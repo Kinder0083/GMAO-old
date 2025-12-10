@@ -562,7 +562,7 @@ async def upload_file(
 # =====================================
 
 @router.post("/cleanup")
-async def cleanup_old_messages(db = Depends(get_db)):
+async def cleanup_old_messages():
     """
     Supprimer les messages et fichiers de plus de 60 jours
     (Endpoint à appeler via un cron job)
