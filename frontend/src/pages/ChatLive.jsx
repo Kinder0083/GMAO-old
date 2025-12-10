@@ -173,11 +173,7 @@ const ChatLive = () => {
         setMessages(prev => [...prev, response.data.message]);
         setNewMessage('');
         setSelectedRecipients([]);
-        
-        toast({
-          title: 'Message envoyé',
-          description: 'Mode REST activé (reconnexion en cours...)'
-        });
+        // Message envoyé avec succès en mode REST, pas besoin de notifier
       } catch (error) {
         console.error('Erreur envoi message:', error);
         toast({
