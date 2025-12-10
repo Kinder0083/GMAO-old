@@ -150,10 +150,30 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     # Sauvegarder dans MongoDB
                     await db.chat_messages.insert_one(chat_message)
                     
+                    # Créer une copie propre du message pour broadcast (sans _id MongoDB)
+                    clean_message = {
+                        "id": chat_message["id"],
+                        "user_id": chat_message["user_id"],
+                        "user_name": chat_message["user_name"],
+                        "user_role": chat_message["user_role"],
+                        "message": chat_message["message"],
+                        "recipient_ids": chat_message["recipient_ids"],
+                        "recipient_names": chat_message["recipient_names"],
+                        "timestamp": chat_message["timestamp"],
+                        "is_deleted": chat_message["is_deleted"],
+                        "deleted_at": chat_message["deleted_at"],
+                        "reply_to_id": chat_message["reply_to_id"],
+                        "reply_to_preview": chat_message["reply_to_preview"],
+                        "reactions": chat_message["reactions"],
+                        "attachments": chat_message["attachments"],
+                        "deletable_until": chat_message["deletable_until"],
+                        "is_private": chat_message["is_private"]
+                    }
+                    
                     # Diffuser le message
                     broadcast_data = {
                         "type": "new_message",
-                        "message": chat_message
+                        "message": clean_message
                     }
                     
                     if recipient_ids:
