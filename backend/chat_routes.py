@@ -509,11 +509,13 @@ async def get_online_users(
     online_user_ids = manager.get_online_users()
     
     # Récupérer les infos complètes
-    users = await db.users.find({"id": {"$in": online_user_ids}}).to_list(length=None)
+    from bson import ObjectId
+    online_object_ids = [ObjectId(uid) for uid in online_user_ids if ObjectId.is_valid(uid)]
+    users = await db.users.find({"_id": {"$in": online_object_ids}}).to_list(length=None)
     
     online_users = [
         {
-            "id": u.get("id"),
+            "id": str(u.get("_id")),
             "name": f"{u.get('prenom', '')} {u.get('nom', '')}".strip(),
             "role": u.get("role", ""),
             "is_online": True
