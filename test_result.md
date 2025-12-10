@@ -103,47 +103,33 @@
 #====================================================================================================
 
 user_problem_statement: |
-  PHASE 1: Corrections Critiques - SMTP, Paramètres, Maintenance Programmée [TERMINÉE]
+  PHASE 5: Nouvelle Fonctionnalité "Chat Live" - Style Viber [EN COURS - Phases 1-2]
   
-  Le client a reporté plusieurs problèmes critiques :
-  1. Erreur lors de l'envoi d'email d'activation aux nouveaux membres
-  2. La page Paramètres n'enregistre aucune information
-  3. Le bouton "Changer son mot de passe" dans Paramètres ne fait rien
-  4. Les compteurs de la page Maintenance Programmée ne se mettent pas à jour correctement
+  Implémentation d'un système de chat en temps réel avec WebSocket :
   
-  PHASE 2: Nouvelles Fonctionnalités [EN COURS]
+  **Phase 1-2 (Chat de base + Messages privés) :**
+  1. WebSocket pour communication instantanée
+  2. Chat de groupe global (tous les utilisateurs)
+  3. Messages privés avec sélection de destinataires
+  4. Indication visuelle discrète pour messages privés
+  5. Liste des utilisateurs en ligne (sidebar)
+  6. Icône enveloppe dans header avec badge messages non lus
+  7. Désactivation timeout d'inactivité sur page Chat Live
+  8. Permissions chatLive ajoutées au système
   
-  Demandes d'évolution :
-  1. Rafraîchissement automatique de toutes les pages (5 secondes)
-  2. Nouvelle section "Journal" (audit log) accessible uniquement aux admins
-     - Enregistrer toutes les actions (créations, modifications, suppressions, connexions)
-     - Filtrable par utilisateur, type d'action, date
-     - Exportable en CSV/Excel
-  3. Modifications de l'affichage des Ordres de Travail :
-     - Afficher uniquement le titre (pas l'ID complet)
-     - Changer "Date de création" en "Créé le DD/MM/YY par [Nom Créateur]"
-     - Ajouter section "Rapport Détaillé" avec système de commentaires horodatés (comme un chat)
-  4. Permissions : Les techniciens ne peuvent supprimer que ce qu'ils ont créé
+  **Phase 3-4 (À venir) :**
+  - Upload fichiers (max 15MB, tous types)
+  - Capture photo caméra avec prévisualisation
+  - Rétention 60 jours (nettoyage automatique)
+  - Menu contextuel clic droit sur fichiers
   
-  PHASE 3: Test complet du nouveau système de rôles et permissions [EN COURS]
+  **Phase 5-6 (À venir) :**
+  - Réactions émojis superposées style Viber
+  - Menu contextuel clic droit sur messages
   
-  Nouveau système de rôles et permissions implémenté:
-  - 11 rôles au total (ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, INDUS, LOGISTIQUE, LABO, ADV, TECHNICIEN, VISUALISEUR)
-  - Grille de permissions par module (17 modules)
-  - Permissions par défaut selon le rôle
-  - Possibilité de personnaliser les permissions
-  
-  PHASE 4: Nouvelle Fonctionnalité "Plan de Surveillance" [EN COURS]
-  
-  Implémentation d'un module complet de gestion du plan de surveillance avec :
-  1. Backend API - Endpoints CRUD pour les items de surveillance
-  2. Frontend - 3 vues différentes (Liste, Grille par catégorie, Calendrier)
-  3. Système de logs avec date, commentaire et upload de fichiers
-  4. Statuts visuels distincts (À planifier, Planifié, Réalisé)
-  5. Rappels automatiques par email
-  6. KPIs dans la page Rapport (Pourcentage global, par catégorie, par responsable)
-  7. Import/Export CSV/Excel
-  8. Badge de notification dans le header
+  **Phase 7-8 (À venir) :**
+  - Répondre à un message (citation)
+  - Suppression messages (10s utilisateur, illimité admin)
 
 backend:
   - task: "Configuration SMTP/Postfix pour envoi d'emails"
