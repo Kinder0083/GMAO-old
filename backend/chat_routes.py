@@ -42,18 +42,27 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     Connexion WebSocket pour le chat en temps réel
     Le token JWT est passé dans l'URL
     """
+    user_id = None
+    user_name = "Unknown"
+    
     try:
         # Valider le token JWT
-        from dependencies import decode_jwt_token
-        payload = decode_jwt_token(token)
-        user_id = payload.get("user_id")
+        from auth import decode_access_token
+        payload = decode_access_token(token)
         
-        if not user_id:
+        if not payload:
             await websocket.close(code=1008, reason="Invalid token")
             return
         
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            await websocket.close(code=1008, reason="Invalid token - no user_id")
+            return
+        
         # Récupérer les infos utilisateur
-        user_data = await db.users.find_one({"id": user_id})
+        from bson import ObjectId
+        user_data = await db.users.find_one({"_id": ObjectId(user_id)})
         if not user_data:
             await websocket.close(code=1008, reason="User not found")
             return
