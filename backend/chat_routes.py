@@ -956,16 +956,16 @@ async def transfer_to_preventive(
     
     # Ajouter à la maintenance préventive
     from bson import ObjectId
-    await db.maintenances_preventives.update_one(
+    await db.preventive_maintenances.update_one(
         {"_id": ObjectId(preventive_id)},
         {
             "$push": {
-                "pieces_jointes": {
-                    "nom": attachment.get("original_filename"),
-                    "chemin": new_file_path,
+                "attachments": {
+                    "filename": attachment.get("original_filename"),
+                    "path": new_file_path,
                     "type": attachment.get("mime_type"),
-                    "taille": attachment.get("file_size"),
-                    "date_ajout": datetime.now(timezone.utc).isoformat()
+                    "size": attachment.get("file_size"),
+                    "uploadedAt": datetime.now(timezone.utc).isoformat()
                 }
             }
         }
