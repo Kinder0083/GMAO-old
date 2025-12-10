@@ -305,10 +305,13 @@ const ChatLive = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setMessages(prev => [...prev, response.data.message]);
+      // Ne pas ajouter manuellement - le WebSocket/polling s'en charge
       setNewMessage('');
       setSelectedRecipients([]);
       closeCameraModal();
+      
+      // Marquer comme lu immédiatement
+      await api.chat.markAsRead();
       
       toast({
         title: 'Photo envoyée',
