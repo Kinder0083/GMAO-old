@@ -404,8 +404,7 @@ async def mark_as_read(
 
 @router.get("/online-users")
 async def get_online_users(
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Récupérer la liste des utilisateurs en ligne
