@@ -375,6 +375,13 @@ const ChatLive = () => {
     return false;
   };
 
+  // Formater la taille de fichier
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   return (
     <div className="flex h-[calc(100vh-120px)] gap-4">
       {/* Zone principale du chat */}
