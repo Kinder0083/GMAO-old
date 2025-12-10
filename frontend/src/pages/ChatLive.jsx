@@ -329,7 +329,7 @@ const ChatLive = () => {
                 className="resize-none"
               />
             </div>
-            <Button onClick={sendMessage} disabled={!newMessage.trim() || !isConnected}>
+            <Button onClick={sendMessage} disabled={!newMessage.trim()}>
               <Send className="h-4 w-4" />
             </Button>
           </div>
