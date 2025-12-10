@@ -337,7 +337,7 @@ async def create_message(
 async def delete_message(
     message_id: str,
     current_user: dict = Depends(get_current_user),
-    _: dict = Depends(require_permission("chatLive", "delete"))
+    _: dict = Depends(require_permission("chatLive", "view"))
 ):
     """
     Supprimer un message
