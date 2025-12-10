@@ -440,6 +440,35 @@ const MainLayout = () => {
     }
   };
 
+  const loadChatUnreadCount = async () => {
+    // Ne charger que si l'utilisateur a accès au chat
+    if (!canView('chatLive')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const backend_url = getBackendURL();
+      
+      const response = await fetch(`${backend_url}/api/chat/unread-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setChatUnreadCount(data.unread_count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du nombre de messages non lus:', error);
+    }
+  };
+
+  // Polling pour les messages non lus toutes les 10 secondes
+  useEffect(() => {
+    loadChatUnreadCount();
+    const interval = setInterval(loadChatUnreadCount, 10000);
+    return () => clearInterval(interval);
+  }, [canView]);
 
 
   // Mapping des icônes
