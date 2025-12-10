@@ -75,9 +75,19 @@ const InactivityHandler = () => {
     };
   }, [resetActivityTimer]);
 
+  // Détecter si l'utilisateur est sur la page Chat Live
+  useEffect(() => {
+    setIsOnChatLivePage(location.pathname === '/chat-live');
+  }, [location.pathname]);
+
   // Vérification de l'inactivité
   useEffect(() => {
     const checkInactivity = setInterval(() => {
+      // Si sur la page Chat Live, désactiver le timeout
+      if (isOnChatLivePage) {
+        return;
+      }
+
       const inactiveTime = Date.now() - lastActivity;
       
       if (inactiveTime >= inactivityTimeout && !showWarning) {
@@ -88,7 +98,7 @@ const InactivityHandler = () => {
     }, 1000); // Vérifier toutes les secondes
 
     return () => clearInterval(checkInactivity);
-  }, [lastActivity, showWarning, inactivityTimeout]);
+  }, [lastActivity, showWarning, inactivityTimeout, isOnChatLivePage]);
 
   // Compte à rebours du popup
   useEffect(() => {
