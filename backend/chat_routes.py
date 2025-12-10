@@ -403,7 +403,8 @@ async def delete_message(
 
 @router.get("/unread-count")
 async def get_unread_count(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    _: dict = Depends(require_permission("chatLive", "view"))
 ):
     """
     Compter le nombre de messages non lus pour l'utilisateur
