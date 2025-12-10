@@ -372,6 +372,122 @@ const ChatLive = () => {
     setContextMenu(null);
   };
 
+  // Ouvrir modal de transfert
+  const openTransferModal = async (type, attachment) => {
+    setContextMenu(null);
+    
+    try {
+      let list = [];
+      
+      if (type === 'workorder') {
+        const response = await api.get('/bons-travail');
+        list = response.data.map(bt => ({
+          id: bt._id,
+          label: bt.titre?.substring(0, 20) + (bt.titre?.length > 20 ? '...' : ''),
+          fullLabel: bt.titre
+        }));
+      } else if (type === 'improvement') {
+        const response = await api.get('/ameliorations');
+        list = response.data.map(am => ({
+          id: am._id,
+          label: am.titre?.substring(0, 20) + (am.titre?.length > 20 ? '...' : ''),
+          fullLabel: am.titre
+        }));
+      } else if (type === 'preventive') {
+        const response = await api.get('/maintenances-preventives');
+        list = response.data.map(mp => ({
+          id: mp._id,
+          label: mp.designation?.substring(0, 20) + (mp.designation?.length > 20 ? '...' : ''),
+          fullLabel: mp.designation
+        }));
+      } else if (type === 'email') {
+        const response = await api.get('/users');
+        list = response.data.map(u => ({
+          id: u.id,
+          label: `${u.prenom} ${u.nom}`,
+          email: u.email
+        }));
+      }
+      
+      setTransferList(list);
+      setShowTransferModal({ type, attachment });
+      setSelectedTransferItem('');
+      setSelectedEmailUsers([]);
+      setEmailMessage('');
+    } catch (error) {
+      console.error('Erreur chargement liste:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger la liste',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Effectuer le transfert
+  const executeTransfer = async () => {
+    if (!showTransferModal) return;
+    
+    const { type, attachment } = showTransferModal;
+    
+    try {
+      if (type === 'email') {
+        if (selectedEmailUsers.length === 0) {
+          toast({
+            title: 'Erreur',
+            description: 'Sélectionnez au moins un destinataire',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        await api.chat.transferByEmail(attachment.id, selectedEmailUsers, emailMessage);
+        toast({
+          title: 'Envoyé',
+          description: `Fichier envoyé par email à ${selectedEmailUsers.length} utilisateur(s)`
+        });
+      } else {
+        if (!selectedTransferItem) {
+          toast({
+            title: 'Erreur',
+            description: 'Sélectionnez un élément',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        if (type === 'workorder') {
+          await api.chat.transferToWorkOrder(attachment.id, selectedTransferItem);
+          toast({
+            title: 'Transféré',
+            description: 'Fichier ajouté à l\'ordre de travail'
+          });
+        } else if (type === 'improvement') {
+          await api.chat.transferToImprovement(attachment.id, selectedTransferItem);
+          toast({
+            title: 'Transféré',
+            description: 'Fichier ajouté à l\'amélioration'
+          });
+        } else if (type === 'preventive') {
+          await api.chat.transferToPreventive(attachment.id, selectedTransferItem);
+          toast({
+            title: 'Transféré',
+            description: 'Fichier ajouté à la maintenance préventive'
+          });
+        }
+      }
+      
+      setShowTransferModal(null);
+    } catch (error) {
+      console.error('Erreur transfert:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de transférer le fichier',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const toggleRecipient = (user) => {
     setSelectedRecipients(prev => {
       const exists = prev.find(r => r.id === user.id);
