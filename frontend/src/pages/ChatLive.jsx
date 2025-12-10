@@ -143,18 +143,43 @@ const ChatLive = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!newMessage.trim()) return;
 
     const messageData = {
-      type: 'message',
       message: newMessage.trim(),
       recipient_ids: selectedRecipients.map(r => r.id),
       reply_to_id: null
     };
 
-    ws.send(JSON.stringify(messageData));
-    setNewMessage('');
-    setSelectedRecipients([]);
+    // Si WebSocket connecté, l'utiliser
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'message',
+        ...messageData
+      }));
+      setNewMessage('');
+      setSelectedRecipients([]);
+    } else {
+      // Sinon, fallback sur l'API REST
+      try {
+        const response = await api.chat.createMessage(messageData);
+        setMessages(prev => [...prev, response.data.message]);
+        setNewMessage('');
+        setSelectedRecipients([]);
+        
+        toast({
+          title: 'Message envoyé',
+          description: 'Mode REST activé (reconnexion en cours...)'
+        });
+      } catch (error) {
+        console.error('Erreur envoi message:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible d\'envoyer le message',
+          variant: 'destructive'
+        });
+      }
+    }
   };
 
   const handleKeyPress = (e) => {
