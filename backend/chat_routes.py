@@ -8,7 +8,7 @@ from models import (
     ChatMessage, ChatMessageCreate, ChatReactionAdd, ChatFileTransfer,
     ChatEmailTransfer, ChatAttachment, ChatReaction, UserChatActivity
 )
-from dependencies import get_current_user, get_db, require_permission
+from dependencies import get_current_user, require_permission
 from websocket_manager import manager
 import logging
 import os
@@ -18,7 +18,15 @@ from email_service import send_email
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"])
+
+# Variables globales (seront injectées depuis server.py)
+db = None
+
+def init_chat_routes(database):
+    """Initialize chat routes with database"""
+    global db
+    db = database
 
 # Dossier de stockage des fichiers
 CHAT_UPLOADS_DIR = "/opt/gmao-iris/backend/uploads/chat/"
