@@ -251,7 +251,8 @@ async def get_messages(
 @router.post("/messages")
 async def create_message(
     message_data: ChatMessageCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    _: dict = Depends(require_permission("chatLive", "edit"))
 ):
     """
     Créer un nouveau message (alternatif au WebSocket)
