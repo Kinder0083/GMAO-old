@@ -899,16 +899,16 @@ async def transfer_to_improvement(
     
     # Ajouter à l'amélioration
     from bson import ObjectId
-    await db.ameliorations.update_one(
+    await db.improvements.update_one(
         {"_id": ObjectId(improvement_id)},
         {
             "$push": {
-                "pieces_jointes": {
-                    "nom": attachment.get("original_filename"),
-                    "chemin": new_file_path,
+                "attachments": {
+                    "filename": attachment.get("original_filename"),
+                    "path": new_file_path,
                     "type": attachment.get("mime_type"),
-                    "taille": attachment.get("file_size"),
-                    "date_ajout": datetime.now(timezone.utc).isoformat()
+                    "size": attachment.get("file_size"),
+                    "uploadedAt": datetime.now(timezone.utc).isoformat()
                 }
             }
         }
