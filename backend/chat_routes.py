@@ -233,7 +233,7 @@ async def create_message(
     Créer un nouveau message (alternatif au WebSocket)
     """
     user_id = current_user.get("id")
-    user_name = current_user.get("user_name", "Utilisateur")
+    user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
     user_role = current_user.get("role", "")
     
     chat_message = {
@@ -458,7 +458,7 @@ async def add_reaction(
     Ajouter une réaction emoji à un message
     """
     user_id = current_user.get("id")
-    user_name = current_user.get("user_name", "Utilisateur")
+    user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
     
     # Vérifier que le message existe
     message = await db.chat_messages.find_one({"id": message_id})
