@@ -227,8 +227,7 @@ async def get_messages(
 @router.post("/messages")
 async def create_message(
     message_data: ChatMessageCreate,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Créer un nouveau message (alternatif au WebSocket)
