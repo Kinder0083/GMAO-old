@@ -1994,6 +1994,71 @@ backend:
           - ✅ Système de pièces utilisées ENTIÈREMENT FONCTIONNEL
           - ✅ Prêt pour utilisation en production
 
+
+  - task: "Chat Live Phase 1-2 - WebSocket + Messages (backend)"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/chat_routes.py, /app/backend/websocket_manager.py, /app/backend/models.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          IMPLÉMENTATION PHASES 1-2 - Backend Chat Live
+          
+          FICHIERS CRÉÉS:
+          1. /app/backend/websocket_manager.py - Gestionnaire de connexions WebSocket
+             - ConnectionManager avec active_connections dict
+             - Méthodes: connect, disconnect, broadcast, send_to_users
+             - Broadcast user status (online/offline)
+             - Gestion des connexions mortes automatique
+          
+          2. /app/backend/chat_routes.py - Routes API Chat
+             Endpoints WebSocket:
+             - WS /api/chat/ws/{token} - Connexion temps réel
+             - Authentification JWT via URL
+             - Support messages publics et privés
+             - Heartbeat toutes les 30s
+             
+             Endpoints REST:
+             - GET /api/chat/messages - Récupérer messages (pagination)
+             - POST /api/chat/messages - Envoyer message
+             - DELETE /api/chat/messages/{id} - Supprimer (règle 10s)
+             - GET /api/chat/unread-count - Compter non lus
+             - POST /api/chat/mark-as-read - Marquer comme lu
+             - GET /api/chat/online-users - Liste utilisateurs en ligne
+             - POST /api/reactions/{message_id} - Ajouter réaction (Phase 5-6)
+             - POST /api/chat/upload - Upload fichiers (Phase 3-4)
+             - POST /api/chat/cleanup - Nettoyage 60 jours (Phase 3-4)
+          
+          3. /app/backend/models.py - Modèles Chat
+             - ChatMessage: id, user_id, message, recipient_ids, timestamp, reactions, attachments
+             - ChatAttachment: fichiers joints
+             - ChatReaction: émojis
+             - UserChatActivity: last_seen, is_online
+             - UserPermissions: ajout chatLive module (tous rôles)
+          
+          4. /app/backend/cleanup_old_chat_messages.py - Script cron
+             - Suppression messages > 60 jours
+             - Suppression fichiers associés
+             - Logging détaillé
+          
+          INTÉGRATION:
+          - chat_routes ajouté dans server.py (api_router.include_router)
+          - Permissions chatLive ajoutées pour tous les 11 rôles
+          - Backend redémarré avec succès
+          
+          À TESTER:
+          1. WebSocket: Connexion/déconnexion
+          2. Messages publics: Broadcast temps réel
+          3. Messages privés: Destinataires spécifiques
+          4. Utilisateurs en ligne: Liste mise à jour
+          5. Messages non lus: Compteur
+          6. Suppression: Règle 10s utilisateur, illimité admin
+          7. Permissions: Vérifier accès selon rôle
+
 frontend:
   - task: "Plan de Surveillance - Interface complète avec 3 vues"
     implemented: true
