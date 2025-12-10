@@ -203,7 +203,7 @@ async def get_messages(
     Récupérer les messages du chat (avec pagination)
     Retourne seulement les messages publics + les messages privés destinés à l'utilisateur
     """
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("id")
     
     # Query pour messages publics OU messages privés pour cet utilisateur
     query = {
@@ -232,7 +232,7 @@ async def create_message(
     """
     Créer un nouveau message (alternatif au WebSocket)
     """
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("id")
     user_name = current_user.get("user_name", "Utilisateur")
     user_role = current_user.get("role", "")
     
@@ -298,7 +298,7 @@ async def delete_message(
     - Utilisateur peut supprimer son propre message dans les 10 premières secondes
     - Admin peut supprimer n'importe quel message à tout moment
     """
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("id")
     is_admin = current_user.get("role") == "ADMIN"
     
     # Récupérer le message
@@ -350,7 +350,7 @@ async def get_unread_count(
     """
     Compter le nombre de messages non lus pour l'utilisateur
     """
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("id")
     
     # Récupérer le dernier timestamp de visite
     activity = await db.user_chat_activity.find_one({"user_id": user_id})
@@ -385,7 +385,7 @@ async def mark_as_read(
     Marquer tous les messages comme lus
     Met à jour le timestamp de dernière visite
     """
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("id")
     
     await db.user_chat_activity.update_one(
         {"user_id": user_id},
@@ -437,7 +437,7 @@ async def add_reaction(
     """
     Ajouter une réaction emoji à un message
     """
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("id")
     user_name = current_user.get("user_name", "Utilisateur")
     
     # Vérifier que le message existe
