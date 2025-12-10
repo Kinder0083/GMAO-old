@@ -141,7 +141,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     
                     # Si message privé, récupérer les noms des destinataires
                     if recipient_ids:
-                        recipients = await db.users.find({"id": {"$in": recipient_ids}}).to_list(length=None)
+                        from bson import ObjectId
+                        # Convertir les IDs string en ObjectId pour la recherche MongoDB
+                        recipient_object_ids = [ObjectId(rid) for rid in recipient_ids if ObjectId.is_valid(rid)]
+                        recipients = await db.users.find({"_id": {"$in": recipient_object_ids}}).to_list(length=None)
                         chat_message["recipient_names"] = [
                             f"{r.get('prenom', '')} {r.get('nom', '')}".strip()
                             for r in recipients
