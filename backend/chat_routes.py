@@ -37,7 +37,7 @@ os.makedirs(CHAT_UPLOADS_DIR, exist_ok=True)
 # =====================================
 
 @router.websocket("/ws/{token}")
-async def websocket_endpoint(websocket: WebSocket, token: str, db=Depends(get_db)):
+async def websocket_endpoint(websocket: WebSocket, token: str):
     """
     Connexion WebSocket pour le chat en temps réel
     Le token JWT est passé dans l'URL
