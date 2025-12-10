@@ -492,8 +492,7 @@ const chatAPI = {
   })
 };
 
-// Export default api avec tous les modules
-export default {
-  ...api,
-  chat: chatAPI
-};
+// Ajouter chatAPI à l'export api
+api.chat = chatAPI;
+
+export default api;
