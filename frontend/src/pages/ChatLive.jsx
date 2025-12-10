@@ -525,19 +525,28 @@ const ChatLive = () => {
         {/* Zone de saisie */}
         <div className="p-4 border-t">
           <div className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFileUpload}
+            />
             <Button 
               variant="outline" 
               size="icon"
-              title="Upload fichiers (Phases 3-4 à venir)"
-              disabled
+              title="Joindre des fichiers"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingFiles}
             >
               <Paperclip className="h-4 w-4" />
             </Button>
             <Button 
               variant="outline" 
               size="icon"
-              title="Capture photo (Phases 3-4 à venir)"
-              disabled
+              title="Prendre une photo"
+              onClick={openCamera}
+              disabled={uploadingFiles}
             >
               <Camera className="h-4 w-4" />
             </Button>
