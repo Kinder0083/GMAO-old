@@ -464,14 +464,48 @@ const ChatLive = () => {
                     {/* Auteur */}
                     {!isOwnMessage && (
                       <div className="font-semibold text-sm mb-1">
-                        {message.user_name}:
+                        {message.user_name} a écrit:
                       </div>
                     )}
                     
-                    {/* Message */}
-                    <div className="break-words whitespace-pre-wrap">
-                      {message.message}
-                    </div>
+                    {/* Message texte */}
+                    {message.message && (
+                      <div className="break-words whitespace-pre-wrap">
+                        {message.message}
+                      </div>
+                    )}
+                    
+                    {/* Fichiers joints */}
+                    {message.attachments && message.attachments.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {message.attachments.length > 0 && !message.message && !isOwnMessage && (
+                          <div className="font-semibold text-sm mb-1">
+                            {message.user_name} a envoyé:
+                          </div>
+                        )}
+                        {message.attachments.map(attachment => (
+                          <div
+                            key={attachment.id}
+                            className={`flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-opacity-80 ${
+                              isOwnMessage ? 'bg-blue-500 border-blue-400' : 'bg-white border-gray-300'
+                            }`}
+                            onContextMenu={(e) => handleFileContextMenu(e, attachment, message.id)}
+                            onClick={() => downloadFile(attachment.id)}
+                          >
+                            <FileText className={`h-5 w-5 ${isOwnMessage ? 'text-white' : 'text-gray-600'}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-sm font-medium truncate ${isOwnMessage ? 'text-white' : 'text-gray-900'}`}>
+                                {attachment.original_filename}
+                              </div>
+                              <div className={`text-xs ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
+                                {formatFileSize(attachment.file_size)}
+                              </div>
+                            </div>
+                            <Download className={`h-4 w-4 ${isOwnMessage ? 'text-white' : 'text-gray-500'}`} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     
                     {/* Timestamp */}
                     <div className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
