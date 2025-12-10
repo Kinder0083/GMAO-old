@@ -103,11 +103,11 @@
 #====================================================================================================
 
 user_problem_statement: |
-  PHASE 5: Nouvelle Fonctionnalité "Chat Live" - Style Viber [EN COURS - Phases 1-2]
+  PHASE 5: Nouvelle Fonctionnalité "Chat Live" - Style Viber [EN COURS - Phases 3-4]
   
   Implémentation d'un système de chat en temps réel avec WebSocket :
   
-  **Phase 1-2 (Chat de base + Messages privés) :**
+  **Phase 1-2 (TERMINÉES ✅) :**
   1. WebSocket pour communication instantanée
   2. Chat de groupe global (tous les utilisateurs)
   3. Messages privés avec sélection de destinataires
@@ -116,16 +116,21 @@ user_problem_statement: |
   6. Icône enveloppe dans header avec badge messages non lus
   7. Désactivation timeout d'inactivité sur page Chat Live
   8. Permissions chatLive ajoutées au système
+  9. Affichage "Utilisateur a écrit:" / "Utilisateur a envoyé:"
   
-  **Phase 3-4 (À venir) :**
-  - Upload fichiers (max 15MB, tous types)
-  - Capture photo caméra avec prévisualisation
-  - Rétention 60 jours (nettoyage automatique)
-  - Menu contextuel clic droit sur fichiers
+  **Phase 3-4 (EN COURS) :**
+  - Upload fichiers (max 15MB, tous types) ✅ Backend + Frontend
+  - Capture photo caméra avec prévisualisation ✅ Frontend
+  - Affichage fichiers joints dans messages ✅
+  - Menu contextuel clic droit sur fichiers ✅ (structure)
+  - Télécharger fichiers ✅
+  - Transférer vers OT/Amélioration/Maintenance 🔄 (endpoints prêts, UI à finaliser)
+  - Transférer par email 🔄 (endpoint prêt, UI à finaliser)
+  - Rétention 60 jours (script cleanup déjà créé) ✅
   
   **Phase 5-6 (À venir) :**
   - Réactions émojis superposées style Viber
-  - Menu contextuel clic droit sur messages
+  - Menu contextuel clic droit sur messages (répondre, supprimer)
   
   **Phase 7-8 (À venir) :**
   - Répondre à un message (citation)
