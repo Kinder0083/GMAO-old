@@ -46,6 +46,7 @@ import BonDeTravailView from "./pages/BonDeTravailView";
 import AutorisationParticuliereForm from "./pages/AutorisationParticuliereForm";
 import AutorisationParticuliereView from "./pages/AutorisationParticuliereView";
 import Personnalisation from "./pages/Personnalisation";
+import ChatLive from "./pages/ChatLive";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
