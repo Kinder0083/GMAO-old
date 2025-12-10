@@ -85,11 +85,17 @@ const ChatLive = () => {
 
     websocket.onerror = (error) => {
       console.error('❌ Erreur WebSocket:', error);
+      console.error('URL tentée:', wsUrl);
       setIsConnected(false);
+      toast({
+        title: 'Erreur de connexion',
+        description: 'Impossible de se connecter au chat en temps réel. Utilisation du mode REST.',
+        variant: 'destructive'
+      });
     };
 
-    websocket.onclose = () => {
-      console.log('🔌 WebSocket déconnecté');
+    websocket.onclose = (event) => {
+      console.log('🔌 WebSocket déconnecté', event.code, event.reason);
       setIsConnected(false);
       if (websocket.heartbeatInterval) {
         clearInterval(websocket.heartbeatInterval);
