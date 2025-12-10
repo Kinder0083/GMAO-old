@@ -336,7 +336,8 @@ async def create_message(
 @router.delete("/messages/{message_id}")
 async def delete_message(
     message_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    _: dict = Depends(require_permission("chatLive", "delete"))
 ):
     """
     Supprimer un message
