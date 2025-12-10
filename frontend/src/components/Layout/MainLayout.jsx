@@ -474,6 +474,7 @@ const MainLayout = () => {
   // Mapping des icônes
   const iconMap = {
     'LayoutDashboard': LayoutDashboard,
+    'Mail': Mail,
     'MessageSquare': MessageSquare,
     'ClipboardList': ClipboardList,
     'Lightbulb': Lightbulb,
