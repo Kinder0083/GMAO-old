@@ -609,6 +609,22 @@ const MainLayout = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Icône Chat Live avec badge messages non lus */}
+          {canView('chatLive') && (
+            <button
+              onClick={() => navigate('/chat-live')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+              title="Chat Live"
+            >
+              <Mail className="w-5 h-5 text-gray-600" />
+              {chatUnreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                  {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Icône rappel échéances avec 3 badges */}
           <div className="relative">
             <button 
