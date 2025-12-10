@@ -825,11 +825,7 @@ const ChatLive = () => {
           {canEdit('workOrders') && (
             <button
               className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-              onClick={() => {
-                // TODO: Ouvrir sous-menu ordres de travail
-                toast({ title: 'Fonctionnalité à venir', description: 'Liste des ordres de travail' });
-                setContextMenu(null);
-              }}
+              onClick={() => openTransferModal('workorder', contextMenu.attachment)}
             >
               <ArrowRightCircle className="h-4 w-4" />
               Transférer dans un OT
@@ -839,11 +835,7 @@ const ChatLive = () => {
           {canEdit('improvements') && (
             <button
               className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-              onClick={() => {
-                // TODO: Ouvrir sous-menu améliorations
-                toast({ title: 'Fonctionnalité à venir', description: 'Liste des améliorations' });
-                setContextMenu(null);
-              }}
+              onClick={() => openTransferModal('improvement', contextMenu.attachment)}
             >
               <ArrowRightCircle className="h-4 w-4" />
               Transférer dans une amélioration
@@ -853,11 +845,7 @@ const ChatLive = () => {
           {canEdit('preventiveMaintenance') && (
             <button
               className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-              onClick={() => {
-                // TODO: Ouvrir sous-menu maintenances
-                toast({ title: 'Fonctionnalité à venir', description: 'Liste des maintenances' });
-                setContextMenu(null);
-              }}
+              onClick={() => openTransferModal('preventive', contextMenu.attachment)}
             >
               <ArrowRightCircle className="h-4 w-4" />
               Transférer dans une maintenance
@@ -866,11 +854,7 @@ const ChatLive = () => {
           
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-            onClick={() => {
-              // TODO: Ouvrir modal sélection utilisateurs pour email
-              toast({ title: 'Fonctionnalité à venir', description: 'Transfert par email' });
-              setContextMenu(null);
-            }}
+            onClick={() => openTransferModal('email', contextMenu.attachment)}
           >
             <MailIcon className="h-4 w-4" />
             Transférer par email
