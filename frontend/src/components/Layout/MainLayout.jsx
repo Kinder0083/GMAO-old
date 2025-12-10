@@ -443,6 +443,12 @@ const MainLayout = () => {
   const loadChatUnreadCount = async () => {
     // Ne charger que si l'utilisateur a accès au chat
     if (!canView('chatLive')) return;
+    
+    // Si l'utilisateur est sur la page Chat Live, ne pas afficher de badge
+    if (location.pathname === '/chat-live') {
+      setChatUnreadCount(0);
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
