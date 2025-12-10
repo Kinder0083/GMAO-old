@@ -181,9 +181,11 @@ const ChatLive = () => {
       // Sinon, fallback sur l'API REST
       try {
         const response = await api.chat.createMessage(messageData);
-        setMessages(prev => [...prev, response.data.message]);
+        // Ne pas ajouter manuellement - le polling s'en charge
         setNewMessage('');
         setSelectedRecipients([]);
+        // Marquer comme lu immédiatement
+        await api.chat.markAsRead();
         // Message envoyé avec succès en mode REST, pas besoin de notifier
       } catch (error) {
         console.error('Erreur envoi message:', error);
