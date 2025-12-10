@@ -655,6 +655,150 @@ async def upload_file(
     return {"success": True, "attachment": attachment}
 
 
+@router.get("/download/{attachment_id}")
+async def download_file(
+    attachment_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Télécharger un fichier joint
+    """
+    # Trouver le message contenant ce fichier
+    message = await db.chat_messages.find_one({
+        "attachments.id": attachment_id
+    })
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    # Trouver l'attachment spécifique
+    attachment = None
+    for att in message.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    file_path = attachment.get("file_path")
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Fichier physique non trouvé")
+    
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=file_path,
+        filename=attachment.get("original_filename"),
+        media_type=attachment.get("mime_type")
+    )
+
+
+@router.post("/messages-with-files")
+async def create_message_with_files(
+    message: str = Form(...),
+    recipient_ids: str = Form("[]"),
+    files: List[UploadFile] = File([]),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Créer un message avec fichiers joints
+    """
+    import json
+    
+    user_id = current_user.get("user_id")
+    user_name = current_user.get("user_name", "Utilisateur")
+    user_role = current_user.get("role", "")
+    
+    # Parser recipient_ids JSON
+    try:
+        recipient_ids_list = json.loads(recipient_ids) if recipient_ids else []
+    except:
+        recipient_ids_list = []
+    
+    # Uploader tous les fichiers
+    attachments = []
+    MAX_SIZE = 15 * 1024 * 1024
+    
+    for file in files:
+        file_content = await file.read()
+        file_size = len(file_content)
+        
+        if file_size > MAX_SIZE:
+            raise HTTPException(status_code=413, detail=f"Fichier {file.filename} trop volumineux (max 15 MB)")
+        
+        file_id = str(uuid.uuid4())
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{file_id}{file_extension}"
+        file_path = os.path.join(CHAT_UPLOADS_DIR, unique_filename)
+        
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+        
+        attachment = {
+            "id": file_id,
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "file_path": file_path,
+            "file_size": file_size,
+            "mime_type": file.content_type or "application/octet-stream",
+            "uploaded_at": datetime.now(timezone.utc).isoformat()
+        }
+        attachments.append(attachment)
+    
+    # Créer le message
+    chat_message = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "user_name": user_name,
+        "user_role": user_role,
+        "message": message,
+        "recipient_ids": recipient_ids_list,
+        "recipient_names": [],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "is_deleted": False,
+        "deleted_at": None,
+        "reply_to_id": None,
+        "reply_to_preview": None,
+        "reactions": [],
+        "attachments": attachments,
+        "deletable_until": (datetime.now(timezone.utc) + timedelta(seconds=10)).isoformat(),
+        "is_private": len(recipient_ids_list) > 0
+    }
+    
+    # Si message privé, récupérer les noms
+    if recipient_ids_list:
+        from bson import ObjectId
+        recipient_object_ids = [ObjectId(rid) for rid in recipient_ids_list if ObjectId.is_valid(rid)]
+        recipients = await db.users.find({"_id": {"$in": recipient_object_ids}}).to_list(length=None)
+        chat_message["recipient_names"] = [
+            f"{r.get('prenom', '')} {r.get('nom', '')}".strip()
+            for r in recipients
+        ]
+    
+    # Sauvegarder
+    await db.chat_messages.insert_one(chat_message)
+    
+    # Créer copie propre pour broadcast
+    clean_message = {k: v for k, v in chat_message.items() if k != "_id"}
+    
+    # Broadcast
+    broadcast_data = {
+        "type": "new_message",
+        "message": clean_message
+    }
+    
+    if recipient_ids_list:
+        all_recipients = recipient_ids_list + [user_id]
+        await manager.send_to_users(broadcast_data, all_recipients)
+    else:
+        await manager.broadcast(broadcast_data)
+    
+    return {"success": True, "message": clean_message}
+
+
 # =====================================
 # NETTOYAGE AUTOMATIQUE (60 JOURS)
 # =====================================
