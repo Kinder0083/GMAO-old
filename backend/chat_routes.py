@@ -842,16 +842,16 @@ async def transfer_to_workorder(
     
     # Ajouter à l'OT
     from bson import ObjectId
-    await db.bons_travail.update_one(
+    await db.work_orders.update_one(
         {"_id": ObjectId(workorder_id)},
         {
             "$push": {
-                "pieces_jointes": {
-                    "nom": attachment.get("original_filename"),
-                    "chemin": new_file_path,
+                "attachments": {
+                    "filename": attachment.get("original_filename"),
+                    "path": new_file_path,
                     "type": attachment.get("mime_type"),
-                    "taille": attachment.get("file_size"),
-                    "date_ajout": datetime.now(timezone.utc).isoformat()
+                    "size": attachment.get("file_size"),
+                    "uploadedAt": datetime.now(timezone.utc).isoformat()
                 }
             }
         }
