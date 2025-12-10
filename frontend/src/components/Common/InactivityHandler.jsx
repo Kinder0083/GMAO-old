@@ -14,10 +14,12 @@ import api from '../../services/api';
 
 const InactivityHandler = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [inactivityTimeout, setInactivityTimeout] = useState(15 * 60 * 1000); // Par défaut 15 minutes
+  const [isOnChatLivePage, setIsOnChatLivePage] = useState(false);
 
   // Charger les paramètres au démarrage
   useEffect(() => {
