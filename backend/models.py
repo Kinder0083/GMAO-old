@@ -2088,3 +2088,77 @@ class ManualExportRequest(BaseModel):
     include_images: bool = True
     include_toc: bool = True
 
+
+# =====================================
+# CHAT LIVE MODELS
+# =====================================
+
+class ChatAttachment(BaseModel):
+    """Fichier joint dans un message de chat"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    filename: str
+    original_filename: str
+    file_path: str
+    file_size: int  # en bytes
+    mime_type: str
+    uploaded_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ChatReaction(BaseModel):
+    """Réaction emoji sur un message"""
+    user_id: str
+    user_name: str
+    emoji: str
+    added_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ChatMessage(BaseModel):
+    """Message de chat"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    user_role: str
+    message: str
+    recipient_ids: List[str] = []  # Vide = message de groupe, sinon privé
+    recipient_names: List[str] = []  # Noms des destinataires (pour affichage)
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    is_deleted: bool = False
+    deleted_at: Optional[str] = None
+    reply_to_id: Optional[str] = None  # ID du message auquel on répond
+    reply_to_preview: Optional[str] = None  # Aperçu du message cité
+    reactions: List[ChatReaction] = []
+    attachments: List[ChatAttachment] = []
+    deletable_until: str = Field(default_factory=lambda: (datetime.now(timezone.utc).timestamp() + 10))  # Timestamp + 10s
+    is_private: bool = False  # True si message privé
+
+class ChatMessageCreate(BaseModel):
+    """Créer un nouveau message"""
+    message: str
+    recipient_ids: List[str] = []
+    reply_to_id: Optional[str] = None
+
+class ChatMessageDelete(BaseModel):
+    """Supprimer un message"""
+    message_id: str
+
+class UserChatActivity(BaseModel):
+    """Activité utilisateur dans le chat"""
+    user_id: str
+    last_seen_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    is_online: bool = False
+    last_activity: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ChatReactionAdd(BaseModel):
+    """Ajouter une réaction à un message"""
+    emoji: str
+
+class ChatFileTransfer(BaseModel):
+    """Transférer un fichier vers un OT/Amélioration/Maintenance"""
+    attachment_id: str
+    target_type: str  # "work_order", "improvement", "preventive_maintenance"
+    target_id: str
+
+class ChatEmailTransfer(BaseModel):
+    """Transférer un fichier par email"""
+    attachment_id: str
+    recipient_user_ids: List[str]
+    message: Optional[str] = None
+
