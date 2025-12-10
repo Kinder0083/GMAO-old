@@ -216,10 +216,33 @@ async def get_messages(
     }
     
     # Récupérer les messages triés par date (plus récents en premier)
-    messages = await db.chat_messages.find(query).sort("timestamp", -1).skip(skip).limit(limit).to_list(length=limit)
+    messages_raw = await db.chat_messages.find(query).sort("timestamp", -1).skip(skip).limit(limit).to_list(length=limit)
     
     # Inverser pour avoir les plus anciens en premier (ordre chronologique)
-    messages.reverse()
+    messages_raw.reverse()
+    
+    # Nettoyer les messages pour éviter les problèmes de sérialisation ObjectId
+    messages = []
+    for msg in messages_raw:
+        clean_msg = {
+            "id": msg.get("id"),
+            "user_id": msg.get("user_id"),
+            "user_name": msg.get("user_name"),
+            "user_role": msg.get("user_role"),
+            "message": msg.get("message"),
+            "recipient_ids": msg.get("recipient_ids", []),
+            "recipient_names": msg.get("recipient_names", []),
+            "timestamp": msg.get("timestamp"),
+            "is_deleted": msg.get("is_deleted", False),
+            "deleted_at": msg.get("deleted_at"),
+            "reply_to_id": msg.get("reply_to_id"),
+            "reply_to_preview": msg.get("reply_to_preview"),
+            "reactions": msg.get("reactions", []),
+            "attachments": msg.get("attachments", []),
+            "deletable_until": msg.get("deletable_until"),
+            "is_private": msg.get("is_private", False)
+        }
+        messages.append(clean_msg)
     
     return {"messages": messages, "total": await db.chat_messages.count_documents(query)}
 
