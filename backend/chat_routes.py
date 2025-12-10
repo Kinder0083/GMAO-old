@@ -352,7 +352,19 @@ async def delete_message(
     
     # Vérifier les permissions
     is_author = message.get("user_id") == user_id
-    deletable_until = datetime.fromisoformat(message.get("deletable_until"))
+    deletable_until_str = message.get("deletable_until")
+    
+    # Parser le timestamp de suppression
+    try:
+        if deletable_until_str.endswith('Z'):
+            deletable_until_str = deletable_until_str[:-1] + '+00:00'
+        deletable_until = datetime.fromisoformat(deletable_until_str)
+        if deletable_until.tzinfo is None:
+            deletable_until = deletable_until.replace(tzinfo=timezone.utc)
+    except (ValueError, AttributeError):
+        # Si erreur de parsing, considérer que le délai est expiré
+        deletable_until = datetime.now(timezone.utc) - timedelta(seconds=1)
+    
     can_delete_time = datetime.now(timezone.utc) <= deletable_until
     
     if is_admin:
