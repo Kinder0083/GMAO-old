@@ -214,9 +214,9 @@ const ChatLive = () => {
           <div>
             <h2 className="text-2xl font-bold">💬 Chat Live</h2>
             <div className="flex items-center gap-2 mt-1">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-orange-500'}`}></div>
               <span className="text-sm text-gray-600">
-                {isConnected ? 'Connecté' : 'Déconnecté'}
+                {isConnected ? 'Temps réel activé' : 'Mode REST (actualisation auto)'}
               </span>
             </div>
           </div>
