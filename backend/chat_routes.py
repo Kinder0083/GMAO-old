@@ -502,8 +502,7 @@ async def add_reaction(
 async def upload_file(
     file: UploadFile = File(...),
     message_id: Optional[str] = Form(None),
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Upload un fichier et l'attacher à un message
