@@ -482,6 +482,9 @@ export const userPreferencesAPI = {
 const chatAPI = {
   getMessages: (limit = 50, skip = 0) => api.get(`/chat/messages?limit=${limit}&skip=${skip}`),
   createMessage: (messageData) => api.post('/chat/messages', messageData),
+  createMessageWithFiles: (formData) => api.post('/chat/messages-with-files', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   deleteMessage: (messageId) => api.delete(`/chat/messages/${messageId}`),
   getUnreadCount: () => api.get('/chat/unread-count'),
   markAsRead: () => api.post('/chat/mark-as-read'),
@@ -489,7 +492,33 @@ const chatAPI = {
   addReaction: (messageId, emoji) => api.post(`/chat/reactions/${messageId}`, { emoji }),
   uploadFile: (formData) => api.post('/chat/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
-  })
+  }),
+  downloadFile: (attachmentId) => api.get(`/chat/download/${attachmentId}`, { responseType: 'blob' }),
+  transferToWorkOrder: (attachmentId, workorderId) => {
+    const formData = new FormData();
+    formData.append('attachment_id', attachmentId);
+    formData.append('workorder_id', workorderId);
+    return api.post('/chat/transfer-to-workorder', formData);
+  },
+  transferToImprovement: (attachmentId, improvementId) => {
+    const formData = new FormData();
+    formData.append('attachment_id', attachmentId);
+    formData.append('improvement_id', improvementId);
+    return api.post('/chat/transfer-to-improvement', formData);
+  },
+  transferToPreventive: (attachmentId, preventiveId) => {
+    const formData = new FormData();
+    formData.append('attachment_id', attachmentId);
+    formData.append('preventive_id', preventiveId);
+    return api.post('/chat/transfer-to-preventive', formData);
+  },
+  transferByEmail: (attachmentId, recipientUserIds, message) => {
+    const formData = new FormData();
+    formData.append('attachment_id', attachmentId);
+    formData.append('recipient_user_ids', JSON.stringify(recipientUserIds));
+    formData.append('message_text', message || '');
+    return api.post('/chat/transfer-by-email', formData);
+  }
 };
 
 // Ajouter chatAPI à l'export api
