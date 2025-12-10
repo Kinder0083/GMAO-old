@@ -117,7 +117,17 @@ const ChatLive = () => {
     
     // Marquer comme lu
     api.chat.markAsRead().catch(console.error);
-  }, []);
+    
+    // Polling toutes les 5 secondes si WebSocket déconnecté
+    const pollingInterval = setInterval(() => {
+      if (!isConnected) {
+        loadMessages();
+        loadOnlineUsers();
+      }
+    }, 5000);
+    
+    return () => clearInterval(pollingInterval);
+  }, [isConnected]);
 
   const loadMessages = async () => {
     try {
