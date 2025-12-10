@@ -432,8 +432,7 @@ async def get_online_users(
 async def add_reaction(
     message_id: str,
     reaction_data: ChatReactionAdd,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Ajouter une réaction emoji à un message
