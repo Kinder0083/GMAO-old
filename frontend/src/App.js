@@ -134,6 +134,7 @@ function App() {
             <Route path="autorisations-particulieres/edit/:id" element={<AutorisationParticuliereForm />} />
             <Route path="ssh" element={<SSHTerminal />} />
             <Route path="personnalisation" element={<Personnalisation />} />
+            <Route path="chat-live" element={<ChatLive />} />
           </Route>
         </Routes>
       </BrowserRouter>
