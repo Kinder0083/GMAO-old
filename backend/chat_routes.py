@@ -659,7 +659,7 @@ async def upload_file(
 async def download_file(
     attachment_id: str,
     current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+
 ):
     """
     Télécharger un fichier joint
@@ -701,7 +701,7 @@ async def create_message_with_files(
     recipient_ids: str = Form("[]"),
     files: List[UploadFile] = File([]),
     current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+
 ):
     """
     Créer un message avec fichiers joints
@@ -808,7 +808,7 @@ async def transfer_to_workorder(
     attachment_id: str = Form(...),
     workorder_id: str = Form(...),
     current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+
 ):
     """
     Transférer un fichier vers un ordre de travail
@@ -865,7 +865,7 @@ async def transfer_to_improvement(
     attachment_id: str = Form(...),
     improvement_id: str = Form(...),
     current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+
 ):
     """
     Transférer un fichier vers une amélioration
@@ -922,7 +922,7 @@ async def transfer_to_preventive(
     attachment_id: str = Form(...),
     preventive_id: str = Form(...),
     current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+
 ):
     """
     Transférer un fichier vers une maintenance préventive
@@ -980,7 +980,7 @@ async def transfer_by_email(
     recipient_user_ids: str = Form(...),
     message_text: str = Form(""),
     current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+
 ):
     """
     Transférer un fichier par email
