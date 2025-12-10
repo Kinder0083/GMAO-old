@@ -474,7 +474,7 @@ const MainLayout = () => {
     loadChatUnreadCount();
     const interval = setInterval(loadChatUnreadCount, 10000);
     return () => clearInterval(interval);
-  }, [canView]);
+  }, [canView, location.pathname]);
 
 
   // Mapping des icônes
