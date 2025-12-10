@@ -498,26 +498,34 @@ const chatAPI = {
     const formData = new FormData();
     formData.append('attachment_id', attachmentId);
     formData.append('workorder_id', workorderId);
-    return api.post('/chat/transfer-to-workorder', formData);
+    return api.post('/chat/transfer-to-workorder', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
   transferToImprovement: (attachmentId, improvementId) => {
     const formData = new FormData();
     formData.append('attachment_id', attachmentId);
     formData.append('improvement_id', improvementId);
-    return api.post('/chat/transfer-to-improvement', formData);
+    return api.post('/chat/transfer-to-improvement', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
   transferToPreventive: (attachmentId, preventiveId) => {
     const formData = new FormData();
     formData.append('attachment_id', attachmentId);
     formData.append('preventive_id', preventiveId);
-    return api.post('/chat/transfer-to-preventive', formData);
+    return api.post('/chat/transfer-to-preventive', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
   transferByEmail: (attachmentId, recipientUserIds, message) => {
     const formData = new FormData();
     formData.append('attachment_id', attachmentId);
     formData.append('recipient_user_ids', JSON.stringify(recipientUserIds));
     formData.append('message_text', message || '');
-    return api.post('/chat/transfer-by-email', formData);
+    return api.post('/chat/transfer-by-email', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   }
 };
 
