@@ -800,6 +800,263 @@ async def create_message_with_files(
 
 
 # =====================================
+# TRANSFERT DE FICHIERS
+# =====================================
+
+@router.post("/transfer-to-workorder")
+async def transfer_to_workorder(
+    attachment_id: str = Form(...),
+    workorder_id: str = Form(...),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Transférer un fichier vers un ordre de travail
+    """
+    # Vérifier permissions
+    permissions = current_user.get("permissions", {})
+    if not permissions.get("workOrders", {}).get("edit", False):
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    # Trouver le fichier
+    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    attachment = None
+    for att in message.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    # Copier le fichier vers le dossier des pièces jointes OT
+    import shutil
+    work_order_attachments_dir = "/opt/gmao-iris/backend/uploads/work_orders/"
+    os.makedirs(work_order_attachments_dir, exist_ok=True)
+    
+    new_file_path = os.path.join(work_order_attachments_dir, attachment.get("filename"))
+    shutil.copy2(attachment.get("file_path"), new_file_path)
+    
+    # Ajouter à l'OT
+    from bson import ObjectId
+    await db.bons_travail.update_one(
+        {"_id": ObjectId(workorder_id)},
+        {
+            "$push": {
+                "pieces_jointes": {
+                    "nom": attachment.get("original_filename"),
+                    "chemin": new_file_path,
+                    "type": attachment.get("mime_type"),
+                    "taille": attachment.get("file_size"),
+                    "date_ajout": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        }
+    )
+    
+    return {"success": True, "message": "Fichier transféré vers l'ordre de travail"}
+
+
+@router.post("/transfer-to-improvement")
+async def transfer_to_improvement(
+    attachment_id: str = Form(...),
+    improvement_id: str = Form(...),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Transférer un fichier vers une amélioration
+    """
+    # Vérifier permissions
+    permissions = current_user.get("permissions", {})
+    if not permissions.get("improvements", {}).get("edit", False):
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    # Trouver le fichier
+    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    attachment = None
+    for att in message.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    # Copier le fichier
+    import shutil
+    improvements_dir = "/opt/gmao-iris/backend/uploads/improvements/"
+    os.makedirs(improvements_dir, exist_ok=True)
+    
+    new_file_path = os.path.join(improvements_dir, attachment.get("filename"))
+    shutil.copy2(attachment.get("file_path"), new_file_path)
+    
+    # Ajouter à l'amélioration
+    from bson import ObjectId
+    await db.ameliorations.update_one(
+        {"_id": ObjectId(improvement_id)},
+        {
+            "$push": {
+                "pieces_jointes": {
+                    "nom": attachment.get("original_filename"),
+                    "chemin": new_file_path,
+                    "type": attachment.get("mime_type"),
+                    "taille": attachment.get("file_size"),
+                    "date_ajout": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        }
+    )
+    
+    return {"success": True, "message": "Fichier transféré vers l'amélioration"}
+
+
+@router.post("/transfer-to-preventive")
+async def transfer_to_preventive(
+    attachment_id: str = Form(...),
+    preventive_id: str = Form(...),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Transférer un fichier vers une maintenance préventive
+    """
+    # Vérifier permissions
+    permissions = current_user.get("permissions", {})
+    if not permissions.get("preventiveMaintenance", {}).get("edit", False):
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    # Trouver le fichier
+    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    attachment = None
+    for att in message.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    # Copier le fichier
+    import shutil
+    preventive_dir = "/opt/gmao-iris/backend/uploads/preventive/"
+    os.makedirs(preventive_dir, exist_ok=True)
+    
+    new_file_path = os.path.join(preventive_dir, attachment.get("filename"))
+    shutil.copy2(attachment.get("file_path"), new_file_path)
+    
+    # Ajouter à la maintenance préventive
+    from bson import ObjectId
+    await db.maintenances_preventives.update_one(
+        {"_id": ObjectId(preventive_id)},
+        {
+            "$push": {
+                "pieces_jointes": {
+                    "nom": attachment.get("original_filename"),
+                    "chemin": new_file_path,
+                    "type": attachment.get("mime_type"),
+                    "taille": attachment.get("file_size"),
+                    "date_ajout": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        }
+    )
+    
+    return {"success": True, "message": "Fichier transféré vers la maintenance préventive"}
+
+
+@router.post("/transfer-by-email")
+async def transfer_by_email(
+    attachment_id: str = Form(...),
+    recipient_user_ids: str = Form(...),
+    message_text: str = Form(""),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    """
+    Transférer un fichier par email
+    """
+    import json
+    
+    # Parser les IDs
+    try:
+        user_ids = json.loads(recipient_user_ids)
+    except:
+        raise HTTPException(status_code=400, detail="Format recipient_user_ids invalide")
+    
+    # Trouver le fichier
+    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    attachment = None
+    for att in message.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    # Récupérer les emails des destinataires
+    from bson import ObjectId
+    recipient_object_ids = [ObjectId(uid) for uid in user_ids if ObjectId.is_valid(uid)]
+    users = await db.users.find({"_id": {"$in": recipient_object_ids}}).to_list(length=None)
+    
+    if not users:
+        raise HTTPException(status_code=404, detail="Aucun destinataire trouvé")
+    
+    # Envoyer l'email à chaque utilisateur
+    sender_name = current_user.get("user_name", "Un utilisateur")
+    
+    for user in users:
+        recipient_email = user.get("email")
+        if not recipient_email:
+            continue
+        
+        recipient_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip()
+        
+        email_subject = f"Fichier partagé par {sender_name}"
+        email_body = f"""
+Bonjour {recipient_name},
+
+{sender_name} vous a partagé un fichier depuis le Chat Live de GMAO Iris :
+
+Fichier : {attachment.get("original_filename")}
+Taille : {attachment.get("file_size") // 1024} KB
+
+{message_text if message_text else ""}
+
+Le fichier est joint à cet email.
+
+Cordialement,
+GMAO Iris
+        """
+        
+        try:
+            send_email(
+                to_email=recipient_email,
+                subject=email_subject,
+                body=email_body,
+                attachment_path=attachment.get("file_path"),
+                attachment_filename=attachment.get("original_filename")
+            )
+        except Exception as e:
+            logger.error(f"Erreur envoi email à {recipient_email}: {e}")
+    
+    return {"success": True, "message": f"Fichier envoyé par email à {len(users)} utilisateur(s)"}
+
+
+# =====================================
 # NETTOYAGE AUTOMATIQUE (60 JOURS)
 # =====================================
 
