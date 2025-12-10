@@ -197,8 +197,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 async def get_messages(
     limit: int = 50,
     skip: int = 0,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Récupérer les messages du chat (avec pagination)
