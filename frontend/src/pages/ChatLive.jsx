@@ -203,6 +203,162 @@ const ChatLive = () => {
     }
   };
 
+  // Upload de fichiers
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingFiles(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('message', newMessage.trim() || 'Fichier(s) joint(s)');
+      formData.append('recipient_ids', JSON.stringify(selectedRecipients.map(r => r.id)));
+      
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+
+      const response = await api.post('/chat/messages-with-files', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setMessages(prev => [...prev, response.data.message]);
+      setNewMessage('');
+      setSelectedRecipients([]);
+      
+      toast({
+        title: 'Fichier(s) envoyé(s)',
+        description: `${files.length} fichier(s) partagé(s) avec succès`
+      });
+    } catch (error) {
+      console.error('Erreur upload fichiers:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer les fichiers',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingFiles(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Ouvrir la caméra
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraStream(stream);
+      setShowCameraModal(true);
+      
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Erreur accès caméra:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'accéder à la caméra',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Capturer une photo
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        setCapturedImage(blob);
+      }, 'image/jpeg', 0.9);
+    }
+  };
+
+  // Envoyer la photo capturée
+  const sendCapturedPhoto = async () => {
+    if (!capturedImage) return;
+
+    setUploadingFiles(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('message', newMessage.trim() || 'Photo capturée');
+      formData.append('recipient_ids', JSON.stringify(selectedRecipients.map(r => r.id)));
+      formData.append('files', capturedImage, `photo-${Date.now()}.jpg`);
+
+      const response = await api.post('/chat/messages-with-files', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setMessages(prev => [...prev, response.data.message]);
+      setNewMessage('');
+      setSelectedRecipients([]);
+      closeCameraModal();
+      
+      toast({
+        title: 'Photo envoyée',
+        description: 'La photo a été partagée avec succès'
+      });
+    } catch (error) {
+      console.error('Erreur envoi photo:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer la photo',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingFiles(false);
+    }
+  };
+
+  // Fermer la caméra
+  const closeCameraModal = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setCapturedImage(null);
+    setShowCameraModal(false);
+  };
+
+  // Menu contextuel clic droit
+  const handleFileContextMenu = (e, attachment, messageId) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      attachment,
+      messageId
+    });
+  };
+
+  // Fermer le menu contextuel
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  // Télécharger un fichier
+  const downloadFile = (attachmentId) => {
+    const token = localStorage.getItem('token');
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+    window.open(`${backendUrl}/api/chat/download/${attachmentId}?token=${token}`, '_blank');
+    setContextMenu(null);
+  };
+
   const toggleRecipient = (user) => {
     setSelectedRecipients(prev => {
       const exists = prev.find(r => r.id === user.id);
