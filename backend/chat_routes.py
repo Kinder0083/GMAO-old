@@ -438,7 +438,8 @@ async def get_unread_count(
 
 @router.post("/mark-as-read")
 async def mark_as_read(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    _: dict = Depends(require_permission("chatLive", "view"))
 ):
     """
     Marquer tous les messages comme lus
