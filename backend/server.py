@@ -6144,7 +6144,8 @@ from demande_arret_routes import router as demande_arret_router
 api_router.include_router(demande_arret_router)
 
 # Chat Live
-from chat_routes import router as chat_router
+from chat_routes import router as chat_router, init_chat_routes
+init_chat_routes(db)
 api_router.include_router(chat_router)
 
 # Manuel utilisateur
