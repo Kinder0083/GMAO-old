@@ -368,15 +368,19 @@ class ChatLiveTester:
         """TEST 8: DELETE /api/chat/messages/{id} - Suppression par utilisateur (après 10s) - doit échouer"""
         self.log("🧪 TEST 8: DELETE /api/chat/messages/{id} - Suppression utilisateur (après 10s)")
         
+        if not self.technicien_data:
+            self.log("❌ Technicien user not available for timing test", "ERROR")
+            return False
+        
         try:
-            # Create a message and wait for 10s window to expire
+            # Create a message with technicien user and wait for 10s window to expire
             message_data = {
                 "message": "Message à supprimer après 10s (doit échouer)",
                 "recipient_ids": [],
                 "reply_to_id": None
             }
             
-            create_response = self.admin_session.post(
+            create_response = self.technicien_session.post(
                 f"{BACKEND_URL}/chat/messages",
                 json=message_data,
                 timeout=15
@@ -392,8 +396,8 @@ class ChatLiveTester:
             self.log("   Waiting 11 seconds for deletion window to expire...")
             time.sleep(11)
             
-            # Try to delete (should fail)
-            delete_response = self.admin_session.delete(
+            # Try to delete with technicien user (should fail)
+            delete_response = self.technicien_session.delete(
                 f"{BACKEND_URL}/chat/messages/{message_id}",
                 timeout=15
             )
