@@ -464,7 +464,8 @@ async def mark_as_read(
 
 @router.get("/online-users")
 async def get_online_users(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    _: dict = Depends(require_permission("chatLive", "view"))
 ):
     """
     Récupérer la liste des utilisateurs en ligne
