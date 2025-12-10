@@ -17,8 +17,17 @@ const ChatLive = () => {
   const [ws, setWs] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [showUserSelector, setShowUserSelector] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const { toast } = useToast();
+  const { canEdit } = usePermissions();
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
