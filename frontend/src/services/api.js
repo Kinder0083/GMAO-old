@@ -479,7 +479,7 @@ export const userPreferencesAPI = {
 
 
 // Chat Live API
-export const chatAPI = {
+const chatAPI = {
   getMessages: (limit = 50, skip = 0) => api.get(`/chat/messages?limit=${limit}&skip=${skip}`),
   createMessage: (messageData) => api.post('/chat/messages', messageData),
   deleteMessage: (messageId) => api.delete(`/chat/messages/${messageId}`),
@@ -492,4 +492,8 @@ export const chatAPI = {
   })
 };
 
-export default api;
+// Export default api avec tous les modules
+export default {
+  ...api,
+  chat: chatAPI
+};
