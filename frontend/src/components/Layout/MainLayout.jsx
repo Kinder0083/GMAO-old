@@ -61,6 +61,7 @@ const MainLayout = () => {
   const [overdueMaintenanceCount, setOverdueMaintenanceCount] = useState(0); // Maintenances préventives (bleu)
   const [surveillanceBadge, setSurveillanceBadge] = useState({ echeances_proches: 0, pourcentage_realisation: 0 });
   const [inventoryStats, setInventoryStats] = useState({ rupture: 0, niveau_bas: 0 }); // Stats inventaire
+  const [chatUnreadCount, setChatUnreadCount] = useState(0); // Messages non lus du chat
   const { canView, isAdmin } = usePermissions();
 
   // Gérer le comportement auto-collapse de la sidebar
