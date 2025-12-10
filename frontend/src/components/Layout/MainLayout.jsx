@@ -30,7 +30,8 @@ import {
   AlertTriangle,
   FolderOpen,
   Terminal,
-  Palette
+  Palette,
+  Mail
 } from 'lucide-react';
 import FirstLoginPasswordDialog from '../Common/FirstLoginPasswordDialog';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
