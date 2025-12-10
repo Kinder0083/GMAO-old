@@ -808,6 +808,102 @@ const ChatLive = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Modal Transfert */}
+      <Dialog open={showTransferModal !== null} onOpenChange={(open) => !open && setShowTransferModal(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              📤 Transférer le fichier
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              Fichier : <span className="font-medium">{showTransferModal?.attachment?.original_filename}</span>
+            </div>
+            
+            {showTransferModal?.type === 'email' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Destinataires :</label>
+                  <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
+                    {transferList.map(user => (
+                      <label key={user.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmailUsers.includes(user.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedEmailUsers(prev => [...prev, user.id]);
+                            } else {
+                              setSelectedEmailUsers(prev => prev.filter(id => id !== user.id));
+                            }
+                          }}
+                          className="rounded"
+                        />
+                        <span className="text-sm">{user.label}</span>
+                        <span className="text-xs text-gray-500">({user.email})</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {selectedEmailUsers.length} sélectionné(s)
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Message (optionnel) :</label>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    placeholder="Ajoutez un message..."
+                    className="w-full border rounded-lg p-2 text-sm"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Sélectionnez {
+                    showTransferModal?.type === 'workorder' ? 'un ordre de travail' :
+                    showTransferModal?.type === 'improvement' ? 'une amélioration' :
+                    'une maintenance préventive'
+                  } :
+                </label>
+                <select
+                  value={selectedTransferItem}
+                  onChange={(e) => setSelectedTransferItem(e.target.value)}
+                  className="w-full border rounded-lg p-2"
+                >
+                  <option value="">-- Sélectionner --</option>
+                  {transferList.map(item => (
+                    <option key={item.id} value={item.id} title={item.fullLabel}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                {transferList.length === 0 && (
+                  <div className="text-sm text-gray-500 mt-2">
+                    Aucun élément disponible
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTransferModal(null)}>
+              Annuler
+            </Button>
+            <Button onClick={executeTransfer}>
+              <ArrowRightCircle className="mr-2 h-4 w-4" />
+              Transférer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Menu contextuel fichiers */}
       {contextMenu && (
         <div
