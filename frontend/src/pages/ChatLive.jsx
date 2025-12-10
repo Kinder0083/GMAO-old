@@ -87,11 +87,8 @@ const ChatLive = () => {
       console.error('❌ Erreur WebSocket:', error);
       console.error('URL tentée:', wsUrl);
       setIsConnected(false);
-      toast({
-        title: 'Erreur de connexion',
-        description: 'Impossible de se connecter au chat en temps réel. Utilisation du mode REST.',
-        variant: 'destructive'
-      });
+      // Note: Le mode REST prendra automatiquement le relais si nécessaire
+      // Pas besoin d'afficher un toast d'erreur à l'utilisateur
     };
 
     websocket.onclose = (event) => {
