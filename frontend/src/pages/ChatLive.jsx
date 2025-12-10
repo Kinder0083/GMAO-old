@@ -314,10 +314,20 @@ const ChatLive = () => {
         {/* Zone de saisie */}
         <div className="p-4 border-t">
           <div className="flex items-end gap-2">
-            <Button variant="outline" size="icon">
+            <Button 
+              variant="outline" 
+              size="icon"
+              title="Upload fichiers (Phases 3-4 à venir)"
+              disabled
+            >
               <Paperclip className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon">
+            <Button 
+              variant="outline" 
+              size="icon"
+              title="Capture photo (Phases 3-4 à venir)"
+              disabled
+            >
               <Camera className="h-4 w-4" />
             </Button>
             <div className="flex-1">
