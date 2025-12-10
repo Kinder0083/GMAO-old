@@ -621,6 +621,133 @@ const ChatLive = () => {
           )}
         </div>
       </Card>
+
+      {/* Modal Caméra */}
+      <Dialog open={showCameraModal} onOpenChange={(open) => !open && closeCameraModal()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>📷 Capture Photo</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {!capturedImage ? (
+              <div>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-lg bg-black"
+                  style={{ maxHeight: '400px' }}
+                />
+                <canvas ref={canvasRef} className="hidden" />
+              </div>
+            ) : (
+              <div>
+                <img
+                  src={URL.createObjectURL(capturedImage)}
+                  alt="Captured"
+                  className="w-full rounded-lg"
+                  style={{ maxHeight: '400px' }}
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            {!capturedImage ? (
+              <>
+                <Button variant="outline" onClick={closeCameraModal}>
+                  Annuler
+                </Button>
+                <Button onClick={capturePhoto}>
+                  <Camera className="mr-2 h-4 w-4" />
+                  Capturer
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setCapturedImage(null)}>
+                  Reprendre
+                </Button>
+                <Button onClick={sendCapturedPhoto} disabled={uploadingFiles}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Envoyer
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Menu contextuel fichiers */}
+      {contextMenu && (
+        <div
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+            onClick={() => downloadFile(contextMenu.attachment.id)}
+          >
+            <Download className="h-4 w-4" />
+            Télécharger
+          </button>
+          
+          {canEdit('workOrders') && (
+            <button
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => {
+                // TODO: Ouvrir sous-menu ordres de travail
+                toast({ title: 'Fonctionnalité à venir', description: 'Liste des ordres de travail' });
+                setContextMenu(null);
+              }}
+            >
+              <ArrowRightCircle className="h-4 w-4" />
+              Transférer dans un OT
+            </button>
+          )}
+          
+          {canEdit('improvements') && (
+            <button
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => {
+                // TODO: Ouvrir sous-menu améliorations
+                toast({ title: 'Fonctionnalité à venir', description: 'Liste des améliorations' });
+                setContextMenu(null);
+              }}
+            >
+              <ArrowRightCircle className="h-4 w-4" />
+              Transférer dans une amélioration
+            </button>
+          )}
+          
+          {canEdit('preventiveMaintenance') && (
+            <button
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => {
+                // TODO: Ouvrir sous-menu maintenances
+                toast({ title: 'Fonctionnalité à venir', description: 'Liste des maintenances' });
+                setContextMenu(null);
+              }}
+            >
+              <ArrowRightCircle className="h-4 w-4" />
+              Transférer dans une maintenance
+            </button>
+          )}
+          
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+            onClick={() => {
+              // TODO: Ouvrir modal sélection utilisateurs pour email
+              toast({ title: 'Fonctionnalité à venir', description: 'Transfert par email' });
+              setContextMenu(null);
+            }}
+          >
+            <MailIcon className="h-4 w-4" />
+            Transférer par email
+          </button>
+        </div>
+      )}
     </div>
   );
 };
