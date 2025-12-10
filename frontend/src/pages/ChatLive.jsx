@@ -223,9 +223,12 @@ const ChatLive = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setMessages(prev => [...prev, response.data.message]);
+      // Ne pas ajouter manuellement - le WebSocket/polling s'en charge
       setNewMessage('');
       setSelectedRecipients([]);
+      
+      // Marquer comme lu immédiatement pour éviter notification de son propre message
+      await api.chat.markAsRead();
       
       toast({
         title: 'Fichier(s) envoyé(s)',
