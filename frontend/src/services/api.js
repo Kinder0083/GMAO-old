@@ -477,4 +477,19 @@ export const userPreferencesAPI = {
   delete: (key) => api.delete(`/user-preferences/${key}`).then(res => res.data)
 };
 
+
+// Chat Live API
+export const chatAPI = {
+  getMessages: (limit = 50, skip = 0) => api.get(`/chat/messages?limit=${limit}&skip=${skip}`),
+  createMessage: (messageData) => api.post('/chat/messages', messageData),
+  deleteMessage: (messageId) => api.delete(`/chat/messages/${messageId}`),
+  getUnreadCount: () => api.get('/chat/unread-count'),
+  markAsRead: () => api.post('/chat/mark-as-read'),
+  getOnlineUsers: () => api.get('/chat/online-users'),
+  addReaction: (messageId, emoji) => api.post(`/chat/reactions/${messageId}`, { emoji }),
+  uploadFile: (formData) => api.post('/chat/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+};
+
 export default api;
