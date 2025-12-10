@@ -345,8 +345,7 @@ async def delete_message(
 
 @router.get("/unread-count")
 async def get_unread_count(
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Compter le nombre de messages non lus pour l'utilisateur
