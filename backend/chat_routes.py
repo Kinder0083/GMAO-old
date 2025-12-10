@@ -178,24 +178,27 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         
     except Exception as e:
         logger.error(f"Erreur WebSocket: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
     finally:
-        # Déconnecter l'utilisateur
-        manager.disconnect(user_id, user_name)
-        
-        # Marquer comme hors ligne
-        await db.user_chat_activity.update_one(
-            {"user_id": user_id},
-            {
-                "$set": {
-                    "is_online": False,
-                    "last_activity": datetime.now(timezone.utc).isoformat()
+        # Déconnecter l'utilisateur seulement s'il était connecté
+        if user_id:
+            manager.disconnect(user_id, user_name)
+            
+            # Marquer comme hors ligne
+            await db.user_chat_activity.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "is_online": False,
+                        "last_activity": datetime.now(timezone.utc).isoformat()
+                    }
                 }
-            }
-        )
-        
-        # Notifier les autres
-        await manager.broadcast_user_status(user_id, user_name, "offline")
+            )
+            
+            # Notifier les autres
+            await manager.broadcast_user_status(user_id, user_name, "offline")
 
 
 # =====================================
