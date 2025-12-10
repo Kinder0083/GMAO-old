@@ -22,6 +22,11 @@ const ChatLive = () => {
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [showTransferModal, setShowTransferModal] = useState(null); // { type: 'workorder'|'improvement'|'preventive'|'email', attachment }
+  const [transferList, setTransferList] = useState([]);
+  const [selectedTransferItem, setSelectedTransferItem] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [selectedEmailUsers, setSelectedEmailUsers] = useState([]);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
