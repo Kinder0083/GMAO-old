@@ -291,8 +291,7 @@ async def create_message(
 @router.delete("/messages/{message_id}")
 async def delete_message(
     message_id: str,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Supprimer un message
