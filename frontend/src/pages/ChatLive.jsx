@@ -380,31 +380,31 @@ const ChatLive = () => {
       let list = [];
       
       if (type === 'workorder') {
-        const response = await api.get('/bons-travail');
-        list = response.data.map(bt => ({
-          id: bt._id,
-          label: bt.titre?.substring(0, 20) + (bt.titre?.length > 20 ? '...' : ''),
-          fullLabel: bt.titre
+        const response = await api.get('/work-orders');
+        list = (response.data || []).map(bt => ({
+          id: bt._id || bt.id,
+          label: (bt.titre || bt.title || 'Sans titre').substring(0, 20) + ((bt.titre || bt.title || '').length > 20 ? '...' : ''),
+          fullLabel: bt.titre || bt.title || 'Sans titre'
         }));
       } else if (type === 'improvement') {
-        const response = await api.get('/ameliorations');
-        list = response.data.map(am => ({
-          id: am._id,
-          label: am.titre?.substring(0, 20) + (am.titre?.length > 20 ? '...' : ''),
-          fullLabel: am.titre
+        const response = await api.get('/improvements');
+        list = (response.data || []).map(am => ({
+          id: am._id || am.id,
+          label: (am.titre || am.title || 'Sans titre').substring(0, 20) + ((am.titre || am.title || '').length > 20 ? '...' : ''),
+          fullLabel: am.titre || am.title || 'Sans titre'
         }));
       } else if (type === 'preventive') {
-        const response = await api.get('/maintenances-preventives');
-        list = response.data.map(mp => ({
-          id: mp._id,
-          label: mp.designation?.substring(0, 20) + (mp.designation?.length > 20 ? '...' : ''),
-          fullLabel: mp.designation
+        const response = await api.get('/preventive-maintenance');
+        list = (response.data || []).map(mp => ({
+          id: mp._id || mp.id,
+          label: (mp.designation || mp.titre || 'Sans titre').substring(0, 20) + ((mp.designation || mp.titre || '').length > 20 ? '...' : ''),
+          fullLabel: mp.designation || mp.titre || 'Sans titre'
         }));
       } else if (type === 'email') {
         const response = await api.get('/users');
-        list = response.data.map(u => ({
-          id: u.id,
-          label: `${u.prenom} ${u.nom}`,
+        list = (response.data || []).map(u => ({
+          id: u.id || u._id,
+          label: `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Utilisateur',
           email: u.email
         }));
       }
@@ -418,7 +418,7 @@ const ChatLive = () => {
       console.error('Erreur chargement liste:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de charger la liste',
+        description: `Impossible de charger la liste: ${error.response?.data?.detail || error.message}`,
         variant: 'destructive'
       });
     }
