@@ -973,6 +973,14 @@ class Meter(BaseModel):
     date_creation: datetime
     notes: Optional[str] = None
     actif: bool = True
+    
+    # MQTT Integration
+    mqtt_enabled: bool = False  # Activer la collecte MQTT
+    mqtt_topic: Optional[str] = None  # Topic MQTT à écouter
+    mqtt_json_path: Optional[str] = None  # Chemin JSON (ex: "value" ou "sensor.temperature")
+    mqtt_refresh_interval: int = 5  # Intervalle de collecte en minutes (par défaut 5 min)
+    mqtt_last_value: Optional[float] = None  # Dernière valeur reçue
+    mqtt_last_update: Optional[str] = None  # Dernière mise à jour MQTT
 
 class MeterCreate(BaseModel):
     nom: str
@@ -983,6 +991,12 @@ class MeterCreate(BaseModel):
     prix_unitaire: Optional[float] = None
     abonnement_mensuel: Optional[float] = None
     notes: Optional[str] = None
+    
+    # MQTT Integration
+    mqtt_enabled: bool = False
+    mqtt_topic: Optional[str] = None
+    mqtt_json_path: Optional[str] = None
+    mqtt_refresh_interval: int = 5
 
 class MeterUpdate(BaseModel):
     nom: Optional[str] = None
@@ -993,6 +1007,12 @@ class MeterUpdate(BaseModel):
     abonnement_mensuel: Optional[float] = None
     notes: Optional[str] = None
     actif: Optional[bool] = None
+    
+    # MQTT Integration
+    mqtt_enabled: Optional[bool] = None
+    mqtt_topic: Optional[str] = None
+    mqtt_json_path: Optional[str] = None
+    mqtt_refresh_interval: Optional[int] = None
 
 # Reading (Relevé) Models
 class MeterReading(BaseModel):
