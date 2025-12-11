@@ -974,6 +974,62 @@ async def transfer_to_preventive(
     return {"success": True, "message": "Fichier transféré vers la maintenance préventive"}
 
 
+@router.post("/transfer-to-nearmiss")
+async def transfer_to_nearmiss(
+    attachment_id: str = Form(...),
+    nearmiss_id: str = Form(...),
+    current_user: dict = Depends(get_current_user),
+
+):
+    """
+    Transférer un fichier vers un presqu'accident
+    """
+    # Vérifier permissions
+    permissions = current_user.get("permissions", {})
+    if not permissions.get("presquaccident", {}).get("edit", False):
+        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    
+    # Trouver le fichier
+    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    attachment = None
+    for att in message.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    # Copier le fichier
+    import shutil
+    nearmiss_dir = "/app/backend/uploads/presqu-accident/"
+    os.makedirs(nearmiss_dir, exist_ok=True)
+    
+    new_file_path = os.path.join(nearmiss_dir, attachment.get("filename"))
+    shutil.copy2(attachment.get("file_path"), new_file_path)
+    
+    # Ajouter au presqu'accident
+    await db.presqu_accident_items.update_one(
+        {"id": nearmiss_id},
+        {
+            "$push": {
+                "attachments": {
+                    "filename": attachment.get("original_filename"),
+                    "path": new_file_path,
+                    "type": attachment.get("mime_type"),
+                    "size": attachment.get("file_size"),
+                    "uploadedAt": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        }
+    )
+    
+    return {"success": True, "message": "Fichier transféré vers le presqu'accident"}
+
+
 @router.post("/transfer-by-email")
 async def transfer_by_email(
     attachment_id: str = Form(...),
