@@ -720,6 +720,29 @@ const ChatLive = () => {
                       </div>
                     )}
                     
+                    {/* Réactions */}
+                    {message.reactions && message.reactions.length > 0 && (
+                      <div className="flex gap-1 mt-2 flex-wrap">
+                        {Object.entries(
+                          message.reactions.reduce((acc, r) => {
+                            acc[r.emoji] = acc[r.emoji] || [];
+                            acc[r.emoji].push(r);
+                            return acc;
+                          }, {})
+                        ).map(([emoji, reactions]) => (
+                          <div
+                            key={emoji}
+                            className="bg-white border border-gray-300 rounded-full px-2 py-1 flex items-center gap-1 text-sm cursor-pointer hover:bg-gray-50"
+                            title={reactions.map(r => r.user_name).join(', ')}
+                            onClick={() => toggleReaction(message.id, emoji)}
+                          >
+                            <span>{emoji}</span>
+                            <span className="text-xs text-gray-600">{reactions.length}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     {/* Timestamp */}
                     <div className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
                       {new Date(message.timestamp).toLocaleTimeString('fr-FR', {
