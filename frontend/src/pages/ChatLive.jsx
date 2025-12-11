@@ -395,9 +395,6 @@ const ChatLive = () => {
       const response = await api.chat.addReaction(messageId, emoji);
       console.log('✅ Réaction envoyée avec succès:', response.data);
       
-      setShowEmojiPicker(null);
-      setMessageContextMenu(null);
-      
       // Forcer le rechargement des messages pour voir la réaction immédiatement
       await loadMessages();
       
