@@ -256,6 +256,79 @@ const MeterFormDialog = ({ open, onOpenChange, meter, onSuccess }) => {
             />
           </div>
 
+          {/* Section MQTT */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                type="checkbox"
+                id="mqtt_enabled"
+                checked={formData.mqtt_enabled}
+                onChange={(e) => setFormData({ ...formData, mqtt_enabled: e.target.checked })}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <Label htmlFor="mqtt_enabled" className="text-base font-semibold">
+                📡 Activer la collecte automatique MQTT
+              </Label>
+            </div>
+
+            {formData.mqtt_enabled && (
+              <div className="space-y-4 ml-6 bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="mqtt_topic">Topic MQTT *</Label>
+                    <Input
+                      id="mqtt_topic"
+                      value={formData.mqtt_topic}
+                      onChange={(e) => setFormData({ ...formData, mqtt_topic: e.target.value })}
+                      placeholder="Ex: home/energy/meter1"
+                      required={formData.mqtt_enabled}
+                    />
+                    <p className="text-xs text-gray-600">
+                      Le topic MQTT à écouter pour récupérer les valeurs du compteur
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="mqtt_json_path">Chemin JSON (optionnel)</Label>
+                    <Input
+                      id="mqtt_json_path"
+                      value={formData.mqtt_json_path}
+                      onChange={(e) => setFormData({ ...formData, mqtt_json_path: e.target.value })}
+                      placeholder="Ex: value ou sensor.power"
+                    />
+                    <p className="text-xs text-gray-600">
+                      Chemin pour extraire la valeur du JSON (laisser vide si la valeur est directe)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="mqtt_refresh_interval">Intervalle de collecte (min)</Label>
+                    <Input
+                      id="mqtt_refresh_interval"
+                      type="number"
+                      min="1"
+                      max="1440"
+                      value={formData.mqtt_refresh_interval}
+                      onChange={(e) => setFormData({ ...formData, mqtt_refresh_interval: parseInt(e.target.value) })}
+                    />
+                    <p className="text-xs text-gray-600">
+                      Fréquence de collecte des données (1 à 1440 minutes)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm">
+                  <p className="font-semibold text-blue-900 mb-1">💡 Exemple de payload MQTT :</p>
+                  <pre className="text-xs text-blue-800 font-mono">
+{`{"value": 1234.5}
+ou
+{"sensor": {"power": 1234.5}}`}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
