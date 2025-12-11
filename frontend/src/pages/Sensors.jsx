@@ -50,6 +50,7 @@ const Sensors = () => {
 
   const loadSensors = async () => {
     try {
+      setLoading(true);
       const response = await api.sensors.getAll();
       setSensors(response.data);
     } catch (error) {
