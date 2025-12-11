@@ -1,0 +1,212 @@
+"""
+Gestionnaire MQTT pour connexion, publication et abonnement
+"""
+import paho.mqtt.client as mqtt
+import json
+import logging
+from typing import Optional, Callable, Dict
+from datetime import datetime, timezone
+import threading
+
+logger = logging.getLogger(__name__)
+
+class MQTTManager:
+    """Gestionnaire de connexion MQTT"""
+    
+    def __init__(self):
+        self.client: Optional[mqtt.Client] = None
+        self.is_connected = False
+        self.config: Dict = {}
+        self.message_callbacks: Dict[str, list] = {}  # {topic: [callbacks]}
+        self.connection_lock = threading.Lock()
+        
+    def configure(self, host: str, port: int, username: str = None, password: str = None, 
+                  use_ssl: bool = False, client_id: str = "gmao_iris"):
+        """Configurer les paramètres de connexion MQTT"""
+        self.config = {
+            "host": host,
+            "port": port,
+            "username": username,
+            "password": password,
+            "use_ssl": use_ssl,
+            "client_id": client_id
+        }
+        logger.info(f"Configuration MQTT mise à jour: {host}:{port}")
+    
+    def connect(self) -> bool:
+        """Se connecter au broker MQTT"""
+        with self.connection_lock:
+            if self.is_connected:
+                logger.info("Déjà connecté au broker MQTT")
+                return True
+            
+            if not self.config.get("host"):
+                logger.error("Configuration MQTT manquante")
+                return False
+            
+            try:
+                # Créer le client MQTT
+                self.client = mqtt.Client(client_id=self.config.get("client_id", "gmao_iris"))
+                
+                # Configuration des callbacks
+                self.client.on_connect = self._on_connect
+                self.client.on_disconnect = self._on_disconnect
+                self.client.on_message = self._on_message
+                
+                # Authentification
+                if self.config.get("username"):
+                    self.client.username_pw_set(
+                        self.config["username"],
+                        self.config.get("password")
+                    )
+                
+                # SSL/TLS
+                if self.config.get("use_ssl"):
+                    self.client.tls_set()
+                
+                # Connexion
+                self.client.connect(
+                    self.config["host"],
+                    self.config["port"],
+                    keepalive=60
+                )
+                
+                # Démarrer la boucle dans un thread séparé
+                self.client.loop_start()
+                
+                logger.info(f"Connexion MQTT initiée vers {self.config['host']}:{self.config['port']}")
+                return True
+                
+            except Exception as e:
+                logger.error(f"Erreur connexion MQTT: {e}")
+                self.is_connected = False
+                return False
+    
+    def disconnect(self):
+        """Se déconnecter du broker MQTT"""
+        if self.client and self.is_connected:
+            self.client.loop_stop()
+            self.client.disconnect()
+            self.is_connected = False
+            logger.info("Déconnecté du broker MQTT")
+    
+    def publish(self, topic: str, payload: str, qos: int = 0, retain: bool = False) -> bool:
+        """Publier un message sur un topic"""
+        if not self.is_connected:
+            if not self.connect():
+                return False
+        
+        try:
+            result = self.client.publish(topic, payload, qos=qos, retain=retain)
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                logger.info(f"Message publié sur {topic}: {payload[:100]}...")
+                return True
+            else:
+                logger.error(f"Erreur publication: {result.rc}")
+                return False
+        except Exception as e:
+            logger.error(f"Erreur lors de la publication: {e}")
+            return False
+    
+    def subscribe(self, topic: str, qos: int = 0, callback: Callable = None):
+        """S'abonner à un topic MQTT"""
+        if not self.is_connected:
+            if not self.connect():
+                return False
+        
+        try:
+            self.client.subscribe(topic, qos=qos)
+            
+            # Enregistrer le callback pour ce topic
+            if callback:
+                if topic not in self.message_callbacks:
+                    self.message_callbacks[topic] = []
+                self.message_callbacks[topic].append(callback)
+            
+            logger.info(f"Abonné au topic: {topic}")
+            return True
+        except Exception as e:
+            logger.error(f"Erreur lors de l'abonnement: {e}")
+            return False
+    
+    def unsubscribe(self, topic: str):
+        """Se désabonner d'un topic"""
+        if self.client and self.is_connected:
+            self.client.unsubscribe(topic)
+            if topic in self.message_callbacks:
+                del self.message_callbacks[topic]
+            logger.info(f"Désabonné du topic: {topic}")
+    
+    def _on_connect(self, client, userdata, flags, rc):
+        """Callback appelé lors de la connexion"""
+        if rc == 0:
+            self.is_connected = True
+            logger.info("✅ Connecté au broker MQTT avec succès")
+        else:
+            self.is_connected = False
+            logger.error(f"❌ Échec de connexion MQTT, code: {rc}")
+    
+    def _on_disconnect(self, client, userdata, rc):
+        """Callback appelé lors de la déconnexion"""
+        self.is_connected = False
+        if rc != 0:
+            logger.warning(f"Déconnexion inattendue du broker MQTT, code: {rc}")
+    
+    def _on_message(self, client, userdata, message):
+        """Callback appelé lors de la réception d'un message"""
+        topic = message.topic
+        payload = message.payload.decode('utf-8')
+        
+        logger.info(f"Message reçu sur {topic}: {payload[:100]}...")
+        
+        # Appeler les callbacks enregistrés pour ce topic
+        if topic in self.message_callbacks:
+            for callback in self.message_callbacks[topic]:
+                try:
+                    callback(topic, payload, message.qos)
+                except Exception as e:
+                    logger.error(f"Erreur dans le callback pour {topic}: {e}")
+        
+        # Wildcards (#, +)
+        for registered_topic, callbacks in self.message_callbacks.items():
+            if self._topic_matches(registered_topic, topic):
+                for callback in callbacks:
+                    try:
+                        callback(topic, payload, message.qos)
+                    except Exception as e:
+                        logger.error(f"Erreur dans le callback wildcard pour {topic}: {e}")
+    
+    def _topic_matches(self, pattern: str, topic: str) -> bool:
+        """Vérifier si un topic correspond à un pattern avec wildcards"""
+        if pattern == topic:
+            return False  # Déjà traité dans le cas exact
+        
+        pattern_parts = pattern.split('/')
+        topic_parts = topic.split('/')
+        
+        if '#' in pattern:
+            # # doit être le dernier caractère
+            if pattern_parts[-1] == '#':
+                return topic.startswith('/'.join(pattern_parts[:-1]))
+        
+        if '+' in pattern:
+            if len(pattern_parts) != len(topic_parts):
+                return False
+            for p, t in zip(pattern_parts, topic_parts):
+                if p != '+' and p != t:
+                    return False
+            return True
+        
+        return False
+    
+    def get_status(self) -> Dict:
+        """Obtenir le statut de la connexion MQTT"""
+        return {
+            "connected": self.is_connected,
+            "host": self.config.get("host", "Non configuré"),
+            "port": self.config.get("port", 0),
+            "client_id": self.config.get("client_id", "gmao_iris")
+        }
+
+# Instance globale
+mqtt_manager = MQTTManager()
