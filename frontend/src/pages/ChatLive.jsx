@@ -1064,38 +1064,28 @@ const ChatLive = () => {
       {/* Sélecteur d'emojis */}
       {showEmojiPicker && (
         <div 
-          className="fixed bg-white border-2 border-blue-500 rounded-lg shadow-2xl p-4 z-[60]"
+          className="fixed bg-white rounded-lg shadow-lg p-2 z-[60]"
           style={{ 
-            top: Math.min(showEmojiPicker.y || window.innerHeight / 2, window.innerHeight - 100),
-            left: Math.min(showEmojiPicker.x || window.innerWidth / 2, window.innerWidth - 300)
+            top: Math.min(showEmojiPicker.y || window.innerHeight / 2, window.innerHeight - 60),
+            left: Math.min(showEmojiPicker.x || window.innerWidth / 2, window.innerWidth - 200)
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="text-sm font-semibold mb-3 text-gray-700">Choisissez une réaction :</div>
-          <div className="flex gap-3">
+          <div className="flex gap-1">
             {basicEmojis.map(emoji => (
               <button
                 key={emoji}
-                className="text-3xl hover:scale-125 transition-transform p-2 rounded-lg hover:bg-blue-50 active:scale-110"
+                className="text-xl hover:scale-110 transition-transform p-1 rounded hover:bg-gray-100"
                 onClick={(e) => {
                   e.stopPropagation();
+                  console.log('Emoji cliqué:', emoji, 'Message ID:', showEmojiPicker.messageId);
                   toggleReaction(showEmojiPicker.messageId, emoji);
                 }}
-                title={`Réagir avec ${emoji}`}
               >
                 {emoji}
               </button>
             ))}
           </div>
-          <button
-            className="mt-3 w-full text-xs text-gray-500 hover:text-gray-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowEmojiPicker(null);
-            }}
-          >
-            Annuler
-          </button>
         </div>
       )}
 
