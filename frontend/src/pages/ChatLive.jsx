@@ -736,7 +736,7 @@ const ChatLive = () => {
 
                     {/* Réactions - Superposition style Viber */}
                     {message.reactions && message.reactions.length > 0 && (
-                      <div className="absolute -bottom-2 right-2 flex gap-1">
+                      <div className="absolute -bottom-2 right-1 flex gap-1 flex-row-reverse">
                         {Object.entries(
                           message.reactions.reduce((acc, r) => {
                             acc[r.emoji] = acc[r.emoji] || [];
@@ -748,11 +748,7 @@ const ChatLive = () => {
                           return (
                             <button
                               key={emoji}
-                              className={`border rounded-full px-1.5 py-0.5 flex items-center gap-0.5 text-xs cursor-pointer transition-all hover:scale-110 shadow-md ${
-                                hasUserReacted 
-                                  ? 'bg-blue-100 border-blue-400' 
-                                  : 'bg-white border-gray-300 hover:bg-gray-50'
-                              }`}
+                              className="bg-white border border-gray-300 rounded-full px-1.5 py-0.5 flex items-center gap-0.5 text-xs cursor-pointer transition-all hover:scale-110 shadow-md hover:bg-gray-50"
                               title={reactions.map(r => r.user_name).join(', ')}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -760,7 +756,7 @@ const ChatLive = () => {
                               }}
                             >
                               <span className="text-sm">{emoji}</span>
-                              <span className={`text-xs font-semibold ${hasUserReacted ? 'text-blue-600' : 'text-gray-600'}`}>
+                              <span className="text-xs font-semibold text-gray-600">
                                 {reactions.length}
                               </span>
                             </button>
