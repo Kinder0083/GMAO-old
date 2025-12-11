@@ -911,38 +911,65 @@ frontend:
           matching Viber-style chat functionality.
 
 user_problem_statement: |
-  PHASE 5: Nouvelle Fonctionnalité "Chat Live" - Style Viber [EN COURS - Phases 3-4]
-  
-  Implémentation d'un système de chat en temps réel avec WebSocket :
-  
-  **Phase 1-2 (TERMINÉES ✅) :**
-  1. WebSocket pour communication instantanée
-  2. Chat de groupe global (tous les utilisateurs)
-  3. Messages privés avec sélection de destinataires
-  4. Indication visuelle discrète pour messages privés
-  5. Liste des utilisateurs en ligne (sidebar)
-  6. Icône enveloppe dans header avec badge messages non lus
-  7. Désactivation timeout d'inactivité sur page Chat Live
-  8. Permissions chatLive ajoutées au système
-  9. Affichage "Utilisateur a écrit:" / "Utilisateur a envoyé:"
-  
-  **Phase 3-4 (EN COURS) :**
-  - Upload fichiers (max 15MB, tous types) ✅ Backend + Frontend
-  - Capture photo caméra avec prévisualisation ✅ Frontend
-  - Affichage fichiers joints dans messages ✅
-  - Menu contextuel clic droit sur fichiers ✅ (structure)
-  - Télécharger fichiers ✅
-  - Transférer vers OT/Amélioration/Maintenance 🔄 (endpoints prêts, UI à finaliser)
-  - Transférer par email 🔄 (endpoint prêt, UI à finaliser)
-  - Rétention 60 jours (script cleanup déjà créé) ✅
-  
-  **Phase 5-6 (À venir) :**
-  - Réactions émojis superposées style Viber
-  - Menu contextuel clic droit sur messages (répondre, supprimer)
-  
-  **Phase 7-8 (À venir) :**
-  - Répondre à un message (citation)
-  - Suppression messages (10s utilisateur, illimité admin)
+  Test Complet des Améliorations MQTT Phase 1 - Import/Export & Templates
+
+  **Contexte :**
+  J'ai implémenté deux fonctionnalités majeures pour améliorer la gestion des capteurs MQTT :
+  1. **Import/Export** : Permet d'exporter les configurations de capteurs en JSON/CSV et de les réimporter
+  2. **Modèles de capteurs** : 16 modèles prédéfinis (température, humidité, pression, etc.) pour créer rapidement des capteurs
+
+  **Objectif du test :**
+  Vérifier que toutes les nouvelles fonctionnalités fonctionnent correctement.
+
+  **Étapes de test :**
+
+  ### Partie 1 : Import/Export
+  1. Se connecter : admin@gmao-iris.local / Admin123!
+  2. Naviguer vers /sensors
+  3. Cliquer sur le bouton Import/Export (icône Download)
+  4. Vérifier que le menu déroulant s'affiche avec :
+     - "Exporter JSON"
+     - "Exporter CSV"
+     - "Importer JSON"
+  5. Tester l'export JSON (doit télécharger un fichier)
+  6. Tester l'export CSV (doit télécharger un fichier)
+
+  ### Partie 2 : Templates de Capteurs
+  7. Cliquer sur "Nouveau capteur"
+  8. Vérifier qu'une section "🎯 Utiliser un modèle" s'affiche en haut du formulaire
+  9. Vérifier que les modèles sont affichés dans une grille (Température, Humidité, Pression, etc.)
+  10. Cliquer sur un modèle (ex: "Capteur de Température")
+  11. Vérifier que le formulaire se remplit automatiquement avec :
+      - Type = TEMPERATURE
+      - Unité = °C
+      - Intervalle de rafraîchissement = 60
+      - Seuils min/max préremplis
+  12. Vérifier qu'un toast de succès "Modèle appliqué" s'affiche
+
+  ### Partie 3 : Création Complète d'un Capteur via Template
+  13. Après avoir appliqué un template, remplir :
+      - Nom : "Test Température"
+      - Topic MQTT : "test/temperature"
+  14. Soumettre le formulaire
+  15. Vérifier que le capteur est créé et apparaît dans la liste
+
+  **Endpoints Backend à Tester :**
+  - GET /api/sensors/templates/list
+  - GET /api/sensors/export/json
+  - GET /api/sensors/export/csv
+  - POST /api/sensors (création avec template)
+
+  **Résultat Attendu :**
+  - ✅ Menu Import/Export fonctionnel
+  - ✅ Export JSON et CSV téléchargent des fichiers
+  - ✅ Section templates visible dans le formulaire de création
+  - ✅ Clic sur template remplit automatiquement le formulaire
+  - ✅ Toast de confirmation affiché
+  - ✅ Création de capteur via template réussie
+
+  **Credentials :**
+  - Email: admin@gmao-iris.local
+  - Password: Admin123!
 
 backend:
   - task: "Configuration SMTP/Postfix pour envoi d'emails"
