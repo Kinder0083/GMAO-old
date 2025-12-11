@@ -29,7 +29,7 @@ def init_chat_routes(database):
     db = database
 
 # Dossier de stockage des fichiers
-CHAT_UPLOADS_DIR = "/opt/gmao-iris/backend/uploads/chat/"
+CHAT_UPLOADS_DIR = "/app/backend/uploads/chat/"
 os.makedirs(CHAT_UPLOADS_DIR, exist_ok=True)
 
 # =====================================
