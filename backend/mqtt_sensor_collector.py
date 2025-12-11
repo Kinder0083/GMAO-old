@@ -72,11 +72,22 @@ class MQTTSensorCollector:
             
     async def handle_mqtt_message(self, sensor_id: str, topic: str, payload: str):
         """Traiter un message MQTT reçu pour un capteur"""
+        # Importer le logger MQTT
+        from mqtt_logger import mqtt_logger
+        
         try:
             # Récupérer les informations du capteur
             sensor = await self.db.sensors.find_one({"id": sensor_id}, {"_id": 0})
             
             if not sensor or not sensor.get("actif"):
+                if mqtt_logger:
+                    await mqtt_logger.log_message(
+                        topic=topic,
+                        payload=payload[:200],
+                        sensor_id=sensor_id,
+                        success=False,
+                        error_message="Capteur non trouvé ou inactif"
+                    )
                 return
                 
             # Parser le payload
@@ -84,6 +95,15 @@ class MQTTSensorCollector:
             
             if value is None:
                 logger.warning(f"Impossible d'extraire la valeur du payload pour {sensor['nom']}: {payload[:100]}")
+                if mqtt_logger:
+                    await mqtt_logger.log_message(
+                        topic=topic,
+                        payload=payload[:200],
+                        sensor_id=sensor_id,
+                        sensor_name=sensor.get('nom'),
+                        success=False,
+                        error_message="Impossible d'extraire la valeur"
+                    )
                 return
                 
             # Convertir en float
@@ -91,9 +111,28 @@ class MQTTSensorCollector:
                 value_float = float(value)
             except (ValueError, TypeError):
                 logger.error(f"Valeur non numérique reçue pour {sensor['nom']}: {value}")
+                if mqtt_logger:
+                    await mqtt_logger.log_message(
+                        topic=topic,
+                        payload=payload[:200],
+                        sensor_id=sensor_id,
+                        sensor_name=sensor.get('nom'),
+                        success=False,
+                        error_message=f"Valeur non numérique: {value}"
+                    )
                 return
                 
             logger.info(f"📊 Valeur MQTT reçue pour capteur '{sensor['nom']}': {value_float} {sensor.get('unite', '')}")
+            
+            # Logger le message réussi
+            if mqtt_logger:
+                await mqtt_logger.log_message(
+                    topic=topic,
+                    payload=payload[:200],
+                    sensor_id=sensor_id,
+                    sensor_name=sensor.get('nom'),
+                    success=True
+                )
             
             # Mettre à jour la valeur actuelle du capteur
             await self.db.sensors.update_one(
@@ -117,6 +156,17 @@ class MQTTSensorCollector:
             logger.error(f"Erreur traitement message MQTT pour capteur {sensor_id}: {e}")
             import traceback
             logger.error(traceback.format_exc())
+            
+            # Logger l'erreur
+            from mqtt_logger import mqtt_logger
+            if mqtt_logger:
+                await mqtt_logger.log_message(
+                    topic=topic,
+                    payload=payload[:200] if payload else "",
+                    sensor_id=sensor_id,
+                    success=False,
+                    error_message=str(e)
+                )
             
     def extract_value(self, payload: str, json_path: Optional[str]) -> Optional[float]:
         """Extraire la valeur du payload MQTT"""
