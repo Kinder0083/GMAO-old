@@ -370,7 +370,6 @@ const ChatLive = () => {
     const handleClick = () => {
       setContextMenu(null);
       setMessageContextMenu(null);
-      setShowEmojiPicker(null);
     };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
