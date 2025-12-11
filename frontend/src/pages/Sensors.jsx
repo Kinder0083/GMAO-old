@@ -181,12 +181,10 @@ const Sensors = () => {
         
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setLoading(true);
-              loadSensors();
-            }}
+            onClick={loadSensors}
             disabled={loading}
             className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Actualiser les capteurs"
           >
             <RefreshCw className={loading ? 'animate-spin' : ''} size={18} />
           </button>
