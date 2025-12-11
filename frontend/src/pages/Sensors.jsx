@@ -116,6 +116,89 @@ const Sensors = () => {
     }
   };
 
+  const handleExportJson = async () => {
+    try {
+      const response = await api.sensors.exportJson();
+      const blob = new Blob([response.data], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `sensors_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Succès',
+        description: 'Export JSON téléchargé'
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de l\'export',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const response = await api.sensors.exportCsv();
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `sensors_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Succès',
+        description: 'Export CSV téléchargé'
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de l\'export',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const response = await api.sensors.importJson(file);
+      
+      toast({
+        title: 'Import terminé',
+        description: `${response.data.imported} capteur(s) importé(s), ${response.data.skipped} ignoré(s)`
+      });
+      
+      if (response.data.errors.length > 0) {
+        console.warn('Erreurs d\'import:', response.data.errors);
+      }
+      
+      await loadSensors();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: error.response?.data?.detail || 'Erreur lors de l\'import',
+        variant: 'destructive'
+      });
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const getSensorIcon = (type) => {
     const icons = {
       TEMPERATURE: Thermometer,
