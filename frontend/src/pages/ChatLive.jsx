@@ -197,6 +197,7 @@ const ChatLive = () => {
         // Ne pas ajouter manuellement - le polling s'en charge
         setNewMessage('');
         setSelectedRecipients([]);
+        setReplyingTo(null);
         // Marquer comme lu immédiatement
         await api.chat.markAsRead();
         // Message envoyé avec succès en mode REST, pas besoin de notifier
