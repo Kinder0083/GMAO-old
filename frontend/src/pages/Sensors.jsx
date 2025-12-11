@@ -18,7 +18,6 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useToast } from '../hooks/use-toast';
-import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import SensorFormDialog from '../components/Sensors/SensorFormDialog';
 
@@ -32,8 +31,10 @@ const Sensors = () => {
   const [editingSensor, setEditingSensor] = useState(null);
   
   const { toast } = useToast();
-  const { currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'ADMIN';
+  
+  // Récupérer l'utilisateur depuis localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
     loadSensors();
