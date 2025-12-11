@@ -354,6 +354,121 @@ const SpecialSettings = () => {
     });
   };
 
+  // Fonctions MQTT
+  const loadMqttConfig = async () => {
+    try {
+      setLoadingMqtt(true);
+      const response = await api.mqtt.getConfig();
+      setMqttConfig({
+        host: response.data.host || '',
+        port: response.data.port || 1883,
+        username: response.data.username || '',
+        password: '',
+        use_ssl: response.data.use_ssl || false,
+        client_id: response.data.client_id || 'gmao_iris'
+      });
+      
+      // Charger le statut
+      const statusResponse = await api.mqtt.getStatus();
+      setMqttStatus(statusResponse.data);
+    } catch (error) {
+      console.error('Erreur chargement config MQTT:', error);
+    } finally {
+      setLoadingMqtt(false);
+    }
+  };
+
+  const handleSaveMqttConfig = async () => {
+    // Validation
+    if (!mqttConfig.host.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'L\'adresse du broker MQTT est requise',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (mqttConfig.port < 1 || mqttConfig.port > 65535) {
+      toast({
+        title: 'Erreur',
+        description: 'Le port doit être entre 1 et 65535',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setSavingMqtt(true);
+      await api.mqtt.saveConfig(mqttConfig);
+      
+      toast({
+        title: 'Configuration sauvegardée',
+        description: 'La configuration MQTT a été enregistrée avec succès'
+      });
+      
+      // Recharger le statut
+      await loadMqttConfig();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: formatErrorMessage(error, 'Impossible de sauvegarder la configuration MQTT'),
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingMqtt(false);
+    }
+  };
+
+  const handleConnectMqtt = async () => {
+    try {
+      setConnectingMqtt(true);
+      await api.mqtt.connect();
+      
+      toast({
+        title: 'Connexion réussie',
+        description: 'Connecté au broker MQTT avec succès'
+      });
+      
+      // Recharger le statut
+      const statusResponse = await api.mqtt.getStatus();
+      setMqttStatus(statusResponse.data);
+    } catch (error) {
+      toast({
+        title: 'Erreur de connexion',
+        description: formatErrorMessage(error, 'Impossible de se connecter au broker MQTT'),
+        variant: 'destructive'
+      });
+    } finally {
+      setConnectingMqtt(false);
+    }
+  };
+
+  const handleDisconnectMqtt = async () => {
+    try {
+      setConnectingMqtt(true);
+      await api.mqtt.disconnect();
+      
+      toast({
+        title: 'Déconnexion',
+        description: 'Déconnecté du broker MQTT'
+      });
+      
+      // Recharger le statut
+      const statusResponse = await api.mqtt.getStatus();
+      setMqttStatus(statusResponse.data);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: formatErrorMessage(error, 'Erreur lors de la déconnexion'),
+        variant: 'destructive'
+      });
+    } finally {
+      setConnectingMqtt(false);
+    }
+  };
+
+
   const handleResetPassword = async (userId, userName) => {
     confirm({
       title: 'Réinitialiser le mot de passe',
