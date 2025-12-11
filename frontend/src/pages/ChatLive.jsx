@@ -669,7 +669,8 @@ const ChatLive = () => {
             return (
               <div
                 key={message.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                ref={(el) => (messageRefs.current[message.id] = el)}
+                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} transition-colors duration-300`}
               >
                 <div className={`max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}>
                   {/* Indicateur message privé */}
