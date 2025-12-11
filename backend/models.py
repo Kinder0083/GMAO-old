@@ -52,6 +52,9 @@ class UserPermissions(BaseModel):
     settings: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Paramètres
     personalization: ModulePermission = ModulePermission(view=True, edit=True, delete=False)  # Personnalisation
     chatLive: ModulePermission = ModulePermission(view=True, edit=True, delete=False)  # Chat Live
+    sensors: ModulePermission = ModulePermission(view=True, edit=False, delete=False)  # Capteurs MQTT
+    iotDashboard: ModulePermission = ModulePermission(view=True, edit=False, delete=False)  # Dashboard IoT
+    mqttLogs: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Logs MQTT (Admin)
 
 # Fonction helper pour obtenir les permissions par défaut selon le rôle
 def get_default_permissions_by_role(role: str) -> UserPermissions:
