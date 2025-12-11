@@ -961,6 +961,16 @@ const ChatLive = () => {
             </button>
           )}
           
+          {canEdit('presquaccident') && (
+            <button
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => openTransferModal('nearmiss', contextMenu.attachment)}
+            >
+              <ArrowRightCircle className="h-4 w-4" />
+              Transférer dans un presqu'accident
+            </button>
+          )}
+          
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
             onClick={() => openTransferModal('email', contextMenu.attachment)}
