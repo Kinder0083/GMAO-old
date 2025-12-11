@@ -481,6 +481,12 @@ const ChatLive = () => {
             title: 'Transféré',
             description: 'Fichier ajouté à la maintenance préventive'
           });
+        } else if (type === 'nearmiss') {
+          await api.chat.transferToNearMiss(attachment.id, selectedTransferItem);
+          toast({
+            title: 'Transféré',
+            description: 'Fichier ajouté au presqu\'accident'
+          });
         }
       }
       
