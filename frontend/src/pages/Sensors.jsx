@@ -48,11 +48,18 @@ const Sensors = () => {
     filterSensors();
   }, [sensors, searchTerm, typeFilter]);
 
-  const loadSensors = async () => {
+  const loadSensors = async (showSuccessToast = false) => {
     try {
       setLoading(true);
       const response = await api.sensors.getAll();
       setSensors(response.data);
+      
+      if (showSuccessToast) {
+        toast({
+          title: 'Succès',
+          description: `${response.data.length} capteur(s) actualisé(s)`
+        });
+      }
     } catch (error) {
       console.error('Erreur chargement capteurs:', error);
       toast({
