@@ -179,13 +179,16 @@ const Sensors = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={loadSensors}
+          <button
+            onClick={() => {
+              setLoading(true);
+              loadSensors();
+            }}
             disabled={loading}
+            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className={loading ? 'animate-spin' : ''} size={18} />
-          </Button>
+          </button>
           
           {isAdmin && (
             <Button
