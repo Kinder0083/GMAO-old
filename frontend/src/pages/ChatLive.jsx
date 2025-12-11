@@ -39,6 +39,9 @@ const ChatLive = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userId = user.id;
 
+  // Emojis de base pour les réactions
+  const basicEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡'];
+
   // Scroll automatique vers le bas
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
