@@ -2219,6 +2219,7 @@ Documentez tout.""",
 
 async def generate_manual():
     client = AsyncIOMotorClient(mongo_url)
+    db_name = os.getenv('DB_NAME', 'gmao_db')
     db = client[db_name]  # Utiliser la bonne base de données
     
     print("📚 Génération du manuel complet...")
