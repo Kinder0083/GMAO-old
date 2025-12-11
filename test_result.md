@@ -103,7 +103,34 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Test Phase 4 - Dashboard IoT Temps Réel
+  Test du bouton "Actualiser" sur la page Capteurs (/sensors)
+
+  **Contexte :**
+  L'utilisateur a signalé que le bouton "Actualiser" (icône RefreshCw) sur la page Capteurs ne fonctionne pas. J'ai corrigé le problème en :
+  1. Ajoutant `setLoading(true)` au début de la fonction `loadSensors()`
+  2. Simplifiant le gestionnaire onClick du bouton
+  3. Ajoutant un toast de feedback visuel quand l'actualisation réussit
+
+  **Objectif du test :**
+  Vérifier que le bouton "Actualiser" fonctionne correctement et rafraîchit les données des capteurs.
+
+  **Étapes de test :**
+  1. Se connecter avec les credentials admin (email: buenogy@gmail.com - essayer plusieurs mots de passe courants si nécessaire : admin, Admin123, password)
+  2. Naviguer vers la page /sensors
+  3. Attendre que la page charge complètement
+  4. Cliquer sur le bouton "Actualiser" (icône RefreshCw en haut à droite)
+  5. Vérifier que :
+     - L'icône tourne pendant le chargement (classe animate-spin)
+     - Un toast de succès apparaît avec le message "X capteur(s) actualisé(s)"
+     - La page affiche les capteurs (ou un message "Aucun capteur créé" si la base est vide)
+     - Aucune erreur dans la console
+
+  **Credentials à tester :**
+  - Email: buenogy@gmail.com
+  - Tenter ces mots de passe dans l'ordre : "admin", "Admin123", "password", "admin123"
+
+  **Résultat attendu :**
+  Le bouton doit rafraîchir les données et afficher un toast de confirmation.
 
 frontend:
   - task: "Dashboard IoT - Interface temps réel avec KPI et graphiques"
