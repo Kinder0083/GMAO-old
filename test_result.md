@@ -7285,10 +7285,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Système de pièces utilisées - TESTS TERMINÉS"
+    - "Chat Live Online Users List - Phase 9"
+    - "Chat Live Delete Message & Admin Permissions - Phase 10"
   stuck_tasks: []
   test_all: false
-  test_priority: "sequential"
+  test_priority: "high_first"
 
   - task: "Module Demande d'Arrêt pour Maintenance - Backend API"
     implemented: true
