@@ -569,7 +569,17 @@ const mqttAPI = {
   clearMessages: () => api.delete('/mqtt/messages')
 };
 
-api.mqtt = mqttAPI;
+api.mqtt = {
+  ...mqttAPI,
+  // MQTT Logs
+  getLogs: (filters = {}) => api.get('/mqtt/logs/', { params: filters }),
+  getLogsStats: (hours = 24) => api.get('/mqtt/logs/stats', { params: { hours } }),
+  getLogsTopics: (hours = 24) => api.get('/mqtt/logs/topics', { params: { hours } }),
+  clearLogs: (hours = null) => {
+    const params = hours ? { hours } : {};
+    return api.delete('/mqtt/logs/clear', { params });
+  }
+};
 
 // ==================== Sensors API ====================
 const sensorsAPI = {
