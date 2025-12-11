@@ -831,8 +831,14 @@ async def transfer_to_workorder(
 ):
     """
     Transférer un fichier vers un ordre de travail
+    Nécessite la permission 'workOrders.edit'
     """
-    # Pas de vérification de permissions spécifique - vérifiée côté frontend
+    # Vérification des permissions backend
+    if not current_user.get("permissions", {}).get("workOrders", {}).get("edit", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Permission 'workOrders.edit' requise pour transférer des fichiers"
+        )
     
     # Trouver le fichier
     message = await db.chat_messages.find_one({"attachments.id": attachment_id})
@@ -885,8 +891,14 @@ async def transfer_to_improvement(
 ):
     """
     Transférer un fichier vers une amélioration
+    Nécessite la permission 'improvements.edit'
     """
-    # Pas de vérification de permissions spécifique - vérifiée côté frontend
+    # Vérification des permissions backend
+    if not current_user.get("permissions", {}).get("improvements", {}).get("edit", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Permission 'improvements.edit' requise pour transférer des fichiers"
+        )
     
     # Trouver le fichier
     message = await db.chat_messages.find_one({"attachments.id": attachment_id})
@@ -939,8 +951,14 @@ async def transfer_to_preventive(
 ):
     """
     Transférer un fichier vers une maintenance préventive
+    Nécessite la permission 'preventiveMaintenance.edit'
     """
-    # Pas de vérification de permissions spécifique - vérifiée côté frontend
+    # Vérification des permissions backend
+    if not current_user.get("permissions", {}).get("preventiveMaintenance", {}).get("edit", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Permission 'preventiveMaintenance.edit' requise pour transférer des fichiers"
+        )
     
     # Trouver le fichier
     message = await db.chat_messages.find_one({"attachments.id": attachment_id})
