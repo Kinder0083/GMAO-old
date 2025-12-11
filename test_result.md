@@ -537,6 +537,27 @@ user_problem_statement: |
   PHASE 5: Nouvelle Fonctionnalité "Chat Live" - Style Viber [EN COURS - Phases 3-4]
 
 frontend:
+  - task: "MQTT Logs Visualizer Page - Phase 2"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/MQTTLogs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          Page MQTT Logs implémentée avec toutes les fonctionnalités Phase 2:
+          - Interface complète avec titre "Logs MQTT" et icône Activity
+          - 4 cartes de statistiques (Total Messages, Succès, Erreurs, Taux de Succès)
+          - Filtres avancés: topic, période (1h/6h/24h/7j), statut (tous/succès/erreurs), limite
+          - Tableau des logs avec colonnes: Timestamp, Status, Topic, Capteur, Payload, Erreur
+          - Auto-refresh toutes les 10 secondes
+          - Bouton "Actualiser" manuel avec animation
+          - Bouton "Vider les logs" (admin uniquement)
+          - API intégrée: getLogs, getLogsStats, getLogsTopics, clearLogs
+
   - task: "MQTT Sensors Import/Export Functionality"
     implemented: true
     working: true
