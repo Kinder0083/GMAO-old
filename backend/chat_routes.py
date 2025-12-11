@@ -551,29 +551,48 @@ async def add_reaction(
         "added_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # Vérifier si l'utilisateur a déjà réagi avec cet emoji
+    # Vérifier si l'utilisateur a déjà réagi
     existing_reactions = message.get("reactions", [])
-    already_reacted = any(
-        r.get("user_id") == user_id and r.get("emoji") == reaction_data.emoji
-        for r in existing_reactions
+    
+    # Trouver si l'utilisateur a déjà une réaction (n'importe quel emoji)
+    user_existing_reaction = next(
+        (r for r in existing_reactions if r.get("user_id") == user_id),
+        None
     )
     
-    if already_reacted:
-        # Retirer la réaction
-        await db.chat_messages.update_one(
-            {"id": message_id},
-            {
-                "$pull": {
-                    "reactions": {
-                        "user_id": user_id,
-                        "emoji": reaction_data.emoji
+    if user_existing_reaction:
+        # Si c'est le même emoji, on le retire (toggle)
+        if user_existing_reaction.get("emoji") == reaction_data.emoji:
+            await db.chat_messages.update_one(
+                {"id": message_id},
+                {
+                    "$pull": {
+                        "reactions": {
+                            "user_id": user_id
+                        }
                     }
                 }
-            }
-        )
-        action = "removed"
+            )
+            action = "removed"
+        else:
+            # Si c'est un emoji différent, on remplace (retire l'ancien et ajoute le nouveau)
+            await db.chat_messages.update_one(
+                {"id": message_id},
+                {
+                    "$pull": {
+                        "reactions": {
+                            "user_id": user_id
+                        }
+                    }
+                }
+            )
+            await db.chat_messages.update_one(
+                {"id": message_id},
+                {"$push": {"reactions": reaction}}
+            )
+            action = "changed"
     else:
-        # Ajouter la réaction
+        # Ajouter la réaction (première fois)
         await db.chat_messages.update_one(
             {"id": message_id},
             {"$push": {"reactions": reaction}}
