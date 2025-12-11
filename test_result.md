@@ -8681,7 +8681,9 @@ metadata:
   test_sequence: 1
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "MQTT Sensors Import/Export Functionality"
+    - "MQTT Sensors Templates System"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -8690,6 +8692,16 @@ agent_communication:
     -agent: "main"
     -message: |
       NOUVELLE TÂCHE DE TEST AJOUTÉE - Bouton Actualiser Page Capteurs
+    -agent: "testing"
+    -message: |
+      DÉBUT DU TEST - Améliorations MQTT Phase 1 (Import/Export & Templates)
+      
+      Tâches à tester:
+      1. Import/Export des capteurs (JSON/CSV)
+      2. Système de modèles de capteurs avec 16 templates prédéfinis
+      
+      Credentials: admin@gmao-iris.local / Admin123!
+      Page cible: /sensors
       
       L'utilisateur a reporté un problème avec le bouton "Actualiser" sur la page Capteurs (/sensors).
       J'ai corrigé le problème et ajouté une tâche de test prioritaire.
