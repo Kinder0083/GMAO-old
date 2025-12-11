@@ -444,6 +444,19 @@ const ChatLive = () => {
     return false;
   };
 
+  // Scroller vers un message
+  const scrollToMessage = (messageId) => {
+    const messageElement = messageRefs.current[messageId];
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Flash animation
+      messageElement.classList.add('bg-yellow-100');
+      setTimeout(() => {
+        messageElement.classList.remove('bg-yellow-100');
+      }, 1000);
+    }
+  };
+
   // Télécharger un fichier
   const downloadFile = (attachmentId) => {
     const token = localStorage.getItem('token');
