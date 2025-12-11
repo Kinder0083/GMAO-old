@@ -588,7 +588,22 @@ const sensorsAPI = {
     api.get(`/sensors/${id}/readings`, { params: { limit, hours } }),
   getStatistics: (id, hours = 24) => 
     api.get(`/sensors/${id}/statistics`, { params: { hours } }),
-  clearReadings: (id) => api.delete(`/sensors/${id}/readings`)
+  clearReadings: (id) => api.delete(`/sensors/${id}/readings`),
+  
+  // Templates
+  getTemplates: () => api.get('/sensors/templates/list'),
+  getTemplate: (templateId) => api.get(`/sensors/templates/${templateId}`),
+  
+  // Import/Export
+  exportJson: () => api.get('/sensors/export/json', { responseType: 'blob' }),
+  exportCsv: () => api.get('/sensors/export/csv', { responseType: 'blob' }),
+  importJson: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/sensors/import/json', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
 };
 
 api.sensors = sensorsAPI;
