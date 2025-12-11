@@ -1053,6 +1053,21 @@ const ChatLive = () => {
             className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
             onClick={(e) => {
               e.stopPropagation();
+              setReplyingTo({
+                id: messageContextMenu.message.id,
+                user_name: messageContextMenu.message.user_name,
+                message: messageContextMenu.message.message
+              });
+              setMessageContextMenu(null);
+            }}
+          >
+            ↩️ Répondre
+          </button>
+
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+            onClick={(e) => {
+              e.stopPropagation();
               setShowEmojiPicker({ 
                 messageId: messageContextMenu.message.id,
                 x: messageContextMenu.x,
