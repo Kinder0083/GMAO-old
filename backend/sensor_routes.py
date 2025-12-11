@@ -1,7 +1,7 @@
 """
 Routes API pour les capteurs IoT
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from typing import List, Optional
 from models import Sensor, SensorCreate, SensorUpdate, SensorReading, SensorReadingCreate
 from dependencies import get_current_user, get_current_admin_user
