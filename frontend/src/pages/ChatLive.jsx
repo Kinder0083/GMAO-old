@@ -385,17 +385,23 @@ const ChatLive = () => {
 
   // Ajouter/retirer une réaction
   const toggleReaction = async (messageId, emoji) => {
+    console.log('🎯 toggleReaction appelée - Message:', messageId, 'Emoji:', emoji);
+    
     try {
-      await api.chat.addReaction(messageId, emoji);
+      const response = await api.chat.addReaction(messageId, emoji);
+      console.log('✅ Réaction envoyée avec succès:', response.data);
+      
       setShowEmojiPicker(null);
       setMessageContextMenu(null);
       
-      // La réaction sera mise à jour via WebSocket/polling
+      // Forcer le rechargement des messages pour voir la réaction immédiatement
+      await loadMessages();
+      
     } catch (error) {
-      console.error('Erreur réaction:', error);
+      console.error('❌ Erreur réaction:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'ajouter la réaction',
+        description: error.response?.data?.detail || 'Impossible d\'ajouter la réaction',
         variant: 'destructive'
       });
     }
