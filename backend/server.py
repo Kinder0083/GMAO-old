@@ -6156,6 +6156,10 @@ from chat_routes import router as chat_router, init_chat_routes
 init_chat_routes(db)
 api_router.include_router(chat_router)
 
+# Chat Cleanup Service
+from chat_cleanup_service import init_chat_cleanup_service
+chat_cleanup_service = init_chat_cleanup_service(db)
+
 # Manuel utilisateur
 from manual_routes import router as manual_router
 api_router.include_router(manual_router)
@@ -6218,11 +6222,21 @@ async def startup_scheduler():
             replace_existing=True
         )
         
+        # Configurer le nettoyage automatique des messages du chat à 3h00 du matin
+        scheduler.add_job(
+            chat_cleanup_service.cleanup_old_messages,
+            CronTrigger(hour=3, minute=0),  # Tous les jours à 3h00
+            id='chat_cleanup',
+            name='Nettoyage messages chat > 60 jours',
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("✅ Scheduler démarré:")
         logger.info("   - Vérification maintenances préventives: tous les jours à 00h00")
         logger.info("   - Vérification mises à jour: tous les jours à 01h00")
         logger.info("   - Vérification demandes expirées: tous les jours à 02h00")
+        logger.info("   - Nettoyage messages chat (60j): tous les jours à 03h00")
         
         # Initialiser et démarrer les collecteurs MQTT
         await mqtt_meter_collector.initialize(db)
