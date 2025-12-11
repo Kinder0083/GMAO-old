@@ -217,6 +217,40 @@ frontend:
           
           🎉 CONCLUSION: Dashboard IoT is WORKING PERFECTLY and ready for production
 
+  - task: "Sensors Page Refresh Button Fix - Test du bouton Actualiser"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Sensors.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          CORRECTION DU BOUTON ACTUALISER - Page Capteurs (/sensors)
+          
+          PROBLÈME REPORTÉ PAR L'UTILISATEUR:
+          - Le bouton "Actualiser" (icône RefreshCw) ne fonctionnait pas sur la page Capteurs
+          - Pas de feedback visuel lors du clic
+          - Pas de toast de confirmation
+          
+          CORRECTIONS EFFECTUÉES:
+          1. Ajout de `setLoading(true)` au début de la fonction `loadSensors()` (ligne 53)
+          2. Simplification du gestionnaire onClick du bouton (ligne 191)
+          3. Ajout d'un paramètre `showSuccessToast` à `loadSensors()` (ligne 51)
+          4. Ajout du toast de feedback visuel avec message "X capteur(s) actualisé(s)" (lignes 57-62)
+          5. Animation de rotation de l'icône pendant le chargement (ligne 196)
+          
+          FONCTIONNALITÉS IMPLÉMENTÉES:
+          - Bouton refresh avec icône RefreshCw en haut à droite
+          - Animation spin pendant le chargement (classe animate-spin)
+          - Toast de succès avec compteur de capteurs actualisés
+          - Désactivation du bouton pendant le chargement
+          - Tooltip "Actualiser les capteurs"
+          
+          À TESTER: Vérifier que le bouton fonctionne correctement avec les credentials buenogy@gmail.com
+
 user_problem_statement: |
   Test Phase 1 MQTT - Configuration UI and P/L MQTT page
 
