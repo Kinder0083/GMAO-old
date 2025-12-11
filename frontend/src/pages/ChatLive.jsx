@@ -1012,6 +1012,57 @@ const ChatLive = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Menu contextuel messages */}
+      {messageContextMenu && (
+        <div
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
+          style={{ top: messageContextMenu.y, left: messageContextMenu.x }}
+        >
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+            onClick={() => {
+              setShowEmojiPicker({ messageId: messageContextMenu.message.id });
+              setMessageContextMenu(null);
+            }}
+          >
+            😊 Réagir avec un emoji
+          </button>
+          
+          {canDeleteMessage(messageContextMenu.message) && (
+            <button
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-red-600"
+              onClick={() => deleteMessage(messageContextMenu.message.id)}
+            >
+              <X className="h-4 w-4" />
+              Supprimer
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Sélecteur d'emojis */}
+      {showEmojiPicker && (
+        <div className="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50"
+             style={{ 
+               top: '50%', 
+               left: '50%', 
+               transform: 'translate(-50%, -50%)'
+             }}>
+          <div className="text-sm font-medium mb-2">Réagir avec :</div>
+          <div className="flex gap-2">
+            {basicEmojis.map(emoji => (
+              <button
+                key={emoji}
+                className="text-2xl hover:scale-125 transition-transform p-2 rounded hover:bg-gray-100"
+                onClick={() => toggleReaction(showEmojiPicker.messageId, emoji)}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Menu contextuel fichiers */}
       {contextMenu && (
         <div
