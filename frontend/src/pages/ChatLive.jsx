@@ -726,9 +726,17 @@ const ChatLive = () => {
                       </div>
                     )}
                     
-                    {/* Réactions */}
+                    {/* Timestamp */}
+                    <div className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {new Date(message.timestamp).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+
+                    {/* Réactions - Superposition style Viber */}
                     {message.reactions && message.reactions.length > 0 && (
-                      <div className="flex gap-1 mt-2 flex-wrap">
+                      <div className="absolute -bottom-2 right-2 flex gap-1">
                         {Object.entries(
                           message.reactions.reduce((acc, r) => {
                             acc[r.emoji] = acc[r.emoji] || [];
@@ -740,9 +748,9 @@ const ChatLive = () => {
                           return (
                             <button
                               key={emoji}
-                              className={`border rounded-full px-2 py-1 flex items-center gap-1 text-sm cursor-pointer transition-all hover:scale-110 ${
+                              className={`border rounded-full px-1.5 py-0.5 flex items-center gap-0.5 text-xs cursor-pointer transition-all hover:scale-110 shadow-md ${
                                 hasUserReacted 
-                                  ? 'bg-blue-100 border-blue-400 shadow-sm' 
+                                  ? 'bg-blue-100 border-blue-400' 
                                   : 'bg-white border-gray-300 hover:bg-gray-50'
                               }`}
                               title={reactions.map(r => r.user_name).join(', ')}
@@ -751,7 +759,7 @@ const ChatLive = () => {
                                 toggleReaction(message.id, emoji);
                               }}
                             >
-                              <span className="text-base">{emoji}</span>
+                              <span className="text-sm">{emoji}</span>
                               <span className={`text-xs font-semibold ${hasUserReacted ? 'text-blue-600' : 'text-gray-600'}`}>
                                 {reactions.length}
                               </span>
@@ -760,14 +768,6 @@ const ChatLive = () => {
                         })}
                       </div>
                     )}
-                    
-                    {/* Timestamp */}
-                    <div className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
-                      {new Date(message.timestamp).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
                   </div>
                 </div>
               </div>
