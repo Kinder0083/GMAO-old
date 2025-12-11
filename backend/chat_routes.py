@@ -948,7 +948,7 @@ async def transfer_to_preventive(
     
     # Copier le fichier
     import shutil
-    preventive_dir = "/opt/gmao-iris/backend/uploads/preventive/"
+    preventive_dir = "/app/backend/uploads/preventive-maintenance/"
     os.makedirs(preventive_dir, exist_ok=True)
     
     new_file_path = os.path.join(preventive_dir, attachment.get("filename"))
