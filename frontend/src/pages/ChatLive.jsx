@@ -1097,9 +1097,9 @@ const ChatLive = () => {
           {/* Ligne de séparation */}
           <div className="border-t border-gray-200 my-1"></div>
 
-          {/* Emojis directement dans le menu - VERSION MODIFIÉE */}
+          {/* Emojis directement dans le menu */}
           <div className="px-3 py-2">
-            <div className="text-xs text-gray-500 mb-1">😊 Réactions :</div>
+            <div className="text-xs text-gray-500 mb-1">Réagir :</div>
             <div className="flex gap-1 justify-center">
               {basicEmojis.map(emoji => (
                 <button
