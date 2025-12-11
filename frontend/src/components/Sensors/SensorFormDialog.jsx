@@ -102,6 +102,33 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
     }
   };
 
+  const loadTemplates = async () => {
+    try {
+      const response = await api.sensors.getTemplates();
+      setTemplates(response.data.templates || []);
+    } catch (error) {
+      console.error('Erreur chargement templates:', error);
+    }
+  };
+
+  const applyTemplate = (template) => {
+    setFormData(prev => ({
+      ...prev,
+      type: template.type,
+      unite: template.unit,
+      refresh_interval: template.mqtt_refresh_interval,
+      min_threshold: template.default_min_threshold?.toString() || '',
+      max_threshold: template.default_max_threshold?.toString() || '',
+      alert_enabled: !!template.default_min_threshold || !!template.default_max_threshold,
+      notes: template.description
+    }));
+    setShowTemplates(false);
+    toast({
+      title: 'Modèle appliqué',
+      description: `Modèle "${template.name}" appliqué. Personnalisez les valeurs selon vos besoins.`
+    });
+  };
+
   const handleTypeChange = (type) => {
     const selectedType = sensorTypes.find(t => t.value === type);
     setFormData({
