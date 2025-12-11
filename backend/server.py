@@ -4773,6 +4773,10 @@ async def create_meter(meter: MeterCreate, current_user: dict = Depends(require_
         
         await db.meters.insert_one(meter_data)
         
+        # Rafraîchir les abonnements MQTT si activé
+        if meter_data.get("mqtt_enabled"):
+            await mqtt_meter_collector.refresh_subscriptions()
+        
         # Audit log
         await audit_service.log_action(
             user_id=current_user["id"],
@@ -4835,6 +4839,10 @@ async def update_meter(
     
     # Récupérer le compteur mis à jour
     updated_meter = await db.meters.find_one({"id": meter_id})
+    
+    # Rafraîchir les abonnements MQTT si MQTT activé/modifié
+    if "mqtt_enabled" in update_data or "mqtt_topic" in update_data:
+        await mqtt_meter_collector.refresh_subscriptions()
     
     # Audit log
     await audit_service.log_action(
