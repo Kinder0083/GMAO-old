@@ -33,8 +33,10 @@ const Sensors = () => {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSensor, setEditingSensor] = useState(null);
+  const [showImportExport, setShowImportExport] = useState(false);
   
   const { toast } = useToast();
+  const fileInputRef = useRef(null);
   
   // Récupérer l'utilisateur depuis localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
