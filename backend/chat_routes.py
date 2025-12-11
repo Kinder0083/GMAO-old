@@ -1011,9 +1011,14 @@ async def transfer_to_nearmiss(
 ):
     """
     Transférer un fichier vers un presqu'accident
+    Nécessite la permission 'presquaccident.edit'
     """
-    # Pas de vérification de permissions spécifique - si l'utilisateur peut accéder au chat,
-    # il peut transférer des fichiers (la permission est vérifiée côté frontend)
+    # Vérification des permissions backend
+    if not current_user.get("permissions", {}).get("presquaccident", {}).get("edit", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Permission 'presquaccident.edit' requise pour transférer des fichiers"
+        )
     
     # Trouver le fichier
     message = await db.chat_messages.find_one({"attachments.id": attachment_id})
