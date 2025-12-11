@@ -400,6 +400,13 @@ const ChatLive = () => {
           label: (mp.designation || mp.titre || 'Sans titre').substring(0, 20) + ((mp.designation || mp.titre || '').length > 20 ? '...' : ''),
           fullLabel: mp.designation || mp.titre || 'Sans titre'
         }));
+      } else if (type === 'nearmiss') {
+        const response = await api.get('/presqu-accident/items');
+        list = (response.data || []).map(pa => ({
+          id: pa.id,
+          label: (pa.titre || pa.description || 'Sans titre').substring(0, 20) + ((pa.titre || pa.description || '').length > 20 ? '...' : ''),
+          fullLabel: pa.titre || pa.description || 'Sans titre'
+        }));
       } else if (type === 'email') {
         const response = await api.get('/users');
         list = (response.data || []).map(u => ({
