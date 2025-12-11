@@ -22,6 +22,8 @@ const ChatLive = () => {
   const [cameraStream, setCameraStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const [messageContextMenu, setMessageContextMenu] = useState(null); // { x, y, message }
+  const [showEmojiPicker, setShowEmojiPicker] = useState(null); // { messageId }
   const [showTransferModal, setShowTransferModal] = useState(null); // { type: 'workorder'|'improvement'|'preventive'|'email', attachment }
   const [transferList, setTransferList] = useState([]);
   const [selectedTransferItem, setSelectedTransferItem] = useState('');
