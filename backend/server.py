@@ -6168,6 +6168,14 @@ api_router.include_router(mqtt_router)
 # MQTT Meter Collector
 from mqtt_meter_collector import mqtt_meter_collector
 
+# Sensor routes
+from sensor_routes import router as sensor_router, init_sensor_routes
+init_sensor_routes(db)
+api_router.include_router(sensor_router)
+
+# MQTT Sensor Collector
+from mqtt_sensor_collector import mqtt_sensor_collector
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
@@ -6209,10 +6217,14 @@ async def startup_scheduler():
         logger.info("   - Vérification mises à jour: tous les jours à 01h00")
         logger.info("   - Vérification demandes expirées: tous les jours à 02h00")
         
-        # Initialiser et démarrer le collecteur MQTT
+        # Initialiser et démarrer les collecteurs MQTT
         await mqtt_meter_collector.initialize(db)
         await mqtt_meter_collector.start()
         logger.info("✅ Collecteur MQTT compteurs démarré")
+        
+        await mqtt_sensor_collector.initialize(db)
+        await mqtt_sensor_collector.start()
+        logger.info("✅ Collecteur MQTT capteurs démarré")
         
     except Exception as e:
         logger.error(f"❌ Erreur lors du démarrage du scheduler: {str(e)}")
