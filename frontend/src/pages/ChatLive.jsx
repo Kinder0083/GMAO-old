@@ -1138,33 +1138,7 @@ const ChatLive = () => {
         </div>
       )}
 
-      {/* Sélecteur d'emojis */}
-      {showEmojiPicker && (
-        <div 
-          className="fixed bg-white rounded-lg shadow-lg p-2 z-[60]"
-          style={{ 
-            top: Math.min(showEmojiPicker.y || window.innerHeight / 2, window.innerHeight - 60),
-            left: Math.min(showEmojiPicker.x || window.innerWidth / 2, window.innerWidth - 200)
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex gap-1">
-            {basicEmojis.map(emoji => (
-              <button
-                key={emoji}
-                className="text-xl hover:scale-110 transition-transform p-1 rounded hover:bg-gray-100"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  console.log('Emoji cliqué:', emoji, 'Message ID:', showEmojiPicker.messageId);
-                  toggleReaction(showEmojiPicker.messageId, emoji);
-                }}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Emoji picker supprimé - les emojis sont maintenant directement dans le menu contextuel */}
 
       {/* Menu contextuel fichiers */}
       {contextMenu && (
