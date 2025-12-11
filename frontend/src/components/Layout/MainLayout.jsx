@@ -884,6 +884,17 @@ const MainLayout = () => {
                   {sidebarOpen && <span className="text-sm font-medium">Paramètres Spéciaux</span>}
                 </button>
                 <button
+                  onClick={() => navigate('/mqtt-pubsub')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${!sidebarOpen ? 'justify-center px-2' : ''}`}
+                  style={getSidebarButtonStyle(location.pathname === '/mqtt-pubsub')}
+                  onMouseEnter={(e) => handleSidebarButtonHover(e, location.pathname === '/mqtt-pubsub')}
+                  onMouseLeave={(e) => handleSidebarButtonLeave(e, location.pathname === '/mqtt-pubsub')}
+                  title={!sidebarOpen ? 'P/L MQTT' : ''}
+                >
+                  <Radio size={20} className="flex-shrink-0" />
+                  {sidebarOpen && <span className="text-sm font-medium">P/L MQTT</span>}
+                </button>
+                <button
                   onClick={() => navigate('/updates')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${!sidebarOpen ? 'justify-center px-2' : ''}`}
                   style={getSidebarButtonStyle(location.pathname === '/updates')}
