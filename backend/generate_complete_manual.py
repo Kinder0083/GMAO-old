@@ -2224,10 +2224,10 @@ async def generate_manual():
     print("📚 Génération du manuel complet...")
     
     try:
-        # NE PAS supprimer pour garder Chat Live et MQTT qui seront ajoutés après
+        # Supprimer ancien contenu
         await db.manual_versions.delete_many({})
-        # await db.manual_chapters.delete_many({})
-        # await db.manual_sections.delete_many({})
+        await db.manual_chapters.delete_many({})
+        await db.manual_sections.delete_many({})
         
         # Créer version
         now = datetime.now(timezone.utc)
