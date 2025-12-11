@@ -1099,32 +1099,44 @@ const ChatLive = () => {
             ↩️ Répondre
           </button>
 
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowEmojiPicker({ 
-                messageId: messageContextMenu.message.id,
-                x: messageContextMenu.x,
-                y: messageContextMenu.y
-              });
-              setMessageContextMenu(null);
-            }}
-          >
-            😊 Réagir avec un emoji
-          </button>
+          {/* Ligne de séparation */}
+          <div className="border-t border-gray-200 my-1"></div>
+
+          {/* Emojis directement dans le menu */}
+          <div className="px-3 py-2">
+            <div className="text-xs text-gray-500 mb-1">Réagir :</div>
+            <div className="flex gap-1 justify-center">
+              {basicEmojis.map(emoji => (
+                <button
+                  key={emoji}
+                  className="text-2xl hover:scale-125 transition-transform p-1 rounded hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleReaction(messageContextMenu.message.id, emoji);
+                    setMessageContextMenu(null);
+                  }}
+                  title={`Réagir avec ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
           
           {canDeleteMessage(messageContextMenu.message) && (
-            <button
-              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-red-600"
-              onClick={(e) => {
-                e.stopPropagation();
-                deleteMessage(messageContextMenu.message.id);
-              }}
-            >
-              <X className="h-4 w-4" />
-              Supprimer
-            </button>
+            <>
+              <div className="border-t border-gray-200 my-1"></div>
+              <button
+                className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-red-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteMessage(messageContextMenu.message.id);
+                }}
+              >
+                <X className="h-4 w-4" />
+                Supprimer
+              </button>
+            </>
           )}
         </div>
       )}
