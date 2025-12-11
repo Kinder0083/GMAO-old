@@ -28,7 +28,11 @@ const MeterFormDialog = ({ open, onOpenChange, meter, onSuccess }) => {
     unite: 'kWh',
     prix_unitaire: '',
     abonnement_mensuel: '',
-    notes: ''
+    notes: '',
+    mqtt_enabled: false,
+    mqtt_topic: '',
+    mqtt_json_path: '',
+    mqtt_refresh_interval: 5
   });
 
   useEffect(() => {
@@ -43,7 +47,11 @@ const MeterFormDialog = ({ open, onOpenChange, meter, onSuccess }) => {
           unite: meter.unite || 'kWh',
           prix_unitaire: meter.prix_unitaire || '',
           abonnement_mensuel: meter.abonnement_mensuel || '',
-          notes: meter.notes || ''
+          notes: meter.notes || '',
+          mqtt_enabled: meter.mqtt_enabled || false,
+          mqtt_topic: meter.mqtt_topic || '',
+          mqtt_json_path: meter.mqtt_json_path || '',
+          mqtt_refresh_interval: meter.mqtt_refresh_interval || 5
         });
       } else {
         setFormData({
@@ -54,7 +62,11 @@ const MeterFormDialog = ({ open, onOpenChange, meter, onSuccess }) => {
           unite: 'kWh',
           prix_unitaire: '',
           abonnement_mensuel: '',
-          notes: ''
+          notes: '',
+          mqtt_enabled: false,
+          mqtt_topic: '',
+          mqtt_json_path: '',
+          mqtt_refresh_interval: 5
         });
       }
     }
