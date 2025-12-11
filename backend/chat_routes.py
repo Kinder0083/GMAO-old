@@ -986,6 +986,8 @@ async def transfer_to_nearmiss(
     """
     # Vérifier permissions (view suffit car ajouter un fichier n'est pas éditer le presqu'accident)
     permissions = current_user.get("permissions", {})
+    logger.info(f"🔍 Transfer nearmiss - permissions: {permissions.get('presquaccident', {})}")
+    logger.info(f"🔍 Has view: {permissions.get('presquaccident', {}).get('view', False)}")
     if not permissions.get("presquaccident", {}).get("view", False):
         raise HTTPException(status_code=403, detail="Permissions insuffisantes")
     
