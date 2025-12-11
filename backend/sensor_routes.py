@@ -400,6 +400,136 @@ async def export_sensors_csv(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/groups/by-location")
+async def get_sensors_by_location(
+    current_user: dict = Depends(get_current_user)
+):
+    """Regrouper les capteurs par localisation"""
+    try:
+        # Pipeline d'agrégation MongoDB
+        pipeline = [
+            {"$match": {"actif": True}},
+            {"$group": {
+                "_id": "$emplacement_id",
+                "location_name": {"$first": "$emplacement.nom"},
+                "sensors": {"$push": {
+                    "id": "$id",
+                    "nom": "$nom",
+                    "type": "$type",
+                    "unite": "$unite",
+                    "current_value": "$current_value",
+                    "last_update": "$last_update",
+                    "alert_enabled": "$alert_enabled"
+                }},
+                "count": {"$sum": 1},
+                "avg_value": {"$avg": "$current_value"},
+                "alerts_active": {"$sum": {"$cond": ["$alert_enabled", 1, 0]}}
+            }},
+            {"$sort": {"count": -1}}
+        ]
+        
+        results = await db.sensors.aggregate(pipeline).to_list(length=None)
+        
+        # Formater les résultats
+        groups = []
+        for result in results:
+            group = {
+                "location_id": result["_id"] if result["_id"] else "no_location",
+                "location_name": result["location_name"] if result.get("location_name") else "Sans emplacement",
+                "sensors": result["sensors"],
+                "count": result["count"],
+                "avg_value": round(result["avg_value"], 2) if result.get("avg_value") else None,
+                "alerts_active": result["alerts_active"]
+            }
+            groups.append(group)
+        
+        return {
+            "groups": groups,
+            "total_groups": len(groups),
+            "total_sensors": sum(g["count"] for g in groups)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur regroupement capteurs par localisation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/groups/by-type")
+async def get_sensors_by_type(
+    current_user: dict = Depends(get_current_user)
+):
+    """Regrouper les capteurs par type"""
+    try:
+        # Pipeline d'agrégation MongoDB
+        pipeline = [
+            {"$match": {"actif": True}},
+            {"$group": {
+                "_id": "$type",
+                "sensors": {"$push": {
+                    "id": "$id",
+                    "nom": "$nom",
+                    "unite": "$unite",
+                    "current_value": "$current_value",
+                    "last_update": "$last_update",
+                    "emplacement": "$emplacement"
+                }},
+                "count": {"$sum": 1},
+                "avg_value": {"$avg": "$current_value"},
+                "min_value": {"$min": "$current_value"},
+                "max_value": {"$max": "$current_value"}
+            }},
+            {"$sort": {"count": -1}}
+        ]
+        
+        results = await db.sensors.aggregate(pipeline).to_list(length=None)
+        
+        # Noms de types en français
+        type_labels = {
+            "TEMPERATURE": "Température",
+            "HUMIDITY": "Humidité",
+            "PRESSURE": "Pression",
+            "AIR_QUALITY": "Qualité d'air",
+            "LIGHT": "Luminosité",
+            "POWER": "Puissance",
+            "ENERGY": "Énergie",
+            "VOLTAGE": "Tension",
+            "CURRENT": "Courant",
+            "WATER_LEVEL": "Niveau d'eau",
+            "FLOW": "Débit",
+            "VIBRATION": "Vibration",
+            "NOISE": "Bruit",
+            "CO2": "CO2",
+            "MOTION": "Mouvement",
+            "DOOR": "Ouverture",
+            "OTHER": "Autre"
+        }
+        
+        # Formater les résultats
+        groups = []
+        for result in results:
+            sensor_type = result["_id"]
+            group = {
+                "type": sensor_type,
+                "type_label": type_labels.get(sensor_type, sensor_type),
+                "sensors": result["sensors"],
+                "count": result["count"],
+                "avg_value": round(result["avg_value"], 2) if result.get("avg_value") else None,
+                "min_value": round(result["min_value"], 2) if result.get("min_value") else None,
+                "max_value": round(result["max_value"], 2) if result.get("max_value") else None
+            }
+            groups.append(group)
+        
+        return {
+            "groups": groups,
+            "total_groups": len(groups),
+            "total_sensors": sum(g["count"] for g in groups)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur regroupement capteurs par type: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/import/json")
 async def import_sensors_json(
     file: UploadFile = File(...),
