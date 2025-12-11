@@ -571,4 +571,26 @@ const mqttAPI = {
 
 api.mqtt = mqttAPI;
 
+// ==================== Sensors API ====================
+const sensorsAPI = {
+  getAll: (type = null) => {
+    const params = {};
+    if (type) params.type = type;
+    return api.get('/sensors', { params });
+  },
+  getById: (id) => api.get(`/sensors/${id}`),
+  create: (data) => api.post('/sensors', data),
+  update: (id, data) => api.put(`/sensors/${id}`, data),
+  delete: (id) => api.delete(`/sensors/${id}`),
+  
+  // Readings
+  getReadings: (id, limit = 100, hours = 24) => 
+    api.get(`/sensors/${id}/readings`, { params: { limit, hours } }),
+  getStatistics: (id, hours = 24) => 
+    api.get(`/sensors/${id}/statistics`, { params: { hours } }),
+  clearReadings: (id) => api.delete(`/sensors/${id}/readings`)
+};
+
+api.sensors = sensorsAPI;
+
 export default api;
