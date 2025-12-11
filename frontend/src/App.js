@@ -49,6 +49,7 @@ import Personnalisation from "./pages/Personnalisation";
 import ChatLive from "./pages/ChatLive";
 import MQTTPubSub from "./pages/MQTTPubSub";
 import Sensors from "./pages/Sensors";
+import IoTDashboard from "./pages/IoTDashboard";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
@@ -139,6 +140,7 @@ function App() {
             <Route path="chat-live" element={<ChatLive />} />
             <Route path="mqtt-pubsub" element={<MQTTPubSub />} />
             <Route path="sensors" element={<Sensors />} />
+            <Route path="iot-dashboard" element={<IoTDashboard />} />
           </Route>
         </Routes>
       </BrowserRouter>
