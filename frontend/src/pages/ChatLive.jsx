@@ -729,17 +729,29 @@ const ChatLive = () => {
                             acc[r.emoji].push(r);
                             return acc;
                           }, {})
-                        ).map(([emoji, reactions]) => (
-                          <div
-                            key={emoji}
-                            className="bg-white border border-gray-300 rounded-full px-2 py-1 flex items-center gap-1 text-sm cursor-pointer hover:bg-gray-50"
-                            title={reactions.map(r => r.user_name).join(', ')}
-                            onClick={() => toggleReaction(message.id, emoji)}
-                          >
-                            <span>{emoji}</span>
-                            <span className="text-xs text-gray-600">{reactions.length}</span>
-                          </div>
-                        ))}
+                        ).map(([emoji, reactions]) => {
+                          const hasUserReacted = reactions.some(r => r.user_id === userId);
+                          return (
+                            <button
+                              key={emoji}
+                              className={`border rounded-full px-2 py-1 flex items-center gap-1 text-sm cursor-pointer transition-all hover:scale-110 ${
+                                hasUserReacted 
+                                  ? 'bg-blue-100 border-blue-400 shadow-sm' 
+                                  : 'bg-white border-gray-300 hover:bg-gray-50'
+                              }`}
+                              title={reactions.map(r => r.user_name).join(', ')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleReaction(message.id, emoji);
+                              }}
+                            >
+                              <span className="text-base">{emoji}</span>
+                              <span className={`text-xs font-semibold ${hasUserReacted ? 'text-blue-600' : 'text-gray-600'}`}>
+                                {reactions.length}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                     
