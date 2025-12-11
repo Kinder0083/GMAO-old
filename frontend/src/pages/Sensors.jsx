@@ -188,7 +188,7 @@ const Sensors = () => {
         
         <div className="flex items-center gap-2">
           <button
-            onClick={loadSensors}
+            onClick={() => loadSensors(true)}
             disabled={loading}
             className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Actualiser les capteurs"
