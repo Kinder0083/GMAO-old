@@ -55,6 +55,21 @@ const SpecialSettings = () => {
   const [restoringTailscale, setRestoringTailscale] = useState(false);
   const [tailscaleStatus, setTailscaleStatus] = useState(null);
   
+  // États MQTT
+  const [mqttConfig, setMqttConfig] = useState({
+    host: '',
+    port: 1883,
+    username: '',
+    password: '',
+    use_ssl: false,
+    client_id: 'gmao_iris'
+  });
+  const [loadingMqtt, setLoadingMqtt] = useState(true);
+  const [savingMqtt, setSavingMqtt] = useState(false);
+  const [connectingMqtt, setConnectingMqtt] = useState(false);
+  const [mqttStatus, setMqttStatus] = useState(null);
+  const [showMqttPassword, setShowMqttPassword] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
