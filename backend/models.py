@@ -2200,6 +2200,90 @@ class MQTTConfig(BaseModel):
     """Configuration du broker MQTT"""
     host: str
     port: int = 1883
+
+
+# =======================
+# Sensor (Capteur) Models
+# =======================
+
+class SensorType(str, Enum):
+    TEMPERATURE = "TEMPERATURE"  # Température
+    HUMIDITY = "HUMIDITY"  # Humidité
+    PRESSURE = "PRESSURE"  # Pression
+    AIR_QUALITY = "AIR_QUALITY"  # Qualité de l'air
+    LIGHT = "LIGHT"  # Luminosité
+    MOTION = "MOTION"  # Mouvement/Présence
+    DOOR = "DOOR"  # Ouverture porte/fenêtre
+    WATER_LEVEL = "WATER_LEVEL"  # Niveau d'eau
+    VOLTAGE = "VOLTAGE"  # Tension électrique
+    CURRENT = "CURRENT"  # Courant électrique
+    POWER = "POWER"  # Puissance électrique
+    ENERGY = "ENERGY"  # Énergie
+    FLOW = "FLOW"  # Débit
+    VIBRATION = "VIBRATION"  # Vibration
+    NOISE = "NOISE"  # Niveau sonore
+    CO2 = "CO2"  # CO2
+    OTHER = "OTHER"  # Autre
+
+class Sensor(BaseModel):
+    id: str
+    nom: str
+    type: SensorType
+    emplacement_id: Optional[str] = None
+    emplacement: Optional[Dict] = None
+    unite: str  # °C, %, bar, lux, ppm, etc.
+    mqtt_topic: str  # Topic MQTT obligatoire
+    mqtt_json_path: Optional[str] = None  # Chemin JSON pour extraire la valeur
+    refresh_interval: int = 1  # Intervalle de rafraîchissement en minutes
+    current_value: Optional[float] = None  # Valeur actuelle
+    last_update: Optional[str] = None  # Dernière mise à jour
+    min_threshold: Optional[float] = None  # Seuil minimum pour alerte
+    max_threshold: Optional[float] = None  # Seuil maximum pour alerte
+    alert_enabled: bool = False  # Activer les alertes
+    notes: Optional[str] = None
+    actif: bool = True
+    date_creation: datetime
+    created_by: str
+
+class SensorCreate(BaseModel):
+    nom: str
+    type: SensorType
+    emplacement_id: Optional[str] = None
+    unite: str
+    mqtt_topic: str
+    mqtt_json_path: Optional[str] = None
+    refresh_interval: int = 1
+    min_threshold: Optional[float] = None
+    max_threshold: Optional[float] = None
+    alert_enabled: bool = False
+    notes: Optional[str] = None
+
+class SensorUpdate(BaseModel):
+    nom: Optional[str] = None
+    type: Optional[SensorType] = None
+    emplacement_id: Optional[str] = None
+    unite: Optional[str] = None
+    mqtt_topic: Optional[str] = None
+    mqtt_json_path: Optional[str] = None
+    refresh_interval: Optional[int] = None
+    min_threshold: Optional[float] = None
+    max_threshold: Optional[float] = None
+    alert_enabled: Optional[bool] = None
+    notes: Optional[str] = None
+    actif: Optional[bool] = None
+
+class SensorReading(BaseModel):
+    id: str
+    sensor_id: str
+    sensor_nom: Optional[str] = None
+    timestamp: datetime
+    value: float
+    unit: str
+    date_creation: datetime
+
+class SensorReadingCreate(BaseModel):
+    value: float
+
     username: Optional[str] = None
     password: Optional[str] = None
     use_ssl: bool = False
