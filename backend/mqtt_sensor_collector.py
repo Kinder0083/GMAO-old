@@ -216,25 +216,51 @@ class MQTTSensorCollector:
             logger.error(f"Erreur création relevé capteur: {e}")
             
     async def check_alert_thresholds(self, sensor: dict, value: float):
-        """Vérifier les seuils d'alerte et créer des notifications si nécessaire"""
+        """Vérifier les seuils d'alerte et créer des alertes si nécessaire"""
         try:
+            from alert_service import alert_service
+            from models import AlertType, AlertSeverity
+            
             min_threshold = sensor.get("min_threshold")
             max_threshold = sensor.get("max_threshold")
             
-            alert_message = None
+            alert_triggered = False
+            threshold_value = None
+            threshold_type = None
+            severity = AlertSeverity.WARNING
             
             if min_threshold is not None and value < min_threshold:
-                alert_message = f"⚠️ Capteur '{sensor['nom']}': valeur trop basse ({value} {sensor.get('unite', '')}) - Seuil min: {min_threshold}"
+                alert_triggered = True
+                threshold_value = min_threshold
+                threshold_type = "min"
+                severity = AlertSeverity.WARNING
+                title = f"Valeur basse - {sensor['nom']}"
+                message = f"La valeur du capteur {sensor['nom']} est en dessous du seuil minimum.\nValeur actuelle: {value} {sensor.get('unite', '')}\nSeuil minimum: {min_threshold} {sensor.get('unite', '')}"
                 
             elif max_threshold is not None and value > max_threshold:
-                alert_message = f"⚠️ Capteur '{sensor['nom']}': valeur trop élevée ({value} {sensor.get('unite', '')}) - Seuil max: {max_threshold}"
+                alert_triggered = True
+                threshold_value = max_threshold
+                threshold_type = "max"
+                severity = AlertSeverity.CRITICAL
+                title = f"Valeur élevée - {sensor['nom']}"
+                message = f"La valeur du capteur {sensor['nom']} dépasse le seuil maximum.\nValeur actuelle: {value} {sensor.get('unite', '')}\nSeuil maximum: {max_threshold} {sensor.get('unite', '')}"
                 
-            if alert_message:
-                logger.warning(alert_message)
+            if alert_triggered:
+                # Créer l'alerte avec le service
+                await alert_service.create_alert(
+                    alert_type=AlertType.SENSOR_THRESHOLD,
+                    severity=severity,
+                    title=title,
+                    message=message,
+                    source_type="sensor",
+                    source_id=sensor["id"],
+                    source_name=sensor["nom"],
+                    value=value,
+                    threshold=threshold_value,
+                    threshold_type=threshold_type
+                )
                 
-                # TODO: Créer une notification dans le système
-                # Pour l'instant, on log juste l'alerte
-                # Dans la Phase 5, on créera des notifications visuelles et potentiellement des OT
+                logger.warning(f"🚨 Alerte créée pour capteur {sensor['nom']}: {title}")
                 
         except Exception as e:
             logger.error(f"Erreur vérification seuils alerte: {e}")
