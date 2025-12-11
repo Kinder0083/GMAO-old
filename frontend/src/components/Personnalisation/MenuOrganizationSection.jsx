@@ -56,7 +56,10 @@ const DEFAULT_MENU_ITEMS = [
   { id: 'planning', label: 'Planning', path: '/planning', icon: 'Calendar', module: 'planning', visible: true, favorite: false, order: 18 },
   { id: 'vendors', label: 'Fournisseurs', path: '/vendors', icon: 'ShoppingCart', module: 'vendors', visible: true, favorite: false, order: 19 },
   { id: 'purchase-history', label: 'Historique Achat', path: '/purchase-history', icon: 'ShoppingBag', module: 'purchaseHistory', visible: true, favorite: false, order: 20 },
-  { id: 'import-export', label: 'Import / Export', path: '/import-export', icon: 'Database', module: 'importExport', visible: true, favorite: false, order: 21 }
+  { id: 'import-export', label: 'Import / Export', path: '/import-export', icon: 'Database', module: 'importExport', visible: true, favorite: false, order: 21 },
+  { id: 'sensors', label: '📡 Capteurs MQTT', path: '/sensors', icon: 'Activity', module: 'sensors', visible: true, favorite: false, order: 22 },
+  { id: 'iot-dashboard', label: '📊 Dashboard IoT', path: '/iot-dashboard', icon: 'BarChart3', module: 'iotDashboard', visible: true, favorite: false, order: 23 },
+  { id: 'mqtt-logs', label: '🔍 Logs MQTT', path: '/mqtt-logs', icon: 'Terminal', module: 'mqttLogs', visible: true, favorite: false, order: 24 }
 ];
 
 const MenuOrganizationSection = () => {
