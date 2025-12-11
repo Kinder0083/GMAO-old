@@ -537,13 +537,47 @@ user_problem_statement: |
   PHASE 5: Nouvelle Fonctionnalité "Chat Live" - Style Viber [EN COURS - Phases 3-4]
 
 frontend:
-  - task: "Chat Live Reply Functionality - Viber-style message replies"
+  - task: "MQTT Sensors Import/Export Functionality"
     implemented: true
-    working: true
-    file: "/app/frontend/src/pages/ChatLive.jsx"
+    working: "NA"
+    file: "/app/frontend/src/pages/Sensors.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          Fonctionnalités Import/Export implémentées pour les capteurs MQTT:
+          - Menu déroulant Import/Export avec icône Download (lignes 290-352)
+          - Export JSON via GET /api/sensors/export/json (lignes 119-143)
+          - Export CSV via GET /api/sensors/export/csv (lignes 145-169)
+          - Import JSON via POST /api/sensors/import/json (lignes 171-200)
+          - Téléchargement automatique des fichiers exportés
+          - Feedback utilisateur avec toasts de succès/erreur
+          - Gestion des erreurs d'import avec compteurs (importés/ignorés)
+          - Restriction admin uniquement pour les fonctions Import/Export
+
+  - task: "MQTT Sensors Templates System"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/Sensors/SensorFormDialog.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          Système de modèles de capteurs implémenté:
+          - Section "🎯 Utiliser un modèle" en haut du formulaire (lignes 209-238)
+          - Chargement des templates via GET /api/sensors/templates/list (lignes 105-112)
+          - Grille de modèles avec 16 types prédéfinis (température, humidité, etc.)
+          - Fonction applyTemplate() pour remplir automatiquement le formulaire (lignes 114-130)
+          - Auto-remplissage: type, unité, intervalle, seuils min/max, alertes
+          - Toast de confirmation "Modèle appliqué" (lignes 126-129)
+          - Masquage automatique de la section après sélection
+          - Templates visibles uniquement lors de création (pas en édition)
   
   - task: "Chat Live Emoji Reactions - Direct emoji display in context menu (Improved UX)"
     implemented: true
