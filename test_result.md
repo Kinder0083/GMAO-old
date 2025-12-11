@@ -7684,8 +7684,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Chat Live Online Users List - Phase 9"
-    - "Chat Live Delete Message & Admin Permissions - Phase 10"
+    - "MQTT Configuration UI in Paramètres Spéciaux"
+    - "P/L MQTT Menu and Page Implementation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
