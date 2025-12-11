@@ -15,7 +15,9 @@ import api from '../../services/api';
 
 const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
   const [locations, setLocations] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(!sensor);
   const [formData, setFormData] = useState({
     nom: '',
     type: 'TEMPERATURE',
