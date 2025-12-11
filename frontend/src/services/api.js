@@ -540,4 +540,35 @@ const chatAPI = {
 // Ajouter chatAPI à l'export api
 api.chat = chatAPI;
 
+// ==================== MQTT API ====================
+const mqttAPI = {
+  // Configuration
+  getConfig: () => api.get('/mqtt/config'),
+  saveConfig: (config) => api.post('/mqtt/config', config),
+  
+  // Connexion
+  connect: () => api.post('/mqtt/connect'),
+  disconnect: () => api.post('/mqtt/disconnect'),
+  getStatus: () => api.get('/mqtt/status'),
+  
+  // Publication
+  publish: (data) => api.post('/mqtt/publish', data),
+  
+  // Abonnement
+  subscribe: (data) => api.post('/mqtt/subscribe', data),
+  unsubscribe: (topicEncoded) => api.delete(`/mqtt/subscribe/${topicEncoded}`),
+  getSubscriptions: () => api.get('/mqtt/subscriptions'),
+  
+  // Messages
+  getMessages: (topic = null, limit = 100) => {
+    const params = {};
+    if (topic) params.topic = topic;
+    if (limit) params.limit = limit;
+    return api.get('/mqtt/messages', { params });
+  },
+  clearMessages: () => api.delete('/mqtt/messages')
+};
+
+api.mqtt = mqttAPI;
+
 export default api;
