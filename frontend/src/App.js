@@ -50,6 +50,7 @@ import ChatLive from "./pages/ChatLive";
 import MQTTPubSub from "./pages/MQTTPubSub";
 import Sensors from "./pages/Sensors";
 import IoTDashboard from "./pages/IoTDashboard";
+import MQTTLogs from "./pages/MQTTLogs";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
