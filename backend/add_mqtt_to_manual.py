@@ -690,15 +690,21 @@ site/zone/equipement/metrique
     # Ajouter les IDs de sections au chapitre
     mqtt_chapter["sections"] = [s["id"] for s in sections]
     
-    # Insérer le chapitre
-    await db.manual_chapters.delete_many({"id": chapter_id})
-    await db.manual_chapters.insert_one(mqtt_chapter)
+    # Insérer le chapitre (upsert pour ne pas perdre les autres)
+    await db.manual_chapters.update_one(
+        {"id": chapter_id},
+        {"$set": mqtt_chapter},
+        upsert=True
+    )
     print(f"✅ Chapitre MQTT créé : {mqtt_chapter['title']}")
     
-    # Insérer les sections
-    section_ids = [s["id"] for s in sections]
-    await db.manual_sections.delete_many({"id": {"$in": section_ids}})
-    await db.manual_sections.insert_many(sections)
+    # Insérer les sections (upsert pour chaque section)
+    for section in sections:
+        await db.manual_sections.update_one(
+            {"id": section["id"]},
+            {"$set": section},
+            upsert=True
+        )
     print(f"✅ {len(sections)} sections ajoutées")
     
     # Afficher les titres des sections
