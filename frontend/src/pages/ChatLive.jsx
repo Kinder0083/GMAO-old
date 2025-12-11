@@ -805,6 +805,26 @@ const ChatLive = () => {
 
         {/* Zone de saisie */}
         <div className="p-4 border-t">
+          {/* Zone de réponse */}
+          {replyingTo && (
+            <div className="mb-2 bg-gray-50 border-l-4 border-blue-500 p-2 rounded flex items-start gap-2">
+              <div className="flex-1">
+                <div className="text-xs font-semibold text-gray-700">
+                  Répondre à {replyingTo.user_name}
+                </div>
+                <div className="text-xs text-gray-600 italic truncate">
+                  {replyingTo.message}
+                </div>
+              </div>
+              <button
+                onClick={() => setReplyingTo(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           <div className="flex items-end gap-2">
             <input
               ref={fileInputRef}
