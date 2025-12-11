@@ -205,6 +205,38 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
           </DialogTitle>
         </DialogHeader>
 
+        {/* Templates Section */}
+        {!sensor && showTemplates && templates.length > 0 && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-purple-900">🎯 Utiliser un modèle</h3>
+              <button
+                type="button"
+                onClick={() => setShowTemplates(false)}
+                className="text-sm text-purple-600 hover:text-purple-800"
+              >
+                Ignorer
+              </button>
+            </div>
+            <p className="text-sm text-purple-700">
+              Choisissez un modèle prédéfini pour gagner du temps
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+              {templates.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => applyTemplate(template)}
+                  className="p-3 bg-white border border-purple-300 rounded-lg hover:bg-purple-100 hover:border-purple-400 transition-colors text-left"
+                >
+                  <div className="text-sm font-medium text-purple-900">{template.name}</div>
+                  <div className="text-xs text-purple-600 mt-1">{template.unit}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Nom */}
