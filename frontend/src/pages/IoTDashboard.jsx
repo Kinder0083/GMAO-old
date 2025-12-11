@@ -32,8 +32,11 @@ const IoTDashboard = () => {
   const [sensors, setSensors] = useState([]);
   const [sensorReadings, setSensorReadings] = useState({});
   const [statistics, setStatistics] = useState({});
+  const [groupsByType, setGroupsByType] = useState([]);
+  const [groupsByLocation, setGroupsByLocation] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(24); // heures
+  const [activeTab, setActiveTab] = useState('overview'); // overview, groups
 
   useEffect(() => {
     loadDashboardData();
@@ -45,9 +48,16 @@ const IoTDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Charger tous les capteurs
-      const sensorsResponse = await api.sensors.getAll();
+      // Charger tous les capteurs et groupes
+      const [sensorsResponse, groupsTypeResponse, groupsLocationResponse] = await Promise.all([
+        api.sensors.getAll(),
+        api.sensors.getGroupsByType(),
+        api.sensors.getGroupsByLocation()
+      ]);
+      
       const allSensors = sensorsResponse.data;
+      setGroupsByType(groupsTypeResponse.data.groups || []);
+      setGroupsByLocation(groupsLocationResponse.data.groups || []);
       setSensors(allSensors);
 
       // Charger les relevés et statistiques pour chaque capteur
