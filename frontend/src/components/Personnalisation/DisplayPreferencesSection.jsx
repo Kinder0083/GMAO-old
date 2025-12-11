@@ -51,7 +51,10 @@ const DisplayPreferencesSection = () => {
     { value: '/planning', label: 'Planning', module: 'planning' },
     { value: '/vendors', label: 'Fournisseurs', module: 'vendors' },
     { value: '/purchase-history', label: 'Historique Achat', module: 'purchaseHistory' },
-    { value: '/import-export', label: 'Import / Export', module: 'importExport' }
+    { value: '/import-export', label: 'Import / Export', module: 'importExport' },
+    { value: '/sensors', label: '📡 Capteurs MQTT', module: 'sensors' },
+    { value: '/iot-dashboard', label: '📊 Dashboard IoT', module: 'iotDashboard' },
+    { value: '/mqtt-logs', label: '🔍 Logs MQTT', module: 'mqttLogs' }
   ].filter(page => canView(page.module));
 
   return (
