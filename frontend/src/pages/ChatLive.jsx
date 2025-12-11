@@ -29,7 +29,9 @@ const ChatLive = () => {
   const [selectedTransferItem, setSelectedTransferItem] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   const [selectedEmailUsers, setSelectedEmailUsers] = useState([]);
+  const [replyingTo, setReplyingTo] = useState(null); // { id, user_name, message }
   const messagesEndRef = useRef(null);
+  const messageRefs = useRef({}); // Références pour scroll vers message
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
