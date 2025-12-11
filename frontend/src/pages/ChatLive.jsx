@@ -881,6 +881,7 @@ const ChatLive = () => {
                   Sélectionnez {
                     showTransferModal?.type === 'workorder' ? 'un ordre de travail' :
                     showTransferModal?.type === 'improvement' ? 'une amélioration' :
+                    showTransferModal?.type === 'nearmiss' ? 'un presqu\'accident' :
                     'une maintenance préventive'
                   } :
                 </label>
