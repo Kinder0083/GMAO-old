@@ -243,3 +243,194 @@ async def clear_sensor_readings(
     except Exception as e:
         logger.error(f"Erreur suppression relevés capteur: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =======================
+# Templates & Import/Export
+# =======================
+
+@router.get("/templates/list")
+async def get_sensor_templates(
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer tous les modèles de capteurs disponibles"""
+    from sensor_templates import get_all_templates
+    return get_all_templates()
+
+
+@router.get("/templates/{template_id}")
+async def get_sensor_template(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer un modèle de capteur spécifique"""
+    from sensor_templates import get_template
+    template = get_template(template_id)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    return template
+
+
+@router.get("/export/json")
+async def export_sensors_json(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Exporter tous les capteurs en JSON (admin seulement)"""
+    from fastapi.responses import JSONResponse
+    import json
+    
+    try:
+        sensors = await db.sensors.find({"actif": True}, {"_id": 0}).to_list(length=None)
+        
+        export_data = {
+            "export_date": datetime.now(timezone.utc).isoformat(),
+            "exported_by": current_user.get("email"),
+            "total_sensors": len(sensors),
+            "sensors": sensors
+        }
+        
+        return JSONResponse(
+            content=export_data,
+            headers={
+                "Content-Disposition": f"attachment; filename=sensors_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Erreur export capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/export/csv")
+async def export_sensors_csv(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Exporter tous les capteurs en CSV (admin seulement)"""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    
+    try:
+        sensors = await db.sensors.find({"actif": True}, {"_id": 0}).to_list(length=None)
+        
+        # Créer le CSV
+        output = io.StringIO()
+        fieldnames = ['nom', 'type', 'unite', 'mqtt_topic', 'mqtt_json_key', 'mqtt_refresh_interval', 
+                      'alert_enabled', 'min_threshold', 'max_threshold', 'emplacement_id']
+        
+        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        
+        for sensor in sensors:
+            # Extraire seulement les champs nécessaires
+            row = {
+                'nom': sensor.get('nom', ''),
+                'type': sensor.get('type', ''),
+                'unite': sensor.get('unite', ''),
+                'mqtt_topic': sensor.get('mqtt_topic', ''),
+                'mqtt_json_key': sensor.get('mqtt_json_key', 'value'),
+                'mqtt_refresh_interval': sensor.get('mqtt_refresh_interval', 60),
+                'alert_enabled': sensor.get('alert_enabled', False),
+                'min_threshold': sensor.get('min_threshold', ''),
+                'max_threshold': sensor.get('max_threshold', ''),
+                'emplacement_id': sensor.get('emplacement_id', '')
+            }
+            writer.writerow(row)
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=sensors_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Erreur export CSV capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/json")
+async def import_sensors_json(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Importer des capteurs depuis un fichier JSON (admin seulement)"""
+    import json
+    
+    try:
+        # Lire le fichier
+        content = await file.read()
+        data = json.loads(content)
+        
+        # Valider la structure
+        if "sensors" not in data:
+            raise HTTPException(status_code=400, detail="Format JSON invalide: clé 'sensors' manquante")
+        
+        sensors_to_import = data["sensors"]
+        imported_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for sensor_data in sensors_to_import:
+            try:
+                # Vérifier si un capteur avec le même topic existe déjà
+                existing = await db.sensors.find_one({
+                    "mqtt_topic": sensor_data.get("mqtt_topic"),
+                    "actif": True
+                })
+                
+                if existing:
+                    skipped_count += 1
+                    errors.append(f"Capteur '{sensor_data.get('nom')}' ignoré (topic déjà existant)")
+                    continue
+                
+                # Créer un nouveau capteur
+                sensor_id = str(uuid4())
+                new_sensor = {
+                    "id": sensor_id,
+                    "nom": sensor_data.get("nom"),
+                    "type": sensor_data.get("type"),
+                    "unite": sensor_data.get("unite"),
+                    "mqtt_topic": sensor_data.get("mqtt_topic"),
+                    "mqtt_json_key": sensor_data.get("mqtt_json_key", "value"),
+                    "mqtt_refresh_interval": sensor_data.get("mqtt_refresh_interval", 60),
+                    "alert_enabled": sensor_data.get("alert_enabled", False),
+                    "min_threshold": sensor_data.get("min_threshold"),
+                    "max_threshold": sensor_data.get("max_threshold"),
+                    "emplacement_id": sensor_data.get("emplacement_id"),
+                    "date_creation": datetime.now(timezone.utc),
+                    "actif": True,
+                    "created_by": current_user["id"],
+                    "current_value": None,
+                    "last_update": None
+                }
+                
+                # Récupérer l'emplacement si fourni
+                if new_sensor.get("emplacement_id"):
+                    location = await db.locations.find_one({"id": new_sensor["emplacement_id"]}, {"_id": 0})
+                    if location:
+                        new_sensor["emplacement"] = {"id": location["id"], "nom": location["nom"]}
+                
+                await db.sensors.insert_one(new_sensor)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Erreur import capteur '{sensor_data.get('nom', 'inconnu')}': {str(e)}")
+        
+        return {
+            "success": True,
+            "imported": imported_count,
+            "skipped": skipped_count,
+            "errors": errors
+        }
+        
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Fichier JSON invalide")
+    except Exception as e:
+        logger.error(f"Erreur import capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
