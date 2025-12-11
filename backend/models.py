@@ -2277,6 +2277,69 @@ class SensorReading(BaseModel):
     sensor_id: str
     sensor_nom: Optional[str] = None
     timestamp: datetime
+
+
+# =======================
+# Alert & Notification Models
+# =======================
+
+class AlertType(str, Enum):
+    SENSOR_THRESHOLD = "SENSOR_THRESHOLD"  # Seuil capteur dépassé
+    METER_THRESHOLD = "METER_THRESHOLD"  # Seuil compteur dépassé
+    SENSOR_OFFLINE = "SENSOR_OFFLINE"  # Capteur hors ligne
+    METER_OFFLINE = "METER_OFFLINE"  # Compteur hors ligne
+
+class AlertSeverity(str, Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    CRITICAL = "CRITICAL"
+
+class AlertAction(str, Enum):
+    CREATE_WORKORDER = "CREATE_WORKORDER"  # Créer un OT
+    SEND_EMAIL = "SEND_EMAIL"  # Envoyer un email
+    SEND_CHAT_MESSAGE = "SEND_CHAT_MESSAGE"  # Message dans Chat Live
+    NOTIFICATION_ONLY = "NOTIFICATION_ONLY"  # Notification uniquement
+
+class Alert(BaseModel):
+    id: str
+    type: AlertType
+    severity: AlertSeverity
+    title: str
+    message: str
+    source_type: str  # 'sensor' ou 'meter'
+    source_id: str
+    source_name: str
+    value: Optional[float] = None
+    threshold: Optional[float] = None
+    threshold_type: Optional[str] = None  # 'min' ou 'max'
+    actions_executed: List[AlertAction] = []
+    read: bool = False
+    archived: bool = False
+    created_at: datetime
+    read_at: Optional[datetime] = None
+    read_by: Optional[str] = None
+
+class AlertCreate(BaseModel):
+    type: AlertType
+    severity: AlertSeverity
+    title: str
+    message: str
+    source_type: str
+    source_id: str
+    source_name: str
+    value: Optional[float] = None
+    threshold: Optional[float] = None
+    threshold_type: Optional[str] = None
+
+class AlertActionConfig(BaseModel):
+    """Configuration des actions automatiques pour un capteur/compteur"""
+    source_type: str  # 'sensor' ou 'meter'
+    source_id: str
+    enabled: bool = True
+    actions: List[AlertAction] = []
+    email_recipients: List[str] = []  # Pour SEND_EMAIL
+    workorder_template: Optional[Dict] = None  # Pour CREATE_WORKORDER
+
     value: float
     unit: str
     date_creation: datetime
