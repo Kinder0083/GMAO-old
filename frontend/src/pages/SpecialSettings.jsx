@@ -12,7 +12,9 @@ import {
   Clock,
   Save,
   AlertCircle,
-  Globe
+  Globe,
+  Radio,
+  Power
 } from 'lucide-react';
 import api, { usersAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
