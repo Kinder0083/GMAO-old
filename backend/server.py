@@ -6152,6 +6152,11 @@ api_router.include_router(chat_router)
 from manual_routes import router as manual_router
 api_router.include_router(manual_router)
 
+# MQTT routes
+from mqtt_routes import router as mqtt_router, init_mqtt_routes
+init_mqtt_routes(db)
+api_router.include_router(mqtt_router)
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
