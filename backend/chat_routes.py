@@ -891,7 +891,7 @@ async def transfer_to_improvement(
     
     # Copier le fichier
     import shutil
-    improvements_dir = "/opt/gmao-iris/backend/uploads/improvements/"
+    improvements_dir = "/app/backend/uploads/improvements/"
     os.makedirs(improvements_dir, exist_ok=True)
     
     new_file_path = os.path.join(improvements_dir, attachment.get("filename"))
