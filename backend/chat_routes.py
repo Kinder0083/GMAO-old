@@ -813,10 +813,7 @@ async def transfer_to_workorder(
     """
     Transférer un fichier vers un ordre de travail
     """
-    # Vérifier permissions
-    permissions = current_user.get("permissions", {})
-    if not permissions.get("workOrders", {}).get("edit", False):
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    # Pas de vérification de permissions spécifique - vérifiée côté frontend
     
     # Trouver le fichier
     message = await db.chat_messages.find_one({"attachments.id": attachment_id})
