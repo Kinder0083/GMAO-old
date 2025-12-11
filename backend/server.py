@@ -6176,6 +6176,13 @@ api_router.include_router(sensor_router)
 # MQTT Sensor Collector
 from mqtt_sensor_collector import mqtt_sensor_collector
 
+# Alert routes and service
+from alert_routes import router as alert_router, init_alert_routes
+init_alert_routes(db)
+api_router.include_router(alert_router)
+
+from alert_service import alert_service
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
@@ -6225,6 +6232,10 @@ async def startup_scheduler():
         await mqtt_sensor_collector.initialize(db)
         await mqtt_sensor_collector.start()
         logger.info("✅ Collecteur MQTT capteurs démarré")
+        
+        # Initialiser le service d'alertes
+        await alert_service.initialize(db)
+        logger.info("✅ Service d'alertes initialisé")
         
     except Exception as e:
         logger.error(f"❌ Erreur lors du démarrage du scheduler: {str(e)}")
