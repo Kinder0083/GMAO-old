@@ -362,12 +362,77 @@ const ChatLive = () => {
     });
   };
 
-  // Fermer le menu contextuel
+  // Fermer les menus contextuels
   useEffect(() => {
-    const handleClick = () => setContextMenu(null);
+    const handleClick = () => {
+      setContextMenu(null);
+      setMessageContextMenu(null);
+      setShowEmojiPicker(null);
+    };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, []);
+
+  // Menu contextuel message
+  const handleMessageContextMenu = (e, message) => {
+    e.preventDefault();
+    setMessageContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      message
+    });
+  };
+
+  // Ajouter/retirer une réaction
+  const toggleReaction = async (messageId, emoji) => {
+    try {
+      await api.chat.addReaction(messageId, emoji);
+      setShowEmojiPicker(null);
+      setMessageContextMenu(null);
+      
+      // La réaction sera mise à jour via WebSocket/polling
+    } catch (error) {
+      console.error('Erreur réaction:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'ajouter la réaction',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Supprimer un message
+  const deleteMessage = async (messageId) => {
+    try {
+      await api.chat.deleteMessage(messageId);
+      setMessageContextMenu(null);
+      
+      toast({
+        title: 'Supprimé',
+        description: 'Message supprimé'
+      });
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      toast({
+        title: 'Erreur',
+        description: error.response?.data?.detail || 'Impossible de supprimer le message',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Vérifier si l'utilisateur peut supprimer un message
+  const canDeleteMessage = (message) => {
+    if (user.role === 'ADMIN') return true;
+    
+    if (message.user_id === userId) {
+      // L'utilisateur peut supprimer son propre message dans les 10 premières secondes
+      const deletableUntil = new Date(message.deletable_until);
+      return new Date() <= deletableUntil;
+    }
+    
+    return false;
+  };
 
   // Télécharger un fichier
   const downloadFile = (attachmentId) => {
