@@ -7709,8 +7709,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "MQTT Configuration UI in Paramètres Spéciaux"
-    - "P/L MQTT Menu and Page Implementation"
+    - "Dashboard IoT - Interface temps réel avec KPI et graphiques"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
