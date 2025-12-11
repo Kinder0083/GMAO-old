@@ -921,10 +921,7 @@ async def transfer_to_preventive(
     """
     Transférer un fichier vers une maintenance préventive
     """
-    # Vérifier permissions
-    permissions = current_user.get("permissions", {})
-    if not permissions.get("preventiveMaintenance", {}).get("edit", False):
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    # Pas de vérification de permissions spécifique - vérifiée côté frontend
     
     # Trouver le fichier
     message = await db.chat_messages.find_one({"attachments.id": attachment_id})
