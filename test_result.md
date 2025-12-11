@@ -113,6 +113,22 @@ frontend:
     stuck_count: 0
     priority: "high"
     needs_retesting: false
+  
+  - task: "Chat Live Online Users List - Phase 9"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/ChatLive.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+  
+  - task: "Chat Live Delete Message & Admin Permissions - Phase 10"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/ChatLive.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
