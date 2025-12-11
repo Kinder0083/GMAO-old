@@ -25,7 +25,7 @@ Tous les fichiers de configuration pour le déploiement Proxmox sont dans le dos
 ### 1. 🔵 Emergent (Production Cloud)
 **Environnement actuel** - Déploiement automatique via Kubernetes
 
-**URL d'accès :** https://gmao-iris-1.preview.emergentagent.com
+**URL d'accès :** https://iris-messenger.preview.emergentagent.com
 
 **Caractéristiques :**
 - ✅ Déploiement automatique
