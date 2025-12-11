@@ -178,7 +178,7 @@ const ChatLive = () => {
     const messageData = {
       message: newMessage.trim(),
       recipient_ids: selectedRecipients.map(r => r.id),
-      reply_to_id: null
+      reply_to_id: replyingTo ? replyingTo.id : null
     };
 
     // Si WebSocket connecté, l'utiliser
