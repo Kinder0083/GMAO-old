@@ -189,6 +189,7 @@ const ChatLive = () => {
       }));
       setNewMessage('');
       setSelectedRecipients([]);
+      setReplyingTo(null);
     } else {
       // Sinon, fallback sur l'API REST
       try {
