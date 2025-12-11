@@ -326,8 +326,18 @@ async def login(login_request: LoginRequest):
     # Verify password
     logger.info(f"🔍 Attempting password verification...")
     logger.info(f"   Password length: {len(login_request.password)}")
-    logger.info(f"   Hash prefix: {user['hashed_password'][:20]}...")
-    password_valid = verify_password(login_request.password, user["hashed_password"])
+    
+    # Support both 'password' and 'hashed_password' field names
+    password_hash = user.get("hashed_password") or user.get("password")
+    if not password_hash:
+        logger.warning(f"❌ No password hash found for email: {login_request.email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email ou mot de passe incorrect"
+        )
+    
+    logger.info(f"   Hash prefix: {password_hash[:20]}...")
+    password_valid = verify_password(login_request.password, password_hash)
     logger.info(f"🔍 Password valid: {password_valid} (type: {type(password_valid)})")
     
     if not password_valid:
