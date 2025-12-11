@@ -50,7 +50,8 @@ const PermissionsGrid = ({ role, permissions, onChange }) => {
     { key: 'importExport', label: 'Import / Export' },
     { key: 'journal', label: 'Journal d\'audit' },
     { key: 'settings', label: 'Paramètres' },
-    { key: 'personalization', label: 'Personnalisation' }
+    { key: 'personalization', label: 'Personnalisation' },
+    { key: 'chatLive', label: '💬 Chat Live' }
   ];
 
   const handlePermissionChange = (moduleKey, permissionType, checked) => {
