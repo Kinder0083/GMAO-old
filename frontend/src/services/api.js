@@ -518,6 +518,14 @@ const chatAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+  transferToNearMiss: (attachmentId, nearmissId) => {
+    const formData = new FormData();
+    formData.append('attachment_id', attachmentId);
+    formData.append('nearmiss_id', nearmissId);
+    return api.post('/chat/transfer-to-nearmiss', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   transferByEmail: (attachmentId, recipientUserIds, message) => {
     const formData = new FormData();
     formData.append('attachment_id', attachmentId);
