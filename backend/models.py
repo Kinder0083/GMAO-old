@@ -2170,3 +2170,37 @@ class ChatEmailTransfer(BaseModel):
     recipient_user_ids: List[str]
     message: Optional[str] = None
 
+
+
+# =======================
+# MQTT Models
+# =======================
+
+class MQTTConfig(BaseModel):
+    """Configuration du broker MQTT"""
+    host: str
+    port: int = 1883
+    username: Optional[str] = None
+    password: Optional[str] = None
+    use_ssl: bool = False
+    client_id: str = "gmao_iris"
+
+class MQTTPublish(BaseModel):
+    """Publier un message MQTT"""
+    topic: str
+    payload: str
+    qos: int = Field(default=0, ge=0, le=2)
+    retain: bool = False
+
+class MQTTSubscribe(BaseModel):
+    """S'abonner à un topic MQTT"""
+    topic: str
+    qos: int = Field(default=0, ge=0, le=2)
+
+class MQTTMessage(BaseModel):
+    """Message MQTT reçu"""
+    topic: str
+    payload: str
+    qos: int
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
