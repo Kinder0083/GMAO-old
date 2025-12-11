@@ -593,4 +593,22 @@ const sensorsAPI = {
 
 api.sensors = sensorsAPI;
 
+// ==================== Alerts API ====================
+const alertsAPI = {
+  getAll: (unreadOnly = false, limit = 50) => 
+    api.get('/alerts', { params: { unread_only: unreadOnly, limit } }),
+  getUnreadCount: () => api.get('/alerts/unread-count'),
+  markAsRead: (id) => api.post(`/alerts/${id}/read`),
+  markAllAsRead: () => api.post('/alerts/mark-all-read'),
+  delete: (id) => api.delete(`/alerts/${id}`),
+  clearAll: () => api.delete('/alerts'),
+  
+  // Configuration des actions
+  getConfig: (sourceType, sourceId) => 
+    api.get(`/alerts/config/${sourceType}/${sourceId}`),
+  saveConfig: (config) => api.post('/alerts/config', config)
+};
+
+api.alerts = alertsAPI;
+
 export default api;
