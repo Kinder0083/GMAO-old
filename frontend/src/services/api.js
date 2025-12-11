@@ -613,7 +613,11 @@ const sensorsAPI = {
     return api.post('/sensors/import/json', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
-  }
+  },
+  
+  // Groupements
+  getGroupsByLocation: () => api.get('/sensors/groups/by-location'),
+  getGroupsByType: () => api.get('/sensors/groups/by-type')
 };
 
 api.sensors = sensorsAPI;
