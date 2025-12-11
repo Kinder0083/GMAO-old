@@ -186,7 +186,7 @@ async def get_sensor_statistics(
     hours: int = 24,
     current_user: dict = Depends(get_current_user)
 ):
-    """Obtenir les statistiques d'un capteur"""
+    """Obtenir les statistiques avancées d'un capteur avec calculs automatiques"""
     try:
         start_date = datetime.now(timezone.utc) - timedelta(hours=hours)
         
@@ -205,19 +205,58 @@ async def get_sensor_statistics(
                 "min": None,
                 "max": None,
                 "avg": None,
+                "median": None,
+                "std_deviation": None,
+                "range": None,
+                "trend": None,
                 "current": None
             }
         
         values = [r["value"] for r in readings]
+        count = len(values)
+        
+        # Calculs de base
+        avg = sum(values) / count
+        min_val = min(values)
+        max_val = max(values)
+        
+        # Médiane
+        sorted_values = sorted(values)
+        if count % 2 == 0:
+            median = (sorted_values[count//2 - 1] + sorted_values[count//2]) / 2
+        else:
+            median = sorted_values[count//2]
+        
+        # Écart-type
+        variance = sum((x - avg) ** 2 for x in values) / count
+        std_dev = variance ** 0.5
+        
+        # Tendance (régression linéaire simple)
+        trend = None
+        if count > 1:
+            x_mean = (count - 1) / 2
+            y_mean = avg
+            numerator = sum((i - x_mean) * (values[i] - y_mean) for i in range(count))
+            denominator = sum((i - x_mean) ** 2 for i in range(count))
+            if denominator != 0:
+                slope = numerator / denominator
+                # Tendance en % par rapport à la moyenne
+                trend = (slope * count / avg * 100) if avg != 0 else 0
         
         stats = {
-            "count": len(readings),
-            "min": min(values),
-            "max": max(values),
-            "avg": sum(values) / len(values),
-            "current": readings[-1]["value"] if readings else None,
+            "count": count,
+            "min": round(min_val, 2),
+            "max": round(max_val, 2),
+            "avg": round(avg, 2),
+            "median": round(median, 2),
+            "std_deviation": round(std_dev, 2),
+            "range": round(max_val - min_val, 2),
+            "trend": round(trend, 2) if trend is not None else None,
+            "trend_direction": "up" if trend and trend > 0 else ("down" if trend and trend < 0 else "stable"),
+            "current": round(readings[-1]["value"], 2) if readings else None,
             "unit": readings[0].get("unit", ""),
-            "last_update": readings[-1]["timestamp"].isoformat() if readings else None
+            "last_update": readings[-1]["timestamp"].isoformat() if readings else None,
+            "period_hours": hours
         }
         
         return stats
