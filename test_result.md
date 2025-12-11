@@ -1111,6 +1111,66 @@ user_problem_statement: |
   - ✅ Aucune erreur JavaScript dans la console
 
 backend:
+  - task: "MQTT Logs API Endpoints - Phase 2"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/mqtt_logs_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          API MQTT Logs complète implémentée:
+          - GET /api/mqtt/logs/ - Récupération logs avec filtres (topic, sensor_id, success_only, limit, hours)
+          - GET /api/mqtt/logs/stats - Statistiques (total_messages, success_count, error_count, success_rate)
+          - GET /api/mqtt/logs/topics - Liste des topics uniques avec compteurs
+          - DELETE /api/mqtt/logs/clear - Suppression logs (admin uniquement)
+          - Intégration avec mqtt_logger pour logging automatique
+          - Filtrage par période (1h à 7 jours)
+          - Conversion timestamps ISO format
+
+  - task: "Sensors Statistics API - Calculs Automatiques Phase 2"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/sensor_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          API Statistiques Capteurs avancée implémentée:
+          - GET /api/sensors/{id}/statistics - Calculs automatiques complets
+          - Statistiques: count, min, max, avg, median, std_deviation, range
+          - Calcul de tendance (régression linéaire simple)
+          - Direction tendance (up/down/stable)
+          - Valeur actuelle et dernière mise à jour
+          - Période configurable (défaut 24h)
+          - Gestion des cas vides (pas de données)
+
+  - task: "Sensors Grouping API - Phase 2"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/sensor_routes.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          API Regroupement Capteurs implémentée:
+          - GET /api/sensors/groups/by-type - Regroupement par type de capteur
+          - GET /api/sensors/groups/by-location - Regroupement par localisation
+          - Pipeline MongoDB avec agrégation avancée
+          - Statistiques par groupe: count, avg_value, min_value, max_value
+          - Labels français pour types (Température, Humidité, etc.)
+          - Gestion emplacements vides ("Sans emplacement")
+          - Tri par nombre de capteurs décroissant
+
   - task: "Configuration SMTP/Postfix pour envoi d'emails"
     implemented: true
     working: true
