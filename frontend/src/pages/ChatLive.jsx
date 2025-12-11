@@ -663,7 +663,7 @@ const ChatLive = () => {
                   )}
                   
                   <div
-                    className={`rounded-lg p-3 ${
+                    className={`rounded-lg p-3 relative ${
                       isOwnMessage
                         ? 'bg-blue-600 text-white'
                         : isPrivate
@@ -672,6 +672,7 @@ const ChatLive = () => {
                         ? 'bg-blue-50 border border-blue-200 font-semibold'
                         : 'bg-gray-100'
                     }`}
+                    onContextMenu={(e) => handleMessageContextMenu(e, message)}
                   >
                     {/* Auteur */}
                     {!isOwnMessage && (
