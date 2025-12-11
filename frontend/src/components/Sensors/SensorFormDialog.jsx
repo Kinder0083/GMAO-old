@@ -57,6 +57,8 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
   useEffect(() => {
     if (open) {
       loadLocations();
+      loadTemplates();
+      
       if (sensor) {
         setFormData({
           nom: sensor.nom || '',
@@ -71,6 +73,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
           alert_enabled: sensor.alert_enabled || false,
           notes: sensor.notes || ''
         });
+        setShowTemplates(false);
       } else {
         setFormData({
           nom: '',
@@ -85,6 +88,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
           alert_enabled: false,
           notes: ''
         });
+        setShowTemplates(true);
       }
     }
   }, [open, sensor]);
