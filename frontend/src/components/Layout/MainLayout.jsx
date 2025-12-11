@@ -787,10 +787,14 @@ const MainLayout = () => {
             </div>
           </button>
           
-          {/* Cloche notifications */}
+          {/* Alertes MQTT */}
+          <AlertNotifications />
+          
+          {/* Cloche OT en attente */}
           <button 
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
             onClick={() => navigate('/work-orders')}
+            title="Ordres de travail en attente"
           >
             <Bell size={20} className="text-gray-600" />
             {workOrdersCount > 0 && (
