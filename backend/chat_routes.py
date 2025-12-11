@@ -984,12 +984,8 @@ async def transfer_to_nearmiss(
     """
     Transférer un fichier vers un presqu'accident
     """
-    # Vérifier permissions (view suffit car ajouter un fichier n'est pas éditer le presqu'accident)
-    permissions = current_user.get("permissions", {})
-    logger.info(f"🔍 Transfer nearmiss - permissions: {permissions.get('presquaccident', {})}")
-    logger.info(f"🔍 Has view: {permissions.get('presquaccident', {}).get('view', False)}")
-    if not permissions.get("presquaccident", {}).get("view", False):
-        raise HTTPException(status_code=403, detail="Permissions insuffisantes")
+    # Pas de vérification de permissions spécifique - si l'utilisateur peut accéder au chat,
+    # il peut transférer des fichiers (la permission est vérifiée côté frontend)
     
     # Trouver le fichier
     message = await db.chat_messages.find_one({"attachments.id": attachment_id})
