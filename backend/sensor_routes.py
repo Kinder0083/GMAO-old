@@ -49,6 +49,10 @@ async def create_sensor(
         
         await db.sensors.insert_one(sensor_data)
         
+        # Rafraîchir les abonnements MQTT
+        from mqtt_sensor_collector import mqtt_sensor_collector
+        await mqtt_sensor_collector.refresh_subscriptions()
+        
         logger.info(f"Capteur créé: {sensor.nom} (type: {sensor.type})")
         
         return Sensor(**sensor_data)
@@ -118,6 +122,11 @@ async def update_sensor(
     
     # Récupérer le capteur mis à jour
     updated_sensor = await db.sensors.find_one({"id": sensor_id}, {"_id": 0})
+    
+    # Rafraîchir les abonnements MQTT si topic modifié
+    if "mqtt_topic" in update_data:
+        from mqtt_sensor_collector import mqtt_sensor_collector
+        await mqtt_sensor_collector.refresh_subscriptions()
     
     return Sensor(**updated_sensor)
 
