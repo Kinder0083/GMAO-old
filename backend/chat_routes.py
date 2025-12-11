@@ -1160,3 +1160,73 @@ async def cleanup_old_messages():
         "deleted_messages": deleted_count,
         "deleted_files": deleted_files
     }
+
+# =====================================
+# MAINTENANCE & CLEANUP
+# =====================================
+
+@router.post("/cleanup/trigger")
+async def trigger_cleanup(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Déclencher manuellement le nettoyage des messages > 60 jours (Admin uniquement)
+    """
+    # Vérifier que l'utilisateur est admin
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Action réservée aux administrateurs")
+    
+    from chat_cleanup_service import chat_cleanup_service
+    
+    if not chat_cleanup_service:
+        raise HTTPException(status_code=500, detail="Service de nettoyage non initialisé")
+    
+    result = await chat_cleanup_service.cleanup_now()
+    
+    return {
+        "success": result.get("success", False),
+        "deleted_messages": result.get("deleted_messages", 0),
+        "deleted_files": result.get("deleted_files", 0),
+        "error": result.get("error")
+    }
+
+@router.get("/cleanup/stats")
+async def get_cleanup_stats(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtenir des statistiques sur les messages éligibles au nettoyage (Admin uniquement)
+    """
+    # Vérifier que l'utilisateur est admin
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Action réservée aux administrateurs")
+    
+    try:
+        from datetime import datetime, timezone, timedelta
+        
+        # Messages de plus de 60 jours
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=60)
+        old_messages_count = await db.chat_messages.count_documents({
+            "timestamp": {"$lt": cutoff_date.isoformat()}
+        })
+        
+        # Messages totaux
+        total_messages = await db.chat_messages.count_documents({})
+        
+        # Messages récents (derniers 30 jours)
+        recent_date = datetime.now(timezone.utc) - timedelta(days=30)
+        recent_messages = await db.chat_messages.count_documents({
+            "timestamp": {"$gte": recent_date.isoformat()}
+        })
+        
+        return {
+            "total_messages": total_messages,
+            "recent_messages_30d": recent_messages,
+            "old_messages_60d": old_messages_count,
+            "retention_policy": "60 jours",
+            "next_cleanup": "Tous les jours à 03h00 UTC"
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération stats nettoyage: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
