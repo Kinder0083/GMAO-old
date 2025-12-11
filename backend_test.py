@@ -11,7 +11,7 @@ import time
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://realtime-dash-3.preview.emergentagent.com/api"
+BACKEND_URL = "https://manual-fix-1.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@gmao-iris.local"
