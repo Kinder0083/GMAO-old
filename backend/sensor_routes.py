@@ -284,6 +284,13 @@ async def export_sensors_json(
     try:
         sensors = await db.sensors.find({"actif": True}, {"_id": 0}).to_list(length=None)
         
+        # Convertir les dates en ISO format
+        for sensor in sensors:
+            if sensor.get("date_creation") and isinstance(sensor["date_creation"], datetime):
+                sensor["date_creation"] = sensor["date_creation"].isoformat()
+            if sensor.get("last_update") and isinstance(sensor["last_update"], datetime):
+                sensor["last_update"] = sensor["last_update"].isoformat()
+        
         export_data = {
             "export_date": datetime.now(timezone.utc).isoformat(),
             "exported_by": current_user.get("email"),
