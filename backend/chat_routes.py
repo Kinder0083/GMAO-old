@@ -834,7 +834,7 @@ async def transfer_to_workorder(
     
     # Copier le fichier vers le dossier des pièces jointes OT
     import shutil
-    work_order_attachments_dir = "/opt/gmao-iris/backend/uploads/work_orders/"
+    work_order_attachments_dir = "/app/backend/uploads/work-orders/"
     os.makedirs(work_order_attachments_dir, exist_ok=True)
     
     new_file_path = os.path.join(work_order_attachments_dir, attachment.get("filename"))
