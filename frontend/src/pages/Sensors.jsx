@@ -286,15 +286,81 @@ const Sensors = () => {
           </button>
           
           {isAdmin && (
-            <Button
-              onClick={() => {
-                setEditingSensor(null);
-                setIsFormOpen(true);
-              }}
-            >
-              <Plus className="mr-2" size={18} />
-              Nouveau capteur
-            </Button>
+            <>
+              {/* Menu Import/Export */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowImportExport(!showImportExport)}
+                  className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  title="Import/Export"
+                >
+                  <Download size={18} />
+                </button>
+                
+                {showImportExport && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowImportExport(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                      <button
+                        onClick={() => {
+                          handleExportJson();
+                          setShowImportExport(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                      >
+                        <FileJson size={16} />
+                        <span>Exporter JSON</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          handleExportCsv();
+                          setShowImportExport(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                      >
+                        <FileText size={16} />
+                        <span>Exporter CSV</span>
+                      </button>
+                      
+                      <div className="border-t border-gray-200 my-2" />
+                      
+                      <button
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                          setShowImportExport(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                      >
+                        <Upload size={16} />
+                        <span>Importer JSON</span>
+                      </button>
+                      
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".json"
+                        onChange={handleImport}
+                        className="hidden"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <Button
+                onClick={() => {
+                  setEditingSensor(null);
+                  setIsFormOpen(true);
+                }}
+              >
+                <Plus className="mr-2" size={18} />
+                Nouveau capteur
+              </Button>
+            </>
           )}
         </div>
       </div>
