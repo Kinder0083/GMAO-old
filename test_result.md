@@ -8542,3 +8542,35 @@ agent_communication:
       The "💬 Chat Live" chapter has been successfully added to the GMAO Iris user manual 
       and is accessible through the standard manual interface. The integration is complete 
       and functional.
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+
+test_plan:
+  current_focus:
+    - "Sensors Page Refresh Button Fix - Test du bouton Actualiser"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    -agent: "main"
+    -message: |
+      NOUVELLE TÂCHE DE TEST AJOUTÉE - Bouton Actualiser Page Capteurs
+      
+      L'utilisateur a reporté un problème avec le bouton "Actualiser" sur la page Capteurs (/sensors).
+      J'ai corrigé le problème et ajouté une tâche de test prioritaire.
+      
+      CREDENTIALS À UTILISER:
+      - Email: buenogy@gmail.com
+      - Mots de passe à tester: "admin", "Admin123", "password", "admin123"
+      
+      POINTS CRITIQUES À VÉRIFIER:
+      1. Animation de l'icône RefreshCw pendant le chargement
+      2. Toast de succès avec message "X capteur(s) actualisé(s)"
+      3. Fonctionnement correct du rafraîchissement des données
+      4. Absence d'erreurs JavaScript
+      
+      Merci de tester cette fonctionnalité en priorité.
