@@ -705,6 +705,20 @@ const ChatLive = () => {
                       </div>
                     )}
                     
+                    {/* Citation du message auquel on répond */}
+                    {message.reply_to_id && message.reply_to_preview && (
+                      <div 
+                        className={`mb-2 pl-2 border-l-2 cursor-pointer ${
+                          isOwnMessage ? 'border-blue-300' : 'border-gray-400'
+                        }`}
+                        onClick={() => scrollToMessage(message.reply_to_id)}
+                      >
+                        <div className={`text-xs italic ${isOwnMessage ? 'text-blue-100' : 'text-gray-600'}`}>
+                          {message.reply_to_preview}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Message texte */}
                     {message.message && (
                       <div className="break-words whitespace-pre-wrap">
