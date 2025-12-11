@@ -1036,65 +1036,58 @@ frontend:
           matching Viber-style chat functionality.
 
 user_problem_statement: |
-  Test Complet des Améliorations MQTT Phase 1 - Import/Export & Templates
+  Test Complet Phase 2 MQTT - Logs, Calculs Automatiques & Groupements
 
   **Contexte :**
-  J'ai implémenté deux fonctionnalités majeures pour améliorer la gestion des capteurs MQTT :
-  1. **Import/Export** : Permet d'exporter les configurations de capteurs en JSON/CSV et de les réimporter
-  2. **Modèles de capteurs** : 16 modèles prédéfinis (température, humidité, pression, etc.) pour créer rapidement des capteurs
+  J'ai complété la Phase 2 MQTT avec 3 fonctionnalités majeures :
+
+  ### 1️⃣ Visualiseur de Logs MQTT
+  - Page dédiée `/mqtt-logs` avec statistiques en temps réel
+  - Filtres : topic, période, statut (succès/erreur)
+  - Auto-refresh toutes les 10 secondes
+  - Admin peut supprimer les logs
+
+  ### 2️⃣ Calculs Automatiques
+  - Statistiques avancées sur les capteurs
+  - Calculs : moyenne, médiane, écart-type, min, max, plage, tendance
+  - Endpoint : `/api/sensors/{id}/statistics`
+
+  ### 3️⃣ Regroupement de Capteurs
+  - Par type (température, humidité, etc.)
+  - Par localisation
+  - Endpoints : `/api/sensors/groups/by-type` et `/api/sensors/groups/by-location`
 
   **Objectif du test :**
-  Vérifier que toutes les nouvelles fonctionnalités fonctionnent correctement.
+  Valider toutes les nouvelles fonctionnalités de la Phase 2.
 
   **Étapes de test :**
 
-  ### Partie 1 : Import/Export
+  ### Test 1 : Page Logs MQTT
   1. Se connecter : admin@gmao-iris.local / Admin123!
-  2. Naviguer vers /sensors
-  3. Cliquer sur le bouton Import/Export (icône Download)
-  4. Vérifier que le menu déroulant s'affiche avec :
-     - "Exporter JSON"
-     - "Exporter CSV"
-     - "Importer JSON"
-  5. Tester l'export JSON (doit télécharger un fichier)
-  6. Tester l'export CSV (doit télécharger un fichier)
+  2. Naviguer vers /mqtt-logs
+  3. Vérifier que la page s'affiche avec :
+     - 4 cartes de statistiques (Total, Succès, Erreurs, Taux)
+     - Filtres fonctionnels (topic, période, statut)
+     - Tableau des logs
+  4. Tester les filtres :
+     - Changer la période (1h, 6h, 24h, 7j)
+     - Filtrer par statut (Tous, Succès, Erreurs)
+  5. Vérifier le bouton "Actualiser"
 
-  ### Partie 2 : Templates de Capteurs
-  7. Cliquer sur "Nouveau capteur"
-  8. Vérifier qu'une section "🎯 Utiliser un modèle" s'affiche en haut du formulaire
-  9. Vérifier que les modèles sont affichés dans une grille (Température, Humidité, Pression, etc.)
-  10. Cliquer sur un modèle (ex: "Capteur de Température")
-  11. Vérifier que le formulaire se remplit automatiquement avec :
-      - Type = TEMPERATURE
-      - Unité = °C
-      - Intervalle de rafraîchissement = 60
-      - Seuils min/max préremplis
-  12. Vérifier qu'un toast de succès "Modèle appliqué" s'affiche
-
-  ### Partie 3 : Création Complète d'un Capteur via Template
-  13. Après avoir appliqué un template, remplir :
-      - Nom : "Test Température"
-      - Topic MQTT : "test/temperature"
-  14. Soumettre le formulaire
-  15. Vérifier que le capteur est créé et apparaît dans la liste
-
-  **Endpoints Backend à Tester :**
-  - GET /api/sensors/templates/list
-  - GET /api/sensors/export/json
-  - GET /api/sensors/export/csv
-  - POST /api/sensors (création avec template)
-
-  **Résultat Attendu :**
-  - ✅ Menu Import/Export fonctionnel
-  - ✅ Export JSON et CSV téléchargent des fichiers
-  - ✅ Section templates visible dans le formulaire de création
-  - ✅ Clic sur template remplit automatiquement le formulaire
-  - ✅ Toast de confirmation affiché
-  - ✅ Création de capteur via template réussie
+  ### Test 2 : API Groupements (Backend via curl)
+  6. Vérifier que les endpoints répondent correctement :
+     - GET /api/sensors/groups/by-type
+     - GET /api/sensors/groups/by-location
 
   **Credentials :**
   - Email: admin@gmao-iris.local
   - Password: Admin123!
+
+  **Résultat Attendu :**
+  - ✅ Page Logs MQTT fonctionnelle et responsive
+  - ✅ Filtres et auto-refresh opérationnels
+  - ✅ Groupements par type et localisation fonctionnels
+  - ✅ Aucune erreur JavaScript dans la console
 
 backend:
   - task: "Configuration SMTP/Postfix pour envoi d'emails"
