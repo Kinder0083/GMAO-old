@@ -600,11 +600,11 @@ frontend:
 
   - task: "MQTT Sensors Templates System"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/components/Sensors/SensorFormDialog.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "main"
@@ -618,6 +618,57 @@ frontend:
           - Toast de confirmation "Modèle appliqué" (lignes 126-129)
           - Masquage automatique de la section après sélection
           - Templates visibles uniquement lors de création (pas en édition)
+        -working: true
+        -agent: "testing"
+        -comment: |
+          🧪 MQTT TEMPLATES SYSTEM TESTING COMPLETED - December 11, 2025
+          
+          📋 TEST SCENARIO: Complete verification of sensor templates system with 16 predefined models
+          
+          ✅ COMPREHENSIVE TESTING PERFORMED:
+          1. ✅ NEW SENSOR DIALOG: "Nouveau capteur" button found and dialog opened successfully
+          2. ✅ TEMPLATES SECTION: "🎯 Utiliser un modèle" section found at top of form
+          3. ✅ TEMPLATES GRID: Found 16 template buttons in grid layout
+          4. ✅ SPECIFIC TEMPLATES VERIFICATION:
+             - ✅ "Capteur de Température" template found
+             - ✅ "Capteur d'Humidité" template found
+             - ✅ "Capteur de Pression" template found
+             - ✅ All 16 templates displayed correctly in 4-column grid
+          5. ✅ TEMPLATE APPLICATION TEST:
+             - ✅ Clicked on "Capteur de Température" template
+             - ✅ Success toast "Modèle appliqué" appeared immediately
+             - ✅ Form auto-filled correctly with template values
+          6. ✅ AUTO-FILL VERIFICATION:
+             - ✅ Type: TEMPERATURE (correct)
+             - ✅ Unit: °C (correct)
+             - ✅ Interval: 60 minutes (correct)
+             - ✅ Min threshold: -10 (correct)
+             - ✅ Max threshold: 40 (correct)
+             - ✅ Alerts enabled: true (correct)
+             - ✅ Notes: "Modèle pour capteur de température standard" (correct)
+          7. ✅ COMPLETE SENSOR CREATION:
+             - ✅ Filled name: "Test Température"
+             - ✅ Filled MQTT topic: "test/temperature"
+             - ✅ Form submitted successfully
+             - ✅ Success toast "Capteur créé avec succès" appeared
+             - ✅ New sensor "Test Température" appears in sensors list
+          
+          🔍 BACKEND API VALIDATION:
+          - ✅ GET /api/sensors/templates/list: Returns 16 predefined templates
+          - ✅ Templates include: TEMPERATURE, HUMIDITY, PRESSURE, AIR_QUALITY, LIGHT, POWER, ENERGY, VOLTAGE, CURRENT, WATER_LEVEL, FLOW, VIBRATION, CO2, NOISE, MOTION, DOOR
+          - ✅ Each template contains: id, name, description, type, unit, icon, thresholds, mqtt_refresh_interval, sample_topics
+          - ✅ POST /api/sensors: Sensor creation with template data working correctly
+          
+          📊 FUNCTIONALITY ASSESSMENT:
+          The Templates System is FULLY FUNCTIONAL and exceeds requirements:
+          - 16 predefined templates covering all major sensor types
+          - Beautiful grid layout with proper template cards
+          - One-click template application with immediate feedback
+          - Complete form auto-fill including thresholds and descriptions
+          - Seamless integration with sensor creation workflow
+          - Templates only shown during creation (not editing) as designed
+          
+          🎉 CONCLUSION: MQTT Sensors Templates System is WORKING PERFECTLY
   
   - task: "Chat Live Emoji Reactions - Direct emoji display in context menu (Improved UX)"
     implemented: true
