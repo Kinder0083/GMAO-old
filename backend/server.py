@@ -6187,6 +6187,15 @@ api_router.include_router(alert_router)
 
 from alert_service import alert_service
 
+# MQTT Logger
+from mqtt_logger import init_mqtt_logger
+mqtt_logger = init_mqtt_logger(db)
+
+# MQTT Logs routes
+from mqtt_logs_routes import router as mqtt_logs_router, init_mqtt_logs_routes
+init_mqtt_logs_routes(db, mqtt_logger)
+api_router.include_router(mqtt_logs_router)
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
