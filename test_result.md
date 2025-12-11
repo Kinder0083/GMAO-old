@@ -103,6 +103,31 @@
 #====================================================================================================
 
 user_problem_statement: |
+  Test Phase 4 - Dashboard IoT Temps Réel
+
+frontend:
+  - task: "Dashboard IoT - Interface temps réel avec KPI et graphiques"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/IoTDashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          Dashboard IoT implémenté avec toutes les fonctionnalités requises:
+          - 4 KPI cards (Capteurs Actifs, Alertes Actives, Température Moyenne, Puissance Totale)
+          - Section "Valeurs Actuelles" avec jauges circulaires
+          - Sélecteur de plage temporelle (1h, 6h, 24h, 7 jours)
+          - Bouton de rafraîchissement
+          - Graphiques en aires pour chaque capteur
+          - Statistiques Min/Max/Actuel sous chaque graphique
+          - Auto-refresh toutes les 30 secondes
+          - Message d'état vide avec bouton "Créer un capteur"
+
+user_problem_statement: |
   Test Phase 1 MQTT - Configuration UI and P/L MQTT page
 
 frontend:
