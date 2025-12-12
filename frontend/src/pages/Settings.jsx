@@ -31,6 +31,7 @@ const Settings = () => {
 
   useEffect(() => {
     loadUserProfile();
+    loadUsers();
   }, []);
 
   const loadUserProfile = async () => {
