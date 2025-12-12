@@ -13,8 +13,11 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [showUsersList, setShowUsersList] = useState(false);
+  const [showVendorsList, setShowVendorsList] = useState(false);
 
   const [formData, setFormData] = useState({
     type: 'PIECE_DETACHEE',
