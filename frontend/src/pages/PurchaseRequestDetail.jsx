@@ -175,6 +175,18 @@ const PurchaseRequestDetail = () => {
             <div className="flex-1">
               <div className="font-semibold text-lg">{statusConfig.label}</div>
               <div className="text-sm opacity-75">{statusConfig.description}</div>
+              {request.added_to_inventory && (
+                <div className="mt-2">
+                  <Badge className="bg-green-100 text-green-800">
+                    ✓ Ajouté à l'inventaire
+                  </Badge>
+                  {request.inventory_added_by && (
+                    <span className="text-xs text-gray-600 ml-2">
+                      par {request.inventory_added_by}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
