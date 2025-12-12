@@ -6,6 +6,7 @@ import { Label } from '../components/ui/label';
 import { useToast } from '../hooks/use-toast';
 import { User, Mail, Phone, Lock, Bell, Globe } from 'lucide-react';
 import { Switch } from '../components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import ChangePasswordDialog from '../components/Common/ChangePasswordDialog';
 import { authAPI } from '../services/api';
 import { formatErrorMessage } from '../utils/errorFormatter';
