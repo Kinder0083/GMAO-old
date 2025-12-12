@@ -592,7 +592,8 @@ async def get_users_for_purchase_requests(
         return formatted_users
         
     except Exception as e:
-
+        logger.error(f"❌ Erreur récupération utilisateurs: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{request_id}/add-to-inventory", response_model=dict)
