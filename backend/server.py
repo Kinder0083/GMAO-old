@@ -1954,8 +1954,12 @@ async def get_inventory_stats(current_user: dict = Depends(require_permission("i
         niveau_bas = 0
         
         for item in inventory:
+            # Ignorer les articles dont la surveillance est désactivée
+            if not item.get("stock_monitoring_enabled", True):
+                continue
+            
             quantite = item.get("quantite", 0)
-            quantite_min = item.get("quantiteMin", 0)
+            quantite_min = item.get("quantiteMin", item.get("seuil_alerte", 0))
             
             if quantite <= 0:
                 rupture += 1
