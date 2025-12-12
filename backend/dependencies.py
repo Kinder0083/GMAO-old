@@ -14,6 +14,13 @@ def set_database(database):
     global db
     db = database
 
+def get_database():
+    """Retourne la base de données pour les routes"""
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database not initialized")
+    return db
+
+
 async def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depends(security_optional)):
     """Version optionnelle de get_current_user qui ne lève pas d'erreur si pas de credentials"""
     if credentials is None:
