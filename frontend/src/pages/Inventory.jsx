@@ -308,9 +308,18 @@ const Inventory = () => {
                     const status = getStockStatus(item);
                     const StatusIcon = status.icon;
                     return (
-                      <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
+                      <tr key={item.id} className={`border-b hover:bg-gray-50 transition-colors ${item.stock_monitoring_enabled === false ? 'opacity-60' : ''}`}>
                         <td className="py-3 px-4 text-sm text-gray-900 font-medium">{item.reference}</td>
-                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">{item.nom}</td>
+                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">
+                          <div className="flex items-center gap-2">
+                            {item.nom}
+                            {item.stock_monitoring_enabled === false && (
+                              <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded" title="Surveillance désactivée">
+                                <EyeOff size={12} className="inline" /> Non surveillé
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="py-3 px-4 text-sm text-gray-700">{item.categorie}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
