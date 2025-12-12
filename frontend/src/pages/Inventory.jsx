@@ -306,13 +306,15 @@ const Inventory = () => {
                             </Button>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">{item.quantiteMin}</td>
-                        <td className="py-3 px-4 text-sm text-gray-700">{item.prixUnitaire.toFixed(2)} €</td>
-                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">
-                          {(item.quantite * item.prixUnitaire).toFixed(2)} €
+                        <td className="py-3 px-4 text-sm text-gray-600">{item.quantiteMin || item.seuil_alerte || 0}</td>
+                        <td className="py-3 px-4 text-sm text-gray-700">
+                          {(item.prixUnitaire || item.prix_unitaire || 0).toFixed(2)} €
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-700">{item.fournisseur}</td>
-                        <td className="py-3 px-4 text-sm text-gray-600">{item.emplacement}</td>
+                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">
+                          {((item.quantite || 0) * (item.prixUnitaire || item.prix_unitaire || 0)).toFixed(2)} €
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700">{item.fournisseur || '-'}</td>
+                        <td className="py-3 px-4 text-sm text-gray-600">{item.emplacement || '-'}</td>
                         <td className="py-3 px-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color} flex items-center gap-1 w-fit`}>
                             <StatusIcon size={14} />
