@@ -196,6 +196,31 @@ const Settings = () => {
                     placeholder="Ex: Maintenance, Production..."
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="responsable">Responsable Hiérarchique (N+1)</Label>
+                  <Select
+                    value={settings.responsable_hierarchique_id}
+                    onValueChange={(value) => setSettings({ ...settings, responsable_hierarchique_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner votre N+1" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Aucun</SelectItem>
+                      {users
+                        .filter(u => u.id !== JSON.parse(localStorage.getItem('user') || '{}').id)
+                        .map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.prenom} {user.nom} ({user.role})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    Votre N+1 recevra vos demandes d'achat pour validation
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
