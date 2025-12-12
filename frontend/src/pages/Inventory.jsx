@@ -125,10 +125,13 @@ const Inventory = () => {
   );
 
   const getStockStatus = (item) => {
-    if (item.quantite <= 0) {
-      return { color: 'text-red-600', bg: 'bg-red-100', label: 'Rupture', icon: AlertTriangle };
-    } else if (item.quantite <= item.quantiteMin) {
-      return { color: 'text-orange-600', bg: 'bg-orange-100', label: 'Stock bas', icon: TrendingDown };
+    const quantite = item.quantite || 0;
+    const seuilMin = item.quantiteMin || item.seuil_alerte || 0;
+    
+    if (quantite <= 0) {
+      return { color: 'text-red-600', bg: 'bg-red-100', label: 'Rupture', icon: AlertCircle };
+    } else if (quantite <= seuilMin) {
+      return { color: 'text-orange-600', bg: 'bg-orange-100', label: 'Stock bas', icon: AlertTriangle };
     }
     return { color: 'text-green-600', bg: 'bg-green-100', label: 'En stock', icon: Package };
   };
