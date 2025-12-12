@@ -17,30 +17,36 @@ const AddToInventoryDialog = ({ open, onOpenChange, request, onSuccess }) => {
       setLoading(true);
       setStep('checking');
 
+      console.log('Checking inventory for request:', request.id);
       const response = await purchaseRequestsAPI.addToInventory(request.id);
+      console.log('Response:', response.data);
 
       if (response.data.has_duplicates) {
         // Il y a des doublons potentiels
         setDuplicates(response.data.matches);
         setStep('duplicates');
-      } else {
+        setLoading(false);
+      } else if (response.data.success) {
         // Ajouté avec succès
         toast({
           title: 'Succès',
           description: 'Article ajouté à l\'inventaire avec succès'
         });
+        setLoading(false);
         onSuccess();
         onOpenChange(false);
       }
     } catch (error) {
+      console.error('Error adding to inventory:', error);
+      setLoading(false);
+      setStep('error');
       toast({
         title: 'Erreur',
         description: error.response?.data?.detail || 'Impossible d\'ajouter à l\'inventaire',
         variant: 'destructive'
       });
-      onOpenChange(false);
-    } finally {
-      setLoading(false);
+      // Ne pas fermer le dialog immédiatement, laisser l'utilisateur voir l'erreur
+      setTimeout(() => onOpenChange(false), 3000);
     }
   };
 
