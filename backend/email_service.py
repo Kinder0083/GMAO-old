@@ -127,6 +127,97 @@ def send_email(to_email: str, subject: str, html_content: str, text_content: Opt
         return False
 
 
+def send_email_with_attachment(
+    to_email: str, 
+    subject: str, 
+    html_content: str, 
+    attachment_data: bytes = None,
+    attachment_filename: str = None,
+    text_content: Optional[str] = None
+) -> bool:
+    """
+    Envoie un email avec pièce jointe
+    
+    Args:
+        to_email: Email du destinataire
+        subject: Sujet de l'email
+        html_content: Contenu HTML de l'email
+        attachment_data: Données binaires de la pièce jointe
+        attachment_filename: Nom du fichier joint
+        text_content: Contenu texte alternatif (optionnel)
+    
+    Returns:
+        bool: True si envoi réussi, False sinon
+    """
+    try:
+        # Créer le message
+        msg = MIMEMultipart('mixed')
+        msg['Subject'] = subject
+        msg['From'] = f"{SMTP_FROM_NAME} <{SMTP_SENDER_EMAIL}>"
+        msg['To'] = to_email
+        
+        # Alternative part pour texte et HTML
+        msg_alternative = MIMEMultipart('alternative')
+        msg.attach(msg_alternative)
+        
+        # Ajouter version texte si fournie
+        if text_content:
+            part_text = MIMEText(text_content, 'plain', 'utf-8')
+            msg_alternative.attach(part_text)
+        
+        # Ajouter version HTML
+        part_html = MIMEText(html_content, 'html', 'utf-8')
+        msg_alternative.attach(part_html)
+        
+        # Ajouter la pièce jointe si fournie
+        if attachment_data and attachment_filename:
+            attachment = MIMEBase('application', 'octet-stream')
+            attachment.set_payload(attachment_data)
+            encoders.encode_base64(attachment)
+            attachment.add_header(
+                'Content-Disposition',
+                f'attachment; filename= {attachment_filename}'
+            )
+            msg.attach(attachment)
+        
+        # Déterminer le mode de connexion
+        is_local = SMTP_SERVER in ['localhost', '127.0.0.1']
+        needs_auth = bool(SMTP_USERNAME and SMTP_PASSWORD)
+        
+        logger.info(f"📧 Envoi email avec PJ via {SMTP_SERVER}:{SMTP_PORT}")
+        
+        # Connexion SMTP
+        if is_local:
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
+            server.send_message(msg)
+            server.quit()
+        elif SMTP_USE_TLS:
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            if needs_auth:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+        else:
+            server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=10)
+            if needs_auth:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+        
+        logger.info(f"✅ Email avec PJ envoyé à {to_email}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi email avec PJ: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return False
+
+
+
 def send_invitation_email(to_email: str, token: str, role: str) -> bool:
     """
     Envoie un email d'invitation à rejoindre GMAO Iris
