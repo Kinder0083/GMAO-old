@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Minus, Search, Package, AlertTriangle, TrendingDown, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X } from 'lucide-react';
 import InventoryFormDialog from '../components/Inventory/InventoryFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { inventoryAPI } from '../services/api';
