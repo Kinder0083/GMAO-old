@@ -220,6 +220,14 @@ const AddToInventoryDialog = ({ open, onOpenChange, request, onSuccess }) => {
             <p className="text-gray-600">Ajout en cours...</p>
           </div>
         )}
+
+        {step === 'error' && (
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-600 mb-4" />
+            <p className="text-gray-600">Une erreur s'est produite</p>
+            <p className="text-sm text-gray-500 mt-2">Le dialog va se fermer automatiquement...</p>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
