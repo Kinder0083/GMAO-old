@@ -289,37 +289,79 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
               </div>
             </div>
 
-            {/* Fournisseur suggéré */}
+            {/* Fournisseur suggéré avec autocomplete */}
             <div className="space-y-2">
               <Label htmlFor="fournisseur">Fournisseur suggéré</Label>
-              <Input
-                id="fournisseur"
-                value={formData.fournisseur_suggere}
-                onChange={(e) => setFormData({ ...formData, fournisseur_suggere: e.target.value })}
-                placeholder="Nom du fournisseur recommandé"
-              />
+              <div className="relative">
+                <Input
+                  id="fournisseur"
+                  value={formData.fournisseur_suggere}
+                  onChange={(e) => {
+                    setFormData({ ...formData, fournisseur_suggere: e.target.value });
+                    setShowVendorsList(e.target.value.length > 0);
+                  }}
+                  onFocus={() => setShowVendorsList(vendors.length > 0)}
+                  placeholder="Nom du fournisseur recommandé"
+                />
+                {showVendorsList && vendors.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {vendors
+                      .filter(v => v.toLowerCase().includes(formData.fournisseur_suggere.toLowerCase()))
+                      .slice(0, 5)
+                      .map((vendor, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setFormData({ ...formData, fournisseur_suggere: vendor });
+                            setShowVendorsList(false);
+                          }}
+                        >
+                          {vendor}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Destinataire */}
+            {/* Destinataire avec autocomplete */}
             <div className="space-y-2">
               <Label htmlFor="destinataire">Destinataire final *</Label>
-              <Select
-                value={formData.destinataire_id}
-                onValueChange={(value) => setFormData({ ...formData, destinataire_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le destinataire" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.role})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <Input
+                  id="destinataire"
+                  value={formData.destinataire_nom}
+                  onChange={(e) => {
+                    setFormData({ ...formData, destinataire_nom: e.target.value });
+                    setShowUsersList(e.target.value.length > 0);
+                  }}
+                  onFocus={() => setShowUsersList(users.length > 0)}
+                  placeholder="Nom du destinataire"
+                  required
+                />
+                {showUsersList && users.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {users
+                      .filter(u => u.name.toLowerCase().includes(formData.destinataire_nom.toLowerCase()))
+                      .slice(0, 5)
+                      .map((user) => (
+                        <div
+                          key={user.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setFormData({ ...formData, destinataire_nom: user.name });
+                            setShowUsersList(false);
+                          }}
+                        >
+                          {user.name} ({user.role})
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-gray-500">
-                La personne qui recevra l'article (peut être différente du demandeur)
+                La personne qui recevra l'article (texte libre ou sélection depuis la liste)
               </p>
             </div>
 
