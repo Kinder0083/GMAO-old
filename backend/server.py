@@ -1863,8 +1863,8 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
     Note : Accessible à tous les utilisateurs authentifiés pour permettre
     la sélection de pièces dans les ordres de travail, même sans permission 'inventory'.
     """
-    inventory = await db.inventory.find().to_list(1000)
-    return [Inventory(**serialize_doc(item)) for item in inventory]
+    inventory = await db.inventory.find({}, {"_id": 0}).to_list(1000)
+    return inventory
 
 @api_router.post("/inventory", response_model=Inventory)
 async def create_inventory_item(inv_create: InventoryCreate, current_user: dict = Depends(require_permission("inventory", "edit"))):
