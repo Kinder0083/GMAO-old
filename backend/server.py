@@ -1906,6 +1906,44 @@ async def delete_inventory_item(inv_id: str, current_user: dict = Depends(requir
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@api_router.patch("/inventory/{inv_id}/toggle-monitoring")
+async def toggle_inventory_monitoring(inv_id: str, current_user: dict = Depends(require_permission("inventory", "edit"))):
+    """Active/Désactive la surveillance du stock d'un article"""
+    try:
+        # Récupérer l'article actuel
+        item = await db.inventory.find_one({"id": inv_id})
+        if not item:
+            raise HTTPException(status_code=404, detail="Article non trouvé")
+        
+        # Inverser le statut de surveillance (par défaut True si n'existe pas)
+        current_monitoring = item.get("stock_monitoring_enabled", True)
+        new_monitoring = not current_monitoring
+        
+        # Mettre à jour
+        await db.inventory.update_one(
+            {"id": inv_id},
+            {
+                "$set": {
+                    "stock_monitoring_enabled": new_monitoring,
+                    "derniere_modification": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        logger.info(f"📊 Surveillance stock {'activée' if new_monitoring else 'désactivée'} pour {item.get('nom', 'Article')}")
+        
+        return {
+            "message": f"Surveillance {'activée' if new_monitoring else 'désactivée'}",
+            "stock_monitoring_enabled": new_monitoring
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur toggle monitoring: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @api_router.get("/inventory/stats")
 async def get_inventory_stats(current_user: dict = Depends(require_permission("inventory", "view"))):
     """Récupère les statistiques de l'inventaire (rupture et niveau bas)"""
