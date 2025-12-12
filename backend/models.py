@@ -2488,6 +2488,11 @@ class PurchaseRequest(PurchaseRequestBase):
     date_achat_effectue: Optional[str] = None
     date_reception: Optional[str] = None
     date_distribution: Optional[str] = None
+    
+    # Inventaire
+    added_to_inventory: bool = False
+    inventory_added_by: Optional[str] = None
+    inventory_added_at: Optional[str] = None
 
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
