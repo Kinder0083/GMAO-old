@@ -2377,5 +2377,116 @@ class MQTTMessage(BaseModel):
     topic: str
     payload: str
     qos: int
+
+# ============================================================================
+# PURCHASE REQUEST MODELS (Demandes d'Achat)
+# ============================================================================
+
+class PurchaseRequestType(str, Enum):
+    """Type de demande d'achat"""
+    PIECE_DETACHEE = "PIECE_DETACHEE"  # Pièce détachée
+    EQUIPEMENT = "EQUIPEMENT"  # Équipement
+    CONSOMMABLE = "CONSOMMABLE"  # Consommable
+    SERVICE = "SERVICE"  # Service/Prestation
+    OUTILLAGE = "OUTILLAGE"  # Outillage
+    FOURNITURE = "FOURNITURE"  # Fourniture de bureau
+    AUTRE = "AUTRE"  # Autre
+
+class PurchaseRequestUrgency(str, Enum):
+    """Niveau d'urgence"""
+    NORMAL = "NORMAL"
+    URGENT = "URGENT"
+    TRES_URGENT = "TRES_URGENT"
+
+class PurchaseRequestStatus(str, Enum):
+    """Statut de la demande d'achat"""
+    SOUMISE = "SOUMISE"  # Transmise au N+1
+    VALIDEE_N1 = "VALIDEE_N1"  # Validée par N+1
+    APPROUVEE_ACHAT = "APPROUVEE_ACHAT"  # Approuvée par service achat
+    ACHAT_EFFECTUE = "ACHAT_EFFECTUE"  # Achat effectué
+    RECEPTIONNEE = "RECEPTIONNEE"  # Réceptionnée
+    DISTRIBUEE = "DISTRIBUEE"  # Distribuée au destinataire
+    REFUSEE_N1 = "REFUSEE_N1"  # Refusée par N+1
+    REFUSEE_ACHAT = "REFUSEE_ACHAT"  # Refusée par service achat
+
+class PurchaseRequestHistoryEntry(BaseModel):
+    """Entrée d'historique pour une demande d'achat"""
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    user_id: str
+    user_name: str
+    action: str  # Exemple: "Création", "Validation N+1", "Refus", etc.
+    old_status: Optional[str] = None
+    new_status: str
+    comment: Optional[str] = None
+
+class PurchaseRequestBase(BaseModel):
+    """Modèle de base pour une demande d'achat"""
+    type: PurchaseRequestType
+    designation: str = Field(..., min_length=3, max_length=200)
+    description: Optional[str] = None
+    quantite: int = Field(..., gt=0)
+    unite: str = Field(default="Unité")  # Unité, Kg, L, m, etc.
+    reference: Optional[str] = None
+    fournisseur_suggere: Optional[str] = None
+    urgence: PurchaseRequestUrgency = PurchaseRequestUrgency.NORMAL
+    justification: str = Field(..., min_length=10)
+    destinataire_id: str  # ID de l'utilisateur destinataire final
+    destinataire_nom: str  # Nom du destinataire (dénormalisé)
+    
+    # Lien optionnel avec inventaire
+    inventory_item_id: Optional[str] = None
+    
+    # Fichiers joints
+    attached_files: List[str] = Field(default_factory=list)  # URLs des fichiers
+
+class PurchaseRequestCreate(PurchaseRequestBase):
+    """Modèle pour créer une demande d'achat"""
+    pass
+
+class PurchaseRequestUpdate(BaseModel):
+    """Modèle pour mettre à jour une demande d'achat"""
+    type: Optional[PurchaseRequestType] = None
+    designation: Optional[str] = None
+    description: Optional[str] = None
+    quantite: Optional[int] = None
+    unite: Optional[str] = None
+    reference: Optional[str] = None
+    fournisseur_suggere: Optional[str] = None
+    urgence: Optional[PurchaseRequestUrgency] = None
+    justification: Optional[str] = None
+    destinataire_id: Optional[str] = None
+    destinataire_nom: Optional[str] = None
+    inventory_item_id: Optional[str] = None
+
+class PurchaseRequestStatusUpdate(BaseModel):
+    """Modèle pour changer le statut d'une demande"""
+    status: PurchaseRequestStatus
+    comment: Optional[str] = None
+
+class PurchaseRequest(PurchaseRequestBase):
+    """Modèle complet d'une demande d'achat"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    numero: str  # Numéro unique DA-YYYY-XXXXX
+    demandeur_id: str
+    demandeur_nom: str
+    demandeur_email: str
+    status: PurchaseRequestStatus = PurchaseRequestStatus.SOUMISE
+    
+    # Responsables
+    responsable_n1_id: Optional[str] = None
+    responsable_n1_nom: Optional[str] = None
+    
+    # Historique et traçabilité
+    history: List[PurchaseRequestHistoryEntry] = Field(default_factory=list)
+    
+    # Dates
+    date_creation: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    date_derniere_modification: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    date_validation_n1: Optional[str] = None
+    date_approbation_achat: Optional[str] = None
+    date_achat_effectue: Optional[str] = None
+    date_reception: Optional[str] = None
+    date_distribution: Optional[str] = None
+
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
