@@ -38,8 +38,11 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
       loadData();
       // Pré-remplir avec l'utilisateur connecté comme destinataire
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.id && !formData.destinataire_id) {
-        setFormData(prev => ({ ...prev, destinataire_id: user.id }));
+      if (user.prenom && user.nom && !formData.destinataire_nom) {
+        setFormData(prev => ({ 
+          ...prev, 
+          destinataire_nom: `${user.prenom} ${user.nom}` 
+        }));
       }
     }
   }, [open]);
