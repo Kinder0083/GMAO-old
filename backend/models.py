@@ -477,6 +477,7 @@ class UserBase(BaseModel):
     telephone: Optional[str] = None
     role: UserRole = UserRole.VISUALISEUR
     service: Optional[str] = None
+    responsable_hierarchique_id: Optional[str] = None  # ID du N+1
     
     @field_validator('email')
     @classmethod
