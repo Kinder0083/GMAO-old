@@ -407,6 +407,17 @@ const PurchaseRequestDetail = () => {
           setStatusDialogOpen(false);
         }}
       />
+
+      {/* Dialog ajout à l'inventaire */}
+      <AddToInventoryDialog
+        open={inventoryDialogOpen}
+        onOpenChange={setInventoryDialogOpen}
+        request={request}
+        onSuccess={() => {
+          loadRequest();
+          setInventoryDialogOpen(false);
+        }}
+      />
     </div>
   );
 };
