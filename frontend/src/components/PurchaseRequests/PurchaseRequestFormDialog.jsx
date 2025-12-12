@@ -88,7 +88,7 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
     e.preventDefault();
 
     // Validation
-    if (!formData.designation || !formData.justification || !formData.destinataire_id) {
+    if (!formData.designation || !formData.justification || !formData.destinataire_nom) {
       toast({
         title: 'Champs manquants',
         description: 'Veuillez remplir tous les champs obligatoires',
@@ -99,13 +99,9 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
 
     try {
       setLoading(true);
-
-      // Trouver le nom du destinataire
-      const destinataire = users.find(u => u.id === formData.destinataire_id);
       
       const requestData = {
         ...formData,
-        destinataire_nom: destinataire ? destinataire.name : 'Inconnu',
         inventory_item_id: formData.inventory_item_id || null
       };
 
