@@ -754,7 +754,10 @@ async def add_to_existing_inventory(
         }
         
     except HTTPException:
-
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur ajout à l'inventaire existant: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/vendors-list", response_model=List[str])
