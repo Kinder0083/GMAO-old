@@ -355,6 +355,15 @@ const Inventory = () => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleToggleMonitoring(item)}
+                              className={item.stock_monitoring_enabled === false ? "hover:bg-blue-50 hover:text-blue-600" : "hover:bg-gray-50 hover:text-gray-600"}
+                              title={item.stock_monitoring_enabled === false ? "Activer la surveillance du stock" : "Désactiver la surveillance du stock"}
+                            >
+                              {item.stock_monitoring_enabled === false ? <Eye size={16} /> : <EyeOff size={16} />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => {
                                 setSelectedItem(item);
                                 setFormDialogOpen(true);
