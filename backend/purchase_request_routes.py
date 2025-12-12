@@ -594,7 +594,3 @@ async def get_users_for_purchase_requests(
         logger.error(f"❌ Erreur récupération utilisateurs: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-            media_type="text/html",
-            status_code=500
-        )
-
