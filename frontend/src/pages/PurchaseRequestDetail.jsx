@@ -145,11 +145,24 @@ const PurchaseRequestDetail = () => {
           </div>
         </div>
         
-        {canChangeStatus() && (
-          <Button onClick={() => setStatusDialogOpen(true)}>
-            Changer le statut
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {request.status === 'DISTRIBUEE' && !request.added_to_inventory && currentUser?.role === 'ADMIN' && (
+            <Button 
+              onClick={() => setInventoryDialogOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <Package className="h-4 w-4" />
+              Ajouter à l'inventaire
+            </Button>
+          )}
+          
+          {canChangeStatus() && (
+            <Button onClick={() => setStatusDialogOpen(true)}>
+              Changer le statut
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Statut actuel */}
