@@ -19,6 +19,7 @@ const PurchaseRequestDetail = () => {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [inventoryDialogOpen, setInventoryDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
