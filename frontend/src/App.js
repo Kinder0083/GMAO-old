@@ -28,6 +28,8 @@ import Settings from "./pages/Settings";
 import SpecialSettings from "./pages/SpecialSettings";
 import ImportExport from "./pages/ImportExport";
 import PurchaseHistory from "./pages/PurchaseHistory";
+import PurchaseRequests from "./pages/PurchaseRequests";
+import PurchaseRequestDetail from "./pages/PurchaseRequestDetail";
 import Updates from "./pages/Updates";
 import Journal from "./pages/Journal";
 import Meters from "./pages/Meters";
