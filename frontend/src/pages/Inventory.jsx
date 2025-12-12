@@ -117,10 +117,13 @@ const Inventory = () => {
     return matchesSearch;
   });
 
-  const lowStockItems = inventory.filter(item => 
+  // Filtrer uniquement les articles avec surveillance active pour les stats
+  const monitoredItems = inventory.filter(item => item.stock_monitoring_enabled !== false);
+  
+  const lowStockItems = monitoredItems.filter(item => 
     (item.quantite || 0) <= (item.quantiteMin || item.seuil_alerte || 0)
   );
-  const totalValue = inventory.reduce((sum, item) => 
+  const totalValue = monitoredItems.reduce((sum, item) => 
     sum + ((item.quantite || 0) * (item.prixUnitaire || item.prix_unitaire || 0)), 0
   );
 
