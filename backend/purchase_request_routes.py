@@ -753,6 +753,23 @@ async def add_to_existing_inventory(
         }
         
     except HTTPException:
+
+
+
+@router.get("/vendors-list", response_model=List[str])
+async def get_vendors_list(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Récupérer la liste des fournisseurs pour autocomplete"""
+    try:
+        vendors = await db.vendors.find({}, {"_id": 0, "nom": 1}).to_list(1000)
+        vendor_names = [v.get('nom') for v in vendors if v.get('nom')]
+        return vendor_names
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération fournisseurs: {str(e)}")
+        return []
+
         raise
     except Exception as e:
         logger.error(f"❌ Erreur ajout à l'inventaire existant: {str(e)}")
