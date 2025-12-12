@@ -1,7 +1,8 @@
 """
 Routes API pour les demandes d'achat
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Response
+from fastapi.responses import HTMLResponse
 from typing import List, Optional
 from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorDatabase
