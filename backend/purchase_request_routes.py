@@ -592,6 +592,172 @@ async def get_users_for_purchase_requests(
         return formatted_users
         
     except Exception as e:
+
+
+
+@router.post("/{request_id}/add-to-inventory", response_model=dict)
+async def add_to_inventory(
+    request_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Ajouter l'article de la demande à l'inventaire"""
+    try:
+        # Vérifier que l'utilisateur est admin
+        if current_user.get('role') != 'ADMIN':
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent ajouter à l'inventaire")
+        
+        # Récupérer la demande
+        request = await db.purchase_requests.find_one({"id": request_id}, {"_id": 0})
+        
+        if not request:
+            raise HTTPException(status_code=404, detail="Demande introuvable")
+        
+        # Vérifier que le statut est DISTRIBUEE
+        if request['status'] != 'DISTRIBUEE':
+            raise HTTPException(status_code=400, detail="La demande doit être distribuée pour être ajoutée à l'inventaire")
+        
+        # Vérifier si déjà ajoutée
+        if request.get('added_to_inventory'):
+            raise HTTPException(status_code=400, detail="Cette demande a déjà été ajoutée à l'inventaire")
+        
+        # Chercher des articles similaires dans l'inventaire par désignation
+        designation_lower = request['designation'].lower()
+        similar_items = await db.inventory.find({}, {"_id": 0}).to_list(1000)
+        
+        matches = []
+        for item in similar_items:
+            item_name_lower = item.get('nom', '').lower()
+            # Recherche exacte
+            if item_name_lower == designation_lower:
+                matches.append({**item, 'match_type': 'exact'})
+            # Recherche partielle (contient)
+            elif designation_lower in item_name_lower or item_name_lower in designation_lower:
+                matches.append({**item, 'match_type': 'partial'})
+        
+        # Si des doublons potentiels sont trouvés, retourner la liste pour que l'utilisateur choisisse
+        if matches:
+            return {
+                "has_duplicates": True,
+                "matches": matches[:5],  # Limiter à 5 résultats
+                "request_data": {
+                    "designation": request['designation'],
+                    "quantite": request['quantite'],
+                    "unite": request['unite'],
+                    "reference": request.get('reference'),
+                    "type": request['type']
+                }
+            }
+        
+        # Sinon, créer un nouvel article dans l'inventaire
+        new_item = {
+            "id": str(uuid.uuid4()),
+            "nom": request['designation'],
+            "reference": request.get('reference', ''),
+            "quantite": request['quantite'],
+            "unite": request['unite'],
+            "categorie": "autre",  # Catégorie par défaut
+            "emplacement": "",
+            "seuil_alerte": 10,
+            "prix_unitaire": 0,
+            "fournisseur": request.get('fournisseur_suggere', ''),
+            "date_ajout": datetime.now(timezone.utc).isoformat(),
+            "derniere_modification": datetime.now(timezone.utc).isoformat(),
+            "notes": f"Ajouté depuis la demande d'achat {request['numero']}"
+        }
+        
+        await db.inventory.insert_one(new_item)
+        
+        # Mettre à jour la demande
+        user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}"
+        await db.purchase_requests.update_one(
+            {"id": request_id},
+            {
+                "$set": {
+                    "added_to_inventory": True,
+                    "inventory_added_by": user_name,
+                    "inventory_added_at": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        logger.info(f"✅ Article de la demande {request['numero']} ajouté à l'inventaire")
+        
+        return {
+            "success": True,
+            "message": "Article ajouté à l'inventaire avec succès",
+            "inventory_item_id": new_item['id']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur ajout à l'inventaire: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{request_id}/add-to-existing-inventory", response_model=dict)
+async def add_to_existing_inventory(
+    request_id: str,
+    inventory_item_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Ajouter la quantité à un article existant de l'inventaire"""
+    try:
+        if current_user.get('role') != 'ADMIN':
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent ajouter à l'inventaire")
+        
+        # Récupérer la demande
+        request = await db.purchase_requests.find_one({"id": request_id}, {"_id": 0})
+        if not request:
+            raise HTTPException(status_code=404, detail="Demande introuvable")
+        
+        # Récupérer l'article d'inventaire
+        inventory_item = await db.inventory.find_one({"id": inventory_item_id}, {"_id": 0})
+        if not inventory_item:
+            raise HTTPException(status_code=404, detail="Article d'inventaire introuvable")
+        
+        # Ajouter la quantité
+        new_quantity = inventory_item['quantite'] + request['quantite']
+        
+        await db.inventory.update_one(
+            {"id": inventory_item_id},
+            {
+                "$set": {
+                    "quantite": new_quantity,
+                    "derniere_modification": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        # Mettre à jour la demande
+        user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}"
+        await db.purchase_requests.update_one(
+            {"id": request_id},
+            {
+                "$set": {
+                    "added_to_inventory": True,
+                    "inventory_added_by": user_name,
+                    "inventory_added_at": datetime.now(timezone.utc).isoformat(),
+                    "inventory_item_id": inventory_item_id
+                }
+            }
+        )
+        
+        logger.info(f"✅ Quantité de la demande {request['numero']} ajoutée à l'article existant {inventory_item['nom']}")
+        
+        return {
+            "success": True,
+            "message": f"Quantité ajoutée à l'article existant. Nouveau stock: {new_quantity}"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur ajout à l'inventaire existant: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
         logger.error(f"❌ Erreur récupération utilisateurs: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
