@@ -261,7 +261,10 @@ const PurchaseRequests = () => {
 
                   {/* Colonne 2: Article */}
                   <div className="lg:w-2/5">
-                    <div className="font-medium">{request.designation}</div>
+                    <div className="text-sm text-gray-500">
+                      Réf: {request.reference || 'N/A'}
+                    </div>
+                    <div className="font-medium mt-1">{request.designation}</div>
                     <div className="text-sm text-gray-600 mt-1">
                       Quantité: {request.quantite} {request.unite}
                     </div>
