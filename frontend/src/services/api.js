@@ -640,4 +640,18 @@ const alertsAPI = {
 
 api.alerts = alertsAPI;
 
+
+// ==================== PURCHASE REQUESTS ====================
+export const purchaseRequestsAPI = {
+  getAll: (params) => api.get('/purchase-requests', { params }),
+  getById: (id) => api.get(`/purchase-requests/${id}`),
+  create: (data) => api.post('/purchase-requests', data),
+  update: (id, data) => api.put(`/purchase-requests/${id}`, data),
+  updateStatus: (id, data) => api.put(`/purchase-requests/${id}/status`, data),
+  delete: (id) => api.delete(`/purchase-requests/${id}`),
+  getUsersList: () => api.get('/purchase-requests/users-list')
+};
+
+api.purchaseRequests = purchaseRequestsAPI;
+
 export default api;
