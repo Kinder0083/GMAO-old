@@ -649,7 +649,10 @@ export const purchaseRequestsAPI = {
   update: (id, data) => api.put(`/purchase-requests/${id}`, data),
   updateStatus: (id, data) => api.put(`/purchase-requests/${id}/status`, data),
   delete: (id) => api.delete(`/purchase-requests/${id}`),
-  getUsersList: () => api.get('/purchase-requests/users-list')
+  getUsersList: () => api.get('/purchase-requests/users-list'),
+  getVendorsList: () => api.get('/purchase-requests/vendors-list'),
+  addToInventory: (id) => api.post(`/purchase-requests/${id}/add-to-inventory`),
+  addToExistingInventory: (id, inventoryItemId) => api.post(`/purchase-requests/${id}/add-to-existing-inventory?inventory_item_id=${inventoryItemId}`)
 };
 
 api.purchaseRequests = purchaseRequestsAPI;
