@@ -10,6 +10,7 @@ import {
 import { purchaseRequestsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import PurchaseRequestStatusDialog from '../components/PurchaseRequests/PurchaseRequestStatusDialog';
+import AddToInventoryDialog from '../components/PurchaseRequests/AddToInventoryDialog';
 
 const PurchaseRequestDetail = () => {
   const { id } = useParams();
