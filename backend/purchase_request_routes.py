@@ -559,6 +559,9 @@ async def reject_via_token(
         logger.error(f"❌ Erreur refus via token: {str(e)}")
         return Response(
             content=f"<html><body><h1>Erreur</h1><p>{str(e)}</p></body></html>",
+            media_type="text/html",
+            status_code=500
+        )
 
 
 
