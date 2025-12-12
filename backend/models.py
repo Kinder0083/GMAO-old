@@ -92,7 +92,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             chatLive=ModulePermission(view=True, edit=True, delete=True),
             sensors=ModulePermission(view=True, edit=True, delete=True),
             iotDashboard=ModulePermission(view=True, edit=True, delete=False),
-            mqttLogs=ModulePermission(view=True, edit=True, delete=True)
+            mqttLogs=ModulePermission(view=True, edit=True, delete=True),
+            purchaseRequests=ModulePermission(view=True, edit=True, delete=True)
         )
     
     # DIRECTEUR : Demande d'inter./Demandes d'amél. en visualisation et modification
