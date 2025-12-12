@@ -114,7 +114,8 @@ export const inventoryAPI = {
   getById: (id) => api.get(`/inventory/${id}`),
   create: (data) => api.post('/inventory', data),
   update: (id, data) => api.put(`/inventory/${id}`, data),
-  delete: (id) => api.delete(`/inventory/${id}`)
+  delete: (id) => api.delete(`/inventory/${id}`),
+  toggleMonitoring: (id) => api.patch(`/inventory/${id}/toggle-monitoring`)
 };
 
 // ==================== PREVENTIVE MAINTENANCE ====================
