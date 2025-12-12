@@ -82,7 +82,8 @@ const Settings = () => {
         prenom: settings.prenom,
         email: settings.email,
         telephone: settings.telephone,
-        service: settings.service
+        service: settings.service,
+        responsable_hierarchique_id: settings.responsable_hierarchique_id || null
       };
 
       await authAPI.updateProfile(profileData);
