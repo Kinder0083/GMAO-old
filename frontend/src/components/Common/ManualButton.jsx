@@ -488,8 +488,11 @@ const ManualButton = () => {
               )}
             </div>
             
-            {/* Contenu avec formatage préservé */}
-            <div className="whitespace-pre-wrap">{selectedSection.content}</div>
+            {/* Contenu avec formatage préservé et support HTML pour les images */}
+            <div 
+              className="whitespace-pre-wrap" 
+              dangerouslySetInnerHTML={{ __html: selectedSection.content }}
+            />
           </>
         )}
         
