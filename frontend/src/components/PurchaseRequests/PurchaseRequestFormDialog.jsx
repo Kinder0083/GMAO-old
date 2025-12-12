@@ -123,7 +123,7 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
         fournisseur_suggere: '',
         urgence: 'NORMAL',
         justification: '',
-        destinataire_id: '',
+        destinataire_nom: '',
         inventory_item_id: ''
       });
 
