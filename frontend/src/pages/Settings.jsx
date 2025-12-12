@@ -46,6 +46,7 @@ const Settings = () => {
         email: user.email || '',
         telephone: user.telephone || '',
         service: user.service || '',
+        responsable_hierarchique_id: user.responsable_hierarchique_id || '',
         notifications: true,
         emailNotifications: true,
         smsNotifications: false,
