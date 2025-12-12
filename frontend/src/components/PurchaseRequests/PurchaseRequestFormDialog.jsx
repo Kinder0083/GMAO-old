@@ -47,11 +47,13 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
   const loadData = async () => {
     try {
       setLoadingData(true);
-      const [usersRes, inventoryRes] = await Promise.all([
+      const [usersRes, vendorsRes, inventoryRes] = await Promise.all([
         purchaseRequestsAPI.getUsersList(),
+        purchaseRequestsAPI.getVendorsList(),
         inventoryAPI.getAll()
       ]);
       setUsers(usersRes.data);
+      setVendors(vendorsRes.data || []);
       setInventoryItems(inventoryRes.data);
     } catch (error) {
       console.error('Error loading data:', error);
