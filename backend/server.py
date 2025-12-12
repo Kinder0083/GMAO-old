@@ -1856,7 +1856,7 @@ async def delete_location(loc_id: str, current_user: dict = Depends(require_perm
         raise HTTPException(status_code=400, detail=str(e))
 
 # ==================== INVENTORY ROUTES ====================
-@api_router.get("/inventory", response_model=List[Inventory])
+@api_router.get("/inventory")
 async def get_inventory(current_user: dict = Depends(get_current_user)):
     """Liste tous les articles de l'inventaire
     
