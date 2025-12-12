@@ -102,6 +102,25 @@ const Inventory = () => {
     }
   };
 
+  const handleToggleMonitoring = async (item) => {
+    try {
+      const response = await inventoryAPI.toggleMonitoring(item.id);
+      const newStatus = response.data.stock_monitoring_enabled;
+      
+      toast({
+        title: 'Succès',
+        description: `Surveillance ${newStatus ? 'activée' : 'désactivée'} pour ${item.nom}`,
+      });
+      loadInventory();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier la surveillance',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const filteredInventory = inventory.filter(item => {
     // Filtre de recherche par texte
     const matchesSearch = item.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
