@@ -2431,8 +2431,8 @@ class PurchaseRequestBase(BaseModel):
     fournisseur_suggere: Optional[str] = None
     urgence: PurchaseRequestUrgency = PurchaseRequestUrgency.NORMAL
     justification: str = Field(..., min_length=10)
-    destinataire_id: str  # ID de l'utilisateur destinataire final
-    destinataire_nom: str  # Nom du destinataire (dénormalisé)
+    destinataire_id: Optional[str] = None  # ID de l'utilisateur destinataire final (optionnel)
+    destinataire_nom: str  # Nom du destinataire (texte libre ou depuis utilisateur)
     
     # Lien optionnel avec inventaire
     inventory_item_id: Optional[str] = None
