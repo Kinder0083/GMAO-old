@@ -152,14 +152,14 @@ const PurchaseRequestFormDialog = ({ open, onOpenChange, onSuccess }) => {
             <div className="space-y-2">
               <Label>Article depuis l'inventaire (optionnel)</Label>
               <Select
-                value={formData.inventory_item_id}
-                onValueChange={handleInventorySelect}
+                value={formData.inventory_item_id || "none"}
+                onValueChange={(value) => handleInventorySelect(value === "none" ? "" : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un article existant" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun (saisie manuelle)</SelectItem>
+                  <SelectItem value="none">Aucun (saisie manuelle)</SelectItem>
                   {inventoryItems.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
                       {item.nom} - Stock: {item.quantite}
