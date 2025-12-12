@@ -200,14 +200,14 @@ const Settings = () => {
                 <div className="space-y-2">
                   <Label htmlFor="responsable">Responsable Hiérarchique (N+1)</Label>
                   <Select
-                    value={settings.responsable_hierarchique_id}
-                    onValueChange={(value) => setSettings({ ...settings, responsable_hierarchique_id: value })}
+                    value={settings.responsable_hierarchique_id || "none"}
+                    onValueChange={(value) => setSettings({ ...settings, responsable_hierarchique_id: value === "none" ? "" : value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner votre N+1" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Aucun</SelectItem>
+                      <SelectItem value="none">Aucun</SelectItem>
                       {users
                         .filter(u => u.id !== JSON.parse(localStorage.getItem('user') || '{}').id)
                         .map((user) => (
