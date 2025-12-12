@@ -117,8 +117,12 @@ const Inventory = () => {
     return matchesSearch;
   });
 
-  const lowStockItems = inventory.filter(item => item.quantite <= item.quantiteMin);
-  const totalValue = inventory.reduce((sum, item) => sum + (item.quantite * item.prixUnitaire), 0);
+  const lowStockItems = inventory.filter(item => 
+    (item.quantite || 0) <= (item.quantiteMin || item.seuil_alerte || 0)
+  );
+  const totalValue = inventory.reduce((sum, item) => 
+    sum + ((item.quantite || 0) * (item.prixUnitaire || item.prix_unitaire || 0)), 0
+  );
 
   const getStockStatus = (item) => {
     if (item.quantite <= 0) {
