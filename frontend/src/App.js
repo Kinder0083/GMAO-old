@@ -117,6 +117,8 @@ function App() {
             <Route path="planning-mprev" element={<PlanningMPrev />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="purchase-history" element={<PurchaseHistory />} />
+            <Route path="purchase-requests" element={<PurchaseRequests />} />
+            <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
             <Route path="import-export" element={<ImportExport />} />
             <Route path="settings" element={<Settings />} />
             <Route path="special-settings" element={<SpecialSettings />} />
