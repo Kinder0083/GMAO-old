@@ -21,11 +21,13 @@ const Settings = () => {
     email: '',
     telephone: '',
     service: '',
+    responsable_hierarchique_id: '',
     notifications: true,
     emailNotifications: true,
     smsNotifications: false,
     language: 'fr'
   });
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     loadUserProfile();
