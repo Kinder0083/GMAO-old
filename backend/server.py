@@ -6174,6 +6174,10 @@ chat_cleanup_service = init_chat_cleanup_service(db)
 from manual_routes import router as manual_router
 api_router.include_router(manual_router)
 
+# Purchase Request routes
+from purchase_request_routes import router as purchase_request_router
+api_router.include_router(purchase_request_router)
+
 # MQTT routes
 from mqtt_routes import router as mqtt_router, init_mqtt_routes
 init_mqtt_routes(db)
