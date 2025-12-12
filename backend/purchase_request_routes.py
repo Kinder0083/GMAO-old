@@ -309,3 +309,257 @@ async def delete_purchase_request(
     except Exception as e:
         logger.error(f"❌ Erreur suppression demande: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/approve/{token}", response_class=Response)
+async def approve_via_token(
+    token: str,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Approuver une demande via le token dans l'email"""
+    try:
+        # Vérifier le token
+        token_data = await db.approval_tokens.find_one({"token": token, "used": False}, {"_id": 0})
+        
+        if not token_data:
+            return Response(
+                content="<html><body><h1>Lien invalide ou expiré</h1><p>Ce lien n'est plus valide.</p></body></html>",
+                media_type="text/html",
+                status_code=400
+            )
+        
+        # Vérifier l'expiration
+        expiration = datetime.fromisoformat(token_data['expiration'])
+        if datetime.now(timezone.utc) > expiration:
+            return Response(
+                content="<html><body><h1>Lien expiré</h1><p>Ce lien a expiré.</p></body></html>",
+                media_type="text/html",
+                status_code=400
+            )
+        
+        # Récupérer la demande
+        request = await db.purchase_requests.find_one({"id": token_data['request_id']}, {"_id": 0})
+        
+        if not request:
+            return Response(
+                content="<html><body><h1>Demande introuvable</h1></body></html>",
+                media_type="text/html",
+                status_code=404
+            )
+        
+        # Récupérer l'utilisateur
+        user = await db.users.find_one({"id": token_data['user_id']}, {"_id": 0})
+        
+        if not user:
+            return Response(
+                content="<html><body><h1>Utilisateur introuvable</h1></body></html>",
+                media_type="text/html",
+                status_code=404
+            )
+        
+        # Déterminer le nouveau statut selon l'action
+        action = token_data['action']
+        if action == "approve_n1":
+            new_status = PurchaseRequestStatus.VALIDEE_N1.value
+            action_label = "validée par le N+1"
+        elif action == "approve_achat":
+            new_status = PurchaseRequestStatus.APPROUVEE_ACHAT.value
+            action_label = "approuvée par le service achat"
+        else:
+            return Response(
+                content="<html><body><h1>Action invalide</h1></body></html>",
+                media_type="text/html",
+                status_code=400
+            )
+        
+        # Mettre à jour le statut
+        user_name = f"{user.get('prenom', '')} {user.get('nom', '')}"
+        history_entry = PurchaseRequestHistoryEntry(
+            user_id=user['id'],
+            user_name=user_name,
+            action=f"Approbation via email: {request['status']} → {new_status}",
+            old_status=request['status'],
+            new_status=new_status
+        )
+        
+        update_data = {
+            "status": new_status,
+            "date_derniere_modification": datetime.now(timezone.utc).isoformat()
+        }
+        
+        if new_status == PurchaseRequestStatus.VALIDEE_N1.value:
+            update_data["date_validation_n1"] = datetime.now(timezone.utc).isoformat()
+        elif new_status == PurchaseRequestStatus.APPROUVEE_ACHAT.value:
+            update_data["date_approbation_achat"] = datetime.now(timezone.utc).isoformat()
+        
+        await db.purchase_requests.update_one(
+            {"id": request['id']},
+            {
+                "$set": update_data,
+                "$push": {"history": history_entry.model_dump()}
+            }
+        )
+        
+        # Marquer le token comme utilisé
+        await db.approval_tokens.update_one(
+            {"token": token},
+            {"$set": {"used": True, "used_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # Envoyer les emails de notification
+        service = PurchaseRequestService(db)
+        await service.send_status_change_emails(request['id'], request['status'], new_status, user)
+        
+        logger.info(f"✅ Demande {request['numero']} {action_label} via email par {user_name}")
+        
+        return Response(
+            content=f"""
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
+                    .success {{ color: #4caf50; font-size: 24px; margin-bottom: 20px; }}
+                    .info {{ color: #666; }}
+                </style>
+            </head>
+            <body>
+                <div class="success">✓ Demande approuvée avec succès</div>
+                <p class="info">Demande n°{request['numero']} {action_label}</p>
+                <p class="info">Le demandeur a été notifié par email.</p>
+            </body>
+            </html>
+            """,
+            media_type="text/html"
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur approbation via token: {str(e)}")
+        return Response(
+            content=f"<html><body><h1>Erreur</h1><p>{str(e)}</p></body></html>",
+            media_type="text/html",
+            status_code=500
+        )
+
+
+@router.get("/reject/{token}", response_class=Response)
+async def reject_via_token(
+    token: str,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Refuser une demande via le token dans l'email"""
+    try:
+        # Vérifier le token
+        token_data = await db.approval_tokens.find_one({"token": token, "used": False}, {"_id": 0})
+        
+        if not token_data:
+            return Response(
+                content="<html><body><h1>Lien invalide ou expiré</h1><p>Ce lien n'est plus valide.</p></body></html>",
+                media_type="text/html",
+                status_code=400
+            )
+        
+        # Vérifier l'expiration
+        expiration = datetime.fromisoformat(token_data['expiration'])
+        if datetime.now(timezone.utc) > expiration:
+            return Response(
+                content="<html><body><h1>Lien expiré</h1><p>Ce lien a expiré.</p></body></html>",
+                media_type="text/html",
+                status_code=400
+            )
+        
+        # Récupérer la demande
+        request = await db.purchase_requests.find_one({"id": token_data['request_id']}, {"_id": 0})
+        
+        if not request:
+            return Response(
+                content="<html><body><h1>Demande introuvable</h1></body></html>",
+                media_type="text/html",
+                status_code=404
+            )
+        
+        # Récupérer l'utilisateur
+        user = await db.users.find_one({"id": token_data['user_id']}, {"_id": 0})
+        
+        if not user:
+            return Response(
+                content="<html><body><h1>Utilisateur introuvable</h1></body></html>",
+                media_type="text/html",
+                status_code=404
+            )
+        
+        # Déterminer le nouveau statut selon l'action
+        action = token_data['action']
+        if action == "reject_n1":
+            new_status = PurchaseRequestStatus.REFUSEE_N1.value
+            action_label = "refusée par le N+1"
+        elif action == "reject_achat":
+            new_status = PurchaseRequestStatus.REFUSEE_ACHAT.value
+            action_label = "refusée par le service achat"
+        else:
+            return Response(
+                content="<html><body><h1>Action invalide</h1></body></html>",
+                media_type="text/html",
+                status_code=400
+            )
+        
+        # Mettre à jour le statut
+        user_name = f"{user.get('prenom', '')} {user.get('nom', '')}"
+        history_entry = PurchaseRequestHistoryEntry(
+            user_id=user['id'],
+            user_name=user_name,
+            action=f"Refus via email: {request['status']} → {new_status}",
+            old_status=request['status'],
+            new_status=new_status
+        )
+        
+        await db.purchase_requests.update_one(
+            {"id": request['id']},
+            {
+                "$set": {
+                    "status": new_status,
+                    "date_derniere_modification": datetime.now(timezone.utc).isoformat()
+                },
+                "$push": {"history": history_entry.model_dump()}
+            }
+        )
+        
+        # Marquer le token comme utilisé
+        await db.approval_tokens.update_one(
+            {"token": token},
+            {"$set": {"used": True, "used_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # Envoyer les emails de notification
+        service = PurchaseRequestService(db)
+        await service.send_status_change_emails(request['id'], request['status'], new_status, user)
+        
+        logger.info(f"✅ Demande {request['numero']} {action_label} via email par {user_name}")
+        
+        return Response(
+            content=f"""
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
+                    .warning {{ color: #f44336; font-size: 24px; margin-bottom: 20px; }}
+                    .info {{ color: #666; }}
+                </style>
+            </head>
+            <body>
+                <div class="warning">✗ Demande refusée</div>
+                <p class="info">Demande n°{request['numero']} {action_label}</p>
+                <p class="info">Le demandeur a été notifié par email.</p>
+            </body>
+            </html>
+            """,
+            media_type="text/html"
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur refus via token: {str(e)}")
+        return Response(
+            content=f"<html><body><h1>Erreur</h1><p>{str(e)}</p></body></html>",
+            media_type="text/html",
+            status_code=500
+        )
+
