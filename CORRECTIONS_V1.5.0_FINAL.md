@@ -124,8 +124,8 @@ app.add_middleware(
 #### **B. Backend - Variables d'environnement**
 **Fichier :** `/app/backend/.env`
 ```env
-FRONTEND_URL=https://manual-fix-1.preview.emergentagent.com
-BACKEND_URL=https://manual-fix-1.preview.emergentagent.com
+FRONTEND_URL=https://visual-manual.preview.emergentagent.com
+BACKEND_URL=https://visual-manual.preview.emergentagent.com
 ```
 
 **Résultat :**
@@ -141,7 +141,7 @@ curl -X GET https://votre-backend.com/api/users \
 
 # ✅ Ceci fonctionnera (origine autorisée)
 curl -X GET https://votre-backend.com/api/users \
-  -H "Origin: https://manual-fix-1.preview.emergentagent.com"
+  -H "Origin: https://visual-manual.preview.emergentagent.com"
 ```
 
 ---
@@ -243,8 +243,8 @@ def resolve_git_conflicts(self, strategy: str) -> Dict:
    - Version mise à jour : `current_version = "1.5.0"` (ligne 16)
 
 4. ✅ `/app/backend/.env` :
-   - Ajout `FRONTEND_URL=https://manual-fix-1.preview.emergentagent.com`
-   - Ajout `BACKEND_URL=https://manual-fix-1.preview.emergentagent.com`
+   - Ajout `FRONTEND_URL=https://visual-manual.preview.emergentagent.com`
+   - Ajout `BACKEND_URL=https://visual-manual.preview.emergentagent.com`
 
 ### **Frontend (React) :**
 5. ✅ `/app/frontend/src/pages/Login.jsx` :
@@ -258,7 +258,7 @@ def resolve_git_conflicts(self, strategy: str) -> Dict:
 ### **1. Test de la version affichée :**
 ```bash
 # A. Vérifier l'endpoint public
-curl https://manual-fix-1.preview.emergentagent.com/api/version
+curl https://visual-manual.preview.emergentagent.com/api/version
 
 # Résultat attendu :
 {
@@ -268,18 +268,18 @@ curl https://manual-fix-1.preview.emergentagent.com/api/version
 }
 
 # B. Vérifier sur la page de login
-# Ouvrir : https://manual-fix-1.preview.emergentagent.com/login
+# Ouvrir : https://visual-manual.preview.emergentagent.com/login
 # En bas de page : "Version 1.5.0" doit s'afficher
 ```
 
 ### **2. Test de la sécurité CORS :**
 ```bash
 # A. Test depuis une origine autorisée (doit fonctionner)
-curl -X GET https://manual-fix-1.preview.emergentagent.com/api/version \
-  -H "Origin: https://manual-fix-1.preview.emergentagent.com"
+curl -X GET https://visual-manual.preview.emergentagent.com/api/version \
+  -H "Origin: https://visual-manual.preview.emergentagent.com"
 
 # B. Test depuis une origine NON autorisée (doit être bloqué)
-curl -X GET https://manual-fix-1.preview.emergentagent.com/api/version \
+curl -X GET https://visual-manual.preview.emergentagent.com/api/version \
   -H "Origin: http://ip-malveillante.com" \
   -v
 # Devrait retourner une erreur CORS ou pas de réponse
