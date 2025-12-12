@@ -63,6 +63,15 @@ const Settings = () => {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const response = await authAPI.getUsers();
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
