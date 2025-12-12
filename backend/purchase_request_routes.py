@@ -559,6 +559,38 @@ async def reject_via_token(
         logger.error(f"❌ Erreur refus via token: {str(e)}")
         return Response(
             content=f"<html><body><h1>Erreur</h1><p>{str(e)}</p></body></html>",
+
+
+
+@router.get("/users-list", response_model=List[dict])
+async def get_users_for_purchase_requests(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Récupérer la liste des utilisateurs pour le formulaire de demande d'achat"""
+    try:
+        users = await db.users.find(
+            {},
+            {"_id": 0, "id": 1, "nom": 1, "prenom": 1, "email": 1, "role": 1}
+        ).to_list(1000)
+        
+        # Formater pour le frontend
+        formatted_users = [
+            {
+                "id": u["id"],
+                "name": f"{u.get('prenom', '')} {u.get('nom', '')}",
+                "email": u.get("email", ""),
+                "role": u.get("role", "")
+            }
+            for u in users
+        ]
+        
+        return formatted_users
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération utilisateurs: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
             media_type="text/html",
             status_code=500
         )
