@@ -20,7 +20,7 @@ from purchase_request_service import PurchaseRequestService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/purchase-requests", tags=["purchase-requests"])
+router = APIRouter(prefix="/purchase-requests", tags=["purchase-requests"])
 
 
 @router.post("", response_model=dict)
