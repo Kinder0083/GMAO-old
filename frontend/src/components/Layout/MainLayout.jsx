@@ -32,7 +32,8 @@ import {
   Terminal,
   Palette,
   Mail,
-  Radio
+  Radio,
+  Activity
 } from 'lucide-react';
 import FirstLoginPasswordDialog from '../Common/FirstLoginPasswordDialog';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
