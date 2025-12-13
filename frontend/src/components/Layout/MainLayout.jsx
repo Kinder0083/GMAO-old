@@ -556,7 +556,9 @@ const MainLayout = () => {
     })
     .map(item => ({
       ...item,
-      icon: iconMap[item.icon] || LayoutDashboard
+      icon: iconMap[item.icon] || LayoutDashboard,
+      // Supprimer les emojis du label pour éviter les doubles icônes
+      label: item.label.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()
     }));
 
   const handleLogout = () => {
