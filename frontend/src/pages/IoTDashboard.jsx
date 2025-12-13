@@ -254,25 +254,61 @@ const IoTDashboard = () => {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        {kpiCards.map((kpi, index) => {
-          const Icon = kpi.icon;
-          return (
-            <Card key={index} className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">{kpi.title}</p>
-                  <p className="text-2xl font-bold">{kpi.value}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${kpi.color}`}>
-                  <Icon className="text-white" size={24} />
-                </div>
-              </div>
-            </Card>
-          );
-        })}
+      {/* Tabs Navigation */}
+      <div className="flex gap-2 mb-6 border-b">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-6 py-3 font-medium transition-colors ${
+            activeTab === 'overview'
+              ? 'text-purple-600 border-b-2 border-purple-600'
+              : 'text-gray-600 hover:text-purple-600'
+          }`}
+        >
+          Vue d'ensemble
+        </button>
+        <button
+          onClick={() => setActiveTab('groups-type')}
+          className={`px-6 py-3 font-medium transition-colors ${
+            activeTab === 'groups-type'
+              ? 'text-purple-600 border-b-2 border-purple-600'
+              : 'text-gray-600 hover:text-purple-600'
+          }`}
+        >
+          Groupes par Type
+        </button>
+        <button
+          onClick={() => setActiveTab('groups-location')}
+          className={`px-6 py-3 font-medium transition-colors ${
+            activeTab === 'groups-location'
+              ? 'text-purple-600 border-b-2 border-purple-600'
+              : 'text-gray-600 hover:text-purple-600'
+          }`}
+        >
+          Groupes par Localisation
+        </button>
       </div>
+
+      {/* KPI Cards - Only in Overview */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {kpiCards.map((kpi, index) => {
+            const Icon = kpi.icon;
+            return (
+              <Card key={index} className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">{kpi.title}</p>
+                    <p className="text-2xl font-bold">{kpi.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${kpi.color}`}>
+                    <Icon className="text-white" size={24} />
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Gauges Section */}
       {sensors.filter(s => ['TEMPERATURE', 'HUMIDITY', 'PRESSURE', 'POWER'].includes(s.type)).length > 0 && (
