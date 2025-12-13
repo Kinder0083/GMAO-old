@@ -36,7 +36,7 @@ const IoTDashboard = () => {
   const [groupsByLocation, setGroupsByLocation] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(24); // heures
-  const [activeTab, setActiveTab] = useState('overview'); // overview, groups
+  const [activeTab, setActiveTab] = useState('overview'); // overview, groups-type, groups-location
 
   useEffect(() => {
     loadDashboardData();
