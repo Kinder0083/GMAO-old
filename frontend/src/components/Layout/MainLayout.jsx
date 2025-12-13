@@ -501,7 +501,9 @@ const MainLayout = () => {
     'Users': Users,
     'ShoppingCart': ShoppingCart,
     'ShoppingBag': ShoppingBag,
-    'Database': Database
+    'Database': Database,
+    'Activity': Activity,
+    'Terminal': Terminal
   };
 
   // Liste par défaut des menus
