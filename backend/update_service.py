@@ -474,8 +474,11 @@ class UpdateService:
                     error_msg = pull_stderr.decode()
                     logger.warning(f"⚠️ Git pull a échoué: {error_msg}")
                     # Ne pas bloquer si Git n'est pas configuré (environnement sans Git)
-                    if "No remote" in error_msg or "no remote" in error_msg or "not a git repository" in error_msg:
-                        logger.info("ℹ️ Environnement sans Git, passage à l'étape suivante")
+                    if ("No remote" in error_msg or "no remote" in error_msg or 
+                        "not a git repository" in error_msg or 
+                        "does not appear to be a git repository" in error_msg or
+                        "'origin' does not appear" in error_msg):
+                        logger.info("ℹ️ Environnement sans Git configuré (normal en production Emergent), passage à l'étape suivante")
                     else:
                         logger.error(f"❌ Échec du git pull: {error_msg}")
                         return {
