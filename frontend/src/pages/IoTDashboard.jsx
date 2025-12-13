@@ -310,57 +310,147 @@ const IoTDashboard = () => {
         </div>
       )}
 
-      {/* Gauges Section */}
-      {sensors.filter(s => ['TEMPERATURE', 'HUMIDITY', 'PRESSURE', 'POWER'].includes(s.type)).length > 0 && (
-        <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Valeurs Actuelles</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {sensors
-              .filter(s => ['TEMPERATURE', 'HUMIDITY', 'PRESSURE', 'POWER'].includes(s.type))
-              .slice(0, 4)
-              .map(sensor => (
-                <GaugeWidget key={sensor.id} sensor={sensor} />
-              ))}
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Gauges Section */}
+          {sensors.filter(s => ['TEMPERATURE', 'HUMIDITY', 'PRESSURE', 'POWER'].includes(s.type)).length > 0 && (
+            <Card className="p-6 mb-6">
+              <h2 className="text-xl font-semibold mb-4">Valeurs Actuelles</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {sensors
+                  .filter(s => ['TEMPERATURE', 'HUMIDITY', 'PRESSURE', 'POWER'].includes(s.type))
+                  .slice(0, 4)
+                  .map(sensor => (
+                    <GaugeWidget key={sensor.id} sensor={sensor} />
+                  ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {sensors.slice(0, 6).map(sensor => {
+              const chartData = formatChartData(sensorReadings[sensor.id]);
+              const stats = statistics[sensor.id];
+
+              if (chartData.length === 0) return null;
+
+              return (
+                <Card key={sensor.id} className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">{sensor.nom}</h3>
+                      <p className="text-sm text-gray-600">{sensor.unite}</p>
+                    </div>
+                    {stats && (
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">Moyenne</p>
+                        <p className="text-lg font-semibold">
+                          {stats.avg?.toFixed(1)} {sensor.unite}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id={`gradient-${sensor.id}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="time" 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <YAxis 
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke="#8b5cf6" 
+                        fillOpacity={1}
+                        fill={`url(#gradient-${sensor.id})`}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+
+                  {stats && (
+                    <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t">
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600">Min</p>
+                        <p className="text-sm font-semibold">{stats.min?.toFixed(1)}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600">Max</p>
+                        <p className="text-sm font-semibold">{stats.max?.toFixed(1)}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600">Actuel</p>
+                        <p className="text-sm font-semibold">{stats.current?.toFixed(1)}</p>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
-        </Card>
+        </>
       )}
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {sensors.slice(0, 6).map(sensor => {
-          const chartData = formatChartData(sensorReadings[sensor.id]);
-          const stats = statistics[sensor.id];
-
-          if (chartData.length === 0) return null;
-
-          return (
-            <Card key={sensor.id} className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{sensor.nom}</h3>
-                  <p className="text-sm text-gray-600">{sensor.unite}</p>
-                </div>
-                {stats && (
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">Moyenne</p>
-                    <p className="text-lg font-semibold">
-                      {stats.avg?.toFixed(1)} {sensor.unite}
-                    </p>
+      {/* Groups by Type Tab */}
+      {activeTab === 'groups-type' && (
+        <div className="space-y-6">
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Statistiques par Type de Capteur</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {groupsByType.map(group => (
+                <Card key={group.type} className="p-4 bg-gradient-to-br from-purple-50 to-blue-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-lg">{group.type_label}</h3>
+                    <span className="text-2xl font-bold text-purple-600">{group.count}</span>
                   </div>
-                )}
-              </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Moyenne:</span>
+                      <span className="font-semibold">{group.avg_value?.toFixed(1) || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Min:</span>
+                      <span className="font-semibold text-blue-600">{group.min_value?.toFixed(1) || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Max:</span>
+                      <span className="font-semibold text-red-600">{group.max_value?.toFixed(1) || 'N/A'}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Card>
 
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id={`gradient-${sensor.id}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
+          {/* Comparison Chart */}
+          {groupsByType.length > 0 && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Comparaison des Moyennes par Type</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={groupsByType.filter(g => g.avg_value !== null)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
-                    dataKey="time" 
+                    dataKey="type_label" 
                     stroke="#9ca3af"
                     style={{ fontSize: '12px' }}
                   />
@@ -375,36 +465,170 @@ const IoTDashboard = () => {
                       borderRadius: '8px'
                     }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#8b5cf6" 
-                    fillOpacity={1}
-                    fill={`url(#gradient-${sensor.id})`}
-                  />
-                </AreaChart>
+                  <Legend />
+                  <Bar dataKey="avg_value" fill="#8b5cf6" name="Moyenne" />
+                  <Bar dataKey="min_value" fill="#3b82f6" name="Min" />
+                  <Bar dataKey="max_value" fill="#ef4444" name="Max" />
+                </BarChart>
               </ResponsiveContainer>
-
-              {stats && (
-                <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600">Min</p>
-                    <p className="text-sm font-semibold">{stats.min?.toFixed(1)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600">Max</p>
-                    <p className="text-sm font-semibold">{stats.max?.toFixed(1)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600">Actuel</p>
-                    <p className="text-sm font-semibold">{stats.current?.toFixed(1)}</p>
-                  </div>
-                </div>
-              )}
             </Card>
-          );
-        })}
-      </div>
+          )}
+
+          {/* Sensor Details by Type */}
+          {groupsByType.map(group => (
+            <Card key={`details-${group.type}`} className="p-6">
+              <h3 className="text-lg font-semibold mb-4">
+                {group.type_label} - Détails des Capteurs ({group.count})
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Nom</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Valeur Actuelle</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Unité</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Emplacement</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Dernière MAJ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {group.sensors.map(sensor => (
+                      <tr key={sensor.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm">{sensor.nom}</td>
+                        <td className="px-4 py-3 text-sm font-semibold">
+                          {sensor.current_value?.toFixed(2) || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-sm">{sensor.unite}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {sensor.emplacement?.nom || 'Non défini'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {sensor.last_update 
+                            ? new Date(sensor.last_update).toLocaleString('fr-FR')
+                            : 'Jamais'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Groups by Location Tab */}
+      {activeTab === 'groups-location' && (
+        <div className="space-y-6">
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Statistiques par Localisation</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {groupsByLocation.map(group => (
+                <Card key={group.location_id} className="p-4 bg-gradient-to-br from-green-50 to-teal-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-lg">{group.location_name}</h3>
+                    <span className="text-2xl font-bold text-green-600">{group.count}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Moyenne:</span>
+                      <span className="font-semibold">{group.avg_value?.toFixed(1) || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Alertes actives:</span>
+                      <span className={`font-semibold ${group.alerts_active > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {group.alerts_active}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Card>
+
+          {/* Location Comparison Chart */}
+          {groupsByLocation.length > 0 && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Répartition des Capteurs par Localisation</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={groupsByLocation}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="location_name" 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="count" fill="#10b981" name="Nombre de capteurs" />
+                  <Bar dataKey="alerts_active" fill="#ef4444" name="Alertes actives" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          )}
+
+          {/* Sensor Details by Location */}
+          {groupsByLocation.map(group => (
+            <Card key={`details-${group.location_id}`} className="p-6">
+              <h3 className="text-lg font-semibold mb-4">
+                {group.location_name} - Détails des Capteurs ({group.count})
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Nom</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Type</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Valeur</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Unité</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Alerte</th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Dernière MAJ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {group.sensors.map(sensor => (
+                      <tr key={sensor.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm">{sensor.nom}</td>
+                        <td className="px-4 py-3 text-sm">{sensor.type}</td>
+                        <td className="px-4 py-3 text-sm font-semibold">
+                          {sensor.current_value?.toFixed(2) || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-sm">{sensor.unite}</td>
+                        <td className="px-4 py-3">
+                          {sensor.alert_enabled ? (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                              Activée
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                              Désactivée
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {sensor.last_update 
+                            ? new Date(sensor.last_update).toLocaleString('fr-FR')
+                            : 'Jamais'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* No sensors message */}
       {sensors.length === 0 && (
