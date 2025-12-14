@@ -530,12 +530,23 @@ class UpdateService:
             # Backend dependencies
             backend_req = self.backend_dir / "requirements.txt"
             if backend_req.exists():
+                # Chercher le venv Python
+                venv_pip = self.backend_dir / "venv" / "bin" / "pip"
+                pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
+                
+                logger.info(f"🐍 Installation backend avec: {pip_cmd}")
+                
                 pip_process = await asyncio.create_subprocess_exec(
-                    "pip", "install", "-r", str(backend_req),
+                    pip_cmd, "install", "-r", str(backend_req),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
-                await asyncio.wait_for(pip_process.communicate(), timeout=300)
+                pip_stdout, pip_stderr = await asyncio.wait_for(pip_process.communicate(), timeout=300)
+                
+                if pip_process.returncode != 0:
+                    logger.warning(f"⚠️ Certaines dépendances n'ont pas pu être installées: {pip_stderr.decode()[:200]}")
+                else:
+                    logger.info("✅ Dépendances backend installées")
             
             # Frontend dependencies
             frontend_package = self.frontend_dir / "package.json"
