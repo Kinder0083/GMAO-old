@@ -10,6 +10,7 @@ const DrawingCanvas = ({ onValidate, onCancel }) => {
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState([]);
   const [startPos, setStartPos] = useState(null);
+  const [currentPath, setCurrentPath] = useState([]);
   const [palettePosition, setPalettePosition] = useState({ x: 20, y: 20 });
   const [isDraggingPalette, setIsDraggingPalette] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
