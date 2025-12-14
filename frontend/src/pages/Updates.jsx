@@ -42,6 +42,52 @@ const Updates = () => {
     loadUpdateInfo();
   }, []);
 
+  const waitForBackendReady = async (token) => {
+    const maxAttempts = 30; // 30 tentatives (30 secondes max)
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Essayer de contacter le backend
+        const response = await axios.get(`${BACKEND_URL}/api/updates/current`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 2000 // 2 secondes de timeout par requête
+        });
+        
+        if (response.status === 200) {
+          setUpdateLogs(prev => [...prev, '✅ Backend disponible !']);
+          setUpdateLogs(prev => [...prev, '🔄 Rechargement de la page...']);
+          
+          toast({
+            title: 'Succès',
+            description: 'Mise à jour appliquée avec succès. Rechargement...'
+          });
+          
+          // Attendre 2 secondes avant de recharger pour laisser l'utilisateur voir le message
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+          
+          return;
+        }
+      } catch (error) {
+        // Le backend n'est pas encore prêt, on continue d'attendre
+        attempts++;
+        setUpdateLogs(prev => [...prev, `⏳ Tentative ${attempts}/${maxAttempts}...`]);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1 seconde
+      }
+    }
+    
+    // Si on arrive ici, le backend n'a pas répondu après 30 tentatives
+    setUpdateLogs(prev => [...prev, '⚠️ Délai d\'attente dépassé. Rechargement manuel nécessaire.']);
+    toast({
+      title: 'Attention',
+      description: 'Le backend met plus de temps que prévu. Veuillez rafraîchir la page manuellement (F5).',
+      variant: 'warning'
+    });
+    setUpdating(false);
+  };
+
   const loadUpdateInfo = async () => {
     try {
       setLoading(true);
