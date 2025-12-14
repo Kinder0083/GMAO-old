@@ -4,15 +4,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { useToast } from '../../hooks/use-toast';
-import { HelpCircle, Loader2 } from 'lucide-react';
+import { HelpCircle, Loader2, Pencil } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import axios from 'axios';
 import { getBackendURL } from '../../utils/config';
+import DrawingCanvas from './DrawingCanvas';
 
 const HelpButton = () => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [annotationImage, setAnnotationImage] = useState(null);
   const { toast } = useToast();
 
   const captureScreenshot = async () => {
