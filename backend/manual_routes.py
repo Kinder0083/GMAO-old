@@ -35,8 +35,8 @@ async def get_manual_content(
             return await initialize_default_manual(current_user)
         
         # Récupérer tous les chapitres et sections
-        chapters = await db.manual_chapters.find({}).sort("order", 1).to_list(None)
-        sections = await db.manual_sections.find({}).sort("order", 1).to_list(None)
+        chapters = await db.manual_chapters.find({}, {"_id": 0}).sort("order", 1).to_list(None)
+        sections = await db.manual_sections.find({}, {"_id": 0}).sort("order", 1).to_list(None)
         
         # Filtrer selon le rôle de l'utilisateur
         user_role = current_user.get("role", "")
