@@ -42,43 +42,59 @@ const Updates = () => {
     loadUpdateInfo();
   }, []);
 
-  const waitForBackendReady = async (token) => {
-    const maxAttempts = 30; // 30 tentatives (30 secondes max)
+  const waitForBackendReady = async (token, expectedVersion) => {
+    // D'abord, attendre 5 secondes pour laisser le backend commencer son redémarrage
+    setUpdateLogs(prev => [...prev, '⏳ Attente du démarrage du redémarrage (5s)...']);
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    const maxAttempts = 40; // 40 tentatives (40 secondes max après le délai initial)
     let attempts = 0;
+    let backendIsDown = false;
     
     while (attempts < maxAttempts) {
       try {
         // Essayer de contacter le backend
         const response = await axios.get(`${BACKEND_URL}/api/updates/current`, {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 2000 // 2 secondes de timeout par requête
+          timeout: 3000 // 3 secondes de timeout par requête
         });
         
         if (response.status === 200) {
-          setUpdateLogs(prev => [...prev, '✅ Backend disponible !']);
-          setUpdateLogs(prev => [...prev, '🔄 Rechargement de la page...']);
+          const currentVersion = response.data.version;
           
-          toast({
-            title: 'Succès',
-            description: 'Mise à jour appliquée avec succès. Rechargement...'
-          });
-          
-          // Attendre 2 secondes avant de recharger pour laisser l'utilisateur voir le message
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-          
-          return;
+          // Vérifier que la nouvelle version est installée
+          if (backendIsDown || currentVersion === expectedVersion) {
+            setUpdateLogs(prev => [...prev, `✅ Backend disponible avec version ${currentVersion} !`]);
+            setUpdateLogs(prev => [...prev, '🔄 Rechargement de la page...']);
+            
+            toast({
+              title: 'Succès',
+              description: 'Mise à jour appliquée avec succès. Rechargement...'
+            });
+            
+            // Attendre 2 secondes avant de recharger pour laisser l'utilisateur voir le message
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+            
+            return;
+          } else {
+            // Le backend répond mais avec l'ancienne version, il n'a pas encore redémarré
+            setUpdateLogs(prev => [...prev, `⏳ Backend actif (v${currentVersion}) mais pas encore redémarré...`]);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            attempts++;
+          }
         }
       } catch (error) {
-        // Le backend n'est pas encore prêt, on continue d'attendre
+        // Le backend n'est pas accessible, il est probablement en cours de redémarrage
+        backendIsDown = true;
         attempts++;
-        setUpdateLogs(prev => [...prev, `⏳ Tentative ${attempts}/${maxAttempts}...`]);
+        setUpdateLogs(prev => [...prev, `⏳ Tentative ${attempts}/${maxAttempts} - Backend indisponible...`]);
         await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1 seconde
       }
     }
     
-    // Si on arrive ici, le backend n'a pas répondu après 30 tentatives
+    // Si on arrive ici, le backend n'a pas répondu après toutes les tentatives
     setUpdateLogs(prev => [...prev, '⚠️ Délai d\'attente dépassé. Rechargement manuel nécessaire.']);
     toast({
       title: 'Attention',
