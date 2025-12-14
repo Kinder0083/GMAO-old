@@ -365,6 +365,14 @@ const HelpButton = () => {
         <span className="hidden md:inline">Aide</span>
       </Button>
 
+      {/* Mode dessin */}
+      {drawingMode && (
+        <DrawingCanvas
+          onValidate={handleDrawingValidate}
+          onCancel={handleDrawingCancel}
+        />
+      )}
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
