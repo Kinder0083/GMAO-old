@@ -290,8 +290,8 @@ const Updates = () => {
         setUpdateLogs(prev => [...prev, '✅ Mise à jour terminée avec succès !']);
         setUpdateLogs(prev => [...prev, '⏳ Attente du redémarrage des services...']);
         
-        // Attendre que le backend soit à nouveau disponible
-        await waitForBackendReady(token);
+        // Attendre que le backend soit à nouveau disponible avec la nouvelle version
+        await waitForBackendReady(token, latestVersion.version);
       }
         } catch (error) {
           // Si erreur réseau/gateway, le backend est probablement en train de redémarrer
@@ -300,9 +300,9 @@ const Updates = () => {
             setUpdateLogs(prev => [...prev, '🔄 Services en cours de redémarrage...']);
             setUpdateLogs(prev => [...prev, '⏳ Attente de la disponibilité du backend...']);
             
-            // Attendre que le backend soit à nouveau disponible
+            // Attendre que le backend soit à nouveau disponible avec la nouvelle version
             const token = localStorage.getItem('token');
-            await waitForBackendReady(token);
+            await waitForBackendReady(token, latestVersion.version);
           } else {
             setUpdateLogs(prev => [...prev, `❌ Erreur: ${error.response?.data?.detail || error.message}`]);
             
