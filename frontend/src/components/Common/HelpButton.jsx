@@ -384,6 +384,27 @@ const HelpButton = () => {
               <li>L'URL de la page</li>
               <li>Les éventuelles erreurs console</li>
             </ul>
+
+            {/* Bouton pour dessiner sur l'écran */}
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={handleStartDrawing}
+                disabled={sending}
+                className="gap-2 border-purple-300 hover:bg-purple-50 text-purple-700"
+              >
+                <Pencil size={18} />
+                Dessiner sur l'écran
+              </Button>
+            </div>
+
+            {annotationImage && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-700 flex items-center gap-2">
+                  ✅ Annotations ajoutées ! Elles seront incluses dans le screenshot.
+                </p>
+              </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="message">
