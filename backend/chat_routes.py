@@ -1227,8 +1227,11 @@ async def get_cleanup_stats(
     try:
         from datetime import datetime, timezone, timedelta
         
-        # Messages de plus de 60 jours
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=60)
+        # Lire la rétention configurée
+        retention_days = int(os.getenv('CHAT_RETENTION_DAYS', '60'))
+        
+        # Messages de plus de X jours
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
         old_messages_count = await db.chat_messages.count_documents({
             "timestamp": {"$lt": cutoff_date.isoformat()}
         })
@@ -1245,11 +1248,40 @@ async def get_cleanup_stats(
         return {
             "total_messages": total_messages,
             "recent_messages_30d": recent_messages,
-            "old_messages_60d": old_messages_count,
-            "retention_policy": "60 jours",
+            "old_messages": old_messages_count,
+            "retention_policy": f"{retention_days} jours",
             "next_cleanup": "Tous les jours à 03h00 UTC"
         }
         
     except Exception as e:
         logger.error(f"Erreur récupération stats nettoyage: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/cleanup/history")
+async def get_cleanup_history(
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Obtenir l'historique des nettoyages automatiques (Admin uniquement)
+    """
+    # Vérifier que l'utilisateur est admin
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Action réservée aux administrateurs")
+    
+    try:
+        # Récupérer les derniers nettoyages
+        history = await db.cleanup_history.find(
+            {"type": "chat_messages"},
+            {"_id": 0}
+        ).sort("date", -1).limit(limit).to_list(length=limit)
+        
+        return {
+            "history": history,
+            "count": len(history)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération historique nettoyage: {e}")
         raise HTTPException(status_code=500, detail=str(e))
