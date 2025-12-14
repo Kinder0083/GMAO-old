@@ -86,6 +86,8 @@ async def get_manual_content(
             if chapter_has_sections:
                 final_chapters.append(chapter)
         
+        logger.info(f"📖 DEBUG: Après filtrage - Chapitres: {len(final_chapters)}, Sections: {len(filtered_sections)}")
+        
         return {
             "version": current_version.get("version"),
             "chapters": final_chapters,
