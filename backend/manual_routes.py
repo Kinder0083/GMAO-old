@@ -19,7 +19,7 @@ router = APIRouter(prefix="/manual", tags=["manual"])
 from server import db
 
 
-@router.get("/manual/content")
+@router.get("/content")
 async def get_manual_content(
     role_filter: Optional[str] = None,
     module_filter: Optional[str] = None,
