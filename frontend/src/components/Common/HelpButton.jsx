@@ -122,37 +122,44 @@ const HelpButton = () => {
   const handleDrawingValidate = async (drawingDataUrl) => {
     // Fusionner le screenshot de la page avec les annotations
     try {
-      // Capturer l'écran actuel
+      // 1. Fermer le mode dessin IMMÉDIATEMENT pour qu'il ne soit pas capturé
+      setDrawingMode(false);
+      
+      // 2. Attendre que le DrawingCanvas soit complètement démonté du DOM
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 3. Capturer l'écran SANS le canvas de dessin ni la palette
       const baseScreenshot = await captureScreenshotForDrawing();
       
       if (baseScreenshot) {
-        // Créer un canvas pour fusionner les deux images
+        // 4. Créer un canvas pour fusionner les deux images
         const canvas = document.createElement('canvas');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         const ctx = canvas.getContext('2d');
         
-        // Charger l'image de base
+        // 5. Charger l'image de base
         const baseImg = new Image();
         await new Promise((resolve) => {
           baseImg.onload = resolve;
           baseImg.src = baseScreenshot;
         });
         
-        // Dessiner l'image de base
+        // 6. Dessiner l'image de base
         ctx.drawImage(baseImg, 0, 0);
         
-        // Charger l'image des annotations
+        // 7. Charger l'image des annotations
         const annotationImg = new Image();
         await new Promise((resolve) => {
           annotationImg.onload = resolve;
           annotationImg.src = drawingDataUrl;
         });
         
-        // Dessiner les annotations par-dessus
+        // 8. Dessiner les annotations par-dessus (semi-transparent)
+        ctx.globalAlpha = 1; // Les annotations sont déjà avec opacité 0.7
         ctx.drawImage(annotationImg, 0, 0);
         
-        // Convertir en dataURL
+        // 9. Convertir en dataURL
         const mergedDataUrl = canvas.toDataURL('image/png');
         setAnnotationImage(mergedDataUrl);
       }
@@ -160,7 +167,7 @@ const HelpButton = () => {
       console.error('Erreur lors de la fusion des images:', error);
     }
     
-    setDrawingMode(false);
+    // 10. Ouvrir la modale avec l'image fusionnée
     setOpen(true);
   };
 
