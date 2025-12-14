@@ -193,16 +193,11 @@ const DrawingCanvas = ({ onValidate, onCancel }) => {
     const pos = getMousePos(e);
 
     if (tool === 'pencil') {
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const points = [];
-      // Sauvegarder les points du tracé
-      // (simplifié - en production, on stockerait tous les points)
       setHistory([...history, {
         tool: 'pencil',
-        points: [startPos, pos],
+        points: currentPath,
         color,
-        lineWidth,
-        imageData
+        lineWidth
       }]);
     } else if (tool === 'arrow') {
       drawArrow(ctx, startPos.x, startPos.y, pos.x, pos.y);
@@ -226,12 +221,13 @@ const DrawingCanvas = ({ onValidate, onCancel }) => {
       ctx.globalCompositeOperation = 'source-over';
       setHistory([...history, {
         tool: 'eraser',
-        points: [startPos, pos],
+        points: currentPath,
         lineWidth
       }]);
     }
 
     setIsDrawing(false);
+    setCurrentPath([]);
   };
 
   const handleUndo = () => {
