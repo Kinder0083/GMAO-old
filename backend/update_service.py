@@ -439,67 +439,90 @@ class UpdateService:
             # Utiliser git pull pour récupérer les changements
             git_dir = self.app_root
             
+            git_available = False
+            
             try:
-                # Vérifier s'il y a des modifications locales
-                git_check = await asyncio.create_subprocess_exec(
-                    "git", "status", "--porcelain",
-                    cwd=git_dir,
+                # Vérifier si Git est disponible et configuré
+                git_version = await asyncio.create_subprocess_exec(
+                    "git", "--version",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
-                check_stdout, _ = await git_check.communicate()
-                
-                if check_stdout.decode().strip():
-                    logger.warning("⚠️ Modifications locales détectées")
-                    # Stash les modifications locales
-                    stash_process = await asyncio.create_subprocess_exec(
-                        "git", "stash",
+                await git_version.communicate()
+                git_available = (git_version.returncode == 0)
+            except FileNotFoundError:
+                logger.warning("⚠️ Git n'est pas installé sur ce système")
+                git_available = False
+            
+            if git_available:
+                try:
+                    # Vérifier s'il y a des modifications locales
+                    git_check = await asyncio.create_subprocess_exec(
+                        "git", "status", "--porcelain",
                         cwd=git_dir,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE
                     )
-                    await stash_process.communicate()
-                
-                # Git pull
-                pull_process = await asyncio.create_subprocess_exec(
-                    "git", "pull", "origin", self.github_branch,
-                    cwd=git_dir,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                
-                pull_stdout, pull_stderr = await asyncio.wait_for(pull_process.communicate(), timeout=120)
-                
-                if pull_process.returncode != 0:
-                    error_msg = pull_stderr.decode()
-                    logger.warning(f"⚠️ Git pull a échoué: {error_msg}")
-                    # Ne pas bloquer si Git n'est pas configuré (environnement sans Git)
-                    if ("No remote" in error_msg or "no remote" in error_msg or 
-                        "not a git repository" in error_msg or 
-                        "does not appear to be a git repository" in error_msg or
-                        "'origin' does not appear" in error_msg):
-                        logger.info("ℹ️ Environnement sans Git configuré (normal en production Emergent), passage à l'étape suivante")
-                    else:
-                        logger.error(f"❌ Échec du git pull: {error_msg}")
-                        return {
-                            "success": False,
-                            "message": "Échec du téléchargement de la mise à jour",
-                            "error": error_msg
-                        }
-                
-                logger.info("✅ Mise à jour téléchargée")
-                
-            except asyncio.TimeoutError:
-                return {
-                    "success": False,
-                    "message": "Timeout lors du téléchargement"
-                }
-            except FileNotFoundError:
-                logger.warning("⚠️ Git non disponible, mise à jour manuelle nécessaire")
-                return {
-                    "success": False,
-                    "message": "Git non disponible sur ce système"
-                }
+                    check_stdout, check_stderr = await git_check.communicate()
+                    
+                    if git_check.returncode != 0:
+                        logger.warning(f"⚠️ Git status a échoué: {check_stderr.decode()}")
+                        git_available = False
+                    elif check_stdout.decode().strip():
+                        logger.warning("⚠️ Modifications locales détectées")
+                        # Stash les modifications locales
+                        stash_process = await asyncio.create_subprocess_exec(
+                            "git", "stash",
+                            cwd=git_dir,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        await stash_process.communicate()
+                    
+                    if git_available:
+                        # Git pull
+                        pull_process = await asyncio.create_subprocess_exec(
+                            "git", "pull", "origin", self.github_branch,
+                            cwd=git_dir,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        
+                        pull_stdout, pull_stderr = await asyncio.wait_for(pull_process.communicate(), timeout=120)
+                        
+                        if pull_process.returncode != 0:
+                            error_msg = pull_stderr.decode()
+                            logger.warning(f"⚠️ Git pull a échoué: {error_msg}")
+                            # Vérifier si c'est un problème de configuration Git (non bloquant)
+                            if ("No remote" in error_msg or "no remote" in error_msg or 
+                                "not a git repository" in error_msg or 
+                                "does not appear to be a git repository" in error_msg or
+                                "'origin' does not appear" in error_msg or
+                                "Could not resolve host" in error_msg):
+                                logger.info("ℹ️ Git non configuré ou réseau indisponible - CONTINUE sans Git")
+                                git_available = False
+                            else:
+                                # Erreur Git réelle (permissions, conflit, etc.)
+                                logger.error(f"❌ Échec du git pull: {error_msg}")
+                                return {
+                                    "success": False,
+                                    "message": "Échec du téléchargement de la mise à jour",
+                                    "error": error_msg
+                                }
+                        else:
+                            logger.info("✅ Mise à jour téléchargée via Git")
+                    
+                except asyncio.TimeoutError:
+                    logger.warning("⚠️ Timeout Git - CONTINUE sans Git")
+                    git_available = False
+                except Exception as e:
+                    logger.warning(f"⚠️ Erreur Git ({str(e)}) - CONTINUE sans Git")
+                    git_available = False
+            
+            if not git_available:
+                logger.warning("⚠️ Mise à jour Git non disponible")
+                logger.info("ℹ️ Les dépendances seront réinstallées et les services redémarrés")
+                logger.info("ℹ️ Pour mettre à jour le code, utilisez 'git pull' manuellement ou réinstallez depuis GitHub")
             
             # 4. Installer les dépendances
             logger.info("📦 Étape 4/5: Installation des dépendances...")
