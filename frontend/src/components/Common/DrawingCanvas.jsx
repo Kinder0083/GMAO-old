@@ -163,9 +163,11 @@ const DrawingCanvas = ({ onValidate, onCancel }) => {
     const pos = getMousePos(e);
 
     if (tool === 'pencil') {
+      setCurrentPath(prev => [...prev, pos]);
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke();
     } else if (tool === 'eraser') {
+      setCurrentPath(prev => [...prev, pos]);
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke();
     } else if (tool === 'arrow' || tool === 'rectangle') {
