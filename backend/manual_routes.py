@@ -38,6 +38,9 @@ async def get_manual_content(
         chapters = await db.manual_chapters.find({}, {"_id": 0}).sort("order", 1).to_list(None)
         sections = await db.manual_sections.find({}, {"_id": 0}).sort("order", 1).to_list(None)
         
+        logger.info(f"📖 DEBUG: Chapitres bruts: {len(chapters)}, Sections brutes: {len(sections)}")
+        logger.info(f"📖 DEBUG: User role: {user_role}, Filters: role={role_filter}, module={module_filter}, level={level_filter}")
+        
         # Filtrer selon le rôle de l'utilisateur
         user_role = current_user.get("role", "")
         
