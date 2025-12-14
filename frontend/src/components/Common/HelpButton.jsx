@@ -23,6 +23,12 @@ const HelpButton = () => {
     let originalBadgeDisplay = null;
     
     try {
+      // Si on a une annotation, la retourner directement fusionnée avec le screenshot
+      if (annotationImage) {
+        console.log('📸 Utilisation du screenshot avec annotations');
+        return annotationImage;
+      }
+      
       // Sauvegarder l'URL actuelle avant toute manipulation
       const currentUrl = window.location.href;
       console.log('📸 Capture de la page:', currentUrl);
@@ -105,6 +111,114 @@ const HelpButton = () => {
         emergentBadge.style.display = originalBadgeDisplay;
       }
       setOpen(true);
+    }
+  };
+
+  const handleStartDrawing = () => {
+    setOpen(false);
+    setDrawingMode(true);
+  };
+
+  const handleDrawingValidate = async (drawingDataUrl) => {
+    // Fusionner le screenshot de la page avec les annotations
+    try {
+      // Capturer l'écran actuel
+      const baseScreenshot = await captureScreenshotForDrawing();
+      
+      if (baseScreenshot) {
+        // Créer un canvas pour fusionner les deux images
+        const canvas = document.createElement('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        
+        // Charger l'image de base
+        const baseImg = new Image();
+        await new Promise((resolve) => {
+          baseImg.onload = resolve;
+          baseImg.src = baseScreenshot;
+        });
+        
+        // Dessiner l'image de base
+        ctx.drawImage(baseImg, 0, 0);
+        
+        // Charger l'image des annotations
+        const annotationImg = new Image();
+        await new Promise((resolve) => {
+          annotationImg.onload = resolve;
+          annotationImg.src = drawingDataUrl;
+        });
+        
+        // Dessiner les annotations par-dessus
+        ctx.drawImage(annotationImg, 0, 0);
+        
+        // Convertir en dataURL
+        const mergedDataUrl = canvas.toDataURL('image/png');
+        setAnnotationImage(mergedDataUrl);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la fusion des images:', error);
+    }
+    
+    setDrawingMode(false);
+    setOpen(true);
+  };
+
+  const handleDrawingCancel = () => {
+    setDrawingMode(false);
+    setAnnotationImage(null);
+    setOpen(true);
+  };
+
+  const captureScreenshotForDrawing = async () => {
+    try {
+      // Capture simple sans fermer la modale
+      const emergentBadge = document.getElementById('emergent-badge');
+      const originalDisplay = emergentBadge ? emergentBadge.style.display : null;
+      
+      if (emergentBadge) {
+        emergentBadge.style.display = 'none';
+      }
+      
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      const captureWrapper = document.createElement('div');
+      captureWrapper.style.position = 'fixed';
+      captureWrapper.style.top = '0';
+      captureWrapper.style.left = '0';
+      captureWrapper.style.width = `${viewportWidth}px`;
+      captureWrapper.style.height = `${viewportHeight}px`;
+      captureWrapper.style.overflow = 'hidden';
+      captureWrapper.style.zIndex = '-1';
+      
+      const bodyClone = document.body.cloneNode(true);
+      bodyClone.style.position = 'absolute';
+      bodyClone.style.top = '0';
+      bodyClone.style.left = '0';
+      
+      captureWrapper.appendChild(bodyClone);
+      document.body.appendChild(captureWrapper);
+      
+      const dataUrl = await toPng(captureWrapper, {
+        quality: 0.8,
+        pixelRatio: 1,
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        width: viewportWidth,
+        height: viewportHeight
+      });
+      
+      document.body.removeChild(captureWrapper);
+      
+      if (emergentBadge && originalDisplay !== null) {
+        emergentBadge.style.display = originalDisplay;
+      }
+      
+      return dataUrl;
+    } catch (error) {
+      console.error('Erreur capture pour dessin:', error);
+      return null;
     }
   };
 
