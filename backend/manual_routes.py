@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Créer un routeur séparé pour les endpoints du manuel
-router = APIRouter()
+router = APIRouter(prefix="/manual", tags=["manual"])
 
 # Import de la base de données
 from server import db
