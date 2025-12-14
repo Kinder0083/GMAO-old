@@ -117,6 +117,7 @@ const DrawingCanvas = ({ onValidate, onCancel }) => {
     const pos = getMousePos(e);
     setIsDrawing(true);
     setStartPos(pos);
+    setCurrentPath([pos]);
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -150,6 +151,7 @@ const DrawingCanvas = ({ onValidate, onCancel }) => {
         }]);
       }
       setIsDrawing(false);
+      setCurrentPath([]);
     }
   };
 
