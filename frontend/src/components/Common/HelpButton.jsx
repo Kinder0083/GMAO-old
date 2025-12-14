@@ -327,6 +327,7 @@ const HelpButton = () => {
       // Fermer la modale et réinitialiser
       setOpen(false);
       setMessage('');
+      setAnnotationImage(null); // Nettoyer les annotations
       
     } catch (error) {
       console.error('❌ Erreur complète:', error);
