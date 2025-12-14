@@ -226,27 +226,31 @@ const Updates = () => {
 
       if (response.data.success) {
         setUpdateLogs(prev => [...prev, '✅ Mise à jour terminée avec succès !']);
+        setUpdateLogs(prev => [...prev, '⏳ Attente du redémarrage des services...']);
         
-        toast({
-          title: 'Succès',
-          description: 'Mise à jour appliquée avec succès. Rechargement de la page...'
-        });
-
-        // Recharger la page après 3 secondes
-        setTimeout(() => {
-          window.location.reload();
-        }, 3000);
+        // Attendre que le backend soit à nouveau disponible
+        await waitForBackendReady(token);
       }
         } catch (error) {
-          setUpdateLogs(prev => [...prev, `❌ Erreur: ${error.response?.data?.detail || error.message}`]);
-          
-          toast({
-            title: 'Erreur',
-            description: formatErrorMessage(error, 'Échec de la mise à jour'),
-            variant: 'destructive'
-          });
-        } finally {
-          setUpdating(false);
+          // Si erreur réseau/gateway, le backend est probablement en train de redémarrer
+          if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || 
+              error.response?.status === 502 || error.response?.status === 503) {
+            setUpdateLogs(prev => [...prev, '🔄 Services en cours de redémarrage...']);
+            setUpdateLogs(prev => [...prev, '⏳ Attente de la disponibilité du backend...']);
+            
+            // Attendre que le backend soit à nouveau disponible
+            const token = localStorage.getItem('token');
+            await waitForBackendReady(token);
+          } else {
+            setUpdateLogs(prev => [...prev, `❌ Erreur: ${error.response?.data?.detail || error.message}`]);
+            
+            toast({
+              title: 'Erreur',
+              description: formatErrorMessage(error, 'Échec de la mise à jour'),
+              variant: 'destructive'
+            });
+            setUpdating(false);
+          }
         }
       }
     });
