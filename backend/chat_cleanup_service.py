@@ -20,12 +20,15 @@ class ChatCleanupService:
         logger.info(f"📅 Configuration: Rétention des messages = {self.retention_days} jours")
         
     async def cleanup_old_messages(self):
-        """Supprimer les messages et fichiers de plus de 60 jours"""
+        """Supprimer les messages et fichiers selon la rétention configurée"""
+        start_time = datetime.now(timezone.utc)
+        
         try:
-            # Calculer la date limite (60 jours en arrière)
-            cutoff_date = datetime.now(timezone.utc) - timedelta(days=60)
+            # Calculer la date limite
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.retention_days)
             
             logger.info(f"🧹 Début du nettoyage des messages avant {cutoff_date.isoformat()}")
+            logger.info(f"   Rétention configurée: {self.retention_days} jours")
             
             # Récupérer les messages à supprimer
             old_messages = await self.db.chat_messages.find(
@@ -35,6 +38,7 @@ class ChatCleanupService:
             
             deleted_messages_count = 0
             deleted_files_count = 0
+            failed_files = []
             
             for message in old_messages:
                 # Supprimer les fichiers attachés
@@ -47,26 +51,59 @@ class ChatCleanupService:
                             logger.info(f"  📎 Fichier supprimé: {os.path.basename(file_path)}")
                         except Exception as e:
                             logger.error(f"  ❌ Erreur suppression fichier {file_path}: {e}")
+                            failed_files.append(file_path)
                 
                 # Supprimer le message
                 await self.db.chat_messages.delete_one({"id": message.get("id")})
                 deleted_messages_count += 1
             
+            # Calculer la durée
+            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+            
             if deleted_messages_count > 0:
-                logger.info(f"✅ Nettoyage terminé:")
+                logger.info(f"✅ Nettoyage terminé en {duration:.2f}s:")
                 logger.info(f"   - {deleted_messages_count} messages supprimés")
                 logger.info(f"   - {deleted_files_count} fichiers supprimés")
+                if failed_files:
+                    logger.warning(f"   - {len(failed_files)} fichiers ont échoué")
             else:
                 logger.info("✅ Aucun message à nettoyer")
+            
+            # Sauvegarder l'historique du nettoyage
+            cleanup_record = {
+                "date": start_time.isoformat(),
+                "type": "chat_messages",
+                "retention_days": self.retention_days,
+                "cutoff_date": cutoff_date.isoformat(),
+                "deleted_messages": deleted_messages_count,
+                "deleted_files": deleted_files_count,
+                "failed_files": len(failed_files),
+                "duration_seconds": duration,
+                "success": True
+            }
+            
+            await self.db.cleanup_history.insert_one(cleanup_record)
             
             return {
                 "success": True,
                 "deleted_messages": deleted_messages_count,
-                "deleted_files": deleted_files_count
+                "deleted_files": deleted_files_count,
+                "failed_files": len(failed_files),
+                "duration": duration
             }
             
         except Exception as e:
             logger.error(f"❌ Erreur lors du nettoyage: {e}")
+            
+            # Sauvegarder l'échec dans l'historique
+            await self.db.cleanup_history.insert_one({
+                "date": start_time.isoformat(),
+                "type": "chat_messages",
+                "retention_days": self.retention_days,
+                "success": False,
+                "error": str(e)
+            })
+            
             return {
                 "success": False,
                 "error": str(e)
