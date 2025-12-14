@@ -373,7 +373,7 @@ const Updates = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Mise à Jour</h1>
-          <p className="text-gray-600 mt-1">Gérez les mises à jour de l'application</p>
+          <p className="text-gray-600 mt-1">Gérez les mises à jour de l&apos;application</p>
         </div>
         <Button
           variant="outline"
