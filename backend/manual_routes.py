@@ -105,7 +105,7 @@ async def get_manual_content(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/manual/search")
+@router.post("/search")
 async def search_manual(
     search_request: ManualSearchRequest,
     current_user: dict = Depends(get_current_user)
@@ -169,7 +169,7 @@ async def search_manual(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/manual/content")
+@router.post("/content")
 async def create_or_update_manual(
     manual_data: ManualCreate,
     current_user: dict = Depends(get_current_admin_user)
@@ -362,7 +362,7 @@ Cliquez sur un badge pour voir les détails.""",
 
 
 
-@router.get("/manual/export-pdf")
+@router.get("/export-pdf")
 async def export_manual_pdf(
     level_filter: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
@@ -585,7 +585,7 @@ async def export_manual_pdf(
 # ENDPOINTS ADMIN - ÉDITION DU MANUEL
 # ========================================
 
-@router.put("/manual/sections/{section_id}")
+@router.put("/sections/{section_id}")
 async def update_manual_section(
     section_id: str,
     title: Optional[str] = None,
@@ -645,7 +645,7 @@ async def update_manual_section(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/manual/sections")
+@router.post("/sections")
 async def create_manual_section(
     chapter_id: str,
     title: str,
@@ -720,7 +720,7 @@ async def create_manual_section(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/manual/sections/{section_id}")
+@router.delete("/sections/{section_id}")
 async def delete_manual_section(
     section_id: str,
     current_user: dict = Depends(require_permission("admin", "delete"))
