@@ -1,6 +1,6 @@
 """
 Service de nettoyage automatique des messages de chat
-S'exécute en arrière-plan et nettoie les messages de plus de 60 jours
+S'exécute en arrière-plan et nettoie les messages selon la rétention configurée
 """
 import asyncio
 import os
@@ -15,6 +15,9 @@ class ChatCleanupService:
         self.db = database
         self.is_running = False
         self.cleanup_task = None
+        # Configuration avec valeurs par défaut
+        self.retention_days = int(os.getenv('CHAT_RETENTION_DAYS', '60'))
+        logger.info(f"📅 Configuration: Rétention des messages = {self.retention_days} jours")
         
     async def cleanup_old_messages(self):
         """Supprimer les messages et fichiers de plus de 60 jours"""
