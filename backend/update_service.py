@@ -565,28 +565,57 @@ class UpdateService:
             logger.info("🔄 Étape 5/5: Redémarrage des services...")
             
             try:
-                # Redémarrer via supervisorctl
-                restart_process = await asyncio.create_subprocess_exec(
-                    "sudo", "supervisorctl", "restart", "all",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
+                # Déterminer la commande supervisorctl (avec ou sans sudo)
+                # Essayer différentes variantes
+                supervisorctl_commands = [
+                    ["/usr/bin/sudo", "supervisorctl", "restart", "all"],
+                    ["sudo", "supervisorctl", "restart", "all"],
+                    ["supervisorctl", "restart", "all"],
+                    ["/usr/bin/supervisorctl", "restart", "all"]
+                ]
                 
-                restart_stdout, restart_stderr = await asyncio.wait_for(restart_process.communicate(), timeout=30)
+                restart_success = False
+                last_error = None
                 
-                if restart_process.returncode != 0:
-                    logger.error(f"❌ Échec du redémarrage: {restart_stderr.decode()}")
-                    return {
-                        "success": False,
-                        "message": "Mise à jour installée mais échec du redémarrage",
-                        "error": restart_stderr.decode(),
-                        "backup_path": str(backup_path)
-                    }
+                for cmd in supervisorctl_commands:
+                    try:
+                        logger.info(f"🔄 Tentative de redémarrage avec: {' '.join(cmd)}")
+                        
+                        restart_process = await asyncio.create_subprocess_exec(
+                            *cmd,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        
+                        restart_stdout, restart_stderr = await asyncio.wait_for(
+                            restart_process.communicate(), 
+                            timeout=30
+                        )
+                        
+                        if restart_process.returncode == 0:
+                            logger.info(f"✅ Services redémarrés avec: {' '.join(cmd)}")
+                            restart_success = True
+                            break
+                        else:
+                            last_error = restart_stderr.decode()
+                            logger.warning(f"⚠️ Échec avec {' '.join(cmd)}: {last_error[:100]}")
+                            
+                    except FileNotFoundError:
+                        logger.debug(f"⚠️ Commande non trouvée: {' '.join(cmd)}")
+                        continue
+                    except Exception as e:
+                        logger.debug(f"⚠️ Erreur avec {' '.join(cmd)}: {str(e)}")
+                        continue
                 
-                logger.info("✅ Services redémarrés")
-                
+                if not restart_success:
+                    logger.warning("⚠️ Impossible de redémarrer automatiquement les services")
+                    logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all")
+                    # Ne pas bloquer - la mise à jour est quand même installée
+                    
             except asyncio.TimeoutError:
                 logger.warning("⚠️ Timeout lors du redémarrage des services")
+            except Exception as e:
+                logger.warning(f"⚠️ Erreur lors du redémarrage: {str(e)}")
             
             # Mise à jour réussie
             logger.info(f"✨ Mise à jour vers {version} terminée avec succès")
