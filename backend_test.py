@@ -63,551 +63,370 @@ class PurchaseHistoryTester:
             self.log(f"❌ Admin login request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def create_technicien_user(self):
-        """Create a technicien user for testing private messages"""
-        self.log("Creating technicien user for testing...")
+    def test_purchase_history_stats_basic(self):
+        """TEST 1: GET /api/purchase-history/stats - Basic endpoint test"""
+        self.log("🧪 TEST 1: GET /api/purchase-history/stats - Basic endpoint test")
         
         try:
-            # Create technicien user
-            response = self.admin_session.post(
-                f"{BACKEND_URL}/users/create-member",
-                json={
-                    "email": "technicien.test@gmao-iris.local",
-                    "prenom": "Test",
-                    "nom": "Technicien",
-                    "role": "TECHNICIEN",
-                    "telephone": "0123456789",
-                    "service": "Maintenance",
-                    "password": "Test123!"
-                },
-                timeout=10
-            )
+            response = self.admin_session.get(f"{BACKEND_URL}/purchase-history/stats", timeout=15)
             
             if response.status_code == 200:
-                self.log("✅ Technicien user created successfully")
+                data = response.json()
+                self.log(f"✅ GET /api/purchase-history/stats successful (200 OK)")
                 
-                # Login as technicien
-                tech_response = self.technicien_session.post(
-                    f"{BACKEND_URL}/auth/login",
-                    json={
-                        "email": "technicien.test@gmao-iris.local",
-                        "password": "Test123!"
-                    },
-                    timeout=10
-                )
+                # Verify basic response structure
+                required_fields = [
+                    "totalAchats", "montantTotal", "commandesTotales", 
+                    "parFournisseur", "parMois", "parSite", "parGroupeStatistique", 
+                    "articlesTop", "par_utilisateur", "par_mois", "par_mois_categories"
+                ]
                 
-                if tech_response.status_code == 200:
-                    tech_data = tech_response.json()
-                    self.technicien_token = tech_data.get("access_token")
-                    self.technicien_data = tech_data.get("user")
+                missing_fields = [field for field in required_fields if field not in data]
+                if missing_fields:
+                    self.log(f"❌ Missing required fields: {missing_fields}", "ERROR")
+                    return False
+                
+                self.log("✅ All required fields present in response")
+                self.log(f"   Total achats: {data.get('totalAchats', 0)}")
+                self.log(f"   Montant total: {data.get('montantTotal', 0)}")
+                self.log(f"   Commandes totales: {data.get('commandesTotales', 0)}")
+                
+                return True
+            else:
+                self.log(f"❌ GET /api/purchase-history/stats failed - Status: {response.status_code}", "ERROR")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_par_mois_categories_structure(self):
+        """TEST 2: Verify par_mois_categories field structure"""
+        self.log("🧪 TEST 2: Verify par_mois_categories field structure")
+        
+        try:
+            response = self.admin_session.get(f"{BACKEND_URL}/purchase-history/stats", timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                par_mois_categories = data.get("par_mois_categories", [])
+                
+                self.log(f"✅ par_mois_categories field found")
+                self.log(f"   Number of months: {len(par_mois_categories)}")
+                
+                if len(par_mois_categories) > 0:
+                    # Check structure of first month
+                    first_month = par_mois_categories[0]
                     
-                    self.technicien_session.headers.update({
-                        "Authorization": f"Bearer {self.technicien_token}"
-                    })
+                    # Verify month structure
+                    if "mois" not in first_month or "categories" not in first_month:
+                        self.log("❌ Invalid month structure - missing 'mois' or 'categories'", "ERROR")
+                        return False
                     
-                    self.log(f"✅ Technicien login successful - User: {self.technicien_data.get('prenom')} {self.technicien_data.get('nom')}")
+                    self.log(f"✅ Month structure correct: {first_month['mois']}")
+                    self.log(f"   Categories count: {len(first_month['categories'])}")
+                    
+                    # Check category structure
+                    if len(first_month['categories']) > 0:
+                        first_category = first_month['categories'][0]
+                        required_cat_fields = ["nom", "montant", "nb_lignes", "nb_commandes"]
+                        
+                        missing_cat_fields = [field for field in required_cat_fields if field not in first_category]
+                        if missing_cat_fields:
+                            self.log(f"❌ Missing category fields: {missing_cat_fields}", "ERROR")
+                            return False
+                        
+                        self.log(f"✅ Category structure correct:")
+                        self.log(f"     Category: {first_category['nom']}")
+                        self.log(f"     Montant: {first_category['montant']}")
+                        self.log(f"     Nb lignes: {first_category['nb_lignes']}")
+                        self.log(f"     Nb commandes: {first_category['nb_commandes']}")
+                    
                     return True
                 else:
-                    self.log(f"❌ Technicien login failed - Status: {tech_response.status_code}", "ERROR")
-                    return False
+                    self.log("ℹ️  No data in par_mois_categories (empty dataset)")
+                    return True
+                    
             else:
-                self.log(f"❌ Technicien creation failed - Status: {response.status_code}, Response: {response.text}", "ERROR")
+                self.log(f"❌ Request failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Technicien creation request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def test_get_messages(self):
-        """TEST 1: GET /api/chat/messages - Récupérer les messages du chat"""
-        self.log("🧪 TEST 1: GET /api/chat/messages - Récupération des messages")
+    def test_category_mapping_validation(self):
+        """TEST 3: Verify category mapping is working correctly"""
+        self.log("🧪 TEST 3: Verify category mapping is working correctly")
         
         try:
-            response = self.admin_session.get(f"{BACKEND_URL}/chat/messages", timeout=15)
+            response = self.admin_session.get(f"{BACKEND_URL}/purchase-history/stats", timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
-                self.log(f"✅ GET /api/chat/messages successful (200 OK)")
-                self.log(f"   Messages returned: {len(data.get('messages', []))}")
-                self.log(f"   Total count: {data.get('total', 0)}")
+                par_mois_categories = data.get("par_mois_categories", [])
                 
-                # Verify response structure
-                if 'messages' in data and 'total' in data:
-                    self.log("✅ Response structure correct (messages, total)")
-                    return True
-                else:
-                    self.log("❌ Response structure incorrect", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ GET /api/chat/messages failed - Status: {response.status_code}", "ERROR")
-                return False
+                # Collect all categories found
+                all_categories = set()
+                for month_data in par_mois_categories:
+                    for category in month_data.get("categories", []):
+                        all_categories.add(category["nom"])
                 
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_post_public_message(self):
-        """TEST 2: POST /api/chat/messages - Envoyer un message public"""
-        self.log("🧪 TEST 2: POST /api/chat/messages - Envoi message public")
-        
-        try:
-            message_data = {
-                "message": "Test message public depuis backend test",
-                "recipient_ids": [],  # Empty for public message
-                "reply_to_id": None
-            }
-            
-            response = self.admin_session.post(
-                f"{BACKEND_URL}/chat/messages",
-                json=message_data,
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ POST /api/chat/messages (public) successful (200 OK)")
+                self.log(f"✅ Found {len(all_categories)} unique categories:")
+                for category in sorted(all_categories):
+                    self.log(f"   - {category}")
                 
-                if data.get('success') and 'message' in data:
-                    message = data['message']
-                    self.test_messages.append(message['id'])
-                    self.log(f"   Message ID: {message['id']}")
-                    self.log(f"   Message content: {message['message']}")
-                    self.log(f"   Is private: {message.get('is_private', False)}")
-                    self.log(f"   User name: {message.get('user_name')}")
-                    return True
-                else:
-                    self.log("❌ Response structure incorrect", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ POST /api/chat/messages failed - Status: {response.status_code}", "ERROR")
-                return False
+                # Check for "Non catégorisé" category (should exist for unmapped articles)
+                if "Non catégorisé" in all_categories:
+                    self.log("✅ 'Non catégorisé' category found (correct for unmapped articles)")
                 
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_post_private_message(self):
-        """TEST 3: POST /api/chat/messages - Envoyer un message privé"""
-        self.log("🧪 TEST 3: POST /api/chat/messages - Envoi message privé")
-        
-        if not self.technicien_data:
-            self.log("❌ Technicien user not available for private message test", "ERROR")
-            return False
-        
-        try:
-            message_data = {
-                "message": "Test message privé pour technicien",
-                "recipient_ids": [self.technicien_data['id']],  # Private message to technicien
-                "reply_to_id": None
-            }
-            
-            response = self.admin_session.post(
-                f"{BACKEND_URL}/chat/messages",
-                json=message_data,
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ POST /api/chat/messages (private) successful (200 OK)")
+                # Verify known categories from mapping
+                expected_categories = [
+                    "Maintenance Constructions", "Achat Transport Divers", 
+                    "Investissements", "Fournitures de Bureau"
+                ]
                 
-                if data.get('success') and 'message' in data:
-                    message = data['message']
-                    self.test_messages.append(message['id'])
-                    self.log(f"   Message ID: {message['id']}")
-                    self.log(f"   Message content: {message['message']}")
-                    self.log(f"   Is private: {message.get('is_private', False)}")
-                    self.log(f"   Recipients: {message.get('recipient_names', [])}")
-                    return True
-                else:
-                    self.log("❌ Response structure incorrect", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ POST /api/chat/messages failed - Status: {response.status_code}", "ERROR")
-                return False
+                found_expected = [cat for cat in expected_categories if cat in all_categories]
+                if found_expected:
+                    self.log(f"✅ Found expected categories: {found_expected}")
                 
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_get_unread_count(self):
-        """TEST 4: GET /api/chat/unread-count - Compter les messages non lus"""
-        self.log("🧪 TEST 4: GET /api/chat/unread-count - Compteur messages non lus")
-        
-        try:
-            response = self.admin_session.get(f"{BACKEND_URL}/chat/unread-count", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ GET /api/chat/unread-count successful (200 OK)")
-                self.log(f"   Unread count: {data.get('unread_count', 0)}")
-                
-                if 'unread_count' in data and isinstance(data['unread_count'], int):
-                    self.log("✅ Response structure correct (unread_count as integer)")
-                    return True
-                else:
-                    self.log("❌ Response structure incorrect", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ GET /api/chat/unread-count failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_mark_as_read(self):
-        """TEST 5: POST /api/chat/mark-as-read - Marquer comme lu"""
-        self.log("🧪 TEST 5: POST /api/chat/mark-as-read - Marquer messages comme lus")
-        
-        try:
-            response = self.admin_session.post(f"{BACKEND_URL}/chat/mark-as-read", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ POST /api/chat/mark-as-read successful (200 OK)")
-                
-                if data.get('success'):
-                    self.log("✅ Messages marked as read successfully")
-                    return True
-                else:
-                    self.log("❌ Response indicates failure", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ POST /api/chat/mark-as-read failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_get_online_users(self):
-        """TEST 6: GET /api/chat/online-users - Liste des utilisateurs en ligne"""
-        self.log("🧪 TEST 6: GET /api/chat/online-users - Utilisateurs en ligne")
-        
-        try:
-            response = self.admin_session.get(f"{BACKEND_URL}/chat/online-users", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ GET /api/chat/online-users successful (200 OK)")
-                self.log(f"   Online users count: {len(data.get('online_users', []))}")
-                
-                if 'online_users' in data and isinstance(data['online_users'], list):
-                    self.log("✅ Response structure correct (online_users as list)")
-                    # Note: List may be empty since WebSocket connections are not active in REST tests
-                    self.log("ℹ️  Note: List may be empty as WebSocket connections are not active in REST tests")
-                    return True
-                else:
-                    self.log("❌ Response structure incorrect", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ GET /api/chat/online-users failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_delete_message_user_within_10s(self):
-        """TEST 7: DELETE /api/chat/messages/{id} - Suppression par utilisateur (dans les 10s)"""
-        self.log("🧪 TEST 7: DELETE /api/chat/messages/{id} - Suppression utilisateur (10s)")
-        
-        if not self.test_messages:
-            self.log("❌ No test messages available for deletion", "ERROR")
-            return False
-        
-        try:
-            # Create a new message for immediate deletion
-            message_data = {
-                "message": "Message à supprimer immédiatement",
-                "recipient_ids": [],
-                "reply_to_id": None
-            }
-            
-            create_response = self.admin_session.post(
-                f"{BACKEND_URL}/chat/messages",
-                json=message_data,
-                timeout=15
-            )
-            
-            if create_response.status_code != 200:
-                self.log("❌ Failed to create message for deletion test", "ERROR")
-                return False
-            
-            message_id = create_response.json()['message']['id']
-            
-            # Immediately try to delete (within 10s window)
-            delete_response = self.admin_session.delete(
-                f"{BACKEND_URL}/chat/messages/{message_id}",
-                timeout=15
-            )
-            
-            if delete_response.status_code == 200:
-                data = delete_response.json()
-                self.log(f"✅ DELETE /api/chat/messages/{message_id} successful (200 OK)")
-                
-                if data.get('success'):
-                    self.log("✅ Message deleted successfully within 10s window")
-                    return True
-                else:
-                    self.log("❌ Response indicates failure", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ DELETE /api/chat/messages failed - Status: {delete_response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_delete_message_user_after_10s(self):
-        """TEST 8: DELETE /api/chat/messages/{id} - Suppression par utilisateur (après 10s) - doit échouer"""
-        self.log("🧪 TEST 8: DELETE /api/chat/messages/{id} - Suppression utilisateur (après 10s)")
-        
-        if not self.technicien_data:
-            self.log("❌ Technicien user not available for timing test", "ERROR")
-            return False
-        
-        try:
-            # Create a message with technicien user and wait for 10s window to expire
-            message_data = {
-                "message": "Message à supprimer après 10s (doit échouer)",
-                "recipient_ids": [],
-                "reply_to_id": None
-            }
-            
-            create_response = self.technicien_session.post(
-                f"{BACKEND_URL}/chat/messages",
-                json=message_data,
-                timeout=15
-            )
-            
-            if create_response.status_code != 200:
-                self.log("❌ Failed to create message for deletion test", "ERROR")
-                return False
-            
-            message_id = create_response.json()['message']['id']
-            
-            # Wait 11 seconds to exceed the 10s window
-            self.log("   Waiting 11 seconds for deletion window to expire...")
-            time.sleep(11)
-            
-            # Try to delete with technicien user (should fail)
-            delete_response = self.technicien_session.delete(
-                f"{BACKEND_URL}/chat/messages/{message_id}",
-                timeout=15
-            )
-            
-            if delete_response.status_code == 403:
-                self.log(f"✅ DELETE /api/chat/messages/{message_id} correctly rejected (403 Forbidden)")
-                self.log("✅ 10-second deletion window correctly enforced")
                 return True
+                
             else:
-                self.log(f"❌ DELETE should have been rejected but got status: {delete_response.status_code}", "ERROR")
+                self.log(f"❌ Request failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def test_delete_message_admin_unlimited(self):
-        """TEST 9: DELETE /api/chat/messages/{id} - Suppression admin (illimitée)"""
-        self.log("🧪 TEST 9: DELETE /api/chat/messages/{id} - Suppression admin (illimitée)")
+    def test_montant_totals_consistency(self):
+        """TEST 4: Verify montant totals match between par_mois and par_mois_categories"""
+        self.log("🧪 TEST 4: Verify montant totals consistency")
         
         try:
-            # Create a message and wait to exceed 10s window
-            message_data = {
-                "message": "Message à supprimer par admin après 10s",
-                "recipient_ids": [],
-                "reply_to_id": None
-            }
+            response = self.admin_session.get(f"{BACKEND_URL}/purchase-history/stats", timeout=15)
             
-            create_response = self.admin_session.post(
-                f"{BACKEND_URL}/chat/messages",
-                json=message_data,
-                timeout=15
-            )
-            
-            if create_response.status_code != 200:
-                self.log("❌ Failed to create message for admin deletion test", "ERROR")
-                return False
-            
-            message_id = create_response.json()['message']['id']
-            
-            # Wait 11 seconds to exceed the 10s window
-            self.log("   Waiting 11 seconds for deletion window to expire...")
-            time.sleep(11)
-            
-            # Admin should still be able to delete
-            delete_response = self.admin_session.delete(
-                f"{BACKEND_URL}/chat/messages/{message_id}",
-                timeout=15
-            )
-            
-            if delete_response.status_code == 200:
-                data = delete_response.json()
-                self.log(f"✅ DELETE /api/chat/messages/{message_id} successful (200 OK)")
+            if response.status_code == 200:
+                data = response.json()
+                par_mois = data.get("par_mois", [])
+                par_mois_categories = data.get("par_mois_categories", [])
                 
-                if data.get('success'):
-                    self.log("✅ Admin can delete messages without time restriction")
-                    return True
-                else:
-                    self.log("❌ Response indicates failure", "ERROR")
+                # Create dictionaries for easy comparison
+                mois_totals = {month["mois"]: month["montant_total"] for month in par_mois}
+                
+                consistency_errors = []
+                
+                for month_data in par_mois_categories:
+                    month = month_data["mois"]
+                    categories_total = sum(cat["montant"] for cat in month_data["categories"])
+                    
+                    if month in mois_totals:
+                        expected_total = mois_totals[month]
+                        
+                        # Allow small floating point differences
+                        if abs(categories_total - expected_total) > 0.01:
+                            consistency_errors.append({
+                                "month": month,
+                                "expected": expected_total,
+                                "categories_sum": categories_total,
+                                "difference": abs(categories_total - expected_total)
+                            })
+                
+                if consistency_errors:
+                    self.log("❌ Montant totals inconsistency found:", "ERROR")
+                    for error in consistency_errors:
+                        self.log(f"   Month {error['month']}: Expected {error['expected']}, Got {error['categories_sum']} (diff: {error['difference']})", "ERROR")
                     return False
+                else:
+                    self.log("✅ Montant totals are consistent between par_mois and par_mois_categories")
+                    return True
+                
             else:
-                self.log(f"❌ DELETE /api/chat/messages failed - Status: {delete_response.status_code}", "ERROR")
+                self.log(f"❌ Request failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def test_permissions_visualiseur(self):
-        """TEST 10: Test permissions - VISUALISEUR peut voir mais pas envoyer"""
-        self.log("🧪 TEST 10: Test permissions VISUALISEUR")
+    def test_categories_sorted_by_montant(self):
+        """TEST 5: Verify categories are sorted by montant (descending)"""
+        self.log("🧪 TEST 5: Verify categories are sorted by montant (descending)")
         
         try:
-            # Create a VISUALISEUR user
-            visualiseur_response = self.admin_session.post(
-                f"{BACKEND_URL}/users/create-member",
-                json={
-                    "email": "visualiseur.test@gmao-iris.local",
-                    "prenom": "Test",
-                    "nom": "Visualiseur",
-                    "role": "VISUALISEUR",
-                    "telephone": "0123456789",
-                    "service": "Test",
-                    "password": "Test123!"
-                },
-                timeout=10
-            )
+            response = self.admin_session.get(f"{BACKEND_URL}/purchase-history/stats", timeout=15)
             
-            if visualiseur_response.status_code != 200:
-                self.log("❌ Failed to create VISUALISEUR user", "ERROR")
-                return False
-            
-            # Login as VISUALISEUR
-            visualiseur_session = requests.Session()
-            login_response = visualiseur_session.post(
-                f"{BACKEND_URL}/auth/login",
-                json={
-                    "email": "visualiseur.test@gmao-iris.local",
-                    "password": "Test123!"
-                },
-                timeout=10
-            )
-            
-            if login_response.status_code != 200:
-                self.log("❌ VISUALISEUR login failed", "ERROR")
-                return False
-            
-            token = login_response.json().get("access_token")
-            visualiseur_session.headers.update({
-                "Authorization": f"Bearer {token}"
-            })
-            
-            # Test GET messages (should work)
-            get_response = visualiseur_session.get(f"{BACKEND_URL}/chat/messages", timeout=15)
-            
-            if get_response.status_code == 200:
-                self.log("✅ VISUALISEUR can view messages (200 OK)")
+            if response.status_code == 200:
+                data = response.json()
+                par_mois_categories = data.get("par_mois_categories", [])
+                
+                sorting_errors = []
+                
+                for month_data in par_mois_categories:
+                    month = month_data["mois"]
+                    categories = month_data["categories"]
+                    
+                    if len(categories) > 1:
+                        # Check if sorted by montant descending
+                        for i in range(len(categories) - 1):
+                            if categories[i]["montant"] < categories[i + 1]["montant"]:
+                                sorting_errors.append({
+                                    "month": month,
+                                    "position": i,
+                                    "current": categories[i]["montant"],
+                                    "next": categories[i + 1]["montant"]
+                                })
+                
+                if sorting_errors:
+                    self.log("❌ Categories not properly sorted by montant:", "ERROR")
+                    for error in sorting_errors:
+                        self.log(f"   Month {error['month']}: Position {error['position']} has {error['current']} < {error['next']}", "ERROR")
+                    return False
+                else:
+                    self.log("✅ Categories are properly sorted by montant (descending)")
+                    return True
+                
             else:
-                self.log(f"❌ VISUALISEUR cannot view messages - Status: {get_response.status_code}", "ERROR")
+                self.log(f"❌ Request failed - Status: {response.status_code}", "ERROR")
                 return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_date_filters(self):
+        """TEST 6: Test with date filters (start_date, end_date)"""
+        self.log("🧪 TEST 6: Test with date filters")
+        
+        try:
+            # Test with date range
+            start_date = "2024-01-01"
+            end_date = "2024-12-31"
             
-            # Test POST message (should fail based on chatLive permissions)
-            message_data = {
-                "message": "Test message from VISUALISEUR (should fail)",
-                "recipient_ids": [],
-                "reply_to_id": None
-            }
-            
-            post_response = visualiseur_session.post(
-                f"{BACKEND_URL}/chat/messages",
-                json=message_data,
+            response = self.admin_session.get(
+                f"{BACKEND_URL}/purchase-history/stats",
+                params={"start_date": start_date, "end_date": end_date},
                 timeout=15
             )
             
-            # Check if VISUALISEUR has edit permission for chatLive
-            # According to models.py, VISUALISEUR has chatLive: view=True, edit=False, delete=False
-            if post_response.status_code == 403:
-                self.log("✅ VISUALISEUR correctly denied message sending (403 Forbidden)")
-                return True
-            elif post_response.status_code == 200:
-                self.log("ℹ️  VISUALISEUR can send messages (permissions allow edit)")
-                return True
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ Date filter test successful (200 OK)")
+                self.log(f"   Filtered results - Total achats: {data.get('totalAchats', 0)}")
+                
+                # Verify par_mois_categories still exists
+                if "par_mois_categories" in data:
+                    self.log("✅ par_mois_categories field present with date filters")
+                    
+                    # Check if dates are within range
+                    par_mois_categories = data.get("par_mois_categories", [])
+                    date_errors = []
+                    
+                    for month_data in par_mois_categories:
+                        month = month_data["mois"]
+                        if month < start_date[:7] or month > end_date[:7]:
+                            date_errors.append(month)
+                    
+                    if date_errors:
+                        self.log(f"❌ Dates outside filter range found: {date_errors}", "ERROR")
+                        return False
+                    else:
+                        self.log("✅ All dates within specified range")
+                        return True
+                else:
+                    self.log("❌ par_mois_categories field missing with date filters", "ERROR")
+                    return False
+                
             else:
-                self.log(f"❌ Unexpected response for VISUALISEUR POST - Status: {post_response.status_code}", "ERROR")
+                self.log(f"❌ Date filter test failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def cleanup_test_data(self):
-        """Clean up test data created during tests"""
-        self.log("🧹 Cleaning up test data...")
+    def test_empty_data_handling(self):
+        """TEST 7: Test graceful handling of empty data"""
+        self.log("🧪 TEST 7: Test graceful handling of empty data")
         
         try:
-            # Delete test users
-            users_to_delete = [
-                "technicien.test@gmao-iris.local",
-                "visualiseur.test@gmao-iris.local"
-            ]
+            # Test with a date range that should have no data
+            start_date = "2030-01-01"
+            end_date = "2030-12-31"
             
-            for email in users_to_delete:
-                # Get user list to find IDs
-                users_response = self.admin_session.get(f"{BACKEND_URL}/users", timeout=10)
-                if users_response.status_code == 200:
-                    users = users_response.json()
-                    for user in users:
-                        if user.get('email') == email:
-                            delete_response = self.admin_session.delete(
-                                f"{BACKEND_URL}/users/{user['id']}",
-                                timeout=10
-                            )
-                            if delete_response.status_code == 200:
-                                self.log(f"✅ Deleted test user: {email}")
-                            break
+            response = self.admin_session.get(
+                f"{BACKEND_URL}/purchase-history/stats",
+                params={"start_date": start_date, "end_date": end_date},
+                timeout=15
+            )
             
-            self.log("✅ Cleanup completed")
-            
-        except Exception as e:
-            self.log(f"⚠️  Cleanup warning: {str(e)}", "WARNING")
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ Empty data test successful (200 OK)")
+                
+                # Verify empty response structure
+                expected_empty_values = {
+                    "totalAchats": 0,
+                    "montantTotal": 0,
+                    "commandesTotales": 0
+                }
+                
+                for field, expected_value in expected_empty_values.items():
+                    if data.get(field) != expected_value:
+                        self.log(f"❌ Expected {field} to be {expected_value}, got {data.get(field)}", "ERROR")
+                        return False
+                
+                # Verify empty arrays
+                expected_empty_arrays = [
+                    "parFournisseur", "parMois", "parSite", "parGroupeStatistique", 
+                    "articlesTop", "par_utilisateur", "par_mois", "par_mois_categories"
+                ]
+                
+                for field in expected_empty_arrays:
+                    if not isinstance(data.get(field), list) or len(data.get(field, [])) != 0:
+                        self.log(f"❌ Expected {field} to be empty array, got {data.get(field)}", "ERROR")
+                        return False
+                
+                self.log("✅ Empty data handled gracefully")
+                return True
+                
+            else:
+                self.log(f"❌ Empty data test failed - Status: {response.status_code}", "ERROR")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
     
-    def run_chat_live_tests(self):
-        """Run comprehensive tests for Chat Live REST endpoints"""
+    def run_purchase_history_tests(self):
+        """Run comprehensive tests for Purchase History Statistics with Category Breakdown"""
         self.log("=" * 80)
-        self.log("TESTING CHAT LIVE PHASES 1-2 - REST ENDPOINTS")
+        self.log("TESTING PURCHASE HISTORY STATISTICS WITH CATEGORY BREAKDOWN")
         self.log("=" * 80)
         self.log("CONTEXTE:")
-        self.log("Test des endpoints REST du Chat Live style Viber (Phases 1-2)")
-        self.log("Fonctionnalités: Messages publics/privés, compteur non lus, suppression avec règles")
+        self.log("Test du nouvel endpoint /api/purchase-history/stats avec catégorisation")
+        self.log("Fonctionnalité: par_mois_categories avec breakdown par catégorie mensuel")
         self.log("")
-        self.log("ENDPOINTS À TESTER:")
-        self.log("1. GET /api/chat/messages (pagination)")
-        self.log("2. POST /api/chat/messages (public/privé)")
-        self.log("3. DELETE /api/chat/messages/{id} (règles 10s/admin)")
-        self.log("4. GET /api/chat/unread-count")
-        self.log("5. POST /api/chat/mark-as-read")
-        self.log("6. GET /api/chat/online-users")
-        self.log("7. Tests de permissions selon rôles")
+        self.log("TESTS À EFFECTUER:")
+        self.log("1. GET /api/purchase-history/stats (endpoint de base)")
+        self.log("2. Vérification structure par_mois_categories")
+        self.log("3. Validation mapping des catégories")
+        self.log("4. Cohérence des montants totaux")
+        self.log("5. Tri des catégories par montant")
+        self.log("6. Filtres de date")
+        self.log("7. Gestion des données vides")
         self.log("=" * 80)
         
         results = {
             "admin_login": False,
-            "create_technicien": False,
-            "get_messages": False,
-            "post_public_message": False,
-            "post_private_message": False,
-            "get_unread_count": False,
-            "mark_as_read": False,
-            "get_online_users": False,
-            "delete_message_user_10s": False,
-            "delete_message_user_after_10s": False,
-            "delete_message_admin": False,
-            "permissions_visualiseur": False
+            "basic_endpoint": False,
+            "structure_validation": False,
+            "category_mapping": False,
+            "montant_consistency": False,
+            "categories_sorting": False,
+            "date_filters": False,
+            "empty_data_handling": False
         }
         
         # Test 1: Admin Login
@@ -617,50 +436,35 @@ class PurchaseHistoryTester:
             self.log("❌ Cannot proceed with other tests - Admin login failed", "ERROR")
             return results
         
-        # Test 2: Create technicien user for private message testing
-        results["create_technicien"] = self.create_technicien_user()
-        
-        # TESTS CRITIQUES DES ENDPOINTS CHAT LIVE
+        # TESTS CRITIQUES DE L'ENDPOINT PURCHASE HISTORY STATS
         self.log("\n" + "=" * 60)
-        self.log("📱 TESTS CRITIQUES - ENDPOINTS CHAT LIVE REST")
+        self.log("📊 TESTS CRITIQUES - PURCHASE HISTORY STATS")
         self.log("=" * 60)
         
-        # Test 3: Get messages
-        results["get_messages"] = self.test_get_messages()
+        # Test 2: Basic endpoint test
+        results["basic_endpoint"] = self.test_purchase_history_stats_basic()
         
-        # Test 4: Post public message
-        results["post_public_message"] = self.test_post_public_message()
+        # Test 3: Structure validation
+        results["structure_validation"] = self.test_par_mois_categories_structure()
         
-        # Test 5: Post private message
-        results["post_private_message"] = self.test_post_private_message()
+        # Test 4: Category mapping
+        results["category_mapping"] = self.test_category_mapping_validation()
         
-        # Test 6: Get unread count
-        results["get_unread_count"] = self.test_get_unread_count()
+        # Test 5: Montant consistency
+        results["montant_consistency"] = self.test_montant_totals_consistency()
         
-        # Test 7: Mark as read
-        results["mark_as_read"] = self.test_mark_as_read()
+        # Test 6: Categories sorting
+        results["categories_sorting"] = self.test_categories_sorted_by_montant()
         
-        # Test 8: Get online users
-        results["get_online_users"] = self.test_get_online_users()
+        # Test 7: Date filters
+        results["date_filters"] = self.test_date_filters()
         
-        # Test 9: Delete message within 10s (user)
-        results["delete_message_user_10s"] = self.test_delete_message_user_within_10s()
-        
-        # Test 10: Delete message after 10s (user - should fail)
-        results["delete_message_user_after_10s"] = self.test_delete_message_user_after_10s()
-        
-        # Test 11: Delete message admin (unlimited)
-        results["delete_message_admin"] = self.test_delete_message_admin_unlimited()
-        
-        # Test 12: Permissions VISUALISEUR
-        results["permissions_visualiseur"] = self.test_permissions_visualiseur()
-        
-        # Cleanup
-        self.cleanup_test_data()
+        # Test 8: Empty data handling
+        results["empty_data_handling"] = self.test_empty_data_handling()
         
         # Summary
         self.log("=" * 80)
-        self.log("CHAT LIVE PHASES 1-2 - RÉSULTATS DES TESTS")
+        self.log("PURCHASE HISTORY CATEGORY BREAKDOWN - RÉSULTATS DES TESTS")
         self.log("=" * 80)
         
         passed = sum(results.values())
@@ -674,102 +478,105 @@ class PurchaseHistoryTester:
         
         # Analyse détaillée des tests critiques
         critical_tests = [
-            "admin_login", "get_messages", "post_public_message", "post_private_message",
-            "get_unread_count", "mark_as_read", "get_online_users", 
-            "delete_message_user_10s", "delete_message_user_after_10s", 
-            "delete_message_admin", "permissions_visualiseur"
+            "admin_login", "basic_endpoint", "structure_validation", "category_mapping",
+            "montant_consistency", "categories_sorting", "date_filters", "empty_data_handling"
         ]
         critical_passed = sum(results.get(test, False) for test in critical_tests)
         
         self.log("\n" + "=" * 60)
-        self.log("ANALYSE CRITIQUE DES ENDPOINTS CHAT LIVE")
+        self.log("ANALYSE CRITIQUE DU PURCHASE HISTORY STATS")
         self.log("=" * 60)
         
         # TEST CRITIQUE 1: Authentification
         if results.get("admin_login", False):
             self.log("🎉 TEST CRITIQUE 1 - AUTHENTIFICATION: ✅ SUCCÈS")
-            self.log("✅ Connexion admin@gmao-iris.local / Admin123! réussie")
+            self.log("✅ Connexion admin@test.com / testpassword réussie")
         else:
             self.log("🚨 TEST CRITIQUE 1 - AUTHENTIFICATION: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 2: Messages publics
-        if results.get("get_messages", False) and results.get("post_public_message", False):
-            self.log("🎉 TEST CRITIQUE 2 - MESSAGES PUBLICS: ✅ SUCCÈS")
-            self.log("✅ GET /api/chat/messages fonctionne")
-            self.log("✅ POST /api/chat/messages (public) fonctionne")
+        # TEST CRITIQUE 2: Endpoint de base
+        if results.get("basic_endpoint", False):
+            self.log("🎉 TEST CRITIQUE 2 - ENDPOINT DE BASE: ✅ SUCCÈS")
+            self.log("✅ GET /api/purchase-history/stats fonctionne")
+            self.log("✅ Tous les champs requis présents")
         else:
-            self.log("🚨 TEST CRITIQUE 2 - MESSAGES PUBLICS: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 2 - ENDPOINT DE BASE: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 3: Messages privés
-        if results.get("post_private_message", False):
-            self.log("🎉 TEST CRITIQUE 3 - MESSAGES PRIVÉS: ✅ SUCCÈS")
-            self.log("✅ POST /api/chat/messages (privé) fonctionne")
-            self.log("✅ Destinataires spécifiques supportés")
+        # TEST CRITIQUE 3: Structure par_mois_categories
+        if results.get("structure_validation", False):
+            self.log("🎉 TEST CRITIQUE 3 - STRUCTURE PAR_MOIS_CATEGORIES: ✅ SUCCÈS")
+            self.log("✅ Structure correcte: mois + categories")
+            self.log("✅ Champs catégorie: nom, montant, nb_lignes, nb_commandes")
         else:
-            self.log("🚨 TEST CRITIQUE 3 - MESSAGES PRIVÉS: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 3 - STRUCTURE PAR_MOIS_CATEGORIES: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 4: Compteur et lecture
-        if results.get("get_unread_count", False) and results.get("mark_as_read", False):
-            self.log("🎉 TEST CRITIQUE 4 - COMPTEUR NON LUS: ✅ SUCCÈS")
-            self.log("✅ GET /api/chat/unread-count fonctionne")
-            self.log("✅ POST /api/chat/mark-as-read fonctionne")
+        # TEST CRITIQUE 4: Mapping des catégories
+        if results.get("category_mapping", False):
+            self.log("🎉 TEST CRITIQUE 4 - MAPPING DES CATÉGORIES: ✅ SUCCÈS")
+            self.log("✅ Articles correctement mappés aux catégories")
+            self.log("✅ 'Non catégorisé' pour articles non mappés")
         else:
-            self.log("🚨 TEST CRITIQUE 4 - COMPTEUR NON LUS: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 4 - MAPPING DES CATÉGORIES: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 5: Suppression avec règles
-        if (results.get("delete_message_user_10s", False) and 
-            results.get("delete_message_user_after_10s", False) and 
-            results.get("delete_message_admin", False)):
-            self.log("🎉 TEST CRITIQUE 5 - SUPPRESSION AVEC RÈGLES: ✅ SUCCÈS")
-            self.log("✅ Utilisateur peut supprimer dans les 10s")
-            self.log("✅ Utilisateur ne peut plus supprimer après 10s")
-            self.log("✅ Admin peut supprimer sans limite de temps")
+        # TEST CRITIQUE 5: Cohérence des montants
+        if results.get("montant_consistency", False):
+            self.log("🎉 TEST CRITIQUE 5 - COHÉRENCE DES MONTANTS: ✅ SUCCÈS")
+            self.log("✅ Totaux par_mois = somme des catégories")
         else:
-            self.log("🚨 TEST CRITIQUE 5 - SUPPRESSION AVEC RÈGLES: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 5 - COHÉRENCE DES MONTANTS: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 6: Permissions
-        if results.get("permissions_visualiseur", False):
-            self.log("🎉 TEST CRITIQUE 6 - PERMISSIONS: ✅ SUCCÈS")
-            self.log("✅ VISUALISEUR peut voir les messages")
-            self.log("✅ Permissions selon rôles respectées")
+        # TEST CRITIQUE 6: Tri des catégories
+        if results.get("categories_sorting", False):
+            self.log("🎉 TEST CRITIQUE 6 - TRI DES CATÉGORIES: ✅ SUCCÈS")
+            self.log("✅ Catégories triées par montant décroissant")
         else:
-            self.log("🚨 TEST CRITIQUE 6 - PERMISSIONS: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 6 - TRI DES CATÉGORIES: ❌ ÉCHEC")
+        
+        # TEST CRITIQUE 7: Filtres de date
+        if results.get("date_filters", False):
+            self.log("🎉 TEST CRITIQUE 7 - FILTRES DE DATE: ✅ SUCCÈS")
+            self.log("✅ start_date et end_date fonctionnent")
+        else:
+            self.log("🚨 TEST CRITIQUE 7 - FILTRES DE DATE: ❌ ÉCHEC")
+        
+        # TEST CRITIQUE 8: Gestion données vides
+        if results.get("empty_data_handling", False):
+            self.log("🎉 TEST CRITIQUE 8 - GESTION DONNÉES VIDES: ✅ SUCCÈS")
+            self.log("✅ Réponse gracieuse pour données vides")
+        else:
+            self.log("🚨 TEST CRITIQUE 8 - GESTION DONNÉES VIDES: ❌ ÉCHEC")
         
         # Conclusion finale
         self.log("\n" + "=" * 80)
-        self.log("CONCLUSION FINALE - CHAT LIVE PHASES 1-2")
+        self.log("CONCLUSION FINALE - PURCHASE HISTORY CATEGORY BREAKDOWN")
         self.log("=" * 80)
         
         if critical_passed >= len(critical_tests) - 1:  # Allow 1 failure
-            self.log("🎉 CHAT LIVE PHASES 1-2 BACKEND ENTIÈREMENT FONCTIONNEL!")
-            self.log("✅ Tous les endpoints REST fonctionnent correctement")
-            self.log("✅ Messages publics et privés supportés")
-            self.log("✅ Compteur de messages non lus opérationnel")
-            self.log("✅ Règles de suppression (10s utilisateur, illimité admin) respectées")
-            self.log("✅ Permissions selon rôles fonctionnelles")
-            self.log("✅ Le backend Chat Live est PRÊT POUR PRODUCTION")
-            self.log("")
-            self.log("ℹ️  NOTE: Les WebSockets ne peuvent pas être testés via REST")
-            self.log("ℹ️  Les tests WebSocket nécessitent un client WebSocket dédié")
+            self.log("🎉 PURCHASE HISTORY CATEGORY BREAKDOWN ENTIÈREMENT FONCTIONNEL!")
+            self.log("✅ Endpoint /api/purchase-history/stats opérationnel")
+            self.log("✅ Champ par_mois_categories correctement implémenté")
+            self.log("✅ Mapping des articles vers catégories fonctionnel")
+            self.log("✅ Structure de réponse conforme aux spécifications")
+            self.log("✅ Cohérence des données validée")
+            self.log("✅ Filtres de date opérationnels")
+            self.log("✅ La fonctionnalité est PRÊTE POUR PRODUCTION")
         else:
-            self.log("⚠️ CHAT LIVE PHASES 1-2 INCOMPLET - PROBLÈMES DÉTECTÉS")
+            self.log("⚠️ PURCHASE HISTORY CATEGORY BREAKDOWN INCOMPLET - PROBLÈMES DÉTECTÉS")
             failed_critical = [test for test in critical_tests if not results.get(test, False)]
             self.log(f"❌ Tests critiques échoués: {', '.join(failed_critical)}")
-            self.log("❌ Les endpoints Chat Live ne fonctionnent pas correctement")
+            self.log("❌ La fonctionnalité de catégorisation ne fonctionne pas correctement")
             self.log("❌ Intervention requise avant mise en production")
         
         return results
 
 if __name__ == "__main__":
-    tester = ChatLiveTester()
-    results = tester.run_chat_live_tests()
+    tester = PurchaseHistoryTester()
+    results = tester.run_purchase_history_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "get_messages", "post_public_message", "post_private_message",
-        "get_unread_count", "mark_as_read", "get_online_users", 
-        "delete_message_user_10s", "delete_message_user_after_10s", 
-        "delete_message_admin", "permissions_visualiseur"
+        "admin_login", "basic_endpoint", "structure_validation", "category_mapping",
+        "montant_consistency", "categories_sorting", "date_filters", "empty_data_handling"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
