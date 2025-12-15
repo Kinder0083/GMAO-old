@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Script for Chat Live Functionality (Phases 1-2)
-Tests all REST endpoints for the Chat Live feature
+Backend API Testing Script for Purchase History Statistics with Category Breakdown
+Tests the new purchase-history/stats endpoint with par_mois_categories feature
 """
 
 import requests
@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 BACKEND_URL = "https://purchase-history-1.preview.emergentagent.com/api"
 
 # Test credentials
-ADMIN_EMAIL = "admin@gmao-iris.local"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_EMAIL = "admin@test.com"
+ADMIN_PASSWORD = "testpassword"
 
 class ChatLiveTester:
     def __init__(self):
