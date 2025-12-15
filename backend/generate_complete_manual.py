@@ -2292,9 +2292,17 @@ async def generate_manual():
         
         print(f"\n✅ {len(ALL_SECTIONS)} sections créées")
         print("\n🎉 Manuel généré avec succès !")
+        return True
         
+    except Exception as e:
+        print(f"❌ ERREUR: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
     finally:
         client.close()
 
 if __name__ == "__main__":
-    asyncio.run(generate_manual())
+    success = asyncio.run(generate_manual())
+    import sys
+    sys.exit(0 if success else 1)
