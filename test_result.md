@@ -9164,10 +9164,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "MQTT Logs Visualizer Page - Phase 2"
-    - "MQTT Logs API Endpoints - Phase 2"
-    - "Sensors Statistics API - Calculs Automatiques Phase 2"
-    - "Sensors Grouping API - Phase 2"
+    - "Purchase History Category Breakdown Feature"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
