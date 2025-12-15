@@ -9043,22 +9043,35 @@ agent_communication:
       Merci de tester cette fonctionnalité en priorité.
     -agent: "testing"
     -message: |
-      ✅ TEST TERMINÉ - Bouton Actualiser Page Capteurs
+      ✅ TEST TERMINÉ - Purchase History Statistics API with Category Breakdown
       
-      RÉSULTATS DU TEST:
-      - ✅ API Backend fonctionnel (GET /api/sensors retourne 1 capteur)
-      - ✅ Authentification validée (admin@gmao-iris.local / Admin123!)
-      - ✅ Code frontend analysé et conforme aux corrections
-      - ✅ Implémentation du bouton refresh complète
-      - ✅ Toast de feedback implémenté
-      - ✅ Animation de chargement configurée
-      - ✅ Gestion d'erreurs présente
+      RÉSULTATS DU TEST COMPLET (8/8 TESTS RÉUSSIS):
+      - ✅ Endpoint /api/purchase-history/stats fonctionnel (200 OK)
+      - ✅ Nouveau champ "par_mois_categories" présent et correctement structuré
+      - ✅ Mapping des articles vers catégories opérationnel (16 catégories trouvées)
+      - ✅ Cohérence des montants validée (par_mois = somme des catégories)
+      - ✅ Tri des catégories par montant décroissant confirmé
+      - ✅ Filtres de date (start_date, end_date) fonctionnels
+      - ✅ Gestion gracieuse des données vides validée
+      - ✅ Structure de réponse conforme aux spécifications
       
-      CONCLUSION: Le bouton "Actualiser" fonctionne correctement.
-      Toutes les corrections demandées ont été implémentées et testées.
+      DONNÉES RÉELLES TESTÉES:
+      - Total achats: 200 (94707.26€, 101 commandes)
+      - 2 mois de données (2025-10, 2025-11)
+      - 16 catégories uniques identifiées
+      - Exemple: Investissements (19235.76€, 7 lignes, 4 commandes)
+      
+      CORRECTIONS EFFECTUÉES:
+      - ✅ Ajout "par_mois_categories": [] dans réponse vide (ligne 3269)
+      - ✅ Backend redémarré et tests re-validés
       
       CREDENTIALS VALIDÉS:
-      - admin@gmao-iris.local / Admin123! (WORKING)
-      - buenogy@gmail.com credentials non trouvés dans le système
+      - admin@test.com / testpassword (WORKING)
       
-      Le problème reporté par l'utilisateur est RÉSOLU.
+      🎉 CONCLUSION: La fonctionnalité Purchase History Category Breakdown est ENTIÈREMENT OPÉRATIONNELLE
+      - Tous les tests du cahier des charges validés
+      - Structure de réponse conforme aux spécifications
+      - Mapping des catégories fonctionnel
+      - Prêt pour utilisation en production
+      
+      La nouvelle fonctionnalité de catégorisation des achats par mois est PRÊTE POUR PRODUCTION.
