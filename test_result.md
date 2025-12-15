@@ -1109,6 +1109,135 @@ user_problem_statement: |
   Please perform comprehensive testing and report any issues found.
 
 backend:
+  - task: "Purchase History Statistics API with Category Breakdown"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py, /app/backend/category_mapping.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: |
+          NEW FEATURE IMPLEMENTED - Purchase History Category Breakdown
+          
+          CONTEXT:
+          Implemented a new feature to categorize purchase expenses by month using article codes.
+          Each purchase article is mapped to a category using category_mapping.py file.
+          
+          BACKEND IMPLEMENTATION:
+          1. /app/backend/category_mapping.py:
+             - CATEGORY_MAPPING: Maps categories to article codes (DM6 codes)
+             - ARTICLE_TO_CATEGORY: Reverse mapping for quick lookup
+             - get_category_from_article(): Function to get category from article code
+             - Returns "Non catégorisé" for unmapped articles
+          
+          2. /app/backend/server.py (lines 3320-3398):
+             - Enhanced GET /api/purchase-history/stats endpoint
+             - Added monthly_category_stats calculation
+             - New field "par_mois_categories" in response
+             - Structure: array of {mois, categories[{nom, montant, nb_lignes, nb_commandes}]}
+             - Categories sorted by montant (descending)
+             - Consistent with existing par_mois totals
+          
+          3. Fixed empty data handling:
+             - Added "par_mois_categories": [] to empty response (line 3269)
+             - Ensures consistent API response structure
+          
+          FEATURES IMPLEMENTED:
+          ✅ Article to category mapping using category_mapping.py
+          ✅ Monthly breakdown by category in par_mois_categories field
+          ✅ Each category includes: nom, montant, nb_lignes, nb_commandes
+          ✅ Categories sorted by montant (descending)
+          ✅ "Non catégorisé" for unmapped articles
+          ✅ Consistent totals between par_mois and par_mois_categories
+          ✅ Date filters support (start_date, end_date)
+          ✅ Graceful empty data handling
+        -working: true
+        -agent: "testing"
+        -comment: |
+          ✅ PURCHASE HISTORY CATEGORY BREAKDOWN ENTIÈREMENT FONCTIONNEL - Tests complets réussis (8/8)
+          
+          🎯 TESTS EFFECTUÉS (Décembre 2025):
+          
+          📊 TEST 1: Endpoint de base ✅ RÉUSSI
+          - GET /api/purchase-history/stats: SUCCESS (200 OK)
+          - Tous les champs requis présents dans la réponse
+          - Total achats: 200, Montant total: 94707.26€, Commandes: 101
+          - Nouveau champ "par_mois_categories" présent et fonctionnel
+          
+          📊 TEST 2: Structure par_mois_categories ✅ RÉUSSI
+          - Structure correcte: array d'objets avec "mois" et "categories"
+          - 2 mois de données trouvés (2025-10, 2025-11)
+          - Chaque catégorie contient: nom, montant, nb_lignes, nb_commandes
+          - Exemple: Investissements (19235.76€, 7 lignes, 4 commandes)
+          
+          📊 TEST 3: Mapping des catégories ✅ RÉUSSI
+          - 16 catégories uniques trouvées dans les données
+          - Catégories attendues présentes: Maintenance Constructions, Achat Transport Divers, Investissements, Fournitures de Bureau
+          - Mapping category_mapping.py fonctionnel
+          - Articles correctement associés aux catégories
+          
+          📊 TEST 4: Cohérence des montants ✅ RÉUSSI
+          - Totaux par_mois = somme des catégories dans par_mois_categories
+          - Vérification mathématique: pas d'écart > 0.01€
+          - Intégrité des données confirmée
+          
+          📊 TEST 5: Tri des catégories ✅ RÉUSSI
+          - Catégories triées par montant décroissant dans chaque mois
+          - Ordre correct vérifié pour tous les mois
+          - Plus gros montants en premier comme spécifié
+          
+          📊 TEST 6: Filtres de date ✅ RÉUSSI
+          - Filtres start_date et end_date fonctionnels
+          - Champ par_mois_categories présent avec filtres
+          - Dates dans la plage spécifiée uniquement
+          - Réponse cohérente avec et sans filtres
+          
+          📊 TEST 7: Gestion données vides ✅ RÉUSSI
+          - Réponse gracieuse pour plage de dates sans données
+          - Tous les champs présents avec valeurs par défaut
+          - par_mois_categories: [] (array vide) comme attendu
+          - Pas d'erreurs 500 ou de champs manquants
+          
+          📊 TEST 8: Validation structure réponse ✅ RÉUSSI
+          - Structure JSON conforme aux spécifications
+          - Exemple réel: {"mois": "2025-10", "categories": [{"nom": "Investissements", "montant": 19235.76, "nb_lignes": 7, "nb_commandes": 4}, ...]}
+          - Types de données corrects (string, number, integer)
+          
+          🔧 CORRECTIONS EFFECTUÉES PENDANT LES TESTS:
+          - Ajout du champ "par_mois_categories": [] dans la réponse vide (ligne 3269)
+          - Backend redémarré pour appliquer la correction
+          - Tous les tests passent maintenant sans erreur
+          
+          🔐 VÉRIFICATIONS TECHNIQUES:
+          - ✅ Authentification admin@test.com / testpassword fonctionnelle
+          - ✅ Import category_mapping.py dans server.py (ligne 3321)
+          - ✅ Fonction get_category_from_article() utilisée correctement
+          - ✅ Calculs MongoDB avec agrégation par mois et catégorie
+          - ✅ Sérialisation JSON sans erreurs ObjectId
+          - ✅ Gestion des cas edge (articles non mappés, données vides)
+          
+          📋 FONCTIONNALITÉS VALIDÉES:
+          - ✅ Endpoint GET /api/purchase-history/stats avec nouveau champ
+          - ✅ Mapping articles → catégories via category_mapping.py
+          - ✅ Breakdown mensuel par catégorie (par_mois_categories)
+          - ✅ Structure de réponse conforme: {mois, categories[{nom, montant, nb_lignes, nb_commandes}]}
+          - ✅ Tri des catégories par montant décroissant
+          - ✅ Cohérence des totaux entre par_mois et par_mois_categories
+          - ✅ Support des filtres de date (start_date, end_date)
+          - ✅ Gestion gracieuse des données vides
+          - ✅ "Non catégorisé" pour articles non mappés
+          
+          🎉 CONCLUSION: La fonctionnalité Purchase History Category Breakdown est ENTIÈREMENT OPÉRATIONNELLE
+          - Tous les tests du cahier des charges sont validés (8/8)
+          - L'endpoint /api/purchase-history/stats retourne le nouveau champ par_mois_categories
+          - La structure de réponse est conforme aux spécifications
+          - Le mapping des catégories fonctionne parfaitement
+          - Les filtres et la gestion des cas edge sont opérationnels
+          - La fonctionnalité est prête pour utilisation en production
+
   - task: "MQTT Logs API Endpoints - Phase 2"
     implemented: true
     working: "NA"
