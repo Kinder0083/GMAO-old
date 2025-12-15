@@ -135,6 +135,23 @@ const ManualButton = () => {
   const selectSection = (section, chapter) => {
     setSelectedSection(section);
     setSelectedChapter(chapter);
+    setSearchResults([]); // Réinitialiser les résultats de recherche
+    setCurrentPage(1);
+  };
+
+  // Fonction pour surligner les mots-clés dans le texte
+  const highlightText = (text, query) => {
+    if (!query || !text) return text;
+    
+    const words = query.toLowerCase().split(' ').filter(w => w.length > 2);
+    let highlightedText = text;
+    
+    words.forEach(word => {
+      const regex = new RegExp(`(${word})`, 'gi');
+      highlightedText = highlightedText.replace(regex, '<mark style="background-color: #fef08a; padding: 2px 4px; border-radius: 2px; font-weight: 600;">$1</mark>');
+    });
+    
+    return highlightedText;
   };
 
   const exportPDF = async () => {
