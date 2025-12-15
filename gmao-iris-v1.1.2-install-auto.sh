@@ -535,6 +535,16 @@ pip install -q -r requirements.txt
 # Créer les admins
 python3 /tmp/create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
 
+# Initialisation du manuel utilisateur
+echo ""
+echo "📚 Initialisation du manuel utilisateur..."
+python3 generate_complete_manual.py
+if [ $? -eq 0 ]; then
+    echo "✅ Manuel initialisé avec succès"
+else
+    echo "⚠️  Avertissement: Échec initialisation manuel (non bloquant)"
+fi
+
 deactivate
 
 # Frontend build
