@@ -462,21 +462,45 @@ const PurchaseHistory = () => {
               ))}
             </div>
 
-            {/* Tableau des dépenses par catégorie */}
+            {/* Tableau des dépenses par catégorie avec sélecteur de mois */}
             {stats?.par_mois_categories && stats.par_mois_categories.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Détail par Catégorie</h3>
-                <div className="space-y-6">
-                  {stats.par_mois_categories.slice(-3).reverse().map((monthData, monthIndex) => (
-                    <div key={monthIndex} className="border rounded-lg bg-white p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">📊 Détail par Catégorie (DM6)</h3>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600 font-medium">Sélectionner le mois :</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">-- Choisir un mois --</option>
+                      {stats.par_mois_categories.map((monthData, idx) => (
+                        <option key={idx} value={monthData.mois}>
+                          {monthData.mois} ({monthData.categories.length} DM6)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Afficher le tableau du mois sélectionné */}
+                {selectedMonth && (() => {
+                  const monthData = stats.par_mois_categories.find(m => m.mois === selectedMonth);
+                  if (!monthData) return null;
+                  
+                  return (
+                    <div className="border rounded-lg bg-white p-4">
                       <h4 className="font-semibold text-gray-700 mb-3 text-base">
-                        Mois: {monthData.mois}
+                        Mois: {monthData.mois} - {monthData.categories.length} DM6 différents
                       </h4>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead className="bg-gray-50">
                             <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">DM6</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Articles</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Montant HT</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Nb Lignes</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Nb Commandes</th>
@@ -491,8 +515,14 @@ const PurchaseHistory = () => {
                               
                               return (
                                 <tr key={catIndex} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 text-sm font-mono text-blue-700 font-semibold">
+                                    {cat.dm6}
+                                  </td>
                                   <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                                     {cat.nom}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">
+                                    {cat.articles}
                                   </td>
                                   <td className="px-4 py-3 text-sm text-right font-semibold text-green-600">
                                     {formatCurrency(cat.montant)}
@@ -520,7 +550,7 @@ const PurchaseHistory = () => {
                               );
                             })}
                             <tr className="bg-blue-50 font-bold">
-                              <td className="px-4 py-3 text-sm text-gray-900">Total</td>
+                              <td colSpan="3" className="px-4 py-3 text-sm text-gray-900">Total</td>
                               <td className="px-4 py-3 text-sm text-right text-blue-700">
                                 {formatCurrency(monthData.categories.reduce((sum, c) => sum + c.montant, 0))}
                               </td>
@@ -538,8 +568,15 @@ const PurchaseHistory = () => {
                         </table>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
+
+                {/* Message si aucun mois sélectionné */}
+                {!selectedMonth && (
+                  <div className="text-center py-8 text-gray-500 border rounded-lg bg-gray-50">
+                    👆 Veuillez sélectionner un mois ci-dessus pour voir le détail par DM6
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
