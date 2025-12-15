@@ -323,8 +323,8 @@ const ManualButton = () => {
         `${backend_url}/api/manual/search`,
         {
           query: searchQuery,
-          level_filter: levelFilter !== 'both' ? levelFilter : null,
-          module_filter: moduleFilter !== 'all' ? moduleFilter : null
+          level_filter: searchLevelFilter !== 'all' ? searchLevelFilter : null,
+          module_filter: searchModuleFilter !== 'all' ? searchModuleFilter : null
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -337,59 +337,13 @@ const ManualButton = () => {
       if (response.data.results && response.data.results.length > 0) {
         const results = response.data.results;
         
-        // Créer un affichage des résultats de recherche
-        const searchResultsContent = `# Résultats de recherche pour "${searchQuery}"
-
-Trouvé ${results.length} résultat(s) :
-
-${results.map((result, index) => `
-## ${index + 1}. ${result.title}
-
-${result.excerpt}...
-
-**Pertinence** : ${result.relevance_score.toFixed(1)}
-`).join('\n---\n')}
-
-💡 *Cliquez sur un chapitre dans la table des matières pour voir le contenu complet.*`;
+        // Stocker les résultats pour la pagination
+        setSearchResults(results);
+        setCurrentPage(1);
         
-        // Créer une section temporaire pour afficher les résultats
-        const searchResultSection = {
-          id: 'search-results',
-          title: `Résultats : "${searchQuery}"`,
-          content: searchResultsContent,
-          level: 'beginner'
-        };
-        
-        const searchChapter = {
-          id: 'search-chapter',
-          title: '🔍 Recherche',
-          icon: 'Search'
-        };
-        
-        setSelectedSection(searchResultSection);
-        setSelectedChapter(searchChapter);
-        
-        // Si on veut naviguer vers le premier résultat
-        // Chercher la section correspondante dans les données du manuel
-        const firstResult = results[0];
-        
-        // Essayer de trouver la section par son ID
-        let foundSection = manualData.sections.find(s => s.id === firstResult.section_id);
-        
-        // Si pas trouvé par ID, essayer par titre
-        if (!foundSection) {
-          foundSection = manualData.sections.find(s => s.title === firstResult.title);
-        }
-        
-        if (foundSection) {
-          // Trouver le chapitre parent
-          const foundChapter = manualData.chapters.find(c => c.sections && c.sections.includes(foundSection.id));
-          
-          if (foundChapter) {
-            // Développer le chapitre dans la table des matières
-            setExpandedChapters(new Set([foundChapter.id]));
-          }
-        }
+        // Développer les chapitres pertinents
+        const relevantChapters = [...new Set(results.map(r => r.chapter_id).filter(Boolean))];
+        setExpandedChapters(new Set(relevantChapters));
         
         toast({
           title: 'Recherche terminée',
@@ -397,6 +351,7 @@ ${result.excerpt}...
           duration: 2000
         });
       } else {
+        setSearchResults([]);
         toast({
           title: 'Aucun résultat',
           description: 'Aucun résultat trouvé pour votre recherche',
@@ -412,6 +367,17 @@ ${result.excerpt}...
       });
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Fonction pour naviguer vers un résultat de recherche
+  const goToSearchResult = (result) => {
+    const section = manualData.sections.find(s => s.id === result.section_id);
+    const chapter = manualData.chapters.find(c => c.id === result.chapter_id);
+    
+    if (section && chapter) {
+      selectSection(section, chapter);
+      setExpandedChapters(new Set([chapter.id]));
     }
   };
 
