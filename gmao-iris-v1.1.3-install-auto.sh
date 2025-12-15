@@ -5,7 +5,8 @@
 # 
 # NOUVEAUTÉS v1.1.3:
 # - Initialisation automatique du manuel utilisateur complet
-# - Manuel évolutif avec 12+ chapitres et 49+ sections
+# - Manuel évolutif avec 23 chapitres et 61+ sections
+# - Tous les modules couverts : Chat, MQTT, Demandes d'Achat, etc.
 # - Toutes les sections visibles pour tous les rôles (target_roles=[])
 # - Correction des routes API du manuel (/api/manual/*)
 #
