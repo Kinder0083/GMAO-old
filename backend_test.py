@@ -17,15 +17,12 @@ BACKEND_URL = "https://purchase-history-1.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@test.com"
 ADMIN_PASSWORD = "testpassword"
 
-class ChatLiveTester:
+class PurchaseHistoryTester:
     def __init__(self):
         self.admin_session = requests.Session()
         self.admin_token = None
         self.admin_data = None
-        self.technicien_session = requests.Session()
-        self.technicien_token = None
-        self.technicien_data = None
-        self.test_messages = []
+        self.test_purchases = []
         
     def log(self, message, level="INFO"):
         """Log test messages with timestamp"""
