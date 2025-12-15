@@ -460,6 +460,87 @@ const PurchaseHistory = () => {
                 </div>
               ))}
             </div>
+
+            {/* Tableau des dépenses par catégorie */}
+            {stats?.par_mois_categories && stats.par_mois_categories.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Détail par Catégorie</h3>
+                <div className="space-y-6">
+                  {stats.par_mois_categories.slice(-3).reverse().map((monthData, monthIndex) => (
+                    <div key={monthIndex} className="border rounded-lg bg-white p-4">
+                      <h4 className="font-semibold text-gray-700 mb-3 text-base">
+                        Mois: {monthData.mois}
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Montant HT</th>
+                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Nb Lignes</th>
+                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Nb Commandes</th>
+                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">% du Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {monthData.categories.map((cat, catIndex) => {
+                              // Calculer le total du mois pour le pourcentage
+                              const totalMois = monthData.categories.reduce((sum, c) => sum + c.montant, 0);
+                              const percentage = totalMois > 0 ? ((cat.montant / totalMois) * 100) : 0;
+                              
+                              return (
+                                <tr key={catIndex} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                                    {cat.nom}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right font-semibold text-green-600">
+                                    {formatCurrency(cat.montant)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right text-gray-700">
+                                    {cat.nb_lignes}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right text-blue-600">
+                                    {cat.nb_commandes}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                                        <div 
+                                          className="bg-blue-600 h-2 rounded-full" 
+                                          style={{width: `${Math.min(percentage, 100)}%`}}
+                                        ></div>
+                                      </div>
+                                      <span className="font-medium text-gray-700 text-xs">
+                                        {percentage.toFixed(1)}%
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            <tr className="bg-blue-50 font-bold">
+                              <td className="px-4 py-3 text-sm text-gray-900">Total</td>
+                              <td className="px-4 py-3 text-sm text-right text-blue-700">
+                                {formatCurrency(monthData.categories.reduce((sum, c) => sum + c.montant, 0))}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-700">
+                                {monthData.categories.reduce((sum, c) => sum + c.nb_lignes, 0)}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-blue-600">
+                                {monthData.categories.reduce((sum, c) => sum + c.nb_commandes, 0)}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-700">
+                                100%
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
