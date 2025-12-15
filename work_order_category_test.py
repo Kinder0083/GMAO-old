@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://iris-manuals.preview.emergentagent.com/api"
+BACKEND_URL = "https://purchase-history-1.preview.emergentagent.com/api"
 
 # Test credentials - admin account as specified in the request
 ADMIN_EMAIL = "admin@gmao-iris.local"
