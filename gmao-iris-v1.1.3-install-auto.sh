@@ -542,14 +542,17 @@ pip install -q -r requirements.txt
 # Créer les admins
 python3 /tmp/create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
 
-# Initialisation du manuel utilisateur
+# Initialisation du manuel utilisateur complet (23 chapitres)
 echo ""
-echo "📚 Initialisation du manuel utilisateur..."
-python3 generate_complete_manual.py
+echo "📚 Initialisation du manuel utilisateur complet (23 chapitres)..."
+python3 generate_full_manual_23ch.py
 if [ $? -eq 0 ]; then
-    echo "✅ Manuel initialisé avec succès"
+    echo "✅ Manuel initialisé avec succès (23 chapitres, 61+ sections)"
 else
     echo "⚠️  Avertissement: Échec initialisation manuel (non bloquant)"
+    echo "   Vous pouvez le réexécuter manuellement:"
+    echo "   cd /opt/gmao-iris/backend && source venv/bin/activate"
+    echo "   python3 generate_full_manual_23ch.py"
 fi
 
 deactivate
