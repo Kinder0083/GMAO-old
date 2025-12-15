@@ -731,32 +731,81 @@ const ManualButton = () => {
 
           {/* Search Bar */}
           <div className="px-6 py-3 border-b bg-gray-50 shrink-0">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center mb-2">
               <div className="flex-1 relative">
                 <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input
-                  placeholder="Rechercher dans le manuel..."
+                  placeholder="Rechercher dans le manuel... (Ex: équipement, maintenance, stock)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchManual()}
                   className="pl-10"
                 />
               </div>
-              <Button onClick={searchManual} size="sm">
-                Rechercher
+              <Button onClick={searchManual} size="sm" disabled={loading}>
+                {loading ? 'Recherche...' : 'Rechercher'}
               </Button>
               
-              {/* Filtres */}
-              <select
-                value={levelFilter}
-                onChange={(e) => setLevelFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {/* Bouton Filtres Avancés */}
+              <Button 
+                variant={showAdvancedFilters ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               >
-                <option value="both">Tous niveaux</option>
-                <option value="beginner">Débutant</option>
-                <option value="advanced">Avancé</option>
-              </select>
+                <Filter size={16} className="mr-1" />
+                Filtres
+              </Button>
             </div>
+            
+            {/* Filtres Avancés */}
+            {showAdvancedFilters && (
+              <div className="flex gap-2 items-center pt-2 border-t">
+                <span className="text-xs font-medium text-gray-600 mr-2">Filtres:</span>
+                
+                {/* Filtre Niveau */}
+                <select
+                  value={searchLevelFilter}
+                  onChange={(e) => setSearchLevelFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">📚 Tous niveaux</option>
+                  <option value="beginner">🌱 Débutant</option>
+                  <option value="intermediate">📖 Intermédiaire</option>
+                  <option value="advanced">🎓 Avancé</option>
+                </select>
+                
+                {/* Filtre Module */}
+                <select
+                  value={searchModuleFilter}
+                  onChange={(e) => setSearchModuleFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">📦 Tous modules</option>
+                  <option value="equipment">🏭 Équipements</option>
+                  <option value="workorders">📋 Ordres de Travail</option>
+                  <option value="maintenance">🔄 Maintenance</option>
+                  <option value="inventory">📦 Stock</option>
+                  <option value="requests">🛠️ Demandes</option>
+                  <option value="reports">📊 Rapports</option>
+                  <option value="admin">⚙️ Administration</option>
+                  <option value="people">👥 Personnel</option>
+                </select>
+                
+                {/* Bouton Réinitialiser */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchLevelFilter('all');
+                    setSearchModuleFilter('all');
+                  }}
+                  className="text-xs"
+                >
+                  <X size={14} className="mr-1" />
+                  Réinitialiser
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Content Area - with explicit height */}
