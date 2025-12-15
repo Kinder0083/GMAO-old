@@ -3318,11 +3318,11 @@ async def get_purchase_stats(
     
     users_list.sort(key=lambda x: x['montant_total'], reverse=True)
     
-    # NOUVELLES STATS - Par mois (format liste) avec catégorisation PAR DM6
-    from category_mapping import get_category_from_article
+    # NOUVELLES STATS - Par mois avec catégorisation PAR (ARTICLE + DM6)
+    from category_mapping import get_category_from_article_dm6
     
     monthly_stats = {}
-    monthly_dm6_stats = {}  # Structure: {mois: {dm6: {category, montant, etc.}}}
+    monthly_article_dm6_stats = {}  # Structure: {mois: {(article, dm6): {category, montant, etc.}}}
     
     for purchase in all_purchases:
         date = purchase.get('dateCreation')
@@ -3333,7 +3333,7 @@ async def get_purchase_stats(
             num_commande = purchase.get('numeroCommande')
             montant = purchase.get('montantLigneHT', 0)
             article = purchase.get('article', '')
-            dm6 = purchase.get('DM6', 'Non défini')  # Récupérer le DM6
+            dm6 = purchase.get('DM6', 'Non défini')
             
             # Stats globales par mois
             if month_key not in monthly_stats:
@@ -3349,28 +3349,29 @@ async def get_purchase_stats(
             monthly_stats[month_key]['montant'] += montant
             monthly_stats[month_key]['nb_lignes'] += 1
             
-            # Stats par DM6 et par mois (CHAQUE DM6 est une ligne séparée)
-            category = get_category_from_article(article)
+            # Stats par (ARTICLE, DM6) - CHAQUE COMBINAISON est unique!
+            category = get_category_from_article_dm6(article, dm6)
             
-            if month_key not in monthly_dm6_stats:
-                monthly_dm6_stats[month_key] = {}
+            if month_key not in monthly_article_dm6_stats:
+                monthly_article_dm6_stats[month_key] = {}
             
-            # Clé unique = DM6 (pas la catégorie !)
-            if dm6 not in monthly_dm6_stats[month_key]:
-                monthly_dm6_stats[month_key][dm6] = {
+            # Clé unique = (ARTICLE, DM6) - PAS juste DM6!
+            unique_key = (article, dm6)
+            
+            if unique_key not in monthly_article_dm6_stats[month_key]:
+                monthly_article_dm6_stats[month_key][unique_key] = {
+                    'article': article,
                     'dm6': dm6,
-                    'categorie': category,  # Nom de catégorie pour affichage
+                    'categorie': category,
                     'montant': 0,
                     'nb_lignes': 0,
-                    'commandes': set(),
-                    'articles': set()  # Pour info
+                    'commandes': set()
                 }
             
-            monthly_dm6_stats[month_key][dm6]['montant'] += montant
-            monthly_dm6_stats[month_key][dm6]['nb_lignes'] += 1
+            monthly_article_dm6_stats[month_key][unique_key]['montant'] += montant
+            monthly_article_dm6_stats[month_key][unique_key]['nb_lignes'] += 1
             if num_commande:
-                monthly_dm6_stats[month_key][dm6]['commandes'].add(num_commande)
-            monthly_dm6_stats[month_key][dm6]['articles'].add(article)
+                monthly_article_dm6_stats[month_key][unique_key]['commandes'].add(num_commande)
     
     # Créer la liste mensuelle globale
     monthly_list = []
@@ -3383,22 +3384,22 @@ async def get_purchase_stats(
         })
     monthly_list.sort(key=lambda x: x['mois'])
     
-    # Créer la liste mensuelle par DM6
+    # Créer la liste mensuelle par (ARTICLE, DM6)
     monthly_category_list = []
-    for month in sorted(monthly_dm6_stats.keys()):
+    for month in sorted(monthly_article_dm6_stats.keys()):
         month_data = {
             'mois': month,
-            'categories': []  # Garder le nom 'categories' pour compatibilité frontend
+            'categories': []  # Garder 'categories' pour compatibilité frontend
         }
         
-        for dm6, dm6_data in monthly_dm6_stats[month].items():
+        for (article, dm6), data in monthly_article_dm6_stats[month].items():
             month_data['categories'].append({
+                'article': article,
                 'dm6': dm6,
-                'nom': dm6_data['categorie'],  # Nom de catégorie pour affichage
-                'montant': round(dm6_data['montant'], 2),
-                'nb_lignes': dm6_data['nb_lignes'],
-                'nb_commandes': len(dm6_data['commandes']),
-                'articles': ', '.join(sorted(dm6_data['articles']))  # Articles associés
+                'nom': data['categorie'],
+                'montant': round(data['montant'], 2),
+                'nb_lignes': data['nb_lignes'],
+                'nb_commandes': len(data['commandes'])
             })
         
         # Trier par montant décroissant
