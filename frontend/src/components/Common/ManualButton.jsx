@@ -28,6 +28,14 @@ const ManualButton = () => {
   const [levelFilter, setLevelFilter] = useState('both'); // 'beginner', 'advanced', 'both'
   const [moduleFilter, setModuleFilter] = useState('all');
   const [adminMode, setAdminMode] = useState(false);
+  
+  // Nouveaux états pour la recherche avancée
+  const [searchResults, setSearchResults] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [resultsPerPage] = useState(10);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [searchLevelFilter, setSearchLevelFilter] = useState('all');
+  const [searchModuleFilter, setSearchModuleFilter] = useState('all');
   const [editingSection, setEditingSection] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
