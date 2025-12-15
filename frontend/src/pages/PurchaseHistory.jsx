@@ -498,9 +498,9 @@ const PurchaseHistory = () => {
                         <table className="w-full text-sm">
                           <thead className="bg-gray-50">
                             <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Article</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">DM6</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Articles</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Montant HT</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Nb Lignes</th>
                               <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Nb Commandes</th>
@@ -515,14 +515,14 @@ const PurchaseHistory = () => {
                               
                               return (
                                 <tr key={catIndex} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 text-sm font-mono text-orange-700 font-semibold">
+                                    {cat.article}
+                                  </td>
                                   <td className="px-4 py-3 text-sm font-mono text-blue-700 font-semibold">
                                     {cat.dm6}
                                   </td>
                                   <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                                     {cat.nom}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">
-                                    {cat.articles}
                                   </td>
                                   <td className="px-4 py-3 text-sm text-right font-semibold text-green-600">
                                     {formatCurrency(cat.montant)}
