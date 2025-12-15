@@ -477,7 +477,7 @@ const PurchaseHistory = () => {
                       <option value="">-- Choisir un mois --</option>
                       {stats.par_mois_categories.map((monthData, idx) => (
                         <option key={idx} value={monthData.mois}>
-                          {monthData.mois} ({monthData.categories.length} DM6)
+                          {monthData.mois} ({monthData.categories.length} lignes)
                         </option>
                       ))}
                     </select>
