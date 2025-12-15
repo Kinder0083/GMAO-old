@@ -2251,7 +2251,7 @@ async def generate_manual():
         # Créer chapitres
         chapters = [
             {"id": "ch-001", "title": "🚀 Guide de Démarrage", "description": "Premiers pas", "icon": "Rocket", "order": 1, "sections": ["sec-001-01", "sec-001-02", "sec-001-03", "sec-001-04"], "target_roles": [], "target_modules": []},
-            {"id": "ch-002", "title": "👤 Utilisateurs", "description": "Gérer les utilisateurs", "icon": "Users", "order": 2, "sections": ["sec-002-01", "sec-002-02", "sec-002-03"], "target_roles": ["ADMIN"], "target_modules": ["people"]},
+            {"id": "ch-002", "title": "👤 Utilisateurs", "description": "Gérer les utilisateurs", "icon": "Users", "order": 2, "sections": ["sec-002-01", "sec-002-02", "sec-002-03"], "target_roles": [], "target_modules": ["people"]},
             {"id": "ch-003", "title": "📋 Ordres de Travail", "description": "Gérer les OT", "icon": "ClipboardList", "order": 3, "sections": ["sec-003-01", "sec-003-02", "sec-003-03", "sec-003-04", "sec-003-05"], "target_roles": [], "target_modules": ["workOrders"]},
             {"id": "ch-004", "title": "🔧 Équipements", "description": "Gérer les équipements", "icon": "Wrench", "order": 4, "sections": ["sec-004-01", "sec-004-02", "sec-004-03", "sec-004-04"], "target_roles": [], "target_modules": ["assets"]},
             {"id": "ch-005", "title": "🔄 Maintenance Préventive", "description": "Planifier les maintenances", "icon": "RotateCw", "order": 5, "sections": ["sec-005-01", "sec-005-02", "sec-005-03", "sec-005-04"], "target_roles": [], "target_modules": ["preventiveMaintenance"]},
