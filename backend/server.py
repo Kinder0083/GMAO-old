@@ -3265,7 +3265,8 @@ async def get_purchase_stats(
             "parGroupeStatistique": [],
             "articlesTop": [],
             "par_utilisateur": [],
-            "par_mois": []
+            "par_mois": [],
+            "par_mois_categories": []
         }
     
     total_achats = len(all_purchases)
