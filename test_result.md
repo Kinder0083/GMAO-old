@@ -1057,58 +1057,56 @@ frontend:
           matching Viber-style chat functionality.
 
 user_problem_statement: |
-  Test Complet Phase 2 MQTT - Logs, Calculs Automatiques & Groupements
+  Test Purchase History Statistics API with Category Breakdown Feature
 
-  **Contexte :**
-  J'ai complété la Phase 2 MQTT avec 3 fonctionnalités majeures :
+  **Context:**
+  I've just implemented a new feature to categorize purchase expenses by month. The feature works as follows:
+  - Each purchase has an "article" code (e.g., YP62404, AP23104, YP60608)
+  - Based on the article code, we map it to a category using a mapping file (category_mapping.py)
+  - The API endpoint `/api/purchase-history/stats` now returns a new field `par_mois_categories` with monthly expenses broken down by category
 
-  ### 1️⃣ Visualiseur de Logs MQTT
-  - Page dédiée `/mqtt-logs` avec statistiques en temps réel
-  - Filtres : topic, période, statut (succès/erreur)
-  - Auto-refresh toutes les 10 secondes
-  - Admin peut supprimer les logs
+  **What to test:**
 
-  ### 2️⃣ Calculs Automatiques
-  - Statistiques avancées sur les capteurs
-  - Calculs : moyenne, médiane, écart-type, min, max, plage, tendance
-  - Endpoint : `/api/sensors/{id}/statistics`
+  1. **API Endpoint Test**: `/api/purchase-history/stats`
+     - Verify the response includes the new `par_mois_categories` field
+     - Verify the structure: array of objects with `mois` and `categories` fields
+     - Each category should have: `nom`, `montant`, `nb_lignes`, `nb_commandes`
 
-  ### 3️⃣ Regroupement de Capteurs
-  - Par type (température, humidité, etc.)
-  - Par localisation
-  - Endpoints : `/api/sensors/groups/by-type` et `/api/sensors/groups/by-location`
+  2. **Data Validation**:
+     - Verify that articles are correctly mapped to categories
+     - Check that "Non catégorisé" appears for articles without mapping
+     - Verify montant totals match between `par_mois` and sum of categories in `par_mois_categories`
 
-  **Objectif du test :**
-  Valider toutes les nouvelles fonctionnalités de la Phase 2.
+  3. **Edge Cases**:
+     - Test with date filters (start_date, end_date) if available
+     - Verify categories are sorted by montant (descending)
+     - Check that the response handles empty data gracefully
 
-  **Étapes de test :**
+  **Authentication:**
+  - Use credentials: admin@test.com / testpassword
+  - API base URL is in REACT_APP_BACKEND_URL env variable
 
-  ### Test 1 : Page Logs MQTT
-  1. Se connecter : admin@gmao-iris.local / Admin123!
-  2. Naviguer vers /mqtt-logs
-  3. Vérifier que la page s'affiche avec :
-     - 4 cartes de statistiques (Total, Succès, Erreurs, Taux)
-     - Filtres fonctionnels (topic, période, statut)
-     - Tableau des logs
-  4. Tester les filtres :
-     - Changer la période (1h, 6h, 24h, 7j)
-     - Filtrer par statut (Tous, Succès, Erreurs)
-  5. Vérifier le bouton "Actualiser"
+  **Expected Response Structure:**
+  ```json
+  {
+    "par_mois_categories": [
+      {
+        "mois": "2025-11",
+        "categories": [
+          {
+            "nom": "Maintenance Constructions",
+            "montant": 7813.42,
+            "nb_lignes": 22,
+            "nb_commandes": 20
+          },
+          ...
+        ]
+      }
+    ]
+  }
+  ```
 
-  ### Test 2 : API Groupements (Backend via curl)
-  6. Vérifier que les endpoints répondent correctement :
-     - GET /api/sensors/groups/by-type
-     - GET /api/sensors/groups/by-location
-
-  **Credentials :**
-  - Email: admin@gmao-iris.local
-  - Password: Admin123!
-
-  **Résultat Attendu :**
-  - ✅ Page Logs MQTT fonctionnelle et responsive
-  - ✅ Filtres et auto-refresh opérationnels
-  - ✅ Groupements par type et localisation fonctionnels
-  - ✅ Aucune erreur JavaScript dans la console
+  Please perform comprehensive testing and report any issues found.
 
 backend:
   - task: "MQTT Logs API Endpoints - Phase 2"
