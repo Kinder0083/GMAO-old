@@ -24,6 +24,7 @@ const PurchaseHistory = () => {
   const [filterSupplier, setFilterSupplier] = useState('');
   const [expandedOrders, setExpandedOrders] = useState(new Set());
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(''); // Mois sélectionné pour le détail par catégorie
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
