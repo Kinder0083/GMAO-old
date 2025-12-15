@@ -8667,7 +8667,7 @@ agent_communication:
       🎯 FIX 2: Verify user can only have ONE emoji reaction per message (emoji replacement)
       
       ✅ TESTING ENVIRONMENT VERIFIED:
-      - Frontend URL: https://deployease-1.preview.emergentagent.com
+      - Frontend URL: https://iris-manuals.preview.emergentagent.com
       - Login successful with admin@gmao-iris.local / Admin123!
       - Chat Live page accessible and functional
       - WebSocket connection active ("Temps réel activé")
