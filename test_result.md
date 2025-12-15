@@ -1057,56 +1057,54 @@ frontend:
           matching Viber-style chat functionality.
 
 user_problem_statement: |
-  Test Purchase History Statistics API with Category Breakdown Feature
+  Test the Purchase History page with the new Category Breakdown feature
 
   **Context:**
-  I've just implemented a new feature to categorize purchase expenses by month. The feature works as follows:
-  - Each purchase has an "article" code (e.g., YP62404, AP23104, YP60608)
-  - Based on the article code, we map it to a category using a mapping file (category_mapping.py)
-  - The API endpoint `/api/purchase-history/stats` now returns a new field `par_mois_categories` with monthly expenses broken down by category
+  The Purchase History page now displays a new "Détail par Catégorie" section that shows monthly expenses broken down by category. This is displayed below the monthly bar chart and the 3-month summary cards.
 
   **What to test:**
 
-  1. **API Endpoint Test**: `/api/purchase-history/stats`
-     - Verify the response includes the new `par_mois_categories` field
-     - Verify the structure: array of objects with `mois` and `categories` fields
-     - Each category should have: `nom`, `montant`, `nb_lignes`, `nb_commandes`
+  1. **Page Load & Data Display**:
+     - Navigate to /purchase-history
+     - Verify the "📈 Évolution Mensuelle des Achats" chart loads
+     - Verify the "📊 Détail par Catégorie" section appears below
+     - Check that the section shows data for the last 3 months
 
-  2. **Data Validation**:
-     - Verify that articles are correctly mapped to categories
-     - Check that "Non catégorisé" appears for articles without mapping
-     - Verify montant totals match between `par_mois` and sum of categories in `par_mois_categories`
+  2. **Category Table Structure**:
+     - Each month should have its own table with:
+       * Month header (e.g., "Mois: 2025-11")
+       * Table columns: Catégorie, Montant HT, Nb Lignes, Nb Commandes, % du Total
+       * Categories should be listed with their data
+       * Progress bars showing percentage
+       * Total row at the bottom (bold, blue background)
 
-  3. **Edge Cases**:
-     - Test with date filters (start_date, end_date) if available
-     - Verify categories are sorted by montant (descending)
-     - Check that the response handles empty data gracefully
+  3. **Data Validation**:
+     - Verify categories are shown (e.g., "Maintenance Constructions", "Fourniture EPI", etc.)
+     - Check that amounts are displayed in EUR format (e.g., "7 813,42 €")
+     - Verify that percentages add up to 100%
+     - Ensure the Total row shows correct sums
+
+  4. **Visual Check**:
+     - Tables should be well-formatted and readable
+     - Progress bars should display correctly
+     - Hover effects should work on table rows
+     - No layout issues or overlapping elements
+
+  5. **Responsive Design**:
+     - Test that tables are scrollable on smaller screens
+     - Verify that the layout doesn't break
 
   **Authentication:**
   - Use credentials: admin@test.com / testpassword
-  - API base URL is in REACT_APP_BACKEND_URL env variable
 
-  **Expected Response Structure:**
-  ```json
-  {
-    "par_mois_categories": [
-      {
-        "mois": "2025-11",
-        "categories": [
-          {
-            "nom": "Maintenance Constructions",
-            "montant": 7813.42,
-            "nb_lignes": 22,
-            "nb_commandes": 20
-          },
-          ...
-        ]
-      }
-    ]
-  }
-  ```
+  **Expected Result:**
+  - ✅ Page loads without errors
+  - ✅ Category breakdown tables display for last 3 months
+  - ✅ Data is correctly formatted and calculations are accurate
+  - ✅ Visual design is clean and professional
+  - ✅ No console errors
 
-  Please perform comprehensive testing and report any issues found.
+  Please test thoroughly and report any issues.
 
 backend:
   - task: "Purchase History Statistics API with Category Breakdown"
