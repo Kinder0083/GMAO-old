@@ -1,54 +1,72 @@
 # Mapping des catégories basé sur le fichier Achats.xlsx
-# Format: catégorie -> liste de codes DM6
+# Format: (ARTICLE, DM6) -> Catégorie
+# CHAQUE COMBINAISON ARTICLE+DM6 EST UNIQUE
 
-CATEGORY_MAPPING = {
-    "Location Mobilière Diverse": ["YP61304", "YP61305"],
-    "Location Mobilière": ["YP61306"],
-    "Gardiennage": ["YP61112"],
-    "Informatique": ["YP61109"],
-    "Prestations diverses": ["YP61102"],
-    "Maintenance Constructions": ["YP61502"],
-    "Maintenance Véhicules": ["YP61502"],
-    "Maintenance diverse": ["YP61502"],
-    "Prestation Entretien Installation labo": ["YP61502"],
-    "Maintenance machines": ["YP61502"],
-    "Maintenance - fournitures Entretien": ["YP60612"],
-    "Maintenance - Fournitures petit équipement": ["YP60605"],
-    "Nettoyage vêtements": ["YP61504"],
-    "Nettoyage locaux": ["YP61501"],
-    "Prestation Sous-Traitance générales / Diverse": ["YP61102"],
-    "Matières consommables": ["YP60608"],
-    "Matières consommables - LABO": ["YP60608"],
-    "Fourniture EPI": ["YP60607"],
-    "Fournitures de Bureau": ["YP60606"],
-    "Prestation Transport Sur Achat": ["YP62401"],
-    "Achat Transport Divers": ["YP62404"],
-    "Prestation Externe Prod": ["YP61103"],
-    "Investissements": ["AP23104"],
-    "Divers à reclasser": ["YP65801"]
+# Mapping basé sur ARTICLE + DM6 (pas juste Article!)
+ARTICLE_DM6_TO_CATEGORY = {
+    # Location
+    ("LD", "YP61304"): "Location Mobilière Diverse",
+    ("CD", "YP61305"): "Location Mobilière Diverse",
+    ("LD", "YP61306"): "Location Mobilière",
+    
+    # Services
+    ("YP61112", None): "Gardiennage",
+    ("YP61109", None): "Informatique",
+    ("YP61102", None): "Prestations diverses",
+    
+    # Maintenance - ATTENTION: YP61502 a plusieurs DM6 différents!
+    ("YP61502", "I370500"): "Maintenance Constructions",
+    ("YP61502", "I370900"): "Maintenance Constructions",
+    ("YP61502", "I370200"): "Maintenance Véhicules",
+    ("YP61502", "I370300"): "Maintenance Machines",  # CORRECTION ICI!
+    ("YP61502", "I370100"): "Maintenance diverse",
+    ("YP61502", None): "Prestation Entretien Installation labo",  # Fallback
+    
+    # Maintenance fournitures
+    ("YP60612", None): "Maintenance - fournitures Entretien",
+    ("YP60605", "I370500"): "Maintenance - Fournitures petit équipement",
+    ("YP60605", "I380200"): "Maintenance - Fournitures petit équipement",
+    
+    # Nettoyage
+    ("YP61504", None): "Nettoyage vêtements",
+    ("YP61501", None): "Nettoyage locaux",
+    
+    # Consommables
+    ("YP60608", None): "Matières consommables",
+    ("YP60607", None): "Fourniture EPI",
+    ("YP60606", None): "Fournitures de Bureau",
+    
+    # Transport
+    ("YP62401", None): "Prestation Transport Sur Achat",
+    ("YP62404", None): "Achat Transport Divers",
+    
+    # Production
+    ("YP61103", None): "Prestation Externe Prod",
+    
+    # Investissements et divers
+    ("AP23104", None): "Investissements",
+    ("YP65801", None): "Divers à reclasser",
 }
 
-# Créer un mapping inversé: code Article → Catégorie
-# Basé sur l'analyse du fichier Achats.xlsx fourni par l'utilisateur
-ARTICLE_TO_CATEGORY = {}
-for category, codes in CATEGORY_MAPPING.items():
-    for code in codes:
-        if code not in ARTICLE_TO_CATEGORY:
-            ARTICLE_TO_CATEGORY[code] = category
-        # Si le code existe déjà, on garde la première catégorie rencontrée
-
-def get_category_from_article(article_code: str) -> str:
+def get_category_from_article_dm6(article_code: str, dm6_code: str) -> str:
     """
-    Retourne la catégorie d'un article basé sur son code article.
+    Retourne la catégorie basée sur ARTICLE + DM6.
     
     Args:
-        article_code: Code article (ex: "YP62404")
+        article_code: Code article (ex: "YP61502")
+        dm6_code: Code DM6 (ex: "I370300")
         
     Returns:
         Nom de la catégorie ou "Non catégorisé" si non trouvé
     """
-    return ARTICLE_TO_CATEGORY.get(article_code, "Non catégorisé")
-
-def get_all_categories() -> list:
-    """Retourne la liste de toutes les catégories disponibles"""
-    return list(CATEGORY_MAPPING.keys())
+    # Essayer avec le DM6 exact
+    key = (article_code, dm6_code)
+    if key in ARTICLE_DM6_TO_CATEGORY:
+        return ARTICLE_DM6_TO_CATEGORY[key]
+    
+    # Fallback: essayer sans DM6 (None)
+    key_fallback = (article_code, None)
+    if key_fallback in ARTICLE_DM6_TO_CATEGORY:
+        return ARTICLE_DM6_TO_CATEGORY[key_fallback]
+    
+    return "Non catégorisé"
