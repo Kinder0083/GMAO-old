@@ -2260,7 +2260,7 @@ async def generate_manual():
             {"id": "ch-008", "title": "💡 Demandes d'Amélioration", "description": "Proposer des améliorations", "icon": "Lightbulb", "order": 8, "sections": ["sec-008-01", "sec-008-02", "sec-008-03"], "target_roles": [], "target_modules": ["improvementRequests"]},
             {"id": "ch-009", "title": "📈 Projets d'Amélioration", "description": "Gérer les projets", "icon": "TrendingUp", "order": 9, "sections": ["sec-009-01", "sec-009-02", "sec-009-03"], "target_roles": [], "target_modules": ["improvements"]},
             {"id": "ch-010", "title": "📊 Rapports et Analyses", "description": "Analyser les performances", "icon": "BarChart", "order": 10, "sections": ["sec-010-01", "sec-010-02", "sec-010-03"], "target_roles": [], "target_modules": ["reports"]},
-            {"id": "ch-011", "title": "⚙️ Administration", "description": "Configuration système", "icon": "Settings", "order": 11, "sections": ["sec-011-01", "sec-011-02", "sec-011-03", "sec-011-04", "sec-011-05", "sec-011-06", "sec-011-07", "sec-011-08"], "target_roles": ["ADMIN"], "target_modules": ["admin"]},
+            {"id": "ch-011", "title": "⚙️ Administration", "description": "Configuration système", "icon": "Settings", "order": 11, "sections": ["sec-011-01", "sec-011-02", "sec-011-03", "sec-011-04", "sec-011-05", "sec-011-06", "sec-011-07", "sec-011-08"], "target_roles": [], "target_modules": ["admin"]},
             {"id": "ch-012", "title": "❓ FAQ et Dépannage", "description": "Questions fréquentes", "icon": "HelpCircle", "order": 12, "sections": ["sec-012-01", "sec-012-02", "sec-012-03", "sec-012-04", "sec-012-05"], "target_roles": [], "target_modules": []}
         ]
         
