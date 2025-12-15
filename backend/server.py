@@ -3491,7 +3491,8 @@ async def get_purchase_stats(
         "parGroupeStatistique": par_groupe,
         "articlesTop": articles_top,
         "par_utilisateur": users_list,  # NOUVELLES STATS
-        "par_mois": monthly_list  # NOUVELLES STATS (format différent)
+        "par_mois": monthly_list,  # NOUVELLES STATS (format différent)
+        "par_mois_categories": monthly_category_list  # NOUVELLES STATS - Catégorisation mensuelle
     }
 
 @api_router.post("/purchase-history", response_model=PurchaseHistory)
