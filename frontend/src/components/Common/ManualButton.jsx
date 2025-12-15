@@ -381,6 +381,122 @@ const ManualButton = () => {
     }
   };
 
+  // Rendu des résultats de recherche avec pagination
+  const renderSearchResults = () => {
+    if (searchResults.length === 0) return null;
+    
+    const indexOfLastResult = currentPage * resultsPerPage;
+    const indexOfFirstResult = indexOfLastResult - resultsPerPage;
+    const currentResults = searchResults.slice(indexOfFirstResult, indexOfLastResult);
+    const totalPages = Math.ceil(searchResults.length / resultsPerPage);
+    
+    return (
+      <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded-lg mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-lg flex items-center gap-2">
+            <Search className="w-5 h-5" />
+            Résultats pour "{searchQuery}"
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearchResults([]);
+              setSearchQuery('');
+              setCurrentPage(1);
+            }}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+        
+        <p className="text-sm text-gray-600 mb-4">
+          {searchResults.length} résultat(s) trouvé(s) • Page {currentPage}/{totalPages}
+        </p>
+        
+        <div className="space-y-3">
+          {currentResults.map((result, index) => (
+            <div
+              key={result.section_id}
+              className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
+              onClick={() => goToSearchResult(result)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded">
+                      #{indexOfFirstResult + index + 1}
+                    </span>
+                    <span className="text-xs text-gray-500">{result.chapter_title}</span>
+                  </div>
+                  
+                  <h4 
+                    className="font-semibold text-base mb-2"
+                    dangerouslySetInnerHTML={{ __html: highlightText(result.title, searchQuery) }}
+                  />
+                  
+                  <p 
+                    className="text-sm text-gray-700 mb-2"
+                    dangerouslySetInnerHTML={{ __html: highlightText(result.excerpt, searchQuery) }}
+                  />
+                  
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="flex items-center gap-1">
+                      <span className="font-medium">Score:</span>
+                      <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                        {result.relevance_score.toFixed(1)}
+                      </span>
+                    </span>
+                    <span className="text-blue-600 hover:underline">
+                      Voir le contenu complet →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              ← Précédent
+            </Button>
+            
+            <div className="flex gap-1">
+              {[...Array(totalPages)].map((_, i) => (
+                <Button
+                  key={i}
+                  variant={currentPage === i + 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(i + 1)}
+                  className="w-8 h-8 p-0"
+                >
+                  {i + 1}
+                </Button>
+              ))}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Suivant →
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderTableOfContents = () => {
     if (!manualData || !manualData.chapters) return null;
 
