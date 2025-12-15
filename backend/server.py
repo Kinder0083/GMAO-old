@@ -3317,8 +3317,12 @@ async def get_purchase_stats(
     
     users_list.sort(key=lambda x: x['montant_total'], reverse=True)
     
-    # NOUVELLES STATS - Par mois (format liste)
+    # NOUVELLES STATS - Par mois (format liste) avec catégorisation
+    from category_mapping import get_category_from_article
+    
     monthly_stats = {}
+    monthly_category_stats = {}  # Structure: {mois: {categorie: montant}}
+    
     for purchase in all_purchases:
         date = purchase.get('dateCreation')
         if date:
@@ -3327,7 +3331,9 @@ async def get_purchase_stats(
             month_key = date.strftime('%Y-%m')
             num_commande = purchase.get('numeroCommande')
             montant = purchase.get('montantLigneHT', 0)
+            article = purchase.get('article', '')
             
+            # Stats globales par mois
             if month_key not in monthly_stats:
                 monthly_stats[month_key] = {
                     'mois': month_key,
@@ -3340,7 +3346,26 @@ async def get_purchase_stats(
                 monthly_stats[month_key]['commandes'].add(num_commande)
             monthly_stats[month_key]['montant'] += montant
             monthly_stats[month_key]['nb_lignes'] += 1
+            
+            # Stats par catégorie et par mois
+            category = get_category_from_article(article)
+            
+            if month_key not in monthly_category_stats:
+                monthly_category_stats[month_key] = {}
+            
+            if category not in monthly_category_stats[month_key]:
+                monthly_category_stats[month_key][category] = {
+                    'montant': 0,
+                    'nb_lignes': 0,
+                    'commandes': set()
+                }
+            
+            monthly_category_stats[month_key][category]['montant'] += montant
+            monthly_category_stats[month_key][category]['nb_lignes'] += 1
+            if num_commande:
+                monthly_category_stats[month_key][category]['commandes'].add(num_commande)
     
+    # Créer la liste mensuelle globale
     monthly_list = []
     for month, data in monthly_stats.items():
         monthly_list.append({
@@ -3350,6 +3375,26 @@ async def get_purchase_stats(
             'montant_total': round(data['montant'], 2)
         })
     monthly_list.sort(key=lambda x: x['mois'])
+    
+    # Créer la liste mensuelle par catégorie
+    monthly_category_list = []
+    for month in sorted(monthly_category_stats.keys()):
+        month_data = {
+            'mois': month,
+            'categories': []
+        }
+        
+        for category, cat_data in monthly_category_stats[month].items():
+            month_data['categories'].append({
+                'nom': category,
+                'montant': round(cat_data['montant'], 2),
+                'nb_lignes': cat_data['nb_lignes'],
+                'nb_commandes': len(cat_data['commandes'])
+            })
+        
+        # Trier les catégories par montant décroissant
+        month_data['categories'].sort(key=lambda x: x['montant'], reverse=True)
+        monthly_category_list.append(month_data)
     
     # Par fournisseur (ancienne stat - gardée)
     fournisseurs = {}
