@@ -492,7 +492,7 @@ const PurchaseHistory = () => {
                   return (
                     <div className="border rounded-lg bg-white p-4">
                       <h4 className="font-semibold text-gray-700 mb-3 text-base">
-                        Mois: {monthData.mois} - {monthData.categories.length} DM6 différents
+                        Mois: {monthData.mois} - {monthData.categories.length} lignes (Article + DM6 uniques)
                       </h4>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
