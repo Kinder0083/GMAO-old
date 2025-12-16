@@ -3349,7 +3349,10 @@ async def get_purchase_stats(
             monthly_stats[month_key]['nb_lignes'] += 1
             
             # Stats par (ARTICLE, DM6) - CHAQUE COMBINAISON est unique!
-            category = get_category_from_article_dm6(article, dm6)
+            try:
+                category = get_category_from_article_dm6(article, dm6)
+            except Exception as e:
+                category = "Non catégorisé"
             
             if month_key not in monthly_article_dm6_stats:
                 monthly_article_dm6_stats[month_key] = {}
