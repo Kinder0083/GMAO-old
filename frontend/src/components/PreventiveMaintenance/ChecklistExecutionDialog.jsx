@@ -127,29 +127,27 @@ const ChecklistExecutionDialog = ({
         return;
       }
 
-      // Calculer les statistiques
-      const completedItems = responses.length;
-      const compliantItems = responses.filter(r => r.is_compliant).length;
-      const nonCompliantItems = responses.filter(r => !r.is_compliant).length;
-
-      const executionData = {
+      // Étape 1: Créer l'exécution
+      const createData = {
         checklist_template_id: template.id,
         work_order_id: workOrderId,
         preventive_maintenance_id: preventiveMaintenanceId,
-        equipment_id: equipmentId,
+        equipment_id: executionContext.equipmentId
+      };
+
+      const createdExecution = await checklistsAPI.createExecution(createData);
+
+      // Étape 2: Mettre à jour avec les réponses
+      const updateData = {
         responses: responses.map(r => ({
           ...r,
           answered_at: new Date().toISOString()
         })),
         general_comment: generalComment,
-        general_photos: [],
-        total_items: template.items.length,
-        completed_items: completedItems,
-        compliant_items: compliantItems,
-        non_compliant_items: nonCompliantItems
+        status: 'completed'
       };
 
-      await checklistsAPI.createExecution(executionData);
+      await checklistsAPI.updateExecution(createdExecution.data.id, updateData);
 
       toast({
         title: 'Succès',
