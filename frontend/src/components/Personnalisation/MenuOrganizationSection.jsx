@@ -412,6 +412,126 @@ const MenuOrganizationSection = () => {
     .filter(item => !item.category_id)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
+  // Déplacer un menu vers le haut
+  const moveMenuUp = async (itemId, categoryId) => {
+    const itemsInCategory = categoryId 
+      ? getMenusByCategory(categoryId) 
+      : uncategorizedMenus;
+    
+    const currentIndex = itemsInCategory.findIndex(item => item.id === itemId);
+    if (currentIndex <= 0) return; // Déjà en haut
+    
+    const itemAbove = itemsInCategory[currentIndex - 1];
+    const currentItem = itemsInCategory[currentIndex];
+    
+    // Échanger les ordres
+    const updatedItems = menuItems.map(item => {
+      if (item.id === currentItem.id) {
+        return { ...item, order: itemAbove.order };
+      }
+      if (item.id === itemAbove.id) {
+        return { ...item, order: currentItem.order };
+      }
+      return item;
+    });
+    
+    setMenuItems(updatedItems);
+    
+    try {
+      await updatePreferences({ menu_items: updatedItems });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Erreur de déplacement', variant: 'destructive' });
+    }
+  };
+
+  // Déplacer un menu vers le bas
+  const moveMenuDown = async (itemId, categoryId) => {
+    const itemsInCategory = categoryId 
+      ? getMenusByCategory(categoryId) 
+      : uncategorizedMenus;
+    
+    const currentIndex = itemsInCategory.findIndex(item => item.id === itemId);
+    if (currentIndex >= itemsInCategory.length - 1) return; // Déjà en bas
+    
+    const itemBelow = itemsInCategory[currentIndex + 1];
+    const currentItem = itemsInCategory[currentIndex];
+    
+    // Échanger les ordres
+    const updatedItems = menuItems.map(item => {
+      if (item.id === currentItem.id) {
+        return { ...item, order: itemBelow.order };
+      }
+      if (item.id === itemBelow.id) {
+        return { ...item, order: currentItem.order };
+      }
+      return item;
+    });
+    
+    setMenuItems(updatedItems);
+    
+    try {
+      await updatePreferences({ menu_items: updatedItems });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Erreur de déplacement', variant: 'destructive' });
+    }
+  };
+
+  // Déplacer une catégorie vers le haut
+  const moveCategoryUp = async (categoryId) => {
+    const sortedCategories = [...categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const currentIndex = sortedCategories.findIndex(cat => cat.id === categoryId);
+    if (currentIndex <= 0) return;
+    
+    const categoryAbove = sortedCategories[currentIndex - 1];
+    const currentCategory = sortedCategories[currentIndex];
+    
+    const updatedCategories = categories.map(cat => {
+      if (cat.id === currentCategory.id) {
+        return { ...cat, order: categoryAbove.order };
+      }
+      if (cat.id === categoryAbove.id) {
+        return { ...cat, order: currentCategory.order };
+      }
+      return cat;
+    });
+    
+    setCategories(updatedCategories);
+    
+    try {
+      await updatePreferences({ menu_categories: updatedCategories });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Erreur de déplacement', variant: 'destructive' });
+    }
+  };
+
+  // Déplacer une catégorie vers le bas
+  const moveCategoryDown = async (categoryId) => {
+    const sortedCategories = [...categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const currentIndex = sortedCategories.findIndex(cat => cat.id === categoryId);
+    if (currentIndex >= sortedCategories.length - 1) return;
+    
+    const categoryBelow = sortedCategories[currentIndex + 1];
+    const currentCategory = sortedCategories[currentIndex];
+    
+    const updatedCategories = categories.map(cat => {
+      if (cat.id === currentCategory.id) {
+        return { ...cat, order: categoryBelow.order };
+      }
+      if (cat.id === categoryBelow.id) {
+        return { ...cat, order: currentCategory.order };
+      }
+      return cat;
+    });
+    
+    setCategories(updatedCategories);
+    
+    try {
+      await updatePreferences({ menu_categories: updatedCategories });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Erreur de déplacement', variant: 'destructive' });
+    }
+  };
+
   // Fonction de rendu pour un menu item
   const renderMenuItemRow = (item, categoryId) => (
     <div
