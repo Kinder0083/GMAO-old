@@ -667,19 +667,61 @@ class UpdateService:
             # Mise à jour réussie
             logger.info(f"✨ Mise à jour vers {version} terminée avec succès")
             
+            # Enregistrer le succès dans l'historique
+            update_history["completed_at"] = datetime.now(timezone.utc).isoformat()
+            update_history["status"] = "success"
+            update_history["success"] = True
+            update_history["backup_path"] = str(backup_path)
+            update_history["backup_created"] = True
+            update_history["logs"].append(f"Mise à jour vers {version} terminée avec succès")
+            
+            # Calculer la durée
+            start_time = datetime.fromisoformat(update_history["started_at"])
+            end_time = datetime.fromisoformat(update_history["completed_at"])
+            update_history["duration_seconds"] = (end_time - start_time).total_seconds()
+            
+            # Sauvegarder dans la base de données
+            try:
+                await self.db.system_update_history.insert_one(update_history)
+                logger.info("✅ Historique de mise à jour enregistré")
+            except Exception as e:
+                logger.error(f"❌ Erreur lors de l'enregistrement de l'historique: {str(e)}")
+            
             return {
                 "success": True,
                 "message": f"Mise à jour vers {version} appliquée avec succès",
                 "version": version,
                 "backup_path": str(backup_path),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
+                "history_id": update_history["id"]
             }
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de l'application de la mise à jour: {str(e)}")
+            
+            # Enregistrer l'échec dans l'historique
+            update_history["completed_at"] = datetime.now(timezone.utc).isoformat()
+            update_history["status"] = "failed"
+            update_history["success"] = False
+            update_history["error_message"] = str(e)
+            update_history["logs"].append(f"Erreur: {str(e)}")
+            
+            # Calculer la durée
+            start_time = datetime.fromisoformat(update_history["started_at"])
+            end_time = datetime.fromisoformat(update_history["completed_at"])
+            update_history["duration_seconds"] = (end_time - start_time).total_seconds()
+            
+            # Sauvegarder dans la base de données
+            try:
+                await self.db.system_update_history.insert_one(update_history)
+                logger.info("✅ Historique d'échec de mise à jour enregistré")
+            except Exception as db_error:
+                logger.error(f"❌ Erreur lors de l'enregistrement de l'historique: {str(db_error)}")
+            
             return {
                 "success": False,
                 "message": "Erreur lors de l'application de la mise à jour",
-                "error": str(e)
+                "error": str(e),
+                "history_id": update_history["id"]
             }
 
