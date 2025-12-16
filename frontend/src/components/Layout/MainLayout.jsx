@@ -500,14 +500,27 @@ const MainLayout = () => {
     'FileText': FileText,
     'AlertTriangle': AlertTriangle,
     'FolderOpen': FolderOpen,
+    'Folder': Folder,
     'BarChart3': BarChart3,
     'Users': Users,
     'ShoppingCart': ShoppingCart,
     'ShoppingBag': ShoppingBag,
     'Database': Database,
     'Activity': Activity,
-    'Terminal': Terminal
+    'Terminal': Terminal,
+    'Shield': Shield
   };
+
+  // Toggle expansion d'une catégorie
+  const toggleCategoryExpansion = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+
+  // Récupérer les catégories depuis les préférences
+  const menuCategories = preferences?.menu_categories || [];
 
   // Liste par défaut des menus
   const defaultMenuItems = [
