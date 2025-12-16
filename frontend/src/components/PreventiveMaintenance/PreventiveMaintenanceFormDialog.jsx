@@ -276,7 +276,7 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
             
             {checklists.length === 0 && (
               <p className="text-xs text-gray-500 mt-1">
-                Aucune checklist disponible. Créez-en une depuis l'onglet "Checklists".
+                Aucune checklist disponible. Créez-en une depuis l&apos;onglet Checklists.
               </p>
             )}
           </div>
