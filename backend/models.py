@@ -822,6 +822,7 @@ class PreventiveMaintenanceBase(BaseModel):
     assigne_a_id: Optional[str] = None
     duree: float
     statut: PMStatus = PMStatus.ACTIF
+    checklist_template_id: Optional[str] = None  # ID du modèle de checklist associé
 
 class PreventiveMaintenanceCreate(PreventiveMaintenanceBase):
     pass
@@ -835,6 +836,7 @@ class PreventiveMaintenanceUpdate(BaseModel):
     duree: Optional[float] = None
     statut: Optional[PMStatus] = None
     derniereMaintenance: Optional[datetime] = None
+    checklist_template_id: Optional[str] = None
 
 class PreventiveMaintenance(PreventiveMaintenanceBase):
     id: str
@@ -842,6 +844,7 @@ class PreventiveMaintenance(PreventiveMaintenanceBase):
     dateCreation: datetime
     equipement: Optional[dict] = None
     assigneA: Optional[dict] = None
+    checklist_template: Optional[dict] = None  # Détails du modèle de checklist
 
     class Config:
         from_attributes = True
