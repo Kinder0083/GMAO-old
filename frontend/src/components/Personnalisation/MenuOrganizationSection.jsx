@@ -533,19 +533,50 @@ const MenuOrganizationSection = () => {
   };
 
   // Fonction de rendu pour un menu item
-  const renderMenuItemRow = (item, categoryId) => (
+  const renderMenuItemRow = (item, categoryId, itemIndex, totalItems) => (
     <div
       key={item.id}
       draggable
       onDragStart={() => handleDragStart(item, 'menu')}
       onDragOver={handleDragOver}
       onDrop={() => handleDropOnMenuItem(item.id, categoryId)}
-      className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+      className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
         draggedItem?.item?.id === item.id ? 'bg-blue-50 border-blue-300 opacity-50' : 'bg-white border-gray-200'
-      } ${!item.visible ? 'opacity-50' : ''} cursor-move hover:border-blue-200`}
+      } ${!item.visible ? 'opacity-50' : ''} hover:border-blue-200`}
     >
+      {/* Flèches haut/bas pour réorganiser */}
+      <div className="flex flex-col gap-0.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            moveMenuUp(item.id, categoryId);
+          }}
+          disabled={itemIndex === 0}
+          title="Monter"
+        >
+          <ArrowUp size={14} className={itemIndex === 0 ? 'text-gray-300' : 'text-gray-600'} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            moveMenuDown(item.id, categoryId);
+          }}
+          disabled={itemIndex === totalItems - 1}
+          title="Descendre"
+        >
+          <ArrowDown size={14} className={itemIndex === totalItems - 1 ? 'text-gray-300' : 'text-gray-600'} />
+        </Button>
+      </div>
+
+      {/* Grip pour drag & drop */}
       <div className="cursor-grab active:cursor-grabbing">
-        <GripVertical size={20} className="text-gray-400" />
+        <GripVertical size={18} className="text-gray-400" />
       </div>
 
       <div className="flex-1 flex items-center gap-2">
@@ -553,10 +584,11 @@ const MenuOrganizationSection = () => {
         {item.favorite && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="sm"
+          className="h-8 w-8 p-0"
           onClick={() => toggleFavorite(item.id)}
           title={item.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
@@ -565,6 +597,7 @@ const MenuOrganizationSection = () => {
         <Button
           variant="ghost"
           size="sm"
+          className="h-8 w-8 p-0"
           onClick={() => toggleVisibility(item.id)}
           title={item.visible ? 'Masquer' : 'Afficher'}
         >
