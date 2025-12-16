@@ -634,6 +634,7 @@ const PreventiveMaintenance = () => {
                             size="sm"
                             className="flex-1"
                             onClick={handleViewHistory}
+                            data-testid="checklist-history-button"
                           >
                             <History size={14} className="mr-1" />
                             Historique
