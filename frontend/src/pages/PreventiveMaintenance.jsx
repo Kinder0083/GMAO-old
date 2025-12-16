@@ -208,14 +208,36 @@ const PreventiveMaintenance = () => {
               <Grid size={16} className="mr-1" />
               Arborescence
             </Button>
+            <Button
+              variant={viewMode === 'checklists' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('checklists')}
+              className={viewMode === 'checklists' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+            >
+              <ClipboardCheck size={16} className="mr-1" />
+              Checklists
+            </Button>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
-            setSelectedMaintenance(null);
-            setFormDialogOpen(true);
-          }}>
-            <Plus size={20} className="mr-2" />
-            Nouvelle planification
-          </Button>
+          <div className="flex flex-col gap-1">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
+              setSelectedMaintenance(null);
+              setFormDialogOpen(true);
+            }}>
+              <Plus size={20} className="mr-2" />
+              Nouvelle planification
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-green-500 text-green-600 hover:bg-green-50"
+              onClick={() => {
+                setSelectedChecklist(null);
+                setChecklistDialogOpen(true);
+              }}
+            >
+              <Plus size={20} className="mr-2" />
+              Nouvelle Checklist
+            </Button>
+          </div>
         </div>
       </div>
 
