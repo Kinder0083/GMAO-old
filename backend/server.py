@@ -6451,6 +6451,76 @@ async def get_current_version():
         "app_name": "GMAO Iris"
     }
 
+@api_router.get("/updates/history-list")
+async def get_update_history(
+    limit: int = 50,
+    skip: int = 0,
+    status: Optional[str] = None,
+    current_user: dict = Depends(require_permission("dashboard", "view"))
+):
+    """
+    Récupère l'historique des mises à jour système
+    """
+    try:
+        # Construire le filtre
+        filter_query = {}
+        if status:
+            filter_query["status"] = status
+        
+        # Récupérer l'historique
+        history = await db.system_update_history.find(
+            filter_query,
+            {"_id": 0}
+        ).sort("started_at", -1).skip(skip).limit(limit).to_list(limit)
+        
+        # Récupérer le nombre total
+        total = await db.system_update_history.count_documents(filter_query)
+        
+        return {
+            "data": history,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        }
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération historique mises à jour: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/updates/history-stats")
+async def get_update_history_stats(
+    current_user: dict = Depends(require_permission("dashboard", "view"))
+):
+    """
+    Récupère les statistiques sur l'historique des mises à jour
+    """
+    try:
+        # Total des mises à jour
+        total_updates = await db.system_update_history.count_documents({})
+        
+        # Mises à jour réussies
+        successful_updates = await db.system_update_history.count_documents({"success": True})
+        
+        # Mises à jour échouées
+        failed_updates = await db.system_update_history.count_documents({"success": False})
+        
+        # Dernière mise à jour
+        last_update = await db.system_update_history.find_one(
+            {},
+            {"_id": 0},
+            sort=[("started_at", -1)]
+        )
+        
+        return {
+            "total_updates": total_updates,
+            "successful_updates": successful_updates,
+            "failed_updates": failed_updates,
+            "success_rate": round((successful_updates / total_updates * 100) if total_updates > 0 else 0, 2),
+            "last_update": last_update
+        }
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération stats mises à jour: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Import surveillance routes
 from surveillance_routes import router as surveillance_router, init_surveillance_routes
