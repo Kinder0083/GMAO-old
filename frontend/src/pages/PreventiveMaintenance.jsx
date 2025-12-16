@@ -495,11 +495,146 @@ const PreventiveMaintenance = () => {
         </Card>
       )}
 
+      {/* Vue Checklists */}
+      {viewMode === 'checklists' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardCheck size={24} className="text-green-600" />
+                Modèles de Checklists
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedChecklist(null);
+                  setChecklistDialogOpen(true);
+                }}
+              >
+                <Plus size={16} className="mr-1" />
+                Nouvelle Checklist
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingChecklists ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Chargement...</p>
+              </div>
+            ) : checklists.length === 0 ? (
+              <div className="text-center py-8">
+                <ClipboardCheck size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 mb-4">Aucune checklist créée</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedChecklist(null);
+                    setChecklistDialogOpen(true);
+                  }}
+                >
+                  <Plus size={16} className="mr-1" />
+                  Créer votre première checklist
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {checklists.map((checklist) => (
+                  <Card key={checklist.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{checklist.name}</h3>
+                          {checklist.description && (
+                            <p className="text-sm text-gray-500 mt-1">{checklist.description}</p>
+                          )}
+                        </div>
+                        {checklist.is_template && (
+                          <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">
+                            Modèle
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <CheckCircle size={16} className="text-blue-500" />
+                          <span>{checklist.items?.length || 0} items de contrôle</span>
+                        </div>
+                        {checklist.equipment_ids?.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Grid size={16} className="text-gray-400" />
+                            <span>{checklist.equipment_ids.length} équipement(s) associé(s)</span>
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-400">
+                          Créée par {checklist.created_by_name}
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            setSelectedChecklist(checklist);
+                            setChecklistDialogOpen(true);
+                          }}
+                        >
+                          <Edit size={14} className="mr-1" />
+                          Modifier
+                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-500 hover:bg-red-50"
+                            onClick={() => {
+                              confirm({
+                                title: 'Supprimer la checklist',
+                                description: `Voulez-vous vraiment supprimer la checklist "${checklist.name}" ?`,
+                                confirmText: 'Supprimer',
+                                cancelText: 'Annuler',
+                                variant: 'destructive',
+                                onConfirm: async () => {
+                                  try {
+                                    await checklistsAPI.deleteTemplate(checklist.id);
+                                    toast({ title: 'Succès', description: 'Checklist supprimée' });
+                                    loadChecklists();
+                                  } catch (error) {
+                                    toast({ title: 'Erreur', description: 'Erreur de suppression', variant: 'destructive' });
+                                  }
+                                }
+                              });
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <PreventiveMaintenanceFormDialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         maintenance={selectedMaintenance}
         onSuccess={loadMaintenance}
+        checklists={checklists}
+      />
+
+      <ChecklistFormDialog
+        open={checklistDialogOpen}
+        onOpenChange={setChecklistDialogOpen}
+        checklist={selectedChecklist}
+        onSuccess={loadChecklists}
       />
 
       {/* Dialog de confirmation de suppression */}
