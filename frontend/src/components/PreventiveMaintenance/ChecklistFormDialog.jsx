@@ -438,7 +438,7 @@ const ChecklistFormDialog = ({ open, onOpenChange, checklist, onSuccess }) => {
             <label htmlFor="is_template" className="text-sm">
               <span className="font-medium">Enregistrer comme modèle réutilisable</span>
               <span className="text-gray-500 ml-1">
-                (pourra être sélectionné lors de la création d'une planification)
+                (pourra être sélectionné lors de la création d&apos;une planification)
               </span>
             </label>
           </div>
