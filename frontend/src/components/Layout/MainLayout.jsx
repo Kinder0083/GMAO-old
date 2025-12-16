@@ -867,15 +867,101 @@ const MainLayout = () => {
           right: preferences?.sidebar_position === 'right' ? 0 : 'auto'
         }}
       >
-        <div className="p-4 space-y-2 h-full overflow-y-auto">
-          {menuItems
+        <div className="p-4 space-y-1 h-full overflow-y-auto">
+          {/* Rendu des catégories avec sous-menus */}
+          {menuCategories
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map(category => {
+              const categoryMenus = getMenusByCategory(category.id);
+              if (categoryMenus.length === 0) return null;
+              
+              const CategoryIcon = iconMap[category.icon] || Folder;
+              const isExpanded = expandedCategories[category.id] !== false; // Par défaut ouvert
+              const hasActiveMenu = categoryHasActiveMenu(category.id);
+
+              return (
+                <div key={category.id} className="mb-1">
+                  {/* Header de catégorie */}
+                  <button
+                    onClick={() => toggleCategoryExpansion(category.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
+                      !sidebarOpen ? 'justify-center px-2' : ''
+                    }`}
+                    style={{
+                      backgroundColor: hasActiveMenu ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      color: preferences?.sidebar_icon_color || '#ffffff'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = hasActiveMenu ? 'rgba(255,255,255,0.05)' : 'transparent';
+                    }}
+                    title={!sidebarOpen ? category.name : ''}
+                  >
+                    <CategoryIcon size={18} className="flex-shrink-0" />
+                    {sidebarOpen && (
+                      <>
+                        <span className="text-sm font-semibold flex-1 text-left">{category.name}</span>
+                        <ChevronDown 
+                          size={16} 
+                          className={`flex-shrink-0 transition-transform ${isExpanded ? '' : '-rotate-90'}`} 
+                        />
+                      </>
+                    )}
+                  </button>
+                  
+                  {/* Sous-menus de la catégorie */}
+                  {(isExpanded || !sidebarOpen) && (
+                    <div className={sidebarOpen ? 'ml-3 border-l border-white/10 pl-2 space-y-1 mt-1' : 'space-y-1 mt-1'}>
+                      {categoryMenus
+                        .filter(item => !item.adminOnly || user.role === 'ADMIN')
+                        .map((item, index) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.path;
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => navigate(item.path)}
+                              className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
+                                !sidebarOpen ? 'justify-center px-2' : ''
+                              }`}
+                              style={{
+                                backgroundColor: isActive ? (preferences?.primary_color || '#2563eb') : 'transparent',
+                                color: preferences?.sidebar_icon_color || '#ffffff'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }
+                              }}
+                              title={!sidebarOpen ? item.label : ''}
+                            >
+                              <Icon size={18} className="flex-shrink-0" />
+                              {sidebarOpen && <span className="text-sm">{item.label}</span>}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          
+          {/* Menus sans catégorie */}
+          {uncategorizedMenus
             .filter(item => !item.adminOnly || user.role === 'ADMIN')
             .map((item, index) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
                 <button
-                  key={index}
+                  key={`uncategorized-${index}`}
                   onClick={() => navigate(item.path)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                     !sidebarOpen ? 'justify-center px-2' : ''
