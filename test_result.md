@@ -1,8 +1,11 @@
-# Test Results - Organisation des menus avec flèches haut/bas
+# Test Results - Checklist de Contrôles Préventifs
 
 ## Fonctionnalité testée
-1. Groupement des menus de navigation par catégories personnalisées avec sous-menus dépliables
-2. **NOUVEAU**: Flèches haut/bas pour réorganiser facilement les menus et catégories sans drag-and-drop
+**NOUVELLE FONCTIONNALITÉ** : Checklists de contrôles préventifs
+- Création de modèles de checklists avec items de contrôle
+- Types de contrôle : Oui/Non, Valeur numérique, Texte libre
+- Association aux équipements et maintenances préventives
+- Enregistrement comme modèle réutilisable
 
 ## Tests effectués
 
