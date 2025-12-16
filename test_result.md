@@ -8984,7 +8984,7 @@ agent_communication:
       🎯 FIX 2: Verify user can only have ONE emoji reaction per message (emoji replacement)
       
       ✅ TESTING ENVIRONMENT VERIFIED:
-      - Frontend URL: https://purchase-history-1.preview.emergentagent.com
+      - Frontend URL: https://menu-maestro-78.preview.emergentagent.com
       - Login successful with admin@gmao-iris.local / Admin123!
       - Chat Live page accessible and functional
       - WebSocket connection active ("Temps réel activé")
