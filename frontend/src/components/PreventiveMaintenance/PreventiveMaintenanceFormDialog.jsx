@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../../hooks/use-toast';
 import { preventiveMaintenanceAPI, equipmentsAPI, usersAPI } from '../../services/api';
 import { formatErrorMessage } from '../../utils/errorFormatter';
+import { ClipboardCheck, CheckCircle } from 'lucide-react';
 
-const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSuccess }) => {
+const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSuccess, checklists = [] }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [equipments, setEquipments] = useState([]);
@@ -27,7 +28,8 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
     prochaineMaintenance: '',
     assigne_a_id: '',
     duree: '',
-    statut: 'ACTIF'
+    statut: 'ACTIF',
+    checklist_template_id: ''
   });
 
   useEffect(() => {
@@ -41,7 +43,8 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
           prochaineMaintenance: maintenance.prochaineMaintenance?.split('T')[0] || '',
           assigne_a_id: maintenance.assigneA?.id || '',
           duree: maintenance.duree || '',
-          statut: maintenance.statut || 'ACTIF'
+          statut: maintenance.statut || 'ACTIF',
+          checklist_template_id: maintenance.checklist_template_id || ''
         });
       } else {
         setFormData({
@@ -51,7 +54,8 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
           prochaineMaintenance: '',
           assigne_a_id: '',
           duree: '',
-          statut: 'ACTIF'
+          statut: 'ACTIF',
+          checklist_template_id: ''
         });
       }
     }
@@ -78,7 +82,8 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
       const submitData = {
         ...formData,
         duree: parseFloat(formData.duree),
-        prochaineMaintenance: new Date(formData.prochaineMaintenance).toISOString()
+        prochaineMaintenance: new Date(formData.prochaineMaintenance).toISOString(),
+        checklist_template_id: formData.checklist_template_id || null
       };
 
       if (maintenance) {
@@ -107,6 +112,17 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
       setLoading(false);
     }
   };
+
+  // Filtrer les checklists par équipement sélectionné (si applicable)
+  const availableChecklists = checklists.filter(cl => 
+    cl.is_template && (
+      cl.equipment_ids?.length === 0 || 
+      !formData.equipement_id ||
+      cl.equipment_ids?.includes(formData.equipement_id)
+    )
+  );
+
+  const selectedChecklist = checklists.find(cl => cl.id === formData.checklist_template_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,6 +228,57 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
                 required
               />
             </div>
+          </div>
+
+          {/* Sélection de checklist */}
+          <div className="space-y-2 p-4 bg-green-50 rounded-lg border border-green-200">
+            <Label htmlFor="checklist_template_id" className="flex items-center gap-2">
+              <ClipboardCheck size={18} className="text-green-600" />
+              Checklist de contrôle (optionnel)
+            </Label>
+            <Select 
+              value={formData.checklist_template_id} 
+              onValueChange={(value) => setFormData({ ...formData, checklist_template_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner une checklist..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Aucune checklist</SelectItem>
+                {availableChecklists.map(cl => (
+                  <SelectItem key={cl.id} value={cl.id}>
+                    {cl.name} ({cl.items?.length || 0} items)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {selectedChecklist && (
+              <div className="mt-2 p-3 bg-white rounded border">
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Aperçu : {selectedChecklist.name}
+                </p>
+                <div className="space-y-1">
+                  {selectedChecklist.items?.slice(0, 3).map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span>{item.label}</span>
+                    </div>
+                  ))}
+                  {selectedChecklist.items?.length > 3 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      + {selectedChecklist.items.length - 3} autres items...
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {checklists.length === 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Aucune checklist disponible. Créez-en une depuis l'onglet "Checklists".
+              </p>
+            )}
           </div>
 
           <DialogFooter>
