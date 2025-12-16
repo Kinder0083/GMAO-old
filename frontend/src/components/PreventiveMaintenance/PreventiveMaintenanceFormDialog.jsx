@@ -83,7 +83,7 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
         ...formData,
         duree: parseFloat(formData.duree),
         prochaineMaintenance: new Date(formData.prochaineMaintenance).toISOString(),
-        checklist_template_id: formData.checklist_template_id || null
+        checklist_template_id: formData.checklist_template_id && formData.checklist_template_id !== 'none' ? formData.checklist_template_id : null
       };
 
       if (maintenance) {
