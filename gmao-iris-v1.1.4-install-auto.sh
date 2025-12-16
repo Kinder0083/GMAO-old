@@ -552,6 +552,105 @@ else
     echo "⚠️  Avertissement: Échec initialisation manuel (non bloquant)"
 fi
 
+# Création du fichier category_mapping.py (v1.1.4)
+echo ""
+echo "📊 Création du module de catégorisation..."
+cat > category_mapping.py << 'CATEOF'
+# Mapping des catégories basé sur le fichier Achats.xlsx
+# Format: (ARTICLE, DM6) -> Catégorie
+# CHAQUE COMBINAISON ARTICLE+DM6 EST UNIQUE
+
+ARTICLE_DM6_TO_CATEGORY = {
+    # Location
+    ("LD", "YP61304"): "Location Mobilière Diverse",
+    ("CD", "YP61305"): "Location Mobilière Diverse",
+    ("LD", "YP61306"): "Location Mobilière",
+    
+    # Services
+    ("YP61112", None): "Gardiennage",
+    ("YP61109", None): "Informatique",
+    ("YP61102", None): "Prestations diverses",
+    
+    # Maintenance - ATTENTION: YP61502 a plusieurs DM6 différents!
+    ("YP61502", "I370500"): "Maintenance Constructions",
+    ("YP61502", "I370900"): "Maintenance Constructions",
+    ("YP61502", "I370200"): "Maintenance Véhicules",
+    ("YP61502", "I370300"): "Maintenance Machines",
+    ("YP61502", "I370100"): "Maintenance diverse",
+    ("YP61502", None): "Prestation Entretien Installation labo",
+    
+    # Maintenance fournitures
+    ("YP60612", None): "Maintenance - fournitures Entretien",
+    ("YP60605", "I370500"): "Maintenance - Fournitures petit équipement",
+    ("YP60605", "I380200"): "Maintenance - Fournitures petit équipement",
+    
+    # Nettoyage
+    ("YP61504", None): "Nettoyage vêtements",
+    ("YP61501", None): "Nettoyage locaux",
+    
+    # Consommables
+    ("YP60608", None): "Matières consommables",
+    ("YP60607", None): "Fourniture EPI",
+    ("YP60606", None): "Fournitures de Bureau",
+    
+    # Transport
+    ("YP62401", None): "Prestation Transport Sur Achat",
+    ("YP62404", None): "Achat Transport Divers",
+    
+    # Production
+    ("YP61103", None): "Prestation Externe Prod",
+    
+    # Investissements et divers
+    ("AP23104", None): "Investissements",
+    ("YP65801", None): "Divers à reclasser",
+}
+
+def get_category_from_article_dm6(article_code: str, dm6_code: str) -> str:
+    """
+    Retourne la catégorie basée sur ARTICLE + DM6.
+    
+    Args:
+        article_code: Code article (ex: "YP61502")
+        dm6_code: Code DM6 (ex: "I370300")
+        
+    Returns:
+        Nom de la catégorie ou "Non catégorisé" si non trouvé
+    """
+    # Essayer avec le DM6 exact
+    key = (article_code, dm6_code)
+    if key in ARTICLE_DM6_TO_CATEGORY:
+        return ARTICLE_DM6_TO_CATEGORY[key]
+    
+    # Fallback: essayer sans DM6 (None)
+    key_fallback = (article_code, None)
+    if key_fallback in ARTICLE_DM6_TO_CATEGORY:
+        return ARTICLE_DM6_TO_CATEGORY[key_fallback]
+    
+    return "Non catégorisé"
+CATEOF
+
+if [ -f category_mapping.py ]; then
+    echo "✅ Module category_mapping.py créé"
+else
+    echo "❌ ERREUR: Échec création category_mapping.py"
+fi
+
+# Vérifier que l'import est présent dans server.py (v1.1.4)
+echo "🔍 Vérification de l'import dans server.py..."
+if grep -q "from category_mapping import get_category_from_article_dm6" server.py; then
+    echo "✅ Import déjà présent dans server.py"
+else
+    echo "⚠️  Import manquant, ajout automatique..."
+    # Trouver la ligne avec audit_service
+    LINE_NUM=\$(grep -n "from audit_service import AuditService" server.py | cut -d: -f1)
+    if [ -n "\$LINE_NUM" ]; then
+        sed -i "\${LINE_NUM}a from category_mapping import get_category_from_article_dm6" server.py
+        echo "✅ Import ajouté ligne \$((\$LINE_NUM + 1))"
+    else
+        echo "❌ Impossible de trouver la ligne d'insertion"
+    fi
+fi
+
 deactivate
 
 # Frontend build
