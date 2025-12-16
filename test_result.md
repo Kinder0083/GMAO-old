@@ -1,11 +1,12 @@
-# Test Results - Checklist de Contrôles Préventifs
+# Test Results - Exécution de Checklists Préventives
 
 ## Fonctionnalité testée
-**NOUVELLE FONCTIONNALITÉ** : Checklists de contrôles préventifs
-- Création de modèles de checklists avec items de contrôle
-- Types de contrôle : Oui/Non, Valeur numérique, Texte libre
-- Association aux équipements et maintenances préventives
-- Enregistrement comme modèle réutilisable
+**NOUVELLE FONCTIONNALITÉ** : Exécution complète de checklists de contrôles préventifs
+- Exécution de checklists existantes avec réponses YES/NO et NUMERIC
+- Gestion des conformités et non-conformités
+- Documentation des problèmes avec descriptions
+- Historique des exécutions avec taux de conformité
+- Validation et sauvegarde des résultats
 
 ## Tests effectués
 
