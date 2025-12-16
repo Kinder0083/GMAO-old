@@ -604,32 +604,53 @@ const PreventiveMaintenance = () => {
                         </div>
                       </div>
                       
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => {
-                            setSelectedChecklist(checklist);
-                            setChecklistDialogOpen(true);
-                          }}
-                        >
-                          <Edit size={14} className="mr-1" />
-                          Modifier
-                        </Button>
-                        {canDelete && (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-red-500 hover:bg-red-50"
+                            className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+                            onClick={() => handleExecuteChecklist(checklist)}
+                          >
+                            <Play size={14} className="mr-1" />
+                            Exécuter
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
                             onClick={() => {
-                              confirm({
-                                title: 'Supprimer la checklist',
-                                description: `Voulez-vous vraiment supprimer la checklist "${checklist.name}" ?`,
-                                confirmText: 'Supprimer',
-                                cancelText: 'Annuler',
-                                variant: 'destructive',
-                                onConfirm: async () => {
+                              setSelectedChecklist(checklist);
+                              setChecklistDialogOpen(true);
+                            }}
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Modifier
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={handleViewHistory}
+                          >
+                            <History size={14} className="mr-1" />
+                            Historique
+                          </Button>
+                          {canDelete && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-500 hover:bg-red-50"
+                              onClick={() => {
+                                confirm({
+                                  title: 'Supprimer la checklist',
+                                  description: `Voulez-vous vraiment supprimer la checklist "${checklist.name}" ?`,
+                                  confirmText: 'Supprimer',
+                                  cancelText: 'Annuler',
+                                  variant: 'destructive',
+                                  onConfirm: async () => {
                                   try {
                                     await checklistsAPI.deleteTemplate(checklist.id);
                                     toast({ title: 'Succès', description: 'Checklist supprimée' });
