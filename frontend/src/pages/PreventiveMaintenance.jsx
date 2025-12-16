@@ -717,6 +717,28 @@ const PreventiveMaintenance = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog d'exécution de checklist */}
+      <ChecklistExecutionDialog
+        open={executionDialogOpen}
+        onOpenChange={setExecutionDialogOpen}
+        template={checklistToExecute}
+        equipmentId={executionContext.equipmentId}
+        equipmentName={executionContext.equipmentName}
+        onSuccess={() => {
+          loadChecklists();
+          toast({
+            title: 'Succès',
+            description: 'Checklist exécutée avec succès'
+          });
+        }}
+      />
+
+      {/* Dialog de l'historique des checklists */}
+      <ChecklistHistoryView
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+      />
+
       {/* Confirm Dialog */}
       <ConfirmDialog />
     </div>
