@@ -428,6 +428,8 @@ class UpdateService:
                 
                 if dump_process.returncode != 0:
                     logger.error(f"❌ Échec du backup: {stderr.decode()}")
+                    update_history["logs"].append(f"Échec du backup: {stderr.decode()[:200]}")
+                    update_history["backup_created"] = False
                     return {
                         "success": False,
                         "message": "Échec de la création du backup",
@@ -435,6 +437,9 @@ class UpdateService:
                     }
                     
                 logger.info(f"✅ Backup créé: {backup_path}")
+                update_history["logs"].append(f"Backup créé: {backup_path}")
+                update_history["backup_created"] = True
+                update_history["backup_path"] = str(backup_path)
                 
             except asyncio.TimeoutError:
                 logger.error("❌ Timeout lors du backup")
