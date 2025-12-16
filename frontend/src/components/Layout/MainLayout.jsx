@@ -577,6 +577,19 @@ const MainLayout = () => {
       label: item.label ? item.label.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim() : item.label
     }));
 
+  // Grouper les menus par catégorie
+  const getMenusByCategory = (categoryId) => {
+    return menuItems.filter(item => item.category_id === categoryId);
+  };
+
+  // Menus sans catégorie
+  const uncategorizedMenus = menuItems.filter(item => !item.category_id);
+
+  // Vérifier si une catégorie contient le menu actif
+  const categoryHasActiveMenu = (categoryId) => {
+    return menuItems.some(item => item.category_id === categoryId && location.pathname === item.path);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
