@@ -44,7 +44,7 @@
 
 #### Test 1: Page de Personnalisation - Onglet Organisation du Menu ✅
 - **Status**: ✅ RÉUSSI
-- **URL**: https://proxmox-update.preview.emergentagent.com/personnalisation
+- **URL**: https://checklist-control.preview.emergentagent.com/personnalisation
 - **Résultats**:
   - ✅ Connexion avec admin@test.com / testpassword réussie
   - ✅ Navigation vers la page Personnalisation fonctionnelle
@@ -69,7 +69,7 @@
 
 #### Test 3: Sidebar avec catégories dépliables ✅
 - **Status**: ✅ RÉUSSI
-- **URL**: https://proxmox-update.preview.emergentagent.com/dashboard
+- **URL**: https://checklist-control.preview.emergentagent.com/dashboard
 - **Résultats**:
   - ✅ Catégorie "Maintenance" visible dans la sidebar
   - ✅ Sous-menus correctement affichés: Ordres de travail, Maintenance prev., Planning M.Prev., Équipements
