@@ -40,7 +40,7 @@ Groupement des menus de navigation par catégories personnalisées avec sous-men
 
 #### Test 1: Page de Personnalisation - Onglet Organisation du Menu ✅
 - **Status**: ✅ RÉUSSI
-- **URL**: https://menu-maestro-78.preview.emergentagent.com/personnalisation
+- **URL**: https://proxmox-update.preview.emergentagent.com/personnalisation
 - **Résultats**:
   - ✅ Connexion avec admin@test.com / testpassword réussie
   - ✅ Navigation vers la page Personnalisation fonctionnelle
@@ -65,7 +65,7 @@ Groupement des menus de navigation par catégories personnalisées avec sous-men
 
 #### Test 3: Sidebar avec catégories dépliables ✅
 - **Status**: ✅ RÉUSSI
-- **URL**: https://menu-maestro-78.preview.emergentagent.com/dashboard
+- **URL**: https://proxmox-update.preview.emergentagent.com/dashboard
 - **Résultats**:
   - ✅ Catégorie "Maintenance" visible dans la sidebar
   - ✅ Sous-menus correctement affichés: Ordres de travail, Maintenance prev., Planning M.Prev., Équipements
