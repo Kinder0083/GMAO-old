@@ -3320,8 +3320,6 @@ async def get_purchase_stats(
     users_list.sort(key=lambda x: x['montant_total'], reverse=True)
     
     # NOUVELLES STATS - Par mois avec catégorisation PAR (ARTICLE + DM6)
-    from category_mapping import get_category_from_article_dm6
-    
     monthly_stats = {}
     monthly_article_dm6_stats = {}  # Structure: {mois: {(article, dm6): {category, montant, etc.}}}
     
