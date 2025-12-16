@@ -117,6 +117,30 @@ const PreventiveMaintenance = () => {
     }
   };
 
+  const handleExecuteChecklist = async (checklist) => {
+    // Trouver le template de checklist
+    const template = checklists.find(c => c.id === checklist.id);
+    if (!template) {
+      toast({
+        title: 'Erreur',
+        description: 'Template de checklist introuvable',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setChecklistToExecute(template);
+    setExecutionContext({
+      equipmentId: null,
+      equipmentName: checklist.name
+    });
+    setExecutionDialogOpen(true);
+  };
+
+  const handleViewHistory = () => {
+    setHistoryDialogOpen(true);
+  };
+
   const handleExecuteNow = async (pm) => {
     confirm({
       title: 'Créer un ordre de travail',
