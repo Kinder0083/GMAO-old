@@ -57,7 +57,20 @@ const PreventiveMaintenance = () => {
 
   useEffect(() => {
     loadMaintenance();
+    loadChecklists();
   }, []);
+
+  const loadChecklists = async () => {
+    try {
+      setLoadingChecklists(true);
+      const response = await checklistsAPI.getTemplates();
+      setChecklists(response.data);
+    } catch (error) {
+      console.error('Erreur chargement checklists:', error);
+    } finally {
+      setLoadingChecklists(false);
+    }
+  };
 
   const loadMaintenance = async () => {
     try {
