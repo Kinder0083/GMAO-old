@@ -322,7 +322,7 @@ const ChecklistFormDialog = ({ open, onOpenChange, checklist, onSuccess }) => {
                               <Input
                                 value={item.label}
                                 onChange={(e) => updateItem(index, 'label', e.target.value)}
-                                placeholder="Libellé du contrôle (ex: Vérifier le niveau d'huile)"
+                                placeholder="Libellé du contrôle (ex: Vérifier le niveau huile)"
                               />
                             </div>
                             <Select
