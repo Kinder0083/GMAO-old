@@ -409,9 +409,10 @@ const MenuOrganizationSection = () => {
     .filter(item => !item.category_id)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // Composant pour afficher un menu item
-  const MenuItemRow = ({ item, categoryId }) => (
+  // Fonction de rendu pour un menu item
+  const renderMenuItemRow = (item, categoryId) => (
     <div
+      key={item.id}
       draggable
       onDragStart={() => handleDragStart(item, 'menu')}
       onDragOver={handleDragOver}
