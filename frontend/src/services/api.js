@@ -127,6 +127,25 @@ export const preventiveMaintenanceAPI = {
   delete: (id) => api.delete(`/preventive-maintenance/${id}`)
 };
 
+// ==================== CHECKLISTS ====================
+export const checklistsAPI = {
+  // Templates (modèles de checklists)
+  getTemplates: () => api.get('/checklists/templates'),
+  getTemplate: (id) => api.get(`/checklists/templates/${id}`),
+  createTemplate: (data) => api.post('/checklists/templates', data),
+  updateTemplate: (id, data) => api.put(`/checklists/templates/${id}`, data),
+  deleteTemplate: (id) => api.delete(`/checklists/templates/${id}`),
+  
+  // Executions (exécutions de checklists)
+  getExecutions: (params) => api.get('/checklists/executions', { params }),
+  getExecution: (id) => api.get(`/checklists/executions/${id}`),
+  createExecution: (data) => api.post('/checklists/executions', data),
+  updateExecution: (id, data) => api.put(`/checklists/executions/${id}`, data),
+  
+  // Historique
+  getHistory: (params) => api.get('/checklists/history', { params })
+};
+
 // ==================== USERS ====================
 export const usersAPI = {
   getAll: () => api.get('/users'),
