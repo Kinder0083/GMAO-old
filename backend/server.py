@@ -28,6 +28,7 @@ import dependencies
 from dependencies import get_current_user, get_current_admin_user, check_permission, require_permission
 import email_service
 from audit_service import AuditService
+from category_mapping import get_category_from_article_dm6
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
