@@ -24,12 +24,19 @@ const PreventiveMaintenance = () => {
   const [loading, setLoading] = useState(true);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'tree'
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'tree', ou 'checklists'
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [maintenanceToDelete, setMaintenanceToDelete] = useState(null);
+  
+  // États pour les checklists
+  const [checklistDialogOpen, setChecklistDialogOpen] = useState(false);
+  const [selectedChecklist, setSelectedChecklist] = useState(null);
+  const [checklists, setChecklists] = useState([]);
+  const [loadingChecklists, setLoadingChecklists] = useState(false);
 
   // Vérifier les permissions
   const canDelete = user?.permissions?.preventiveMaintenance?.delete === true;
+  const canEdit = user?.permissions?.preventiveMaintenance?.edit === true;
 
   // Fonction pour afficher le badge de statut
   const getStatusBadge = (statut) => {
