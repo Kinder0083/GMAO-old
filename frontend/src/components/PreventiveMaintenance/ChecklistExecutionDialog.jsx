@@ -237,9 +237,14 @@ const ChecklistExecutionDialog = ({
                             variant={response.value_yes_no === true ? 'default' : 'outline'}
                             className={response.value_yes_no === true ? 'bg-green-600 hover:bg-green-700' : ''}
                             onClick={() => {
-                              updateResponse(index, 'value_yes_no', true);
-                              updateResponse(index, 'is_compliant', true);
-                              updateResponse(index, 'has_issue', false);
+                              const newResponses = [...responses];
+                              newResponses[index] = {
+                                ...newResponses[index],
+                                value_yes_no: true,
+                                is_compliant: true,
+                                has_issue: false
+                              };
+                              setResponses(newResponses);
                             }}
                           >
                             <CheckCircle size={16} className="mr-2" />
@@ -250,9 +255,14 @@ const ChecklistExecutionDialog = ({
                             variant={response.value_yes_no === false ? 'default' : 'outline'}
                             className={response.value_yes_no === false ? 'bg-red-600 hover:bg-red-700' : ''}
                             onClick={() => {
-                              updateResponse(index, 'value_yes_no', false);
-                              updateResponse(index, 'is_compliant', false);
-                              updateResponse(index, 'has_issue', true);
+                              const newResponses = [...responses];
+                              newResponses[index] = {
+                                ...newResponses[index],
+                                value_yes_no: false,
+                                is_compliant: false,
+                                has_issue: true
+                              };
+                              setResponses(newResponses);
                               setExpandedItems(new Set([...expandedItems, index]));
                             }}
                           >
