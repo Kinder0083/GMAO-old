@@ -651,10 +651,12 @@ const MenuOrganizationSection = () => {
           <Label className="text-sm font-semibold text-gray-700">Catégories</Label>
           {categories
             .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map(category => {
+            .map((category, categoryIndex, sortedCategories) => {
               const CategoryIcon = getCategoryIcon(category.icon);
               const categoryMenus = getMenusByCategory(category.id);
               const isExpanded = expandedCategories[category.id];
+              const isFirst = categoryIndex === 0;
+              const isLast = categoryIndex === sortedCategories.length - 1;
 
               return (
                 <Card 
@@ -664,11 +666,41 @@ const MenuOrganizationSection = () => {
                   onDrop={() => handleDropOnCategory(category.id)}
                 >
                   <div 
-                    className={`flex items-center gap-3 p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors ${
+                    className={`flex items-center gap-2 p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors ${
                       draggedItem?.type === 'menu' ? 'ring-2 ring-blue-300 ring-inset' : ''
                     }`}
                     onClick={() => toggleCategoryExpansion(category.id)}
                   >
+                    {/* Flèches haut/bas pour réorganiser les catégories */}
+                    <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveCategoryUp(category.id);
+                        }}
+                        disabled={isFirst}
+                        title="Monter la catégorie"
+                      >
+                        <ArrowUp size={14} className={isFirst ? 'text-gray-300' : 'text-gray-600'} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveCategoryDown(category.id);
+                        }}
+                        disabled={isLast}
+                        title="Descendre la catégorie"
+                      >
+                        <ArrowDown size={14} className={isLast ? 'text-gray-300' : 'text-gray-600'} />
+                      </Button>
+                    </div>
+
                     <button className="p-1">
                       {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </button>
