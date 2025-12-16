@@ -119,6 +119,12 @@ Toutes les fonctionnalités de catégories de menu fonctionnent correctement.
 - **Status**: ✅ ALL TESTS PASSED
 - **Comment**: Successfully completed all 5 test scenarios. Custom menu categories feature is fully functional on frontend. Minor issues with Playwright selectors for icons but visual confirmation shows all elements are present and working.
 
+### Testing Agent - Arrow Buttons Backend Testing Complete
+- **Date**: Current
+- **Agent**: testing
+- **Status**: ✅ ARROW BUTTONS BACKEND FUNCTIONAL
+- **Comment**: Completed comprehensive testing of arrow buttons functionality for menu organization. Backend API fully supports UP/DOWN reordering of categories and menu items via order field manipulation. 8/9 tests passed with 1 minor expected failure. All critical functionality working correctly.
+
 ## Agent Communication
 
 ### From Main Agent
