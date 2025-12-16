@@ -1,11 +1,11 @@
-# Test Results - Groupement personnalisé des menus
+# Test Results - Groupement personnalisé des menus (Frontend Testing)
 
 ## Fonctionnalité testée
-Groupement des menus de navigation par catégories personnalisées avec sous-menus dépliables.
+Groupement des menus de navigation par catégories personnalisées avec sous-menus dépliables côté frontend.
 
 ## Tests effectués
 
-### Backend Tests ✅ TOUS RÉUSSIS
+### Backend Tests ✅ TOUS RÉUSSIS (Déjà validés)
 1. **✅ Vérification de l'API `/api/user-preferences`**
    - GET /api/user-preferences fonctionne correctement (200 OK)
    - Champs `menu_categories` et `menu_items` présents dans la réponse
@@ -36,41 +36,92 @@ Groupement des menus de navigation par catégories personnalisées avec sous-men
    - Types de données corrects validés
    - Persistence des données en base confirmée
 
-### Frontend Tests (À TESTER PAR L'AGENT PRINCIPAL)
-1. **Page Personnalisation > Organisation du Menu**
-   - Bouton "Nouvelle catégorie" ouvre un dialogue
-   - Création de catégorie avec nom et icône
-   - Modification et suppression de catégories
-   - Glisser-déposer des menus vers les catégories
+### Frontend Tests (EN COURS)
 
-2. **Sidebar avec catégories**
-   - Les catégories s'affichent avec leur icône
-   - Click sur catégorie: déplie/replie les sous-menus
-   - Les menus sans catégorie s'affichent normalement
-   - Les sous-menus sont indentés avec une bordure visuelle
+#### Test 1: Page de Personnalisation - Onglet Organisation du Menu
+- **Status**: À tester
+- **URL**: https://menu-maestro-78.preview.emergentagent.com/personnalisation
+- **Éléments à vérifier**:
+  - Connexion avec admin@test.com / testpassword
+  - Navigation vers la page Personnalisation
+  - Clic sur l'onglet "Organisation du Menu"
+  - Bouton "Nouvelle catégorie" présent et bleu
+  - Section "Catégories" visible avec la catégorie "Maintenance"
+  - Section "Sans catégorie" avec les menus restants
+  - Icônes étoile (favori) et œil (visibilité) sur chaque menu
+  - Menus draggables (icône grip vertical)
+
+#### Test 2: Création d'une nouvelle catégorie via UI
+- **Status**: À tester
+- **Éléments à vérifier**:
+  - Clic sur bouton "Nouvelle catégorie"
+  - Dialogue modal s'ouvre
+  - Remplir nom: "Administration"
+  - Sélectionner icône "Shield" (Sécurité)
+  - Clic sur "Créer"
+  - Toast de succès "Catégorie créée"
+  - Nouvelle catégorie "Administration" visible
+  - Zone drop "Glissez des menus ici" visible
+
+#### Test 3: Sidebar avec catégories dépliables
+- **Status**: À tester
+- **URL**: https://menu-maestro-78.preview.emergentagent.com/dashboard
+- **Éléments à vérifier**:
+  - Catégorie "Maintenance" visible avec icône clé
+  - Flèche chevron présente pour déplier/replier
+  - Sous-menus indentés: Ordres de travail, Maintenance prev., etc.
+  - Menus sans catégorie affichés normalement après
+
+#### Test 4: Toggle des catégories (dépliage/repliage)
+- **Status**: À tester
+- **Éléments à vérifier**:
+  - Clic sur catégorie "Maintenance" dans sidebar
+  - Sous-menus disparaissent (catégorie repliée)
+  - Flèche pointe vers la droite
+  - Clic à nouveau pour déplier
+  - Sous-menus réapparaissent
+
+#### Test 5: Navigation depuis un sous-menu
+- **Status**: À tester
+- **Éléments à vérifier**:
+  - Clic sur "Ordres de travail" dans catégorie Maintenance
+  - Page /work-orders s'ouvre
+  - Menu "Ordres de travail" surligné (fond bleu)
+  - Catégorie Maintenance reste visible
 
 ## Credentials
 - Email: admin@test.com
 - Password: testpassword
 
 ## Notes importantes
-- Une catégorie "Maintenance" existe déjà avec 4 menus assignés
-- Pour tester le drag-and-drop dans l'interface de personnalisation
-- Vérifier l'état collapsé/expandé des catégories dans la sidebar
+- Backend entièrement fonctionnel avec catégories existantes
+- Frontend utilise React avec composants shadcn/ui
+- Drag-and-drop HTML5 peut ne pas fonctionner avec Playwright
+- Se concentrer sur les tests d'interface et navigation
 
-## Résultats des tests backend
-
-### Tests critiques réussis (9/9) ✅
-- ✅ Authentification admin@test.com / testpassword
-- ✅ Endpoint GET /api/user-preferences opérationnel
-- ✅ Création de catégories via PUT /api/user-preferences
-- ✅ Assignation de menus aux catégories fonctionnelle
-- ✅ Persistence des données validée
-- ✅ Structure des catégories conforme
-- ✅ Gestion des menus sans catégorie correcte
-- ✅ Validation de la structure des données
-- ✅ Création de multiples catégories (Stock, IoT)
-
-### Statut backend: ✅ ENTIÈREMENT FONCTIONNEL
+## Statut backend: ✅ ENTIÈREMENT FONCTIONNEL
 L'API /api/user-preferences est opérationnelle et prête pour production.
 Toutes les fonctionnalités de catégories de menu fonctionnent correctement.
+
+---
+
+## Status History
+
+### Testing Agent - Initial Assessment
+- **Date**: Current
+- **Agent**: testing
+- **Status**: Starting frontend testing
+- **Comment**: Backend tests already passed. Starting comprehensive frontend testing of custom menu categories feature.
+
+## Agent Communication
+
+### From Main Agent
+- Backend implementation complete and tested
+- All API endpoints functional
+- Categories "Maintenance", "Stock", "IoT" already exist
+- Ready for frontend testing
+
+### From Testing Agent
+- Starting frontend testing with Playwright
+- Will test all 5 test scenarios systematically
+- Focus on UI interactions and navigation flows
