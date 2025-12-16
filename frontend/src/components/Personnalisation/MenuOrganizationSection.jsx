@@ -575,9 +575,7 @@ const MenuOrganizationSection = () => {
           </div>
           
           <div className={`space-y-2 ${draggedItem?.type === 'menu' ? 'ring-2 ring-gray-300 ring-inset rounded-lg p-2' : ''}`}>
-            {uncategorizedMenus.map(item => (
-              <MenuItemRow key={item.id} item={item} categoryId={null} />
-            ))}
+            {uncategorizedMenus.map(item => renderMenuItemRow(item, null))}
           </div>
         </CardContent>
       </Card>
