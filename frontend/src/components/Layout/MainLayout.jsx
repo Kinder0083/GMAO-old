@@ -53,6 +53,7 @@ const MainLayout = () => {
   const { preferences } = usePreferences();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [firstLoginDialogOpen, setFirstLoginDialogOpen] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState({ nom: 'Utilisateur', role: 'VIEWER', firstLogin: false, id: '' });
