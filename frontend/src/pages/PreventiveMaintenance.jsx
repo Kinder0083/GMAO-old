@@ -651,20 +651,21 @@ const PreventiveMaintenance = () => {
                                   cancelText: 'Annuler',
                                   variant: 'destructive',
                                   onConfirm: async () => {
-                                  try {
-                                    await checklistsAPI.deleteTemplate(checklist.id);
-                                    toast({ title: 'Succès', description: 'Checklist supprimée' });
-                                    loadChecklists();
-                                  } catch (error) {
-                                    toast({ title: 'Erreur', description: 'Erreur de suppression', variant: 'destructive' });
+                                    try {
+                                      await checklistsAPI.deleteTemplate(checklist.id);
+                                      toast({ title: 'Succès', description: 'Checklist supprimée' });
+                                      loadChecklists();
+                                    } catch (error) {
+                                      toast({ title: 'Erreur', description: 'Erreur de suppression', variant: 'destructive' });
+                                    }
                                   }
-                                }
-                              });
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        )}
+                                });
+                              }}
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
