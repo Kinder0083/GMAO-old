@@ -1,7 +1,8 @@
-# Test Results - Groupement personnalisé des menus (Frontend Testing)
+# Test Results - Organisation des menus avec flèches haut/bas
 
 ## Fonctionnalité testée
-Groupement des menus de navigation par catégories personnalisées avec sous-menus dépliables côté frontend.
+1. Groupement des menus de navigation par catégories personnalisées avec sous-menus dépliables
+2. **NOUVEAU**: Flèches haut/bas pour réorganiser facilement les menus et catégories sans drag-and-drop
 
 ## Tests effectués
 
