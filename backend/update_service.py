@@ -379,8 +379,27 @@ class UpdateService:
         Returns:
             Dict avec success, message, et détails
         """
+        # Créer l'entrée d'historique
+        update_history = {
+            "id": str(uuid.uuid4()),
+            "version_before": self.current_version,
+            "version_after": version,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "status": "in_progress",
+            "success": False,
+            "files_modified": [],
+            "files_added": [],
+            "files_deleted": [],
+            "total_files_changed": 0,
+            "logs": [],
+            "triggered_by": "manual",
+            "backup_created": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
         try:
             logger.info(f"🚀 Début de l'application de la mise à jour vers {version}")
+            update_history["logs"].append(f"Début de la mise à jour vers {version}")
             
             # 1. Créer un backup de la base de données
             logger.info("📦 Étape 1/5: Création du backup de la base de données...")
