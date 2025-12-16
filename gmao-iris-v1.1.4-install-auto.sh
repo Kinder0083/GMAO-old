@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# GMAO Iris v1.1.2 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
+# GMAO Iris v1.1.4 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
+# 
+# NOUVEAUTÉS v1.1.4:
+# - Fonctionnalité "Détail par Catégorie (Article + DM6)"
+# - Création automatique de category_mapping.py
+# - Vérification import dans server.py
+# - Rebuild frontend automatique après installation
+# - Post-installation hook intégré
 # 
 # CORRECTIFS v1.1.2:
 # - Auto-détection du template Debian disponible
