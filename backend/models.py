@@ -2496,3 +2496,131 @@ class PurchaseRequest(PurchaseRequestBase):
 
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+
+# ============================================================================
+# CHECKLIST MODELS (Checklists de Contrôles Préventifs)
+# ============================================================================
+
+class ChecklistItemType(str, Enum):
+    """Type de réponse pour un item de checklist"""
+    YES_NO = "YES_NO"  # Oui/Non (conforme/non conforme)
+    NUMERIC = "NUMERIC"  # Valeur numérique avec seuils
+    TEXT = "TEXT"  # Texte libre
+
+class ChecklistItemBase(BaseModel):
+    """Item de contrôle dans une checklist"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    label: str = Field(..., min_length=1, max_length=500)  # Libellé du contrôle
+    type: ChecklistItemType = ChecklistItemType.YES_NO
+    order: int = 0  # Ordre d'affichage
+    required: bool = True  # Obligatoire ou non
+    
+    # Pour les valeurs numériques
+    unit: Optional[str] = None  # Unité (°C, bar, mm, etc.)
+    min_value: Optional[float] = None  # Valeur min acceptable
+    max_value: Optional[float] = None  # Valeur max acceptable
+    expected_value: Optional[float] = None  # Valeur attendue
+    
+    # Instructions supplémentaires
+    instructions: Optional[str] = None
+
+class ChecklistTemplateBase(BaseModel):
+    """Modèle de base pour un template de checklist"""
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    equipment_ids: List[str] = Field(default_factory=list)  # Équipements associés
+    items: List[ChecklistItemBase] = Field(default_factory=list)
+    is_template: bool = True  # Est un modèle réutilisable
+
+class ChecklistTemplateCreate(ChecklistTemplateBase):
+    """Création d'un template de checklist"""
+    pass
+
+class ChecklistTemplateUpdate(BaseModel):
+    """Mise à jour d'un template de checklist"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    equipment_ids: Optional[List[str]] = None
+    items: Optional[List[ChecklistItemBase]] = None
+    is_template: Optional[bool] = None
+
+class ChecklistTemplate(ChecklistTemplateBase):
+    """Template de checklist complet"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_by_id: str
+    created_by_name: str
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+# === Exécution d'une checklist (lors d'un ordre de travail) ===
+
+class ChecklistItemResponse(BaseModel):
+    """Réponse à un item de checklist lors de l'exécution"""
+    item_id: str
+    item_label: str
+    item_type: ChecklistItemType
+    
+    # Réponse selon le type
+    value_yes_no: Optional[bool] = None  # Pour YES_NO
+    value_numeric: Optional[float] = None  # Pour NUMERIC
+    value_text: Optional[str] = None  # Pour TEXT
+    
+    # Conformité
+    is_compliant: bool = True  # Conforme ou non
+    
+    # En cas de problème
+    has_issue: bool = False
+    issue_description: Optional[str] = None  # Commentaire sur le problème
+    issue_photos: List[str] = Field(default_factory=list)  # URLs des photos
+    
+    # Métadonnées
+    answered_at: Optional[str] = None
+    answered_by_id: Optional[str] = None
+    answered_by_name: Optional[str] = None
+
+class ChecklistExecutionBase(BaseModel):
+    """Exécution d'une checklist"""
+    checklist_template_id: str
+    checklist_name: str
+    work_order_id: Optional[str] = None  # Ordre de travail associé
+    preventive_maintenance_id: Optional[str] = None  # Maintenance préventive associée
+    equipment_id: Optional[str] = None
+    equipment_name: Optional[str] = None
+    
+    responses: List[ChecklistItemResponse] = Field(default_factory=list)
+    
+    # Résumé
+    total_items: int = 0
+    completed_items: int = 0
+    compliant_items: int = 0
+    non_compliant_items: int = 0
+    
+    # Commentaire général
+    general_comment: Optional[str] = None
+    general_photos: List[str] = Field(default_factory=list)
+
+class ChecklistExecutionCreate(BaseModel):
+    """Création d'une exécution de checklist"""
+    checklist_template_id: str
+    work_order_id: Optional[str] = None
+    preventive_maintenance_id: Optional[str] = None
+    equipment_id: Optional[str] = None
+
+class ChecklistExecutionUpdate(BaseModel):
+    """Mise à jour d'une exécution (ajout de réponses)"""
+    responses: Optional[List[ChecklistItemResponse]] = None
+    general_comment: Optional[str] = None
+    general_photos: Optional[List[str]] = None
+    status: Optional[str] = None  # "in_progress", "completed"
+
+class ChecklistExecution(ChecklistExecutionBase):
+    """Exécution de checklist complète"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    status: str = "in_progress"  # "in_progress", "completed"
+    
+    executed_by_id: str
+    executed_by_name: str
+    
+    started_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    completed_at: Optional[str] = None
+
