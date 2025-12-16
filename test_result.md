@@ -146,6 +146,17 @@ Toutes les fonctionnalités de catégories de menu fonctionnent correctement.
 - ⚠️ Minor: Some UI icons not detected by Playwright selectors but visually confirmed present
 - 🎯 Feature is production-ready and fully functional
 
+### From Testing Agent - ARROW BUTTONS BACKEND REPORT
+- ✅ Backend API /api/user-preferences fully supports arrow buttons functionality
+- ✅ Category reordering (UP/DOWN arrows) working via order field manipulation
+- ✅ Menu item reordering within categories working correctly
+- ✅ Uncategorized menu reordering working correctly
+- ✅ Arrow button constraints properly enforced (first item UP disabled, last item DOWN disabled)
+- ✅ All reordering operations persist correctly in database
+- ✅ Data integrity maintained after multiple reordering operations
+- ✅ Backend ready for frontend arrow buttons implementation
+- 🎯 Arrow buttons backend functionality is PRODUCTION-READY
+
 ## Test Results Summary
 
 ### Critical Tests Passed (5/5) ✅
