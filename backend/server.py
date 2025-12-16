@@ -2152,6 +2152,227 @@ async def check_and_execute_due_maintenances_old(current_user: dict = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== CHECKLIST ROUTES ====================
+
+@api_router.get("/checklists/templates", response_model=List[ChecklistTemplate])
+async def get_checklist_templates(current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))):
+    """Liste tous les modèles de checklists"""
+    templates = await db.checklist_templates.find().to_list(1000)
+    return [ChecklistTemplate(**serialize_doc(t)) for t in templates]
+
+@api_router.get("/checklists/templates/{template_id}", response_model=ChecklistTemplate)
+async def get_checklist_template(template_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))):
+    """Récupère un modèle de checklist par ID"""
+    try:
+        template = await db.checklist_templates.find_one({"_id": ObjectId(template_id)})
+        if not template:
+            # Essayer avec l'ID string
+            template = await db.checklist_templates.find_one({"id": template_id})
+        if not template:
+            raise HTTPException(status_code=404, detail="Modèle de checklist non trouvé")
+        return ChecklistTemplate(**serialize_doc(template))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.post("/checklists/templates", response_model=ChecklistTemplate)
+async def create_checklist_template(template_create: ChecklistTemplateCreate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
+    """Créer un nouveau modèle de checklist"""
+    try:
+        template_dict = template_create.model_dump()
+        template_dict["id"] = str(uuid.uuid4())
+        template_dict["created_by_id"] = current_user.get("id")
+        template_dict["created_by_name"] = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        template_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+        template_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        await db.checklist_templates.insert_one(template_dict)
+        return ChecklistTemplate(**template_dict)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.put("/checklists/templates/{template_id}", response_model=ChecklistTemplate)
+async def update_checklist_template(template_id: str, template_update: ChecklistTemplateUpdate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
+    """Mettre à jour un modèle de checklist"""
+    try:
+        update_data = {k: v for k, v in template_update.model_dump().items() if v is not None}
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Essayer avec ObjectId d'abord
+        result = await db.checklist_templates.update_one(
+            {"_id": ObjectId(template_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            # Essayer avec l'ID string
+            result = await db.checklist_templates.update_one(
+                {"id": template_id},
+                {"$set": update_data}
+            )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Modèle de checklist non trouvé")
+        
+        template = await db.checklist_templates.find_one({"_id": ObjectId(template_id)})
+        if not template:
+            template = await db.checklist_templates.find_one({"id": template_id})
+        return ChecklistTemplate(**serialize_doc(template))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.delete("/checklists/templates/{template_id}")
+async def delete_checklist_template(template_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "delete"))):
+    """Supprimer un modèle de checklist"""
+    try:
+        result = await db.checklist_templates.delete_one({"_id": ObjectId(template_id)})
+        if result.deleted_count == 0:
+            result = await db.checklist_templates.delete_one({"id": template_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Modèle de checklist non trouvé")
+        return {"message": "Modèle de checklist supprimé"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# === Exécutions de checklists ===
+
+@api_router.get("/checklists/executions", response_model=List[ChecklistExecution])
+async def get_checklist_executions(
+    work_order_id: Optional[str] = None,
+    preventive_maintenance_id: Optional[str] = None,
+    current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))
+):
+    """Liste les exécutions de checklists, avec filtres optionnels"""
+    query = {}
+    if work_order_id:
+        query["work_order_id"] = work_order_id
+    if preventive_maintenance_id:
+        query["preventive_maintenance_id"] = preventive_maintenance_id
+    
+    executions = await db.checklist_executions.find(query).sort("started_at", -1).to_list(1000)
+    return [ChecklistExecution(**serialize_doc(e)) for e in executions]
+
+@api_router.get("/checklists/executions/{execution_id}", response_model=ChecklistExecution)
+async def get_checklist_execution(execution_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))):
+    """Récupère une exécution de checklist par ID"""
+    try:
+        execution = await db.checklist_executions.find_one({"_id": ObjectId(execution_id)})
+        if not execution:
+            execution = await db.checklist_executions.find_one({"id": execution_id})
+        if not execution:
+            raise HTTPException(status_code=404, detail="Exécution de checklist non trouvée")
+        return ChecklistExecution(**serialize_doc(execution))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.post("/checklists/executions", response_model=ChecklistExecution)
+async def create_checklist_execution(execution_create: ChecklistExecutionCreate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
+    """Démarrer une nouvelle exécution de checklist"""
+    try:
+        # Récupérer le template
+        template = await db.checklist_templates.find_one({"id": execution_create.checklist_template_id})
+        if not template:
+            template = await db.checklist_templates.find_one({"_id": ObjectId(execution_create.checklist_template_id)})
+        if not template:
+            raise HTTPException(status_code=404, detail="Modèle de checklist non trouvé")
+        
+        # Récupérer l'équipement si spécifié
+        equipment_name = None
+        if execution_create.equipment_id:
+            equipment = await db.equipments.find_one({"_id": ObjectId(execution_create.equipment_id)})
+            if equipment:
+                equipment_name = equipment.get("nom", "")
+        
+        execution_dict = {
+            "id": str(uuid.uuid4()),
+            "checklist_template_id": execution_create.checklist_template_id,
+            "checklist_name": template.get("name", ""),
+            "work_order_id": execution_create.work_order_id,
+            "preventive_maintenance_id": execution_create.preventive_maintenance_id,
+            "equipment_id": execution_create.equipment_id,
+            "equipment_name": equipment_name,
+            "responses": [],
+            "total_items": len(template.get("items", [])),
+            "completed_items": 0,
+            "compliant_items": 0,
+            "non_compliant_items": 0,
+            "general_comment": None,
+            "general_photos": [],
+            "status": "in_progress",
+            "executed_by_id": current_user.get("id"),
+            "executed_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": None
+        }
+        
+        await db.checklist_executions.insert_one(execution_dict)
+        return ChecklistExecution(**execution_dict)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.put("/checklists/executions/{execution_id}", response_model=ChecklistExecution)
+async def update_checklist_execution(execution_id: str, execution_update: ChecklistExecutionUpdate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
+    """Mettre à jour une exécution de checklist (ajouter des réponses)"""
+    try:
+        update_data = {k: v for k, v in execution_update.model_dump().items() if v is not None}
+        
+        # Si on passe des réponses, convertir en dict
+        if "responses" in update_data:
+            update_data["responses"] = [r.model_dump() if hasattr(r, 'model_dump') else r for r in update_data["responses"]]
+            
+            # Calculer les statistiques
+            responses = update_data["responses"]
+            completed = sum(1 for r in responses if r.get("value_yes_no") is not None or r.get("value_numeric") is not None or r.get("value_text"))
+            compliant = sum(1 for r in responses if r.get("is_compliant", True))
+            non_compliant = sum(1 for r in responses if not r.get("is_compliant", True))
+            
+            update_data["completed_items"] = completed
+            update_data["compliant_items"] = compliant
+            update_data["non_compliant_items"] = non_compliant
+        
+        # Si le statut passe à "completed", ajouter la date de fin
+        if update_data.get("status") == "completed":
+            update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+        
+        result = await db.checklist_executions.update_one(
+            {"_id": ObjectId(execution_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            result = await db.checklist_executions.update_one(
+                {"id": execution_id},
+                {"$set": update_data}
+            )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Exécution de checklist non trouvée")
+        
+        execution = await db.checklist_executions.find_one({"_id": ObjectId(execution_id)})
+        if not execution:
+            execution = await db.checklist_executions.find_one({"id": execution_id})
+        return ChecklistExecution(**serialize_doc(execution))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/checklists/history")
+async def get_checklist_history(
+    equipment_id: Optional[str] = None,
+    template_id: Optional[str] = None,
+    limit: int = 50,
+    current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))
+):
+    """Récupère l'historique des exécutions de checklists"""
+    query = {"status": "completed"}
+    if equipment_id:
+        query["equipment_id"] = equipment_id
+    if template_id:
+        query["checklist_template_id"] = template_id
+    
+    executions = await db.checklist_executions.find(query).sort("completed_at", -1).to_list(limit)
+    return [serialize_doc(e) for e in executions]
+
 # ==================== USERS ROUTES ====================
 @api_router.get("/users", response_model=List[User])
 async def get_users(current_user: dict = Depends(require_permission("people", "view"))):
