@@ -35,6 +35,12 @@ const PreventiveMaintenance = () => {
   const [selectedChecklist, setSelectedChecklist] = useState(null);
   const [checklists, setChecklists] = useState([]);
   const [loadingChecklists, setLoadingChecklists] = useState(false);
+  
+  // États pour l'exécution et l'historique des checklists
+  const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [checklistToExecute, setChecklistToExecute] = useState(null);
+  const [executionContext, setExecutionContext] = useState({});
 
   // Vérifier les permissions
   const canDelete = user?.permissions?.preventiveMaintenance?.delete === true;
