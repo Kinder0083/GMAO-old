@@ -132,7 +132,7 @@ const ChecklistExecutionDialog = ({
         checklist_template_id: template.id,
         work_order_id: workOrderId,
         preventive_maintenance_id: preventiveMaintenanceId,
-        equipment_id: executionContext.equipmentId
+        equipment_id: equipmentId
       };
 
       const createdExecution = await checklistsAPI.createExecution(createData);
