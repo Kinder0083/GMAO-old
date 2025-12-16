@@ -111,7 +111,7 @@ const ChecklistExecutionDialog = ({
         if (!item.required) return false;
         
         if (item.type === 'YES_NO' && resp.value_yes_no === null) return true;
-        if (item.type === 'NUMERIC' && resp.value_numeric === null) return true;
+        if (item.type === 'NUMERIC' && (resp.value_numeric === null || resp.value_numeric === '')) return true;
         if (item.type === 'TEXT' && !resp.value_text) return true;
         
         return false;
