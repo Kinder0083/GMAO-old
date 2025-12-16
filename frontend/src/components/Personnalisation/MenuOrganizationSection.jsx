@@ -547,9 +547,7 @@ const MenuOrganizationSection = () => {
                   {isExpanded && (
                     <CardContent className="pt-3 pb-3 space-y-2">
                       {categoryMenus.length > 0 ? (
-                        categoryMenus.map(item => (
-                          <MenuItemRow key={item.id} item={item} categoryId={category.id} />
-                        ))
+                        categoryMenus.map(item => renderMenuItemRow(item, category.id))
                       ) : (
                         <div className="text-center py-6 text-gray-400 border-2 border-dashed rounded-lg">
                           <FolderOpenIcon size={32} className="mx-auto mb-2 opacity-50" />
