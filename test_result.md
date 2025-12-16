@@ -189,24 +189,35 @@ Toutes les fonctionnalités de catégories de menu fonctionnent correctement.
 
 ## Agent Communication
 
-### From Testing Agent - CHECKLIST EXECUTION TESTING REPORT
+### From Testing Agent - CHECKLIST EXECUTION TESTING REPORT (UPDATED)
 - ✅ Interface utilisateur complètement fonctionnelle
 - ✅ Navigation et accès aux checklists parfaits
 - ✅ Dialog d'exécution avec tous les types d'items (YES/NO, NUMERIC)
 - ✅ Gestion des conformités et non-conformités
 - ✅ Documentation des problèmes pour les non-conformités
 - ✅ Validation des plages numériques (5-8 bar)
-- ❌ **PROBLÈME CRITIQUE**: Form submission ne fonctionne pas
-- ❌ **PROBLÈME CRITIQUE**: Aucune requête POST vers l'API backend
+- ❌ **PROBLÈME CRITIQUE IDENTIFIÉ**: Validation frontend défaillante
+- ❌ **PROBLÈME CRITIQUE**: Aucune requête POST/PUT vers l'API backend
 - ❌ **PROBLÈME CRITIQUE**: Les exécutions ne sont pas sauvegardées
-- ⚠️ Historique partiellement accessible (overlay issues)
 
-### DIAGNOSTIC TECHNIQUE
+### DIAGNOSTIC TECHNIQUE DÉTAILLÉ
 - **Frontend**: Interface parfaite, UX excellente
-- **Backend**: API endpoints fonctionnels et testés
+- **Backend**: API endpoints fonctionnels (processus 2-étapes CREATE puis UPDATE)
 - **Intégration**: Déconnexion critique entre frontend et backend
-- **Cause probable**: Problème dans le handleSubmit du ChecklistExecutionDialog
+- **CAUSE RACINE IDENTIFIÉE**: Bug dans la validation des champs numériques
+  - Ligne 114 de ChecklistExecutionDialog.jsx: `resp.value_numeric === null`
+  - Problème: Les champs vides retournent `""` (string vide), pas `null`
+  - Solution: Changer la validation en `resp.value_numeric === null || resp.value_numeric === ""`
 - **Impact**: Fonctionnalité inutilisable en production
+
+### TESTS EFFECTUÉS AUJOURD'HUI
+- ✅ Connexion et navigation vers Maintenance Préventive → Checklists
+- ✅ Ouverture du dialog d'exécution de checklist
+- ✅ Remplissage des items (YES/NO: "Conforme", NUMERIC: "6.5")
+- ✅ Ajout de commentaire général
+- ❌ Validation échoue avec message "Veuillez remplir tous les items obligatoires"
+- ❌ Aucune requête réseau POST/PUT détectée
+- ❌ Processus 2-étapes non testé (bloqué par validation frontend)
 
 ### From Testing Agent - ARROW BUTTONS BACKEND REPORT
 - ✅ Backend API /api/user-preferences fully supports arrow buttons functionality
