@@ -244,7 +244,7 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
                 <SelectValue placeholder="Sélectionner une checklist..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucune checklist</SelectItem>
+                <SelectItem value="none">Aucune checklist</SelectItem>
                 {availableChecklists.map(cl => (
                   <SelectItem key={cl.id} value={cl.id}>
                     {cl.name} ({cl.items?.length || 0} items)
