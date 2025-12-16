@@ -25,6 +25,7 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   X,
   LayoutDashboard,
   ClipboardList,
@@ -47,7 +48,9 @@ import {
   Database,
   Activity,
   Terminal,
-  Mail
+  Mail,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 // Liste des icônes disponibles pour les catégories
