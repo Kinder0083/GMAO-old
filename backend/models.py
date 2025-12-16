@@ -2627,3 +2627,56 @@ class ChecklistExecution(ChecklistExecutionBase):
     started_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     completed_at: Optional[str] = None
 
+
+
+# ==================== SYSTEM UPDATE HISTORY MODELS ====================
+
+class UpdateStatus(str, Enum):
+    """Statut d'une mise à jour"""
+    SUCCESS = "success"
+    FAILED = "failed"
+    IN_PROGRESS = "in_progress"
+
+class SystemUpdateHistory(BaseModel):
+    """Historique des mises à jour du système"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Informations de version
+    version_before: str
+    version_after: str
+    
+    # Informations temporelles
+    started_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    completed_at: Optional[str] = None
+    duration_seconds: Optional[float] = None
+    
+    # Statut et résultat
+    status: UpdateStatus = UpdateStatus.IN_PROGRESS
+    success: bool = False
+    
+    # Détails techniques
+    files_modified: List[str] = []
+    files_added: List[str] = []
+    files_deleted: List[str] = []
+    total_files_changed: int = 0
+    
+    # Logs et messages
+    update_message: Optional[str] = None
+    error_message: Optional[str] = None
+    logs: List[str] = []
+    
+    # Informations sur le déclencheur
+    triggered_by: str = "automatic"  # "automatic", "manual", "admin"
+    triggered_by_user_id: Optional[str] = None
+    triggered_by_user_name: Optional[str] = None
+    
+    # Backup
+    backup_created: bool = False
+    backup_path: Optional[str] = None
+    
+    # Métadonnées
+    git_commit_hash: Optional[str] = None
+    github_repo: Optional[str] = None
+    
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
