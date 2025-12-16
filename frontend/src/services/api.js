@@ -677,4 +677,10 @@ export const purchaseRequestsAPI = {
 
 api.purchaseRequests = purchaseRequestsAPI;
 
+// API Historique des mises à jour système
+export const systemUpdateHistoryAPI = {
+  getHistory: (params = {}) => api.get('/api/updates/history-list', { params }),
+  getStats: () => api.get('/api/updates/history-stats')
+};
+
 export default api;
