@@ -10,6 +10,64 @@
 
 ## Tests effectués
 
+### Frontend Tests - Exécution de Checklists
+
+#### Test 1: Navigation et Interface ✅ RÉUSSI
+- **Status**: ✅ RÉUSSI
+- **URL**: https://checklist-control.preview.emergentagent.com/preventive-maintenance
+- **Résultats**:
+  - ✅ Connexion avec admin@test.com / testpassword réussie
+  - ✅ Navigation vers "Maintenance prev." → "Checklists" fonctionnelle
+  - ✅ Checklist test "Test Checklist Contrôle Compresseur" trouvée avec 2 items
+  - ✅ Bouton "Exécuter" présent et cliquable
+  - ✅ Interface utilisateur complète et fonctionnelle
+
+#### Test 2: Dialog d'Exécution de Checklist ✅ RÉUSSI
+- **Status**: ✅ RÉUSSI
+- **Résultats**:
+  - ✅ Dialog "Exécution de la checklist" s'ouvre correctement
+  - ✅ Item #1 (YES/NO): Boutons "Conforme"/"Non conforme" fonctionnels
+  - ✅ Item #2 (NUMERIC): Champ numérique avec validation de plage (5-8 bar)
+  - ✅ Commentaire général optionnel disponible
+  - ✅ Interface responsive et intuitive
+
+#### Test 3: Réponses Conformes ✅ RÉUSSI
+- **Status**: ✅ RÉUSSI
+- **Résultats**:
+  - ✅ Item #1: "Conforme" sélectionné avec succès
+  - ✅ Item #2: Valeur "6.5" saisie (dans la plage acceptable)
+  - ✅ Icône verte de conformité affichée correctement
+  - ✅ Commentaire général "Test d'exécution automatisé" ajouté
+  - ✅ Bouton "Valider la checklist" fonctionnel
+
+#### Test 4: Réponses Non-Conformes ✅ RÉUSSI
+- **Status**: ✅ RÉUSSI
+- **Résultats**:
+  - ✅ Item #1: "Non conforme" sélectionné avec succès
+  - ✅ Section "Documenter le problème" apparaît automatiquement
+  - ✅ Description du problème saisissable: "Niveau d'huile insuffisant"
+  - ✅ Item #2: Valeur "9.5" (hors plage) détectée comme non-conforme
+  - ✅ Icône rouge de non-conformité affichée correctement
+  - ✅ Interface de documentation des problèmes fonctionnelle
+
+#### Test 5: Validation et Soumission ❌ PROBLÈME CRITIQUE
+- **Status**: ❌ PROBLÈME CRITIQUE
+- **Résultats**:
+  - ✅ Bouton "Valider la checklist" cliquable
+  - ✅ Toast de succès affiché dans l'interface
+  - ❌ **CRITIQUE**: Aucune requête POST vers /api/checklists/executions
+  - ❌ **CRITIQUE**: Les données ne sont pas sauvegardées en base
+  - ❌ **CRITIQUE**: Déconnexion entre UI et backend
+
+#### Test 6: Historique des Exécutions ⚠️ PARTIELLEMENT FONCTIONNEL
+- **Status**: ⚠️ PARTIELLEMENT FONCTIONNEL
+- **Résultats**:
+  - ✅ Bouton "Historique" présent
+  - ⚠️ Problème d'overlay empêchant le clic normal
+  - ✅ Force-click fonctionne partiellement
+  - ❌ Aucune exécution dans l'historique (normal car pas sauvegardées)
+  - ✅ API GET /api/checklists/executions fonctionne (retourne [])
+
 ### Backend Tests ✅ TOUS RÉUSSIS (Déjà validés)
 1. **✅ Vérification de l'API `/api/user-preferences`**
    - GET /api/user-preferences fonctionne correctement (200 OK)
