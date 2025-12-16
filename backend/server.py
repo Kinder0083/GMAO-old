@@ -2335,23 +2335,34 @@ async def update_checklist_execution(execution_id: str, execution_update: Checkl
         if update_data.get("status") == "completed":
             update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
         
+        # Essayer d'abord avec l'ID custom
         result = await db.checklist_executions.update_one(
-            {"_id": ObjectId(execution_id)},
+            {"id": execution_id},
             {"$set": update_data}
         )
         
+        # Si pas trouvé, essayer avec ObjectId (pour compatibilité)
         if result.matched_count == 0:
-            result = await db.checklist_executions.update_one(
-                {"id": execution_id},
-                {"$set": update_data}
-            )
+            try:
+                result = await db.checklist_executions.update_one(
+                    {"_id": ObjectId(execution_id)},
+                    {"$set": update_data}
+                )
+            except:
+                pass
         
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Exécution de checklist non trouvée")
         
-        execution = await db.checklist_executions.find_one({"_id": ObjectId(execution_id)})
+        # Récupérer l'exécution mise à jour
+        execution = await db.checklist_executions.find_one({"id": execution_id})
         if not execution:
-            execution = await db.checklist_executions.find_one({"id": execution_id})
+            try:
+                execution = await db.checklist_executions.find_one({"_id": ObjectId(execution_id)})
+            except:
+                pass
+        if not execution:
+            raise HTTPException(status_code=404, detail="Exécution de checklist non trouvée")
         return ChecklistExecution(**serialize_doc(execution))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
