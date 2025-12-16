@@ -9,9 +9,10 @@ import {
   DialogHeader,
   DialogTitle
 } from '../components/ui/dialog';
-import { Plus, Calendar, Clock, CheckCircle, List, Grid, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Clock, CheckCircle, List, Grid, Trash2, ClipboardCheck, Edit, Eye } from 'lucide-react';
 import PreventiveMaintenanceFormDialog from '../components/PreventiveMaintenance/PreventiveMaintenanceFormDialog';
-import { preventiveMaintenanceAPI, workOrdersAPI } from '../services/api';
+import ChecklistFormDialog from '../components/PreventiveMaintenance/ChecklistFormDialog';
+import { preventiveMaintenanceAPI, workOrdersAPI, checklistsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 
