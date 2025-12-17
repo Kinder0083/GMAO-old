@@ -569,12 +569,12 @@ SMTP_HOST=localhost
 SMTP_PORT=25
 SMTP_FROM=noreply@gmao-iris.local
 SMTP_FROM_NAME=GMAO Iris
-APP_URL=http://${CONTAINER_IP}
+APP_URL=${FRONTEND_URL}
 BEOF
 
 # Frontend .env
 cat > frontend/.env <<FEOF
-REACT_APP_BACKEND_URL=http://${CONTAINER_IP}
+REACT_APP_BACKEND_URL=${FRONTEND_URL}
 NODE_ENV=production
 FEOF
 
