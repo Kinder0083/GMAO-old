@@ -521,22 +521,29 @@ const Updates = () => {
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      {item.status === 'success' ? (
+                      {item.success ? (
                         <CheckCircle size={20} className="text-green-600" />
                       ) : (
                         <AlertCircle size={20} className="text-red-600" />
                       )}
                       <div>
-                        <p className="font-medium text-gray-900">Version {item.version}</p>
-                        <p className="text-sm text-gray-600">
-                          {new Date(item.date).toLocaleString('fr-FR')}
+                        <p className="font-medium text-gray-900">
+                          {item.version_before} → {item.version_after}
                         </p>
-                        {item.message && (
-                          <p className="text-xs text-gray-500 mt-1">{item.message}</p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(item.started_at).toLocaleString('fr-FR')}
+                        </p>
+                        {item.duration_seconds && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Durée: {Math.floor(item.duration_seconds / 60)}m {Math.floor(item.duration_seconds % 60)}s
+                          </p>
+                        )}
+                        {item.error_message && (
+                          <p className="text-xs text-red-600 mt-1">{item.error_message}</p>
                         )}
                       </div>
                     </div>
-                    {item.status === 'success' && item.version !== currentVersion && (
+                    {item.success && item.backup_path && item.version_after !== currentVersion && (
                       <Button
                         variant="outline"
                         size="sm"
