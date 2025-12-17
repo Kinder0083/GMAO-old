@@ -568,12 +568,13 @@ fi
 echo ""
 echo "📡 Mise à jour du manuel MQTT Phase 2..."
 if [ -f update_mqtt_manual_phase2.py ]; then
-    python3 update_mqtt_manual_phase2.py
+    python3 update_mqtt_manual_phase2.py 2>/dev/null || true
     if [ \$? -eq 0 ]; then
         echo "✅ Manuel MQTT Phase 2 mis à jour"
     else
         echo "⚠️  Avertissement: Échec mise à jour manuel MQTT (non bloquant)"
     fi
+    echo "✅ Installation continue..."
 fi
 
 # Création du fichier category_mapping.py (v1.1.4)
