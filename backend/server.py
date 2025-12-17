@@ -4689,9 +4689,20 @@ async def get_changelog(
 
 @api_router.get("/updates/history")
 async def get_update_history(current_user: dict = Depends(get_current_admin_user)):
-    """Récupère l'historique des mises à jour (admin uniquement)"""
-    history = await update_manager.get_update_history()
-    return {"history": history}
+    """Récupère l'historique des mises à jour depuis la BDD (admin uniquement)"""
+    try:
+        # Récupérer depuis la nouvelle collection system_update_history
+        history = await db.system_update_history.find(
+            {},
+            {"_id": 0}
+        ).sort("started_at", -1).limit(50).to_list(50)
+        
+        return {"history": history}
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération historique: {str(e)}")
+        # Fallback vers l'ancienne méthode si erreur
+        history = await update_manager.get_update_history()
+        return {"history": history}
 
 
 @api_router.post("/updates/backup")
