@@ -120,7 +120,7 @@ const Updates = () => {
         axios.get(`${BACKEND_URL}/api/updates/changelog`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${BACKEND_URL}/api/updates/history`, {
+        axios.get(`${BACKEND_URL}/api/updates/history-list`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -129,7 +129,7 @@ const Updates = () => {
       setLatestVersion(checkRes.data.latest_version);
       setUpdateAvailable(checkRes.data.update_available);
       setChangelog(changelogRes.data.changelog || []);
-      setHistory(historyRes.data.history || []);
+      setHistory(historyRes.data.data || []);
     } catch (error) {
       toast({
         title: 'Erreur',
