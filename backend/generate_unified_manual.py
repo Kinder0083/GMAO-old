@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """
-Script pour générer et importer le contenu complet du manuel
+Script idempotent unifié pour générer le manuel complet GMAO Iris (23 chapitres)
+Ce script remplace generate_complete_manual.py et add_missing_manual_chapters.py
+
+Caractéristiques :
+- Idempotent : Peut être exécuté plusieurs fois sans dupliquer les données
+- Complet : Génère tous les 23 chapitres et leurs sections (61 sections au total)
+- Maintenable : Code centralisé et organisé
+
+Utilisation :
+    python3 generate_unified_manual.py
 """
 import asyncio
 from datetime import datetime, timezone
