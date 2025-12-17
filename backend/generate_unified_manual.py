@@ -2574,10 +2574,27 @@ async def generate_manual():
             {"id": "ch-023", "title": "💾 Import / Export", "description": "Importer et exporter des données", "icon": "Database", "order": 23, "sections": ["sec-023-01"], "target_roles": [], "target_modules": ["importExport"]}
         ]
         
+        # Insérer ou mettre à jour les chapitres (idempotent)
+        chapters_created = 0
+        chapters_updated = 0
         for chapter in chapters:
-            chapter_data = {**chapter, "created_at": now.isoformat(), "updated_at": now.isoformat()}
-            await db.manual_chapters.insert_one(chapter_data)
-            print(f"✅ {chapter['title']}")
+            existing = await db.manual_chapters.find_one({"id": chapter["id"]})
+            chapter_data = {**chapter, "updated_at": now.isoformat()}
+            
+            if not existing:
+                chapter_data["created_at"] = now.isoformat()
+                chapters_created += 1
+            
+            await db.manual_chapters.update_one(
+                {"id": chapter["id"]},
+                {"$set": chapter_data},
+                upsert=True
+            )
+            
+            if existing:
+                chapters_updated += 1
+        
+        print(f"✅ {chapters_created} chapitres créés, {chapters_updated} mis à jour")
         
         # Créer sections
         order = 1
