@@ -778,7 +778,18 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Accès à l'application"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "🌐 URL:     http://${CONTAINER_IP}"
+echo "🌐 URL:     ${FRONTEND_URL}"
+if [[ -n "$TAILSCALE_IP" ]]; then
+    echo ""
+    echo "🔐 ACCÈS À DISTANCE VIA TAILSCALE:"
+    echo "   ✅ Tailscale activé"
+    echo "   ✅ IP Tailscale: $TAILSCALE_IP"
+    echo "   ✅ URL à distance: ${FRONTEND_URL}"
+    echo ""
+    echo "   📱 Installez Tailscale sur vos appareils:"
+    echo "      Windows/Mac/Linux: https://tailscale.com/download"
+    echo "      iOS/Android: App Store / Play Store"
+fi
 echo ""
 echo "🔐 Compte principal:"
 echo "   Email:        ${ADMIN_EMAIL}"
@@ -799,7 +810,7 @@ if [[ "$BACKEND_STATUS" == *"RUNNING"* ]]; then
     echo "✅ Tout est opérationnel !"
     echo ""
     echo "Testez la connexion:"
-    echo "  curl http://${CONTAINER_IP}/api/health"
+    echo "  curl ${FRONTEND_URL}/api/health"
 else
     warn "Backend: Vérifier les logs"
     echo ""
