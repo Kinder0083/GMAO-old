@@ -450,15 +450,20 @@ else
     ok "IP du container (Statique): $CONTAINER_IP"
 fi
 
-# Installation de Tailscale si demandé
-if [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]] && [[ -n "$TAILSCALE_AUTH_KEY" ]]; then
+# Déterminer l'URL d'accès en fonction du choix
+if [[ -n "$MANUAL_URL" ]]; then
+    # URL manuelle fournie
+    FRONTEND_URL="$MANUAL_URL"
+    ok "URL d'accès: $FRONTEND_URL (manuelle)"
+    
+elif [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]] && [[ -n "$TAILSCALE_AUTH_KEY" ]]; then
+    # Installation de Tailscale
     msg "Installation de Tailscale..."
     pct exec $CTID -- bash << 'TAILSCALE_INSTALL'
 # Installer Tailscale
 curl -fsSL https://tailscale.com/install.sh | sh
-
-# Démarrer Tailscale avec la clé fournie
-EOF
+TAILSCALE_INSTALL
+    
     pct exec $CTID -- bash -c "tailscale up --authkey=$TAILSCALE_AUTH_KEY --hostname=gmao-iris-${CTID} --accept-routes --accept-dns=false" 2>&1 | grep -v "Success" || true
     
     sleep 5
@@ -468,14 +473,15 @@ EOF
     
     if [[ -n "$TAILSCALE_IP" ]]; then
         ok "Tailscale installé - IP: $TAILSCALE_IP"
-        # Utiliser l'IP Tailscale comme URL principale
         FRONTEND_URL="http://$TAILSCALE_IP"
     else
-        warn "Tailscale installé mais IP non obtenue (vérifiez après installation)"
+        warn "Tailscale installé mais IP non obtenue, utilisation IP locale"
         FRONTEND_URL="http://$CONTAINER_IP"
     fi
 else
+    # IP locale uniquement
     FRONTEND_URL="http://$CONTAINER_IP"
+    ok "URL d'accès: $FRONTEND_URL (locale)"
 fi
 
 msg "Clonage de l'application depuis GitHub..."
