@@ -632,15 +632,21 @@ python3 /tmp/create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
 
 # Initialisation du manuel utilisateur complet (23 chapitres)
 echo ""
-echo "📚 Génération du manuel utilisateur complet (23 chapitres)..."
-python3 generate_full_manual_23ch.py
+echo "📚 Génération du manuel utilisateur (étape 1/2 - 12 chapitres de base)..."
+python3 generate_complete_manual.py
 if [ $? -eq 0 ]; then
-    echo "✅ Manuel complet généré avec succès (23 chapitres)"
+    echo "✅ Manuel de base généré (12 chapitres)"
 else
-    echo "⚠️  Avertissement: Échec génération manuel (non bloquant)"
-    echo "   Tentative avec le manuel de base..."
-    python3 generate_complete_manual.py || true
+    echo "⚠️  Avertissement: Échec génération manuel de base"
 fi
+
+echo ""
+echo "📚 Ajout des chapitres supplémentaires (étape 2/2 - 11 chapitres)..."
+python3 add_missing_manual_chapters.py 2>/dev/null || echo "⚠️  Certains chapitres supplémentaires non ajoutés"
+python3 add_chat_live_manual.py 2>/dev/null || true
+python3 add_purchase_requests_manual.py 2>/dev/null || true
+
+echo "✅ Manuel utilisateur complet initialisé"
 
 # Création du fichier category_mapping.py (v1.1.4)
 echo ""
