@@ -416,6 +416,34 @@ else
     ok "IP du container (Statique): $CONTAINER_IP"
 fi
 
+# Installation de Tailscale si demandé
+if [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]] && [[ -n "$TAILSCALE_AUTH_KEY" ]]; then
+    msg "Installation de Tailscale..."
+    pct exec $CTID -- bash << 'TAILSCALE_INSTALL'
+# Installer Tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+
+# Démarrer Tailscale avec la clé fournie
+EOF
+    pct exec $CTID -- bash -c "tailscale up --authkey=$TAILSCALE_AUTH_KEY --hostname=gmao-iris-${CTID} --accept-routes --accept-dns=false" 2>&1 | grep -v "Success" || true
+    
+    sleep 5
+    
+    # Récupérer l'IP Tailscale
+    TAILSCALE_IP=$(pct exec $CTID -- tailscale ip -4 2>/dev/null || echo "")
+    
+    if [[ -n "$TAILSCALE_IP" ]]; then
+        ok "Tailscale installé - IP: $TAILSCALE_IP"
+        # Utiliser l'IP Tailscale comme URL principale
+        FRONTEND_URL="http://$TAILSCALE_IP"
+    else
+        warn "Tailscale installé mais IP non obtenue (vérifiez après installation)"
+        FRONTEND_URL="http://$CONTAINER_IP"
+    fi
+else
+    FRONTEND_URL="http://$CONTAINER_IP"
+fi
+
 msg "Clonage de l'application depuis GitHub..."
 
 # Créer le script Python pour les admins (VERSION 1.1 - CORRIGÉE)
