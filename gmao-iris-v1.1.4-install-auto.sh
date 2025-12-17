@@ -630,14 +630,16 @@ pip install -q -r requirements.txt
 # Créer les admins
 python3 /tmp/create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
 
-# Initialisation du manuel utilisateur
+# Initialisation du manuel utilisateur complet (23 chapitres)
 echo ""
-echo "📚 Initialisation du manuel utilisateur..."
-python3 generate_complete_manual.py
+echo "📚 Génération du manuel utilisateur complet (23 chapitres)..."
+python3 generate_full_manual_23ch.py
 if [ $? -eq 0 ]; then
-    echo "✅ Manuel initialisé avec succès"
+    echo "✅ Manuel complet généré avec succès (23 chapitres)"
 else
-    echo "⚠️  Avertissement: Échec initialisation manuel (non bloquant)"
+    echo "⚠️  Avertissement: Échec génération manuel (non bloquant)"
+    echo "   Tentative avec le manuel de base..."
+    python3 generate_complete_manual.py || true
 fi
 
 # Création du fichier category_mapping.py (v1.1.4)
