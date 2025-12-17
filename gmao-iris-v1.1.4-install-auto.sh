@@ -245,6 +245,19 @@ echo ""
 [[ ${#ROOT_PASS} -lt 8 ]] && err "Mot de passe root trop court"
 
 echo ""
+msg "Configuration Tailscale (accès à distance sécurisé - OPTIONNEL)"
+echo "Tailscale permet d'accéder à votre GMAO depuis Internet en toute sécurité"
+echo "Pour obtenir une clé: https://login.tailscale.com/admin/settings/keys"
+echo ""
+read -p "Installer Tailscale ? (y/n) [n]: " INSTALL_TAILSCALE
+INSTALL_TAILSCALE=${INSTALL_TAILSCALE:-n}
+
+if [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]]; then
+    read -p "Clé d'authentification Tailscale: " TAILSCALE_AUTH_KEY
+    [[ -z "$TAILSCALE_AUTH_KEY" ]] && warn "Pas de clé Tailscale fournie, installation sans Tailscale"
+fi
+
+echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Résumé:"
 echo "  Proxmox: $PVE_VERSION"
