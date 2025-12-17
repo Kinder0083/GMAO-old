@@ -2517,28 +2517,35 @@ async def generate_manual():
     print("📚 Génération du manuel complet...")
     
     try:
-        # Supprimer ancien contenu
-        await db.manual_versions.delete_many({})
-        await db.manual_chapters.delete_many({})
-        await db.manual_sections.delete_many({})
-        
-        # Créer version
+        # Créer ou mettre à jour la version du manuel (idempotent)
         now = datetime.now(timezone.utc)
         version = {
             "id": str(uuid.uuid4()),
-            "version": "2.0",
+            "version": "3.0",
             "release_date": now.isoformat(),
             "changes": [
-                "Manuel complet avec 12 chapitres",
-                "49 sections détaillées couvrant tous les modules",
+                "Manuel complet avec 23 chapitres",
+                "61 sections détaillées couvrant tous les modules",
                 "Guide complet de A à Z",
-                "FAQ et dépannage inclus"
+                "Chapitres Chat Live, MQTT/IoT, Demandes d'Achat, Zones, Compteurs, etc.",
+                "FAQ et dépannage inclus",
+                "Recherche intuitive intégrée"
             ],
             "author_id": "system",
             "author_name": "Système GMAO Iris",
-            "is_current": True
+            "is_current": True,
+            "updated_at": now.isoformat()
         }
+        
+        # Désactiver les anciennes versions
+        await db.manual_versions.update_many(
+            {"is_current": True},
+            {"$set": {"is_current": False}}
+        )
+        
+        # Insérer la nouvelle version
         await db.manual_versions.insert_one(version)
+        print("✅ Version 3.0 du manuel créée")
         
         # Créer chapitres (tous les 23 chapitres)
         chapters = [
