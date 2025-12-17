@@ -2540,7 +2540,7 @@ async def generate_manual():
         }
         await db.manual_versions.insert_one(version)
         
-        # Créer chapitres
+        # Créer chapitres (tous les 23 chapitres)
         chapters = [
             {"id": "ch-001", "title": "🚀 Guide de Démarrage", "description": "Premiers pas", "icon": "Rocket", "order": 1, "sections": ["sec-001-01", "sec-001-02", "sec-001-03", "sec-001-04"], "target_roles": [], "target_modules": []},
             {"id": "ch-002", "title": "👤 Utilisateurs", "description": "Gérer les utilisateurs", "icon": "Users", "order": 2, "sections": ["sec-002-01", "sec-002-02", "sec-002-03"], "target_roles": [], "target_modules": ["people"]},
@@ -2553,7 +2553,18 @@ async def generate_manual():
             {"id": "ch-009", "title": "📈 Projets d'Amélioration", "description": "Gérer les projets", "icon": "TrendingUp", "order": 9, "sections": ["sec-009-01", "sec-009-02", "sec-009-03"], "target_roles": [], "target_modules": ["improvements"]},
             {"id": "ch-010", "title": "📊 Rapports et Analyses", "description": "Analyser les performances", "icon": "BarChart", "order": 10, "sections": ["sec-010-01", "sec-010-02", "sec-010-03"], "target_roles": [], "target_modules": ["reports"]},
             {"id": "ch-011", "title": "⚙️ Administration", "description": "Configuration système", "icon": "Settings", "order": 11, "sections": ["sec-011-01", "sec-011-02", "sec-011-03", "sec-011-04", "sec-011-05", "sec-011-06", "sec-011-07", "sec-011-08"], "target_roles": [], "target_modules": ["admin"]},
-            {"id": "ch-012", "title": "❓ FAQ et Dépannage", "description": "Questions fréquentes", "icon": "HelpCircle", "order": 12, "sections": ["sec-012-01", "sec-012-02", "sec-012-03", "sec-012-04", "sec-012-05"], "target_roles": [], "target_modules": []}
+            {"id": "ch-012", "title": "❓ FAQ et Dépannage", "description": "Questions fréquentes", "icon": "HelpCircle", "order": 12, "sections": ["sec-012-01", "sec-012-02", "sec-012-03", "sec-012-04", "sec-012-05"], "target_roles": [], "target_modules": []},
+            {"id": "ch-013", "title": "💬 Chat Live et Collaboration", "description": "Communication en temps réel entre équipes", "icon": "MessageCircle", "order": 13, "sections": ["sec-013-01"], "target_roles": [], "target_modules": ["chatLive"]},
+            {"id": "ch-014", "title": "📡 Capteurs MQTT et IoT", "description": "Monitoring des capteurs en temps réel", "icon": "Activity", "order": 14, "sections": ["sec-014-01", "sec-014-02"], "target_roles": [], "target_modules": ["sensors"]},
+            {"id": "ch-015", "title": "📝 Demandes d'Achat", "description": "Gérer les demandes d'achat et approvisionnements", "icon": "ShoppingCart", "order": 15, "sections": ["sec-015-01"], "target_roles": [], "target_modules": ["purchaseRequests"]},
+            {"id": "ch-016", "title": "📍 Gestion des Zones", "description": "Organiser les zones et localisations", "icon": "MapPin", "order": 16, "sections": ["sec-016-01"], "target_roles": [], "target_modules": ["locations"]},
+            {"id": "ch-017", "title": "⏱️ Compteurs", "description": "Suivi des compteurs d'équipements", "icon": "Gauge", "order": 17, "sections": ["sec-017-01"], "target_roles": [], "target_modules": ["meters"]},
+            {"id": "ch-018", "title": "👁️ Plan de Surveillance", "description": "Organiser la surveillance des installations", "icon": "Eye", "order": 18, "sections": ["sec-018-01"], "target_roles": [], "target_modules": ["surveillance"]},
+            {"id": "ch-019", "title": "⚠️ Presqu'accidents", "description": "Gérer les presqu'accidents et incidents", "icon": "AlertTriangle", "order": 19, "sections": ["sec-019-01"], "target_roles": [], "target_modules": ["presquaccident"]},
+            {"id": "ch-020", "title": "📂 Documentations", "description": "Gérer la documentation technique", "icon": "FolderOpen", "order": 20, "sections": ["sec-020-01"], "target_roles": [], "target_modules": ["documentations"]},
+            {"id": "ch-021", "title": "📅 Planning", "description": "Planifier les interventions", "icon": "Calendar", "order": 21, "sections": ["sec-021-01"], "target_roles": [], "target_modules": ["planning"]},
+            {"id": "ch-022", "title": "🏭 Fournisseurs", "description": "Gérer les fournisseurs", "icon": "Building", "order": 22, "sections": ["sec-022-01"], "target_roles": [], "target_modules": ["vendors"]},
+            {"id": "ch-023", "title": "💾 Import / Export", "description": "Importer et exporter des données", "icon": "Database", "order": 23, "sections": ["sec-023-01"], "target_roles": [], "target_modules": ["importExport"]}
         ]
         
         for chapter in chapters:
