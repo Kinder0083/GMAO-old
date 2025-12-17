@@ -7,6 +7,20 @@ echo "   Configuration Proxmox - GMAO Iris"
 echo "=================================================="
 echo ""
 
+# Détecter automatiquement le répertoire d'installation
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$SCRIPT_DIR"
+
+echo "📂 Répertoire détecté : $APP_DIR"
+echo ""
+
+# Vérifier que les fichiers .env existent
+if [ ! -f "$APP_DIR/frontend/.env" ]; then
+    echo "❌ Erreur : Fichier $APP_DIR/frontend/.env introuvable !"
+    echo "   Veuillez exécuter ce script depuis le répertoire d'installation de GMAO Iris"
+    exit 1
+fi
+
 # Demander l'URL/IP publique
 echo "🌐 Entrez l'URL ou l'IP publique de votre serveur Proxmox"
 echo "   Exemples:"
@@ -30,18 +44,18 @@ echo ""
 
 # Backup des fichiers existants
 echo "💾 Création de backups..."
-cp /app/frontend/.env /app/frontend/.env.backup.$(date +%Y%m%d_%H%M%S)
-cp /app/backend/.env /app/backend/.env.backup.$(date +%Y%m%d_%H%M%S)
+cp "$APP_DIR/frontend/.env" "$APP_DIR/frontend/.env.backup.$(date +%Y%m%d_%H%M%S)"
+cp "$APP_DIR/backend/.env" "$APP_DIR/backend/.env.backup.$(date +%Y%m%d_%H%M%S)"
 
 # Modifier frontend/.env
 echo "🔧 Configuration du frontend..."
-sed -i "s|^REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=$PUBLIC_URL|g" /app/frontend/.env
+sed -i "s|^REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=$PUBLIC_URL|g" "$APP_DIR/frontend/.env"
 
 # Modifier backend/.env
 echo "🔧 Configuration du backend..."
-sed -i "s|^FRONTEND_URL=.*|FRONTEND_URL=$PUBLIC_URL|g" /app/backend/.env
-sed -i "s|^BACKEND_URL=.*|BACKEND_URL=$PUBLIC_URL|g" /app/backend/.env
-sed -i "s|^APP_URL=.*|APP_URL=$PUBLIC_URL|g" /app/backend/.env
+sed -i "s|^FRONTEND_URL=.*|FRONTEND_URL=$PUBLIC_URL|g" "$APP_DIR/backend/.env"
+sed -i "s|^BACKEND_URL=.*|BACKEND_URL=$PUBLIC_URL|g" "$APP_DIR/backend/.env"
+sed -i "s|^APP_URL=.*|APP_URL=$PUBLIC_URL|g" "$APP_DIR/backend/.env"
 
 echo ""
 echo "✅ Configuration terminée !"
