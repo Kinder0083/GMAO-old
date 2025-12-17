@@ -268,6 +268,11 @@ echo "  Container: $CTID (${RAM}Mo, ${CORES} cores, ${DISK_SIZE}Go)"
 echo "  Réseau: $IP_CONFIG"
 echo "  GitHub: ${GITHUB_USER}/${REPO_NAME} (branche: $BRANCH)"
 echo "  Admin: $ADMIN_EMAIL"
+if [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]] && [[ -n "$TAILSCALE_AUTH_KEY" ]]; then
+    echo "  Tailscale: OUI"
+else
+    echo "  Tailscale: NON"
+fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 read -p "Confirmer l'installation ? (y/n): " CONFIRM
