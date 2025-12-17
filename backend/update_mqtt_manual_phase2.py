@@ -156,10 +156,9 @@ async def update_mqtt_manual():
         return True
         
     except Exception as e:
-        print(f"❌ ERREUR: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        print(f"⚠️  ERREUR: {e}")
+        print("   ✅ Installation continue (non bloquant)")
+        return True  # Ne pas bloquer l'installation
     finally:
         client.close()
 
