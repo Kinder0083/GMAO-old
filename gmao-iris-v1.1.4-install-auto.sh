@@ -302,10 +302,12 @@ echo "  Container: $CTID (${RAM}Mo, ${CORES} cores, ${DISK_SIZE}Go)"
 echo "  Réseau: $IP_CONFIG"
 echo "  GitHub: ${GITHUB_USER}/${REPO_NAME} (branche: $BRANCH)"
 echo "  Admin: $ADMIN_EMAIL"
-if [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]] && [[ -n "$TAILSCALE_AUTH_KEY" ]]; then
-    echo "  Tailscale: OUI"
+if [[ -n "$MANUAL_URL" ]]; then
+    echo "  Accès distant: URL manuelle ($MANUAL_URL)"
+elif [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]] && [[ -n "$TAILSCALE_AUTH_KEY" ]]; then
+    echo "  Accès distant: Tailscale"
 else
-    echo "  Tailscale: NON"
+    echo "  Accès distant: IP locale uniquement"
 fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
