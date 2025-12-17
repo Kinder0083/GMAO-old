@@ -2212,6 +2212,10 @@ class MQTTConfig(BaseModel):
     """Configuration du broker MQTT"""
     host: str
     port: int = 1883
+    username: Optional[str] = ""
+    password: Optional[str] = ""
+    use_ssl: bool = False
+    client_id: str = "gmao_iris"
 
 
 # =======================
