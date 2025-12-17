@@ -63,8 +63,8 @@ echo ""
 
 # Afficher les modifications
 echo "📋 Fichiers modifiés :"
-echo "   - /app/frontend/.env"
-echo "   - /app/backend/.env"
+echo "   - $APP_DIR/frontend/.env"
+echo "   - $APP_DIR/backend/.env"
 echo ""
 
 # Proposer de redémarrer les services
