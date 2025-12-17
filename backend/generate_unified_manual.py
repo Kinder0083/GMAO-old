@@ -2223,6 +2223,289 @@ Documentez tout.""",
         "target_roles": [],
         "target_modules": [],
         "keywords": ["bonnes pratiques", "conseils", "qualité", "efficacité"]
+    },
+    
+    "sec-013-01": {
+        "title": "Utiliser le Chat Live",
+        "content": """### Communication en Temps Réel
+
+Le module **Chat Live** permet aux équipes de communiquer instantanément.
+
+**Fonctionnalités** :
+1. Messages instantanés entre utilisateurs
+2. Notifications en temps réel
+3. Historique des conversations
+4. Pièces jointes possibles
+
+**Utilisation** :
+- Module **Chat Live**
+- Sélectionner un utilisateur ou créer un groupe
+- Envoyer des messages
+- Recevoir des notifications""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["chatLive"],
+        "keywords": ["chat", "communication", "messagerie"]
+    },
+    
+    "sec-014-01": {
+        "title": "Configurer MQTT",
+        "content": """### Configuration du Broker MQTT
+
+Pour connecter vos capteurs IoT :
+
+1. Module **Administration** > **Paramètres MQTT**
+2. Renseigner :
+   - Adresse du broker MQTT
+   - Port (1883 par défaut)
+   - Nom d'utilisateur
+   - Mot de passe
+   - ID Client
+3. **Sauvegarder** et **Connecter**
+4. Vérifier le statut de connexion""",
+        "level": "advanced",
+        "target_roles": [],
+        "target_modules": ["sensors"],
+        "keywords": ["mqtt", "iot", "configuration", "capteurs"]
+    },
+    
+    "sec-014-02": {
+        "title": "Gérer les Capteurs IoT",
+        "content": """### Ajouter et Surveiller les Capteurs
+
+**Ajouter un Capteur** :
+1. Module **Capteurs MQTT**
+2. **+ Nouveau Capteur**
+3. Nom, Type, Topic MQTT
+4. Seuils d'alerte (min/max)
+5. **Enregistrer**
+
+**Surveillance** :
+- Dashboard temps réel
+- Graphiques d'évolution
+- Alertes automatiques si seuils dépassés
+- Historique des mesures""",
+        "level": "intermediate",
+        "target_roles": [],
+        "target_modules": ["sensors"],
+        "keywords": ["capteurs", "monitoring", "iot", "alertes"]
+    },
+    
+    "sec-015-01": {
+        "title": "Créer une Demande d'Achat",
+        "content": """### Soumettre une Demande d'Achat
+
+1. Module **Demandes d'Achat**
+2. **+ Nouvelle Demande**
+3. Remplir :
+   - Article demandé
+   - Quantité
+   - Justification
+   - Urgence
+   - Fournisseur suggéré (optionnel)
+4. **Soumettre**
+
+**Workflow** :
+- Soumise → En attente d'approbation
+- Approuvée → Commande créée
+- Refusée → Notification avec motif""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["purchaseRequests"],
+        "keywords": ["achat", "approvisionnement", "commande"]
+    },
+    
+    "sec-016-01": {
+        "title": "Organiser les Zones",
+        "content": """### Créer et Gérer les Zones
+
+Les zones permettent de localiser vos équipements.
+
+1. Module **Zones**
+2. **+ Nouvelle Zone**
+3. Nom, Bâtiment, Étage, Description
+4. **Enregistrer**
+
+**Hiérarchie** :
+- Site → Bâtiment → Étage → Zone → Sous-zone
+
+**Utilité** :
+- Localiser rapidement les équipements
+- Filtrer les OT par zone
+- Rapports par zone""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["locations"],
+        "keywords": ["zones", "localisation", "bâtiments"]
+    },
+    
+    "sec-017-01": {
+        "title": "Suivre les Compteurs",
+        "content": """### Gérer les Compteurs d'Équipements
+
+Les compteurs suivent les heures de fonctionnement, km, cycles, etc.
+
+**Créer un Compteur** :
+1. Dans la fiche Équipement
+2. Onglet **Compteurs**
+3. **+ Nouveau Compteur**
+4. Type, Unité, Valeur initiale
+5. **Enregistrer**
+
+**Relever un Compteur** :
+- Saisir la nouvelle valeur
+- Date et heure enregistrées
+- Calcul automatique des écarts
+- Déclenchement préventif basé sur compteur""",
+        "level": "intermediate",
+        "target_roles": [],
+        "target_modules": ["meters"],
+        "keywords": ["compteurs", "heures", "cycles"]
+    },
+    
+    "sec-018-01": {
+        "title": "Mettre en Place un Plan de Surveillance",
+        "content": """### Organiser la Surveillance
+
+Le plan de surveillance définit les rondes et vérifications.
+
+**Créer un Plan** :
+1. Module **Plan de Surveillance**
+2. **+ Nouveau Plan**
+3. Zones concernées
+4. Points de contrôle
+5. Fréquence des rondes
+6. Affectation des responsables
+
+**Exécution** :
+- Liste des points à vérifier
+- Constatations et photos
+- Génération automatique d'OT si anomalie""",
+        "level": "advanced",
+        "target_roles": [],
+        "target_modules": ["surveillance"],
+        "keywords": ["surveillance", "rondes", "inspection"]
+    },
+    
+    "sec-019-01": {
+        "title": "Déclarer un Presqu'accident",
+        "content": """### Signaler les Presqu'accidents
+
+Les presqu'accidents sont des événements qui auraient pu causer un accident.
+
+**Déclarer** :
+1. Module **Presqu'accidents**
+2. **+ Nouveau Presqu'accident**
+3. Description de l'événement
+4. Localisation
+5. Causes potentielles
+6. Personnes impliquées
+7. Photos si disponibles
+8. **Enregistrer**
+
+**Suivi** :
+- Analyse des causes
+- Actions correctives
+- Prévention des accidents futurs""",
+        "level": "intermediate",
+        "target_roles": [],
+        "target_modules": ["presquaccident"],
+        "keywords": ["sécurité", "presqu'accident", "prévention"]
+    },
+    
+    "sec-020-01": {
+        "title": "Gérer la Documentation",
+        "content": """### Ajouter et Organiser les Documents
+
+Le module Documentations centralise tous vos fichiers techniques.
+
+**Ajouter un Document** :
+1. Module **Documentations**
+2. **+ Nouveau Document**
+3. Titre, Catégorie, Description
+4. Upload du fichier (PDF, Excel, Word, images...)
+5. Lier à un équipement (optionnel)
+6. **Enregistrer**
+
+**Recherche et Consultation** :
+- Recherche par mot-clé
+- Filtres par catégorie, équipement
+- Téléchargement des fichiers
+- Historique des versions""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["documentations"],
+        "keywords": ["documentation", "fichiers", "manuels"]
+    },
+    
+    "sec-021-01": {
+        "title": "Utiliser le Planning",
+        "content": """### Planifier les Interventions
+
+Le Planning affiche toutes les interventions et maintenances.
+
+**Fonctionnalités** :
+1. Vue calendrier avec tous les ordres de travail
+2. Drag & drop pour réorganiser
+3. Filtrer par technicien, zone, type
+4. Exporter le planning
+
+**Utilisation** :
+- Module **Planning**
+- Visualiser les OT à venir
+- Glisser-déposer pour réaffecter
+- Identifier les surcharges
+- Optimiser les tournées""",
+        "level": "intermediate",
+        "target_roles": [],
+        "target_modules": ["planning"],
+        "keywords": ["planning", "calendrier", "organisation"]
+    },
+    
+    "sec-022-01": {
+        "title": "Gérer les Fournisseurs",
+        "content": """### Ajouter et Gérer les Fournisseurs
+
+**Ajouter un Fournisseur** :
+1. Module **Fournisseurs**
+2. **+ Nouveau Fournisseur**
+3. Nom, Contact, Adresse, Email, Téléphone
+4. Spécialités et domaines
+5. **Enregistrer**
+
+**Utilisation** :
+- Associer aux pièces fournies
+- Historique des commandes
+- Évaluation des fournisseurs
+- Contacts rapides""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["vendors"],
+        "keywords": ["fournisseurs", "contacts", "achats"]
+    },
+    
+    "sec-023-01": {
+        "title": "Import / Export de Données",
+        "content": """### Importer et Exporter
+
+**Import** :
+1. Module **Import / Export**
+2. **Import**
+3. Sélectionner le type (équipements, pièces, etc.)
+4. Upload fichier Excel/CSV
+5. Mapper les colonnes
+6. **Importer**
+
+**Export** :
+- Exporter toutes vos données en Excel
+- Choisir les modules à exporter
+- Sauvegardes régulières recommandées
+
+💡 **Conseil** : Effectuez des exports réguliers pour sauvegarder vos données""",
+        "level": "advanced",
+        "target_roles": [],
+        "target_modules": ["importExport"],
+        "keywords": ["import", "export", "excel", "csv", "données"]
     }
 }
 
