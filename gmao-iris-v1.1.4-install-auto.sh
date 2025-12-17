@@ -820,9 +820,17 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Accès à l'application"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "🌐 URL:     ${FRONTEND_URL}"
-if [[ -n "$TAILSCALE_IP" ]]; then
+echo "🌐 URL principale:     ${FRONTEND_URL}"
+echo "🌐 URL locale:         http://${CONTAINER_IP}"
+echo ""
+
+if [[ -n "$MANUAL_URL" ]]; then
+    echo "📡 ACCÈS À DISTANCE VIA URL MANUELLE:"
+    echo "   ✅ URL configurée: ${MANUAL_URL}"
+    echo "   ⚠️  Assurez-vous que cette URL pointe vers votre serveur"
+    echo "   ⚠️  Configurez votre routeur/firewall si nécessaire"
     echo ""
+elif [[ -n "$TAILSCALE_IP" ]]; then
     echo "🔐 ACCÈS À DISTANCE VIA TAILSCALE:"
     echo "   ✅ Tailscale activé"
     echo "   ✅ IP Tailscale: $TAILSCALE_IP"
@@ -831,8 +839,13 @@ if [[ -n "$TAILSCALE_IP" ]]; then
     echo "   📱 Installez Tailscale sur vos appareils:"
     echo "      Windows/Mac/Linux: https://tailscale.com/download"
     echo "      iOS/Android: App Store / Play Store"
+    echo ""
+else
+    echo "ℹ️  Accès local uniquement configuré"
+    echo "   Pour un accès à distance, relancez l'installation avec Tailscale"
+    echo "   ou configurez une URL publique"
+    echo ""
 fi
-echo ""
 echo "🔐 Compte principal:"
 echo "   Email:        ${ADMIN_EMAIL}"
 echo "   Mot de passe: [celui que vous avez défini]"
