@@ -871,6 +871,9 @@ if [[ "$BACKEND_STATUS" == *"RUNNING"* ]]; then
     echo ""
     echo "✅ Tout est opérationnel !"
     echo ""
+    echo "📚 Manuel utilisateur : 23 chapitres avec recherche intuitive 🔍"
+    echo "   Utilisez le bouton 'Manuel' dans l'application pour y accéder"
+    echo ""
     echo "Testez la connexion:"
     echo "  curl ${FRONTEND_URL}/api/health"
 else
