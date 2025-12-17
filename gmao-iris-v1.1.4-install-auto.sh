@@ -245,17 +245,51 @@ echo ""
 [[ ${#ROOT_PASS} -lt 8 ]] && err "Mot de passe root trop court"
 
 echo ""
-msg "Configuration Tailscale (accès à distance sécurisé - OPTIONNEL)"
-echo "Tailscale permet d'accéder à votre GMAO depuis Internet en toute sécurité"
-echo "Pour obtenir une clé: https://login.tailscale.com/admin/settings/keys"
+msg "Configuration de l'accès à distance (OPTIONNEL)"
+echo "Choisissez comment accéder à votre GMAO depuis l'extérieur:"
 echo ""
-read -p "Installer Tailscale ? (y/n) [n]: " INSTALL_TAILSCALE
-INSTALL_TAILSCALE=${INSTALL_TAILSCALE:-n}
+echo "  1) IP/URL manuelle (ex: votre IP publique, nom de domaine)"
+echo "  2) Tailscale (VPN sécurisé automatique)"
+echo "  3) Aucun (utiliser uniquement l'IP locale)"
+echo ""
+read -p "Votre choix [3]: " ACCESS_CHOICE
+ACCESS_CHOICE=${ACCESS_CHOICE:-3}
 
-if [[ "$INSTALL_TAILSCALE" =~ ^[Yy]$ ]]; then
-    read -p "Clé d'authentification Tailscale: " TAILSCALE_AUTH_KEY
-    [[ -z "$TAILSCALE_AUTH_KEY" ]] && warn "Pas de clé Tailscale fournie, installation sans Tailscale"
-fi
+INSTALL_TAILSCALE="n"
+MANUAL_URL=""
+
+case $ACCESS_CHOICE in
+    1)
+        echo ""
+        echo "Entrez votre IP publique ou nom de domaine"
+        echo "Exemples: http://203.0.113.45 ou https://mon-domaine.com"
+        read -p "URL d'accès: " MANUAL_URL
+        if [[ -z "$MANUAL_URL" ]]; then
+            warn "Aucune URL fournie, utilisation de l'IP locale"
+        else
+            ok "URL manuelle configurée: $MANUAL_URL"
+        fi
+        ;;
+    2)
+        echo ""
+        echo "Configuration Tailscale"
+        echo "Pour obtenir une clé: https://login.tailscale.com/admin/settings/keys"
+        echo ""
+        read -p "Clé d'authentification Tailscale: " TAILSCALE_AUTH_KEY
+        if [[ -z "$TAILSCALE_AUTH_KEY" ]]; then
+            warn "Pas de clé Tailscale fournie, utilisation de l'IP locale"
+        else
+            INSTALL_TAILSCALE="y"
+            ok "Tailscale sera installé"
+        fi
+        ;;
+    3)
+        ok "Utilisation de l'IP locale uniquement"
+        ;;
+    *)
+        warn "Choix invalide, utilisation de l'IP locale"
+        ;;
+esac
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
