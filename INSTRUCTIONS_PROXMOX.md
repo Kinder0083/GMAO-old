@@ -16,12 +16,17 @@ Votre serveur Proxmox est accessible via :
 
 ### Étape 2 : Modifier le fichier frontend/.env
 
-Sur votre serveur Proxmox, éditez le fichier `/app/frontend/.env` :
+Sur votre serveur Proxmox, éditez le fichier `frontend/.env` dans votre répertoire d'installation :
 
 ```bash
-# Sur votre serveur Proxmox, exécutez :
-nano /app/frontend/.env
+# Allez dans votre répertoire d'installation (exemple : /opt/GMAO/)
+cd /VOTRE/CHEMIN/GMAO/
+
+# Éditez le fichier frontend/.env
+nano frontend/.env
 ```
+
+**Note :** Le chemin exact dépend de votre installation. Si vous avez utilisé les scripts d'installation, c'est probablement `/opt/gmao-iris/` ou similaire.
 
 Modifiez la ligne `REACT_APP_BACKEND_URL` avec VOTRE URL :
 
@@ -40,10 +45,11 @@ REACT_APP_BACKEND_URL=http://VOTRE-IP-PUBLIQUE
 
 ### Étape 3 : Modifier le fichier backend/.env (optionnel mais recommandé)
 
-Éditez aussi `/app/backend/.env` :
+Éditez aussi `backend/.env` dans votre répertoire d'installation :
 
 ```bash
-nano /app/backend/.env
+# Dans le même répertoire que l'étape précédente
+nano backend/.env
 ```
 
 Modifiez ces lignes :
