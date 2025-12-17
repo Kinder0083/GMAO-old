@@ -630,23 +630,22 @@ pip install -q -r requirements.txt
 # Créer les admins
 python3 /tmp/create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
 
-# Initialisation du manuel utilisateur complet (23 chapitres)
+# Initialisation du manuel utilisateur complet (23 chapitres) - Script unifié
 echo ""
-echo "📚 Génération du manuel utilisateur (étape 1/2 - 12 chapitres de base)..."
-python3 generate_complete_manual.py
+echo "📚 Génération du manuel utilisateur complet (23 chapitres + 61 sections)..."
+python3 generate_unified_manual.py
 if [ $? -eq 0 ]; then
-    echo "✅ Manuel de base généré (12 chapitres)"
+    echo "✅ Manuel complet généré avec succès"
+    echo "   ✓ 23 chapitres créés"
+    echo "   ✓ 61 sections détaillées"
+    echo "   ✓ Recherche intuitive incluse par défaut 🔍"
+    echo ""
+    echo "💡 La recherche intuitive du manuel est désormais active."
+    echo "   Accédez au manuel et utilisez la barre de recherche en haut"
+    echo "   pour trouver instantanément n'importe quelle information."
 else
-    echo "⚠️  Avertissement: Échec génération manuel de base"
+    echo "⚠️  Avertissement: Échec génération du manuel"
 fi
-
-echo ""
-echo "📚 Ajout des chapitres supplémentaires (étape 2/2 - 11 chapitres)..."
-python3 add_missing_manual_chapters.py 2>/dev/null || echo "⚠️  Certains chapitres supplémentaires non ajoutés"
-python3 add_chat_live_manual.py 2>/dev/null || true
-python3 add_purchase_requests_manual.py 2>/dev/null || true
-
-echo "✅ Manuel utilisateur complet initialisé"
 
 # Création du fichier category_mapping.py (v1.1.4)
 echo ""
