@@ -2596,9 +2596,13 @@ async def generate_manual():
         
         print(f"✅ {chapters_created} chapitres créés, {chapters_updated} mis à jour")
         
-        # Créer sections
+        # Insérer ou mettre à jour les sections (idempotent)
+        sections_created = 0
+        sections_updated = 0
         order = 1
         for sec_id, sec_data in ALL_SECTIONS.items():
+            existing = await db.manual_sections.find_one({"id": sec_id})
+            
             section = {
                 "id": sec_id,
                 "title": sec_data["title"],
@@ -2611,14 +2615,27 @@ async def generate_manual():
                 "images": [],
                 "video_url": None,
                 "keywords": sec_data.get("keywords", []),
-                "created_at": now.isoformat(),
                 "updated_at": now.isoformat()
             }
-            await db.manual_sections.insert_one(section)
+            
+            if not existing:
+                section["created_at"] = now.isoformat()
+                sections_created += 1
+            
+            await db.manual_sections.update_one(
+                {"id": sec_id},
+                {"$set": section},
+                upsert=True
+            )
+            
+            if existing:
+                sections_updated += 1
+            
             order += 1
         
-        print(f"\n✅ {len(ALL_SECTIONS)} sections créées")
-        print("\n🎉 Manuel généré avec succès !")
+        print(f"✅ {sections_created} sections créées, {sections_updated} mises à jour")
+        print(f"\n📚 Total: {len(chapters)} chapitres, {len(ALL_SECTIONS)} sections")
+        print("\n🎉 Manuel unifié généré avec succès !")
         return True
         
     except Exception as e:
