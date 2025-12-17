@@ -166,4 +166,5 @@ async def update_mqtt_manual():
 if __name__ == "__main__":
     import sys
     success = asyncio.run(update_mqtt_manual())
-    sys.exit(0 if success else 1)
+    # Toujours retourner 0 pour ne pas bloquer l'installation
+    sys.exit(0)
