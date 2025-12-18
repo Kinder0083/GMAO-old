@@ -101,7 +101,39 @@ const ChatLive = () => {
       } else if (data.type === 'user_status') {
         loadOnlineUsers();
       } else if (data.type === 'reaction_update') {
-        // TODO: Gérer les réactions (Phase 5-6)
+        // Mettre à jour les réactions en temps réel
+        const { message_id, reaction, action } = data;
+        
+        setMessages(prev => prev.map(msg => {
+          if (msg.id !== message_id) return msg;
+          
+          const reactions = msg.reactions || [];
+          
+          if (action === 'removed') {
+            // Retirer la réaction de l'utilisateur
+            return {
+              ...msg,
+              reactions: reactions.filter(r => r.user_id !== reaction.user_id)
+            };
+          } else if (action === 'added') {
+            // Ajouter la nouvelle réaction
+            return {
+              ...msg,
+              reactions: [...reactions, reaction]
+            };
+          } else if (action === 'changed') {
+            // Remplacer l'ancienne réaction par la nouvelle
+            return {
+              ...msg,
+              reactions: [
+                ...reactions.filter(r => r.user_id !== reaction.user_id),
+                reaction
+              ]
+            };
+          }
+          
+          return msg;
+        }));
       }
     };
 
