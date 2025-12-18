@@ -278,8 +278,11 @@ async def unsubscribe_mqtt(
 ):
     """Se désabonner d'un topic MQTT (admin seulement)"""
     try:
-        # Décoder le topic (remplacer %2F par /)
-        topic = topic_encoded.replace("%2F", "/")
+        # Décoder complètement le topic (URL decode)
+        from urllib.parse import unquote
+        topic = unquote(topic_encoded)
+        
+        logger.info(f"Désabonnement du topic: {topic}")
         
         mqtt_manager.unsubscribe(topic)
         
@@ -293,7 +296,9 @@ async def unsubscribe_mqtt(
         
     except Exception as e:
         logger.error(f"Erreur désabonnement MQTT: {e}")
-        raise HTTPException(status_code=500, detail="Erreur désabonnement MQTT")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Erreur désabonnement MQTT: {str(e)}")
 
 
 @router.get("/subscriptions")
