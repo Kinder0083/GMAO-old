@@ -297,16 +297,26 @@
 - ❌ Aucune requête réseau POST/PUT détectée
 - ❌ Processus 2-étapes non testé (bloqué par validation frontend)
 
-### From Testing Agent - ARROW BUTTONS BACKEND REPORT
-- ✅ Backend API /api/user-preferences fully supports arrow buttons functionality
-- ✅ Category reordering (UP/DOWN arrows) working via order field manipulation
-- ✅ Menu item reordering within categories working correctly
-- ✅ Uncategorized menu reordering working correctly
-- ✅ Arrow button constraints properly enforced (first item UP disabled, last item DOWN disabled)
-- ✅ All reordering operations persist correctly in database
-- ✅ Data integrity maintained after multiple reordering operations
-- ✅ Backend ready for frontend arrow buttons implementation
-- 🎯 Arrow buttons backend functionality is PRODUCTION-READY
+### From Testing Agent - MQTT PUBSUB TESTING REPORT (CRITICAL ISSUES)
+- ❌ **ACCÈS BLOQUÉ**: Page MQTT PubSub inaccessible avec credentials fournis
+- ❌ **PERMISSIONS**: Routes MQTT nécessitent rôle ADMIN (get_current_admin_user)
+- ❌ **CONFIGURATION**: "Configuration MQTT manquante" dans logs backend
+- ❌ **CONNEXION**: MQTT Manager ne peut pas se connecter sans configuration
+- ❌ **TESTS IMPOSSIBLES**: Impossible de tester les corrections sans accès approprié
+
+### DIAGNOSTIC TECHNIQUE DÉTAILLÉ - MQTT
+- **Frontend**: Page redirige vers login (permissions insuffisantes)
+- **Backend**: Configuration MQTT manquante dans base de données
+- **Permissions**: Toutes routes MQTT nécessitent `get_current_admin_user`
+- **Collecteurs**: Démarrés mais sans connexion MQTT
+- **CAUSE RACINE**: Utilisateur de test n'a pas permissions admin + configuration manquante
+- **Impact**: Impossible de tester les corrections des bugs signalés
+
+### BUGS SIGNALÉS NON TESTABLES
+1. ❌ **"Impossible d'écouter/recevoir des messages"** - Non testé (accès bloqué)
+2. ❌ **"Erreur Method Not Allowed lors suppression"** - Non testé (accès bloqué)
+3. ❌ **Corrections wildcard "#"** - Non testées (accès bloqué)
+4. ❌ **Améliorations logs diagnostiques** - Non testées (accès bloqué)
 
 ## Test Results Summary
 
