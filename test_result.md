@@ -180,14 +180,16 @@
 - **Problème**: Utilisateur n'a pas les permissions ADMIN requises pour MQTT
 
 ## Notes importantes
-- Backend entièrement fonctionnel avec catégories existantes
-- Frontend utilise React avec composants shadcn/ui
-- Drag-and-drop HTML5 peut ne pas fonctionner avec Playwright
-- Se concentrer sur les tests d'interface et navigation
+- **CRITIQUE**: MQTT nécessite configuration préalable (host, port, credentials)
+- **CRITIQUE**: Toutes les routes MQTT nécessitent permissions ADMIN
+- **CRITIQUE**: Utilisateur de test n'a pas les permissions requises
+- **CRITIQUE**: Impossible de tester les corrections sans accès approprié
 
-## Statut backend: ✅ ENTIÈREMENT FONCTIONNEL
-L'API /api/user-preferences est opérationnelle et prête pour production.
-Toutes les fonctionnalités de catégories de menu fonctionnent correctement.
+## Statut MQTT: ❌ NON FONCTIONNEL
+- Configuration MQTT manquante sur le serveur
+- Permissions utilisateur insuffisantes
+- Impossible de tester les corrections des bugs signalés
+- Nécessite intervention pour configuration et permissions
 
 ---
 
