@@ -174,9 +174,10 @@
   - ✅ Navigation entre pages fonctionnelle
   - ✅ Catégorie Maintenance reste visible après navigation
 
-## Credentials
-- Email: admin@test.com
-- Password: testpassword
+## Credentials Testés
+- Email: buenogy@gmail.com
+- Password: Admin2024!
+- **Problème**: Utilisateur n'a pas les permissions ADMIN requises pour MQTT
 
 ## Notes importantes
 - Backend entièrement fonctionnel avec catégories existantes
