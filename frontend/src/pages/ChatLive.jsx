@@ -422,14 +422,73 @@ const ChatLive = () => {
     console.log('🎯 toggleReaction appelée - Message:', messageId, 'Emoji:', emoji);
     
     try {
+      // Mise à jour optimiste de l'UI (immediate feedback)
+      const currentMessage = messages.find(m => m.id === messageId);
+      if (currentMessage) {
+        const reactions = currentMessage.reactions || [];
+        const userReaction = reactions.find(r => r.user_id === userId);
+        
+        // Prédire l'action
+        let predictedAction;
+        if (userReaction && userReaction.emoji === emoji) {
+          predictedAction = 'removed';
+        } else {
+          predictedAction = userReaction ? 'changed' : 'added';
+        }
+        
+        // Mettre à jour localement pour feedback immédiat
+        setMessages(prev => prev.map(msg => {
+          if (msg.id !== messageId) return msg;
+          
+          const newReactions = msg.reactions || [];
+          
+          if (predictedAction === 'removed') {
+            return {
+              ...msg,
+              reactions: newReactions.filter(r => r.user_id !== userId)
+            };
+          } else if (predictedAction === 'added') {
+            return {
+              ...msg,
+              reactions: [...newReactions, {
+                user_id: userId,
+                user_name: user.prenom + ' ' + user.nom,
+                emoji: emoji,
+                added_at: new Date().toISOString()
+              }]
+            };
+          } else if (predictedAction === 'changed') {
+            return {
+              ...msg,
+              reactions: [
+                ...newReactions.filter(r => r.user_id !== userId),
+                {
+                  user_id: userId,
+                  user_name: user.prenom + ' ' + user.nom,
+                  emoji: emoji,
+                  added_at: new Date().toISOString()
+                }
+              ]
+            };
+          }
+          
+          return msg;
+        }));
+      }
+      
+      // Envoyer la requête au serveur
       const response = await api.chat.addReaction(messageId, emoji);
       console.log('✅ Réaction envoyée avec succès:', response.data);
       
-      // Forcer le rechargement des messages pour voir la réaction immédiatement
-      await loadMessages();
+      // Le WebSocket mettra à jour l'état pour tous les utilisateurs
+      // Pas besoin de recharger manuellement - le broadcast le fera
       
     } catch (error) {
       console.error('❌ Erreur réaction:', error);
+      
+      // En cas d'erreur, recharger pour obtenir l'état correct
+      await loadMessages();
+      
       toast({
         title: 'Erreur',
         description: error.response?.data?.detail || 'Impossible d\'ajouter la réaction',
