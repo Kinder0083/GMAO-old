@@ -155,7 +155,8 @@ const MQTTPubSub = () => {
 
   const handleUnsubscribe = async (topic) => {
     try {
-      const encodedTopic = topic.replace(/\//g, '%2F');
+      // Encoder correctement le topic (y compris #, +, et /)
+      const encodedTopic = encodeURIComponent(topic);
       await api.mqtt.unsubscribe(encodedTopic);
       
       toast({
@@ -165,9 +166,10 @@ const MQTTPubSub = () => {
       
       await loadSubscriptions();
     } catch (error) {
+      console.error('Erreur unsubscribe:', error);
       toast({
         title: 'Erreur',
-        description: error.response?.data?.detail || 'Erreur lors du désabonnement',
+        description: error.response?.data?.detail || error.message || 'Erreur lors du désabonnement',
         variant: 'destructive'
       });
     }
