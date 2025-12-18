@@ -237,6 +237,14 @@ async def subscribe_mqtt(
 ):
     """S'abonner à un topic MQTT (admin seulement)"""
     try:
+        logger.info(f"Tentative d'abonnement au topic: {data.topic} (QoS: {data.qos})")
+        
+        # Vérifier que la configuration MQTT existe
+        config = await db.mqtt_config.find_one({"id": "default"})
+        if not config:
+            raise HTTPException(status_code=400, detail="Configuration MQTT non définie. Configurez d'abord MQTT dans Paramètres.")
+        
+        # S'abonner au topic
         success = mqtt_manager.subscribe(
             topic=data.topic,
             qos=data.qos,
@@ -244,6 +252,8 @@ async def subscribe_mqtt(
         )
         
         if success:
+            logger.info(f"✅ Abonnement réussi au topic: {data.topic}")
+            
             # Enregistrer l'abonnement
             await db.mqtt_subscriptions.update_one(
                 {"topic": data.topic},
@@ -262,12 +272,15 @@ async def subscribe_mqtt(
             
             return {"success": True, "message": f"Abonné au topic: {data.topic}"}
         else:
-            raise HTTPException(status_code=500, detail="Échec d'abonnement au topic")
+            logger.error(f"❌ Échec d'abonnement au topic: {data.topic}")
+            raise HTTPException(status_code=500, detail="Échec d'abonnement au topic. Vérifiez la connexion MQTT.")
             
     except HTTPException as he:
         raise he
     except Exception as e:
-        logger.error(f"Erreur abonnement MQTT: {e}")
+        logger.error(f"❌ Erreur abonnement MQTT: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Erreur abonnement MQTT: {str(e)}")
 
 
