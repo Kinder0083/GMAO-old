@@ -10,17 +10,13 @@
 
 ## Tests effectués
 
-### Frontend Tests - Exécution de Checklists
+### MQTT Publish/Subscribe Tests
 
-#### Test 1: Navigation et Interface ✅ RÉUSSI
-- **Status**: ✅ RÉUSSI
-- **URL**: https://proxmox-deploy.preview.emergentagent.com/preventive-maintenance
+#### Test 1: Connexion et Navigation ⏳ EN COURS
+- **Status**: ⏳ EN COURS
+- **URL**: https://proxmox-deploy.preview.emergentagent.com/mqtt-pubsub
 - **Résultats**:
-  - ✅ Connexion avec admin@test.com / testpassword réussie
-  - ✅ Navigation vers "Maintenance prev." → "Checklists" fonctionnelle
-  - ✅ Checklist test "Test Checklist Contrôle Compresseur" trouvée avec 2 items
-  - ✅ Bouton "Exécuter" présent et cliquable
-  - ✅ Interface utilisateur complète et fonctionnelle
+  - ⏳ Test en cours...
 
 #### Test 2: Dialog d'Exécution de Checklist ✅ RÉUSSI
 - **Status**: ✅ RÉUSSI
