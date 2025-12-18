@@ -111,22 +111,43 @@ class MQTTManager:
     def subscribe(self, topic: str, qos: int = 0, callback: Callable = None):
         """S'abonner à un topic MQTT"""
         if not self.is_connected:
+            logger.info("Pas connecté, tentative de connexion...")
             if not self.connect():
+                logger.error("Impossible de se connecter pour s'abonner")
                 return False
         
+        # Attendre que la connexion soit vraiment établie
+        import time
+        max_wait = 5  # secondes
+        waited = 0
+        while not self.is_connected and waited < max_wait:
+            time.sleep(0.1)
+            waited += 0.1
+        
+        if not self.is_connected:
+            logger.error("Timeout: connexion MQTT non établie")
+            return False
+        
         try:
-            self.client.subscribe(topic, qos=qos)
+            result = self.client.subscribe(topic, qos=qos)
+            
+            if result[0] != mqtt.MQTT_ERR_SUCCESS:
+                logger.error(f"Erreur lors de la souscription: code {result[0]}")
+                return False
             
             # Enregistrer le callback pour ce topic
             if callback:
                 if topic not in self.message_callbacks:
                     self.message_callbacks[topic] = []
-                self.message_callbacks[topic].append(callback)
+                if callback not in self.message_callbacks[topic]:
+                    self.message_callbacks[topic].append(callback)
             
-            logger.info(f"Abonné au topic: {topic}")
+            logger.info(f"✅ Abonné au topic: {topic} (QoS: {qos})")
             return True
         except Exception as e:
-            logger.error(f"Erreur lors de l'abonnement: {e}")
+            logger.error(f"❌ Erreur lors de l'abonnement à {topic}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
     
     def unsubscribe(self, topic: str):
