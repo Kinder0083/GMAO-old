@@ -1,7 +1,7 @@
-# Test Results - Exécution de Checklists Préventives
+# Test Results - MQTT Publish/Subscribe Functionality
 
 ## Fonctionnalité testée
-**NOUVELLE FONCTIONNALITÉ** : Exécution complète de checklists de contrôles préventifs
+**MQTT PUBLISH/SUBSCRIBE** : Test de la fonctionnalité MQTT Pub/Sub après corrections des bugs
 - Exécution de checklists existantes avec réponses YES/NO et NUMERIC
 - Gestion des conformités et non-conformités
 - Documentation des problèmes avec descriptions
