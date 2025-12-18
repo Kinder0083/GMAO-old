@@ -332,21 +332,15 @@
 - ✅ WebSocket temps réel (RÉUSSI)
 - ✅ Absence erreurs console (RÉUSSI)
 
-### Statut Réactions Emoji: ✅ ENTIÈREMENT FONCTIONNEL
-Les réactions emoji du Chat Live fonctionnent parfaitement.
-**PRÊT POUR PRODUCTION**: Synchronisation temps réel via WebSocket opérationnelle.
+### Tests MQTT Publish/Subscribe (4/4 testés)
+- ❌ Connexion et Navigation (ÉCHEC CRITIQUE)
+- ❌ Vérification Backend MQTT (PROBLÈMES CRITIQUES)
+- ❌ Analyse des Permissions (ACCÈS REFUSÉ)
+- ❌ Diagnostic Technique (CONFIGURATION MANQUANTE)
 
-### Tests d'Exécution de Checklists (6/6 testés)
-- ✅ Navigation et Interface (RÉUSSI)
-- ✅ Dialog d'Exécution de Checklist (RÉUSSI)  
-- ✅ Réponses Conformes (RÉUSSI)
-- ✅ Réponses Non-Conformes (RÉUSSI)
-- ❌ Validation et Soumission (PROBLÈME CRITIQUE)
-- ⚠️ Historique des Exécutions (PARTIELLEMENT FONCTIONNEL)
-
-### Statut Frontend: ❌ PROBLÈME CRITIQUE BLOQUANT
-L'interface d'exécution de checklists est parfaite visuellement mais ne sauvegarde pas les données.
-**BLOQUANT POUR PRODUCTION**: Les exécutions ne sont pas persistées en base de données.
+### Statut MQTT: ❌ PROBLÈMES CRITIQUES BLOQUANTS
+La fonctionnalité MQTT Pub/Sub est inaccessible en raison de problèmes de permissions et de configuration.
+**BLOQUANT POUR TESTS**: Impossible de tester les corrections sans configuration MQTT et permissions admin.
 
 ---
 
