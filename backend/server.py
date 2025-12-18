@@ -3932,7 +3932,16 @@ EXPORT_MODULES = {
     "inventory": "inventory",
     "locations": "locations",
     "vendors": "vendors",
-    "purchase-history": "purchase_history"
+    "purchase-history": "purchase_history",
+    "purchase-requests": "purchase_requests",
+    "preventive-maintenance": "preventive_maintenance",
+    "preventive-checklists": "preventive_checklists",
+    "preventive-checklist-templates": "preventive_checklist_templates",
+    "preventive-checklist-executions": "preventive_checklist_executions",
+    "sensors": "sensors",
+    "documentations": "documentations",
+    "mqtt-logs": "mqtt_logs",
+    "chat-messages": "chat_messages"
 }
 
 @api_router.get("/export/{module}")
