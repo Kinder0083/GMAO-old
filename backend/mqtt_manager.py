@@ -199,17 +199,30 @@ class MQTTManager:
     
     def _topic_matches(self, pattern: str, topic: str) -> bool:
         """Vérifier si un topic correspond à un pattern avec wildcards"""
+        # Si c'est un match exact, ne pas le retraiter ici
         if pattern == topic:
-            return False  # Déjà traité dans le cas exact
+            return False
+        
+        # Cas spécial: # seul matche tous les topics
+        if pattern == '#':
+            return True
         
         pattern_parts = pattern.split('/')
         topic_parts = topic.split('/')
         
+        # Traiter le wildcard multi-niveau '#'
         if '#' in pattern:
-            # # doit être le dernier caractère
+            # # doit être le dernier élément
             if pattern_parts[-1] == '#':
-                return topic.startswith('/'.join(pattern_parts[:-1]))
+                # Si # est seul ou après un /, matcher tout ce qui commence par le préfixe
+                if len(pattern_parts) == 1:
+                    return True  # # seul matche tout
+                prefix = '/'.join(pattern_parts[:-1])
+                if prefix == '':
+                    return True
+                return topic.startswith(prefix + '/') or topic == prefix
         
+        # Traiter le wildcard single-niveau '+'
         if '+' in pattern:
             if len(pattern_parts) != len(topic_parts):
                 return False
