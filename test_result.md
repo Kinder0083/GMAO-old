@@ -12,11 +12,38 @@
 
 ### MQTT Publish/Subscribe Tests
 
-#### Test 1: Connexion et Navigation ⏳ EN COURS
-- **Status**: ⏳ EN COURS
+#### Test 1: Connexion et Navigation ❌ ÉCHEC CRITIQUE
+- **Status**: ❌ ÉCHEC CRITIQUE
 - **URL**: https://proxmox-deploy.preview.emergentagent.com/mqtt-pubsub
 - **Résultats**:
-  - ⏳ Test en cours...
+  - ✅ Connexion avec buenogy@gmail.com / Admin2024! réussie
+  - ❌ **CRITIQUE**: Redirection vers page de connexion lors de l'accès à /mqtt-pubsub
+  - ❌ **CRITIQUE**: Utilisateur n'a pas les permissions admin requises pour MQTT
+  - ❌ **CRITIQUE**: Configuration MQTT manquante sur le serveur
+
+#### Test 2: Vérification Backend MQTT ❌ PROBLÈMES CRITIQUES
+- **Status**: ❌ PROBLÈMES CRITIQUES
+- **Résultats**:
+  - ❌ **CRITIQUE**: "Configuration MQTT manquante" dans les logs backend
+  - ❌ **CRITIQUE**: MQTT Manager ne peut pas se connecter (pas de config)
+  - ❌ **CRITIQUE**: Routes MQTT nécessitent permissions admin (`get_current_admin_user`)
+  - ⚠️ Collecteurs MQTT démarrés mais sans connexion
+
+#### Test 3: Analyse des Permissions ❌ ACCÈS REFUSÉ
+- **Status**: ❌ ACCÈS REFUSÉ
+- **Résultats**:
+  - ❌ **CRITIQUE**: Page MQTT PubSub inaccessible avec les credentials fournis
+  - ❌ **CRITIQUE**: Toutes les routes MQTT nécessitent le rôle ADMIN
+  - ❌ **CRITIQUE**: Impossible de tester la fonctionnalité sans permissions appropriées
+  - ❌ **CRITIQUE**: Aucun formulaire de publication/souscription visible
+
+#### Test 4: Diagnostic Technique ❌ CONFIGURATION MANQUANTE
+- **Status**: ❌ CONFIGURATION MANQUANTE
+- **Résultats**:
+  - ❌ **CRITIQUE**: Aucune configuration MQTT définie dans la base de données
+  - ❌ **CRITIQUE**: Status MQTT affiché comme "Déconnecté" (attendu sans config)
+  - ❌ **CRITIQUE**: Impossible de tester publication/souscription sans configuration
+  - ❌ **CRITIQUE**: Impossible de tester suppression d'abonnements sans accès
 
 #### Test 2: Dialog d'Exécution de Checklist ✅ RÉUSSI
 - **Status**: ✅ RÉUSSI
