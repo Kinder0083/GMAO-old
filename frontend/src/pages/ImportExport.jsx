@@ -27,13 +27,23 @@ const ImportExport = () => {
     { value: 'improvements', label: 'Améliorations' },
     { value: 'equipments', label: 'Équipements' },
     { value: 'meters', label: 'Compteurs' },
+    { value: 'meter-readings', label: 'Relevés de compteurs' },
     { value: 'surveillance-items', label: 'Plan de Surveillance' },
     { value: 'presqu-accident-items', label: 'Presqu\'accident' },
     { value: 'users', label: 'Utilisateurs (Équipes)' },
     { value: 'inventory', label: 'Inventaire' },
     { value: 'locations', label: 'Zones' },
     { value: 'vendors', label: 'Fournisseurs' },
-    { value: 'purchase-history', label: 'Historique Achat' }
+    { value: 'purchase-history', label: 'Historique Achat' },
+    { value: 'purchase-requests', label: 'Demandes d\'Achat' },
+    { value: 'preventive-maintenance', label: 'Maintenance Préventive' },
+    { value: 'preventive-checklists', label: 'Checklists Préventives' },
+    { value: 'preventive-checklist-templates', label: 'Templates Checklists' },
+    { value: 'preventive-checklist-executions', label: 'Exécutions Checklists' },
+    { value: 'sensors', label: 'Capteurs IoT/MQTT' },
+    { value: 'documentations', label: 'Documentations' },
+    { value: 'mqtt-logs', label: 'Logs MQTT' },
+    { value: 'chat-messages', label: 'Messages Chat Live' }
   ];
 
   const handleExport = async () => {
