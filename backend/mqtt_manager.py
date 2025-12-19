@@ -180,26 +180,47 @@ class MQTTManager:
         
         logger.info(f"📨 Message MQTT reçu sur {topic}: {payload[:100]}...")
         
-        # Appeler les callbacks enregistrés pour ce topic (exact match)
+        # Sauvegarder directement dans MongoDB (synchrone avec pymongo)
+        try:
+            from pymongo import MongoClient
+            import os
+            
+            mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+            db_name = os.getenv('DB_NAME', 'gmao_iris')
+            
+            client_mongo = MongoClient(mongo_url)
+            db_sync = client_mongo[db_name]
+            
+            # Sauvegarder le message
+            db_sync.mqtt_messages.insert_one({
+                "topic": topic,
+                "payload": payload,
+                "qos": message.qos,
+                "received_at": datetime.now(timezone.utc).isoformat()
+            })
+            
+            client_mongo.close()
+            logger.info(f"✅ Message sauvegardé: {topic}")
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur sauvegarde message: {e}")
+        
+        # Appeler les callbacks enregistrés si présents
         if topic in self.message_callbacks:
             for callback in self.message_callbacks[topic]:
                 try:
                     callback(topic, payload, message.qos)
                 except Exception as e:
-                    logger.error(f"❌ Erreur callback pour {topic}: {e}")
-                    import traceback
-                    logger.error(traceback.format_exc())
+                    logger.error(f"❌ Erreur callback {topic}: {e}")
         
-        # Wildcards (#, +)
+        # Wildcards
         for registered_topic, callbacks in self.message_callbacks.items():
             if self._topic_matches(registered_topic, topic):
                 for callback in callbacks:
                     try:
                         callback(topic, payload, message.qos)
                     except Exception as e:
-                        logger.error(f"❌ Erreur callback wildcard pour {topic}: {e}")
-                        import traceback
-                        logger.error(traceback.format_exc())
+                        logger.error(f"❌ Erreur callback wildcard {topic}: {e}")
     
     def _topic_matches(self, pattern: str, topic: str) -> bool:
         """Vérifier si un topic correspond à un pattern avec wildcards"""
