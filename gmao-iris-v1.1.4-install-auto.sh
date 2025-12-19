@@ -743,9 +743,6 @@ yarn install --silent 2>/dev/null
 yarn build 2>/dev/null
 APPEOF
 
-# Nettoyer
-rm /tmp/create_admins_${CTID}.py
-
 ok "Application installée"
 
 msg "Configuration des services..."
