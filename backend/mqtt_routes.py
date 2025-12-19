@@ -246,11 +246,11 @@ async def subscribe_mqtt(
         if not config:
             raise HTTPException(status_code=400, detail="Configuration MQTT non définie. Configurez d'abord MQTT dans Paramètres.")
         
-        # S'abonner au topic avec le callback SYNCHRONE
+        # S'abonner au topic
         success = mqtt_manager.subscribe(
             topic=data.topic,
             qos=data.qos,
-            callback=mqtt_message_callback_sync
+            callback=None  # Ne pas utiliser de callback pour l'instant
         )
         
         if success:
