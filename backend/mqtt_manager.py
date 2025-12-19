@@ -23,6 +23,11 @@ class MQTTManager:
         self.db = None  # Référence à la base de données pour restaurer les abonnements
         self._auto_restore = True  # Activer la restauration automatique des abonnements
         
+    def set_database(self, database):
+        """Définir la référence à la base de données pour restaurer les abonnements"""
+        self.db = database
+        logger.info("MQTT Manager: référence base de données configurée")
+        
     def configure(self, host: str, port: int, username: str = None, password: str = None, 
                   use_ssl: bool = False, client_id: str = "gmao_iris"):
         """Configurer les paramètres de connexion MQTT"""
