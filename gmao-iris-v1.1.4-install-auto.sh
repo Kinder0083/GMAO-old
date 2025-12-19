@@ -627,8 +627,15 @@ source venv/bin/activate
 pip install -q --upgrade pip
 pip install -q -r requirements.txt
 
-# Créer les admins
-python3 /tmp/create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
+# Créer les admins avec le script permanent du backend
+echo "🔐 Création des comptes administrateurs..."
+python3 create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
+if [ $? -eq 0 ]; then
+    echo "✅ Comptes administrateurs créés avec succès"
+else
+    echo "⚠️  Avertissement: Problème lors de la création des admins"
+    echo "   Vous pourrez toujours vous connecter avec buenogy@gmail.com / Admin2024!"
+fi
 
 # Initialisation du manuel utilisateur complet (23 chapitres) - Script unifié
 echo ""
