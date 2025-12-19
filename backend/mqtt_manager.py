@@ -184,11 +184,21 @@ class MQTTManager:
         if topic in self.message_callbacks:
             for callback in self.message_callbacks[topic]:
                 try:
-                    # Si le callback est async, l'exécuter dans un nouveau thread
+                    # Si le callback est async, l'exécuter avec asyncio.run_coroutine_threadsafe
                     import asyncio
                     import inspect
                     if inspect.iscoroutinefunction(callback):
-                        asyncio.create_task(callback(topic, payload, message.qos))
+                        # Trouver l'event loop principal
+                        try:
+                            loop = asyncio.get_event_loop()
+                            if loop.is_running():
+                                asyncio.run_coroutine_threadsafe(callback(topic, payload, message.qos), loop)
+                            else:
+                                # Fallback : créer une nouvelle boucle temporaire
+                                asyncio.run(callback(topic, payload, message.qos))
+                        except RuntimeError:
+                            # Pas d'event loop, en créer un
+                            asyncio.run(callback(topic, payload, message.qos))
                     else:
                         callback(topic, payload, message.qos)
                 except Exception as e:
@@ -201,11 +211,18 @@ class MQTTManager:
             if self._topic_matches(registered_topic, topic):
                 for callback in callbacks:
                     try:
-                        # Si le callback est async, l'exécuter dans un nouveau thread
+                        # Si le callback est async, l'exécuter avec asyncio.run_coroutine_threadsafe
                         import asyncio
                         import inspect
                         if inspect.iscoroutinefunction(callback):
-                            asyncio.create_task(callback(topic, payload, message.qos))
+                            try:
+                                loop = asyncio.get_event_loop()
+                                if loop.is_running():
+                                    asyncio.run_coroutine_threadsafe(callback(topic, payload, message.qos), loop)
+                                else:
+                                    asyncio.run(callback(topic, payload, message.qos))
+                            except RuntimeError:
+                                asyncio.run(callback(topic, payload, message.qos))
                         else:
                             callback(topic, payload, message.qos)
                     except Exception as e:
