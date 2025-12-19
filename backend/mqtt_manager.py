@@ -7,6 +7,7 @@ import logging
 from typing import Optional, Callable, Dict
 from datetime import datetime, timezone
 import threading
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,8 @@ class MQTTManager:
         self.config: Dict = {}
         self.message_callbacks: Dict[str, list] = {}  # {topic: [callbacks]}
         self.connection_lock = threading.Lock()
+        self.db = None  # Référence à la base de données pour restaurer les abonnements
+        self._auto_restore = True  # Activer la restauration automatique des abonnements
         
     def configure(self, host: str, port: int, username: str = None, password: str = None, 
                   use_ssl: bool = False, client_id: str = "gmao_iris"):
