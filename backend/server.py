@@ -6615,6 +6615,30 @@ async def startup_scheduler():
         await mqtt_sensor_collector.start()
         logger.info("✅ Collecteur MQTT capteurs démarré")
         
+        # Auto-connexion MQTT si configuré (pour la page P/L MQTT)
+        try:
+            mqtt_config = await db.mqtt_config.find_one({"id": "default"})
+            if mqtt_config and mqtt_config.get("host"):
+                logger.info(f"🔌 Configuration MQTT trouvée: {mqtt_config.get('host')}:{mqtt_config.get('port', 1883)}")
+                mqtt_manager.set_database(db)
+                mqtt_manager.configure(
+                    host=mqtt_config["host"],
+                    port=mqtt_config.get("port", 1883),
+                    username=mqtt_config.get("username"),
+                    password=mqtt_config.get("password"),
+                    use_ssl=mqtt_config.get("use_ssl", False),
+                    client_id=mqtt_config.get("client_id", "gmao_iris")
+                )
+                success = mqtt_manager.connect()
+                if success:
+                    logger.info("✅ Connexion MQTT automatique initiée (abonnements restaurés dans on_connect)")
+                else:
+                    logger.warning("⚠️ Échec de la connexion MQTT automatique")
+            else:
+                logger.info("ℹ️ Aucune configuration MQTT trouvée, connexion manuelle requise")
+        except Exception as mqtt_err:
+            logger.error(f"❌ Erreur lors de l'auto-connexion MQTT: {mqtt_err}")
+        
         # Initialiser le service d'alertes
         await alert_service.initialize(db)
         logger.info("✅ Service d'alertes initialisé")
