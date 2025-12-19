@@ -177,50 +177,61 @@ class MQTTManager:
         """Callback appelé lors de la réception d'un message"""
         topic = message.topic
         payload = message.payload.decode('utf-8')
+        qos = message.qos
         
-        logger.info(f"📨 Message MQTT reçu sur {topic}: {payload[:100]}...")
+        logger.info(f"📨 [MQTT] Message reçu sur '{topic}' (QoS={qos}): {payload[:100]}...")
         
-        # Sauvegarder directement dans MongoDB (synchrone avec pymongo)
+        # Sauvegarder IMMÉDIATEMENT dans MongoDB avec pymongo (synchrone)
         try:
             from pymongo import MongoClient
             import os
+            from datetime import datetime, timezone
             
             mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
             db_name = os.getenv('DB_NAME', 'gmao_iris')
             
-            client_mongo = MongoClient(mongo_url)
-            db_sync = client_mongo[db_name]
+            logger.info(f"[MQTT] Connexion à MongoDB: {mongo_url}/{db_name}")
             
-            # Sauvegarder le message
-            db_sync.mqtt_messages.insert_one({
+            mongo_client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+            db_sync = mongo_client[db_name]
+            
+            # Créer le document
+            doc = {
                 "topic": topic,
                 "payload": payload,
-                "qos": message.qos,
+                "qos": qos,
                 "received_at": datetime.now(timezone.utc).isoformat()
-            })
+            }
             
-            client_mongo.close()
-            logger.info(f"✅ Message sauvegardé: {topic}")
+            logger.info(f"[MQTT] Insertion du message dans mqtt_messages...")
+            result = db_sync.mqtt_messages.insert_one(doc)
+            logger.info(f"✅ [MQTT] Message sauvegardé avec ID: {result.inserted_id}")
+            
+            mongo_client.close()
             
         except Exception as e:
-            logger.error(f"❌ Erreur sauvegarde message: {e}")
+            logger.error(f"❌ [MQTT] ERREUR sauvegarde message: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
         
         # Appeler les callbacks enregistrés si présents
         if topic in self.message_callbacks:
+            logger.info(f"[MQTT] Appel des callbacks pour {topic}")
             for callback in self.message_callbacks[topic]:
                 try:
-                    callback(topic, payload, message.qos)
+                    callback(topic, payload, qos)
                 except Exception as e:
-                    logger.error(f"❌ Erreur callback {topic}: {e}")
+                    logger.error(f"❌ [MQTT] Erreur callback {topic}: {e}")
         
         # Wildcards
         for registered_topic, callbacks in self.message_callbacks.items():
             if self._topic_matches(registered_topic, topic):
+                logger.info(f"[MQTT] Match wildcard: {registered_topic} -> {topic}")
                 for callback in callbacks:
                     try:
-                        callback(topic, payload, message.qos)
+                        callback(topic, payload, qos)
                     except Exception as e:
-                        logger.error(f"❌ Erreur callback wildcard {topic}: {e}")
+                        logger.error(f"❌ [MQTT] Erreur callback wildcard {topic}: {e}")
     
     def _topic_matches(self, pattern: str, topic: str) -> bool:
         """Vérifier si un topic correspond à un pattern avec wildcards"""
