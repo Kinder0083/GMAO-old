@@ -162,10 +162,20 @@ class MQTTManager:
         """Callback appelé lors de la connexion"""
         if rc == 0:
             self.is_connected = True
-            logger.info("✅ Connecté au broker MQTT avec succès")
+            logger.info("✅ [MQTT] Connecté au broker MQTT avec succès")
+            logger.info(f"[MQTT] Flags: {flags}")
         else:
             self.is_connected = False
-            logger.error(f"❌ Échec de connexion MQTT, code: {rc}")
+            logger.error(f"❌ [MQTT] Échec de connexion MQTT, code: {rc}")
+            # Codes d'erreur MQTT
+            errors = {
+                1: "Protocol version incorrect",
+                2: "Client ID invalide",
+                3: "Serveur indisponible",
+                4: "Username/password incorrect",
+                5: "Non autorisé"
+            }
+            logger.error(f"[MQTT] Erreur: {errors.get(rc, 'Erreur inconnue')}")
     
     def _on_disconnect(self, client, userdata, rc):
         """Callback appelé lors de la déconnexion"""
