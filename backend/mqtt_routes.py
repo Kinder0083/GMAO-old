@@ -213,8 +213,39 @@ async def publish_mqtt(
 # Abonnement MQTT
 # =======================
 
+def mqtt_message_callback_sync(topic: str, payload: str, qos: int):
+    """Callback SYNCHRONE appelé lors de la réception d'un message MQTT"""
+    try:
+        # Utiliser un client MongoDB synchrone pour la sauvegarde
+        from pymongo import MongoClient
+        import os
+        
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        db_name = os.getenv('DB_NAME', 'gmao_iris')
+        
+        client = MongoClient(mongo_url)
+        db_sync = client[db_name]
+        
+        # Enregistrer le message
+        db_sync.mqtt_messages.insert_one({
+            "topic": topic,
+            "payload": payload,
+            "qos": qos,
+            "received_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+        client.close()
+        
+        logger.info(f"📨 Message MQTT sauvegardé: {topic} - {payload[:50]}...")
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur sauvegarde message MQTT: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+
 async def mqtt_message_callback(topic: str, payload: str, qos: int):
-    """Callback appelé lors de la réception d'un message MQTT"""
+    """Callback ASYNC (legacy - non utilisé)"""
     try:
         # Enregistrer le message dans la base de données
         await db.mqtt_messages.insert_one({
