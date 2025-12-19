@@ -628,14 +628,85 @@ source venv/bin/activate
 pip install -q --upgrade pip
 pip install -q -r requirements.txt
 
-# Créer les admins avec le script permanent du backend
+# Créer les admins directement avec Python inline
 echo "🔐 Création des comptes administrateurs..."
-python3 create_admins.py "${ADMIN_EMAIL}" "${ADMIN_PASS}"
+python3 << PYEOF
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+from passlib.context import CryptContext
+from datetime import datetime, timezone
+import os
+
+async def create_admins():
+    try:
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        client = AsyncIOMotorClient(mongo_url)
+        db_name = os.getenv('DB_NAME', 'gmao_iris')
+        db = client[db_name]
+        pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto', bcrypt__rounds=10)
+        
+        all_modules = ['dashboard', 'workOrders', 'assets', 'preventiveMaintenance',
+                      'planningMprev', 'inventory', 'locations', 'vendors', 'reports',
+                      'purchaseHistory', 'people', 'planning', 'improvementRequests',
+                      'improvements', 'interventionRequests', 'equipments', 'meters',
+                      'importExport', 'journal', 'settings', 'surveillance',
+                      'surveillanceRapport', 'presquaccident', 'presquaccidentRapport',
+                      'documentations', 'personalization', 'chatLive', 'sensors',
+                      'iotDashboard', 'mqttLogs', 'purchaseRequests']
+        
+        admin_permissions = {m: {'view': True, 'edit': True, 'delete': True} for m in all_modules}
+        
+        # Admin principal
+        admin1 = {
+            'email': '${ADMIN_EMAIL}',
+            'hashed_password': pwd_context.hash('${ADMIN_PASS}'),
+            'nom': 'Admin', 'prenom': 'Principal', 'role': 'ADMIN',
+            'telephone': None, 'service': None, 'statut': 'actif',
+            'dateCreation': datetime.now(timezone.utc).isoformat(),
+            'derniereConnexion': None, 'firstLogin': False,
+            'permissions': admin_permissions, 'responsable_hierarchique_id': None
+        }
+        
+        existing = await db.users.find_one({'email': '${ADMIN_EMAIL}'})
+        if existing:
+            await db.users.update_one({'email': '${ADMIN_EMAIL}'}, {'\$set': admin1})
+            print('✅ Admin principal mis à jour: ${ADMIN_EMAIL}')
+        else:
+            await db.users.insert_one(admin1)
+            print('✅ Admin principal créé: ${ADMIN_EMAIL}')
+        
+        # Admin de secours
+        admin2 = {
+            'email': 'buenogy@gmail.com',
+            'hashed_password': pwd_context.hash('Admin2024!'),
+            'nom': 'Bueno', 'prenom': 'Gregory', 'role': 'ADMIN',
+            'telephone': None, 'service': None, 'statut': 'actif',
+            'dateCreation': datetime.now(timezone.utc).isoformat(),
+            'derniereConnexion': None, 'firstLogin': False,
+            'permissions': admin_permissions, 'responsable_hierarchique_id': None
+        }
+        
+        existing2 = await db.users.find_one({'email': 'buenogy@gmail.com'})
+        if existing2:
+            await db.users.update_one({'email': 'buenogy@gmail.com'}, {'\$set': admin2})
+            print('✅ Admin secours mis à jour: buenogy@gmail.com')
+        else:
+            await db.users.insert_one(admin2)
+            print('✅ Admin secours créé: buenogy@gmail.com')
+        
+        client.close()
+        return True
+    except Exception as e:
+        print(f'❌ Erreur: {e}')
+        return False
+
+asyncio.run(create_admins())
+PYEOF
+
 if [ $? -eq 0 ]; then
-    echo "✅ Comptes administrateurs créés avec succès"
+    echo "✅ Comptes administrateurs créés"
 else
-    echo "⚠️  Avertissement: Problème lors de la création des admins"
-    echo "   Vous pourrez toujours vous connecter avec buenogy@gmail.com / Admin2024!"
+    echo "⚠️  Avertissement: Problème création admins (vous pourrez utiliser buenogy@gmail.com / Admin2024!)"
 fi
 
 # Initialisation du manuel utilisateur complet (23 chapitres) - Script unifié
