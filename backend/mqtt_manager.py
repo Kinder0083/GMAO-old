@@ -180,29 +180,13 @@ class MQTTManager:
         
         logger.info(f"📨 Message MQTT reçu sur {topic}: {payload[:100]}...")
         
-        # Appeler les callbacks enregistrés pour ce topic
+        # Appeler les callbacks enregistrés pour ce topic (exact match)
         if topic in self.message_callbacks:
             for callback in self.message_callbacks[topic]:
                 try:
-                    # Si le callback est async, l'exécuter avec asyncio.run_coroutine_threadsafe
-                    import asyncio
-                    import inspect
-                    if inspect.iscoroutinefunction(callback):
-                        # Trouver l'event loop principal
-                        try:
-                            loop = asyncio.get_event_loop()
-                            if loop.is_running():
-                                asyncio.run_coroutine_threadsafe(callback(topic, payload, message.qos), loop)
-                            else:
-                                # Fallback : créer une nouvelle boucle temporaire
-                                asyncio.run(callback(topic, payload, message.qos))
-                        except RuntimeError:
-                            # Pas d'event loop, en créer un
-                            asyncio.run(callback(topic, payload, message.qos))
-                    else:
-                        callback(topic, payload, message.qos)
+                    callback(topic, payload, message.qos)
                 except Exception as e:
-                    logger.error(f"❌ Erreur dans le callback pour {topic}: {e}")
+                    logger.error(f"❌ Erreur callback pour {topic}: {e}")
                     import traceback
                     logger.error(traceback.format_exc())
         
@@ -211,22 +195,9 @@ class MQTTManager:
             if self._topic_matches(registered_topic, topic):
                 for callback in callbacks:
                     try:
-                        # Si le callback est async, l'exécuter avec asyncio.run_coroutine_threadsafe
-                        import asyncio
-                        import inspect
-                        if inspect.iscoroutinefunction(callback):
-                            try:
-                                loop = asyncio.get_event_loop()
-                                if loop.is_running():
-                                    asyncio.run_coroutine_threadsafe(callback(topic, payload, message.qos), loop)
-                                else:
-                                    asyncio.run(callback(topic, payload, message.qos))
-                            except RuntimeError:
-                                asyncio.run(callback(topic, payload, message.qos))
-                        else:
-                            callback(topic, payload, message.qos)
+                        callback(topic, payload, message.qos)
                     except Exception as e:
-                        logger.error(f"❌ Erreur dans le callback wildcard pour {topic}: {e}")
+                        logger.error(f"❌ Erreur callback wildcard pour {topic}: {e}")
                         import traceback
                         logger.error(traceback.format_exc())
     
