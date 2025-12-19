@@ -11,13 +11,37 @@ echo ""
 
 echo "📊 1. STATUT DES SERVICES"
 echo "─────────────────────────────────────────────────────────────"
-supervisorctl status backend frontend
+BACKEND_STATUS=$(supervisorctl status backend 2>/dev/null | awk '{print $2}')
+FRONTEND_STATUS=$(supervisorctl status frontend 2>/dev/null | awk '{print $2}')
+
+echo "Backend: $BACKEND_STATUS"
+echo "Frontend: $FRONTEND_STATUS"
+
+if [[ "$BACKEND_STATUS" != "RUNNING" ]]; then
+    echo ""
+    echo "⚠️  Backend n'est pas démarré !"
+    echo "   Démarrage du backend..."
+    supervisorctl start backend
+    sleep 3
+    echo "   ✓ Backend démarré"
+fi
+
+if [[ "$FRONTEND_STATUS" != "RUNNING" ]]; then
+    echo ""
+    echo "⚠️  Frontend n'est pas démarré !"
+    echo "   Démarrage du frontend..."
+    supervisorctl start frontend
+    sleep 2
+    echo "   ✓ Frontend démarré"
+fi
 echo ""
 
 echo "📡 2. CONFIGURATION MQTT"
 echo "─────────────────────────────────────────────────────────────"
 echo "Vérification de la configuration MQTT dans la base..."
-python3 << 'PYEOF'
+cd backend
+source venv/bin/activate
+python << 'PYEOF'
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -36,31 +60,48 @@ async def check_config():
         print(f"  • SSL: {config.get('use_ssl', False)}")
     else:
         print("✗ Aucune configuration MQTT trouvée")
+        print("  → Configurez MQTT dans Administration > Paramètres Spéciaux")
     
     client.close()
 
 asyncio.run(check_config())
 PYEOF
+deactivate
+cd ..
 echo ""
 
 echo "🔌 3. LOGS DE CONNEXION MQTT (20 dernières lignes)"
 echo "─────────────────────────────────────────────────────────────"
-tail -n 100 /var/log/supervisor/backend.err.log | grep -i "mqtt.*connect\|mqtt.*broker" | tail -20
+if [ -f /var/log/supervisor/backend.err.log ]; then
+    tail -n 100 /var/log/supervisor/backend.err.log | grep -i "mqtt.*connect\|mqtt.*broker" | tail -20
+else
+    echo "✗ Fichier de log introuvable"
+fi
 echo ""
 
 echo "📤 4. LOGS DE PUBLICATION (20 dernières)"
 echo "─────────────────────────────────────────────────────────────"
-tail -n 100 /var/log/supervisor/backend.err.log | grep -i "publish\|publié" | tail -20
+if [ -f /var/log/supervisor/backend.err.log ]; then
+    tail -n 100 /var/log/supervisor/backend.err.log | grep -i "publish\|publié" | tail -20
+else
+    echo "✗ Fichier de log introuvable"
+fi
 echo ""
 
 echo "📥 5. LOGS DE RÉCEPTION (20 dernières)"
 echo "─────────────────────────────────────────────────────────────"
-tail -n 100 /var/log/supervisor/backend.err.log | grep -i "reçu\|received\|message.*mqtt" | tail -20
+if [ -f /var/log/supervisor/backend.err.log ]; then
+    tail -n 100 /var/log/supervisor/backend.err.log | grep -i "reçu\|received\|message.*mqtt" | tail -20
+else
+    echo "✗ Fichier de log introuvable"
+fi
 echo ""
 
 echo "💾 6. MESSAGES MQTT DANS LA BASE DE DONNÉES"
 echo "─────────────────────────────────────────────────────────────"
-python3 << 'PYEOF'
+cd backend
+source venv/bin/activate
+python << 'PYEOF'
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -87,11 +128,15 @@ async def check_messages():
 
 asyncio.run(check_messages())
 PYEOF
+deactivate
+cd ..
 echo ""
 
 echo "📋 7. ABONNEMENTS ACTIFS"
 echo "─────────────────────────────────────────────────────────────"
-python3 << 'PYEOF'
+cd backend
+source venv/bin/activate
+python << 'PYEOF'
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -108,15 +153,20 @@ async def check_subs():
             print(f"  • {sub.get('topic')} (QoS: {sub.get('qos', 0)})")
     else:
         print("✗ Aucun abonnement actif")
+        print("  → Allez dans P/L MQTT et abonnez-vous à '#'")
     
     client.close()
 
 asyncio.run(check_subs())
 PYEOF
+deactivate
+cd ..
 echo ""
 
-echo "🔍 8. LOGS BACKEND EN TEMPS RÉEL (Ctrl+C pour arrêter)"
-echo "─────────────────────────────────────────────────────────────"
-echo "Surveillance des logs backend (filtré MQTT)..."
+echo "════════════════════════════════════════════════════════════"
+echo "DIAGNOSTIC TERMINÉ"
 echo ""
-tail -f /var/log/supervisor/backend.err.log | grep --line-buffered -i "mqtt"
+echo "🔧 Pour voir les logs en temps réel:"
+echo "   tail -f /var/log/supervisor/backend.err.log | grep --line-buffered -i mqtt"
+echo ""
+echo "════════════════════════════════════════════════════════════"
