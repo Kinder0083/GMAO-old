@@ -195,6 +195,51 @@ class MQTTManager:
             }
             logger.error(f"[MQTT] Erreur: {errors.get(rc, 'Erreur inconnue')}")
     
+    def _restore_subscriptions_sync(self):
+        """Restaurer les abonnements sauvegardés depuis la base de données (synchrone)"""
+        try:
+            from pymongo import MongoClient
+            
+            mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+            db_name = os.getenv('DB_NAME', 'gmao_iris')
+            
+            logger.info(f"[MQTT] Restauration des abonnements depuis {db_name}...")
+            
+            mongo_client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+            db_sync = mongo_client[db_name]
+            
+            # Récupérer tous les abonnements actifs
+            subscriptions = list(db_sync.mqtt_subscriptions.find({"active": True}))
+            
+            if not subscriptions:
+                logger.info("[MQTT] Aucun abonnement actif à restaurer")
+                mongo_client.close()
+                return
+                
+            logger.info(f"[MQTT] {len(subscriptions)} abonnement(s) à restaurer")
+            
+            for sub in subscriptions:
+                topic = sub.get("topic")
+                qos = sub.get("qos", 0)
+                
+                if topic and self.client:
+                    try:
+                        result = self.client.subscribe(topic, qos=qos)
+                        if result[0] == mqtt.MQTT_ERR_SUCCESS:
+                            logger.info(f"✅ [MQTT] Abonnement restauré: {topic} (QoS={qos})")
+                        else:
+                            logger.error(f"❌ [MQTT] Échec restauration: {topic}")
+                    except Exception as e:
+                        logger.error(f"❌ [MQTT] Erreur restauration {topic}: {e}")
+            
+            mongo_client.close()
+            logger.info("✅ [MQTT] Restauration des abonnements terminée")
+            
+        except Exception as e:
+            logger.error(f"❌ [MQTT] Erreur lors de la restauration des abonnements: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+    
     def _on_disconnect(self, client, userdata, rc):
         """Callback appelé lors de la déconnexion"""
         self.is_connected = False
