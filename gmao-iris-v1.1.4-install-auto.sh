@@ -576,7 +576,8 @@ asyncio.run(main())
 PYEOF
 
 # Uploader le script dans le container
-pct push $CTID /tmp/create_admins_${CTID}.py /tmp/create_admins.py
+# Note: create_admins.py est maintenant un fichier permanent dans backend/
+# Plus besoin de pousser un script temporaire
 
 # Cloner et installer l'application
 pct exec $CTID -- bash <<APPEOF
