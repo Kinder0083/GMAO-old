@@ -276,7 +276,7 @@ class MQTTManager:
                 "received_at": datetime.now(timezone.utc).isoformat()
             }
             
-            logger.info(f"[MQTT] Insertion du message dans mqtt_messages...")
+            logger.info("[MQTT] Insertion du message dans mqtt_messages...")
             result = db_sync.mqtt_messages.insert_one(doc)
             logger.info(f"✅ [MQTT] Message sauvegardé avec ID: {result.inserted_id}")
             
