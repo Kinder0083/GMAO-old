@@ -110,10 +110,12 @@ class MQTTManager:
     
     def subscribe(self, topic: str, qos: int = 0, callback: Callable = None):
         """S'abonner à un topic MQTT"""
+        logger.info(f"[MQTT] Demande d'abonnement à '{topic}' (QoS={qos})")
+        
         if not self.is_connected:
-            logger.info("Pas connecté, tentative de connexion...")
+            logger.info("[MQTT] Pas connecté, tentative de connexion...")
             if not self.connect():
-                logger.error("Impossible de se connecter pour s'abonner")
+                logger.error("[MQTT] Impossible de se connecter pour s'abonner")
                 return False
         
         # Attendre que la connexion soit vraiment établie
@@ -125,14 +127,17 @@ class MQTTManager:
             waited += 0.1
         
         if not self.is_connected:
-            logger.error("Timeout: connexion MQTT non établie")
+            logger.error("[MQTT] Timeout: connexion MQTT non établie")
             return False
         
         try:
+            logger.info(f"[MQTT] Envoi de la commande subscribe pour '{topic}'...")
             result = self.client.subscribe(topic, qos=qos)
             
+            logger.info(f"[MQTT] Résultat subscribe: {result}")
+            
             if result[0] != mqtt.MQTT_ERR_SUCCESS:
-                logger.error(f"Erreur lors de la souscription: code {result[0]}")
+                logger.error(f"[MQTT] Erreur lors de la souscription: code {result[0]}")
                 return False
             
             # Enregistrer le callback pour ce topic
@@ -141,11 +146,12 @@ class MQTTManager:
                     self.message_callbacks[topic] = []
                 if callback not in self.message_callbacks[topic]:
                     self.message_callbacks[topic].append(callback)
+                logger.info(f"[MQTT] Callback enregistré pour '{topic}'")
             
-            logger.info(f"✅ Abonné au topic: {topic} (QoS: {qos})")
+            logger.info(f"✅ [MQTT] Abonné au topic: {topic} (QoS: {qos})")
             return True
         except Exception as e:
-            logger.error(f"❌ Erreur lors de l'abonnement à {topic}: {e}")
+            logger.error(f"❌ [MQTT] Erreur lors de l'abonnement à {topic}: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return False
