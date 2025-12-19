@@ -6525,6 +6525,9 @@ from mqtt_routes import router as mqtt_router, init_mqtt_routes
 init_mqtt_routes(db)
 api_router.include_router(mqtt_router)
 
+# MQTT Manager - pour connexion automatique au démarrage
+from mqtt_manager import mqtt_manager
+
 # MQTT Meter Collector
 from mqtt_meter_collector import mqtt_meter_collector
 
