@@ -178,24 +178,40 @@ class MQTTManager:
         topic = message.topic
         payload = message.payload.decode('utf-8')
         
-        logger.info(f"Message reçu sur {topic}: {payload[:100]}...")
+        logger.info(f"📨 Message MQTT reçu sur {topic}: {payload[:100]}...")
         
         # Appeler les callbacks enregistrés pour ce topic
         if topic in self.message_callbacks:
             for callback in self.message_callbacks[topic]:
                 try:
-                    callback(topic, payload, message.qos)
+                    # Si le callback est async, l'exécuter dans un nouveau thread
+                    import asyncio
+                    import inspect
+                    if inspect.iscoroutinefunction(callback):
+                        asyncio.create_task(callback(topic, payload, message.qos))
+                    else:
+                        callback(topic, payload, message.qos)
                 except Exception as e:
-                    logger.error(f"Erreur dans le callback pour {topic}: {e}")
+                    logger.error(f"❌ Erreur dans le callback pour {topic}: {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
         
         # Wildcards (#, +)
         for registered_topic, callbacks in self.message_callbacks.items():
             if self._topic_matches(registered_topic, topic):
                 for callback in callbacks:
                     try:
-                        callback(topic, payload, message.qos)
+                        # Si le callback est async, l'exécuter dans un nouveau thread
+                        import asyncio
+                        import inspect
+                        if inspect.iscoroutinefunction(callback):
+                            asyncio.create_task(callback(topic, payload, message.qos))
+                        else:
+                            callback(topic, payload, message.qos)
                     except Exception as e:
-                        logger.error(f"Erreur dans le callback wildcard pour {topic}: {e}")
+                        logger.error(f"❌ Erreur dans le callback wildcard pour {topic}: {e}")
+                        import traceback
+                        logger.error(traceback.format_exc())
     
     def _topic_matches(self, pattern: str, topic: str) -> bool:
         """Vérifier si un topic correspond à un pattern avec wildcards"""
