@@ -178,6 +178,10 @@ class MQTTManager:
             self.is_connected = True
             logger.info("✅ [MQTT] Connecté au broker MQTT avec succès")
             logger.info(f"[MQTT] Flags: {flags}")
+            
+            # Restaurer automatiquement les abonnements sauvegardés
+            if self._auto_restore:
+                self._restore_subscriptions_sync()
         else:
             self.is_connected = False
             logger.error(f"❌ [MQTT] Échec de connexion MQTT, code: {rc}")
