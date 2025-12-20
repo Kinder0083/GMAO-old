@@ -130,7 +130,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
       ]
     };
 
-    if (guidanceSteps[topic]) {
+    if (guidanceSteps[topic] && startGuidance) {
       startGuidance(guidanceSteps[topic]);
       onClose();
     }
