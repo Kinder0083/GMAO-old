@@ -537,9 +537,17 @@ FEOF
 cd backend
 python3 -m venv venv
 source venv/bin/activate
-pip install -q --upgrade pip
-pip install -q -r requirements.txt
-pip install -q emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
+pip install --upgrade pip
+
+# Installer les dépendances de base
+pip install -r requirements.txt
+
+# Installer emergentintegrations depuis le repo Emergent
+echo "📦 Installation de emergentintegrations..."
+pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ || {
+    echo "⚠️ Installation de emergentintegrations échouée, tentative alternative..."
+    pip install --index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ --extra-index-url https://pypi.org/simple/ emergentintegrations
+}
 
 # Créer les admins directement avec Python inline
 echo "🔐 Création des comptes administrateurs..."
