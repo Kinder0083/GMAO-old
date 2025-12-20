@@ -230,13 +230,13 @@ const Personnalisation = () => {
       {/* Content */}
       {viewMode === 'tabs' ? (
         <Tabs defaultValue="appearance" className="w-full">
-          <TabsList className="grid grid-cols-6 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             {sections.map((section) => {
               const Icon = section.icon;
               return (
-                <TabsTrigger key={section.id} value={section.id} className="gap-2">
-                  <Icon size={16} />
-                  {section.title}
+                <TabsTrigger key={section.id} value={section.id} className="gap-1 text-xs px-2">
+                  <Icon size={14} />
+                  <span className="hidden sm:inline truncate">{section.title}</span>
                 </TabsTrigger>
               );
             })}
