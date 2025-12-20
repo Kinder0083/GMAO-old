@@ -1597,6 +1597,60 @@ const SpecialSettings = () => {
                   )}
                 </button>
               </div>
+
+              {/* Section Vérification des versions */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-indigo-600" />
+                  Vérification des versions LLM
+                </h4>
+                
+                {llmVersions && (
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Dernière vérification :</span>
+                      <span className="font-medium">
+                        {llmVersions.last_check 
+                          ? new Date(llmVersions.last_check).toLocaleString('fr-FR')
+                          : 'Jamais'
+                        }
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Prochaine vérification automatique :</span>
+                      <span className="font-medium">
+                        {llmVersions.next_check 
+                          ? new Date(llmVersions.next_check).toLocaleString('fr-FR')
+                          : 'Lundi prochain à 03h00'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <button
+                  onClick={handleCheckLlmVersions}
+                  disabled={checkingLlmVersions}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                >
+                  {checkingLlmVersions ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>Vérification en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4" />
+                      <span>Vérifier maintenant</span>
+                    </>
+                  )}
+                </button>
+                
+                <p className="text-xs text-gray-500 mt-2">
+                  La vérification automatique s'effectue chaque lundi à 03h00 GMT.
+                  Vous recevrez une notification email si de nouvelles versions sont disponibles.
+                </p>
+              </div>
             </div>
           )}
         </div>
