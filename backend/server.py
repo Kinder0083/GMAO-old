@@ -6555,6 +6555,11 @@ from mqtt_logs_routes import router as mqtt_logs_router, init_mqtt_logs_routes
 init_mqtt_logs_routes(db, mqtt_logger)
 api_router.include_router(mqtt_logs_router)
 
+# AI Chatbot routes
+from ai_chat_routes import router as ai_router, init_ai_routes
+init_ai_routes(db)
+api_router.include_router(ai_router)
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
