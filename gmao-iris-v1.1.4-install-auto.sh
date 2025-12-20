@@ -522,6 +522,7 @@ SMTP_PORT=25
 SMTP_FROM=noreply@gmao-iris.local
 SMTP_FROM_NAME=GMAO Iris
 APP_URL=${FRONTEND_URL}
+EMERGENT_LLM_KEY=sk-emergent-12d3316F4Fe54F79e6
 BEOF
 
 # Frontend .env - NE PAS définir REACT_APP_BACKEND_URL pour permettre la détection automatique
@@ -538,6 +539,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -q --upgrade pip
 pip install -q -r requirements.txt
+pip install -q emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
 
 # Créer les admins directement avec Python inline
 echo "🔐 Création des comptes administrateurs..."
