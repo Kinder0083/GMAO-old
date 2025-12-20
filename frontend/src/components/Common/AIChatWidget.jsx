@@ -1,19 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2 } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, Sparkles } from 'lucide-react';
 import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
+import { useAINavigation } from '../../contexts/AINavigationContext';
 import api from '../../services/api';
+
+// Actions rapides disponibles
+const QUICK_ACTIONS = [
+  { id: 'creer-ot', label: 'Créer un OT', icon: '📋' },
+  { id: 'creer-equipement', label: 'Ajouter équipement', icon: '🔧' },
+  { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+  { id: 'capteurs', label: 'Capteurs IoT', icon: '📡' },
+];
 
 const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
   const { preferences } = usePreferences();
   const { toast } = useToast();
+  const { executeAction, navigateTo, startGuidance } = useAINavigation();
   
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [minimized, setMinimized] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(true);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
