@@ -2042,6 +2042,11 @@ class UserPreferencesUpdate(BaseModel):
     stock_alert_threshold: Optional[int] = None
     customization_view_mode: Optional[str] = None
     preset_theme: Optional[str] = None
+    # Préférences IA
+    ai_assistant_name: Optional[str] = None
+    ai_assistant_gender: Optional[str] = None
+    ai_llm_provider: Optional[str] = None
+    ai_llm_model: Optional[str] = None
 
 # ==================== SUPPORT HELP REQUEST ====================
 
