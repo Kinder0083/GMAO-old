@@ -160,6 +160,12 @@ const Personnalisation = () => {
       title: 'Notifications',
       icon: Bell,
       component: NotificationsSection
+    },
+    {
+      id: 'ai',
+      title: 'IA',
+      icon: Bot,
+      component: AISection
     }
   ];
 
