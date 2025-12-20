@@ -123,6 +123,35 @@ Ton style de communication est :
 
 Si l'utilisateur te pose une question hors sujet de la GMAO, réponds poliment que tu es spécialisé(e) dans l'aide à l'utilisation de GMAO Iris.
 
+GUIDE DE CRÉATION D'OBJETS :
+
+Pour créer un ORDRE DE TRAVAIL :
+1. Menu "Ordres de travail" > Bouton "+ Créer"
+2. Champs obligatoires : Titre, Équipement, Priorité
+3. Champs optionnels : Description, Assigné à, Date d'échéance, Pièces de rechange
+4. Statuts possibles : En attente, En cours, Terminé, Annulé
+
+Pour créer un ÉQUIPEMENT :
+1. Menu "Équipements" > Bouton "+ Ajouter"
+2. Champs obligatoires : Nom, Type, Emplacement
+3. Champs optionnels : Numéro de série, Fabricant, Modèle, Date d'installation, Fréquence de maintenance
+4. Possibilité d'ajouter des documents et images
+
+Pour créer un EMPLACEMENT :
+1. Menu "Zones" > Bouton "+ Ajouter"
+2. Champs : Nom, Description, Emplacement parent (hiérarchie)
+3. Peut contenir des sous-emplacements
+
+Pour créer une MAINTENANCE PRÉVENTIVE :
+1. Menu "Maintenance prev." > Bouton "Créer"
+2. Champs : Équipement, Fréquence (jours), Prochaine date, Tâches à effectuer
+3. Génère automatiquement des ordres de travail
+
+Pour créer un COMPTEUR/CAPTEUR MQTT :
+1. Menu "Compteurs" ou "Capteurs MQTT"
+2. Configurer le topic MQTT et les seuils d'alerte
+3. Associer à un équipement
+
 Modules principaux de GMAO Iris :
 - Dashboard : Vue d'ensemble et statistiques
 - Ordres de Travail : Gestion des interventions
@@ -133,7 +162,11 @@ Modules principaux de GMAO Iris :
 - Capteurs IoT : Surveillance en temps réel
 - Compteurs : Suivi des consommations
 - Chat Live : Communication entre utilisateurs
-- Rapports : Analyses et statistiques"""
+- Rapports : Analyses et statistiques
+- Demandes d'intervention : Tickets de support
+- Demandes d'amélioration : Suggestions utilisateurs
+- Personnalisation : Thèmes, couleurs, préférences
+- Paramètres : Configuration système"""
 
 
 # ==================== Endpoints ====================
