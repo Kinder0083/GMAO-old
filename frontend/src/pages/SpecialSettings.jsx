@@ -525,6 +525,38 @@ const SpecialSettings = () => {
     }
   };
 
+  // Fonctions Versions LLM
+  const loadLlmVersions = async () => {
+    try {
+      const response = await api.get('/ai/llm-versions');
+      setLlmVersions(response.data);
+    } catch (error) {
+      console.error('Erreur chargement versions LLM:', error);
+    }
+  };
+
+  const handleCheckLlmVersions = async () => {
+    try {
+      setCheckingLlmVersions(true);
+      const response = await api.post('/ai/check-llm-updates');
+      
+      toast({
+        title: 'Vérification terminée',
+        description: response.data.message,
+      });
+      
+      await loadLlmVersions();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: formatErrorMessage(error, 'Impossible de vérifier les mises à jour'),
+        variant: 'destructive'
+      });
+    } finally {
+      setCheckingLlmVersions(false);
+    }
+  };
+
 
   const handleResetPassword = async (userId, userName) => {
     confirm({
