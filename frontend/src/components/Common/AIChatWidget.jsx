@@ -84,18 +84,34 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Exécuter l'action de navigation
-    try {
-      await executeAction(actionId);
-      
+    // Exécuter l'action de navigation (si disponible)
+    if (executeAction) {
+      try {
+        await executeAction(actionId);
+        
+        const assistantMessage = {
+          role: 'assistant',
+          content: `Je vous ai dirigé vers "${action.label}". Que puis-je faire d'autre pour vous ?`,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } catch (error) {
+        console.error('Erreur action rapide:', error);
+        const errorMessage = {
+          role: 'assistant',
+          content: `Je n'ai pas pu naviguer vers "${action.label}". Voulez-vous que je vous explique comment y accéder ?`,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    } else {
+      // Navigation non disponible, donner des instructions
       const assistantMessage = {
         role: 'assistant',
-        content: `Je vous ai dirigé vers "${action.label}". Que puis-je faire d'autre pour vous ?`,
+        content: `Pour accéder à "${action.label}", utilisez le menu latéral de l'application.`,
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Erreur action rapide:', error);
     }
   };
 
