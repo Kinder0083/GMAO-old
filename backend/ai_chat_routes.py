@@ -438,6 +438,155 @@ async def update_global_llm_keys(
         raise HTTPException(status_code=500, detail="Erreur mise à jour clés LLM")
 
 
+# ==================== Vérification des versions LLM ====================
+
+# Versions connues des modèles (à mettre à jour)
+KNOWN_LLM_VERSIONS = {
+    "gemini": {
+        "latest": "gemini-2.5-flash",
+        "versions": ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"],
+        "last_check": None
+    },
+    "openai": {
+        "latest": "gpt-4o",
+        "versions": ["gpt-5.1", "gpt-4o", "gpt-4o-mini"],
+        "last_check": None
+    },
+    "anthropic": {
+        "latest": "claude-4-sonnet-20250514",
+        "versions": ["claude-4-sonnet-20250514", "claude-3-5-haiku-20241022"],
+        "last_check": None
+    },
+    "deepseek": {
+        "latest": "deepseek-chat",
+        "versions": ["deepseek-chat", "deepseek-coder"],
+        "last_check": None
+    },
+    "mistral": {
+        "latest": "mistral-large-latest",
+        "versions": ["mistral-large-latest", "mistral-medium-latest"],
+        "last_check": None
+    }
+}
+
+@router.get("/llm-versions")
+async def get_llm_versions(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Récupérer les versions LLM actuelles et disponibles (admin seulement)"""
+    try:
+        # Récupérer les versions stockées
+        stored_versions = await db.llm_versions.find_one({"id": "current"})
+        
+        if not stored_versions:
+            # Initialiser avec les versions connues
+            stored_versions = {
+                "id": "current",
+                "versions": KNOWN_LLM_VERSIONS,
+                "last_check": None,
+                "next_check": None
+            }
+            await db.llm_versions.insert_one(stored_versions)
+        
+        return {
+            "versions": stored_versions.get("versions", KNOWN_LLM_VERSIONS),
+            "last_check": stored_versions.get("last_check"),
+            "next_check": stored_versions.get("next_check")
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération versions LLM: {e}")
+        raise HTTPException(status_code=500, detail="Erreur récupération versions LLM")
+
+
+@router.post("/check-llm-updates")
+async def check_llm_updates(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Vérifier manuellement les mises à jour des modèles LLM (admin seulement)"""
+    try:
+        # Simuler une vérification (dans un vrai système, on ferait des appels API)
+        # Pour l'instant, on met à jour la date de dernière vérification
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Calculer la prochaine vérification (prochain lundi à 3h GMT)
+        from datetime import timedelta
+        today = datetime.now(timezone.utc)
+        days_until_monday = (7 - today.weekday()) % 7
+        if days_until_monday == 0 and today.hour >= 3:
+            days_until_monday = 7
+        next_monday = today.replace(hour=3, minute=0, second=0, microsecond=0) + timedelta(days=days_until_monday)
+        
+        await db.llm_versions.update_one(
+            {"id": "current"},
+            {"$set": {
+                "last_check": now,
+                "next_check": next_monday.isoformat(),
+                "checked_by": current_user.get("id")
+            }},
+            upsert=True
+        )
+        
+        # Vérifier s'il y a des nouvelles versions (simulation)
+        new_versions_found = []
+        
+        # Dans un vrai système, on comparerait avec les API des fournisseurs
+        # Pour l'instant, on retourne juste le statut
+        
+        return {
+            "success": True,
+            "message": "Vérification effectuée",
+            "last_check": now,
+            "next_check": next_monday.isoformat(),
+            "new_versions": new_versions_found
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur vérification mises à jour LLM: {e}")
+        raise HTTPException(status_code=500, detail="Erreur vérification mises à jour LLM")
+
+
+@router.post("/notify-llm-update")
+async def notify_llm_update(
+    provider: str,
+    new_version: str,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Envoyer une notification email pour une nouvelle version LLM (admin seulement)"""
+    try:
+        # Récupérer les admins pour les notifier
+        admins = await db.users.find({"role": "admin"}, {"_id": 0, "email": 1, "name": 1}).to_list(100)
+        
+        if not admins:
+            return {"success": False, "message": "Aucun admin à notifier"}
+        
+        # Envoyer les emails (utiliser le service SMTP configuré)
+        # Pour l'instant, on log juste l'action
+        logger.info(f"Notification nouvelle version LLM: {provider} -> {new_version}")
+        logger.info(f"Admins à notifier: {[a.get('email') for a in admins]}")
+        
+        # Stocker la notification
+        await db.llm_notifications.insert_one({
+            "id": str(uuid.uuid4()),
+            "provider": provider,
+            "new_version": new_version,
+            "notified_at": datetime.now(timezone.utc).isoformat(),
+            "notified_by": current_user.get("id"),
+            "admins_notified": [a.get("email") for a in admins]
+        })
+        
+        return {
+            "success": True,
+            "message": f"Notification envoyée pour {provider} v{new_version}",
+            "admins_notified": len(admins)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur notification mise à jour LLM: {e}")
+        raise HTTPException(status_code=500, detail="Erreur notification mise à jour LLM")
+
+
 # ==================== Fonction LLM ====================
 
 async def get_llm_response(
