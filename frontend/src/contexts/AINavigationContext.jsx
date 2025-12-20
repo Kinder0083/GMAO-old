@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useNavigate } from 'react-router-dom';
 import { X, ChevronRight, ChevronLeft, MousePointer2 } from 'lucide-react';
 
-const AINavigationContext = createContext(null);
+// Exporter le contexte pour permettre une utilisation sécurisée avec useContext
+export const AINavigationContext = createContext(null);
 
 export const useAINavigation = () => {
   const context = useContext(AINavigationContext);
