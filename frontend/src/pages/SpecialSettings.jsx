@@ -84,6 +84,10 @@ const SpecialSettings = () => {
   const [showDeepseekKey, setShowDeepseekKey] = useState(false);
   const [showMistralKey, setShowMistralKey] = useState(false);
   
+  // États Versions LLM
+  const [llmVersions, setLlmVersions] = useState(null);
+  const [checkingLlmVersions, setCheckingLlmVersions] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -93,6 +97,7 @@ const SpecialSettings = () => {
     loadTailscaleConfig();
     loadMqttConfig();
     loadLlmKeys();
+    loadLlmVersions();
   }, []);
 
   const loadUsers = async () => {
