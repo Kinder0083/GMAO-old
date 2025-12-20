@@ -576,7 +576,7 @@ const mqttAPI = {
   
   // Abonnement
   subscribe: (data) => api.post('/mqtt/subscribe', data),
-  unsubscribe: (topicEncoded) => api.delete(`/mqtt/subscribe/${topicEncoded}`),
+  unsubscribe: (topic) => api.delete('/mqtt/unsubscribe', { params: { topic } }),
   getSubscriptions: () => api.get('/mqtt/subscriptions'),
   
   // Messages
