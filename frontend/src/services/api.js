@@ -677,6 +677,17 @@ export const purchaseRequestsAPI = {
 
 api.purchaseRequests = purchaseRequestsAPI;
 
+// ==================== AI Chatbot API ====================
+const aiAPI = {
+  getProviders: () => api.get('/ai/providers'),
+  chat: (data) => api.post('/ai/chat', data),
+  getHistory: (sessionId) => api.get(`/ai/history/${sessionId}`),
+  clearHistory: (sessionId) => api.delete(`/ai/history/${sessionId}`),
+  getSessions: () => api.get('/ai/sessions')
+};
+
+api.ai = aiAPI;
+
 // API Historique des mises à jour système
 export const systemUpdateHistoryAPI = {
   getHistory: (params = {}) => api.get('/api/updates/history-list', { params }),
