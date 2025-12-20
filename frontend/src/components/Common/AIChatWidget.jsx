@@ -3,8 +3,15 @@ import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, 
 import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
-import { useAINavigation } from '../../contexts/AINavigationContext';
 import api from '../../services/api';
+
+// Import conditionnel du contexte de navigation
+let useAINavigation;
+try {
+  useAINavigation = require('../../contexts/AINavigationContext').useAINavigation;
+} catch (e) {
+  useAINavigation = null;
+}
 
 // Actions rapides disponibles
 const QUICK_ACTIONS = [
@@ -17,7 +24,17 @@ const QUICK_ACTIONS = [
 const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
   const { preferences } = usePreferences();
   const { toast } = useToast();
-  const { executeAction, navigateTo, startGuidance } = useAINavigation();
+  
+  // Utiliser le contexte de navigation de manière sécurisée
+  let navigationContext = { executeAction: null, navigateTo: null, startGuidance: null };
+  try {
+    if (useAINavigation) {
+      navigationContext = useAINavigation();
+    }
+  } catch (e) {
+    // Le contexte n'est pas disponible, on continue sans
+  }
+  const { executeAction, navigateTo, startGuidance } = navigationContext;
   
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
