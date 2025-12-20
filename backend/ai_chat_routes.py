@@ -326,6 +326,85 @@ async def get_user_sessions(
         raise HTTPException(status_code=500, detail="Erreur récupération sessions")
 
 
+# ==================== Endpoints Clés API Globales ====================
+
+class GlobalLLMKeys(BaseModel):
+    deepseek_api_key: Optional[str] = None
+    mistral_api_key: Optional[str] = None
+
+@router.get("/global-keys")
+async def get_global_llm_keys(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Récupérer les clés API globales (admin seulement)"""
+    try:
+        keys = {}
+        
+        # Récupérer chaque clé
+        for key_name in ["DEEPSEEK_API_KEY", "MISTRAL_API_KEY"]:
+            setting = await db.global_settings.find_one({"key": key_name})
+            # Masquer partiellement la clé pour la sécurité
+            if setting and setting.get("value"):
+                value = setting["value"]
+                # Montrer seulement les 4 premiers et 4 derniers caractères
+                if len(value) > 12:
+                    masked = value[:4] + "*" * (len(value) - 8) + value[-4:]
+                else:
+                    masked = "****" + value[-4:] if len(value) > 4 else "****"
+                keys[key_name.lower()] = masked
+            else:
+                keys[key_name.lower()] = ""
+        
+        return keys
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération clés LLM: {e}")
+        raise HTTPException(status_code=500, detail="Erreur récupération clés LLM")
+
+
+@router.put("/global-keys")
+async def update_global_llm_keys(
+    keys: GlobalLLMKeys,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Mettre à jour les clés API globales (admin seulement)"""
+    try:
+        from datetime import datetime, timezone
+        
+        # Mettre à jour chaque clé si elle est fournie et non masquée
+        if keys.deepseek_api_key and not keys.deepseek_api_key.startswith("****") and "*" not in keys.deepseek_api_key:
+            await db.global_settings.update_one(
+                {"key": "DEEPSEEK_API_KEY"},
+                {"$set": {
+                    "key": "DEEPSEEK_API_KEY",
+                    "value": keys.deepseek_api_key,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": current_user.get("id")
+                }},
+                upsert=True
+            )
+            logger.info("Clé API DeepSeek mise à jour")
+        
+        if keys.mistral_api_key and not keys.mistral_api_key.startswith("****") and "*" not in keys.mistral_api_key:
+            await db.global_settings.update_one(
+                {"key": "MISTRAL_API_KEY"},
+                {"$set": {
+                    "key": "MISTRAL_API_KEY",
+                    "value": keys.mistral_api_key,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": current_user.get("id")
+                }},
+                upsert=True
+            )
+            logger.info("Clé API Mistral mise à jour")
+        
+        return {"success": True, "message": "Clés API mises à jour"}
+        
+    except Exception as e:
+        logger.error(f"Erreur mise à jour clés LLM: {e}")
+        raise HTTPException(status_code=500, detail="Erreur mise à jour clés LLM")
+
+
 # ==================== Fonction LLM ====================
 
 async def get_llm_response(
