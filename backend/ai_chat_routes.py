@@ -4,7 +4,7 @@ Routes API pour le chatbot IA
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
-from dependencies import get_current_user
+from dependencies import get_current_user, get_current_admin_user
 import logging
 import os
 from datetime import datetime, timezone
