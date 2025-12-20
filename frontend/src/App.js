@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "./components/ui/toaster";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { AIContextMenuProvider } from "./contexts/AIContextMenuContext";
+import { AINavigationProvider } from "./contexts/AINavigationContext";
 
 // Layout
 import MainLayout from "./components/Layout/MainLayout";
