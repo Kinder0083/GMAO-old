@@ -524,9 +524,11 @@ SMTP_FROM_NAME=GMAO Iris
 APP_URL=${FRONTEND_URL}
 BEOF
 
-# Frontend .env
+# Frontend .env - NE PAS définir REACT_APP_BACKEND_URL pour permettre la détection automatique
+# Cela permet l'accès depuis l'IP locale ET l'IP externe
 cat > frontend/.env <<FEOF
-REACT_APP_BACKEND_URL=${FRONTEND_URL}
+# REACT_APP_BACKEND_URL n'est PAS défini pour permettre la détection automatique
+# Le frontend utilisera automatiquement window.location.origin
 NODE_ENV=production
 FEOF
 
