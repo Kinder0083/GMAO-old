@@ -72,6 +72,16 @@ const SpecialSettings = () => {
   const [mqttStatus, setMqttStatus] = useState(null);
   const [showMqttPassword, setShowMqttPassword] = useState(false);
   
+  // États Clés API LLM
+  const [llmKeys, setLlmKeys] = useState({
+    deepseek_api_key: '',
+    mistral_api_key: ''
+  });
+  const [loadingLlmKeys, setLoadingLlmKeys] = useState(true);
+  const [savingLlmKeys, setSavingLlmKeys] = useState(false);
+  const [showDeepseekKey, setShowDeepseekKey] = useState(false);
+  const [showMistralKey, setShowMistralKey] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
