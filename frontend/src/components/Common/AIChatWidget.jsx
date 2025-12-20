@@ -61,8 +61,62 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
     }
   }, [isOpen, aiName, aiGender]);
 
+  // Exécuter une action rapide
+  const handleQuickAction = async (actionId) => {
+    setShowQuickActions(false);
+    
+    const action = QUICK_ACTIONS.find(a => a.id === actionId);
+    if (!action) return;
+
+    // Ajouter un message utilisateur simulé
+    const userMessage = {
+      role: 'user',
+      content: `${action.icon} ${action.label}`,
+      timestamp: new Date().toISOString(),
+      isQuickAction: true
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    // Exécuter l'action de navigation
+    try {
+      await executeAction(actionId);
+      
+      const assistantMessage = {
+        role: 'assistant',
+        content: `Je vous ai dirigé vers "${action.label}". Que puis-je faire d'autre pour vous ?`,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Erreur action rapide:', error);
+    }
+  };
+
+  // Démarrer un guidage étape par étape
+  const handleStartGuidance = (topic) => {
+    const guidanceSteps = {
+      'creer-ot': [
+        { route: '/work-orders', message: 'Bienvenue dans le module Ordres de Travail' },
+        { highlight: 'button:has-text("Créer"), button:has-text("+ Créer")', message: 'Cliquez sur ce bouton pour créer un nouvel ordre de travail' },
+        { message: 'Remplissez le formulaire avec les informations de l\'intervention' }
+      ],
+      'creer-equipement': [
+        { route: '/assets', message: 'Bienvenue dans le module Équipements' },
+        { highlight: 'button:has-text("Ajouter"), button:has-text("+ Ajouter")', message: 'Cliquez ici pour ajouter un nouvel équipement' },
+        { message: 'Remplissez les informations de l\'équipement (nom, type, emplacement...)' }
+      ]
+    };
+
+    if (guidanceSteps[topic]) {
+      startGuidance(guidanceSteps[topic]);
+      onClose();
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || loading) return;
+    
+    setShowQuickActions(false);
 
     const userMessage = {
       role: 'user',
