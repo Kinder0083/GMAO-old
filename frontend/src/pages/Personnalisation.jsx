@@ -16,7 +16,8 @@ import {
   Grid3x3,
   List,
   Download,
-  Upload
+  Upload,
+  Bot
 } from 'lucide-react';
 
 // Import des sections
@@ -26,6 +27,7 @@ import MenuOrganizationSection from '../components/Personnalisation/MenuOrganiza
 import DisplayPreferencesSection from '../components/Personnalisation/DisplayPreferencesSection';
 import DashboardSection from '../components/Personnalisation/DashboardSection';
 import NotificationsSection from '../components/Personnalisation/NotificationsSection';
+import AISection from '../components/Personnalisation/AISection';
 
 const Personnalisation = () => {
   const { preferences, updatePreferences, resetPreferences, loading } = usePreferences();
