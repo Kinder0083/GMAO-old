@@ -1980,6 +1980,12 @@ class UserPreferences(BaseModel):
     # Thèmes prédéfinis
     preset_theme: Optional[str] = None  # "orange", "vert", "blanc", "bleu", "custom"
     
+    # Préférences IA
+    ai_assistant_name: str = "Adria"  # Nom de l'assistant IA
+    ai_assistant_gender: str = "female"  # "male" ou "female"
+    ai_llm_provider: str = "gemini"  # "gemini", "openai", "anthropic", "deepseek", "mistral"
+    ai_llm_model: str = "gemini-2.5-flash"  # Modèle LLM par défaut
+    
     # Métadonnées
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
