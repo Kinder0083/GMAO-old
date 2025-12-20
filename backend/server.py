@@ -6604,12 +6604,22 @@ async def startup_scheduler():
             replace_existing=True
         )
         
+        # Configurer la vérification des versions LLM chaque lundi à 3h00 GMT
+        scheduler.add_job(
+            check_llm_versions_job,
+            CronTrigger(day_of_week='mon', hour=3, minute=0),  # Chaque lundi à 3h00
+            id='llm_version_check',
+            name='Vérification versions LLM',
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("✅ Scheduler démarré:")
         logger.info("   - Vérification maintenances préventives: tous les jours à 00h00")
         logger.info("   - Vérification mises à jour: tous les jours à 01h00")
         logger.info("   - Vérification demandes expirées: tous les jours à 02h00")
         logger.info("   - Nettoyage messages chat (60j): tous les jours à 03h00")
+        logger.info("   - Vérification versions LLM: chaque lundi à 03h00")
         
         # Initialiser et démarrer les collecteurs MQTT
         await mqtt_meter_collector.initialize(db)
