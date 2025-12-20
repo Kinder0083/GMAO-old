@@ -100,7 +100,9 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <MainLayout />
+                <AIContextMenuProvider>
+                  <MainLayout />
+                </AIContextMenuProvider>
               </ProtectedRoute>
             }
           >
