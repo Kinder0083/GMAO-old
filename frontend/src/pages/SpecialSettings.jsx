@@ -481,6 +481,43 @@ const SpecialSettings = () => {
     }
   };
 
+  // Fonctions Clés API LLM
+  const loadLlmKeys = async () => {
+    try {
+      setLoadingLlmKeys(true);
+      const response = await api.get('/ai/global-keys');
+      setLlmKeys(response.data || {
+        deepseek_api_key: '',
+        mistral_api_key: ''
+      });
+    } catch (error) {
+      console.error('Erreur chargement clés LLM:', error);
+      // Pas de toast d'erreur car les clés peuvent ne pas être configurées
+    } finally {
+      setLoadingLlmKeys(false);
+    }
+  };
+
+  const handleSaveLlmKeys = async () => {
+    try {
+      setSavingLlmKeys(true);
+      await api.put('/ai/global-keys', llmKeys);
+      
+      toast({
+        title: 'Clés API sauvegardées',
+        description: 'Les clés API des fournisseurs LLM ont été mises à jour',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: formatErrorMessage(error, 'Impossible de sauvegarder les clés API'),
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingLlmKeys(false);
+    }
+  };
+
 
   const handleResetPassword = async (userId, userName) => {
     confirm({
