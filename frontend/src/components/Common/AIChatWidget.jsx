@@ -253,6 +253,28 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
           <>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" style={{ maxHeight: '350px' }}>
+              {/* Actions rapides */}
+              {showQuickActions && messages.length <= 1 && (
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                    <Sparkles size={12} />
+                    Actions rapides
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {QUICK_ACTIONS.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() => handleQuickAction(action.id)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full text-xs font-medium transition-colors"
+                      >
+                        <span>{action.icon}</span>
+                        <span>{action.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {messages.map((msg, index) => (
                 <div
                   key={index}
@@ -267,7 +289,9 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
                   </div>
                   <div className={`max-w-[75%] rounded-lg px-3 py-2 ${
                     msg.role === 'user'
-                      ? 'bg-blue-600 text-white'
+                      ? msg.isQuickAction 
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-blue-600 text-white'
                       : msg.error
                         ? 'bg-red-100 text-red-800 border border-red-200'
                         : 'bg-white text-gray-800 border border-gray-200'
