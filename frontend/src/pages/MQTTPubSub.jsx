@@ -155,9 +155,7 @@ const MQTTPubSub = () => {
 
   const handleUnsubscribe = async (topic) => {
     try {
-      // Encoder correctement le topic (y compris #, +, et /)
-      const encodedTopic = encodeURIComponent(topic);
-      await api.mqtt.unsubscribe(encodedTopic);
+      await api.mqtt.unsubscribe(topic);
       
       toast({
         title: 'Succès',
