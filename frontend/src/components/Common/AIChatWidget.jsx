@@ -179,6 +179,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
   const handleClearHistory = async () => {
     if (!sessionId) {
       setMessages([]);
+      setShowQuickActions(true);
       return;
     }
 
@@ -186,6 +187,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
       await api.ai.clearHistory(sessionId);
       setMessages([]);
       setSessionId(null);
+      setShowQuickActions(true);
       toast({
         title: 'Historique effacé',
         description: 'La conversation a été réinitialisée'
