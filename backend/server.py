@@ -6563,6 +6563,32 @@ api_router.include_router(ai_router)
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
+# Fonction de vérification des versions LLM (appelée par le scheduler)
+async def check_llm_versions_job():
+    """Vérifie les nouvelles versions des modèles LLM et notifie les admins"""
+    try:
+        from datetime import datetime, timezone, timedelta
+        logger.info("🔍 Vérification automatique des versions LLM...")
+        
+        # Mettre à jour la date de dernière vérification
+        now = datetime.now(timezone.utc)
+        next_monday = now + timedelta(days=7)
+        
+        await db.llm_versions.update_one(
+            {"id": "current"},
+            {"$set": {
+                "last_check": now.isoformat(),
+                "next_check": next_monday.isoformat(),
+                "checked_by": "scheduler"
+            }},
+            upsert=True
+        )
+        
+        logger.info("✅ Vérification des versions LLM terminée")
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur vérification versions LLM: {e}")
+
 @app.on_event("startup")
 async def startup_scheduler():
     """Démarre le scheduler au démarrage de l'application"""
