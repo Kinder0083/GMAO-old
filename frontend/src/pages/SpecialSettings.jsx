@@ -90,6 +90,7 @@ const SpecialSettings = () => {
     loadSmtpConfig();
     loadTailscaleConfig();
     loadMqttConfig();
+    loadLlmKeys();
   }, []);
 
   const loadUsers = async () => {
