@@ -14,7 +14,9 @@ import {
   AlertCircle,
   Globe,
   Radio,
-  Power
+  Power,
+  Bot,
+  Sparkles
 } from 'lucide-react';
 import api, { usersAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
