@@ -108,16 +108,19 @@ const WhiteboardPage = () => {
   // ==================== Calcul du scale CSS ====================
   
   // Calculer le scale optimal pour adapter le canvas fixe au conteneur
+  // en utilisant TOUTE la place disponible
   const calculateOptimalScale = useCallback((containerWidth, containerHeight) => {
-    const padding = 20; // Marge autour du canvas
+    const padding = 40; // Marge autour du canvas (pour le label "Tableau X")
     const availableWidth = containerWidth - padding;
     const availableHeight = containerHeight - padding;
     
+    // Calculer le scale pour chaque dimension
     const scaleX = availableWidth / CANVAS_FIXED_WIDTH;
     const scaleY = availableHeight / CANVAS_FIXED_HEIGHT;
     
     // Prendre le plus petit ratio pour que le canvas tienne entièrement
-    return Math.min(scaleX, scaleY, 1); // Maximum 1 (pas d'agrandissement au-delà de 100%)
+    // mais permettre d'aller jusqu'à 100% maximum
+    return Math.min(scaleX, scaleY, 1);
   }, []);
 
   // Appliquer le scale CSS au wrapper du canvas
