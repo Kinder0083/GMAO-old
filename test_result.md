@@ -60,16 +60,18 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Whiteboard Aspect Ratio Consistency"
+    - "Whiteboard WebSocket Object Deletion"
+  stuck_tasks:
     - "Whiteboard Object Deletion WebSocket Sync"
     - "Whiteboard WebSocket Object Deletion"
-  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "testing"
     message: "🎯 STARTING WHITEBOARD BUG TESTING - Testing two critical bug fixes: 1) Aspect ratio consistency across viewport sizes (uniform scale fix), 2) Object deletion WebSocket synchronization. Will test with credentials affichagegmaoiris@gmail.com / Iris1234! and verify reference dimensions show 1600×900 with proper scale percentages."
+  - agent: "testing"
+    message: "✅ WHITEBOARD TESTING COMPLETE - Bug 1 (Aspect Ratio) FIXED: Reference dimensions consistently show 1600×900 with proper scale adjustment (59% desktop vs different mobile). ❌ Bug 2 (WebSocket Deletion) FAILING: WebSocket connections cannot be established - 'WebSocket is closed before the connection is established' error prevents real-time sync. Backend code is correct but server WebSocket configuration needs fixing."
 
 ## Features to Test
 
