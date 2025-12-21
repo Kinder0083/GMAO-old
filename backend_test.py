@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Script for Custom Menu Categories (Groupement personnalisé des menus)
-Tests the user-preferences API endpoints for menu categories functionality
+Backend API Testing Script for Whiteboard Persistence (Tableau d'affichage)
+Tests the whiteboard API endpoints for persistence functionality
 """
 
 import requests
@@ -15,9 +15,9 @@ BACKEND_URL = "https://collab-board-11.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"
-ADMIN_PASSWORD = "testpassword"
+ADMIN_PASSWORD = "password"
 
-class MenuCategoriesTester:
+class WhiteboardTester:
     def __init__(self):
         self.admin_session = requests.Session()
         self.admin_token = None
