@@ -58,15 +58,15 @@ const ChatLive = () => {
     if (!token) return;
 
     // Construire l'URL WebSocket depuis REACT_APP_BACKEND_URL
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL || window.location.origin;
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
     
     // Remplacer http(s):// par ws(s)://
     let wsUrl = backendUrl
       .replace('https://', 'wss://')
       .replace('http://', 'ws://');
     
-    // Ajouter le chemin WebSocket
-    wsUrl = `${wsUrl}/api/chat/ws/${token}`;
+    // Ajouter le chemin WebSocket (directement sur l'app, pas via /api)
+    wsUrl = `${wsUrl}/ws/chat/${token}`;
     
     console.log('🔌 Tentative connexion WebSocket:', wsUrl);
     
