@@ -13,7 +13,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/whiteboard", tags=["Whiteboard"])
+router = APIRouter(prefix="/whiteboard", tags=["Whiteboard"])
 
 # Modèles Pydantic
 class WhiteboardObject(BaseModel):
