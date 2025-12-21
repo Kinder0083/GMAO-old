@@ -306,27 +306,27 @@ export const AINavigationProvider = ({ children }) => {
             height: rect.height
           }
         });
-          });
-          setHighlightStyle('default');
-          setShowArrow(true);
-          setArrowPosition(calculateArrowPosition(rect, 'top'));
-          setShowHandPointer(true);
-          setTooltipContent(`👆 Cliquez sur "${action.name}"`);
-          setTooltipPosition({
-            x: rect.left + rect.width / 2,
-            y: rect.bottom + 80
-          });
-          
-          // Garder la surbrillance pendant 8 secondes puis la retirer
-          setTimeout(() => {
-            setHighlightedElement(null);
-            setTooltipContent('');
-            setShowArrow(false);
-            setShowHandPointer(false);
-          }, 8000);
-          
-          return true;
-        }
+        setHighlightStyle('default');
+        setShowArrow(true);
+        setArrowPosition(calculateArrowPosition(rect, 'top'));
+        setShowHandPointer(true);
+        setTooltipContent(`👆 Cliquez sur "${action.name}"`);
+        setTooltipPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.bottom + 80
+        });
+        
+        // Garder la surbrillance pendant 8 secondes puis la retirer
+        setTimeout(() => {
+          setHighlightedElement(null);
+          setTooltipContent('');
+          setShowArrow(false);
+          setShowHandPointer(false);
+        }, 8000);
+        
+        return true;
+      } else {
+        console.log('Élément non trouvé pour action:', actionKey);
       }
     }
 
