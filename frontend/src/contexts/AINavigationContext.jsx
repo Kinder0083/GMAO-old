@@ -120,22 +120,6 @@ export const AINavigationProvider = ({ children }) => {
     setPulseAnimation(true);
   }, []);
 
-  // Passer à l'étape suivante
-  const nextStep = useCallback(() => {
-    if (currentStep < guidanceSteps.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      stopGuidance();
-    }
-  }, [currentStep, guidanceSteps.length]);
-
-  // Revenir à l'étape précédente
-  const prevStep = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-    }
-  }, [currentStep]);
-
   // Arrêter le guidage
   const stopGuidance = useCallback(() => {
     setIsGuiding(false);
@@ -149,6 +133,22 @@ export const AINavigationProvider = ({ children }) => {
       cancelAnimationFrame(animationFrameRef.current);
     }
   }, []);
+
+  // Passer à l'étape suivante
+  const nextStep = useCallback(() => {
+    if (currentStep < guidanceSteps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      stopGuidance();
+    }
+  }, [currentStep, guidanceSteps.length, stopGuidance]);
+
+  // Revenir à l'étape précédente
+  const prevStep = useCallback(() => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  }, [currentStep]);
 
   // Calculer la position de la flèche
   const calculateArrowPosition = useCallback((rect, position = 'top') => {
