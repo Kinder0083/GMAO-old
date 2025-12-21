@@ -336,6 +336,7 @@ export const AIContextMenuProvider = ({ children }) => {
       {/* Menu contextuel enrichi */}
       {menuVisible && richContext && (
         <div
+          data-ai-context-menu="true"
           className="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
           style={{
             left: menuPosition.x,
