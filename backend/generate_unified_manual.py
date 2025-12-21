@@ -2506,6 +2506,199 @@ Le Planning affiche toutes les interventions et maintenances.
         "target_roles": [],
         "target_modules": ["importExport"],
         "keywords": ["import", "export", "excel", "csv", "données"]
+    },
+    
+    # Chapitre 24 : Assistant IA
+    "sec-024-01": {
+        "title": "Présentation de l'Assistant IA",
+        "content": """🤖 **Votre Assistant IA Personnalisé**
+
+GMAO Iris intègre un assistant IA intelligent qui vous aide à utiliser l'application efficacement.
+
+📌 **Qu'est-ce que l'Assistant IA ?**
+
+L'assistant IA (nommé "Adria" par défaut) est un chatbot intelligent qui peut :
+
+• Répondre à vos questions sur l'utilisation de GMAO Iris
+• Vous guider dans la création d'ordres de travail, équipements, etc.
+• Naviguer automatiquement vers les pages demandées
+• Analyser vos données et statistiques
+• Vous aider à résoudre des problèmes courants
+
+🎯 **Comment accéder à l'Assistant IA ?**
+
+1. **Bouton dans la barre de navigation**
+   • Cliquez sur le bouton robot (ex: "Adria") en haut à droite
+   • À côté des boutons "Manuel" et "Aide"
+
+2. **Menu contextuel (clic droit)**
+   • Faites un clic droit n'importe où dans l'application
+   • Sélectionnez "Discuter avec Adria"
+   • L'assistant connaîtra le contexte de la page où vous êtes
+
+💬 **Fonctionnalités du Chat**
+
+• **Actions rapides** : Boutons pour créer un OT, ajouter un équipement, etc.
+• **Navigation automatique** : L'IA peut vous diriger vers les pages demandées
+• **Historique** : Vos conversations sont sauvegardées
+• **Multilingue** : Répond dans la langue de votre interface
+
+💡 **Astuce** : Posez vos questions en langage naturel, l'assistant comprend le contexte !""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": [],
+        "keywords": ["ia", "assistant", "chatbot", "adria", "aide", "intelligence artificielle"]
+    },
+    
+    "sec-024-02": {
+        "title": "Personnalisation de l'Assistant IA",
+        "content": """⚙️ **Personnaliser votre Assistant IA**
+
+Vous pouvez configurer l'assistant IA selon vos préférences dans le menu Personnalisation.
+
+📍 **Accéder aux paramètres IA**
+
+1. Menu latéral → **Personnalisation**
+2. Cliquez sur l'onglet **IA**
+
+🎨 **Options de personnalisation**
+
+**1. Nom de l'assistant**
+• Par défaut : "Adria"
+• Changez-le pour un nom de votre choix
+• Ce nom apparaîtra dans le bouton et les conversations
+
+**2. Genre de l'assistant**
+• Femme (par défaut) ou Homme
+• Affecte le ton des réponses ("assistante" vs "assistant")
+
+**3. Fournisseur LLM**
+• **Google Gemini** (par défaut, via clé Emergent)
+• **OpenAI GPT** (GPT-4o, GPT-5.1)
+• **Anthropic Claude** (Claude 4 Sonnet)
+• **DeepSeek** (nécessite clé API globale)
+• **Mistral** (nécessite clé API globale)
+
+**4. Modèle**
+• Choisissez le modèle selon le fournisseur sélectionné
+• Les modèles recommandés sont marqués
+
+📊 **Aperçu en temps réel**
+
+• Visualisez l'apparence de votre assistant avant de sauvegarder
+• Affiche le nom, le genre et le fournisseur sélectionnés
+
+💾 **Sauvegarder**
+
+Cliquez sur "Sauvegarder les préférences IA" pour appliquer vos modifications.
+
+💡 **Note** : Chaque utilisateur peut avoir ses propres préférences IA.""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["personnalisation"],
+        "keywords": ["personnalisation", "configuration", "ia", "llm", "gemini", "openai", "claude"]
+    },
+    
+    "sec-024-03": {
+        "title": "Configuration des Clés API LLM (Admin)",
+        "content": """🔐 **Configuration des Clés API pour les Fournisseurs LLM**
+
+*Cette section est réservée aux administrateurs.*
+
+📍 **Accéder aux paramètres**
+
+1. Menu latéral → **Paramètres Spéciaux**
+2. Faites défiler jusqu'à la section **Clés API - Fournisseurs LLM**
+
+🔑 **Types de clés**
+
+**Clé Emergent (pré-configurée)**
+• Fonctionne automatiquement pour : Gemini, OpenAI, Claude
+• Aucune configuration requise
+
+**Clés API globales (optionnelles)**
+• **DeepSeek** : Obtenez votre clé sur platform.deepseek.com
+• **Mistral** : Obtenez votre clé sur console.mistral.ai
+
+⚙️ **Configurer une clé API**
+
+1. Entrez la clé dans le champ correspondant
+2. Utilisez l'icône œil pour afficher/masquer la clé
+3. Cliquez sur "Sauvegarder les clés API"
+
+📅 **Vérification des versions LLM**
+
+L'application vérifie automatiquement les nouvelles versions :
+• **Automatique** : Chaque lundi à 03h00 GMT
+• **Manuelle** : Bouton "Vérifier maintenant"
+
+Vous recevrez une notification email si de nouvelles versions sont disponibles.
+
+⚠️ **Important**
+
+• Les clés API sont stockées de manière sécurisée
+• Elles sont masquées dans l'interface après sauvegarde
+• Seuls les administrateurs peuvent les modifier""",
+        "level": "advanced",
+        "target_roles": ["admin"],
+        "target_modules": ["specialSettings"],
+        "keywords": ["api", "clé", "llm", "deepseek", "mistral", "admin", "configuration"]
+    },
+    
+    "sec-024-04": {
+        "title": "Utilisation Avancée de l'Assistant IA",
+        "content": """🚀 **Fonctionnalités Avancées de l'Assistant IA**
+
+Découvrez comment tirer le meilleur parti de votre assistant IA.
+
+📋 **Actions Rapides**
+
+Au démarrage d'une conversation, des boutons d'action rapide sont disponibles :
+
+• 📋 **Créer un OT** : Navigation directe vers la création d'ordre de travail
+• 🔧 **Ajouter équipement** : Accès rapide à l'ajout d'équipement
+• 📊 **Dashboard** : Retour au tableau de bord
+• 📡 **Capteurs IoT** : Accès aux capteurs MQTT
+
+🎯 **Navigation Assistée**
+
+L'assistant peut :
+• Naviguer automatiquement vers les pages demandées
+• Surligner les éléments importants sur la page
+• Afficher des flèches et tooltips de guidage
+• Vous accompagner étape par étape dans une procédure
+
+💬 **Questions Contextuelles**
+
+Utilisez le clic droit pour poser des questions contextuelles :
+1. Clic droit sur un élément (équipement, OT, etc.)
+2. Sélectionnez "Discuter avec [nom de l'IA]"
+3. L'assistant connaîtra automatiquement le contexte
+
+📝 **Exemples de questions**
+
+• "Comment créer un ordre de travail ?"
+• "Explique-moi la maintenance préventive"
+• "Emmène-moi vers les capteurs IoT"
+• "Comment ajouter un équipement avec MQTT ?"
+• "Quelles sont les statistiques du mois ?"
+
+🔄 **Gestion de l'historique**
+
+• Les conversations sont sauvegardées par session
+• Cliquez sur l'icône poubelle pour effacer l'historique
+• Chaque nouvelle session commence une nouvelle conversation
+
+💡 **Conseils pour de meilleures réponses**
+
+1. Soyez précis dans vos questions
+2. Utilisez le vocabulaire de GMAO (OT, équipement, etc.)
+3. Précisez le contexte si nécessaire
+4. N'hésitez pas à demander des clarifications""",
+        "level": "intermediate",
+        "target_roles": [],
+        "target_modules": [],
+        "keywords": ["avancé", "navigation", "guidage", "actions rapides", "contextuel"]
     }
 }
 
