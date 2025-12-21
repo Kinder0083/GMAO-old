@@ -11,7 +11,7 @@ import time
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://collab-board-11.preview.emergentagent.com/api"
+BACKEND_URL = "https://live-whiteboard.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"

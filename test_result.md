@@ -45,7 +45,7 @@
 
 ### Current Focus
 - Persistance des dessins: ✅ FONCTIONNELLE ET TESTÉE
-- URL Whiteboard: https://collab-board-11.preview.emergentagent.com/whiteboard
+- URL Whiteboard: https://live-whiteboard.preview.emergentagent.com/whiteboard
 
 ### Incorporate User Feedback
 - Les dessins persistent maintenant après navigation ✅ CONFIRMÉ
