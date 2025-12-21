@@ -283,8 +283,7 @@ const WhiteboardPage = () => {
         ws2Ref.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasReady, user?.id]);
+  }, [canvasReady, user?.id, connectWebSocket]);
 
   // ==================== Fin WebSocket ====================
 
