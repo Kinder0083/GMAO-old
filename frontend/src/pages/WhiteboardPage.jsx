@@ -54,6 +54,7 @@ const WhiteboardPage = () => {
   // WebSocket refs
   const ws1Ref = useRef(null);
   const ws2Ref = useRef(null);
+  const saveTimeoutRef = useRef(null);
   
   // États
   const [showToolbar, setShowToolbar] = useState(false);
@@ -66,6 +67,12 @@ const WhiteboardPage = () => {
   const [redoStack, setRedoStack] = useState({ board_1: [], board_2: [] });
   const [isConnected, setIsConnected] = useState({ board_1: false, board_2: false });
   const [canvasReady, setCanvasReady] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Token pour les requêtes API
+  const token = localStorage.getItem('token');
   
   // Désactiver la déconnexion automatique
   useEffect(() => {
@@ -79,6 +86,93 @@ const WhiteboardPage = () => {
   // Générer un ID unique
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+  // Sauvegarder un tableau via API REST
+  const saveBoard = useCallback(async (boardId) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    if (!canvas || !token) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const objects = canvas.toJSON(['id']).objects || [];
+      
+      const response = await fetch(`${API_URL}/board/${boardId}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          objects,
+          user_id: user?.id,
+          user_name: `${user?.prenom || ''} ${user?.nom || ''}`.trim()
+        })
+      });
+      
+      if (response.ok) {
+        setLastSaved(new Date());
+        console.log(`Tableau ${boardId} sauvegardé`);
+      } else {
+        console.error(`Erreur sauvegarde ${boardId}:`, await response.text());
+      }
+    } catch (error) {
+      console.error(`Erreur sauvegarde ${boardId}:`, error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [token, user]);
+
+  // Sauvegarde avec debounce (évite de sauvegarder trop souvent)
+  const debouncedSave = useCallback((boardId) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      saveBoard(boardId);
+    }, 1000); // Sauvegarde 1 seconde après la dernière modification
+  }, [saveBoard]);
+
+  // Charger un tableau depuis l'API
+  const loadBoard = useCallback(async (boardId) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    if (!canvas || !token) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/board/${boardId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.objects && data.objects.length > 0) {
+          // Charger les objets dans le canvas
+          canvas.clear();
+          canvas.backgroundColor = '#FFFFFF';
+          
+          // Utiliser loadFromJSON pour charger tous les objets
+          const canvasData = {
+            version: '6.0.0',
+            objects: data.objects,
+            background: '#FFFFFF'
+          };
+          
+          canvas.loadFromJSON(canvasData, () => {
+            canvas.renderAll();
+            console.log(`Tableau ${boardId} chargé avec ${data.objects.length} objets`);
+          });
+        }
+        
+        setIsConnected(prev => ({ ...prev, [boardId]: true }));
+      }
+    } catch (error) {
+      console.error(`Erreur chargement ${boardId}:`, error);
+    }
+  }, [token]);
+
   // Sauvegarder dans l'historique pour Undo
   const saveToUndoStack = useCallback((boardId) => {
     const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
@@ -90,7 +184,10 @@ const WhiteboardPage = () => {
       [boardId]: [...(prev[boardId] || []).slice(-20), json]
     }));
     setRedoStack(prev => ({ ...prev, [boardId]: [] }));
-  }, []);
+    
+    // Déclencher la sauvegarde automatique
+    debouncedSave(boardId);
+  }, [debouncedSave]);
 
   // Envoyer une mise à jour via WebSocket
   const sendObjectUpdate = useCallback((boardId, type, object) => {
