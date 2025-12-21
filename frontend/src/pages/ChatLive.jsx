@@ -1279,7 +1279,7 @@ const ChatLive = () => {
               onClick={() => openTransferModal('nearmiss', contextMenu.attachment)}
             >
               <ArrowRightCircle className="h-4 w-4" />
-              Transférer dans un presqu'accident
+              Transférer dans un presqu&apos;accident
             </button>
           )}
           
