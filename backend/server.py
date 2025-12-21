@@ -6560,6 +6560,43 @@ from ai_chat_routes import router as ai_router, init_ai_routes
 init_ai_routes(db)
 api_router.include_router(ai_router)
 
+# Whiteboard (Tableau d'affichage) routes
+from whiteboard_routes import router as whiteboard_router, init_whiteboards
+from whiteboard_manager import whiteboard_manager, handle_whiteboard_message
+api_router.include_router(whiteboard_router)
+
+# WebSocket pour le tableau d'affichage
+from fastapi import WebSocket, WebSocketDisconnect
+
+@app.websocket("/ws/whiteboard/{board_id}")
+async def whiteboard_websocket(websocket: WebSocket, board_id: str):
+    """WebSocket pour la synchronisation temps réel du tableau d'affichage"""
+    # Récupérer les paramètres de l'utilisateur depuis la query string
+    user_id = websocket.query_params.get("user_id", "anonymous")
+    user_name = websocket.query_params.get("user_name", "Anonyme")
+    
+    await whiteboard_manager.connect(websocket, board_id, user_id, user_name)
+    
+    try:
+        # Envoyer l'état initial du tableau
+        board = await db.whiteboards.find_one({"board_id": board_id}, {"_id": 0})
+        if board:
+            await websocket.send_json({
+                "type": "sync_response",
+                "board": board
+            })
+        
+        # Écouter les messages
+        while True:
+            data = await websocket.receive_json()
+            await handle_whiteboard_message(websocket, board_id, user_id, user_name, data, db)
+            
+    except WebSocketDisconnect:
+        await whiteboard_manager.disconnect(board_id, user_id)
+    except Exception as e:
+        logger.error(f"Erreur WebSocket whiteboard: {e}")
+        await whiteboard_manager.disconnect(board_id, user_id)
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
