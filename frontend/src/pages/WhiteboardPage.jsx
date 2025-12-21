@@ -723,6 +723,20 @@ const WhiteboardPage = () => {
       }
     }
   }, [activeBoard, activeTool]);
+  
+  // Mettre à jour le pinceau quand la taille change
+  const updateBrushSize = useCallback((newSize) => {
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    if (canvas && canvas.freeDrawingBrush) {
+      if (activeTool === 'highlighter') {
+        canvas.freeDrawingBrush.width = newSize * 3;
+      } else if (activeTool === 'eraser') {
+        canvas.freeDrawingBrush.width = newSize * 2;
+      } else {
+        canvas.freeDrawingBrush.width = newSize;
+      }
+    }
+  }, [activeBoard, activeTool]);
 
   // Ajouter du texte
   const addText = () => {
