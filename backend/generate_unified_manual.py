@@ -2739,9 +2739,33 @@ async def generate_manual():
         
         # Insérer la nouvelle version
         await db.manual_versions.insert_one(version)
-        print("✅ Version 3.0 du manuel créée")
+        print("✅ Version 3.1 du manuel créée")
         
-        # Créer chapitres (tous les 23 chapitres)
+        # NETTOYAGE : Supprimer les doublons potentiels avant de recréer
+        # Supprimer les doublons de chapitres (garder un seul par ID)
+        pipeline_chapters = [
+            {"$group": {"_id": "$id", "count": {"$sum": 1}, "mongo_ids": {"$push": "$_id"}}},
+            {"$match": {"count": {"$gt": 1}}}
+        ]
+        dup_chapters = await db.manual_chapters.aggregate(pipeline_chapters).to_list(length=100)
+        for dup in dup_chapters:
+            ids_to_delete = dup['mongo_ids'][1:]
+            await db.manual_chapters.delete_many({"_id": {"$in": ids_to_delete}})
+        
+        # Supprimer les doublons de sections
+        pipeline_sections = [
+            {"$group": {"_id": "$id", "count": {"$sum": 1}, "mongo_ids": {"$push": "$_id"}}},
+            {"$match": {"count": {"$gt": 1}}}
+        ]
+        dup_sections = await db.manual_sections.aggregate(pipeline_sections).to_list(length=100)
+        for dup in dup_sections:
+            ids_to_delete = dup['mongo_ids'][1:]
+            await db.manual_sections.delete_many({"_id": {"$in": ids_to_delete}})
+        
+        if dup_chapters or dup_sections:
+            print(f"🧹 Nettoyage: {len(dup_chapters)} chapitres et {len(dup_sections)} sections en double supprimés")
+        
+        # Créer chapitres (tous les 24 chapitres)
         chapters = [
             {"id": "ch-001", "title": "🚀 Guide de Démarrage", "description": "Premiers pas", "icon": "Rocket", "order": 1, "sections": ["sec-001-01", "sec-001-02", "sec-001-03", "sec-001-04"], "target_roles": [], "target_modules": []},
             {"id": "ch-002", "title": "👤 Utilisateurs", "description": "Gérer les utilisateurs", "icon": "Users", "order": 2, "sections": ["sec-002-01", "sec-002-02", "sec-002-03"], "target_roles": [], "target_modules": ["people"]},
