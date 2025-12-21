@@ -55,6 +55,7 @@ import MQTTPubSub from "./pages/MQTTPubSub";
 import Sensors from "./pages/Sensors";
 import IoTDashboard from "./pages/IoTDashboard";
 import MQTTLogs from "./pages/MQTTLogs";
+import WhiteboardPage from "./pages/WhiteboardPage";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
