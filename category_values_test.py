@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://iris-stabilizer.preview.emergentagent.com/api"
+BACKEND_URL = "https://scripts-cleanup.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@gmao-iris.local"
