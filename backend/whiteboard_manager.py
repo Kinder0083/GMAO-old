@@ -200,9 +200,12 @@ async def handle_whiteboard_message(websocket: WebSocket, board_id: str, user_id
         # Un objet a été supprimé
         object_id = message.get("object_id")
         
+        logger.info(f"[WS] Suppression objet {object_id} par {user_name} sur {board_id}")
+        
         # Sauvegarder en base
         await save_object_to_db(db, board_id, "remove", object_id, None, user_id, user_name)
         
+        # Diffuser aux autres utilisateurs
         await whiteboard_manager.broadcast_to_board(board_id, {
             "type": "object_removed",
             "object_id": object_id,
@@ -210,6 +213,8 @@ async def handle_whiteboard_message(websocket: WebSocket, board_id: str, user_id
             "user_name": user_name,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }, exclude_user=user_id)
+        
+        logger.info(f"[WS] Suppression objet {object_id} diffusée à {whiteboard_manager.get_connected_count(board_id) - 1} autres utilisateurs")
     
     elif msg_type == "cursor_move":
         # Position du curseur de l'utilisateur
