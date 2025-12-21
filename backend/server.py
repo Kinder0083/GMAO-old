@@ -6598,6 +6598,140 @@ async def whiteboard_websocket(websocket: WebSocket, board_id: str):
         logger.error(f"Erreur WebSocket whiteboard: {e}")
         await whiteboard_manager.disconnect(board_id, user_id)
 
+# WebSocket pour le Chat Live
+from websocket_manager import manager as chat_manager
+from auth import decode_access_token
+from bson import ObjectId
+import uuid
+
+@app.websocket("/ws/chat/{token}")
+async def chat_live_websocket(websocket: WebSocket, token: str):
+    """WebSocket pour le chat en temps réel"""
+    user_id = None
+    user_name = "Unknown"
+    
+    try:
+        # Valider le token JWT
+        payload = decode_access_token(token)
+        
+        if not payload:
+            await websocket.close(code=1008, reason="Invalid token")
+            return
+        
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            await websocket.close(code=1008, reason="Invalid token - no user_id")
+            return
+        
+        # Récupérer les infos utilisateur
+        user_data = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user_data:
+            await websocket.close(code=1008, reason="User not found")
+            return
+        
+        user_name = f"{user_data.get('prenom', '')} {user_data.get('nom', '')}".strip()
+        
+        # Connecter l'utilisateur
+        await chat_manager.connect(websocket, user_id, user_name)
+        
+        # Marquer l'utilisateur comme en ligne
+        await db.user_chat_activity.update_one(
+            {"user_id": user_id},
+            {
+                "$set": {
+                    "user_id": user_id,
+                    "is_online": True,
+                    "last_activity": datetime.now(timezone.utc).isoformat()
+                }
+            },
+            upsert=True
+        )
+        
+        try:
+            while True:
+                # Recevoir les messages du client
+                data = await websocket.receive_json()
+                message_type = data.get("type")
+                
+                if message_type == "heartbeat":
+                    await db.user_chat_activity.update_one(
+                        {"user_id": user_id},
+                        {"$set": {"last_activity": datetime.now(timezone.utc).isoformat()}}
+                    )
+                    await websocket.send_json({"type": "heartbeat_ack"})
+                
+                elif message_type == "message":
+                    message_content = data.get("message", "")
+                    recipient_ids = data.get("recipient_ids", [])
+                    reply_to_id = data.get("reply_to_id")
+                    
+                    chat_message = {
+                        "id": str(uuid.uuid4()),
+                        "user_id": user_id,
+                        "user_name": user_name,
+                        "user_role": user_data.get("role", ""),
+                        "message": message_content,
+                        "recipient_ids": recipient_ids,
+                        "recipient_names": [],
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "is_deleted": False,
+                        "deleted_at": None,
+                        "reply_to_id": reply_to_id,
+                        "reply_to_preview": None,
+                        "reactions": [],
+                        "attachments": [],
+                        "deletable_until": (datetime.now(timezone.utc) + timedelta(seconds=10)).isoformat(),
+                        "is_private": len(recipient_ids) > 0
+                    }
+                    
+                    if reply_to_id:
+                        original_msg = await db.chat_messages.find_one({"id": reply_to_id})
+                        if original_msg:
+                            chat_message["reply_to_preview"] = original_msg.get("message", "")[:100]
+                    
+                    if recipient_ids:
+                        recipient_object_ids = [ObjectId(rid) for rid in recipient_ids if ObjectId.is_valid(rid)]
+                        recipients = await db.users.find({"_id": {"$in": recipient_object_ids}}).to_list(length=None)
+                        chat_message["recipient_names"] = [
+                            f"{r.get('prenom', '')} {r.get('nom', '')}".strip()
+                            for r in recipients
+                        ]
+                    
+                    await db.chat_messages.insert_one(chat_message)
+                    
+                    broadcast_data = {
+                        "type": "new_message",
+                        "message": {k: v for k, v in chat_message.items() if k != "_id"}
+                    }
+                    
+                    if recipient_ids:
+                        await chat_manager.send_to_users(broadcast_data, recipient_ids + [user_id])
+                    else:
+                        await chat_manager.broadcast(broadcast_data)
+                
+                elif message_type == "typing":
+                    await chat_manager.broadcast({
+                        "type": "user_typing",
+                        "user_id": user_id,
+                        "user_name": user_name
+                    }, exclude_user_id=user_id)
+        
+        except WebSocketDisconnect:
+            logger.info(f"Chat WebSocket déconnecté: {user_name}")
+    
+    except Exception as e:
+        logger.error(f"Erreur Chat WebSocket: {e}")
+    
+    finally:
+        if user_id:
+            chat_manager.disconnect(user_id, user_name)
+            await db.user_chat_activity.update_one(
+                {"user_id": user_id},
+                {"$set": {"is_online": False, "last_activity": datetime.now(timezone.utc).isoformat()}}
+            )
+            await chat_manager.broadcast_user_status(user_id, user_name, "offline")
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
