@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fabric } from 'fabric';
-import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/use-toast';
 import { Button } from '../components/ui/button';
 import {
@@ -49,8 +48,11 @@ const STROKE_SIZES = [2, 4, 6, 8, 12, 16, 24];
 
 const WhiteboardPage = () => {
   const navigate = useNavigate();
-  const { user, token } = useAuth();
   const { toast } = useToast();
+  
+  // Récupérer l'utilisateur depuis localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
   
   // Refs pour les canvas
   const canvas1Ref = useRef(null);
