@@ -216,7 +216,18 @@ const Meters = () => {
             </div>
           ) : (
             filteredMeters.map((meter) => (
-            <Card key={meter.id} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={meter.id} 
+              className="hover:shadow-lg transition-shadow"
+              data-ai-type="METER"
+              data-ai-id={meter.id}
+              data-ai-name={meter.nom}
+              data-ai-extra={JSON.stringify({ 
+                type: meter.type, 
+                numero_serie: meter.numero_serie,
+                emplacement: meter.emplacement?.nom 
+              })}
+            >
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
