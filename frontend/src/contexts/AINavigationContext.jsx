@@ -580,11 +580,165 @@ export const AINavigationProvider = ({ children }) => {
       executeAction,
       isGuiding,
       currentStep,
-      totalSteps: guidanceSteps.length
+      totalSteps: guidanceSteps.length,
+      // Nouvelles fonctions d'effets visuels avancés (P3)
+      showSpotlight,
+      addPulseEffect,
+      showTrail,
+      showCustomTooltip,
+      celebrate,
+      addRipple,
+      clearAllEffects,
+      // Guides prédéfinis disponibles
+      availableGuides: Object.keys(PREDEFINED_GUIDES)
     }}>
       {children}
       
-      {/* Overlay de surlignage avancé */}
+      {/* ==================== Effets Visuels Avancés (P3) ==================== */}
+      
+      {/* Effet Spotlight */}
+      {spotlightElement && (
+        <div 
+          className="fixed inset-0 z-[9997] pointer-events-none transition-all duration-500"
+          style={{
+            background: `radial-gradient(circle ${Math.max(spotlightElement.rect.width, spotlightElement.rect.height) * 2}px at ${spotlightElement.rect.left + spotlightElement.rect.width/2}px ${spotlightElement.rect.top + spotlightElement.rect.height/2}px, transparent 0%, rgba(0,0,0,0.8) 100%)`
+          }}
+        >
+          <div 
+            className="absolute animate-ping"
+            style={{
+              top: spotlightElement.rect.top - 4,
+              left: spotlightElement.rect.left - 4,
+              width: spotlightElement.rect.width + 8,
+              height: spotlightElement.rect.height + 8,
+              border: '2px solid rgba(255,255,255,0.5)',
+              borderRadius: '8px'
+            }}
+          />
+          <Sparkles 
+            className="absolute text-yellow-400 animate-pulse"
+            style={{
+              top: spotlightElement.rect.top - 20,
+              left: spotlightElement.rect.left + spotlightElement.rect.width + 5
+            }}
+            size={24}
+          />
+        </div>
+      )}
+      
+      {/* Effets Pulse */}
+      {pulseElements.map(pulse => (
+        <div
+          key={pulse.id}
+          className="fixed z-[9996] pointer-events-none"
+          style={{
+            top: pulse.rect.top - 8,
+            left: pulse.rect.left - 8,
+            width: pulse.rect.width + 16,
+            height: pulse.rect.height + 16
+          }}
+        >
+          <div className="absolute inset-0 rounded-lg border-2 border-purple-500 animate-ping opacity-75" />
+          <div className="absolute inset-2 rounded-lg border-2 border-purple-400 animate-pulse" />
+          <Zap 
+            className="absolute -top-3 -right-3 text-yellow-400 animate-bounce"
+            size={20}
+          />
+        </div>
+      ))}
+      
+      {/* Trail Path (chemin visuel entre deux éléments) */}
+      {trailPath && (
+        <svg 
+          className="fixed inset-0 z-[9995] pointer-events-none"
+          style={{ width: '100%', height: '100%' }}
+        >
+          <defs>
+            <linearGradient id="trailGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#8b5cf6" />
+              <stop offset="100%" stopColor="#ec4899" />
+            </linearGradient>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#ec4899" />
+            </marker>
+          </defs>
+          <path
+            d={`M ${trailPath.start.x} ${trailPath.start.y} Q ${(trailPath.start.x + trailPath.end.x) / 2} ${Math.min(trailPath.start.y, trailPath.end.y) - 50} ${trailPath.end.x} ${trailPath.end.y}`}
+            fill="none"
+            stroke="url(#trailGradient)"
+            strokeWidth="3"
+            strokeDasharray="10,5"
+            markerEnd="url(#arrowhead)"
+            className="animate-pulse"
+          />
+          {/* Points de départ et d'arrivée */}
+          <circle cx={trailPath.start.x} cy={trailPath.start.y} r="8" fill="#8b5cf6" className="animate-ping" />
+          <circle cx={trailPath.end.x} cy={trailPath.end.y} r="8" fill="#ec4899" className="animate-pulse" />
+        </svg>
+      )}
+      
+      {/* Tooltips personnalisés */}
+      {customTooltips.map(tooltip => (
+        <div
+          key={tooltip.id}
+          className="fixed z-[10001] bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg shadow-xl transform -translate-x-1/2 animate-bounce"
+          style={{
+            left: Math.min(Math.max(tooltip.position.x, 100), window.innerWidth - 100),
+            top: tooltip.position.y - 50
+          }}
+        >
+          <div className="absolute left-1/2 -bottom-2 transform -translate-x-1/2 w-4 h-4 bg-indigo-600 rotate-45" />
+          <div className="flex items-center gap-2">
+            <Eye size={16} />
+            <span className="text-sm font-medium">{tooltip.message}</span>
+          </div>
+        </div>
+      ))}
+      
+      {/* Effet Ripple */}
+      {rippleEffects.map(ripple => (
+        <div
+          key={ripple.id}
+          className="fixed z-[9994] pointer-events-none"
+          style={{
+            left: ripple.x - 50,
+            top: ripple.y - 50
+          }}
+        >
+          <div className="w-[100px] h-[100px] rounded-full border-4 border-purple-500 animate-ping opacity-75" />
+        </div>
+      ))}
+      
+      {/* Effet de Célébration (Confettis) */}
+      {showCelebration && (
+        <div className="fixed inset-0 z-[10002] pointer-events-none overflow-hidden">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-bounce"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-20px',
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            >
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{
+                  backgroundColor: ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'][Math.floor(Math.random() * 5)],
+                  transform: `rotate(${Math.random() * 360}deg)`
+                }}
+              />
+            </div>
+          ))}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl animate-pulse">
+            🎉
+          </div>
+        </div>
+      )}
+      
+      {/* ==================== Overlay de surlignage existant ==================== */}
       {highlightedElement && (
         <>
           {/* Fond semi-transparent avec trou animé */}
