@@ -103,56 +103,59 @@ const WhiteboardPage = () => {
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // ==================== Normalisation des coordonnées ====================
-  // IMPORTANT: Utiliser un SCALE UNIFORME pour éviter les distorsions
-  // Les coordonnées sont stockées en pourcentage (0-1) par rapport aux dimensions de référence
+  // IMPORTANT: Utiliser un SCALE UNIFORME unique pour TOUTES les transformations
+  // Cela garantit que les formes conservent leurs proportions (cercle = cercle)
+  // et que les dessins apparaissent aux mêmes positions relatives sur tous les écrans
   
-  // Convertir les coordonnées du canvas vers les coordonnées normalisées (0-1)
+  // Calcule le facteur d'échelle uniforme pour adapter le canvas de référence au canvas réel
+  const getUniformScale = useCallback((canvasWidth, canvasHeight, toReference = false) => {
+    // Facteur d'échelle uniforme = MIN des deux ratios pour s'assurer que tout tient
+    const scaleX = canvasWidth / REFERENCE_WIDTH;
+    const scaleY = canvasHeight / REFERENCE_HEIGHT;
+    const scale = Math.min(scaleX, scaleY);
+    return toReference ? (1 / scale) : scale;
+  }, []);
+  
+  // Convertir les coordonnées du canvas vers les coordonnées de référence
   const normalizeCoordinates = useCallback((objects, canvasWidth, canvasHeight) => {
-    // Utiliser un scale uniforme basé sur la diagonale pour éviter les distorsions
-    const canvasDiagonal = Math.sqrt(canvasWidth * canvasWidth + canvasHeight * canvasHeight);
-    const refDiagonal = Math.sqrt(REFERENCE_WIDTH * REFERENCE_WIDTH + REFERENCE_HEIGHT * REFERENCE_HEIGHT);
-    const uniformScale = refDiagonal / canvasDiagonal;
-    
-    // Scales pour les positions (basés sur les dimensions réelles)
-    const posScaleX = REFERENCE_WIDTH / canvasWidth;
-    const posScaleY = REFERENCE_HEIGHT / canvasHeight;
+    // UN SEUL facteur d'échelle pour tout (positions ET tailles)
+    const scale = getUniformScale(canvasWidth, canvasHeight, true);
     
     return objects.map(obj => {
       const normalized = JSON.parse(JSON.stringify(obj)); // Deep clone
       
-      // Positions: utiliser les scales par axe
-      if (normalized.left !== undefined) normalized.left *= posScaleX;
-      if (normalized.top !== undefined) normalized.top *= posScaleY;
+      // Positions - même scale uniforme
+      if (normalized.left !== undefined) normalized.left *= scale;
+      if (normalized.top !== undefined) normalized.top *= scale;
       
-      // Tailles: utiliser le scale uniforme pour préserver les proportions
-      if (normalized.width !== undefined) normalized.width *= uniformScale;
-      if (normalized.height !== undefined) normalized.height *= uniformScale;
-      if (normalized.radius !== undefined) normalized.radius *= uniformScale;
-      if (normalized.rx !== undefined) normalized.rx *= uniformScale;
-      if (normalized.ry !== undefined) normalized.ry *= uniformScale;
-      if (normalized.fontSize !== undefined) normalized.fontSize *= uniformScale;
-      if (normalized.strokeWidth !== undefined) normalized.strokeWidth *= uniformScale;
+      // Tailles - même scale uniforme (préserve les proportions)
+      if (normalized.width !== undefined) normalized.width *= scale;
+      if (normalized.height !== undefined) normalized.height *= scale;
+      if (normalized.radius !== undefined) normalized.radius *= scale;
+      if (normalized.rx !== undefined) normalized.rx *= scale;
+      if (normalized.ry !== undefined) normalized.ry *= scale;
+      if (normalized.fontSize !== undefined) normalized.fontSize *= scale;
+      if (normalized.strokeWidth !== undefined) normalized.strokeWidth *= scale;
       
-      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs)
+      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs internes de Fabric.js)
       
-      // Pour les paths (dessins libres)
+      // Pour les paths (dessins libres) - même scale uniforme pour X et Y
       if (normalized.path && Array.isArray(normalized.path)) {
         normalized.path = normalized.path.map(cmd => {
           if (!Array.isArray(cmd)) return cmd;
           return cmd.map((val, idx) => {
             if (idx === 0) return val; // Commande (M, L, Q, C, etc.)
             if (typeof val !== 'number') return val;
-            // Alterner X et Y
-            return idx % 2 === 1 ? val * posScaleX : val * posScaleY;
+            return val * scale; // Même scale pour X et Y
           });
         });
       }
       
       // Pour les lignes
-      if (normalized.x1 !== undefined) normalized.x1 *= posScaleX;
-      if (normalized.y1 !== undefined) normalized.y1 *= posScaleY;
-      if (normalized.x2 !== undefined) normalized.x2 *= posScaleX;
-      if (normalized.y2 !== undefined) normalized.y2 *= posScaleY;
+      if (normalized.x1 !== undefined) normalized.x1 *= scale;
+      if (normalized.y1 !== undefined) normalized.y1 *= scale;
+      if (normalized.x2 !== undefined) normalized.x2 *= scale;
+      if (normalized.y2 !== undefined) normalized.y2 *= scale;
       
       // Pour les groupes
       if (normalized.objects && Array.isArray(normalized.objects)) {
@@ -161,55 +164,48 @@ const WhiteboardPage = () => {
       
       return normalized;
     });
-  }, []);
+  }, [getUniformScale]);
   
-  // Convertir les coordonnées normalisées vers les coordonnées du canvas (pour affichage)
+  // Convertir les coordonnées de référence vers les coordonnées du canvas (pour affichage)
   const denormalizeCoordinates = useCallback((objects, canvasWidth, canvasHeight) => {
-    // Utiliser un scale uniforme basé sur la diagonale pour éviter les distorsions
-    const canvasDiagonal = Math.sqrt(canvasWidth * canvasWidth + canvasHeight * canvasHeight);
-    const refDiagonal = Math.sqrt(REFERENCE_WIDTH * REFERENCE_WIDTH + REFERENCE_HEIGHT * REFERENCE_HEIGHT);
-    const uniformScale = canvasDiagonal / refDiagonal;
-    
-    // Scales pour les positions
-    const posScaleX = canvasWidth / REFERENCE_WIDTH;
-    const posScaleY = canvasHeight / REFERENCE_HEIGHT;
+    // UN SEUL facteur d'échelle pour tout (positions ET tailles)
+    const scale = getUniformScale(canvasWidth, canvasHeight, false);
     
     return objects.map(obj => {
       const denormalized = JSON.parse(JSON.stringify(obj)); // Deep clone
       
-      // Positions: utiliser les scales par axe
-      if (denormalized.left !== undefined) denormalized.left *= posScaleX;
-      if (denormalized.top !== undefined) denormalized.top *= posScaleY;
+      // Positions - même scale uniforme
+      if (denormalized.left !== undefined) denormalized.left *= scale;
+      if (denormalized.top !== undefined) denormalized.top *= scale;
       
-      // Tailles: utiliser le scale uniforme pour préserver les proportions
-      if (denormalized.width !== undefined) denormalized.width *= uniformScale;
-      if (denormalized.height !== undefined) denormalized.height *= uniformScale;
-      if (denormalized.radius !== undefined) denormalized.radius *= uniformScale;
-      if (denormalized.rx !== undefined) denormalized.rx *= uniformScale;
-      if (denormalized.ry !== undefined) denormalized.ry *= uniformScale;
-      if (denormalized.fontSize !== undefined) denormalized.fontSize *= uniformScale;
-      if (denormalized.strokeWidth !== undefined) denormalized.strokeWidth *= uniformScale;
+      // Tailles - même scale uniforme (préserve les proportions)
+      if (denormalized.width !== undefined) denormalized.width *= scale;
+      if (denormalized.height !== undefined) denormalized.height *= scale;
+      if (denormalized.radius !== undefined) denormalized.radius *= scale;
+      if (denormalized.rx !== undefined) denormalized.rx *= scale;
+      if (denormalized.ry !== undefined) denormalized.ry *= scale;
+      if (denormalized.fontSize !== undefined) denormalized.fontSize *= scale;
+      if (denormalized.strokeWidth !== undefined) denormalized.strokeWidth *= scale;
       
-      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs)
+      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs internes de Fabric.js)
       
-      // Pour les paths (dessins libres)
+      // Pour les paths (dessins libres) - même scale uniforme pour X et Y
       if (denormalized.path && Array.isArray(denormalized.path)) {
         denormalized.path = denormalized.path.map(cmd => {
           if (!Array.isArray(cmd)) return cmd;
           return cmd.map((val, idx) => {
             if (idx === 0) return val; // Commande (M, L, Q, C, etc.)
             if (typeof val !== 'number') return val;
-            // Alterner X et Y
-            return idx % 2 === 1 ? val * posScaleX : val * posScaleY;
+            return val * scale; // Même scale pour X et Y
           });
         });
       }
       
       // Pour les lignes
-      if (denormalized.x1 !== undefined) denormalized.x1 *= posScaleX;
-      if (denormalized.y1 !== undefined) denormalized.y1 *= posScaleY;
-      if (denormalized.x2 !== undefined) denormalized.x2 *= posScaleX;
-      if (denormalized.y2 !== undefined) denormalized.y2 *= posScaleY;
+      if (denormalized.x1 !== undefined) denormalized.x1 *= scale;
+      if (denormalized.y1 !== undefined) denormalized.y1 *= scale;
+      if (denormalized.x2 !== undefined) denormalized.x2 *= scale;
+      if (denormalized.y2 !== undefined) denormalized.y2 *= scale;
       
       // Pour les groupes
       if (denormalized.objects && Array.isArray(denormalized.objects)) {
@@ -218,7 +214,7 @@ const WhiteboardPage = () => {
       
       return denormalized;
     });
-  }, []);
+  }, [getUniformScale]);
 
   // ==================== WebSocket ====================
   
