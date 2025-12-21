@@ -1007,6 +1007,30 @@ const WhiteboardPage = () => {
     navigate('/dashboard');
   }, [navigate, toast]);
 
+  // Vérifier les permissions (une seule fois au montage)
+  useEffect(() => {
+    if (!hasCheckedPermission) {
+      setHasCheckedPermission(true);
+      if (!canViewWhiteboard) {
+        toast({
+          title: '⛔ Accès refusé',
+          description: 'Vous n\'avez pas la permission d\'accéder au Tableau d\'affichage',
+          variant: 'destructive'
+        });
+        navigate('/dashboard');
+      }
+    }
+  }, [hasCheckedPermission, canViewWhiteboard, toast, navigate]);
+
+  // Si pas de permission, afficher un message de chargement pendant la redirection
+  if (!canViewWhiteboard) {
+    return (
+      <div className="fixed inset-0 bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-500">Redirection...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
       {/* Barre de contrôle minimale */}
