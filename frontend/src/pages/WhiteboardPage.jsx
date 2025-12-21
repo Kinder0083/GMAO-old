@@ -548,9 +548,9 @@ const WhiteboardPage = () => {
           top: centerY - 30,
           width: 100,
           height: 60,
-          fill: 'transparent',
+          fill: activeColor === '#000000' ? 'rgba(0,0,0,0.1)' : 'transparent',
           stroke: activeColor,
-          strokeWidth: strokeWidth,
+          strokeWidth: Math.max(strokeWidth, 2),
         });
         break;
       
