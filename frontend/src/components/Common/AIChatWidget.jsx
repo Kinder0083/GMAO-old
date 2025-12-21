@@ -66,8 +66,35 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
         content: greeting,
         timestamp: new Date().toISOString()
       }]);
+      setHasProcessedInitialQuestion(false);
     }
   }, [isOpen, aiName, aiGender]);
+
+  // Traiter la question initiale du menu contextuel
+  useEffect(() => {
+    if (isOpen && initialQuestion && !hasProcessedInitialQuestion && messages.length > 0 && !loading) {
+      setHasProcessedInitialQuestion(true);
+      setShowQuickActions(false);
+      
+      // Ajouter la question comme message utilisateur
+      const userMessage = {
+        role: 'user',
+        content: initialQuestion,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Envoyer la question à l'IA
+      sendMessageToAI(initialQuestion);
+    }
+  }, [isOpen, initialQuestion, hasProcessedInitialQuestion, messages.length, loading]);
+
+  // Réinitialiser quand on ferme
+  useEffect(() => {
+    if (!isOpen) {
+      setHasProcessedInitialQuestion(false);
+    }
+  }, [isOpen]);
 
   // Exécuter une action rapide
   const handleQuickAction = async (actionId) => {
