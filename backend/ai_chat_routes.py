@@ -33,6 +33,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
     context: Optional[str] = None  # Contexte de la page actuelle
+    include_app_context: Optional[bool] = True  # Inclure le contexte enrichi de l'application
 
 class ChatResponse(BaseModel):
     response: str
