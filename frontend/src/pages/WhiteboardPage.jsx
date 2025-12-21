@@ -10,19 +10,16 @@ import {
   Square,
   Circle,
   ArrowRight,
-  Image,
+  ImageIcon,
   StickyNote,
   Undo2,
   Redo2,
   Palette,
   ChevronLeft,
   X,
-  Minus,
-  Plus,
   MousePointer2,
   Highlighter,
   Trash2,
-  Move,
   Users
 } from 'lucide-react';
 
@@ -31,16 +28,8 @@ const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws:
 
 // Couleurs disponibles
 const COLORS = [
-  '#000000', // Noir
-  '#FF0000', // Rouge
-  '#0000FF', // Bleu
-  '#008000', // Vert
-  '#FFA500', // Orange
-  '#800080', // Violet
-  '#FFFF00', // Jaune
-  '#00FFFF', // Cyan
-  '#FF00FF', // Magenta
-  '#FFFFFF', // Blanc
+  '#000000', '#FF0000', '#0000FF', '#008000', '#FFA500',
+  '#800080', '#FFFF00', '#00FFFF', '#FF00FF', '#FFFFFF',
 ];
 
 // Tailles de trait
@@ -52,13 +41,12 @@ const WhiteboardPage = () => {
   
   // Récupérer l'utilisateur depuis localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');
   
   // Refs pour les canvas
+  const container1Ref = useRef(null);
+  const container2Ref = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
-  const fabricCanvas1Ref = useRef(null);
-  const fabricCanvas2Ref = useRef(null);
   
   // WebSocket refs
   const ws1Ref = useRef(null);
@@ -74,81 +62,23 @@ const WhiteboardPage = () => {
   const [undoStack, setUndoStack] = useState({ board_1: [], board_2: [] });
   const [redoStack, setRedoStack] = useState({ board_1: [], board_2: [] });
   const [isConnected, setIsConnected] = useState({ board_1: false, board_2: false });
+  const [canvasReady, setCanvasReady] = useState(false);
   
-  // Désactiver la déconnexion automatique sur cette page
+  // Désactiver la déconnexion automatique
   useEffect(() => {
-    // Sauvegarder le timeout original et le désactiver
     const originalTimeout = window.autoLogoutTimeout;
-    if (window.autoLogoutTimeout) {
-      clearTimeout(window.autoLogoutTimeout);
+    if (originalTimeout) {
+      clearTimeout(originalTimeout);
     }
-    
-    // Réactiver à la sortie de la page
-    return () => {
-      if (originalTimeout) {
-        // Le timeout sera réactivé automatiquement par le système d'auth
-      }
-    };
-  }, []);
-
-  // Initialiser les canvas Fabric.js
-  const initCanvas = useCallback((canvasEl, boardId) => {
-    if (!canvasEl) return null;
-    
-    const container = canvasEl.parentElement;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    
-    const fabricCanvas = new fabric.Canvas(canvasEl, {
-      width,
-      height,
-      backgroundColor: '#FFFFFF',
-      isDrawingMode: false,
-      selection: true,
-    });
-    
-    // Événements de modification
-    fabricCanvas.on('object:added', (e) => {
-      if (e.target && !e.target._fromRemote) {
-        sendObjectUpdate(boardId, 'object_added', e.target);
-        saveToUndoStack(boardId);
-      }
-    });
-    
-    fabricCanvas.on('object:modified', (e) => {
-      if (e.target && !e.target._fromRemote) {
-        sendObjectUpdate(boardId, 'object_modified', e.target);
-        saveToUndoStack(boardId);
-      }
-    });
-    
-    fabricCanvas.on('object:removed', (e) => {
-      if (e.target && !e.target._fromRemote) {
-        sendObjectUpdate(boardId, 'object_removed', e.target);
-        saveToUndoStack(boardId);
-      }
-    });
-    
-    // Événement de dessin libre
-    fabricCanvas.on('path:created', (e) => {
-      if (e.path) {
-        e.path.id = generateId();
-        sendObjectUpdate(boardId, 'object_added', e.path);
-        saveToUndoStack(boardId);
-      }
-    });
-    
-    return fabricCanvas;
+    return () => {};
   }, []);
 
   // Générer un ID unique
-  const generateId = () => {
-    return `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  };
+  const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Sauvegarder dans l'historique pour Undo
-  const saveToUndoStack = (boardId) => {
-    const canvas = boardId === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+  const saveToUndoStack = useCallback((boardId) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     const json = canvas.toJSON(['id']);
@@ -157,67 +87,35 @@ const WhiteboardPage = () => {
       [boardId]: [...(prev[boardId] || []).slice(-20), json]
     }));
     setRedoStack(prev => ({ ...prev, [boardId]: [] }));
-  };
+  }, []);
 
   // Envoyer une mise à jour via WebSocket
-  const sendObjectUpdate = (boardId, type, object) => {
+  const sendObjectUpdate = useCallback((boardId, type, object) => {
     const ws = boardId === 'board_1' ? ws1Ref.current : ws2Ref.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     
-    const objectData = object.toJSON(['id']);
-    ws.send(JSON.stringify({
-      type,
-      object: objectData,
-      object_id: object.id || generateId()
-    }));
-  };
-
-  // Connexion WebSocket
-  const connectWebSocket = useCallback((boardId) => {
-    if (!user) return;
-    
-    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${user.id}&user_name=${encodeURIComponent(user.prenom + ' ' + user.nom)}`;
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => {
-      console.log(`WebSocket ${boardId} connecté`);
-      setIsConnected(prev => ({ ...prev, [boardId]: true }));
-    };
-    
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleWebSocketMessage(boardId, data);
-      } catch (e) {
-        console.error('Erreur parsing message WS:', e);
-      }
-    };
-    
-    ws.onclose = () => {
-      console.log(`WebSocket ${boardId} déconnecté`);
-      setIsConnected(prev => ({ ...prev, [boardId]: false }));
-      
-      // Reconnexion automatique après 3 secondes
-      setTimeout(() => connectWebSocket(boardId), 3000);
-    };
-    
-    ws.onerror = (error) => {
-      console.error(`Erreur WebSocket ${boardId}:`, error);
-    };
-    
-    return ws;
-  }, [user]);
+    try {
+      const objectData = object.toJSON(['id']);
+      ws.send(JSON.stringify({
+        type,
+        object: objectData,
+        object_id: object.id || generateId()
+      }));
+    } catch (e) {
+      console.error('Erreur envoi objet:', e);
+    }
+  }, []);
 
   // Gérer les messages WebSocket
-  const handleWebSocketMessage = (boardId, data) => {
-    const canvas = boardId === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+  const handleWebSocketMessage = useCallback((boardId, data) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     switch (data.type) {
       case 'sync_response':
-        // Charger l'état initial du tableau
         if (data.board && data.board.objects) {
           canvas.clear();
+          canvas.backgroundColor = '#FFFFFF';
           data.board.objects.forEach(objData => {
             fabric.util.enlivenObjects([objData], (objects) => {
               objects.forEach(obj => {
@@ -277,65 +175,177 @@ const WhiteboardPage = () => {
         });
         break;
       
-      case 'cursor_move':
-        // Afficher le curseur de l'autre utilisateur (optionnel)
-        break;
-      
       default:
         break;
     }
-  };
+  }, [toast]);
 
-  // Initialisation
-  useEffect(() => {
-    // Initialiser les canvas
-    if (canvas1Ref.current && !fabricCanvas1Ref.current) {
-      fabricCanvas1Ref.current = initCanvas(canvas1Ref.current, 'board_1');
-    }
-    if (canvas2Ref.current && !fabricCanvas2Ref.current) {
-      fabricCanvas2Ref.current = initCanvas(canvas2Ref.current, 'board_2');
-    }
+  // Connexion WebSocket
+  const connectWebSocket = useCallback((boardId) => {
+    if (!user || !user.id) return;
     
-    // Connecter les WebSockets
-    if (user) {
+    const userName = `${user.prenom || ''} ${user.nom || 'Anonyme'}`.trim();
+    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${user.id}&user_name=${encodeURIComponent(userName)}`;
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        console.log(`WebSocket ${boardId} connecté`);
+        setIsConnected(prev => ({ ...prev, [boardId]: true }));
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(boardId, data);
+        } catch (e) {
+          console.error('Erreur parsing message WS:', e);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log(`WebSocket ${boardId} déconnecté`);
+        setIsConnected(prev => ({ ...prev, [boardId]: false }));
+        // Reconnexion automatique après 5 secondes
+        setTimeout(() => {
+          if (document.visibilityState === 'visible') {
+            connectWebSocket(boardId);
+          }
+        }, 5000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error(`Erreur WebSocket ${boardId}:`, error);
+      };
+      
+      return ws;
+    } catch (e) {
+      console.error('Erreur création WebSocket:', e);
+      return null;
+    }
+  }, [user, handleWebSocketMessage]);
+
+  // Initialiser un canvas Fabric.js
+  const initCanvas = useCallback((containerEl, boardId) => {
+    if (!containerEl) return null;
+    
+    const width = containerEl.clientWidth || 800;
+    const height = containerEl.clientHeight || 400;
+    
+    // Créer le canvas HTML
+    const canvasEl = document.createElement('canvas');
+    canvasEl.id = `canvas-${boardId}`;
+    containerEl.innerHTML = '';
+    containerEl.appendChild(canvasEl);
+    
+    // Créer le canvas Fabric
+    const fabricCanvas = new fabric.Canvas(canvasEl, {
+      width,
+      height,
+      backgroundColor: '#FFFFFF',
+      isDrawingMode: false,
+      selection: true,
+    });
+    
+    // Événements
+    fabricCanvas.on('object:added', (e) => {
+      if (e.target && !e.target._fromRemote) {
+        sendObjectUpdate(boardId, 'object_added', e.target);
+        saveToUndoStack(boardId);
+      }
+    });
+    
+    fabricCanvas.on('object:modified', (e) => {
+      if (e.target && !e.target._fromRemote) {
+        sendObjectUpdate(boardId, 'object_modified', e.target);
+        saveToUndoStack(boardId);
+      }
+    });
+    
+    fabricCanvas.on('object:removed', (e) => {
+      if (e.target && !e.target._fromRemote) {
+        sendObjectUpdate(boardId, 'object_removed', e.target);
+        saveToUndoStack(boardId);
+      }
+    });
+    
+    fabricCanvas.on('path:created', (e) => {
+      if (e.path) {
+        e.path.id = generateId();
+        sendObjectUpdate(boardId, 'object_added', e.path);
+        saveToUndoStack(boardId);
+      }
+    });
+    
+    return fabricCanvas;
+  }, [sendObjectUpdate, saveToUndoStack]);
+
+  // Initialisation des canvas après montage
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (container1Ref.current && !canvas1Ref.current) {
+        canvas1Ref.current = initCanvas(container1Ref.current, 'board_1');
+      }
+      if (container2Ref.current && !canvas2Ref.current) {
+        canvas2Ref.current = initCanvas(container2Ref.current, 'board_2');
+      }
+      
+      if (canvas1Ref.current && canvas2Ref.current) {
+        setCanvasReady(true);
+      }
+    }, 500);
+    
+    return () => {
+      clearTimeout(timer);
+      if (canvas1Ref.current) {
+        canvas1Ref.current.dispose();
+        canvas1Ref.current = null;
+      }
+      if (canvas2Ref.current) {
+        canvas2Ref.current.dispose();
+        canvas2Ref.current = null;
+      }
+    };
+  }, [initCanvas]);
+
+  // Connexion WebSocket après que les canvas soient prêts
+  useEffect(() => {
+    if (canvasReady && user && user.id) {
       ws1Ref.current = connectWebSocket('board_1');
       ws2Ref.current = connectWebSocket('board_2');
     }
     
-    // Cleanup
     return () => {
       if (ws1Ref.current) ws1Ref.current.close();
       if (ws2Ref.current) ws2Ref.current.close();
-      if (fabricCanvas1Ref.current) fabricCanvas1Ref.current.dispose();
-      if (fabricCanvas2Ref.current) fabricCanvas2Ref.current.dispose();
     };
-  }, [user, initCanvas, connectWebSocket]);
+  }, [canvasReady, user, connectWebSocket]);
 
   // Redimensionner les canvas
   useEffect(() => {
     const handleResize = () => {
-      [fabricCanvas1Ref.current, fabricCanvas2Ref.current].forEach((canvas, idx) => {
-        if (!canvas) return;
-        const container = canvas.lowerCanvasEl.parentElement;
-        canvas.setDimensions({
-          width: container.clientWidth,
-          height: container.clientHeight
-        });
+      [
+        { canvas: canvas1Ref.current, container: container1Ref.current },
+        { canvas: canvas2Ref.current, container: container2Ref.current }
+      ].forEach(({ canvas, container }) => {
+        if (!canvas || !container) return;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        canvas.setDimensions({ width, height });
         canvas.renderAll();
       });
     };
     
     window.addEventListener('resize', handleResize);
-    handleResize();
-    
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [canvasReady]);
 
   // Changer d'outil
   const setTool = (tool) => {
     setActiveTool(tool);
     
-    const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     canvas.isDrawingMode = false;
@@ -350,7 +360,7 @@ const WhiteboardPage = () => {
       
       case 'highlighter':
         canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush.color = activeColor + '80'; // Semi-transparent
+        canvas.freeDrawingBrush.color = activeColor + '80';
         canvas.freeDrawingBrush.width = strokeWidth * 3;
         break;
       
@@ -371,13 +381,13 @@ const WhiteboardPage = () => {
 
   // Ajouter du texte
   const addText = () => {
-    const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     const text = new fabric.IText('Texte', {
       id: generateId(),
-      left: canvas.width / 2,
-      top: canvas.height / 2,
+      left: canvas.width / 2 - 30,
+      top: canvas.height / 2 - 15,
       fontSize: 24,
       fill: activeColor,
       fontFamily: 'Arial',
@@ -389,7 +399,7 @@ const WhiteboardPage = () => {
 
   // Ajouter une forme
   const addShape = (shapeType) => {
-    const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     let shape;
@@ -440,27 +450,27 @@ const WhiteboardPage = () => {
 
   // Ajouter un post-it
   const addStickyNote = () => {
-    const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     const colors = ['#FFEB3B', '#FF9800', '#4CAF50', '#2196F3', '#E91E63'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
-    const group = new fabric.Group([
-      new fabric.Rect({
-        width: 150,
-        height: 150,
-        fill: randomColor,
-        shadow: 'rgba(0,0,0,0.3) 3px 3px 5px',
-      }),
-      new fabric.IText('Note...', {
-        left: 10,
-        top: 10,
-        fontSize: 16,
-        fill: '#000000',
-        width: 130,
-      })
-    ], {
+    const rect = new fabric.Rect({
+      width: 150,
+      height: 150,
+      fill: randomColor,
+      shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.3)', blur: 5, offsetX: 3, offsetY: 3 }),
+    });
+    
+    const text = new fabric.IText('Note...', {
+      left: 10,
+      top: 10,
+      fontSize: 16,
+      fill: '#000000',
+    });
+    
+    const group = new fabric.Group([rect, text], {
       id: generateId(),
       left: canvas.width / 2 - 75,
       top: canvas.height / 2 - 75,
@@ -482,10 +492,9 @@ const WhiteboardPage = () => {
       const reader = new FileReader();
       reader.onload = (event) => {
         fabric.Image.fromURL(event.target.result, (img) => {
-          const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+          const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
           if (!canvas) return;
           
-          // Redimensionner si trop grande
           const maxSize = 300;
           if (img.width > maxSize || img.height > maxSize) {
             const scale = maxSize / Math.max(img.width, img.height);
@@ -512,7 +521,7 @@ const WhiteboardPage = () => {
     const stack = undoStack[activeBoard] || [];
     if (stack.length < 2) return;
     
-    const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     const currentState = stack[stack.length - 1];
@@ -528,9 +537,7 @@ const WhiteboardPage = () => {
       [activeBoard]: prev[activeBoard].slice(0, -1)
     }));
     
-    canvas.loadFromJSON(previousState, () => {
-      canvas.renderAll();
-    });
+    canvas.loadFromJSON(previousState, () => canvas.renderAll());
   };
 
   // Redo
@@ -538,7 +545,7 @@ const WhiteboardPage = () => {
     const stack = redoStack[activeBoard] || [];
     if (stack.length === 0) return;
     
-    const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     const nextState = stack[stack.length - 1];
@@ -553,29 +560,24 @@ const WhiteboardPage = () => {
       [activeBoard]: prev[activeBoard].slice(0, -1)
     }));
     
-    canvas.loadFromJSON(nextState, () => {
-      canvas.renderAll();
-    });
+    canvas.loadFromJSON(nextState, () => canvas.renderAll());
   };
 
   // Supprimer l'objet sélectionné
   const deleteSelected = () => {
-    const canvas = activeBoard === 'board_1' ? fabricCanvas1Ref.current : fabricCanvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     const activeObjects = canvas.getActiveObjects();
-    activeObjects.forEach(obj => {
-      canvas.remove(obj);
-    });
+    activeObjects.forEach(obj => canvas.remove(obj));
     canvas.discardActiveObject();
     canvas.renderAll();
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-100 flex flex-col">
+    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
       {/* Barre de contrôle minimale */}
       <div className="absolute top-4 left-4 z-50 flex gap-2">
-        {/* Bouton retour Dashboard */}
         <Button
           variant="outline"
           size="icon"
@@ -586,7 +588,6 @@ const WhiteboardPage = () => {
           <ChevronLeft size={20} />
         </Button>
         
-        {/* Bouton Palette d'outils */}
         <Button
           variant={showToolbar ? "default" : "outline"}
           size="icon"
@@ -651,36 +652,16 @@ const WhiteboardPage = () => {
           <div className="mb-4">
             <label className="text-xs text-gray-500 mb-2 block">Outils</label>
             <div className="grid grid-cols-4 gap-2">
-              <Button
-                variant={activeTool === 'select' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => setTool('select')}
-                title="Sélection"
-              >
+              <Button variant={activeTool === 'select' ? 'default' : 'outline'} size="icon" onClick={() => setTool('select')} title="Sélection">
                 <MousePointer2 size={18} />
               </Button>
-              <Button
-                variant={activeTool === 'pencil' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => setTool('pencil')}
-                title="Crayon"
-              >
+              <Button variant={activeTool === 'pencil' ? 'default' : 'outline'} size="icon" onClick={() => setTool('pencil')} title="Crayon">
                 <Pencil size={18} />
               </Button>
-              <Button
-                variant={activeTool === 'highlighter' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => setTool('highlighter')}
-                title="Surligneur"
-              >
+              <Button variant={activeTool === 'highlighter' ? 'default' : 'outline'} size="icon" onClick={() => setTool('highlighter')} title="Surligneur">
                 <Highlighter size={18} />
               </Button>
-              <Button
-                variant={activeTool === 'eraser' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => setTool('eraser')}
-                title="Gomme"
-              >
+              <Button variant={activeTool === 'eraser' ? 'default' : 'outline'} size="icon" onClick={() => setTool('eraser')} title="Gomme">
                 <Eraser size={18} />
               </Button>
             </div>
@@ -703,7 +684,7 @@ const WhiteboardPage = () => {
                 <ArrowRight size={18} />
               </Button>
               <Button variant="outline" size="icon" onClick={addImage} title="Image">
-                <Image size={18} />
+                <ImageIcon size={18} />
               </Button>
               <Button variant="outline" size="icon" onClick={addStickyNote} title="Post-it">
                 <StickyNote size={18} />
@@ -723,9 +704,7 @@ const WhiteboardPage = () => {
                   key={color}
                   onClick={() => {
                     setActiveColor(color);
-                    if (activeTool === 'pencil' || activeTool === 'highlighter') {
-                      setTool(activeTool);
-                    }
+                    if (['pencil', 'highlighter'].includes(activeTool)) setTool(activeTool);
                   }}
                   className={`w-6 h-6 rounded-full border-2 ${activeColor === color ? 'border-purple-500 ring-2 ring-purple-300' : 'border-gray-300'}`}
                   style={{ backgroundColor: color }}
@@ -736,23 +715,18 @@ const WhiteboardPage = () => {
           
           {/* Taille du trait */}
           <div className="mb-4">
-            <label className="text-xs text-gray-500 mb-2 block">Taille du trait: {strokeWidth}px</label>
+            <label className="text-xs text-gray-500 mb-2 block">Taille: {strokeWidth}px</label>
             <div className="flex gap-1">
               {STROKE_SIZES.map(size => (
                 <button
                   key={size}
                   onClick={() => {
                     setStrokeWidth(size);
-                    if (activeTool === 'pencil' || activeTool === 'highlighter' || activeTool === 'eraser') {
-                      setTool(activeTool);
-                    }
+                    if (['pencil', 'highlighter', 'eraser'].includes(activeTool)) setTool(activeTool);
                   }}
                   className={`flex-1 h-8 rounded flex items-center justify-center ${strokeWidth === size ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-100 border border-gray-300'}`}
                 >
-                  <div
-                    className="rounded-full bg-black"
-                    style={{ width: Math.min(size, 16), height: Math.min(size, 16) }}
-                  />
+                  <div className="rounded-full bg-black" style={{ width: Math.min(size, 16), height: Math.min(size, 16) }} />
                 </button>
               ))}
             </div>
@@ -762,25 +736,11 @@ const WhiteboardPage = () => {
           <div>
             <label className="text-xs text-gray-500 mb-2 block">Historique</label>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleUndo}
-                disabled={(undoStack[activeBoard]?.length || 0) < 2}
-                className="flex-1"
-              >
-                <Undo2 size={16} className="mr-1" />
-                Annuler
+              <Button variant="outline" size="sm" onClick={handleUndo} disabled={(undoStack[activeBoard]?.length || 0) < 2} className="flex-1">
+                <Undo2 size={16} className="mr-1" /> Annuler
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRedo}
-                disabled={(redoStack[activeBoard]?.length || 0) === 0}
-                className="flex-1"
-              >
-                <Redo2 size={16} className="mr-1" />
-                Rétablir
+              <Button variant="outline" size="sm" onClick={handleRedo} disabled={(redoStack[activeBoard]?.length || 0) === 0} className="flex-1">
+                <Redo2 size={16} className="mr-1" /> Rétablir
               </Button>
             </div>
           </div>
@@ -791,24 +751,24 @@ const WhiteboardPage = () => {
       <div className="flex-1 flex gap-4 p-4 pt-16">
         {/* Tableau 1 */}
         <div 
-          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative`}
+          ref={container1Ref}
+          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative cursor-crosshair`}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10">
             Tableau 1
           </div>
-          <canvas ref={canvas1Ref} className="w-full h-full" />
         </div>
         
         {/* Tableau 2 */}
         <div 
-          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative`}
+          ref={container2Ref}
+          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative cursor-crosshair`}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10">
             Tableau 2
           </div>
-          <canvas ref={canvas2Ref} className="w-full h-full" />
         </div>
       </div>
     </div>
