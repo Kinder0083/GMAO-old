@@ -796,6 +796,30 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
     }
+    
+    # WebSocket pour le Chat Live
+    location /ws/chat/ {
+        proxy_pass http://localhost:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+    
+    # WebSocket pour le Tableau d'affichage
+    location /ws/whiteboard/ {
+        proxy_pass http://localhost:8001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
 }
 EOF
 ln -sf /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/
