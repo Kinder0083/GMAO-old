@@ -8,40 +8,49 @@ Testing Whiteboard bug fixes for GMAO Iris:
 frontend:
   - task: "Whiteboard Aspect Ratio Consistency"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/WhiteboardPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Initial test setup - Need to verify aspect ratio consistency across different viewport sizes. Testing that drawings maintain same relative positions and proportions when switching between desktop (1920x800) and mobile (390x844) viewports."
+      - working: true
+        agent: "testing"
+        comment: "✅ BUG 1 FIXED - Aspect ratio consistency working correctly. Reference dimensions consistently show 1600×900 on both desktop and mobile viewports. Scale percentages correctly adjust (59% on desktop, different on mobile). Uniform scaling implementation preserves shape proportions across different screen sizes."
 
   - task: "Whiteboard Object Deletion WebSocket Sync"
     implemented: true
-    working: "NA"
+    working: false
     file: "frontend/src/pages/WhiteboardPage.jsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Initial test setup - Need to verify object deletion syncs via WebSocket. Testing that console shows '[WS] Envoi suppression objet' messages when objects are deleted and WebSocket messages are sent correctly."
+      - working: false
+        agent: "testing"
+        comment: "❌ BUG 2 PARTIALLY WORKING - WebSocket connections are failing. Console shows 'WebSocket connection to wss://drawshare-sync.preview.emergentagent.com/ws/whiteboard/board_1 failed: WebSocket is closed before the connection is established.' This prevents real-time object deletion sync between users. Frontend code is correct but WebSocket server connection is not working."
 
 backend:
   - task: "Whiteboard WebSocket Object Deletion"
     implemented: true
-    working: "NA"
+    working: false
     file: "backend/whiteboard_manager.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Initial test setup - Need to verify backend WebSocket handling for object deletion. Backend code shows proper logging and message broadcasting for object_removed events."
+      - working: false
+        agent: "testing"
+        comment: "❌ WebSocket server connection failing - Backend code implementation looks correct with proper object_removed handling and '[WS] Envoi suppression objet' logging, but WebSocket connections cannot be established. This is likely a server configuration or deployment issue preventing WebSocket connections from working."
 
 metadata:
   created_by: "testing_agent"
