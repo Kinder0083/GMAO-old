@@ -12,10 +12,19 @@ import json
 import logging
 
 from dependencies import get_database, get_current_user
+from models import ActionType, EntityType
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/whiteboard", tags=["Whiteboard"])
+
+# Référence au service d'audit (sera initialisé depuis server.py)
+audit_service = None
+
+def init_whiteboard_audit(audit_svc):
+    """Initialise le service d'audit pour les routes whiteboard"""
+    global audit_service
+    audit_service = audit_svc
 
 # Modèles Pydantic
 class WhiteboardObject(BaseModel):
