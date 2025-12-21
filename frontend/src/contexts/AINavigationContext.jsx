@@ -33,14 +33,14 @@ const NAVIGATION_MAP = {
   'creer-ot': { 
     route: '/work-orders', 
     action: 'click', 
-    selector: 'button:has-text("Créer"), button:has-text("+ Créer"), button:has-text("Nouveau")',
-    name: 'Créer un Ordre de Travail'
+    selector: 'button:has-text("Nouvel ordre"), button:has-text("Créer"), button:has-text("+ Créer"), button:has-text("Nouveau")',
+    name: 'Nouvel ordre de travail'
   },
   'creer-equipement': { 
     route: '/assets', 
     action: 'click', 
-    selector: 'button:has-text("Ajouter"), button:has-text("+ Ajouter"), button:has-text("Nouveau")',
-    name: 'Ajouter un Équipement'
+    selector: 'button:has-text("Nouvel équipement"), button:has-text("Ajouter"), button:has-text("+ Ajouter"), button:has-text("Nouveau")',
+    name: 'Nouvel équipement'
   },
   'creer-emplacement': { 
     route: '/locations', 
