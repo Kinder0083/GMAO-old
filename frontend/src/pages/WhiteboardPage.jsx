@@ -259,28 +259,28 @@ const WhiteboardPage = () => {
   
   // Effet pour connecter les WebSockets - UNE SEULE FOIS
   useEffect(() => {
+    let timeout;
+    const reconnectTimeout = wsReconnectTimeoutRef.current;
+    const ws1 = ws1Ref.current;
+    const ws2 = ws2Ref.current;
+    
     if (canvasReady && user?.id && !wsConnectionAttemptedRef.current) {
       wsConnectionAttemptedRef.current = true;
       // Attendre un peu avant de tenter la connexion WebSocket
-      const timeout = setTimeout(() => {
+      timeout = setTimeout(() => {
         connectWebSocket('board_1');
         connectWebSocket('board_2');
       }, 1000);
-      
-      return () => clearTimeout(timeout);
     }
     
     return () => {
-      if (wsReconnectTimeoutRef.current) {
-        clearTimeout(wsReconnectTimeoutRef.current);
+      if (timeout) clearTimeout(timeout);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws1) {
+        ws1.close();
       }
-      if (ws1Ref.current) {
-        ws1Ref.current.close();
-        ws1Ref.current = null;
-      }
-      if (ws2Ref.current) {
-        ws2Ref.current.close();
-        ws2Ref.current = null;
+      if (ws2) {
+        ws2.close();
       }
     };
   }, [canvasReady, user?.id, connectWebSocket]);
