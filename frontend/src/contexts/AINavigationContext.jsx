@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, ChevronRight, ChevronLeft, MousePointer2, ArrowDown, Target, Hand } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, MousePointer2, ArrowDown, Target, Hand, Sparkles, Zap, Eye } from 'lucide-react';
 
 // Exporter le contexte pour permettre une utilisation sécurisée avec useContext
 export const AINavigationContext = createContext(null);
@@ -67,23 +67,60 @@ const HIGHLIGHT_STYLES = {
   default: {
     borderColor: 'rgb(147, 51, 234)', // purple-600
     glowColor: 'rgba(147, 51, 234, 0.5)',
-    arrowColor: 'text-purple-500'
+    arrowColor: 'text-purple-500',
+    bgGradient: 'from-purple-500 to-purple-700'
   },
   success: {
     borderColor: 'rgb(34, 197, 94)', // green-500
     glowColor: 'rgba(34, 197, 94, 0.5)',
-    arrowColor: 'text-green-500'
+    arrowColor: 'text-green-500',
+    bgGradient: 'from-green-500 to-green-700'
   },
   warning: {
     borderColor: 'rgb(234, 179, 8)', // yellow-500
     glowColor: 'rgba(234, 179, 8, 0.5)',
-    arrowColor: 'text-yellow-500'
+    arrowColor: 'text-yellow-500',
+    bgGradient: 'from-yellow-500 to-yellow-700'
   },
   error: {
     borderColor: 'rgb(239, 68, 68)', // red-500
     glowColor: 'rgba(239, 68, 68, 0.5)',
-    arrowColor: 'text-red-500'
+    arrowColor: 'text-red-500',
+    bgGradient: 'from-red-500 to-red-700'
+  },
+  info: {
+    borderColor: 'rgb(59, 130, 246)', // blue-500
+    glowColor: 'rgba(59, 130, 246, 0.5)',
+    arrowColor: 'text-blue-500',
+    bgGradient: 'from-blue-500 to-blue-700'
   }
+};
+
+// Guides prédéfinis pour les tutoriels avancés
+const PREDEFINED_GUIDES = {
+  'explorer-dashboard': [
+    { route: '/dashboard', message: '📊 Bienvenue sur le Tableau de Bord GMAO Iris !', delay: 500 },
+    { highlight: '.dashboard-stats, .stats-grid, [data-testid="stats"]', message: '📈 Ces cartes affichent les statistiques clés en temps réel', arrowPosition: 'bottom' },
+    { highlight: '.recent-work-orders, [data-testid="recent-ot"]', message: '📋 Ici vous voyez les derniers ordres de travail', arrowPosition: 'left' },
+    { message: '✅ Vous pouvez maintenant explorer le tableau de bord !' }
+  ],
+  'configurer-alertes': [
+    { route: '/sensors', message: '🔔 Configuration des alertes capteurs', delay: 500 },
+    { highlight: 'button:has-text("Paramètres"), button:has-text("Config")', message: '⚙️ Accédez aux paramètres du capteur', showHand: true },
+    { message: '📝 Définissez les seuils min/max pour déclencher des alertes' }
+  ],
+  'creer-ot': [
+    { route: '/work-orders', message: '📋 Création d\'un Ordre de Travail', delay: 500 },
+    { highlight: 'button:has-text("Nouvel"), button:has-text("Créer"), button.bg-blue-600', message: '👆 Cliquez sur ce bouton pour commencer', showHand: true, arrowPosition: 'top' },
+    { message: '✍️ Remplissez le formulaire : Titre, Équipement, Priorité, Description' },
+    { message: '💾 Cliquez sur Enregistrer pour créer l\'OT' }
+  ],
+  'creer-equipement': [
+    { route: '/assets', message: '🔧 Ajout d\'un nouvel Équipement', delay: 500 },
+    { highlight: 'button:has-text("Nouvel"), button:has-text("Ajouter"), button.bg-blue-600', message: '👆 Cliquez ici pour ajouter un équipement', showHand: true },
+    { message: '📝 Informations requises : Nom, Type, Emplacement' },
+    { message: '📎 Vous pouvez ajouter des documents et photos' }
+  ]
 };
 
 export const AINavigationProvider = ({ children }) => {
