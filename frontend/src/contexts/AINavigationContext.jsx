@@ -155,11 +155,12 @@ export const AINavigationProvider = ({ children }) => {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     
+    // Positions de la flèche et rotations pour que la flèche pointe vers l'élément
     const positions = {
-      top: { x: centerX - 15, y: rect.top - 50, rotation: 180 },
-      bottom: { x: centerX - 15, y: rect.bottom + 20, rotation: 0 },
-      left: { x: rect.left - 50, y: centerY - 15, rotation: 90 },
-      right: { x: rect.right + 20, y: centerY - 15, rotation: -90 }
+      top: { x: centerX - 15, y: rect.top - 50, rotation: 0 },      // Flèche au-dessus, pointe vers le bas
+      bottom: { x: centerX - 15, y: rect.bottom + 20, rotation: 180 }, // Flèche en-dessous, pointe vers le haut
+      left: { x: rect.left - 50, y: centerY - 15, rotation: 90 },   // Flèche à gauche, pointe vers la droite
+      right: { x: rect.right + 20, y: centerY - 15, rotation: -90 }  // Flèche à droite, pointe vers la gauche
     };
     
     return positions[position] || positions.top;
