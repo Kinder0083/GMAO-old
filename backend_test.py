@@ -63,22 +63,20 @@ class WhiteboardTester:
             self.log(f"❌ Admin login request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def test_get_user_preferences_basic(self):
-        """TEST 1: GET /api/user-preferences - Basic endpoint test"""
-        self.log("🧪 TEST 1: GET /api/user-preferences - Basic endpoint test")
+    def test_get_board_initial_state(self):
+        """TEST 1: GET /api/whiteboard/board/board_1 - Get initial board state"""
+        self.log("🧪 TEST 1: GET /api/whiteboard/board/board_1 - Get initial board state")
         
         try:
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
+            response = self.admin_session.get(f"{BACKEND_URL}/whiteboard/board/board_1", timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
-                self.original_preferences = data  # Store for later restoration
-                self.log(f"✅ GET /api/user-preferences successful (200 OK)")
+                self.initial_board_state = data
+                self.log(f"✅ GET /api/whiteboard/board/board_1 successful (200 OK)")
                 
                 # Verify basic response structure
-                required_fields = [
-                    "id", "user_id", "theme_mode", "menu_categories", "menu_items"
-                ]
+                required_fields = ["board_id", "objects", "version", "last_modified"]
                 
                 missing_fields = [field for field in required_fields if field not in data]
                 if missing_fields:
@@ -86,133 +84,14 @@ class WhiteboardTester:
                     return False
                 
                 self.log("✅ All required fields present in response")
-                self.log(f"   User ID: {data.get('user_id')}")
-                self.log(f"   Menu categories count: {len(data.get('menu_categories', []))}")
-                self.log(f"   Menu items count: {len(data.get('menu_items', []))}")
+                self.log(f"   Board ID: {data.get('board_id')}")
+                self.log(f"   Objects count: {len(data.get('objects', []))}")
+                self.log(f"   Version: {data.get('version')}")
+                self.log(f"   Last modified: {data.get('last_modified')}")
                 
                 return True
             else:
-                self.log(f"❌ GET /api/user-preferences failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_existing_maintenance_category(self):
-        """TEST 2: Verify existing "Maintenance" category with assigned menus"""
-        self.log("🧪 TEST 2: Verify existing 'Maintenance' category")
-        
-        try:
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                menu_categories = data.get("menu_categories", [])
-                menu_items = data.get("menu_items", [])
-                
-                # Look for Maintenance category
-                maintenance_category = None
-                for category in menu_categories:
-                    if category.get("name") == "Maintenance":
-                        maintenance_category = category
-                        break
-                
-                if maintenance_category:
-                    self.log(f"✅ 'Maintenance' category found")
-                    self.log(f"   Category ID: {maintenance_category.get('id')}")
-                    self.log(f"   Icon: {maintenance_category.get('icon')}")
-                    self.log(f"   Order: {maintenance_category.get('order')}")
-                    self.log(f"   Items count: {len(maintenance_category.get('items', []))}")
-                    
-                    # Check for assigned menu items
-                    assigned_items = []
-                    for item in menu_items:
-                        if item.get("category_id") == maintenance_category.get("id"):
-                            assigned_items.append(item.get("label"))
-                    
-                    if assigned_items:
-                        self.log(f"✅ Found {len(assigned_items)} assigned menu items:")
-                        for item_label in assigned_items:
-                            self.log(f"     - {item_label}")
-                    else:
-                        self.log("ℹ️  No menu items assigned to Maintenance category")
-                    
-                    return True
-                else:
-                    self.log("ℹ️  'Maintenance' category not found (may need to be created)")
-                    return True  # Not an error, just means it needs to be created
-                    
-            else:
-                self.log(f"❌ Request failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_create_new_category_stock(self):
-        """TEST 3: Create new "Stock" category via PUT /api/user-preferences"""
-        self.log("🧪 TEST 3: Create new 'Stock' category")
-        
-        try:
-            # First get current preferences
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
-            if response.status_code != 200:
-                self.log("❌ Failed to get current preferences", "ERROR")
-                return False
-            
-            current_prefs = response.json()
-            current_categories = current_prefs.get("menu_categories", [])
-            
-            # Create new Stock category
-            new_stock_category = {
-                "id": "stock-category-001",
-                "name": "Stock",
-                "icon": "Package",
-                "order": len(current_categories),
-                "items": []
-            }
-            
-            # Add to existing categories
-            updated_categories = current_categories + [new_stock_category]
-            
-            # Update preferences
-            update_data = {
-                "menu_categories": updated_categories
-            }
-            
-            response = self.admin_session.put(
-                f"{BACKEND_URL}/user-preferences",
-                json=update_data,
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ PUT /api/user-preferences successful (200 OK)")
-                
-                # Verify the new category was created
-                updated_categories = data.get("menu_categories", [])
-                stock_category = None
-                for category in updated_categories:
-                    if category.get("name") == "Stock":
-                        stock_category = category
-                        break
-                
-                if stock_category:
-                    self.log("✅ 'Stock' category successfully created")
-                    self.log(f"   Category ID: {stock_category.get('id')}")
-                    self.log(f"   Name: {stock_category.get('name')}")
-                    self.log(f"   Icon: {stock_category.get('icon')}")
-                    self.log(f"   Order: {stock_category.get('order')}")
-                    return True
-                else:
-                    self.log("❌ 'Stock' category not found in response", "ERROR")
-                    return False
-                
-            else:
-                self.log(f"❌ PUT /api/user-preferences failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ GET /api/whiteboard/board/board_1 failed - Status: {response.status_code}", "ERROR")
                 self.log(f"   Response: {response.text}")
                 return False
                 
@@ -220,342 +99,345 @@ class WhiteboardTester:
             self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def test_assign_menu_to_category(self):
-        """TEST 4: Assign inventory menu to Stock category"""
-        self.log("🧪 TEST 4: Assign inventory menu to Stock category")
+    def test_sync_board_with_objects(self):
+        """TEST 2: POST /api/whiteboard/board/board_1/sync - Save objects to board"""
+        self.log("🧪 TEST 2: POST /api/whiteboard/board/board_1/sync - Save objects to board")
+        
+        # Create test objects
+        test_objects = [
+            {
+                "type": "rect",
+                "left": 50,
+                "top": 50,
+                "width": 100,
+                "height": 100,
+                "fill": "red",
+                "id": "test-rect-1"
+            },
+            {
+                "type": "circle",
+                "left": 200,
+                "top": 100,
+                "radius": 50,
+                "fill": "blue",
+                "id": "test-circle-1"
+            }
+        ]
         
         try:
-            # Get current preferences
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
+            sync_data = {
+                "objects": test_objects,
+                "user_id": self.admin_data.get("id"),
+                "user_name": f"{self.admin_data.get('prenom')} {self.admin_data.get('nom')}",
+                "version": self.initial_board_state.get("version", 0) if self.initial_board_state else 0
+            }
+            
+            response = self.admin_session.post(
+                f"{BACKEND_URL}/whiteboard/board/board_1/sync",
+                json=sync_data,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ POST /api/whiteboard/board/board_1/sync successful (200 OK)")
+                
+                # Verify response structure
+                if "success" in data and data["success"]:
+                    self.log("✅ Sync operation marked as successful")
+                    self.log(f"   Synced at: {data.get('synced_at')}")
+                    return True
+                else:
+                    self.log("❌ Sync operation not marked as successful", "ERROR")
+                    return False
+                
+            else:
+                self.log(f"❌ POST /api/whiteboard/board/board_1/sync failed - Status: {response.status_code}", "ERROR")
+                self.log(f"   Response: {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_verify_objects_persisted(self):
+        """TEST 3: GET /api/whiteboard/board/board_1 - Verify objects are persisted"""
+        self.log("🧪 TEST 3: GET /api/whiteboard/board/board_1 - Verify objects are persisted")
+        
+        try:
+            response = self.admin_session.get(f"{BACKEND_URL}/whiteboard/board/board_1", timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ GET /api/whiteboard/board/board_1 successful (200 OK)")
+                
+                objects = data.get("objects", [])
+                self.log(f"   Objects count after sync: {len(objects)}")
+                
+                # Check if our test objects are present
+                test_rect_found = False
+                test_circle_found = False
+                
+                for obj in objects:
+                    if obj.get("id") == "test-rect-1" and obj.get("type") == "rect":
+                        test_rect_found = True
+                        self.log("✅ Test rectangle object found and persisted")
+                    elif obj.get("id") == "test-circle-1" and obj.get("type") == "circle":
+                        test_circle_found = True
+                        self.log("✅ Test circle object found and persisted")
+                
+                if test_rect_found and test_circle_found:
+                    self.log("✅ All test objects successfully persisted")
+                    return True
+                else:
+                    missing = []
+                    if not test_rect_found:
+                        missing.append("rectangle")
+                    if not test_circle_found:
+                        missing.append("circle")
+                    self.log(f"❌ Missing test objects: {', '.join(missing)}", "ERROR")
+                    return False
+                
+            else:
+                self.log(f"❌ GET /api/whiteboard/board/board_1 failed - Status: {response.status_code}", "ERROR")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_sync_additional_objects(self):
+        """TEST 4: POST /api/whiteboard/board/board_1/sync - Add more objects"""
+        self.log("🧪 TEST 4: POST /api/whiteboard/board/board_1/sync - Add more objects")
+        
+        # Create additional test objects
+        additional_objects = [
+            {
+                "type": "rect",
+                "left": 50,
+                "top": 50,
+                "width": 100,
+                "height": 100,
+                "fill": "red",
+                "id": "test-rect-1"
+            },
+            {
+                "type": "circle",
+                "left": 200,
+                "top": 100,
+                "radius": 50,
+                "fill": "blue",
+                "id": "test-circle-1"
+            },
+            {
+                "type": "text",
+                "left": 300,
+                "top": 200,
+                "text": "Test Text",
+                "fontSize": 20,
+                "fill": "black",
+                "id": "test-text-1"
+            },
+            {
+                "type": "rect",
+                "left": 400,
+                "top": 300,
+                "width": 80,
+                "height": 60,
+                "fill": "green",
+                "id": "test-rect-2"
+            }
+        ]
+        
+        try:
+            sync_data = {
+                "objects": additional_objects,
+                "user_id": self.admin_data.get("id"),
+                "user_name": f"{self.admin_data.get('prenom')} {self.admin_data.get('nom')}",
+                "version": 1
+            }
+            
+            response = self.admin_session.post(
+                f"{BACKEND_URL}/whiteboard/board/board_1/sync",
+                json=sync_data,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ POST /api/whiteboard/board/board_1/sync (additional objects) successful (200 OK)")
+                
+                if "success" in data and data["success"]:
+                    self.log("✅ Additional sync operation marked as successful")
+                    self.log(f"   Synced {len(additional_objects)} objects")
+                    return True
+                else:
+                    self.log("❌ Additional sync operation not marked as successful", "ERROR")
+                    return False
+                
+            else:
+                self.log(f"❌ POST /api/whiteboard/board/board_1/sync (additional) failed - Status: {response.status_code}", "ERROR")
+                self.log(f"   Response: {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_verify_accumulation_or_replacement(self):
+        """TEST 5: GET /api/whiteboard/board/board_1 - Verify accumulation or replacement behavior"""
+        self.log("🧪 TEST 5: GET /api/whiteboard/board/board_1 - Verify accumulation or replacement behavior")
+        
+        try:
+            response = self.admin_session.get(f"{BACKEND_URL}/whiteboard/board/board_1", timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ GET /api/whiteboard/board/board_1 successful (200 OK)")
+                
+                objects = data.get("objects", [])
+                self.log(f"   Final objects count: {len(objects)}")
+                
+                # Check what objects are present
+                object_types = {}
+                for obj in objects:
+                    obj_type = obj.get("type")
+                    obj_id = obj.get("id")
+                    if obj_type not in object_types:
+                        object_types[obj_type] = []
+                    object_types[obj_type].append(obj_id)
+                
+                self.log("   Objects by type:")
+                for obj_type, obj_ids in object_types.items():
+                    self.log(f"     {obj_type}: {len(obj_ids)} objects ({', '.join(obj_ids)})")
+                
+                # Check if we have the expected objects from the last sync
+                expected_objects = ["test-rect-1", "test-circle-1", "test-text-1", "test-rect-2"]
+                found_objects = []
+                
+                for obj in objects:
+                    if obj.get("id") in expected_objects:
+                        found_objects.append(obj.get("id"))
+                
+                if len(found_objects) == len(expected_objects):
+                    self.log("✅ All expected objects from last sync are present (replacement behavior)")
+                    return True
+                elif len(objects) > len(expected_objects):
+                    self.log("✅ Objects accumulated from multiple syncs (accumulation behavior)")
+                    return True
+                else:
+                    self.log(f"❌ Unexpected object count. Expected at least {len(expected_objects)}, got {len(objects)}", "ERROR")
+                    self.log(f"   Found objects: {found_objects}")
+                    return False
+                
+            else:
+                self.log(f"❌ GET /api/whiteboard/board/board_1 failed - Status: {response.status_code}", "ERROR")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_persistence_after_delay(self):
+        """TEST 6: Verify persistence after a delay"""
+        self.log("🧪 TEST 6: Verify persistence after a delay")
+        
+        # Wait a moment to simulate time passing
+        self.log("   Waiting 2 seconds to simulate time passing...")
+        time.sleep(2)
+        
+        try:
+            response = self.admin_session.get(f"{BACKEND_URL}/whiteboard/board/board_1", timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log(f"✅ GET /api/whiteboard/board/board_1 successful after delay (200 OK)")
+                
+                objects = data.get("objects", [])
+                version = data.get("version")
+                
+                self.log(f"   Objects count after delay: {len(objects)}")
+                self.log(f"   Version after delay: {version}")
+                
+                if len(objects) > 0:
+                    self.log("✅ Objects persisted after delay")
+                    return True
+                else:
+                    self.log("❌ No objects found after delay - persistence failed", "ERROR")
+                    return False
+                
+            else:
+                self.log(f"❌ GET /api/whiteboard/board/board_1 failed after delay - Status: {response.status_code}", "ERROR")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_version_increment(self):
+        """TEST 7: Verify version increments with each sync"""
+        self.log("🧪 TEST 7: Verify version increments with each sync")
+        
+        try:
+            # Get current version
+            response = self.admin_session.get(f"{BACKEND_URL}/whiteboard/board/board_1", timeout=15)
+            
             if response.status_code != 200:
-                self.log("❌ Failed to get current preferences", "ERROR")
+                self.log("❌ Failed to get current board state", "ERROR")
                 return False
             
-            current_prefs = response.json()
-            menu_categories = current_prefs.get("menu_categories", [])
-            menu_items = current_prefs.get("menu_items", [])
+            current_data = response.json()
+            current_version = current_data.get("version", 0)
+            self.log(f"   Current version: {current_version}")
             
-            # Find Stock category
-            stock_category = None
-            for category in menu_categories:
-                if category.get("name") == "Stock":
-                    stock_category = category
-                    break
+            # Sync with a simple object
+            test_object = [{
+                "type": "rect",
+                "left": 10,
+                "top": 10,
+                "width": 50,
+                "height": 50,
+                "fill": "yellow",
+                "id": "version-test-rect"
+            }]
             
-            if not stock_category:
-                self.log("❌ Stock category not found", "ERROR")
-                return False
-            
-            # Find inventory menu item
-            inventory_item = None
-            for item in menu_items:
-                if item.get("id") == "inventory":
-                    inventory_item = item
-                    break
-            
-            if not inventory_item:
-                self.log("❌ Inventory menu item not found", "ERROR")
-                return False
-            
-            # Assign inventory to Stock category
-            inventory_item["category_id"] = stock_category.get("id")
-            
-            # Update preferences
-            update_data = {
-                "menu_items": menu_items
+            sync_data = {
+                "objects": test_object,
+                "user_id": self.admin_data.get("id"),
+                "user_name": f"{self.admin_data.get('prenom')} {self.admin_data.get('nom')}",
+                "version": current_version
             }
             
-            response = self.admin_session.put(
-                f"{BACKEND_URL}/user-preferences",
-                json=update_data,
+            response = self.admin_session.post(
+                f"{BACKEND_URL}/whiteboard/board/board_1/sync",
+                json=sync_data,
                 timeout=15
             )
             
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ Menu assignment successful (200 OK)")
-                
-                # Verify the assignment
-                updated_items = data.get("menu_items", [])
-                assigned_inventory = None
-                for item in updated_items:
-                    if item.get("id") == "inventory":
-                        assigned_inventory = item
-                        break
-                
-                if assigned_inventory and assigned_inventory.get("category_id") == stock_category.get("id"):
-                    self.log("✅ Inventory menu successfully assigned to Stock category")
-                    self.log(f"   Menu ID: {assigned_inventory.get('id')}")
-                    self.log(f"   Menu Label: {assigned_inventory.get('label')}")
-                    self.log(f"   Category ID: {assigned_inventory.get('category_id')}")
-                    return True
-                else:
-                    self.log("❌ Menu assignment verification failed", "ERROR")
-                    return False
-                
-            else:
-                self.log(f"❌ PUT /api/user-preferences failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_persistence_verification(self):
-        """TEST 5: Verify data persistence by re-fetching preferences"""
-        self.log("🧪 TEST 5: Verify data persistence")
-        
-        try:
-            # Wait a moment to ensure data is persisted
-            time.sleep(1)
-            
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ Data persistence check successful (200 OK)")
-                
-                # Check if Stock category still exists
-                menu_categories = data.get("menu_categories", [])
-                stock_category = None
-                for category in menu_categories:
-                    if category.get("name") == "Stock":
-                        stock_category = category
-                        break
-                
-                if not stock_category:
-                    self.log("❌ Stock category not persisted", "ERROR")
-                    return False
-                
-                # Check if inventory is still assigned
-                menu_items = data.get("menu_items", [])
-                inventory_item = None
-                for item in menu_items:
-                    if item.get("id") == "inventory":
-                        inventory_item = item
-                        break
-                
-                if not inventory_item:
-                    self.log("❌ Inventory menu item not found", "ERROR")
-                    return False
-                
-                if inventory_item.get("category_id") != stock_category.get("id"):
-                    self.log("❌ Menu assignment not persisted", "ERROR")
-                    return False
-                
-                self.log("✅ All data successfully persisted")
-                self.log(f"   Stock category ID: {stock_category.get('id')}")
-                self.log(f"   Inventory category assignment: {inventory_item.get('category_id')}")
-                
-                return True
-                
-            else:
-                self.log(f"❌ Persistence check failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_menu_items_without_category(self):
-        """TEST 6: Verify menus without category_id are handled correctly"""
-        self.log("🧪 TEST 6: Verify menus without category handling")
-        
-        try:
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                menu_items = data.get("menu_items", [])
-                
-                # Count items without category
-                uncategorized_items = []
-                categorized_items = []
-                
-                for item in menu_items:
-                    if item.get("category_id") is None or item.get("category_id") == "":
-                        uncategorized_items.append(item.get("label"))
-                    else:
-                        categorized_items.append(item.get("label"))
-                
-                self.log(f"✅ Menu categorization analysis complete")
-                self.log(f"   Categorized items: {len(categorized_items)}")
-                self.log(f"   Uncategorized items: {len(uncategorized_items)}")
-                
-                if uncategorized_items:
-                    self.log("   Uncategorized menus (should display normally):")
-                    for item_label in uncategorized_items[:5]:  # Show first 5
-                        self.log(f"     - {item_label}")
-                    if len(uncategorized_items) > 5:
-                        self.log(f"     ... and {len(uncategorized_items) - 5} more")
-                
-                if categorized_items:
-                    self.log("   Categorized menus:")
-                    for item_label in categorized_items[:5]:  # Show first 5
-                        self.log(f"     - {item_label}")
-                    if len(categorized_items) > 5:
-                        self.log(f"     ... and {len(categorized_items) - 5} more")
-                
-                return True
-                
-            else:
-                self.log(f"❌ Request failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_category_structure_validation(self):
-        """TEST 7: Validate category structure matches expected format"""
-        self.log("🧪 TEST 7: Validate category structure")
-        
-        try:
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                menu_categories = data.get("menu_categories", [])
-                
-                structure_errors = []
-                
-                for i, category in enumerate(menu_categories):
-                    # Check required fields
-                    required_fields = ["id", "name", "icon", "order", "items"]
-                    missing_fields = [field for field in required_fields if field not in category]
-                    
-                    if missing_fields:
-                        structure_errors.append(f"Category {i}: Missing fields {missing_fields}")
-                    
-                    # Check field types
-                    if not isinstance(category.get("id"), str):
-                        structure_errors.append(f"Category {i}: 'id' should be string")
-                    
-                    if not isinstance(category.get("name"), str):
-                        structure_errors.append(f"Category {i}: 'name' should be string")
-                    
-                    if not isinstance(category.get("order"), int):
-                        structure_errors.append(f"Category {i}: 'order' should be integer")
-                    
-                    if not isinstance(category.get("items"), list):
-                        structure_errors.append(f"Category {i}: 'items' should be list")
-                
-                if structure_errors:
-                    self.log("❌ Category structure validation failed:", "ERROR")
-                    for error in structure_errors:
-                        self.log(f"   {error}", "ERROR")
-                    return False
-                else:
-                    self.log("✅ All categories have correct structure")
-                    self.log(f"   Validated {len(menu_categories)} categories")
-                    return True
-                
-            else:
-                self.log(f"❌ Request failed - Status: {response.status_code}", "ERROR")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_create_iot_category(self):
-        """TEST 8: Create IoT category as mentioned in review request"""
-        self.log("🧪 TEST 8: Create 'IoT' category")
-        
-        try:
-            # Get current preferences
-            response = self.admin_session.get(f"{BACKEND_URL}/user-preferences", timeout=15)
             if response.status_code != 200:
-                self.log("❌ Failed to get current preferences", "ERROR")
+                self.log("❌ Sync failed", "ERROR")
                 return False
             
-            current_prefs = response.json()
-            current_categories = current_prefs.get("menu_categories", [])
-            
-            # Create new IoT category
-            new_iot_category = {
-                "id": "iot-category-001",
-                "name": "IoT",
-                "icon": "Wifi",
-                "order": len(current_categories),
-                "items": []
-            }
-            
-            # Add to existing categories
-            updated_categories = current_categories + [new_iot_category]
-            
-            # Update preferences
-            update_data = {
-                "menu_categories": updated_categories
-            }
-            
-            response = self.admin_session.put(
-                f"{BACKEND_URL}/user-preferences",
-                json=update_data,
-                timeout=15
-            )
+            # Check new version
+            response = self.admin_session.get(f"{BACKEND_URL}/whiteboard/board/board_1", timeout=15)
             
             if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ IoT category creation successful (200 OK)")
+                new_data = response.json()
+                new_version = new_data.get("version", 0)
+                self.log(f"   New version: {new_version}")
                 
-                # Verify the new category was created
-                updated_categories = data.get("menu_categories", [])
-                iot_category = None
-                for category in updated_categories:
-                    if category.get("name") == "IoT":
-                        iot_category = category
-                        break
-                
-                if iot_category:
-                    self.log("✅ 'IoT' category successfully created")
-                    self.log(f"   Category ID: {iot_category.get('id')}")
-                    self.log(f"   Name: {iot_category.get('name')}")
-                    self.log(f"   Icon: {iot_category.get('icon')}")
-                    self.log(f"   Order: {iot_category.get('order')}")
+                if new_version > current_version:
+                    self.log(f"✅ Version incremented from {current_version} to {new_version}")
                     return True
                 else:
-                    self.log("❌ 'IoT' category not found in response", "ERROR")
+                    self.log(f"❌ Version did not increment. Current: {current_version}, New: {new_version}", "ERROR")
                     return False
-                
             else:
-                self.log(f"❌ PUT /api/user-preferences failed - Status: {response.status_code}", "ERROR")
+                self.log("❌ Failed to get updated board state", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def cleanup_test_data(self):
-        """Clean up test data by restoring original preferences"""
-        self.log("🧹 Cleaning up test data...")
-        
-        if not self.original_preferences:
-            self.log("ℹ️  No original preferences to restore")
-            return True
-        
-        try:
-            # Restore original preferences
-            update_data = {
-                "menu_categories": self.original_preferences.get("menu_categories", []),
-                "menu_items": self.original_preferences.get("menu_items", [])
-            }
-            
-            response = self.admin_session.put(
-                f"{BACKEND_URL}/user-preferences",
-                json=update_data,
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                self.log("✅ Test data cleaned up successfully")
-                return True
-            else:
-                self.log(f"⚠️  Cleanup failed - Status: {response.status_code}")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"⚠️  Cleanup failed - Error: {str(e)}")
             return False
     
     def run_menu_categories_tests(self):
