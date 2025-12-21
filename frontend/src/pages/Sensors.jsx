@@ -419,7 +419,20 @@ const Sensors = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSensors.map((sensor) => (
-            <Card key={sensor.id} className="p-6 hover:shadow-lg transition-shadow">
+            <Card 
+              key={sensor.id} 
+              className="p-6 hover:shadow-lg transition-shadow"
+              data-ai-type="SENSOR"
+              data-ai-id={sensor.id}
+              data-ai-name={sensor.nom}
+              data-ai-status={sensor.alert_enabled ? 'active' : 'inactive'}
+              data-ai-extra={JSON.stringify({ 
+                type: sensor.type, 
+                value: sensor.current_value, 
+                unite: sensor.unite,
+                mqtt_topic: sensor.mqtt_topic 
+              })}
+            >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
