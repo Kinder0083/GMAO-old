@@ -580,6 +580,8 @@ const WhiteboardPage = () => {
     
     canvas.add(shape);
     canvas.setActiveObject(shape);
+    console.log('Shape added:', { type: shapeType, objectsCount: canvas.getObjects().length });
+    canvas.renderAll();
   };
 
   // Ajouter un post-it
