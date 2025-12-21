@@ -1099,26 +1099,26 @@ const WhiteboardPage = () => {
 
   return (
     <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
-      {/* Barre de contrôle minimale */}
-      <div className="absolute top-4 left-4 z-50 flex gap-2">
+      {/* Barre de contrôle minimale - compact */}
+      <div className="absolute top-2 left-2 z-50 flex gap-1">
         <Button
           variant="outline"
           size="icon"
           onClick={handleGoBack}
-          className="bg-white shadow-md hover:bg-gray-100"
+          className="bg-white shadow-md hover:bg-gray-100 h-8 w-8"
           title="Retour au Dashboard"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={18} />
         </Button>
         
         <Button
           variant={showToolbar ? "default" : "outline"}
           size="icon"
           onClick={() => setShowToolbar(!showToolbar)}
-          className={`shadow-md ${showToolbar ? 'bg-purple-600 hover:bg-purple-700' : 'bg-white hover:bg-gray-100'}`}
+          className={`shadow-md h-8 w-8 ${showToolbar ? 'bg-purple-600 hover:bg-purple-700' : 'bg-white hover:bg-gray-100'}`}
           title="Palette d'outils"
         >
-          <Palette size={20} />
+          <Palette size={18} />
         </Button>
       </div>
       
