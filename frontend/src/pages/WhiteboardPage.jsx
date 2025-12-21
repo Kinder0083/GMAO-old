@@ -254,11 +254,20 @@ const WhiteboardPage = () => {
     }
   }, []);
   
-  // Effet pour connecter les WebSockets
+  // Ref pour éviter les connexions multiples
+  const wsConnectionAttemptedRef = useRef(false);
+  
+  // Effet pour connecter les WebSockets - UNE SEULE FOIS
   useEffect(() => {
-    if (canvasReady && user?.id) {
-      connectWebSocket('board_1');
-      connectWebSocket('board_2');
+    if (canvasReady && user?.id && !wsConnectionAttemptedRef.current) {
+      wsConnectionAttemptedRef.current = true;
+      // Attendre un peu avant de tenter la connexion WebSocket
+      const timeout = setTimeout(() => {
+        connectWebSocket('board_1');
+        connectWebSocket('board_2');
+      }, 1000);
+      
+      return () => clearTimeout(timeout);
     }
     
     return () => {
@@ -274,7 +283,8 @@ const WhiteboardPage = () => {
         ws2Ref.current = null;
       }
     };
-  }, [canvasReady, user?.id, connectWebSocket]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasReady, user?.id]);
 
   // ==================== Fin WebSocket ====================
 
