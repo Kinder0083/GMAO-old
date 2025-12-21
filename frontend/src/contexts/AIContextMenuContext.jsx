@@ -239,6 +239,11 @@ export const AIContextMenuProvider = ({ children }) => {
 
   // Gestionnaire de clic droit
   const handleContextMenu = useCallback((e) => {
+    // Ignorer si on est sur la page Chat Live - laisser le menu contextuel natif
+    if (window.location.pathname.includes('chat-live') || window.location.pathname.includes('chat')) {
+      return; // Ne pas intercepter le clic droit sur Chat Live
+    }
+    
     // Ignorer si c'est sur un input, textarea ou élément éditable
     const target = e.target;
     const isEditable = target.tagName === 'INPUT' || 
@@ -247,6 +252,10 @@ export const AIContextMenuProvider = ({ children }) => {
                        target.closest('input, textarea, [contenteditable="true"]');
     
     if (isEditable) return;
+    
+    // Ignorer si on est dans un composant de chat (au cas où)
+    const isChatComponent = target.closest('[data-chat-message], .chat-message, .message-container, [data-no-ai-menu]');
+    if (isChatComponent) return;
 
     e.preventDefault();
     
