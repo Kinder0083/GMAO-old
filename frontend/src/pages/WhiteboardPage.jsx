@@ -153,17 +153,20 @@ const WhiteboardPage = () => {
           canvas.clear();
           canvas.backgroundColor = '#FFFFFF';
           
-          // Utiliser loadFromJSON pour charger tous les objets
+          // Utiliser loadFromJSON avec Promise (Fabric.js v6)
           const canvasData = {
             version: '6.0.0',
             objects: data.objects,
             background: '#FFFFFF'
           };
           
-          canvas.loadFromJSON(canvasData, () => {
+          try {
+            await canvas.loadFromJSON(canvasData);
             canvas.renderAll();
             console.log(`Tableau ${boardId} chargé avec ${data.objects.length} objets`);
-          });
+          } catch (loadError) {
+            console.error(`Erreur loadFromJSON ${boardId}:`, loadError);
+          }
         }
         
         setIsConnected(prev => ({ ...prev, [boardId]: true }));
