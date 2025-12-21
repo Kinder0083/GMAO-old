@@ -400,6 +400,10 @@ const WhiteboardPage = () => {
     
     return () => {
       clearTimeout(timer);
+      // Sauvegarder avant de quitter
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
       if (canvas1Ref.current) {
         canvas1Ref.current.dispose();
         canvas1Ref.current = null;
@@ -411,18 +415,31 @@ const WhiteboardPage = () => {
     };
   }, [initCanvas]);
 
-  // Connexion WebSocket après que les canvas soient prêts
+  // Charger les tableaux depuis l'API après que les canvas soient prêts
   useEffect(() => {
-    if (canvasReady && user && user.id) {
-      ws1Ref.current = connectWebSocket('board_1');
-      ws2Ref.current = connectWebSocket('board_2');
+    if (canvasReady && token) {
+      setIsLoading(true);
+      
+      // Charger les deux tableaux
+      Promise.all([
+        loadBoard('board_1'),
+        loadBoard('board_2')
+      ]).then(() => {
+        setIsLoading(false);
+        toast({
+          title: '✅ Tableaux chargés',
+          description: 'Vos dessins ont été restaurés'
+        });
+      }).catch(() => {
+        setIsLoading(false);
+      });
     }
     
     return () => {
       if (ws1Ref.current) ws1Ref.current.close();
       if (ws2Ref.current) ws2Ref.current.close();
     };
-  }, [canvasReady, user, connectWebSocket]);
+  }, [canvasReady, token, loadBoard, toast]);
 
   // Redimensionner les canvas
   useEffect(() => {
