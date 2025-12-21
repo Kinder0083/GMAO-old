@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Script for Whiteboard Persistence (Tableau d'affichage)
-Tests the whiteboard API endpoints for persistence functionality
+Backend API Testing Script for AI Chatbot GMAO Iris
+Tests the AI chatbot API endpoints for P2 & P3 functionality
 """
 
 import requests
