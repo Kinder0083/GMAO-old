@@ -758,9 +758,9 @@ APPEOF
 ok "Application installée"
 
 msg "Configuration des services..."
-pct exec $CTID -- bash -c '
-# Supervisor
-cat > /etc/supervisor/conf.d/gmao-iris-backend.conf <<EOF
+
+# Supervisor configuration
+pct exec $CTID -- bash -c 'cat > /etc/supervisor/conf.d/gmao-iris-backend.conf << "SUPERVISOR_EOF"
 [program:gmao-iris-backend]
 directory=/opt/gmao-iris/backend
 command=/opt/gmao-iris/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
@@ -770,14 +770,15 @@ autorestart=true
 stderr_logfile=/var/log/gmao-iris-backend.err.log
 stdout_logfile=/var/log/gmao-iris-backend.out.log
 environment=PYTHONUNBUFFERED=1
-EOF
+SUPERVISOR_EOF
 supervisorctl reread >/dev/null
-supervisorctl update >/dev/null
+supervisorctl update >/dev/null'
+
 sleep 3
 
-# Nginx
-rm -f /etc/nginx/sites-enabled/default
-cat > /etc/nginx/sites-available/gmao-iris <<EOF
+# Nginx configuration
+pct exec $CTID -- bash -c 'rm -f /etc/nginx/sites-enabled/default
+cat > /etc/nginx/sites-available/gmao-iris << "NGINX_EOF"
 server {
     listen 80;
     server_name _;
@@ -785,52 +786,52 @@ server {
     
     location / {
         root /opt/gmao-iris/frontend/build;
-        try_files \$uri \$uri/ /index.html;
+        try_files $uri $uri/ /index.html;
     }
     
     location /api {
         proxy_pass http://localhost:8001;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection upgrade;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
     }
     
     # WebSocket pour le Chat Live
     location /ws/chat/ {
         proxy_pass http://localhost:8001;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
         proxy_read_timeout 86400;
         proxy_send_timeout 86400;
     }
     
-    # WebSocket pour le Tableau d'affichage
+    # WebSocket pour le Tableau d affichage
     location /ws/whiteboard/ {
         proxy_pass http://localhost:8001;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
         proxy_read_timeout 86400;
         proxy_send_timeout 86400;
     }
 }
-EOF
+NGINX_EOF
 ln -sf /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/
 nginx -t >/dev/null 2>&1
-systemctl reload nginx
+systemctl reload nginx'
 
-# Firewall
-ufw --force enable >/dev/null 2>&1
+# Firewall configuration
+pct exec $CTID -- bash -c 'ufw --force enable >/dev/null 2>&1
 ufw allow 22/tcp >/dev/null 2>&1
 ufw allow 80/tcp >/dev/null 2>&1
-ufw allow 443/tcp >/dev/null 2>&1
+ufw allow 443/tcp >/dev/null 2>&1'
 
 ok "Services démarrés"
 
