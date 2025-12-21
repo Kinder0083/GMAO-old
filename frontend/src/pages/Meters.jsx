@@ -140,10 +140,15 @@ const Meters = () => {
           <h1 className="text-3xl font-bold text-gray-900">Compteurs</h1>
           <p className="text-gray-600 mt-1">Gérez vos compteurs et relevés de consommation</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
-          setSelectedMeter(null);
-          setFormDialogOpen(true);
-        }}>
+        <Button 
+          id="btn-nouveau-compteur"
+          data-action="creer-compteur"
+          className="bg-blue-600 hover:bg-blue-700 text-white" 
+          onClick={() => {
+            setSelectedMeter(null);
+            setFormDialogOpen(true);
+          }}
+        >
           <Plus size={20} className="mr-2" />
           Nouveau compteur
         </Button>
