@@ -351,7 +351,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       }`}
     >
       <div className="bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
-           style={{ maxHeight: minimized ? '48px' : '500px' }}>
+           style={{ maxHeight: minimized ? '48px' : '600px', height: minimized ? '48px' : '550px' }}>
         
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-3 flex items-center justify-between">
