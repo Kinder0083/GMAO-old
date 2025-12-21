@@ -78,7 +78,7 @@ const InactivityHandler = () => {
   // Détecter si l'utilisateur est sur une page où le timeout est désactivé
   useEffect(() => {
     const disabledPaths = ['/chat-live', '/whiteboard'];
-    setIsOnChatLivePage(disabledPaths.includes(location.pathname));
+    setIsTimeoutDisabled(disabledPaths.includes(location.pathname));
   }, [location.pathname]);
 
   // Vérification de l'inactivité
