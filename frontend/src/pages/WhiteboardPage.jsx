@@ -147,7 +147,8 @@ const WhiteboardPage = () => {
     } catch (error) {
       console.error(`Erreur création WebSocket ${boardId}:`, error);
     }
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, handleWebSocketMessage]);
   
   // Gérer les messages WebSocket
   const handleWebSocketMessage = useCallback((boardId, message) => {
