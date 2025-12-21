@@ -39,7 +39,7 @@ class WhiteboardConnectionManager:
                 try:
                     old_ws = self.active_connections[board_id][user_id]
                     await old_ws.close()
-                except:
+                except Exception:
                     pass
             
             self.active_connections[board_id][user_id] = websocket
