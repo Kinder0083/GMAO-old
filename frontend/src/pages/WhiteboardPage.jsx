@@ -1144,7 +1144,7 @@ const WhiteboardPage = () => {
       
       {/* Palette d'outils */}
       {showToolbar && (
-        <div className="absolute top-16 left-4 z-50 bg-white rounded-xl shadow-2xl p-4 w-64 max-h-[calc(100vh-100px)] overflow-y-auto">
+        <div className="absolute top-12 left-2 z-50 bg-white rounded-xl shadow-2xl p-3 w-60 max-h-[calc(100vh-60px)] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-gray-700">Outils</h3>
             <Button variant="ghost" size="icon" onClick={() => setShowToolbar(false)}>
