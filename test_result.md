@@ -5,91 +5,43 @@ Testing Whiteboard bug fixes for GMAO Iris:
 1. Bug 1: Aspect ratio distortion between devices (uniform scale fix)
 2. Bug 2: Object deletion not syncing via WebSocket
 
-backend:
-  - task: "AI Context Endpoint"
-    implemented: true
-    working: true
-    file: "backend/ai_chat_routes.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ GET /api/ai/context successful - Returns enriched app context with all required fields: current_user_name, current_user_role, active_work_orders, urgent_work_orders, equipment_in_maintenance, active_alerts, sensors_in_alert, current_page, last_action"
-
-  - task: "AI Providers Endpoint"
-    implemented: true
-    working: true
-    file: "backend/ai_chat_routes.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ GET /api/ai/providers successful - Returns 5 LLM providers (Gemini, OpenAI, Anthropic available; DeepSeek, Mistral require API keys). All providers have correct structure with id, name, models, requires_api_key, is_available fields"
-
-  - task: "AI Chat Basic Functionality"
-    implemented: true
-    working: true
-    file: "backend/ai_chat_routes.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ POST /api/ai/chat successful - Basic chat functionality working. AI responds appropriately to GMAO-related queries. Returns proper response structure with response text and session_id"
-
-  - task: "AI Chat with Enriched Context"
-    implemented: true
-    working: true
-    file: "backend/ai_chat_routes.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ POST /api/ai/chat with include_app_context=true successful - AI uses real-time application context in responses, mentioning specific statistics about work orders, equipment, and alerts"
-
-  - task: "AI Navigation Commands Generation"
-    implemented: true
-    working: true
-    file: "backend/ai_chat_routes.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ AI Navigation commands working perfectly - When asked 'montre-moi comment créer un ordre de travail', AI generates appropriate [[ACTION:creer-ot]] command for visual guidance. P3 visual guidance functionality operational"
-
-  - task: "AI Chat History"
-    implemented: true
-    working: true
-    file: "backend/ai_chat_routes.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ GET /api/ai/history/{session_id} successful - Chat history retrieval working correctly. Returns conversation history with proper message structure (role, content, timestamp)"
-
 frontend:
-  - task: "Visual Effects Rendering"
-    implemented: false
+  - task: "Whiteboard Aspect Ratio Consistency"
+    implemented: true
     working: "NA"
-    file: "frontend/src/components/Common/AIChatWidget.jsx"
+    file: "frontend/src/pages/WhiteboardPage.jsx"
     stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
+    priority: "high"
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Frontend visual effects testing not performed - system limitations prevent UI testing. Backend AI commands generation is working correctly"
+        comment: "Initial test setup - Need to verify aspect ratio consistency across different viewport sizes. Testing that drawings maintain same relative positions and proportions when switching between desktop (1920x800) and mobile (390x844) viewports."
+
+  - task: "Whiteboard Object Deletion WebSocket Sync"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/WhiteboardPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - Need to verify object deletion syncs via WebSocket. Testing that console shows '[WS] Envoi suppression objet' messages when objects are deleted and WebSocket messages are sent correctly."
+
+backend:
+  - task: "Whiteboard WebSocket Object Deletion"
+    implemented: true
+    working: "NA"
+    file: "backend/whiteboard_manager.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - Need to verify backend WebSocket handling for object deletion. Backend code shows proper logging and message broadcasting for object_removed events."
 
 metadata:
   created_by: "testing_agent"
