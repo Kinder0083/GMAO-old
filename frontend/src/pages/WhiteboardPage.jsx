@@ -41,7 +41,8 @@ const WS_URL = getWebSocketUrl();
 
 // DIMENSIONS FIXES du canvas (identiques sur tous les écrans)
 // Ces dimensions représentent la "zone de travail" logique
-const CANVAS_FIXED_WIDTH = 1600;
+// Ratio 4:3 pour mieux s'adapter aux différentes tailles d'écran
+const CANVAS_FIXED_WIDTH = 1200;
 const CANVAS_FIXED_HEIGHT = 900;
 
 // Couleurs disponibles
