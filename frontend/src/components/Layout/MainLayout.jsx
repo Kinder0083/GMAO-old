@@ -35,7 +35,8 @@ import {
   Palette,
   Mail,
   Radio,
-  Activity
+  Activity,
+  Presentation
 } from 'lucide-react';
 import FirstLoginPasswordDialog from '../Common/FirstLoginPasswordDialog';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
