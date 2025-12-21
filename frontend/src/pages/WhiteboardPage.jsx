@@ -194,13 +194,22 @@ const WhiteboardPage = () => {
     const userName = `${user?.prenom || ''} ${user?.nom || ''}`.trim() || 'Anonyme';
     const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${userId}&user_name=${encodeURIComponent(userName)}`;
     
-    console.log(`Connexion WebSocket à ${boardId}...`);
+    console.log(`Tentative connexion WebSocket à ${boardId}...`);
     
     try {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       
+      // Timeout pour la connexion
+      const connectionTimeout = setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          console.log(`WebSocket ${boardId} timeout - utilisation de l'API REST uniquement`);
+          ws.close();
+        }
+      }, 5000);
+      
       ws.onopen = () => {
+        clearTimeout(connectionTimeout);
         console.log(`WebSocket ${boardId} connecté`);
         setWsConnected(prev => ({ ...prev, [boardId]: true }));
         
@@ -209,23 +218,19 @@ const WhiteboardPage = () => {
       };
       
       ws.onclose = () => {
+        clearTimeout(connectionTimeout);
         console.log(`WebSocket ${boardId} déconnecté`);
         setWsConnected(prev => ({ ...prev, [boardId]: false }));
         wsRef.current = null;
         
-        // Reconnexion automatique après 5 secondes (augmenté pour éviter les boucles)
-        if (wsReconnectTimeoutRef.current) {
-          clearTimeout(wsReconnectTimeoutRef.current);
-        }
-        wsReconnectTimeoutRef.current = setTimeout(() => {
-          if (document.visibilityState === 'visible') {
-            connectWebSocket(boardId);
-          }
-        }, 5000);
+        // PAS de reconnexion automatique pour éviter les boucles
+        // L'API REST fonctionne toujours comme fallback
       };
       
       ws.onerror = (error) => {
-        console.error(`Erreur WebSocket ${boardId}:`, error);
+        clearTimeout(connectionTimeout);
+        console.log(`WebSocket ${boardId} non disponible - utilisation de l'API REST`);
+        // Ne pas afficher d'erreur car c'est attendu dans certains environnements
       };
       
       ws.onmessage = (event) => {
@@ -237,7 +242,7 @@ const WhiteboardPage = () => {
         }
       };
     } catch (error) {
-      console.error(`Erreur création WebSocket ${boardId}:`, error);
+      console.log(`WebSocket ${boardId} non supporté - utilisation de l'API REST`);
     }
   }, [user, handleWebSocketMessage]);
   
