@@ -41,9 +41,9 @@ const WS_URL = getWebSocketUrl();
 
 // DIMENSIONS FIXES du canvas (identiques sur tous les écrans)
 // Ces dimensions représentent la "zone de travail" logique
-// Ratio 3:4 PORTRAIT pour mieux remplir l'espace avec 2 tableaux côte à côte
-const CANVAS_FIXED_WIDTH = 900;
-const CANVAS_FIXED_HEIGHT = 1200;
+// Format portrait optimisé pour 2 tableaux côte à côte sur écran large
+const CANVAS_FIXED_WIDTH = 800;
+const CANVAS_FIXED_HEIGHT = 1000;
 
 // Couleurs disponibles
 const COLORS = [
