@@ -158,12 +158,28 @@ export const AINavigationProvider = ({ children }) => {
     return false;
   }, [navigate]);
 
-  // Démarrer un guidage étape par étape
-  const startGuidance = useCallback((steps) => {
+  // Démarrer un guidage étape par étape (avec support des guides prédéfinis)
+  const startGuidance = useCallback((stepsOrGuideId) => {
+    // Si c'est une chaîne, chercher dans les guides prédéfinis
+    let steps = stepsOrGuideId;
+    if (typeof stepsOrGuideId === 'string') {
+      steps = PREDEFINED_GUIDES[stepsOrGuideId];
+      if (!steps) {
+        console.warn(`Guide prédéfini '${stepsOrGuideId}' non trouvé`);
+        return false;
+      }
+    }
+    
+    if (!Array.isArray(steps) || steps.length === 0) {
+      console.warn('Étapes de guidage invalides');
+      return false;
+    }
+    
     setGuidanceSteps(steps);
     setCurrentStep(0);
     setIsGuiding(true);
     setPulseAnimation(true);
+    return true;
   }, []);
 
   // Arrêter le guidage
@@ -175,6 +191,7 @@ export const AINavigationProvider = ({ children }) => {
     setTooltipContent('');
     setShowArrow(false);
     setShowHandPointer(false);
+    clearAllEffects();
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
