@@ -283,11 +283,16 @@ const WhiteboardPage = () => {
       
       case 'object_removed':
         if (canvas && message.object_id) {
+          console.log(`[WS] Réception suppression objet ${message.object_id}`);
           isReceivingRemoteRef.current = true;
           const objToRemove = canvas.getObjects().find(o => o.id === message.object_id);
           if (objToRemove) {
+            objToRemove._fromRemote = true; // Marquer comme venant de l'extérieur
             canvas.remove(objToRemove);
             canvas.renderAll();
+            console.log(`[WS] Objet ${message.object_id} supprimé avec succès`);
+          } else {
+            console.log(`[WS] Objet ${message.object_id} non trouvé sur le canvas`);
           }
           isReceivingRemoteRef.current = false;
         }
