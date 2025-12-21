@@ -324,7 +324,15 @@ const Assets = () => {
             </div>
           ) : (
             filteredEquipments.filter(eq => !eq.parent_id).map((equipment) => (
-              <Card key={equipment.id} className="hover:shadow-xl transition-all duration-300 cursor-pointer group">
+              <Card 
+                key={equipment.id} 
+                className="hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                data-ai-type="EQUIPMENT"
+                data-ai-id={equipment.id}
+                data-ai-name={equipment.nom}
+                data-ai-status={equipment.statut}
+                data-ai-extra={JSON.stringify({ categorie: equipment.categorie, emplacement: equipment.emplacement?.nom })}
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
