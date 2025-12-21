@@ -601,13 +601,13 @@ class WhiteboardTester:
         return results
 
 if __name__ == "__main__":
-    tester = MenuCategoriesTester()
-    results = tester.run_menu_categories_tests()
+    tester = WhiteboardTester()
+    results = tester.run_whiteboard_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "basic_endpoint", "create_stock_category", 
-        "assign_menu_to_category", "persistence_verification", "structure_validation"
+        "admin_login", "get_initial_state", "sync_objects", 
+        "verify_persistence", "sync_additional", "verify_behavior"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
