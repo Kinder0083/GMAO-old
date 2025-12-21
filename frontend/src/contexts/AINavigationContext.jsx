@@ -715,25 +715,25 @@ export const AINavigationProvider = ({ children }) => {
         </div>
       ))}
       
-      {/* Effet de Célébration (Confettis) */}
+      {/* Effet de Célébration (Confettis) - avec positions pré-calculées */}
       {showCelebration && (
         <div className="fixed inset-0 z-[10002] pointer-events-none overflow-hidden">
-          {[...Array(50)].map((_, i) => (
+          {CONFETTI_POSITIONS.map((pos, i) => (
             <div
               key={i}
               className="absolute animate-bounce"
               style={{
-                left: `${Math.random() * 100}%`,
+                left: `${pos.left}%`,
                 top: '-20px',
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
+                animationDelay: `${pos.delay}s`,
+                animationDuration: `${pos.duration}s`
               }}
             >
               <div 
                 className="w-3 h-3 rounded-full"
                 style={{
-                  backgroundColor: ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'][Math.floor(Math.random() * 5)],
-                  transform: `rotate(${Math.random() * 360}deg)`
+                  backgroundColor: pos.color,
+                  transform: `rotate(${pos.rotation}deg)`
                 }}
               />
             </div>
