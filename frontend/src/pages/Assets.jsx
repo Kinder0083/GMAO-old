@@ -186,7 +186,12 @@ const Assets = () => {
             </Button>
           </div>
           
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAdd}>
+          <Button 
+            id="btn-nouvel-equipement"
+            data-action="creer-equipement"
+            className="bg-blue-600 hover:bg-blue-700 text-white" 
+            onClick={handleAdd}
+          >
             <Plus size={20} className="mr-2" />
             Nouvel équipement
           </Button>
