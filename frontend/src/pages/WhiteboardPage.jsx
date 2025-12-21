@@ -529,11 +529,16 @@ const WhiteboardPage = () => {
   // Ajouter une forme
   const addShape = (shapeType) => {
     const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    if (!canvas) return;
+    console.log('addShape called:', { shapeType, activeBoard, canvasExists: !!canvas });
+    if (!canvas) {
+      console.error('Canvas not found!');
+      return;
+    }
     
     let shape;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
+    console.log('Canvas dimensions:', { width: canvas.width, height: canvas.height, centerX, centerY });
     
     switch (shapeType) {
       case 'rect':
