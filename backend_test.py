@@ -22,7 +22,7 @@ class WhiteboardTester:
         self.admin_session = requests.Session()
         self.admin_token = None
         self.admin_data = None
-        self.original_preferences = None
+        self.initial_board_state = None
         
     def log(self, message, level="INFO"):
         """Log test messages with timestamp"""
