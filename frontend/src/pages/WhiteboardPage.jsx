@@ -22,7 +22,10 @@ import {
   Trash2,
   Users,
   Wifi,
-  WifiOff
+  WifiOff,
+  ZoomIn,
+  ZoomOut,
+  Maximize2
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -35,6 +38,11 @@ const getWebSocketUrl = () => {
   return `${protocol}//${url.host}`;
 };
 const WS_URL = getWebSocketUrl();
+
+// DIMENSIONS FIXES du canvas (identiques sur tous les écrans)
+// Ces dimensions représentent la "zone de travail" logique
+const CANVAS_FIXED_WIDTH = 1600;
+const CANVAS_FIXED_HEIGHT = 900;
 
 // Couleurs disponibles
 const COLORS = [
@@ -87,9 +95,27 @@ const WhiteboardPage = () => {
   const [wsConnected, setWsConnected] = useState({ board_1: false, board_2: false });
   const [canvasReady, setCanvasReady] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // États pour le zoom adaptatif
+  const [zoomLevels, setZoomLevels] = useState({ board_1: 1, board_2: 1 });
 
   // Générer un ID unique
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // ==================== Calcul du zoom adaptatif ====================
+  
+  // Calculer le zoom optimal pour adapter le canvas fixe au conteneur
+  const calculateOptimalZoom = useCallback((containerWidth, containerHeight) => {
+    const padding = 20; // Marge autour du canvas
+    const availableWidth = containerWidth - padding;
+    const availableHeight = containerHeight - padding;
+    
+    const scaleX = availableWidth / CANVAS_FIXED_WIDTH;
+    const scaleY = availableHeight / CANVAS_FIXED_HEIGHT;
+    
+    // Prendre le plus petit ratio pour que le canvas tienne entièrement
+    return Math.min(scaleX, scaleY, 1); // Maximum 1 (pas d'agrandissement au-delà de 100%)
+  }, []);
 
   // ==================== WebSocket ====================
   
@@ -395,12 +421,13 @@ const WhiteboardPage = () => {
     debouncedSave(boardId);
   }, [debouncedSave]);
 
-  // Initialiser un canvas Fabric.js
+  // Initialiser un canvas Fabric.js avec DIMENSIONS FIXES
   const initCanvas = useCallback((containerEl, boardId) => {
     if (!containerEl) return null;
     
-    const width = containerEl.clientWidth || 800;
-    const height = containerEl.clientHeight || 400;
+    // Utiliser les DIMENSIONS FIXES au lieu des dimensions du conteneur
+    const width = CANVAS_FIXED_WIDTH;
+    const height = CANVAS_FIXED_HEIGHT;
     
     const canvasEl = document.createElement('canvas');
     canvasEl.id = `canvas-${boardId}`;
@@ -414,6 +441,14 @@ const WhiteboardPage = () => {
       isDrawingMode: false,
       selection: true,
     });
+    
+    // Calculer et appliquer le zoom initial
+    const containerWidth = containerEl.clientWidth || 800;
+    const containerHeight = containerEl.clientHeight || 400;
+    const optimalZoom = calculateOptimalZoom(containerWidth, containerHeight);
+    
+    fabricCanvas.setZoom(optimalZoom);
+    setZoomLevels(prev => ({ ...prev, [boardId]: optimalZoom }));
     
     // Événements - utiliser des fonctions qui ne dépendent pas de closures
     fabricCanvas.on('object:added', (e) => {
@@ -556,7 +591,7 @@ const WhiteboardPage = () => {
     });
     
     return fabricCanvas;
-  }, []);
+  }, [calculateOptimalZoom]);
 
   // Initialisation des canvas - UNE SEULE FOIS
   useEffect(() => {
@@ -620,24 +655,37 @@ const WhiteboardPage = () => {
     };
   }, [initCanvas, loadBoard, token, toast]);
 
-  // Redimensionner les canvas
+  // Redimensionner/Ajuster le zoom des canvas lors du resize
   useEffect(() => {
     const handleResize = () => {
       [
-        { canvas: canvas1Ref.current, container: container1Ref.current },
-        { canvas: canvas2Ref.current, container: container2Ref.current }
-      ].forEach(({ canvas, container }) => {
+        { canvas: canvas1Ref.current, container: container1Ref.current, boardId: 'board_1' },
+        { canvas: canvas2Ref.current, container: container2Ref.current, boardId: 'board_2' }
+      ].forEach(({ canvas, container, boardId }) => {
         if (!canvas || !container) return;
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        canvas.setDimensions({ width, height });
+        
+        // Calculer le nouveau zoom optimal
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        const optimalZoom = calculateOptimalZoom(containerWidth, containerHeight);
+        
+        // Appliquer le zoom
+        canvas.setZoom(optimalZoom);
+        setZoomLevels(prev => ({ ...prev, [boardId]: optimalZoom }));
+        
         canvas.renderAll();
       });
     };
     
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [canvasReady]);
+    // Appliquer le zoom initial après un court délai
+    const initialResizeTimeout = setTimeout(handleResize, 500);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(initialResizeTimeout);
+    };
+  }, [canvasReady, calculateOptimalZoom]);
 
   // Gestionnaire de clavier pour supprimer avec la touche Suppr/Delete
   useEffect(() => {
@@ -676,6 +724,39 @@ const WhiteboardPage = () => {
     document.addEventListener('keydown', handleKeyDown, true);
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [activeBoard]);
+
+  // ==================== Fonctions de zoom manuel ====================
+  
+  const handleZoomIn = (boardId) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    if (!canvas) return;
+    
+    const newZoom = Math.min(canvas.getZoom() * 1.2, 2); // Max 200%
+    canvas.setZoom(newZoom);
+    setZoomLevels(prev => ({ ...prev, [boardId]: newZoom }));
+    canvas.renderAll();
+  };
+  
+  const handleZoomOut = (boardId) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    if (!canvas) return;
+    
+    const newZoom = Math.max(canvas.getZoom() / 1.2, 0.25); // Min 25%
+    canvas.setZoom(newZoom);
+    setZoomLevels(prev => ({ ...prev, [boardId]: newZoom }));
+    canvas.renderAll();
+  };
+  
+  const handleZoomFit = (boardId) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    const container = boardId === 'board_1' ? container1Ref.current : container2Ref.current;
+    if (!canvas || !container) return;
+    
+    const optimalZoom = calculateOptimalZoom(container.clientWidth, container.clientHeight);
+    canvas.setZoom(optimalZoom);
+    setZoomLevels(prev => ({ ...prev, [boardId]: optimalZoom }));
+    canvas.renderAll();
+  };
 
   // Changer d'outil
   const setTool = (tool, color = null) => {
@@ -753,15 +834,15 @@ const WhiteboardPage = () => {
     }
   }, [activeBoard, activeTool]);
 
-  // Ajouter du texte
+  // Ajouter du texte - position basée sur les dimensions FIXES
   const addText = () => {
     const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     const text = new fabric.IText('Texte', {
       id: generateId(),
-      left: canvas.width / 2 - 30,
-      top: canvas.height / 2 - 15,
+      left: CANVAS_FIXED_WIDTH / 2 - 30,
+      top: CANVAS_FIXED_HEIGHT / 2 - 15,
       fontSize: 24,
       fill: activeColor,
       fontFamily: 'Arial',
@@ -771,14 +852,14 @@ const WhiteboardPage = () => {
     canvas.renderAll();
   };
 
-  // Ajouter une forme
+  // Ajouter une forme - position basée sur les dimensions FIXES
   const addShape = (shapeType) => {
     const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
     let shape;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
+    const centerX = CANVAS_FIXED_WIDTH / 2;
+    const centerY = CANVAS_FIXED_HEIGHT / 2;
     
     switch (shapeType) {
       case 'rect':
@@ -823,7 +904,7 @@ const WhiteboardPage = () => {
     canvas.renderAll();
   };
 
-  // Ajouter un post-it
+  // Ajouter un post-it - position basée sur les dimensions FIXES
   const addStickyNote = () => {
     const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
@@ -847,8 +928,8 @@ const WhiteboardPage = () => {
     
     const group = new fabric.Group([rect, text], {
       id: generateId(),
-      left: canvas.width / 2 - 75,
-      top: canvas.height / 2 - 75,
+      left: CANVAS_FIXED_WIDTH / 2 - 75,
+      top: CANVAS_FIXED_HEIGHT / 2 - 75,
     });
     
     canvas.add(group);
@@ -879,8 +960,8 @@ const WhiteboardPage = () => {
           
           img.set({
             id: generateId(),
-            left: canvas.width / 2 - img.getScaledWidth() / 2,
-            top: canvas.height / 2 - img.getScaledHeight() / 2,
+            left: CANVAS_FIXED_WIDTH / 2 - img.getScaledWidth() / 2,
+            top: CANVAS_FIXED_HEIGHT / 2 - img.getScaledHeight() / 2,
           });
           
           canvas.add(img);
@@ -1056,11 +1137,16 @@ const WhiteboardPage = () => {
         </Button>
       </div>
       
-      {/* Indicateurs de connexion */}
+      {/* Indicateurs de connexion + Dimensions */}
       <div className="absolute top-4 right-4 z-50 flex gap-4">
+        {/* Info dimensions fixes */}
+        <div className="flex items-center gap-2 bg-blue-100 px-3 py-1.5 rounded-full shadow-md text-xs text-blue-700">
+          📐 {CANVAS_FIXED_WIDTH}×{CANVAS_FIXED_HEIGHT}px
+        </div>
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
           <div className={`w-2 h-2 rounded-full ${isConnected.board_1 ? 'bg-green-500' : 'bg-red-500'}`} />
           <span>Tableau 1</span>
+          <span className="text-xs text-gray-500">({Math.round(zoomLevels.board_1 * 100)}%)</span>
           {wsConnected.board_1 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
           <Users size={14} />
           <span>{connectedUsers.board_1?.length || 0}</span>
@@ -1068,6 +1154,7 @@ const WhiteboardPage = () => {
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
           <div className={`w-2 h-2 rounded-full ${isConnected.board_2 ? 'bg-green-500' : 'bg-red-500'}`} />
           <span>Tableau 2</span>
+          <span className="text-xs text-gray-500">({Math.round(zoomLevels.board_2 * 100)}%)</span>
           {wsConnected.board_2 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
           <Users size={14} />
           <span>{connectedUsers.board_2?.length || 0}</span>
@@ -1076,7 +1163,7 @@ const WhiteboardPage = () => {
       
       {/* Palette d'outils */}
       {showToolbar && (
-        <div className="absolute top-16 left-4 z-50 bg-white rounded-xl shadow-2xl p-4 w-64">
+        <div className="absolute top-16 left-4 z-50 bg-white rounded-xl shadow-2xl p-4 w-64 max-h-[calc(100vh-100px)] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-gray-700">Outils</h3>
             <Button variant="ghost" size="icon" onClick={() => setShowToolbar(false)}>
@@ -1103,6 +1190,22 @@ const WhiteboardPage = () => {
                 className="flex-1"
               >
                 Tableau 2
+              </Button>
+            </div>
+          </div>
+          
+          {/* Contrôles de zoom */}
+          <div className="mb-4">
+            <label className="text-xs text-gray-500 mb-2 block">Zoom ({Math.round(zoomLevels[activeBoard] * 100)}%)</label>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleZoomOut(activeBoard)} title="Zoom arrière" className="flex-1">
+                <ZoomOut size={16} />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleZoomFit(activeBoard)} title="Ajuster à l'écran" className="flex-1">
+                <Maximize2 size={16} />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleZoomIn(activeBoard)} title="Zoom avant" className="flex-1">
+                <ZoomIn size={16} />
               </Button>
             </div>
           </div>
@@ -1213,7 +1316,7 @@ const WhiteboardPage = () => {
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
-          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative cursor-crosshair`}
+          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative cursor-crosshair flex items-center justify-center`}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
@@ -1224,7 +1327,7 @@ const WhiteboardPage = () => {
         {/* Tableau 2 */}
         <div 
           ref={container2Ref}
-          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative cursor-crosshair`}
+          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative cursor-crosshair flex items-center justify-center`}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
