@@ -510,7 +510,9 @@ const MainLayout = () => {
     'Database': Database,
     'Activity': Activity,
     'Terminal': Terminal,
-    'Shield': Shield
+    'Shield': Shield,
+    'Presentation': Presentation,
+    'PresentationIcon': Presentation
   };
 
   // Toggle expansion d'une catégorie
