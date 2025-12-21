@@ -1294,15 +1294,15 @@ const WhiteboardPage = () => {
         </div>
       )}
       
-      {/* Zone des tableaux */}
-      <div className="flex-1 flex flex-col sm:flex-row gap-4 p-4 pt-16">
+      {/* Zone des tableaux - utilise tout l'espace disponible */}
+      <div className="flex-1 flex flex-col sm:flex-row gap-2 p-2 pt-14 min-h-0">
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
-          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative`}
+          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative min-h-0`}
           onClick={() => setActiveBoard('board_1')}
         >
-          <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
+          <div className="absolute top-1 left-1 bg-gray-100/90 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
             Tableau 1
           </div>
           {/* Wrapper pour le scale CSS - contient le canvas de taille fixe */}
@@ -1320,10 +1320,10 @@ const WhiteboardPage = () => {
         {/* Tableau 2 */}
         <div 
           ref={container2Ref}
-          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative`}
+          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative min-h-0`}
           onClick={() => setActiveBoard('board_2')}
         >
-          <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
+          <div className="absolute top-1 left-1 bg-gray-100/90 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
             Tableau 2
           </div>
           {/* Wrapper pour le scale CSS - contient le canvas de taille fixe */}
