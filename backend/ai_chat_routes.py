@@ -782,9 +782,10 @@ async def get_llm_response(
     language: str,
     provider: str,
     model: str,
-    context: str = None
+    context: str = None,
+    app_context: dict = None
 ) -> str:
-    """Obtenir une réponse du LLM configuré"""
+    """Obtenir une réponse du LLM configuré avec contexte enrichi"""
     
     # Récupérer la clé API
     api_key = None
@@ -802,11 +803,11 @@ async def get_llm_response(
     if not api_key:
         raise Exception(f"Clé API non configurée pour {provider}")
     
-    # Préparer le message système
-    system_message = get_system_message(assistant_name, assistant_gender, language)
+    # Préparer le message système avec le contexte enrichi
+    system_message = get_system_message(assistant_name, assistant_gender, language, app_context)
     
-    # Ajouter le contexte si disponible
-    if context:
+    # Ajouter le contexte de page si disponible (et non déjà dans app_context)
+    if context and not app_context:
         system_message += f"\n\nContexte actuel de l'utilisateur : {context}"
     
     # Utiliser emergentintegrations pour l'appel LLM
