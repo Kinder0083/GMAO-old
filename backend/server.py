@@ -6600,9 +6600,6 @@ async def whiteboard_websocket(websocket: WebSocket, board_id: str):
 
 # WebSocket pour le Chat Live
 from websocket_manager import manager as chat_manager
-from auth import decode_access_token
-from bson import ObjectId
-import uuid
 
 @app.websocket("/ws/chat/{token}")
 async def chat_live_websocket(websocket: WebSocket, token: str):
