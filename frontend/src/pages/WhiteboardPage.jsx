@@ -636,11 +636,14 @@ const WhiteboardPage = () => {
   }, [canvasReady]);
 
   // Changer d'outil
-  const setTool = (tool) => {
+  const setTool = (tool, color = null) => {
     setActiveTool(tool);
     
     const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
+    
+    // Utiliser la couleur passée en paramètre ou activeColor
+    const brushColor = color || activeColor;
     
     canvas.isDrawingMode = false;
     canvas.selection = true;
@@ -651,7 +654,7 @@ const WhiteboardPage = () => {
         if (!canvas.freeDrawingBrush) {
           canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
         }
-        canvas.freeDrawingBrush.color = activeColor;
+        canvas.freeDrawingBrush.color = brushColor;
         canvas.freeDrawingBrush.width = strokeWidth;
         break;
       
@@ -660,7 +663,7 @@ const WhiteboardPage = () => {
         if (!canvas.freeDrawingBrush) {
           canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
         }
-        canvas.freeDrawingBrush.color = activeColor + '80';
+        canvas.freeDrawingBrush.color = brushColor + '80';
         canvas.freeDrawingBrush.width = strokeWidth * 3;
         break;
       
@@ -681,6 +684,18 @@ const WhiteboardPage = () => {
         break;
     }
   };
+  
+  // Mettre à jour le pinceau quand la couleur change
+  const updateBrushColor = useCallback((newColor) => {
+    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    if (canvas && canvas.freeDrawingBrush && ['pencil', 'highlighter'].includes(activeTool)) {
+      if (activeTool === 'highlighter') {
+        canvas.freeDrawingBrush.color = newColor + '80';
+      } else {
+        canvas.freeDrawingBrush.color = newColor;
+      }
+    }
+  }, [activeBoard, activeTool]);
 
   // Ajouter du texte
   const addText = () => {
