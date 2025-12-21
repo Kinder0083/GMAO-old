@@ -226,28 +226,6 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     
     await sendMessageToAI(messageToSend);
   };
-      
-    } catch (error) {
-      console.error('Erreur chat IA:', error);
-      
-      const errorMessage = {
-        role: 'assistant',
-        content: `Désolé, je rencontre des difficultés techniques. ${error.response?.data?.detail || 'Veuillez réessayer.'}`,
-        timestamp: new Date().toISOString(),
-        error: true
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
-      
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de contacter l\'assistant IA',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
