@@ -128,7 +128,7 @@ const WhiteboardPage = () => {
     const wrapper = boardId === 'board_1' ? wrapper1Ref.current : wrapper2Ref.current;
     if (wrapper) {
       wrapper.style.transform = `scale(${scale})`;
-      wrapper.style.transformOrigin = 'top left';
+      wrapper.style.transformOrigin = 'top center';
     }
     setScaleFactors(prev => ({ ...prev, [boardId]: scale }));
   }, []);
