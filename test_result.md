@@ -45,22 +45,22 @@ backend:
 
 metadata:
   created_by: "testing_agent"
-  version: "1.0"
-  test_sequence: 1
-  run_ui: false
+  version: "2.0"
+  test_sequence: 2
+  run_ui: true
 
 test_plan:
   current_focus:
-    - "AI Context Endpoint"
-    - "AI Chat with Enriched Context"
-    - "AI Navigation Commands Generation"
+    - "Whiteboard Aspect Ratio Consistency"
+    - "Whiteboard Object Deletion WebSocket Sync"
+    - "Whiteboard WebSocket Object Deletion"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "testing"
-    message: "✅ ALL AI CHATBOT P2 & P3 BACKEND TESTS PASSED (7/7) - All critical AI endpoints are working correctly. Context enrichment, LLM providers, chat functionality, and navigation command generation are fully operational. The AI successfully generates [[ACTION:creer-ot]] commands when asked about work order creation, confirming P3 visual guidance is ready. Frontend visual effects testing was not performed due to system limitations."
+    message: "🎯 STARTING WHITEBOARD BUG TESTING - Testing two critical bug fixes: 1) Aspect ratio consistency across viewport sizes (uniform scale fix), 2) Object deletion WebSocket synchronization. Will test with credentials affichagegmaoiris@gmail.com / Iris1234! and verify reference dimensions show 1600×900 with proper scale percentages."
 
 ## Features to Test
 
