@@ -164,6 +164,90 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     }
   };
 
+  // Parser et exécuter les commandes de navigation dans la réponse de l'IA
+  const parseAndExecuteCommands = (responseText) => {
+    // Regex pour détecter les commandes [[TYPE:action]]
+    const commandRegex = /\[\[(NAVIGATE|ACTION|GUIDE):([^\]]+)\]\]/g;
+    let match;
+    const commands = [];
+    
+    while ((match = commandRegex.exec(responseText)) !== null) {
+      commands.push({ type: match[1], action: match[2] });
+    }
+    
+    // Retirer les commandes du texte affiché
+    const cleanText = responseText.replace(commandRegex, '').trim();
+    
+    // Exécuter les commandes (avec un délai pour laisser le message s'afficher)
+    if (commands.length > 0 && (executeAction || navigateTo || startGuidance)) {
+      setTimeout(() => {
+        commands.forEach(cmd => {
+          console.log('Exécution commande IA:', cmd);
+          
+          if (cmd.type === 'NAVIGATE' && navigateTo) {
+            // Navigation simple vers une page
+            const routeMap = {
+              'dashboard': 'dashboard',
+              'work-orders': 'ordres-de-travail',
+              'assets': 'equipements',
+              'locations': 'emplacements',
+              'inventory': 'inventaire',
+              'preventive-maintenance': 'maintenance-preventive',
+              'sensors': 'capteurs',
+              'meters': 'compteurs',
+              'reports': 'rapports',
+              'settings': 'parametres',
+              'personnalisation': 'personnalisation'
+            };
+            const destination = routeMap[cmd.action] || cmd.action;
+            navigateTo(destination);
+            
+            toast({
+              title: '🧭 Navigation',
+              description: `Je vous emmène vers ${cmd.action.replace('-', ' ')}...`
+            });
+          } 
+          else if (cmd.type === 'ACTION' && executeAction) {
+            // Action avec surbrillance (naviguer + surligner un bouton)
+            executeAction(cmd.action);
+            
+            toast({
+              title: '👆 Action',
+              description: `Je vous montre où cliquer...`
+            });
+          }
+          else if (cmd.type === 'GUIDE' && startGuidance) {
+            // Démarrer un guide étape par étape
+            const guidanceSteps = {
+              'creer-ot': [
+                { route: '/work-orders', message: '📋 Bienvenue dans le module Ordres de Travail' },
+                { highlight: 'button', message: '👆 Cliquez sur le bouton "Nouvel ordre" en haut à droite', showHand: true },
+                { message: '✍️ Remplissez le formulaire avec les informations de l\'intervention' }
+              ],
+              'creer-equipement': [
+                { route: '/assets', message: '🔧 Bienvenue dans le module Équipements' },
+                { highlight: 'button', message: '👆 Cliquez sur "Nouvel équipement" pour ajouter', showHand: true },
+                { message: '✍️ Remplissez les informations de l\'équipement (nom, type, emplacement...)' }
+              ]
+            };
+            
+            if (guidanceSteps[cmd.action]) {
+              startGuidance(guidanceSteps[cmd.action]);
+              onClose(); // Fermer le chat pour mieux voir le guide
+              
+              toast({
+                title: '📖 Guide démarré',
+                description: 'Suivez les étapes pour accomplir cette action'
+              });
+            }
+          }
+        });
+      }, 1000); // Délai de 1 seconde pour laisser le message s'afficher
+    }
+    
+    return cleanText;
+  };
+
   // Fonction pour envoyer un message à l'IA
   const sendMessageToAI = async (messageContent) => {
     setLoading(true);
@@ -178,9 +262,12 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
         context: context
       });
 
+      // Parser la réponse pour extraire et exécuter les commandes
+      const cleanResponse = parseAndExecuteCommands(response.data.response);
+
       const assistantMessage = {
         role: 'assistant',
-        content: response.data.response,
+        content: cleanResponse,
         timestamp: new Date().toISOString()
       };
 
