@@ -20,11 +20,21 @@ import {
   MousePointer2,
   Highlighter,
   Trash2,
-  Users
+  Users,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API_URL = `${BACKEND_URL}/api/whiteboard`;
+
+// Construire l'URL WebSocket
+const getWebSocketUrl = () => {
+  const url = new URL(BACKEND_URL || window.location.origin);
+  const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${url.host}`;
+};
+const WS_URL = getWebSocketUrl();
 
 // Couleurs disponibles
 const COLORS = [
@@ -49,10 +59,16 @@ const WhiteboardPage = () => {
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
   
+  // Refs pour WebSocket
+  const ws1Ref = useRef(null);
+  const ws2Ref = useRef(null);
+  const wsReconnectTimeoutRef = useRef(null);
+  
   // Refs pour éviter les problèmes de closure
   const saveTimeoutRef = useRef(null);
   const initialLoadDoneRef = useRef(false);
   const isLoadingDataRef = useRef(false);
+  const isReceivingRemoteRef = useRef(false);
   
   // États
   const [showToolbar, setShowToolbar] = useState(false);
@@ -64,6 +80,7 @@ const WhiteboardPage = () => {
   const [undoStack, setUndoStack] = useState({ board_1: [], board_2: [] });
   const [redoStack, setRedoStack] = useState({ board_1: [], board_2: [] });
   const [isConnected, setIsConnected] = useState({ board_1: false, board_2: false });
+  const [wsConnected, setWsConnected] = useState({ board_1: false, board_2: false });
   const [canvasReady, setCanvasReady] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
