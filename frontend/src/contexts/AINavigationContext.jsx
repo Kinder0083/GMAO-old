@@ -304,17 +304,6 @@ export const AINavigationProvider = ({ children }) => {
 
     return true;
   }, [navigate, calculateArrowPosition]);
-          setHighlightedElement(null);
-          setTooltipContent('');
-          setShowArrow(false);
-          setShowHandPointer(false);
-          return true;
-        }
-      }
-    }
-
-    return true;
-  }, [navigate, calculateArrowPosition]);
 
   // Effet pour exécuter l'étape courante du guidage
   useEffect(() => {
