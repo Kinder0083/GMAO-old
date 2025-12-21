@@ -346,9 +346,10 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
 
   return (
     <div 
-      className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${
+      className={`fixed bottom-4 right-4 transition-all duration-300 ${
         minimized ? 'w-64' : 'w-96'
       }`}
+      style={{ zIndex: 9999 }}
     >
       <div className="bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
            style={{ maxHeight: minimized ? '48px' : '600px', height: minimized ? '48px' : '550px' }}>
