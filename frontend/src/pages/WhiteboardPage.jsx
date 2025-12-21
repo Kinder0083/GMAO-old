@@ -102,36 +102,59 @@ const WhiteboardPage = () => {
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // ==================== Normalisation des coordonnées ====================
+  // IMPORTANT: Utiliser un SCALE UNIFORME pour éviter les distorsions
+  // Les coordonnées sont stockées en pourcentage (0-1) par rapport aux dimensions de référence
   
-  // Convertir les coordonnées du canvas vers les coordonnées de référence (pour stockage)
+  // Convertir les coordonnées du canvas vers les coordonnées normalisées (0-1)
   const normalizeCoordinates = useCallback((objects, canvasWidth, canvasHeight) => {
-    const scaleX = REFERENCE_WIDTH / canvasWidth;
-    const scaleY = REFERENCE_HEIGHT / canvasHeight;
+    // Utiliser un scale uniforme basé sur la diagonale pour éviter les distorsions
+    const canvasDiagonal = Math.sqrt(canvasWidth * canvasWidth + canvasHeight * canvasHeight);
+    const refDiagonal = Math.sqrt(REFERENCE_WIDTH * REFERENCE_WIDTH + REFERENCE_HEIGHT * REFERENCE_HEIGHT);
+    const uniformScale = refDiagonal / canvasDiagonal;
+    
+    // Scales pour les positions (basés sur les dimensions réelles)
+    const posScaleX = REFERENCE_WIDTH / canvasWidth;
+    const posScaleY = REFERENCE_HEIGHT / canvasHeight;
     
     return objects.map(obj => {
-      const normalized = { ...obj };
-      if (normalized.left !== undefined) normalized.left *= scaleX;
-      if (normalized.top !== undefined) normalized.top *= scaleY;
-      if (normalized.width !== undefined) normalized.width *= scaleX;
-      if (normalized.height !== undefined) normalized.height *= scaleY;
-      if (normalized.radius !== undefined) normalized.radius *= Math.min(scaleX, scaleY);
-      if (normalized.scaleX !== undefined) normalized.scaleX *= scaleX;
-      if (normalized.scaleY !== undefined) normalized.scaleY *= scaleY;
-      if (normalized.fontSize !== undefined) normalized.fontSize *= Math.min(scaleX, scaleY);
-      if (normalized.strokeWidth !== undefined) normalized.strokeWidth *= Math.min(scaleX, scaleY);
+      const normalized = JSON.parse(JSON.stringify(obj)); // Deep clone
+      
+      // Positions: utiliser les scales par axe
+      if (normalized.left !== undefined) normalized.left *= posScaleX;
+      if (normalized.top !== undefined) normalized.top *= posScaleY;
+      
+      // Tailles: utiliser le scale uniforme pour préserver les proportions
+      if (normalized.width !== undefined) normalized.width *= uniformScale;
+      if (normalized.height !== undefined) normalized.height *= uniformScale;
+      if (normalized.radius !== undefined) normalized.radius *= uniformScale;
+      if (normalized.rx !== undefined) normalized.rx *= uniformScale;
+      if (normalized.ry !== undefined) normalized.ry *= uniformScale;
+      if (normalized.fontSize !== undefined) normalized.fontSize *= uniformScale;
+      if (normalized.strokeWidth !== undefined) normalized.strokeWidth *= uniformScale;
+      
+      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs)
       
       // Pour les paths (dessins libres)
-      if (normalized.path) {
+      if (normalized.path && Array.isArray(normalized.path)) {
         normalized.path = normalized.path.map(cmd => {
+          if (!Array.isArray(cmd)) return cmd;
           return cmd.map((val, idx) => {
             if (idx === 0) return val; // Commande (M, L, Q, C, etc.)
-            return typeof val === 'number' ? val * (idx % 2 === 1 ? scaleX : scaleY) : val;
+            if (typeof val !== 'number') return val;
+            // Alterner X et Y
+            return idx % 2 === 1 ? val * posScaleX : val * posScaleY;
           });
         });
       }
       
+      // Pour les lignes
+      if (normalized.x1 !== undefined) normalized.x1 *= posScaleX;
+      if (normalized.y1 !== undefined) normalized.y1 *= posScaleY;
+      if (normalized.x2 !== undefined) normalized.x2 *= posScaleX;
+      if (normalized.y2 !== undefined) normalized.y2 *= posScaleY;
+      
       // Pour les groupes
-      if (normalized.objects) {
+      if (normalized.objects && Array.isArray(normalized.objects)) {
         normalized.objects = normalizeCoordinates(normalized.objects, canvasWidth, canvasHeight);
       }
       
