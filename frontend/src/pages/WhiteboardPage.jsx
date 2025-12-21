@@ -1143,7 +1143,8 @@ const WhiteboardPage = () => {
                   key={size}
                   onClick={() => {
                     setStrokeWidth(size);
-                    if (['pencil', 'highlighter', 'eraser'].includes(activeTool)) setTool(activeTool);
+                    // Mettre à jour immédiatement le pinceau avec la nouvelle taille
+                    updateBrushSize(size);
                   }}
                   className={`flex-1 h-8 rounded flex items-center justify-center ${strokeWidth === size ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-100 border border-gray-300'}`}
                 >
