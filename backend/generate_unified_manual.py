@@ -2764,7 +2764,8 @@ async def generate_manual():
             {"id": "ch-020", "title": "📂 Documentations", "description": "Gérer la documentation technique", "icon": "FolderOpen", "order": 20, "sections": ["sec-020-01"], "target_roles": [], "target_modules": ["documentations"]},
             {"id": "ch-021", "title": "📅 Planning", "description": "Planifier les interventions", "icon": "Calendar", "order": 21, "sections": ["sec-021-01"], "target_roles": [], "target_modules": ["planning"]},
             {"id": "ch-022", "title": "🏭 Fournisseurs", "description": "Gérer les fournisseurs", "icon": "Building", "order": 22, "sections": ["sec-022-01"], "target_roles": [], "target_modules": ["vendors"]},
-            {"id": "ch-023", "title": "💾 Import / Export", "description": "Importer et exporter des données", "icon": "Database", "order": 23, "sections": ["sec-023-01"], "target_roles": [], "target_modules": ["importExport"]}
+            {"id": "ch-023", "title": "💾 Import / Export", "description": "Importer et exporter des données", "icon": "Database", "order": 23, "sections": ["sec-023-01"], "target_roles": [], "target_modules": ["importExport"]},
+            {"id": "ch-024", "title": "🤖 Assistant IA", "description": "Votre assistant intelligent", "icon": "Bot", "order": 24, "sections": ["sec-024-01", "sec-024-02", "sec-024-03", "sec-024-04"], "target_roles": [], "target_modules": []}
         ]
         
         # Insérer ou mettre à jour les chapitres (idempotent)
