@@ -17,12 +17,12 @@ BACKEND_URL = "https://live-whiteboard.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@test.com"
 ADMIN_PASSWORD = "password"
 
-class WhiteboardTester:
+class AIChatbotTester:
     def __init__(self):
         self.admin_session = requests.Session()
         self.admin_token = None
         self.admin_data = None
-        self.initial_board_state = None
+        self.test_session_id = None
         
     def log(self, message, level="INFO"):
         """Log test messages with timestamp"""
