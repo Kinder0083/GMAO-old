@@ -759,8 +759,8 @@ ok "Application installée"
 
 msg "Configuration des services..."
 
-# Supervisor configuration
-pct exec $CTID -- bash -c 'cat > /etc/supervisor/conf.d/gmao-iris-backend.conf << "SUPERVISOR_EOF"
+# Supervisor configuration - using tee to avoid heredoc issues inside bash -c
+pct exec $CTID -- tee /etc/supervisor/conf.d/gmao-iris-backend.conf > /dev/null << 'SUPERVISOR_EOF'
 [program:gmao-iris-backend]
 directory=/opt/gmao-iris/backend
 command=/opt/gmao-iris/backend/venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001
@@ -771,8 +771,9 @@ stderr_logfile=/var/log/gmao-iris-backend.err.log
 stdout_logfile=/var/log/gmao-iris-backend.out.log
 environment=PYTHONUNBUFFERED=1
 SUPERVISOR_EOF
-supervisorctl reread >/dev/null
-supervisorctl update >/dev/null'
+
+pct exec $CTID -- supervisorctl reread
+pct exec $CTID -- supervisorctl update
 
 sleep 3
 
