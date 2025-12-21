@@ -640,26 +640,37 @@ const WhiteboardPage = () => {
     const handleKeyDown = (e) => {
       // Touche Suppr (Delete) ou Backspace
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        // Ne pas supprimer si on est dans un champ de texte
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        // Ne pas supprimer si on est dans un champ de texte éditable
+        const target = e.target;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
           return;
         }
         
+        // Vérifier si on est en mode édition de texte Fabric.js
         const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
         if (!canvas) return;
+        
+        // Si un objet texte est en cours d'édition, ne pas supprimer l'objet
+        const activeObj = canvas.getActiveObject();
+        if (activeObj && activeObj.isEditing) {
+          return;
+        }
         
         const activeObjects = canvas.getActiveObjects();
         if (activeObjects.length > 0) {
           e.preventDefault();
+          e.stopPropagation();
           activeObjects.forEach(obj => canvas.remove(obj));
           canvas.discardActiveObject();
           canvas.renderAll();
+          console.log('Objet(s) supprimé(s) via touche Delete');
         }
       }
     };
     
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Écouter sur document pour capturer tous les événements clavier
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [activeBoard]);
 
   // Changer d'outil
