@@ -1,7 +1,9 @@
-# Test Results - AI Chatbot P2 & P3
+# Test Results - Whiteboard Bugs Fix
 
 ## Testing Protocol
-Testing AI Chatbot enhancements for GMAO Iris
+Testing Whiteboard bug fixes for GMAO Iris:
+1. Bug 1: Aspect ratio distortion between devices (uniform scale fix)
+2. Bug 2: Object deletion not syncing via WebSocket
 
 backend:
   - task: "AI Context Endpoint"
