@@ -1122,27 +1122,23 @@ const WhiteboardPage = () => {
         </Button>
       </div>
       
-      {/* Indicateurs de connexion + Dimensions */}
-      <div className="absolute top-4 right-4 z-50 flex flex-wrap gap-2 justify-end">
+      {/* Indicateurs de connexion + Dimensions - compact */}
+      <div className="absolute top-2 right-2 z-50 flex flex-wrap gap-1 justify-end">
         {/* Info dimensions fixes */}
-        <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full shadow-md text-xs text-green-700 font-medium">
-          🔒 {CANVAS_FIXED_WIDTH}×{CANVAS_FIXED_HEIGHT}px (fixe)
+        <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-full shadow-md text-xs text-green-700 font-medium">
+          🔒 {CANVAS_FIXED_WIDTH}×{CANVAS_FIXED_HEIGHT}
         </div>
-        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
-          <div className={`w-2 h-2 rounded-full ${isConnected.board_1 ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="hidden sm:inline">Tableau 1</span>
-          <span className="text-xs text-gray-500">({Math.round(scaleFactors.board_1 * 100)}%)</span>
-          {wsConnected.board_1 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
-          <Users size={14} />
-          <span>{connectedUsers.board_1?.length || 0}</span>
+        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-md text-xs">
+          <div className={`w-1.5 h-1.5 rounded-full ${isConnected.board_1 ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className="hidden sm:inline">T1</span>
+          <span className="text-gray-500">({Math.round(scaleFactors.board_1 * 100)}%)</span>
+          {wsConnected.board_1 ? <Wifi size={12} className="text-green-500" /> : <WifiOff size={12} className="text-gray-400" />}
         </div>
-        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
-          <div className={`w-2 h-2 rounded-full ${isConnected.board_2 ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="hidden sm:inline">Tableau 2</span>
-          <span className="text-xs text-gray-500">({Math.round(scaleFactors.board_2 * 100)}%)</span>
-          {wsConnected.board_2 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
-          <Users size={14} />
-          <span>{connectedUsers.board_2?.length || 0}</span>
+        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-md text-xs">
+          <div className={`w-1.5 h-1.5 rounded-full ${isConnected.board_2 ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className="hidden sm:inline">T2</span>
+          <span className="text-gray-500">({Math.round(scaleFactors.board_2 * 100)}%)</span>
+          {wsConnected.board_2 ? <Wifi size={12} className="text-green-500" /> : <WifiOff size={12} className="text-gray-400" />}
         </div>
       </div>
       
