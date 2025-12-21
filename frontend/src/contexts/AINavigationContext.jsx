@@ -266,6 +266,142 @@ export const AINavigationProvider = ({ children }) => {
     });
   }, [highlightElement]);
 
+  // ==================== Effets Visuels Avancés (P3) ====================
+
+  // Effet Spotlight - met en lumière un élément avec assombrissement du reste
+  const showSpotlight = useCallback((selector) => {
+    const element = document.querySelector(selector);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      setSpotlightElement({
+        selector,
+        rect: {
+          top: rect.top + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+          height: rect.height
+        }
+      });
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Auto-hide après 5 secondes
+      setTimeout(() => setSpotlightElement(null), 5000);
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Effet Pulse - ajoute une pulsation à un élément
+  const addPulseEffect = useCallback((selector) => {
+    const element = document.querySelector(selector);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      const id = `pulse-${Date.now()}`;
+      
+      setPulseElements(prev => [...prev, {
+        id,
+        rect: {
+          top: rect.top + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+          height: rect.height
+        }
+      }]);
+      
+      // Auto-remove après 4 secondes
+      setTimeout(() => {
+        setPulseElements(prev => prev.filter(p => p.id !== id));
+      }, 4000);
+      
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Effet Trail - trace un chemin entre deux éléments
+  const showTrail = useCallback((startSelector, endSelector) => {
+    const startEl = document.querySelector(startSelector);
+    const endEl = document.querySelector(endSelector);
+    
+    if (startEl && endEl) {
+      const startRect = startEl.getBoundingClientRect();
+      const endRect = endEl.getBoundingClientRect();
+      
+      setTrailPath({
+        start: {
+          x: startRect.left + startRect.width / 2 + window.scrollX,
+          y: startRect.top + startRect.height / 2 + window.scrollY
+        },
+        end: {
+          x: endRect.left + endRect.width / 2 + window.scrollX,
+          y: endRect.top + endRect.height / 2 + window.scrollY
+        }
+      });
+      
+      // Auto-hide après 5 secondes
+      setTimeout(() => setTrailPath(null), 5000);
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Afficher un tooltip personnalisé
+  const showCustomTooltip = useCallback((selector, message) => {
+    const element = document.querySelector(selector);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      const id = `tooltip-${Date.now()}`;
+      
+      setCustomTooltips(prev => [...prev, {
+        id,
+        message,
+        position: {
+          x: rect.left + rect.width / 2,
+          y: rect.top + window.scrollY - 10
+        }
+      }]);
+      
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Auto-hide après 6 secondes
+      setTimeout(() => {
+        setCustomTooltips(prev => prev.filter(t => t.id !== id));
+      }, 6000);
+      
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Effet de célébration (confettis)
+  const celebrate = useCallback(() => {
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 3000);
+  }, []);
+
+  // Ajouter un effet ripple
+  const addRipple = useCallback((x, y) => {
+    const id = `ripple-${Date.now()}`;
+    setRippleEffects(prev => [...prev, { id, x, y }]);
+    setTimeout(() => {
+      setRippleEffects(prev => prev.filter(r => r.id !== id));
+    }, 1000);
+  }, []);
+
+  // Nettoyer tous les effets visuels
+  const clearAllEffects = useCallback(() => {
+    setSpotlightElement(null);
+    setPulseElements([]);
+    setTrailPath(null);
+    setCustomTooltips([]);
+    setShowCelebration(false);
+    setRippleEffects([]);
+    setHighlightedElement(null);
+    setTooltipContent('');
+    setShowArrow(false);
+    setShowHandPointer(false);
+  }, []);
+
   // Cliquer sur un élément
   const clickElement = useCallback((selector) => {
     const element = document.querySelector(selector);
