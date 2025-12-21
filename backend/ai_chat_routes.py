@@ -304,6 +304,14 @@ async def chat_with_ai(
         # Générer ou récupérer l'ID de session
         session_id = request.session_id or f"{user_id}_{str(uuid.uuid4())[:8]}"
         
+        # Récupérer le contexte enrichi de l'application si demandé
+        app_context = None
+        if request.include_app_context:
+            app_context = await get_enriched_app_context(current_user)
+            # Ajouter le contexte de page si fourni
+            if request.context:
+                app_context["current_page"] = request.context
+        
         # Récupérer l'historique de conversation
         history = await db.ai_chat_history.find(
             {"session_id": session_id}
@@ -331,7 +339,8 @@ async def chat_with_ai(
                 language=language,
                 provider=llm_provider,
                 model=llm_model,
-                context=request.context
+                context=request.context,
+                app_context=app_context
             )
         except Exception as llm_error:
             logger.error(f"Erreur LLM: {llm_error}")
