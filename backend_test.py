@@ -440,36 +440,35 @@ class WhiteboardTester:
             self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def run_menu_categories_tests(self):
-        """Run comprehensive tests for Custom Menu Categories functionality"""
+    def run_whiteboard_tests(self):
+        """Run comprehensive tests for Whiteboard Persistence functionality"""
         self.log("=" * 80)
-        self.log("TESTING CUSTOM MENU CATEGORIES (GROUPEMENT PERSONNALISÉ DES MENUS)")
+        self.log("TESTING WHITEBOARD PERSISTENCE (TABLEAU D'AFFICHAGE)")
         self.log("=" * 80)
         self.log("CONTEXTE:")
-        self.log("Test de la fonctionnalité de groupement des menus par catégories personnalisées")
-        self.log("Fonctionnalité: Création et gestion de catégories de menus via /api/user-preferences")
+        self.log("Test de la fonctionnalité de persistance du Tableau d'affichage (Whiteboard)")
+        self.log("Fonctionnalité: Sauvegarde et récupération d'objets via API whiteboard")
         self.log("")
         self.log("TESTS À EFFECTUER:")
-        self.log("1. GET /api/user-preferences (endpoint de base)")
-        self.log("2. Vérification catégorie 'Maintenance' existante")
-        self.log("3. Création nouvelle catégorie 'Stock'")
-        self.log("4. Assignation menu inventory à catégorie Stock")
-        self.log("5. Vérification de la persistence des données")
-        self.log("6. Gestion des menus sans catégorie")
-        self.log("7. Validation structure des catégories")
-        self.log("8. Création catégorie 'IoT'")
+        self.log("1. Login admin avec credentials admin@test.com / password")
+        self.log("2. GET /api/whiteboard/board/board_1 - État initial")
+        self.log("3. POST /api/whiteboard/board/board_1/sync - Sauvegarde objets")
+        self.log("4. GET /api/whiteboard/board/board_1 - Vérification persistance")
+        self.log("5. POST /api/whiteboard/board/board_1/sync - Ajout d'objets")
+        self.log("6. GET /api/whiteboard/board/board_1 - Vérification accumulation/remplacement")
+        self.log("7. Vérification persistance après délai")
+        self.log("8. Vérification incrémentation des versions")
         self.log("=" * 80)
         
         results = {
             "admin_login": False,
-            "basic_endpoint": False,
-            "existing_maintenance": False,
-            "create_stock_category": False,
-            "assign_menu_to_category": False,
-            "persistence_verification": False,
-            "uncategorized_menus": False,
-            "structure_validation": False,
-            "create_iot_category": False
+            "get_initial_state": False,
+            "sync_objects": False,
+            "verify_persistence": False,
+            "sync_additional": False,
+            "verify_behavior": False,
+            "persistence_delay": False,
+            "version_increment": False
         }
         
         # Test 1: Admin Login
@@ -479,41 +478,35 @@ class WhiteboardTester:
             self.log("❌ Cannot proceed with other tests - Admin login failed", "ERROR")
             return results
         
-        # TESTS CRITIQUES DES CATÉGORIES DE MENU
+        # TESTS CRITIQUES DU WHITEBOARD
         self.log("\n" + "=" * 60)
-        self.log("📋 TESTS CRITIQUES - CUSTOM MENU CATEGORIES")
+        self.log("📋 TESTS CRITIQUES - WHITEBOARD PERSISTENCE")
         self.log("=" * 60)
         
-        # Test 2: Basic endpoint test
-        results["basic_endpoint"] = self.test_get_user_preferences_basic()
+        # Test 2: Get initial board state
+        results["get_initial_state"] = self.test_get_board_initial_state()
         
-        # Test 3: Existing Maintenance category
-        results["existing_maintenance"] = self.test_existing_maintenance_category()
+        # Test 3: Sync objects to board
+        results["sync_objects"] = self.test_sync_board_with_objects()
         
-        # Test 4: Create Stock category
-        results["create_stock_category"] = self.test_create_new_category_stock()
+        # Test 4: Verify objects are persisted
+        results["verify_persistence"] = self.test_verify_objects_persisted()
         
-        # Test 5: Assign menu to category
-        results["assign_menu_to_category"] = self.test_assign_menu_to_category()
+        # Test 5: Sync additional objects
+        results["sync_additional"] = self.test_sync_additional_objects()
         
-        # Test 6: Persistence verification
-        results["persistence_verification"] = self.test_persistence_verification()
+        # Test 6: Verify accumulation or replacement behavior
+        results["verify_behavior"] = self.test_verify_accumulation_or_replacement()
         
-        # Test 7: Uncategorized menus
-        results["uncategorized_menus"] = self.test_menu_items_without_category()
+        # Test 7: Verify persistence after delay
+        results["persistence_delay"] = self.test_persistence_after_delay()
         
-        # Test 8: Structure validation
-        results["structure_validation"] = self.test_category_structure_validation()
-        
-        # Test 9: Create IoT category
-        results["create_iot_category"] = self.test_create_iot_category()
-        
-        # Cleanup test data
-        self.cleanup_test_data()
+        # Test 8: Verify version increment
+        results["version_increment"] = self.test_version_increment()
         
         # Summary
         self.log("=" * 80)
-        self.log("CUSTOM MENU CATEGORIES - RÉSULTATS DES TESTS")
+        self.log("WHITEBOARD PERSISTENCE - RÉSULTATS DES TESTS")
         self.log("=" * 80)
         
         passed = sum(results.values())
@@ -527,79 +520,82 @@ class WhiteboardTester:
         
         # Analyse détaillée des tests critiques
         critical_tests = [
-            "admin_login", "basic_endpoint", "create_stock_category", 
-            "assign_menu_to_category", "persistence_verification", "structure_validation"
+            "admin_login", "get_initial_state", "sync_objects", 
+            "verify_persistence", "sync_additional", "verify_behavior"
         ]
         critical_passed = sum(results.get(test, False) for test in critical_tests)
         
         self.log("\n" + "=" * 60)
-        self.log("ANALYSE CRITIQUE DES CATÉGORIES DE MENU")
+        self.log("ANALYSE CRITIQUE DU WHITEBOARD")
         self.log("=" * 60)
         
         # TEST CRITIQUE 1: Authentification
         if results.get("admin_login", False):
             self.log("🎉 TEST CRITIQUE 1 - AUTHENTIFICATION: ✅ SUCCÈS")
-            self.log("✅ Connexion admin@test.com / testpassword réussie")
+            self.log("✅ Connexion admin@test.com / password réussie")
         else:
             self.log("🚨 TEST CRITIQUE 1 - AUTHENTIFICATION: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 2: Endpoint de base
-        if results.get("basic_endpoint", False):
-            self.log("🎉 TEST CRITIQUE 2 - ENDPOINT USER-PREFERENCES: ✅ SUCCÈS")
-            self.log("✅ GET /api/user-preferences fonctionne")
-            self.log("✅ Champs menu_categories et menu_items présents")
+        # TEST CRITIQUE 2: Récupération état initial
+        if results.get("get_initial_state", False):
+            self.log("🎉 TEST CRITIQUE 2 - GET BOARD STATE: ✅ SUCCÈS")
+            self.log("✅ GET /api/whiteboard/board/board_1 fonctionne")
+            self.log("✅ Champs board_id, objects, version, last_modified présents")
         else:
-            self.log("🚨 TEST CRITIQUE 2 - ENDPOINT USER-PREFERENCES: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 2 - GET BOARD STATE: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 3: Création de catégorie
-        if results.get("create_stock_category", False):
-            self.log("🎉 TEST CRITIQUE 3 - CRÉATION DE CATÉGORIE: ✅ SUCCÈS")
-            self.log("✅ Nouvelle catégorie 'Stock' créée avec succès")
-            self.log("✅ Structure: id, name, icon, order, items")
+        # TEST CRITIQUE 3: Sauvegarde d'objets
+        if results.get("sync_objects", False):
+            self.log("🎉 TEST CRITIQUE 3 - SYNC OBJECTS: ✅ SUCCÈS")
+            self.log("✅ POST /api/whiteboard/board/board_1/sync fonctionne")
+            self.log("✅ Objets rectangle et cercle sauvegardés")
         else:
-            self.log("🚨 TEST CRITIQUE 3 - CRÉATION DE CATÉGORIE: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 3 - SYNC OBJECTS: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 4: Assignation de menu
-        if results.get("assign_menu_to_category", False):
-            self.log("🎉 TEST CRITIQUE 4 - ASSIGNATION DE MENU: ✅ SUCCÈS")
-            self.log("✅ Menu 'inventory' assigné à catégorie 'Stock'")
-            self.log("✅ Champ category_id correctement défini")
+        # TEST CRITIQUE 4: Vérification persistance
+        if results.get("verify_persistence", False):
+            self.log("🎉 TEST CRITIQUE 4 - VERIFY PERSISTENCE: ✅ SUCCÈS")
+            self.log("✅ Objets sauvegardés retrouvés après sync")
+            self.log("✅ Persistance en base de données validée")
         else:
-            self.log("🚨 TEST CRITIQUE 4 - ASSIGNATION DE MENU: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 4 - VERIFY PERSISTENCE: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 5: Persistence
-        if results.get("persistence_verification", False):
-            self.log("🎉 TEST CRITIQUE 5 - PERSISTENCE DES DONNÉES: ✅ SUCCÈS")
-            self.log("✅ Catégories et assignations persistées en base")
+        # TEST CRITIQUE 5: Sync additionnel
+        if results.get("sync_additional", False):
+            self.log("🎉 TEST CRITIQUE 5 - ADDITIONAL SYNC: ✅ SUCCÈS")
+            self.log("✅ Sync d'objets additionnels réussi")
         else:
-            self.log("🚨 TEST CRITIQUE 5 - PERSISTENCE DES DONNÉES: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 5 - ADDITIONAL SYNC: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 6: Structure
-        if results.get("structure_validation", False):
-            self.log("🎉 TEST CRITIQUE 6 - VALIDATION STRUCTURE: ✅ SUCCÈS")
-            self.log("✅ Structure des catégories conforme aux spécifications")
+        # TEST CRITIQUE 6: Comportement accumulation/remplacement
+        if results.get("verify_behavior", False):
+            self.log("🎉 TEST CRITIQUE 6 - SYNC BEHAVIOR: ✅ SUCCÈS")
+            self.log("✅ Comportement de sync vérifié (accumulation ou remplacement)")
         else:
-            self.log("🚨 TEST CRITIQUE 6 - VALIDATION STRUCTURE: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 6 - SYNC BEHAVIOR: ❌ ÉCHEC")
         
         # Conclusion finale
         self.log("\n" + "=" * 80)
-        self.log("CONCLUSION FINALE - CUSTOM MENU CATEGORIES")
+        self.log("CONCLUSION FINALE - WHITEBOARD PERSISTENCE")
         self.log("=" * 80)
         
         if critical_passed >= len(critical_tests) - 1:  # Allow 1 failure
-            self.log("🎉 CUSTOM MENU CATEGORIES ENTIÈREMENT FONCTIONNEL!")
-            self.log("✅ API /api/user-preferences opérationnelle")
-            self.log("✅ Création de catégories de menu fonctionnelle")
-            self.log("✅ Assignation de menus aux catégories opérationnelle")
-            self.log("✅ Persistence des données validée")
-            self.log("✅ Structure des données conforme")
-            self.log("✅ Gestion des menus sans catégorie correcte")
+            self.log("🎉 WHITEBOARD PERSISTENCE ENTIÈREMENT FONCTIONNEL!")
+            self.log("✅ API /api/whiteboard/board/{board_id} opérationnelle")
+            self.log("✅ Récupération d'état de tableau fonctionnelle")
+            self.log("✅ Sauvegarde d'objets via sync opérationnelle")
+            self.log("✅ Persistance des données validée")
+            self.log("✅ Comportement de sync vérifié")
+            if results.get("persistence_delay", False):
+                self.log("✅ Persistance après délai validée")
+            if results.get("version_increment", False):
+                self.log("✅ Incrémentation des versions validée")
             self.log("✅ La fonctionnalité est PRÊTE POUR PRODUCTION")
         else:
-            self.log("⚠️ CUSTOM MENU CATEGORIES INCOMPLET - PROBLÈMES DÉTECTÉS")
+            self.log("⚠️ WHITEBOARD PERSISTENCE INCOMPLET - PROBLÈMES DÉTECTÉS")
             failed_critical = [test for test in critical_tests if not results.get(test, False)]
             self.log(f"❌ Tests critiques échoués: {', '.join(failed_critical)}")
-            self.log("❌ La fonctionnalité de catégories de menu ne fonctionne pas correctement")
+            self.log("❌ La fonctionnalité de persistance du whiteboard ne fonctionne pas correctement")
             self.log("❌ Intervention requise avant mise en production")
         
         return results
