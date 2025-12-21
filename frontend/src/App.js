@@ -98,6 +98,15 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/validate-demande-arret" element={<ValidateDemandeArret />} />
           <Route path="/inscription" element={<Inscription />} />
+          {/* Route spéciale pour le Tableau d'affichage - plein écran sans menu */}
+          <Route 
+            path="/whiteboard" 
+            element={
+              <ProtectedRoute>
+                <WhiteboardPage />
+              </ProtectedRoute>
+            } 
+          />
           <Route
             path="/"
             element={
