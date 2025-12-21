@@ -29,35 +29,35 @@ const NAVIGATION_MAP = {
   'parametres': { route: '/settings', name: 'Paramètres' },
   'parametres-speciaux': { route: '/special-settings', name: 'Paramètres Spéciaux' },
   
-  // Actions
+  // Actions - Utiliser des sélecteurs spécifiques pour éviter les erreurs
   'creer-ot': { 
     route: '/work-orders', 
     action: 'click', 
-    selector: 'button:has-text("Nouvel ordre"), button:has-text("Créer"), button:has-text("+ Créer"), button:has-text("Nouveau")',
+    selector: '#btn-nouvel-ordre, [data-action="creer-ot"], button.bg-blue-600:has-text("Nouvel ordre")',
     name: 'Nouvel ordre de travail'
   },
   'creer-equipement': { 
     route: '/assets', 
     action: 'click', 
-    selector: 'button:has-text("Nouvel équipement"), button:has-text("Ajouter"), button:has-text("+ Ajouter"), button:has-text("Nouveau")',
+    selector: '#btn-nouvel-equipement, [data-action="creer-equipement"], button.bg-blue-600:has-text("Nouvel équipement")',
     name: 'Nouvel équipement'
   },
   'creer-emplacement': { 
     route: '/locations', 
     action: 'click', 
-    selector: 'button:has-text("Ajouter"), button:has-text("+ Ajouter")',
+    selector: '#btn-nouvel-emplacement, [data-action="creer-emplacement"], button.bg-blue-600:has-text("Ajouter")',
     name: 'Ajouter un Emplacement'
   },
   'creer-capteur': { 
     route: '/sensors', 
     action: 'click', 
-    selector: 'button:has-text("Créer"), button:has-text("+ Créer"), button:has-text("Ajouter")',
+    selector: '#btn-nouveau-capteur, [data-action="creer-capteur"], button.bg-blue-600:has-text("Créer")',
     name: 'Créer un Capteur'
   },
   'creer-compteur': { 
     route: '/meters', 
     action: 'click', 
-    selector: 'button:has-text("Créer"), button:has-text("+ Créer"), button:has-text("Ajouter")',
+    selector: '#btn-nouveau-compteur, [data-action="creer-compteur"], button.bg-blue-600:has-text("Créer")',
     name: 'Créer un Compteur'
   },
 };
