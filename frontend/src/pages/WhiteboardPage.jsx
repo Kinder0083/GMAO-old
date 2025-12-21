@@ -433,7 +433,7 @@ const WhiteboardPage = () => {
     
     // Appliquer le scale via CSS (pas via Fabric.js zoom)
     wrapperEl.style.transform = `scale(${optimalScale})`;
-    wrapperEl.style.transformOrigin = 'top left';
+    wrapperEl.style.transformOrigin = 'top center';
     wrapperEl.style.width = `${CANVAS_FIXED_WIDTH}px`;
     wrapperEl.style.height = `${CANVAS_FIXED_HEIGHT}px`;
     
