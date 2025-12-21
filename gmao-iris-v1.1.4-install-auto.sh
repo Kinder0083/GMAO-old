@@ -377,11 +377,11 @@ sleep 5
 
 # CORRECTION: Configurer le DNS immédiatement
 msg "Configuration du réseau..."
-pct exec $CTID -- bash -c 'cat > /etc/resolv.conf <<EOF
+pct exec $CTID -- tee /etc/resolv.conf > /dev/null << 'DNS_EOF'
 nameserver 8.8.8.8
 nameserver 8.8.4.4
 nameserver 1.1.1.1
-EOF'
+DNS_EOF
 
 # Vérifier la connectivité Internet
 msg "Vérification de la connectivité Internet..."
