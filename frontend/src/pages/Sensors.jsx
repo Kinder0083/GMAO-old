@@ -352,6 +352,8 @@ const Sensors = () => {
               </div>
               
               <Button
+                id="btn-nouveau-capteur"
+                data-action="creer-capteur"
                 onClick={() => {
                   setEditingSensor(null);
                   setIsFormOpen(true);
