@@ -2714,13 +2714,14 @@ async def generate_manual():
         now = datetime.now(timezone.utc)
         version = {
             "id": str(uuid.uuid4()),
-            "version": "3.0",
+            "version": "3.1",
             "release_date": now.isoformat(),
             "changes": [
-                "Manuel complet avec 23 chapitres",
-                "61 sections détaillées couvrant tous les modules",
+                "Manuel complet avec 24 chapitres",
+                "65 sections détaillées couvrant tous les modules",
                 "Guide complet de A à Z",
                 "Chapitres Chat Live, MQTT/IoT, Demandes d'Achat, Zones, Compteurs, etc.",
+                "Nouveau chapitre Assistant IA avec 4 sections",
                 "FAQ et dépannage inclus",
                 "Recherche intuitive intégrée"
             ],
