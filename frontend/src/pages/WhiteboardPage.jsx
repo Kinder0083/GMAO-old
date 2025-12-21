@@ -55,23 +55,7 @@ const WhiteboardPage = () => {
   
   // Vérifier les permissions
   const canViewWhiteboard = user?.permissions?.whiteboard?.view ?? false;
-  
-  // Rediriger si pas de permission (une seule fois au montage)
-  useEffect(() => {
-    if (!canViewWhiteboard) {
-      toast({
-        title: '⛔ Accès refusé',
-        description: 'Vous n\'avez pas la permission d\'accéder au Tableau d\'affichage',
-        variant: 'destructive'
-      });
-      navigate('/dashboard');
-    }
-  }, []); // Exécuter une seule fois au montage
-  
-  // Si pas de permission, ne pas rendre le composant
-  if (!canViewWhiteboard) {
-    return null;
-  }
+  const [hasCheckedPermission, setHasCheckedPermission] = useState(false);
   
   // Refs pour les canvas
   const container1Ref = useRef(null);
