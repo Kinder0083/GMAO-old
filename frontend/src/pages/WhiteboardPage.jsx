@@ -399,8 +399,23 @@ const WhiteboardPage = () => {
     
     // Événements - utiliser des fonctions qui ne dépendent pas de closures
     fabricCanvas.on('object:added', (e) => {
-      if (e.target && !e.target._fromRemote && !isLoadingDataRef.current) {
-        // Sauvegarder après un délai
+      if (e.target && !e.target._fromRemote && !isLoadingDataRef.current && !isReceivingRemoteRef.current) {
+        const obj = e.target;
+        if (!obj.id) {
+          obj.id = `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        // Envoyer via WebSocket pour temps réel
+        const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            type: 'object_added',
+            object: obj.toJSON(['id']),
+            object_id: obj.id
+          }));
+        }
+        
+        // Sauvegarder via REST après un délai
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
           const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
@@ -427,7 +442,20 @@ const WhiteboardPage = () => {
     });
     
     fabricCanvas.on('object:modified', (e) => {
-      if (e.target && !e.target._fromRemote && !isLoadingDataRef.current) {
+      if (e.target && !e.target._fromRemote && !isLoadingDataRef.current && !isReceivingRemoteRef.current) {
+        const obj = e.target;
+        
+        // Envoyer via WebSocket pour temps réel
+        const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            type: 'object_modified',
+            object: obj.toJSON(['id']),
+            object_id: obj.id
+          }));
+        }
+        
+        // Sauvegarder via REST après un délai
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
           const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
@@ -453,9 +481,37 @@ const WhiteboardPage = () => {
       }
     });
     
+    fabricCanvas.on('object:removed', (e) => {
+      if (e.target && !e.target._fromRemote && !isLoadingDataRef.current && !isReceivingRemoteRef.current) {
+        const obj = e.target;
+        
+        // Envoyer via WebSocket pour temps réel
+        const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && obj.id) {
+          wsRef.current.send(JSON.stringify({
+            type: 'object_removed',
+            object_id: obj.id
+          }));
+        }
+      }
+    });
+    
     fabricCanvas.on('path:created', (e) => {
-      if (e.path && !isLoadingDataRef.current) {
-        e.path.id = `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (e.path && !isLoadingDataRef.current && !isReceivingRemoteRef.current) {
+        const path = e.path;
+        path.id = `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Envoyer via WebSocket pour temps réel
+        const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            type: 'object_added',
+            object: path.toJSON(['id']),
+            object_id: path.id
+          }));
+        }
+        
+        // Sauvegarder via REST après un délai
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = setTimeout(() => {
           const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
