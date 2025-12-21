@@ -166,8 +166,8 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
 
   // Parser et exécuter les commandes de navigation dans la réponse de l'IA
   const parseAndExecuteCommands = (responseText) => {
-    // Regex pour détecter les commandes [[TYPE:action]]
-    const commandRegex = /\[\[(NAVIGATE|ACTION|GUIDE):([^\]]+)\]\]/g;
+    // Regex pour détecter les commandes [[TYPE:action]] ou [[TYPE:selector:message]]
+    const commandRegex = /\[\[(NAVIGATE|ACTION|GUIDE|SPOTLIGHT|PULSE|TRAIL|TOOLTIP|CELEBRATE):([^\]]+)\]\]/g;
     let match;
     const commands = [];
     
@@ -179,7 +179,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     const cleanText = responseText.replace(commandRegex, '').trim();
     
     // Exécuter les commandes (avec un délai pour laisser le message s'afficher)
-    if (commands.length > 0 && (executeAction || navigateTo || startGuidance)) {
+    if (commands.length > 0) {
       setTimeout(() => {
         commands.forEach(cmd => {
           console.log('Exécution commande IA:', cmd);
@@ -217,29 +217,61 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
             });
           }
           else if (cmd.type === 'GUIDE' && startGuidance) {
-            // Démarrer un guide étape par étape
-            const guidanceSteps = {
-              'creer-ot': [
-                { route: '/work-orders', message: '📋 Bienvenue dans le module Ordres de Travail' },
-                { highlight: 'button', message: '👆 Cliquez sur le bouton "Nouvel ordre" en haut à droite', showHand: true },
-                { message: '✍️ Remplissez le formulaire avec les informations de l\'intervention' }
-              ],
-              'creer-equipement': [
-                { route: '/assets', message: '🔧 Bienvenue dans le module Équipements' },
-                { highlight: 'button', message: '👆 Cliquez sur "Nouvel équipement" pour ajouter', showHand: true },
-                { message: '✍️ Remplissez les informations de l\'équipement (nom, type, emplacement...)' }
-              ]
-            };
-            
-            if (guidanceSteps[cmd.action]) {
-              startGuidance(guidanceSteps[cmd.action]);
+            // Démarrer un guide étape par étape (utiliser les guides prédéfinis ou personnalisés)
+            const started = startGuidance(cmd.action);
+            if (started) {
               onClose(); // Fermer le chat pour mieux voir le guide
               
               toast({
                 title: '📖 Guide démarré',
                 description: 'Suivez les étapes pour accomplir cette action'
               });
+            } else {
+              toast({
+                title: '⚠️ Guide non trouvé',
+                description: `Le guide "${cmd.action}" n'existe pas encore`,
+                variant: 'warning'
+              });
             }
+          }
+          // Nouvelles commandes visuelles avancées (P3)
+          else if (cmd.type === 'SPOTLIGHT' && navigationContext?.showSpotlight) {
+            navigationContext.showSpotlight(cmd.action);
+            toast({
+              title: '✨ Spotlight',
+              description: 'Élément mis en lumière'
+            });
+          }
+          else if (cmd.type === 'PULSE' && navigationContext?.addPulseEffect) {
+            navigationContext.addPulseEffect(cmd.action);
+            toast({
+              title: '💫 Attention',
+              description: 'Regardez l\'élément qui pulse'
+            });
+          }
+          else if (cmd.type === 'TRAIL' && navigationContext?.showTrail) {
+            const [startSelector, endSelector] = cmd.action.split(':');
+            if (startSelector && endSelector) {
+              navigationContext.showTrail(startSelector, endSelector);
+              toast({
+                title: '➡️ Chemin',
+                description: 'Suivez la ligne vers l\'élément cible'
+              });
+            }
+          }
+          else if (cmd.type === 'TOOLTIP' && navigationContext?.showCustomTooltip) {
+            const [selector, ...messageParts] = cmd.action.split(':');
+            const message = messageParts.join(':');
+            if (selector && message) {
+              navigationContext.showCustomTooltip(selector, message);
+            }
+          }
+          else if (cmd.type === 'CELEBRATE' && navigationContext?.celebrate) {
+            navigationContext.celebrate();
+            toast({
+              title: '🎉 Félicitations !',
+              description: 'Vous avez réussi !'
+            });
           }
         });
       }, 1000); // Délai de 1 seconde pour laisser le message s'afficher
