@@ -1083,7 +1083,8 @@ const WhiteboardPage = () => {
                   key={color}
                   onClick={() => {
                     setActiveColor(color);
-                    if (['pencil', 'highlighter'].includes(activeTool)) setTool(activeTool);
+                    // Mettre à jour immédiatement le pinceau avec la nouvelle couleur
+                    updateBrushColor(color);
                   }}
                   className={`w-6 h-6 rounded-full border-2 ${activeColor === color ? 'border-purple-500 ring-2 ring-purple-300' : 'border-gray-300'}`}
                   style={{ backgroundColor: color }}
