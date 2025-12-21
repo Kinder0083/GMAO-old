@@ -89,68 +89,7 @@ const WhiteboardPage = () => {
 
   // ==================== WebSocket ====================
   
-  // Connecter au WebSocket
-  const connectWebSocket = useCallback((boardId) => {
-    const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
-    
-    // Fermer la connexion existante si elle existe
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      return;
-    }
-    
-    const userId = user?.id || 'anonymous';
-    const userName = `${user?.prenom || ''} ${user?.nom || ''}`.trim() || 'Anonyme';
-    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${userId}&user_name=${encodeURIComponent(userName)}`;
-    
-    console.log(`Connexion WebSocket à ${boardId}...`);
-    
-    try {
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-      
-      ws.onopen = () => {
-        console.log(`WebSocket ${boardId} connecté`);
-        setWsConnected(prev => ({ ...prev, [boardId]: true }));
-        
-        // Demander la synchronisation initiale
-        ws.send(JSON.stringify({ type: 'sync_request' }));
-      };
-      
-      ws.onclose = () => {
-        console.log(`WebSocket ${boardId} déconnecté`);
-        setWsConnected(prev => ({ ...prev, [boardId]: false }));
-        wsRef.current = null;
-        
-        // Reconnexion automatique après 3 secondes
-        if (wsReconnectTimeoutRef.current) {
-          clearTimeout(wsReconnectTimeoutRef.current);
-        }
-        wsReconnectTimeoutRef.current = setTimeout(() => {
-          if (document.visibilityState === 'visible') {
-            connectWebSocket(boardId);
-          }
-        }, 3000);
-      };
-      
-      ws.onerror = (error) => {
-        console.error(`Erreur WebSocket ${boardId}:`, error);
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          handleWebSocketMessage(boardId, message);
-        } catch (e) {
-          console.error('Erreur parsing message WS:', e);
-        }
-      };
-    } catch (error) {
-      console.error(`Erreur création WebSocket ${boardId}:`, error);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, handleWebSocketMessage]);
-  
-  // Gérer les messages WebSocket
+  // Gérer les messages WebSocket (défini en premier car utilisé par connectWebSocket)
   const handleWebSocketMessage = useCallback((boardId, message) => {
     const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     
@@ -241,6 +180,66 @@ const WhiteboardPage = () => {
         break;
     }
   }, [toast]);
+  
+  // Connecter au WebSocket
+  const connectWebSocket = useCallback((boardId) => {
+    const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+    
+    // Fermer la connexion existante si elle existe
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return;
+    }
+    
+    const userId = user?.id || 'anonymous';
+    const userName = `${user?.prenom || ''} ${user?.nom || ''}`.trim() || 'Anonyme';
+    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${userId}&user_name=${encodeURIComponent(userName)}`;
+    
+    console.log(`Connexion WebSocket à ${boardId}...`);
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      
+      ws.onopen = () => {
+        console.log(`WebSocket ${boardId} connecté`);
+        setWsConnected(prev => ({ ...prev, [boardId]: true }));
+        
+        // Demander la synchronisation initiale
+        ws.send(JSON.stringify({ type: 'sync_request' }));
+      };
+      
+      ws.onclose = () => {
+        console.log(`WebSocket ${boardId} déconnecté`);
+        setWsConnected(prev => ({ ...prev, [boardId]: false }));
+        wsRef.current = null;
+        
+        // Reconnexion automatique après 5 secondes (augmenté pour éviter les boucles)
+        if (wsReconnectTimeoutRef.current) {
+          clearTimeout(wsReconnectTimeoutRef.current);
+        }
+        wsReconnectTimeoutRef.current = setTimeout(() => {
+          if (document.visibilityState === 'visible') {
+            connectWebSocket(boardId);
+          }
+        }, 5000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error(`Erreur WebSocket ${boardId}:`, error);
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          handleWebSocketMessage(boardId, message);
+        } catch (e) {
+          console.error('Erreur parsing message WS:', e);
+        }
+      };
+    } catch (error) {
+      console.error(`Erreur création WebSocket ${boardId}:`, error);
+    }
+  }, [user, handleWebSocketMessage]);
   
   // Envoyer un message WebSocket
   const sendWebSocketMessage = useCallback((boardId, message) => {
