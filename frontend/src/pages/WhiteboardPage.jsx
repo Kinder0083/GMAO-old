@@ -413,7 +413,8 @@ const WhiteboardPage = () => {
         canvas2Ref.current = null;
       }
     };
-  }, [initCanvas]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Exécuter une seule fois au montage
 
   // Charger les tableaux depuis l'API après que les canvas soient prêts
   useEffect(() => {
