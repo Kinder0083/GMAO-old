@@ -1295,7 +1295,7 @@ const WhiteboardPage = () => {
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
-          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative min-h-0`}
+          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative min-h-0 flex items-start justify-center`}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-1 left-1 bg-gray-100/90 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
@@ -1304,11 +1304,11 @@ const WhiteboardPage = () => {
           {/* Wrapper pour le scale CSS - contient le canvas de taille fixe */}
           <div 
             ref={wrapper1Ref}
-            className="bg-white cursor-crosshair"
+            className="bg-white cursor-crosshair shadow-sm"
             style={{ 
               width: CANVAS_FIXED_WIDTH, 
               height: CANVAS_FIXED_HEIGHT,
-              transformOrigin: 'top left'
+              transformOrigin: 'top center'
             }}
           />
         </div>
@@ -1316,7 +1316,7 @@ const WhiteboardPage = () => {
         {/* Tableau 2 */}
         <div 
           ref={container2Ref}
-          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative min-h-0`}
+          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative min-h-0 flex items-start justify-center`}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-1 left-1 bg-gray-100/90 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
@@ -1325,11 +1325,11 @@ const WhiteboardPage = () => {
           {/* Wrapper pour le scale CSS - contient le canvas de taille fixe */}
           <div 
             ref={wrapper2Ref}
-            className="bg-white cursor-crosshair"
+            className="bg-white cursor-crosshair shadow-sm"
             style={{ 
               width: CANVAS_FIXED_WIDTH, 
               height: CANVAS_FIXED_HEIGHT,
-              transformOrigin: 'top left'
+              transformOrigin: 'top center'
             }}
           />
         </div>
