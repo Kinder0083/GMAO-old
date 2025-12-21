@@ -64,46 +64,31 @@ agent_communication:
 
 ## Features to Test
 
-### P0 - Installation Script Fix
-- [ ] Verify script syntax is valid (bash -n)
-- [ ] Verify Nginx configuration section is corrected
+### Whiteboard Bug Fixes - CURRENT FOCUS
 
-### P2 - AI Chatbot Advanced Context ✅ COMPLETED
-- [x] Test `/api/ai/context` endpoint returns enriched app context
-- [x] Verify context includes: active_work_orders, urgent_work_orders, equipment_in_maintenance, active_alerts, sensors_in_alert
-- [x] Test chat with `include_app_context: true` uses context in responses
-- [x] Verify AI can be proactive based on context (e.g., mentioning urgent OTs)
+#### Bug 1: Aspect Ratio Consistency ⏳ TESTING
+- [ ] Login with test credentials (affichagegmaoiris@gmail.com / Iris1234!)
+- [ ] Navigate to /whiteboard
+- [ ] Test desktop viewport (1920x800) - note existing drawing positions
+- [ ] Add new circle shape at center of Tableau 1
+- [ ] Switch to mobile viewport (390x844) and reload page
+- [ ] Verify circle remains circular (not elliptical) and at same relative position
+- [ ] Verify indicator shows "1600×900" reference dimensions with different scale percentages
 
-### P3 - AI Chatbot Advanced Visual Guidance ✅ BACKEND COMPLETED
-- [x] Test [[NAVIGATE:xxx]] commands work (Backend generates correctly)
-- [x] Test [[ACTION:xxx]] commands work (Backend generates [[ACTION:creer-ot]])
-- [ ] Test [[GUIDE:xxx]] commands start guided tutorials (Frontend testing required)
-- [ ] Test [[SPOTLIGHT:selector]] effect (Frontend testing required)
-- [ ] Test [[PULSE:selector]] effect (Frontend testing required)
-- [ ] Test [[CELEBRATE]] confetti effect (Frontend testing required)
-- [ ] Verify visual effects render without errors (Frontend testing required)
+#### Bug 2: Object Deletion WebSocket Sync ⏳ TESTING
+- [ ] On Tableau 1, select an object and press Delete key or use trash icon
+- [ ] Check browser console for "[WS] Envoi suppression objet" log message
+- [ ] Verify object is removed from canvas
+- [ ] Verify deletion was sent via WebSocket (console logs should show the message)
 
 ## Test Credentials
-- Email: admin@test.com
-- Password: password
+- Email: affichagegmaoiris@gmail.com
+- Password: Iris1234!
 
-## API Endpoints ✅ ALL WORKING
-- GET /api/ai/context - Get enriched app context ✅
-- POST /api/ai/chat - Chat with AI (include_app_context param) ✅
-- GET /api/ai/providers - List available LLM providers ✅
-- GET /api/ai/history/{session_id} - Get chat history ✅
+## Expected Results
+1. For aspect ratio: Reference dimensions should be fixed at 1600×900, with only scale percentage changing based on viewport
+2. For deletion: Console should show WebSocket messages being sent when objects are deleted
 
-## Test Results Summary
-**BACKEND: 6/6 tasks working correctly**
-- ✅ AI Context Endpoint - Returns real-time app statistics
-- ✅ AI Providers Endpoint - Lists 5 LLM providers (3 available)
-- ✅ AI Chat Basic - Responds appropriately to GMAO queries
-- ✅ AI Chat with Context - Uses enriched application context
-- ✅ AI Navigation Commands - Generates [[ACTION:creer-ot]] correctly
-- ✅ AI Chat History - Conversation history retrieval working
-
-**FRONTEND: Not tested (system limitations)**
-- Visual effects rendering requires UI testing
-
-## Incorporate User Feedback
-None yet.
+## Test Files
+- Frontend: /app/frontend/src/pages/WhiteboardPage.jsx
+- Backend: /app/backend/whiteboard_manager.py
