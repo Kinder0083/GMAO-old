@@ -952,12 +952,14 @@ const WhiteboardPage = () => {
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
           <div className={`w-2 h-2 rounded-full ${isConnected.board_1 ? 'bg-green-500' : 'bg-red-500'}`} />
           <span>Tableau 1</span>
+          {wsConnected.board_1 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
           <Users size={14} />
           <span>{connectedUsers.board_1?.length || 0}</span>
         </div>
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
           <div className={`w-2 h-2 rounded-full ${isConnected.board_2 ? 'bg-green-500' : 'bg-red-500'}`} />
           <span>Tableau 2</span>
+          {wsConnected.board_2 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
           <Users size={14} />
           <span>{connectedUsers.board_2?.length || 0}</span>
         </div>
