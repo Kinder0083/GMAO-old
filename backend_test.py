@@ -530,13 +530,13 @@ class AIChatbotTester:
         return results
 
 if __name__ == "__main__":
-    tester = WhiteboardTester()
-    results = tester.run_whiteboard_tests()
+    tester = AIChatbotTester()
+    results = tester.run_ai_chatbot_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "get_initial_state", "sync_objects", 
-        "verify_persistence", "sync_additional", "verify_behavior"
+        "admin_login", "ai_context", "ai_providers", 
+        "ai_chat_basic", "ai_chat_context", "ai_navigation"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
