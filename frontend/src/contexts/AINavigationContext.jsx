@@ -136,6 +136,15 @@ export const AINavigationProvider = ({ children }) => {
   const [arrowPosition, setArrowPosition] = useState({ x: 0, y: 0, rotation: 0 });
   const [pulseAnimation, setPulseAnimation] = useState(true);
   const [showHandPointer, setShowHandPointer] = useState(false);
+  
+  // États pour les effets visuels avancés (P3)
+  const [spotlightElement, setSpotlightElement] = useState(null);
+  const [pulseElements, setPulseElements] = useState([]);
+  const [trailPath, setTrailPath] = useState(null);
+  const [customTooltips, setCustomTooltips] = useState([]);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [rippleEffects, setRippleEffects] = useState([]);
+  
   const overlayRef = useRef(null);
   const animationFrameRef = useRef(null);
 
