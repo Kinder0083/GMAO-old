@@ -51,10 +51,12 @@ const PermissionsGrid = ({ role, permissions, onChange }) => {
     { key: 'journal', label: 'Journal d\'audit' },
     { key: 'settings', label: 'Paramètres' },
     { key: 'personalization', label: 'Personnalisation' },
-    { key: 'chatLive', label: '💬 Chat Live' },
-    { key: 'sensors', label: '📡 Capteurs MQTT' },
-    { key: 'iotDashboard', label: '📊 Dashboard IoT' },
-    { key: 'mqttLogs', label: '🔍 Logs MQTT' }
+    { key: 'chatLive', label: 'Chat Live' },
+    { key: 'sensors', label: 'Capteurs MQTT' },
+    { key: 'iotDashboard', label: 'Dashboard IoT' },
+    { key: 'mqttLogs', label: 'Logs MQTT' },
+    { key: 'purchaseRequests', label: 'Demandes d\'achat' },
+    { key: 'whiteboard', label: 'Tableau d\'affichage' }
   ];
 
   const handlePermissionChange = (moduleKey, permissionType, checked) => {
