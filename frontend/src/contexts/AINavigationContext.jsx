@@ -237,12 +237,12 @@ export const AINavigationProvider = ({ children }) => {
     // D'abord, naviguer vers la page
     if (action.route) {
       navigate(action.route);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
     }
 
-    // Ensuite, exécuter l'action (clic, etc.)
+    // Ensuite, surligner l'élément (sans cliquer automatiquement)
     if (action.action === 'click' && action.selector) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 600));
       
       // Essayer plusieurs sélecteurs
       const selectors = action.selector.split(', ');
@@ -264,7 +264,11 @@ export const AINavigationProvider = ({ children }) => {
         }
         
         if (element) {
-          // Surligner d'abord avec le nouveau style
+          // Scroll vers l'élément pour s'assurer qu'il est visible
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Surligner avec effet visuel
           const rect = element.getBoundingClientRect();
           setHighlightedElement({
             selector: sel,
@@ -279,15 +283,27 @@ export const AINavigationProvider = ({ children }) => {
           setShowArrow(true);
           setArrowPosition(calculateArrowPosition(rect, 'top'));
           setShowHandPointer(true);
-          setTooltipContent(`Cliquez sur "${action.name}"`);
+          setTooltipContent(`👆 Cliquez sur "${action.name}"`);
           setTooltipPosition({
             x: rect.left + rect.width / 2,
-            y: rect.bottom + 60
+            y: rect.bottom + 80
           });
           
-          // Attendre un peu puis cliquer
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          element.click();
+          // Garder la surbrillance pendant 8 secondes puis la retirer
+          setTimeout(() => {
+            setHighlightedElement(null);
+            setTooltipContent('');
+            setShowArrow(false);
+            setShowHandPointer(false);
+          }, 8000);
+          
+          return true;
+        }
+      }
+    }
+
+    return true;
+  }, [navigate, calculateArrowPosition]);
           setHighlightedElement(null);
           setTooltipContent('');
           setShowArrow(false);
