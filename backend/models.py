@@ -18,6 +18,7 @@ class UserRole(str, Enum):
     LOGISTIQUE = "LOGISTIQUE"
     LABO = "LABO"
     ADV = "ADV"
+    AFFICHAGE = "AFFICHAGE"  # Rôle pour utilisateur tableau d'affichage
 
 # Permission Models
 class ModulePermission(BaseModel):
