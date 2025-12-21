@@ -423,7 +423,15 @@ const WorkOrders = () => {
                 </thead>
                 <tbody>
                   {filteredWorkOrders.map((wo) => (
-                    <tr key={wo.id} className="border-b hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={wo.id} 
+                      className="border-b hover:bg-gray-50 transition-colors"
+                      data-ai-type="WORK_ORDER"
+                      data-ai-id={wo.id}
+                      data-ai-name={wo.titre}
+                      data-ai-status={wo.statut}
+                      data-ai-extra={JSON.stringify({ numero: wo.numero, priorite: wo.priorite, categorie: wo.categorie })}
+                    >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-gray-900 font-medium">#{wo.numero}</span>
