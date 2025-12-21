@@ -579,12 +579,18 @@ const WhiteboardPage = () => {
       if (e.target && !e.target._fromRemote && !isLoadingDataRef.current && !isReceivingRemoteRef.current) {
         const obj = e.target;
         const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+        
+        // Envoyer via WebSocket pour synchronisation temps réel
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && obj.id) {
+          console.log(`[WS] Envoi suppression objet ${obj.id} vers ${boardId}`);
           wsRef.current.send(JSON.stringify({
             type: 'object_removed',
             object_id: obj.id
           }));
         }
+        
+        // Sauvegarder aussi en base de données pour persistance
+        setupSaveHandler();
       }
     });
     
