@@ -162,35 +162,56 @@ const WhiteboardPage = () => {
     });
   }, []);
   
-  // Convertir les coordonnées de référence vers les coordonnées du canvas (pour affichage)
+  // Convertir les coordonnées normalisées vers les coordonnées du canvas (pour affichage)
   const denormalizeCoordinates = useCallback((objects, canvasWidth, canvasHeight) => {
-    const scaleX = canvasWidth / REFERENCE_WIDTH;
-    const scaleY = canvasHeight / REFERENCE_HEIGHT;
+    // Utiliser un scale uniforme basé sur la diagonale pour éviter les distorsions
+    const canvasDiagonal = Math.sqrt(canvasWidth * canvasWidth + canvasHeight * canvasHeight);
+    const refDiagonal = Math.sqrt(REFERENCE_WIDTH * REFERENCE_WIDTH + REFERENCE_HEIGHT * REFERENCE_HEIGHT);
+    const uniformScale = canvasDiagonal / refDiagonal;
+    
+    // Scales pour les positions
+    const posScaleX = canvasWidth / REFERENCE_WIDTH;
+    const posScaleY = canvasHeight / REFERENCE_HEIGHT;
     
     return objects.map(obj => {
-      const denormalized = { ...obj };
-      if (denormalized.left !== undefined) denormalized.left *= scaleX;
-      if (denormalized.top !== undefined) denormalized.top *= scaleY;
-      if (denormalized.width !== undefined) denormalized.width *= scaleX;
-      if (denormalized.height !== undefined) denormalized.height *= scaleY;
-      if (denormalized.radius !== undefined) denormalized.radius *= Math.min(scaleX, scaleY);
-      if (denormalized.scaleX !== undefined) denormalized.scaleX *= scaleX;
-      if (denormalized.scaleY !== undefined) denormalized.scaleY *= scaleY;
-      if (denormalized.fontSize !== undefined) denormalized.fontSize *= Math.min(scaleX, scaleY);
-      if (denormalized.strokeWidth !== undefined) denormalized.strokeWidth *= Math.min(scaleX, scaleY);
+      const denormalized = JSON.parse(JSON.stringify(obj)); // Deep clone
+      
+      // Positions: utiliser les scales par axe
+      if (denormalized.left !== undefined) denormalized.left *= posScaleX;
+      if (denormalized.top !== undefined) denormalized.top *= posScaleY;
+      
+      // Tailles: utiliser le scale uniforme pour préserver les proportions
+      if (denormalized.width !== undefined) denormalized.width *= uniformScale;
+      if (denormalized.height !== undefined) denormalized.height *= uniformScale;
+      if (denormalized.radius !== undefined) denormalized.radius *= uniformScale;
+      if (denormalized.rx !== undefined) denormalized.rx *= uniformScale;
+      if (denormalized.ry !== undefined) denormalized.ry *= uniformScale;
+      if (denormalized.fontSize !== undefined) denormalized.fontSize *= uniformScale;
+      if (denormalized.strokeWidth !== undefined) denormalized.strokeWidth *= uniformScale;
+      
+      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs)
       
       // Pour les paths (dessins libres)
-      if (denormalized.path) {
+      if (denormalized.path && Array.isArray(denormalized.path)) {
         denormalized.path = denormalized.path.map(cmd => {
+          if (!Array.isArray(cmd)) return cmd;
           return cmd.map((val, idx) => {
-            if (idx === 0) return val;
-            return typeof val === 'number' ? val * (idx % 2 === 1 ? scaleX : scaleY) : val;
+            if (idx === 0) return val; // Commande (M, L, Q, C, etc.)
+            if (typeof val !== 'number') return val;
+            // Alterner X et Y
+            return idx % 2 === 1 ? val * posScaleX : val * posScaleY;
           });
         });
       }
       
+      // Pour les lignes
+      if (denormalized.x1 !== undefined) denormalized.x1 *= posScaleX;
+      if (denormalized.y1 !== undefined) denormalized.y1 *= posScaleY;
+      if (denormalized.x2 !== undefined) denormalized.x2 *= posScaleX;
+      if (denormalized.y2 !== undefined) denormalized.y2 *= posScaleY;
+      
       // Pour les groupes
-      if (denormalized.objects) {
+      if (denormalized.objects && Array.isArray(denormalized.objects)) {
         denormalized.objects = denormalizeCoordinates(denormalized.objects, canvasWidth, canvasHeight);
       }
       
