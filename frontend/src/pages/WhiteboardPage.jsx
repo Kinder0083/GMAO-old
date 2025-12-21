@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fabric } from 'fabric';
+import * as fabric from 'fabric';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import {
