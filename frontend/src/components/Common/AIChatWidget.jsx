@@ -16,7 +16,7 @@ const QUICK_ACTIONS = [
   { id: 'capteurs', label: 'Capteurs IoT', icon: '📡' },
 ];
 
-const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
+const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion = null }) => {
   const { preferences } = usePreferences();
   const { toast } = useToast();
   
@@ -32,6 +32,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null }) => {
   const [sessionId, setSessionId] = useState(null);
   const [minimized, setMinimized] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [hasProcessedInitialQuestion, setHasProcessedInitialQuestion] = useState(false);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
