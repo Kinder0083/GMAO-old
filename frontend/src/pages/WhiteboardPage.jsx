@@ -53,6 +53,21 @@ const WhiteboardPage = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const token = localStorage.getItem('token');
   
+  // Vérifier les permissions
+  const canViewWhiteboard = user?.permissions?.whiteboard?.view ?? false;
+  
+  // Rediriger si pas de permission
+  useEffect(() => {
+    if (user && !canViewWhiteboard) {
+      toast({
+        title: '⛔ Accès refusé',
+        description: 'Vous n\'avez pas la permission d\'accéder au Tableau d\'affichage',
+        variant: 'destructive'
+      });
+      navigate('/dashboard');
+    }
+  }, [canViewWhiteboard, navigate, toast, user]);
+  
   // Refs pour les canvas
   const container1Ref = useRef(null);
   const container2Ref = useRef(null);
