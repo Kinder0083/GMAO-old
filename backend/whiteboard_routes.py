@@ -11,6 +11,8 @@ from uuid import uuid4
 import json
 import logging
 
+from dependencies import get_database, get_current_user
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/whiteboard", tags=["Whiteboard"])
@@ -40,6 +42,12 @@ class WhiteboardUpdate(BaseModel):
     user_id: str
     user_name: str
 
+class WhiteboardSyncData(BaseModel):
+    objects: List[dict] = []
+    user_id: Optional[str] = None
+    user_name: Optional[str] = None
+    version: Optional[int] = 0
+
 # Initialiser les tableaux
 async def init_whiteboards(db):
     """Initialise les deux tableaux s'ils n'existent pas"""
@@ -58,22 +66,16 @@ async def init_whiteboards(db):
 
 # Routes API
 @router.get("/boards")
-async def get_all_boards(db=Depends(lambda: None)):
+async def get_all_boards(db=Depends(get_database)):
     """Récupère l'état des deux tableaux"""
-    from server import get_database
-    db = get_database()
-    
     await init_whiteboards(db)
     
     boards = await db.whiteboards.find({}, {"_id": 0}).to_list(2)
     return {"boards": boards}
 
 @router.get("/board/{board_id}")
-async def get_board(board_id: str):
+async def get_board(board_id: str, db=Depends(get_database)):
     """Récupère l'état d'un tableau spécifique"""
-    from server import get_database
-    db = get_database()
-    
     if board_id not in ["board_1", "board_2"]:
         raise HTTPException(status_code=400, detail="ID de tableau invalide")
     
@@ -86,11 +88,8 @@ async def get_board(board_id: str):
     return board
 
 @router.post("/board/{board_id}/update")
-async def update_board(board_id: str, update: WhiteboardUpdate):
+async def update_board(board_id: str, update: WhiteboardUpdate, db=Depends(get_database)):
     """Met à jour un tableau (ajout, modification, suppression d'objet)"""
-    from server import get_database
-    db = get_database()
-    
     if board_id not in ["board_1", "board_2"]:
         raise HTTPException(status_code=400, detail="ID de tableau invalide")
     
@@ -158,36 +157,34 @@ async def update_board(board_id: str, update: WhiteboardUpdate):
     }
 
 @router.post("/board/{board_id}/sync")
-async def sync_board(board_id: str, data: dict):
+async def sync_board(board_id: str, data: WhiteboardSyncData, db=Depends(get_database)):
     """Synchronise l'état complet d'un tableau (pour sauvegarde complète)"""
-    from server import get_database
-    db = get_database()
-    
     if board_id not in ["board_1", "board_2"]:
         raise HTTPException(status_code=400, detail="ID de tableau invalide")
+    
+    await init_whiteboards(db)
     
     now = datetime.now(timezone.utc).isoformat()
     
     await db.whiteboards.update_one(
         {"board_id": board_id},
         {"$set": {
-            "objects": data.get("objects", []),
-            "version": data.get("version", 0) + 1,
+            "objects": data.objects,
+            "version": (data.version or 0) + 1,
             "last_modified": now,
-            "last_modified_by": data.get("user_id"),
-            "last_modified_by_name": data.get("user_name")
+            "last_modified_by": data.user_id,
+            "last_modified_by_name": data.user_name
         }},
         upsert=True
     )
     
+    logger.info(f"Tableau {board_id} synchronisé avec {len(data.objects)} objets")
+    
     return {"success": True, "synced_at": now}
 
 @router.get("/history")
-async def get_whiteboard_history(limit: int = 50):
+async def get_whiteboard_history(limit: int = 50, db=Depends(get_database)):
     """Récupère l'historique des modifications des tableaux"""
-    from server import get_database
-    db = get_database()
-    
     history = await db.whiteboard_history.find(
         {},
         {"_id": 0}
