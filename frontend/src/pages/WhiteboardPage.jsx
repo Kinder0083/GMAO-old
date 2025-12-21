@@ -36,10 +36,11 @@ const getWebSocketUrl = () => {
 };
 const WS_URL = getWebSocketUrl();
 
-// DIMENSIONS DE RÉFÉRENCE pour normaliser les coordonnées
-// Les coordonnées sont stockées relatives à ces dimensions
-const REFERENCE_WIDTH = 1000;
-const REFERENCE_HEIGHT = 1000;
+// DIMENSIONS DE RÉFÉRENCE FIXES pour normaliser les coordonnées
+// Toutes les coordonnées sont stockées relatives à ces dimensions
+// Ratio 16:9 pour une meilleure compatibilité multi-écrans
+const REFERENCE_WIDTH = 1600;
+const REFERENCE_HEIGHT = 900;
 
 // Couleurs disponibles
 const COLORS = [
