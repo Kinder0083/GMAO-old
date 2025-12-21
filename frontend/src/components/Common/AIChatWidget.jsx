@@ -148,12 +148,12 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     const guidanceSteps = {
       'creer-ot': [
         { route: '/work-orders', message: 'Bienvenue dans le module Ordres de Travail' },
-        { highlight: 'button:has-text("Créer"), button:has-text("+ Créer")', message: 'Cliquez sur ce bouton pour créer un nouvel ordre de travail' },
+        { highlight: 'button:has-text("Créer"), button:has-text("+ Créer")', message: 'Cliquez sur ce bouton pour créer un nouvel ordre de travail', showHand: true },
         { message: 'Remplissez le formulaire avec les informations de l\'intervention' }
       ],
       'creer-equipement': [
         { route: '/assets', message: 'Bienvenue dans le module Équipements' },
-        { highlight: 'button:has-text("Ajouter"), button:has-text("+ Ajouter")', message: 'Cliquez ici pour ajouter un nouvel équipement' },
+        { highlight: 'button:has-text("Ajouter"), button:has-text("+ Ajouter")', message: 'Cliquez ici pour ajouter un nouvel équipement', showHand: true },
         { message: 'Remplissez les informations de l\'équipement (nom, type, emplacement...)' }
       ]
     };
@@ -161,6 +161,51 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     if (guidanceSteps[topic] && startGuidance) {
       startGuidance(guidanceSteps[topic]);
       onClose();
+    }
+  };
+
+  // Fonction pour envoyer un message à l'IA
+  const sendMessageToAI = async (messageContent) => {
+    setLoading(true);
+
+    try {
+      // Construire le contexte
+      const context = initialContext || `Page actuelle: ${window.location.pathname}`;
+      
+      const response = await api.ai.chat({
+        message: messageContent,
+        session_id: sessionId,
+        context: context
+      });
+
+      const assistantMessage = {
+        role: 'assistant',
+        content: response.data.response,
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      setSessionId(response.data.session_id);
+      
+    } catch (error) {
+      console.error('Erreur chat IA:', error);
+      
+      const errorMessage = {
+        role: 'assistant',
+        content: `Désolé, je rencontre des difficultés techniques. ${error.response?.data?.detail || 'Veuillez réessayer.'}`,
+        timestamp: new Date().toISOString(),
+        error: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de contacter l\'assistant IA',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -176,27 +221,11 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = input.trim();
     setInput('');
-    setLoading(true);
-
-    try {
-      // Construire le contexte
-      const context = initialContext || `Page actuelle: ${window.location.pathname}`;
-      
-      const response = await api.ai.chat({
-        message: userMessage.content,
-        session_id: sessionId,
-        context: context
-      });
-
-      const assistantMessage = {
-        role: 'assistant',
-        content: response.data.response,
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-      setSessionId(response.data.session_id);
+    
+    await sendMessageToAI(messageToSend);
+  };
       
     } catch (error) {
       console.error('Erreur chat IA:', error);
