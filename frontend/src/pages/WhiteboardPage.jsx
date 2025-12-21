@@ -701,12 +701,35 @@ const WhiteboardPage = () => {
     activeObjects.forEach(obj => canvas.remove(obj));
     canvas.discardActiveObject();
     canvas.renderAll();
+    
+    // Sauvegarder après suppression
+    debouncedSave(activeBoard);
   };
 
   // Fonction pour retourner au dashboard
-  const handleGoBack = useCallback((e) => {
+  const handleGoBack = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Annuler le timeout de sauvegarde en cours
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Sauvegarder les deux tableaux avant de quitter
+    setIsSaving(true);
+    try {
+      await Promise.all([
+        saveBoard('board_1'),
+        saveBoard('board_2')
+      ]);
+      toast({
+        title: '✅ Sauvegarde effectuée',
+        description: 'Vos dessins ont été sauvegardés'
+      });
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+    }
     
     // Fermer les WebSockets proprement
     if (ws1Ref.current) {
@@ -720,7 +743,7 @@ const WhiteboardPage = () => {
     
     // Naviguer vers le dashboard
     navigate('/dashboard');
-  }, [navigate]);
+  }, [navigate, saveBoard, toast]);
 
   return (
     <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
