@@ -56,6 +56,7 @@ class UserPermissions(BaseModel):
     iotDashboard: ModulePermission = ModulePermission(view=True, edit=False, delete=False)  # Dashboard IoT
     mqttLogs: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Logs MQTT (Admin)
     purchaseRequests: ModulePermission = ModulePermission(view=True, edit=False, delete=False)  # Demandes d'Achat
+    whiteboard: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Tableau d'affichage
 
 # Fonction helper pour obtenir les permissions par défaut selon le rôle
 def get_default_permissions_by_role(role: str) -> UserPermissions:
