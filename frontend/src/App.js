@@ -163,7 +163,6 @@ function App() {
             <Route path="sensors" element={<Sensors />} />
             <Route path="iot-dashboard" element={<IoTDashboard />} />
             <Route path="mqtt-logs" element={<MQTTLogs />} />
-            <Route path="whiteboard" element={<WhiteboardPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
