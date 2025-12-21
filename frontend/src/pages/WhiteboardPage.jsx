@@ -20,10 +20,7 @@ import {
   MousePointer2,
   Highlighter,
   Trash2,
-  Users,
-  Save,
-  Cloud,
-  CloudOff
+  Users
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -44,6 +41,7 @@ const WhiteboardPage = () => {
   
   // Récupérer l'utilisateur depuis localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
   
   // Refs pour les canvas
   const container1Ref = useRef(null);
@@ -51,10 +49,10 @@ const WhiteboardPage = () => {
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
   
-  // WebSocket refs
-  const ws1Ref = useRef(null);
-  const ws2Ref = useRef(null);
+  // Refs pour éviter les problèmes de closure
   const saveTimeoutRef = useRef(null);
+  const initialLoadDoneRef = useRef(false);
+  const isLoadingDataRef = useRef(false);
   
   // États
   const [showToolbar, setShowToolbar] = useState(false);
@@ -68,20 +66,6 @@ const WhiteboardPage = () => {
   const [isConnected, setIsConnected] = useState({ board_1: false, board_2: false });
   const [canvasReady, setCanvasReady] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Token pour les requêtes API
-  const token = localStorage.getItem('token');
-  
-  // Désactiver la déconnexion automatique
-  useEffect(() => {
-    const originalTimeout = window.autoLogoutTimeout;
-    if (originalTimeout) {
-      clearTimeout(originalTimeout);
-    }
-    return () => {};
-  }, []);
 
   // Générer un ID unique
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -89,7 +73,7 @@ const WhiteboardPage = () => {
   // Sauvegarder un tableau via API REST
   const saveBoard = useCallback(async (boardId) => {
     const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    if (!canvas || !token) return;
+    if (!canvas || !token || isLoadingDataRef.current) return;
     
     setIsSaving(true);
     
@@ -110,10 +94,7 @@ const WhiteboardPage = () => {
       });
       
       if (response.ok) {
-        setLastSaved(new Date());
-        console.log(`Tableau ${boardId} sauvegardé`);
-      } else {
-        console.error(`Erreur sauvegarde ${boardId}:`, await response.text());
+        console.log(`Tableau ${boardId} sauvegardé avec ${objects.length} objets`);
       }
     } catch (error) {
       console.error(`Erreur sauvegarde ${boardId}:`, error);
@@ -122,21 +103,25 @@ const WhiteboardPage = () => {
     }
   }, [token, user]);
 
-  // Sauvegarde avec debounce (évite de sauvegarder trop souvent)
+  // Sauvegarde avec debounce
   const debouncedSave = useCallback((boardId) => {
+    if (isLoadingDataRef.current) return;
+    
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     
     saveTimeoutRef.current = setTimeout(() => {
       saveBoard(boardId);
-    }, 1000); // Sauvegarde 1 seconde après la dernière modification
+    }, 1500);
   }, [saveBoard]);
 
   // Charger un tableau depuis l'API
   const loadBoard = useCallback(async (boardId) => {
     const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas || !token) return;
+    
+    isLoadingDataRef.current = true;
     
     try {
       const response = await fetch(`${API_URL}/board/${boardId}`, {
@@ -149,35 +134,33 @@ const WhiteboardPage = () => {
         const data = await response.json();
         
         if (data.objects && data.objects.length > 0) {
-          // Charger les objets dans le canvas
           canvas.clear();
           canvas.backgroundColor = '#FFFFFF';
           
-          // Utiliser loadFromJSON avec Promise (Fabric.js v6)
           const canvasData = {
             version: '6.0.0',
             objects: data.objects,
             background: '#FFFFFF'
           };
           
-          try {
-            await canvas.loadFromJSON(canvasData);
-            canvas.renderAll();
-            console.log(`Tableau ${boardId} chargé avec ${data.objects.length} objets`);
-          } catch (loadError) {
-            console.error(`Erreur loadFromJSON ${boardId}:`, loadError);
-          }
+          await canvas.loadFromJSON(canvasData);
+          canvas.renderAll();
+          console.log(`Tableau ${boardId} chargé avec ${data.objects.length} objets`);
         }
         
         setIsConnected(prev => ({ ...prev, [boardId]: true }));
       }
     } catch (error) {
       console.error(`Erreur chargement ${boardId}:`, error);
+    } finally {
+      isLoadingDataRef.current = false;
     }
   }, [token]);
 
   // Sauvegarder dans l'historique pour Undo
-  const saveToUndoStack = useCallback((boardId) => {
+  const saveToHistory = useCallback((boardId) => {
+    if (isLoadingDataRef.current) return;
+    
     const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
     if (!canvas) return;
     
@@ -188,148 +171,8 @@ const WhiteboardPage = () => {
     }));
     setRedoStack(prev => ({ ...prev, [boardId]: [] }));
     
-    // Déclencher la sauvegarde automatique
     debouncedSave(boardId);
   }, [debouncedSave]);
-
-  // Envoyer une mise à jour via WebSocket
-  const sendObjectUpdate = useCallback((boardId, type, object) => {
-    const ws = boardId === 'board_1' ? ws1Ref.current : ws2Ref.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    
-    try {
-      const objectData = object.toJSON(['id']);
-      ws.send(JSON.stringify({
-        type,
-        object: objectData,
-        object_id: object.id || generateId()
-      }));
-    } catch (e) {
-      console.error('Erreur envoi objet:', e);
-    }
-  }, []);
-
-  // Gérer les messages WebSocket
-  const handleWebSocketMessage = useCallback((boardId, data) => {
-    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    if (!canvas) return;
-    
-    switch (data.type) {
-      case 'sync_response':
-        if (data.board && data.board.objects) {
-          canvas.clear();
-          canvas.backgroundColor = '#FFFFFF';
-          data.board.objects.forEach(objData => {
-            fabric.util.enlivenObjects([objData], (objects) => {
-              objects.forEach(obj => {
-                obj._fromRemote = true;
-                canvas.add(obj);
-              });
-            });
-          });
-          canvas.renderAll();
-        }
-        break;
-      
-      case 'object_added':
-        fabric.util.enlivenObjects([data.object], (objects) => {
-          objects.forEach(obj => {
-            obj.id = data.object_id;
-            obj._fromRemote = true;
-            canvas.add(obj);
-          });
-          canvas.renderAll();
-        });
-        break;
-      
-      case 'object_modified':
-        const objToModify = canvas.getObjects().find(o => o.id === data.object_id);
-        if (objToModify) {
-          objToModify.set(data.object);
-          objToModify._fromRemote = true;
-          canvas.renderAll();
-        }
-        break;
-      
-      case 'object_removed':
-        const objToRemove = canvas.getObjects().find(o => o.id === data.object_id);
-        if (objToRemove) {
-          objToRemove._fromRemote = true;
-          canvas.remove(objToRemove);
-          canvas.renderAll();
-        }
-        break;
-      
-      case 'users_list':
-        setConnectedUsers(prev => ({ ...prev, [boardId]: data.users }));
-        break;
-      
-      case 'user_joined':
-        toast({
-          title: '👤 Utilisateur connecté',
-          description: `${data.user_name} a rejoint le tableau`,
-        });
-        break;
-      
-      case 'user_left':
-        toast({
-          title: '👤 Utilisateur déconnecté',
-          description: `${data.user_name} a quitté le tableau`,
-        });
-        break;
-      
-      default:
-        break;
-    }
-  }, [toast]);
-
-  // Connexion WebSocket - désactivée temporairement car non disponible dans cet environnement
-  // La fonctionnalité temps réel sera active une fois déployé sur Proxmox
-  const connectWebSocket = useCallback((boardId) => {
-    // WebSocket désactivé temporairement
-    // Sur Proxmox, cette fonctionnalité sera active
-    console.log(`WebSocket ${boardId} - connexion désactivée dans cet environnement`);
-    return null;
-    
-    /* CODE WEBSOCKET POUR PRODUCTION
-    if (!user || !user.id) return;
-    
-    const userName = `${user.prenom || ''} ${user.nom || 'Anonyme'}`.trim();
-    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${user.id}&user_name=${encodeURIComponent(userName)}`;
-    
-    try {
-      const ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        console.log(`WebSocket ${boardId} connecté`);
-        setIsConnected(prev => ({ ...prev, [boardId]: true }));
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          handleWebSocketMessage(boardId, data);
-        } catch (e) {
-          console.error('Erreur parsing message WS:', e);
-        }
-      };
-      
-      ws.onclose = () => {
-        console.log(`WebSocket ${boardId} déconnecté`);
-        setIsConnected(prev => ({ ...prev, [boardId]: false }));
-      };
-      
-      ws.onerror = (error) => {
-        console.error(`Erreur WebSocket ${boardId}:`, error);
-      };
-      
-      return ws;
-    } catch (e) {
-      console.error('Erreur création WebSocket:', e);
-      return null;
-    }
-    */
-  }, [user, handleWebSocketMessage]);
 
   // Initialiser un canvas Fabric.js
   const initCanvas = useCallback((containerEl, boardId) => {
@@ -338,13 +181,11 @@ const WhiteboardPage = () => {
     const width = containerEl.clientWidth || 800;
     const height = containerEl.clientHeight || 400;
     
-    // Créer le canvas HTML
     const canvasEl = document.createElement('canvas');
     canvasEl.id = `canvas-${boardId}`;
     containerEl.innerHTML = '';
     containerEl.appendChild(canvasEl);
     
-    // Créer le canvas Fabric
     const fabricCanvas = new fabric.Canvas(canvasEl, {
       width,
       height,
@@ -353,42 +194,103 @@ const WhiteboardPage = () => {
       selection: true,
     });
     
-    // Événements
+    // Événements - utiliser des fonctions qui ne dépendent pas de closures
     fabricCanvas.on('object:added', (e) => {
-      if (e.target && !e.target._fromRemote) {
-        sendObjectUpdate(boardId, 'object_added', e.target);
-        saveToUndoStack(boardId);
+      if (e.target && !e.target._fromRemote && !isLoadingDataRef.current) {
+        // Sauvegarder après un délai
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+          if (canvas && !isLoadingDataRef.current) {
+            const objects = canvas.toJSON(['id']).objects || [];
+            const tkn = localStorage.getItem('token');
+            const usr = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            fetch(`${API_URL}/board/${boardId}/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tkn}`
+              },
+              body: JSON.stringify({
+                objects,
+                user_id: usr?.id,
+                user_name: `${usr?.prenom || ''} ${usr?.nom || ''}`.trim()
+              })
+            }).then(() => console.log(`Tableau ${boardId} sauvegardé`));
+          }
+        }, 1500);
       }
     });
     
     fabricCanvas.on('object:modified', (e) => {
-      if (e.target && !e.target._fromRemote) {
-        sendObjectUpdate(boardId, 'object_modified', e.target);
-        saveToUndoStack(boardId);
-      }
-    });
-    
-    fabricCanvas.on('object:removed', (e) => {
-      if (e.target && !e.target._fromRemote) {
-        sendObjectUpdate(boardId, 'object_removed', e.target);
-        saveToUndoStack(boardId);
+      if (e.target && !e.target._fromRemote && !isLoadingDataRef.current) {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+          if (canvas && !isLoadingDataRef.current) {
+            const objects = canvas.toJSON(['id']).objects || [];
+            const tkn = localStorage.getItem('token');
+            const usr = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            fetch(`${API_URL}/board/${boardId}/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tkn}`
+              },
+              body: JSON.stringify({
+                objects,
+                user_id: usr?.id,
+                user_name: `${usr?.prenom || ''} ${usr?.nom || ''}`.trim()
+              })
+            }).then(() => console.log(`Tableau ${boardId} sauvegardé`));
+          }
+        }, 1500);
       }
     });
     
     fabricCanvas.on('path:created', (e) => {
-      if (e.path) {
-        e.path.id = generateId();
-        sendObjectUpdate(boardId, 'object_added', e.path);
-        saveToUndoStack(boardId);
+      if (e.path && !isLoadingDataRef.current) {
+        e.path.id = `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+          if (canvas && !isLoadingDataRef.current) {
+            const objects = canvas.toJSON(['id']).objects || [];
+            const tkn = localStorage.getItem('token');
+            const usr = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            fetch(`${API_URL}/board/${boardId}/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${tkn}`
+              },
+              body: JSON.stringify({
+                objects,
+                user_id: usr?.id,
+                user_name: `${usr?.prenom || ''} ${usr?.nom || ''}`.trim()
+              })
+            }).then(() => console.log(`Tableau ${boardId} sauvegardé`));
+          }
+        }, 1500);
       }
     });
     
     return fabricCanvas;
-  }, [sendObjectUpdate, saveToUndoStack]);
+  }, []);
 
-  // Initialisation des canvas après montage
+  // Initialisation des canvas - UNE SEULE FOIS
   useEffect(() => {
-    const timer = setTimeout(() => {
+    let mounted = true;
+    
+    const initializeCanvases = async () => {
+      // Attendre que les containers soient prêts
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (!mounted) return;
+      
       if (container1Ref.current && !canvas1Ref.current) {
         canvas1Ref.current = initCanvas(container1Ref.current, 'board_1');
       }
@@ -398,12 +300,35 @@ const WhiteboardPage = () => {
       
       if (canvas1Ref.current && canvas2Ref.current) {
         setCanvasReady(true);
+        
+        // Charger les données SEULEMENT si pas déjà fait
+        if (!initialLoadDoneRef.current && token) {
+          initialLoadDoneRef.current = true;
+          isLoadingDataRef.current = true;
+          
+          try {
+            await Promise.all([
+              loadBoard('board_1'),
+              loadBoard('board_2')
+            ]);
+            
+            toast({
+              title: '✅ Tableaux chargés',
+              description: 'Vos dessins ont été restaurés'
+            });
+          } catch (err) {
+            console.error('Erreur chargement:', err);
+          } finally {
+            isLoadingDataRef.current = false;
+          }
+        }
       }
-    }, 500);
+    };
+    
+    initializeCanvases();
     
     return () => {
-      clearTimeout(timer);
-      // Sauvegarder avant de quitter
+      mounted = false;
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
@@ -416,33 +341,7 @@ const WhiteboardPage = () => {
         canvas2Ref.current = null;
       }
     };
-  }, []); // Exécuter une seule fois au montage
-
-  // Charger les tableaux depuis l'API après que les canvas soient prêts
-  useEffect(() => {
-    if (canvasReady && token) {
-      setIsLoading(true);
-      
-      // Charger les deux tableaux
-      Promise.all([
-        loadBoard('board_1'),
-        loadBoard('board_2')
-      ]).then(() => {
-        setIsLoading(false);
-        toast({
-          title: '✅ Tableaux chargés',
-          description: 'Vos dessins ont été restaurés'
-        });
-      }).catch(() => {
-        setIsLoading(false);
-      });
-    }
-    
-    return () => {
-      if (ws1Ref.current) ws1Ref.current.close();
-      if (ws2Ref.current) ws2Ref.current.close();
-    };
-  }, [canvasReady, token, loadBoard, toast]);
+  }, [initCanvas, loadBoard, token, toast]);
 
   // Redimensionner les canvas
   useEffect(() => {
@@ -476,7 +375,6 @@ const WhiteboardPage = () => {
     switch (tool) {
       case 'pencil':
         canvas.isDrawingMode = true;
-        // Créer le brush s'il n'existe pas (Fabric.js v6)
         if (!canvas.freeDrawingBrush) {
           canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
         }
@@ -526,7 +424,7 @@ const WhiteboardPage = () => {
     });
     canvas.add(text);
     canvas.setActiveObject(text);
-    text.enterEditing();
+    canvas.renderAll();
   };
 
   // Ajouter une forme
@@ -546,7 +444,7 @@ const WhiteboardPage = () => {
           top: centerY - 30,
           width: 100,
           height: 60,
-          fill: activeColor === '#000000' ? 'rgba(0,0,0,0.1)' : 'transparent',
+          fill: 'transparent',
           stroke: activeColor,
           strokeWidth: Math.max(strokeWidth, 2),
         });
@@ -560,7 +458,7 @@ const WhiteboardPage = () => {
           radius: 40,
           fill: 'transparent',
           stroke: activeColor,
-          strokeWidth: strokeWidth,
+          strokeWidth: Math.max(strokeWidth, 2),
         });
         break;
       
@@ -611,6 +509,7 @@ const WhiteboardPage = () => {
     
     canvas.add(group);
     canvas.setActiveObject(group);
+    canvas.renderAll();
   };
 
   // Ajouter une image
@@ -642,6 +541,7 @@ const WhiteboardPage = () => {
           
           canvas.add(img);
           canvas.setActiveObject(img);
+          canvas.renderAll();
         });
       };
       reader.readAsDataURL(file);
@@ -670,7 +570,11 @@ const WhiteboardPage = () => {
       [activeBoard]: prev[activeBoard].slice(0, -1)
     }));
     
-    canvas.loadFromJSON(previousState, () => canvas.renderAll());
+    isLoadingDataRef.current = true;
+    canvas.loadFromJSON(previousState).then(() => {
+      canvas.renderAll();
+      isLoadingDataRef.current = false;
+    });
   };
 
   // Redo
@@ -693,7 +597,11 @@ const WhiteboardPage = () => {
       [activeBoard]: prev[activeBoard].slice(0, -1)
     }));
     
-    canvas.loadFromJSON(nextState, () => canvas.renderAll());
+    isLoadingDataRef.current = true;
+    canvas.loadFromJSON(nextState).then(() => {
+      canvas.renderAll();
+      isLoadingDataRef.current = false;
+    });
   };
 
   // Supprimer l'objet sélectionné
@@ -705,9 +613,6 @@ const WhiteboardPage = () => {
     activeObjects.forEach(obj => canvas.remove(obj));
     canvas.discardActiveObject();
     canvas.renderAll();
-    
-    // Sauvegarder après suppression
-    debouncedSave(activeBoard);
   };
 
   // Fonction pour retourner au dashboard
@@ -715,18 +620,38 @@ const WhiteboardPage = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Annuler le timeout de sauvegarde en cours
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     
-    // Sauvegarder les deux tableaux avant de quitter
     setIsSaving(true);
     try {
-      await Promise.all([
-        saveBoard('board_1'),
-        saveBoard('board_2')
-      ]);
+      // Sauvegarder les deux tableaux
+      const tkn = localStorage.getItem('token');
+      const usr = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      const savePromises = ['board_1', 'board_2'].map(async (boardId) => {
+        const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+        if (!canvas) return;
+        
+        const objects = canvas.toJSON(['id']).objects || [];
+        
+        await fetch(`${API_URL}/board/${boardId}/sync`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tkn}`
+          },
+          body: JSON.stringify({
+            objects,
+            user_id: usr?.id,
+            user_name: `${usr?.prenom || ''} ${usr?.nom || ''}`.trim()
+          })
+        });
+      });
+      
+      await Promise.all(savePromises);
+      
       toast({
         title: '✅ Sauvegarde effectuée',
         description: 'Vos dessins ont été sauvegardés'
@@ -735,19 +660,8 @@ const WhiteboardPage = () => {
       console.error('Erreur sauvegarde:', error);
     }
     
-    // Fermer les WebSockets proprement
-    if (ws1Ref.current) {
-      ws1Ref.current.close();
-      ws1Ref.current = null;
-    }
-    if (ws2Ref.current) {
-      ws2Ref.current.close();
-      ws2Ref.current = null;
-    }
-    
-    // Naviguer vers le dashboard
     navigate('/dashboard');
-  }, [navigate, saveBoard, toast]);
+  }, [navigate, toast]);
 
   return (
     <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
@@ -930,7 +844,7 @@ const WhiteboardPage = () => {
           className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative cursor-crosshair`}
           onClick={() => setActiveBoard('board_1')}
         >
-          <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10">
+          <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
             Tableau 1
           </div>
         </div>
@@ -941,11 +855,19 @@ const WhiteboardPage = () => {
           className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-hidden relative cursor-crosshair`}
           onClick={() => setActiveBoard('board_2')}
         >
-          <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10">
+          <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
             Tableau 2
           </div>
         </div>
       </div>
+      
+      {/* Indicateur de sauvegarde */}
+      {isSaving && (
+        <div className="absolute bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+          Sauvegarde en cours...
+        </div>
+      )}
     </div>
   );
 };
