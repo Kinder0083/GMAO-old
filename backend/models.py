@@ -94,7 +94,44 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             sensors=ModulePermission(view=True, edit=True, delete=True),
             iotDashboard=ModulePermission(view=True, edit=True, delete=False),
             mqttLogs=ModulePermission(view=True, edit=True, delete=True),
-            purchaseRequests=ModulePermission(view=True, edit=True, delete=True)
+            purchaseRequests=ModulePermission(view=True, edit=True, delete=True),
+            whiteboard=ModulePermission(view=True, edit=True, delete=True)
+        )
+    
+    # Rôle spécial AFFICHAGE : Uniquement accès au tableau d'affichage
+    if role == "AFFICHAGE":
+        return UserPermissions(
+            dashboard=ModulePermission(view=True, edit=False, delete=False),
+            interventionRequests=ModulePermission(view=False, edit=False, delete=False),
+            workOrders=ModulePermission(view=False, edit=False, delete=False),
+            improvementRequests=ModulePermission(view=False, edit=False, delete=False),
+            improvements=ModulePermission(view=False, edit=False, delete=False),
+            preventiveMaintenance=ModulePermission(view=False, edit=False, delete=False),
+            planningMprev=ModulePermission(view=False, edit=False, delete=False),
+            assets=ModulePermission(view=False, edit=False, delete=False),
+            inventory=ModulePermission(view=False, edit=False, delete=False),
+            locations=ModulePermission(view=False, edit=False, delete=False),
+            meters=ModulePermission(view=False, edit=False, delete=False),
+            surveillance=ModulePermission(view=False, edit=False, delete=False),
+            surveillanceRapport=ModulePermission(view=False, edit=False, delete=False),
+            presquaccident=ModulePermission(view=False, edit=False, delete=False),
+            presquaccidentRapport=ModulePermission(view=False, edit=False, delete=False),
+            documentations=ModulePermission(view=False, edit=False, delete=False),
+            vendors=ModulePermission(view=False, edit=False, delete=False),
+            reports=ModulePermission(view=False, edit=False, delete=False),
+            people=ModulePermission(view=False, edit=False, delete=False),
+            planning=ModulePermission(view=False, edit=False, delete=False),
+            purchaseHistory=ModulePermission(view=False, edit=False, delete=False),
+            importExport=ModulePermission(view=False, edit=False, delete=False),
+            journal=ModulePermission(view=False, edit=False, delete=False),
+            settings=ModulePermission(view=False, edit=False, delete=False),
+            personalization=ModulePermission(view=False, edit=False, delete=False),
+            chatLive=ModulePermission(view=False, edit=False, delete=False),
+            sensors=ModulePermission(view=False, edit=False, delete=False),
+            iotDashboard=ModulePermission(view=False, edit=False, delete=False),
+            mqttLogs=ModulePermission(view=False, edit=False, delete=False),
+            purchaseRequests=ModulePermission(view=False, edit=False, delete=False),
+            whiteboard=ModulePermission(view=True, edit=True, delete=False)
         )
     
     # DIRECTEUR : Demande d'inter./Demandes d'amél. en visualisation et modification
