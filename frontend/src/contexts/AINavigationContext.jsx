@@ -13,6 +13,16 @@ export const useAINavigation = () => {
   return context;
 };
 
+// Positions pré-calculées pour les confettis (évite Math.random() pendant le rendu)
+const CONFETTI_COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
+const CONFETTI_POSITIONS = Array.from({ length: 50 }, (_, i) => ({
+  left: (i * 2) % 100,
+  delay: (i % 10) * 0.2,
+  duration: 2 + (i % 3),
+  color: CONFETTI_COLORS[i % 5],
+  rotation: (i * 7) % 360
+}));
+
 // Mapping des actions vers les sélecteurs et routes
 const NAVIGATION_MAP = {
   // Pages principales
