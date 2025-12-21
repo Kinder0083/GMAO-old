@@ -354,18 +354,28 @@ const WhiteboardPage = () => {
     switch (tool) {
       case 'pencil':
         canvas.isDrawingMode = true;
+        // Créer le brush s'il n'existe pas (Fabric.js v6)
+        if (!canvas.freeDrawingBrush) {
+          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+        }
         canvas.freeDrawingBrush.color = activeColor;
         canvas.freeDrawingBrush.width = strokeWidth;
         break;
       
       case 'highlighter':
         canvas.isDrawingMode = true;
+        if (!canvas.freeDrawingBrush) {
+          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+        }
         canvas.freeDrawingBrush.color = activeColor + '80';
         canvas.freeDrawingBrush.width = strokeWidth * 3;
         break;
       
       case 'eraser':
         canvas.isDrawingMode = true;
+        if (!canvas.freeDrawingBrush) {
+          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+        }
         canvas.freeDrawingBrush.color = '#FFFFFF';
         canvas.freeDrawingBrush.width = strokeWidth * 2;
         break;
