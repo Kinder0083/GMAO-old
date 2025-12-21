@@ -831,7 +831,6 @@ ufw --force enable >/dev/null 2>&1
 ufw allow 22/tcp >/dev/null 2>&1
 ufw allow 80/tcp >/dev/null 2>&1
 ufw allow 443/tcp >/dev/null 2>&1
-' >/dev/null 2>&1
 
 ok "Services démarrés"
 
