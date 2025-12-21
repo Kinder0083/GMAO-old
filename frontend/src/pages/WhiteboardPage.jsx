@@ -635,6 +635,33 @@ const WhiteboardPage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [canvasReady]);
 
+  // Gestionnaire de clavier pour supprimer avec la touche Suppr/Delete
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Touche Suppr (Delete) ou Backspace
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Ne pas supprimer si on est dans un champ de texte
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+          return;
+        }
+        
+        const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+        if (!canvas) return;
+        
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length > 0) {
+          e.preventDefault();
+          activeObjects.forEach(obj => canvas.remove(obj));
+          canvas.discardActiveObject();
+          canvas.renderAll();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeBoard]);
+
   // Changer d'outil
   const setTool = (tool, color = null) => {
     setActiveTool(tool);
