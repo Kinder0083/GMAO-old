@@ -49,16 +49,16 @@ const WhiteboardPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Récupérer l'utilisateur depuis localStorage
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');
+  // Récupérer l'utilisateur depuis localStorage (une seule fois)
+  const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{}'));
+  const [token] = useState(() => localStorage.getItem('token'));
   
   // Vérifier les permissions
   const canViewWhiteboard = user?.permissions?.whiteboard?.view ?? false;
   
-  // Rediriger si pas de permission
+  // Rediriger si pas de permission (une seule fois au montage)
   useEffect(() => {
-    if (user && !canViewWhiteboard) {
+    if (!canViewWhiteboard) {
       toast({
         title: '⛔ Accès refusé',
         description: 'Vous n\'avez pas la permission d\'accéder au Tableau d\'affichage',
@@ -66,7 +66,12 @@ const WhiteboardPage = () => {
       });
       navigate('/dashboard');
     }
-  }, [canViewWhiteboard, navigate, toast, user]);
+  }, []); // Exécuter une seule fois au montage
+  
+  // Si pas de permission, ne pas rendre le composant
+  if (!canViewWhiteboard) {
+    return null;
+  }
   
   // Refs pour les canvas
   const container1Ref = useRef(null);
