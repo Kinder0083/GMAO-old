@@ -191,7 +191,13 @@ export const AINavigationProvider = ({ children }) => {
     setTooltipContent('');
     setShowArrow(false);
     setShowHandPointer(false);
-    clearAllEffects();
+    // Nettoyer les effets visuels avancés
+    setSpotlightElement(null);
+    setPulseElements([]);
+    setTrailPath(null);
+    setCustomTooltips([]);
+    setShowCelebration(false);
+    setRippleEffects([]);
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
