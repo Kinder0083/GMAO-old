@@ -268,16 +268,32 @@ export const AIContextMenuProvider = ({ children }) => {
     setMenuVisible(true);
   }, []);
 
-  // Fermer le menu au clic ailleurs
+  // Fermer le menu au clic ailleurs (mais pas si on clique dans le menu)
   useEffect(() => {
-    const handleClick = () => setMenuVisible(false);
+    const handleClick = (e) => {
+      // Ne pas fermer si le clic vient du menu lui-même
+      const menu = document.querySelector('[data-ai-context-menu]');
+      if (menu && menu.contains(e.target)) {
+        return;
+      }
+      setMenuVisible(false);
+    };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') setMenuVisible(false);
     };
     
     if (menuVisible) {
-      document.addEventListener('click', handleClick);
-      document.addEventListener('keydown', handleKeyDown);
+      // Ajouter un délai pour éviter la fermeture immédiate
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleClick);
+        document.addEventListener('keydown', handleKeyDown);
+      }, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('click', handleClick);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     }
     
     return () => {
