@@ -84,8 +84,8 @@ const InactivityHandler = () => {
   // Vérification de l'inactivité
   useEffect(() => {
     const checkInactivity = setInterval(() => {
-      // Si sur la page Chat Live, désactiver le timeout
-      if (isOnChatLivePage) {
+      // Si sur une page protégée (Chat Live ou Whiteboard), désactiver le timeout
+      if (isTimeoutDisabled) {
         return;
       }
 
@@ -99,7 +99,7 @@ const InactivityHandler = () => {
     }, 1000); // Vérifier toutes les secondes
 
     return () => clearInterval(checkInactivity);
-  }, [lastActivity, showWarning, inactivityTimeout, isOnChatLivePage]);
+  }, [lastActivity, showWarning, inactivityTimeout, isTimeoutDisabled]);
 
   // Compte à rebours du popup
   useEffect(() => {
