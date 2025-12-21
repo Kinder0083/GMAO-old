@@ -19,7 +19,7 @@ const InactivityHandler = () => {
   const [countdown, setCountdown] = useState(60);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [inactivityTimeout, setInactivityTimeout] = useState(15 * 60 * 1000); // Par défaut 15 minutes
-  const [isOnChatLivePage, setIsOnChatLivePage] = useState(false);
+  const [isTimeoutDisabled, setIsTimeoutDisabled] = useState(false);
 
   // Charger les paramètres au démarrage
   useEffect(() => {
