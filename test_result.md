@@ -7,10 +7,21 @@
 1. ✅ GET /api/whiteboard/board/{board_id} - Récupération d'un tableau
 2. ✅ POST /api/whiteboard/board/{board_id}/sync - Sauvegarde complète d'un tableau
 
-**Résultats curl**:
-- GET board_1: Retourne correctement board_id, objects, version
-- POST sync: Sauvegarde les objets et incrémente la version
-- Persistance: Les objets sont bien stockés dans MongoDB
+**Résultats tests complets (21/12/2025 12:18)**:
+- ✅ Authentification admin@test.com / password réussie
+- ✅ GET /api/whiteboard/board/board_1 - État initial récupéré (board_id, objects, version, last_modified)
+- ✅ POST /api/whiteboard/board/board_1/sync - Sauvegarde d'objets (rectangle, cercle) réussie
+- ✅ Vérification persistance - Objets retrouvés après sync
+- ✅ POST sync additionnel - Ajout d'objets (texte, rectangle2) réussi
+- ✅ Comportement de remplacement vérifié - 4 objets finaux (replacement behavior)
+- ✅ Persistance après délai (2s) - Objets toujours présents
+- ✅ Incrémentation des versions - Version 1→2→3 correcte
+
+**Tests de persistance validés**:
+- Objets sauvegardés: rectangles, cercles, texte avec propriétés (left, top, width, height, fill, etc.)
+- Comportement: Remplacement complet lors du sync (pas d'accumulation)
+- Versions: Incrémentation automatique à chaque sync
+- Stockage MongoDB: Persistance confirmée après délais
 
 ### Tests Frontend Whiteboard
 **Status**: À VALIDER
