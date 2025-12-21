@@ -776,9 +776,10 @@ supervisorctl update >/dev/null'
 
 sleep 3
 
-# Nginx configuration
-pct exec $CTID -- bash -c 'rm -f /etc/nginx/sites-enabled/default
-cat > /etc/nginx/sites-available/gmao-iris << "NGINX_EOF"
+# Nginx configuration - using tee to avoid heredoc issues inside bash -c
+pct exec $CTID -- rm -f /etc/nginx/sites-enabled/default
+
+pct exec $CTID -- tee /etc/nginx/sites-available/gmao-iris > /dev/null << 'NGINX_EOF'
 server {
     listen 80;
     server_name _;
@@ -823,9 +824,10 @@ server {
     }
 }
 NGINX_EOF
-ln -sf /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/
-nginx -t >/dev/null 2>&1
-systemctl reload nginx'
+
+pct exec $CTID -- ln -sf /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/
+pct exec $CTID -- nginx -t
+pct exec $CTID -- systemctl reload nginx
 
 # Firewall configuration
 pct exec $CTID -- bash -c 'ufw --force enable >/dev/null 2>&1
