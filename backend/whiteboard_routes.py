@@ -173,6 +173,11 @@ async def sync_board(board_id: str, data: WhiteboardSyncData, db=Depends(get_dat
     
     await init_whiteboards(db)
     
+    # Récupérer l'état actuel pour comparer
+    current_board = await db.whiteboards.find_one({"board_id": board_id})
+    current_objects_count = len(current_board.get("objects", [])) if current_board else 0
+    new_objects_count = len(data.objects)
+    
     now = datetime.now(timezone.utc).isoformat()
     
     await db.whiteboards.update_one(
@@ -188,6 +193,42 @@ async def sync_board(board_id: str, data: WhiteboardSyncData, db=Depends(get_dat
     )
     
     logger.info(f"Tableau {board_id} synchronisé avec {len(data.objects)} objets")
+    
+    # Logger dans le journal d'audit système
+    if audit_service and data.user_id:
+        # Récupérer les infos utilisateur
+        user = await db.users.find_one({"id": data.user_id})
+        user_email = user.get("email", "inconnu") if user else "inconnu"
+        
+        # Déterminer l'action
+        if current_objects_count == 0 and new_objects_count > 0:
+            action = ActionType.CREATE
+            details = f"Création initiale avec {new_objects_count} éléments"
+        elif new_objects_count != current_objects_count:
+            action = ActionType.UPDATE
+            diff = new_objects_count - current_objects_count
+            if diff > 0:
+                details = f"Ajout de {diff} élément(s) (total: {new_objects_count})"
+            else:
+                details = f"Suppression de {abs(diff)} élément(s) (total: {new_objects_count})"
+        else:
+            action = ActionType.UPDATE
+            details = f"Modification des éléments ({new_objects_count} éléments)"
+        
+        await audit_service.log_action(
+            user_id=data.user_id,
+            user_name=data.user_name or "Utilisateur",
+            user_email=user_email,
+            action=action,
+            entity_type=EntityType.WHITEBOARD,
+            entity_id=board_id,
+            entity_name=f"Tableau d'affichage {board_id.replace('board_', '')}",
+            details=details,
+            changes={
+                "objects_count_before": current_objects_count,
+                "objects_count_after": new_objects_count
+            }
+        )
     
     return {"success": True, "synced_at": now}
 
