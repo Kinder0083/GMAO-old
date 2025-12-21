@@ -683,7 +683,9 @@ const aiAPI = {
   chat: (data) => api.post('/ai/chat', data),
   getHistory: (sessionId) => api.get(`/ai/history/${sessionId}`),
   clearHistory: (sessionId) => api.delete(`/ai/history/${sessionId}`),
-  getSessions: () => api.get('/ai/sessions')
+  getSessions: () => api.get('/ai/sessions'),
+  // Nouveau: récupérer le contexte enrichi de l'application (P2)
+  getContext: () => api.get('/ai/context')
 };
 
 api.ai = aiAPI;
