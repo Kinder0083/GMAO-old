@@ -20,11 +20,14 @@ import {
   MousePointer2,
   Highlighter,
   Trash2,
-  Users
+  Users,
+  Save,
+  Cloud,
+  CloudOff
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+const API_URL = `${BACKEND_URL}/api/whiteboard`;
 
 // Couleurs disponibles
 const COLORS = [
