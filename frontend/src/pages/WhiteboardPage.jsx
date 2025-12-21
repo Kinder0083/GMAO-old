@@ -180,8 +180,15 @@ const WhiteboardPage = () => {
     }
   }, [toast]);
 
-  // Connexion WebSocket
+  // Connexion WebSocket - désactivée temporairement car non disponible dans cet environnement
+  // La fonctionnalité temps réel sera active une fois déployé sur Proxmox
   const connectWebSocket = useCallback((boardId) => {
+    // WebSocket désactivé temporairement
+    // Sur Proxmox, cette fonctionnalité sera active
+    console.log(`WebSocket ${boardId} - connexion désactivée dans cet environnement`);
+    return null;
+    
+    /* CODE WEBSOCKET POUR PRODUCTION
     if (!user || !user.id) return;
     
     const userName = `${user.prenom || ''} ${user.nom || 'Anonyme'}`.trim();
@@ -207,12 +214,6 @@ const WhiteboardPage = () => {
       ws.onclose = () => {
         console.log(`WebSocket ${boardId} déconnecté`);
         setIsConnected(prev => ({ ...prev, [boardId]: false }));
-        // Reconnexion automatique après 5 secondes
-        setTimeout(() => {
-          if (document.visibilityState === 'visible') {
-            connectWebSocket(boardId);
-          }
-        }, 5000);
       };
       
       ws.onerror = (error) => {
@@ -224,6 +225,7 @@ const WhiteboardPage = () => {
       console.error('Erreur création WebSocket:', e);
       return null;
     }
+    */
   }, [user, handleWebSocketMessage]);
 
   // Initialiser un canvas Fabric.js
