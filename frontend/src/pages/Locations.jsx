@@ -112,7 +112,18 @@ const Locations = () => {
 
     return (
       <div key={zone.id} className={indentClass}>
-        <Card className="hover:shadow-xl transition-all duration-300 mb-4">
+        <Card 
+          className="hover:shadow-xl transition-all duration-300 mb-4"
+          data-ai-type="LOCATION"
+          data-ai-id={zone.id}
+          data-ai-name={zone.nom}
+          data-ai-extra={JSON.stringify({ 
+            level: zone.level, 
+            type: zone.type,
+            parent: zone.parent?.nom,
+            ville: zone.ville 
+          })}
+        >
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
               {hasChildren && (
