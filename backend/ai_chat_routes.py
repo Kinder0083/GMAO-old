@@ -243,7 +243,109 @@ Modules principaux de GMAO Iris :
 - Paramètres : Configuration système"""
 
 
+# ==================== Fonctions de Contexte Enrichi ====================
+
+async def get_enriched_app_context(current_user: dict) -> dict:
+    """
+    Récupère le contexte enrichi de l'application pour améliorer la pertinence des réponses de l'IA.
+    Inclut des statistiques en temps réel sur l'état de l'application.
+    """
+    try:
+        context = {
+            "current_user_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip() or current_user.get('email', 'Utilisateur'),
+            "current_user_role": current_user.get('role', 'N/A'),
+            "current_page": "N/A",
+            "last_action": "N/A"
+        }
+        
+        # Compter les ordres de travail actifs
+        try:
+            active_wos = await db.work_orders.count_documents({
+                "statut": {"$in": ["en_attente", "en_cours", "En attente", "En cours"]}
+            })
+            context["active_work_orders"] = active_wos
+        except Exception:
+            context["active_work_orders"] = 0
+        
+        # Compter les OT urgents (priorité haute)
+        try:
+            urgent_wos = await db.work_orders.count_documents({
+                "statut": {"$in": ["en_attente", "en_cours", "En attente", "En cours"]},
+                "priorite": {"$in": ["haute", "urgente", "Haute", "Urgente", "critical"]}
+            })
+            context["urgent_work_orders"] = urgent_wos
+        except Exception:
+            context["urgent_work_orders"] = 0
+        
+        # Équipements en maintenance
+        try:
+            eq_maintenance = await db.equipments.count_documents({
+                "statut": {"$in": ["en_maintenance", "En maintenance", "hors_service", "Hors service"]}
+            })
+            context["equipment_in_maintenance"] = eq_maintenance
+        except Exception:
+            context["equipment_in_maintenance"] = 0
+        
+        # Alertes actives (capteurs)
+        try:
+            alerts = await db.sensor_alerts.count_documents({
+                "status": {"$in": ["active", "unacknowledged"]}
+            })
+            context["active_alerts"] = alerts
+        except Exception:
+            context["active_alerts"] = 0
+        
+        # Capteurs en alerte
+        try:
+            sensors_alert = await db.sensors.count_documents({
+                "status": {"$in": ["alert", "warning", "critical"]}
+            })
+            context["sensors_in_alert"] = sensors_alert
+        except Exception:
+            context["sensors_in_alert"] = 0
+        
+        # Dernière action utilisateur (depuis l'audit)
+        try:
+            last_audit = await db.audit_logs.find_one(
+                {"user_id": current_user.get("id")},
+                sort=[("timestamp", -1)]
+            )
+            if last_audit:
+                context["last_action"] = f"{last_audit.get('action', 'N/A')} sur {last_audit.get('entity_type', 'N/A')}"
+        except Exception:
+            context["last_action"] = "N/A"
+        
+        return context
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération contexte enrichi: {e}")
+        return {
+            "current_user_name": current_user.get('email', 'Utilisateur'),
+            "current_user_role": current_user.get('role', 'N/A'),
+            "active_work_orders": 0,
+            "urgent_work_orders": 0,
+            "equipment_in_maintenance": 0,
+            "active_alerts": 0,
+            "sensors_in_alert": 0,
+            "current_page": "N/A",
+            "last_action": "N/A"
+        }
+
+
 # ==================== Endpoints ====================
+
+@router.get("/context")
+async def get_app_context(
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer le contexte enrichi de l'application pour l'IA"""
+    try:
+        context = await get_enriched_app_context(current_user)
+        return {"context": context}
+    except Exception as e:
+        logger.error(f"Erreur récupération contexte: {e}")
+        raise HTTPException(status_code=500, detail="Erreur récupération contexte")
+
 
 @router.get("/providers")
 async def get_llm_providers(
