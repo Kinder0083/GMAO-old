@@ -87,6 +87,192 @@ const WhiteboardPage = () => {
   // Générer un ID unique
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+  // ==================== WebSocket ====================
+  
+  // Connecter au WebSocket
+  const connectWebSocket = useCallback((boardId) => {
+    const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+    
+    // Fermer la connexion existante si elle existe
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return;
+    }
+    
+    const userId = user?.id || 'anonymous';
+    const userName = `${user?.prenom || ''} ${user?.nom || ''}`.trim() || 'Anonyme';
+    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${userId}&user_name=${encodeURIComponent(userName)}`;
+    
+    console.log(`Connexion WebSocket à ${boardId}...`);
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      
+      ws.onopen = () => {
+        console.log(`WebSocket ${boardId} connecté`);
+        setWsConnected(prev => ({ ...prev, [boardId]: true }));
+        
+        // Demander la synchronisation initiale
+        ws.send(JSON.stringify({ type: 'sync_request' }));
+      };
+      
+      ws.onclose = () => {
+        console.log(`WebSocket ${boardId} déconnecté`);
+        setWsConnected(prev => ({ ...prev, [boardId]: false }));
+        wsRef.current = null;
+        
+        // Reconnexion automatique après 3 secondes
+        if (wsReconnectTimeoutRef.current) {
+          clearTimeout(wsReconnectTimeoutRef.current);
+        }
+        wsReconnectTimeoutRef.current = setTimeout(() => {
+          if (document.visibilityState === 'visible') {
+            connectWebSocket(boardId);
+          }
+        }, 3000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error(`Erreur WebSocket ${boardId}:`, error);
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          handleWebSocketMessage(boardId, message);
+        } catch (e) {
+          console.error('Erreur parsing message WS:', e);
+        }
+      };
+    } catch (error) {
+      console.error(`Erreur création WebSocket ${boardId}:`, error);
+    }
+  }, [user]);
+  
+  // Gérer les messages WebSocket
+  const handleWebSocketMessage = useCallback((boardId, message) => {
+    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    
+    switch (message.type) {
+      case 'users_list':
+        setConnectedUsers(prev => ({
+          ...prev,
+          [boardId]: message.users || []
+        }));
+        break;
+      
+      case 'user_joined':
+        toast({
+          title: '👋 Nouvel utilisateur',
+          description: `${message.user_name} a rejoint le tableau`
+        });
+        break;
+      
+      case 'user_left':
+        toast({
+          title: '👋 Départ',
+          description: `${message.user_name} a quitté le tableau`
+        });
+        break;
+      
+      case 'object_added':
+        if (canvas && message.object) {
+          isReceivingRemoteRef.current = true;
+          fabric.util.enlivenObjects([message.object]).then((objects) => {
+            objects.forEach(obj => {
+              obj.id = message.object_id;
+              obj._fromRemote = true;
+              canvas.add(obj);
+            });
+            canvas.renderAll();
+            isReceivingRemoteRef.current = false;
+          });
+        }
+        break;
+      
+      case 'object_modified':
+        if (canvas && message.object && message.object_id) {
+          isReceivingRemoteRef.current = true;
+          const existingObj = canvas.getObjects().find(o => o.id === message.object_id);
+          if (existingObj) {
+            canvas.remove(existingObj);
+          }
+          fabric.util.enlivenObjects([message.object]).then((objects) => {
+            objects.forEach(obj => {
+              obj.id = message.object_id;
+              obj._fromRemote = true;
+              canvas.add(obj);
+            });
+            canvas.renderAll();
+            isReceivingRemoteRef.current = false;
+          });
+        }
+        break;
+      
+      case 'object_removed':
+        if (canvas && message.object_id) {
+          isReceivingRemoteRef.current = true;
+          const objToRemove = canvas.getObjects().find(o => o.id === message.object_id);
+          if (objToRemove) {
+            canvas.remove(objToRemove);
+            canvas.renderAll();
+          }
+          isReceivingRemoteRef.current = false;
+        }
+        break;
+      
+      case 'sync_response':
+        // Synchronisation initiale reçue
+        if (canvas && message.board && message.board.objects) {
+          isLoadingDataRef.current = true;
+          canvas.loadFromJSON({
+            version: '6.0.0',
+            objects: message.board.objects,
+            background: '#FFFFFF'
+          }).then(() => {
+            canvas.renderAll();
+            isLoadingDataRef.current = false;
+          });
+        }
+        break;
+      
+      default:
+        break;
+    }
+  }, [toast]);
+  
+  // Envoyer un message WebSocket
+  const sendWebSocketMessage = useCallback((boardId, message) => {
+    const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(message));
+    }
+  }, []);
+  
+  // Effet pour connecter les WebSockets
+  useEffect(() => {
+    if (canvasReady && user?.id) {
+      connectWebSocket('board_1');
+      connectWebSocket('board_2');
+    }
+    
+    return () => {
+      if (wsReconnectTimeoutRef.current) {
+        clearTimeout(wsReconnectTimeoutRef.current);
+      }
+      if (ws1Ref.current) {
+        ws1Ref.current.close();
+        ws1Ref.current = null;
+      }
+      if (ws2Ref.current) {
+        ws2Ref.current.close();
+        ws2Ref.current = null;
+      }
+    };
+  }, [canvasReady, user?.id, connectWebSocket]);
+
+  // ==================== Fin WebSocket ====================
+
   // Sauvegarder un tableau via API REST
   const saveBoard = useCallback(async (boardId) => {
     const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
