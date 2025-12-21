@@ -237,47 +237,75 @@ export const AINavigationProvider = ({ children }) => {
     // D'abord, naviguer vers la page
     if (action.route) {
       navigate(action.route);
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     // Ensuite, surligner l'élément (sans cliquer automatiquement)
     if (action.action === 'click' && action.selector) {
-      await new Promise(resolve => setTimeout(resolve, 600));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Essayer plusieurs sélecteurs
+      // Essayer plusieurs sélecteurs dans l'ordre
       const selectors = action.selector.split(', ');
+      let element = null;
+      
       for (const sel of selectors) {
-        // Convertir le sélecteur has-text en querySelector compatible
-        let element;
+        // D'abord essayer le sélecteur direct (ID ou data-attribute)
+        if (sel.startsWith('#') || sel.startsWith('[data-')) {
+          element = document.querySelector(sel);
+          if (element) {
+            console.log('Élément trouvé avec sélecteur:', sel);
+            break;
+          }
+        }
+        
+        // Si c'est un sélecteur :has-text() - chercher le bouton par son texte
         if (sel.includes(':has-text(')) {
           const textMatch = sel.match(/:has-text\("([^"]+)"\)/);
           if (textMatch) {
             const searchText = textMatch[1];
-            const baseSelector = sel.split(':has-text')[0];
-            const elements = document.querySelectorAll(baseSelector || 'button');
-            element = Array.from(elements).find(el => 
-              el.textContent.includes(searchText)
-            );
-          }
-        } else {
-          element = document.querySelector(sel);
-        }
-        
-        if (element) {
-          // Scroll vers l'élément pour s'assurer qu'il est visible
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          // Surligner avec effet visuel
-          const rect = element.getBoundingClientRect();
-          setHighlightedElement({
-            selector: sel,
-            rect: {
-              top: rect.top + window.scrollY,
-              left: rect.left + window.scrollX,
-              width: rect.width,
-              height: rect.height
+            const baseSelector = sel.split(':has-text')[0] || 'button';
+            
+            // Chercher dans le contenu principal, pas dans le header ou la sidebar
+            const mainContent = document.querySelector('main, [role="main"], .main-content') || document.body;
+            const elements = mainContent.querySelectorAll(baseSelector);
+            
+            // Trouver le bouton qui contient EXACTEMENT ce texte (pas juste partiellement)
+            element = Array.from(elements).find(el => {
+              const text = el.textContent.trim();
+              return text === searchText || text.includes(searchText);
+            });
+            
+            if (element) {
+              console.log('Élément trouvé avec texte:', searchText);
+              break;
             }
+          }
+        } else if (!sel.startsWith('#') && !sel.startsWith('[data-')) {
+          // Sélecteur CSS standard
+          element = document.querySelector(sel);
+          if (element) {
+            console.log('Élément trouvé avec CSS:', sel);
+            break;
+          }
+        }
+      }
+      
+      if (element) {
+        // Scroll vers l'élément pour s'assurer qu'il est visible
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Surligner avec effet visuel
+        const rect = element.getBoundingClientRect();
+        setHighlightedElement({
+          selector: action.selector,
+          rect: {
+            top: rect.top + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+            height: rect.height
+          }
+        });
           });
           setHighlightStyle('default');
           setShowArrow(true);
