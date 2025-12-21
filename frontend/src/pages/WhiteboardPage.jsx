@@ -65,9 +65,11 @@ const WhiteboardPage = () => {
   const canViewWhiteboard = user?.permissions?.whiteboard?.view ?? false;
   const [hasCheckedPermission, setHasCheckedPermission] = useState(false);
   
-  // Refs pour les canvas
+  // Refs pour les canvas et leurs wrappers
   const container1Ref = useRef(null);
   const container2Ref = useRef(null);
+  const wrapper1Ref = useRef(null);
+  const wrapper2Ref = useRef(null);
   const canvas1Ref = useRef(null);
   const canvas2Ref = useRef(null);
   
@@ -96,16 +98,16 @@ const WhiteboardPage = () => {
   const [canvasReady, setCanvasReady] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // États pour le zoom adaptatif
-  const [zoomLevels, setZoomLevels] = useState({ board_1: 1, board_2: 1 });
+  // États pour le scale CSS (PAS le zoom Fabric.js)
+  const [scaleFactors, setScaleFactors] = useState({ board_1: 1, board_2: 1 });
 
   // Générer un ID unique
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  // ==================== Calcul du zoom adaptatif ====================
+  // ==================== Calcul du scale CSS ====================
   
-  // Calculer le zoom optimal pour adapter le canvas fixe au conteneur
-  const calculateOptimalZoom = useCallback((containerWidth, containerHeight) => {
+  // Calculer le scale optimal pour adapter le canvas fixe au conteneur
+  const calculateOptimalScale = useCallback((containerWidth, containerHeight) => {
     const padding = 20; // Marge autour du canvas
     const availableWidth = containerWidth - padding;
     const availableHeight = containerHeight - padding;
@@ -115,6 +117,16 @@ const WhiteboardPage = () => {
     
     // Prendre le plus petit ratio pour que le canvas tienne entièrement
     return Math.min(scaleX, scaleY, 1); // Maximum 1 (pas d'agrandissement au-delà de 100%)
+  }, []);
+
+  // Appliquer le scale CSS au wrapper du canvas
+  const applyScale = useCallback((boardId, scale) => {
+    const wrapper = boardId === 'board_1' ? wrapper1Ref.current : wrapper2Ref.current;
+    if (wrapper) {
+      wrapper.style.transform = `scale(${scale})`;
+      wrapper.style.transformOrigin = 'top left';
+    }
+    setScaleFactors(prev => ({ ...prev, [boardId]: scale }));
   }, []);
 
   // ==================== WebSocket ====================
@@ -252,15 +264,11 @@ const WhiteboardPage = () => {
         console.log(`WebSocket ${boardId} déconnecté`);
         setWsConnected(prev => ({ ...prev, [boardId]: false }));
         wsRef.current = null;
-        
-        // PAS de reconnexion automatique pour éviter les boucles
-        // L'API REST fonctionne toujours comme fallback
       };
       
-      ws.onerror = (error) => {
+      ws.onerror = () => {
         clearTimeout(connectionTimeout);
         console.log(`WebSocket ${boardId} non disponible - utilisation de l'API REST`);
-        // Ne pas afficher d'erreur car c'est attendu dans certains environnements
       };
       
       ws.onmessage = (event) => {
@@ -276,14 +284,6 @@ const WhiteboardPage = () => {
     }
   }, [user, handleWebSocketMessage]);
   
-  // Envoyer un message WebSocket
-  const sendWebSocketMessage = useCallback((boardId, message) => {
-    const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-    }
-  }, []);
-  
   // Ref pour éviter les connexions multiples
   const wsConnectionAttemptedRef = useRef(false);
   
@@ -296,7 +296,6 @@ const WhiteboardPage = () => {
     
     if (canvasReady && user?.id && !wsConnectionAttemptedRef.current) {
       wsConnectionAttemptedRef.current = true;
-      // Attendre un peu avant de tenter la connexion WebSocket
       timeout = setTimeout(() => {
         connectWebSocket('board_1');
         connectWebSocket('board_2');
@@ -306,12 +305,8 @@ const WhiteboardPage = () => {
     return () => {
       if (timeout) clearTimeout(timeout);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      if (ws1) {
-        ws1.close();
-      }
-      if (ws2) {
-        ws2.close();
-      }
+      if (ws1) ws1.close();
+      if (ws2) ws2.close();
     };
   }, [canvasReady, user?.id, connectWebSocket]);
 
@@ -404,53 +399,43 @@ const WhiteboardPage = () => {
     }
   }, [token]);
 
-  // Sauvegarder dans l'historique pour Undo
-  const saveToHistory = useCallback((boardId) => {
-    if (isLoadingDataRef.current) return;
+  // Initialiser un canvas Fabric.js avec DIMENSIONS FIXES (sans zoom)
+  const initCanvas = useCallback((containerEl, wrapperEl, boardId) => {
+    if (!containerEl || !wrapperEl) return null;
     
-    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    if (!canvas) return;
-    
-    const json = canvas.toJSON(['id']);
-    setUndoStack(prev => ({
-      ...prev,
-      [boardId]: [...(prev[boardId] || []).slice(-20), json]
-    }));
-    setRedoStack(prev => ({ ...prev, [boardId]: [] }));
-    
-    debouncedSave(boardId);
-  }, [debouncedSave]);
-
-  // Initialiser un canvas Fabric.js avec DIMENSIONS FIXES
-  const initCanvas = useCallback((containerEl, boardId) => {
-    if (!containerEl) return null;
-    
-    // Utiliser les DIMENSIONS FIXES au lieu des dimensions du conteneur
-    const width = CANVAS_FIXED_WIDTH;
-    const height = CANVAS_FIXED_HEIGHT;
-    
+    // Créer l'élément canvas HTML
     const canvasEl = document.createElement('canvas');
     canvasEl.id = `canvas-${boardId}`;
-    containerEl.innerHTML = '';
-    containerEl.appendChild(canvasEl);
+    canvasEl.width = CANVAS_FIXED_WIDTH;
+    canvasEl.height = CANVAS_FIXED_HEIGHT;
     
+    // Vider le wrapper et ajouter le canvas
+    wrapperEl.innerHTML = '';
+    wrapperEl.appendChild(canvasEl);
+    
+    // Créer le canvas Fabric.js avec les dimensions FIXES
     const fabricCanvas = new fabric.Canvas(canvasEl, {
-      width,
-      height,
+      width: CANVAS_FIXED_WIDTH,
+      height: CANVAS_FIXED_HEIGHT,
       backgroundColor: '#FFFFFF',
       isDrawingMode: false,
       selection: true,
     });
     
-    // Calculer et appliquer le zoom initial
+    // Calculer et appliquer le scale CSS initial
     const containerWidth = containerEl.clientWidth || 800;
     const containerHeight = containerEl.clientHeight || 400;
-    const optimalZoom = calculateOptimalZoom(containerWidth, containerHeight);
+    const optimalScale = calculateOptimalScale(containerWidth, containerHeight);
     
-    fabricCanvas.setZoom(optimalZoom);
-    setZoomLevels(prev => ({ ...prev, [boardId]: optimalZoom }));
+    // Appliquer le scale via CSS (pas via Fabric.js zoom)
+    wrapperEl.style.transform = `scale(${optimalScale})`;
+    wrapperEl.style.transformOrigin = 'top left';
+    wrapperEl.style.width = `${CANVAS_FIXED_WIDTH}px`;
+    wrapperEl.style.height = `${CANVAS_FIXED_HEIGHT}px`;
     
-    // Événements - utiliser des fonctions qui ne dépendent pas de closures
+    setScaleFactors(prev => ({ ...prev, [boardId]: optimalScale }));
+    
+    // Événements
     fabricCanvas.on('object:added', (e) => {
       if (e.target && !e.target._fromRemote && !isLoadingDataRef.current && !isReceivingRemoteRef.current) {
         const obj = e.target;
@@ -591,7 +576,7 @@ const WhiteboardPage = () => {
     });
     
     return fabricCanvas;
-  }, [calculateOptimalZoom]);
+  }, [calculateOptimalScale]);
 
   // Initialisation des canvas - UNE SEULE FOIS
   useEffect(() => {
@@ -603,11 +588,11 @@ const WhiteboardPage = () => {
       
       if (!mounted) return;
       
-      if (container1Ref.current && !canvas1Ref.current) {
-        canvas1Ref.current = initCanvas(container1Ref.current, 'board_1');
+      if (container1Ref.current && wrapper1Ref.current && !canvas1Ref.current) {
+        canvas1Ref.current = initCanvas(container1Ref.current, wrapper1Ref.current, 'board_1');
       }
-      if (container2Ref.current && !canvas2Ref.current) {
-        canvas2Ref.current = initCanvas(container2Ref.current, 'board_2');
+      if (container2Ref.current && wrapper2Ref.current && !canvas2Ref.current) {
+        canvas2Ref.current = initCanvas(container2Ref.current, wrapper2Ref.current, 'board_2');
       }
       
       if (canvas1Ref.current && canvas2Ref.current) {
@@ -655,37 +640,35 @@ const WhiteboardPage = () => {
     };
   }, [initCanvas, loadBoard, token, toast]);
 
-  // Redimensionner/Ajuster le zoom des canvas lors du resize
+  // Redimensionner/Ajuster le scale des canvas lors du resize
   useEffect(() => {
     const handleResize = () => {
       [
-        { canvas: canvas1Ref.current, container: container1Ref.current, boardId: 'board_1' },
-        { canvas: canvas2Ref.current, container: container2Ref.current, boardId: 'board_2' }
-      ].forEach(({ canvas, container, boardId }) => {
-        if (!canvas || !container) return;
+        { container: container1Ref.current, wrapper: wrapper1Ref.current, boardId: 'board_1' },
+        { container: container2Ref.current, wrapper: wrapper2Ref.current, boardId: 'board_2' }
+      ].forEach(({ container, wrapper, boardId }) => {
+        if (!container || !wrapper) return;
         
-        // Calculer le nouveau zoom optimal
+        // Calculer le nouveau scale optimal
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
-        const optimalZoom = calculateOptimalZoom(containerWidth, containerHeight);
+        const optimalScale = calculateOptimalScale(containerWidth, containerHeight);
         
-        // Appliquer le zoom
-        canvas.setZoom(optimalZoom);
-        setZoomLevels(prev => ({ ...prev, [boardId]: optimalZoom }));
-        
-        canvas.renderAll();
+        // Appliquer le scale via CSS
+        wrapper.style.transform = `scale(${optimalScale})`;
+        setScaleFactors(prev => ({ ...prev, [boardId]: optimalScale }));
       });
     };
     
     window.addEventListener('resize', handleResize);
-    // Appliquer le zoom initial après un court délai
+    // Appliquer le scale initial après un court délai
     const initialResizeTimeout = setTimeout(handleResize, 500);
     
     return () => {
       window.removeEventListener('resize', handleResize);
       clearTimeout(initialResizeTimeout);
     };
-  }, [canvasReady, calculateOptimalZoom]);
+  }, [canvasReady, calculateOptimalScale]);
 
   // Gestionnaire de clavier pour supprimer avec la touche Suppr/Delete
   useEffect(() => {
@@ -720,42 +703,40 @@ const WhiteboardPage = () => {
       }
     };
     
-    // Écouter sur document pour capturer tous les événements clavier
     document.addEventListener('keydown', handleKeyDown, true);
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [activeBoard]);
 
-  // ==================== Fonctions de zoom manuel ====================
+  // ==================== Fonctions de scale manuel ====================
   
-  const handleZoomIn = (boardId) => {
-    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    if (!canvas) return;
+  const handleScaleUp = (boardId) => {
+    const wrapper = boardId === 'board_1' ? wrapper1Ref.current : wrapper2Ref.current;
+    if (!wrapper) return;
     
-    const newZoom = Math.min(canvas.getZoom() * 1.2, 2); // Max 200%
-    canvas.setZoom(newZoom);
-    setZoomLevels(prev => ({ ...prev, [boardId]: newZoom }));
-    canvas.renderAll();
+    const currentScale = scaleFactors[boardId] || 1;
+    const newScale = Math.min(currentScale * 1.2, 2); // Max 200%
+    wrapper.style.transform = `scale(${newScale})`;
+    setScaleFactors(prev => ({ ...prev, [boardId]: newScale }));
   };
   
-  const handleZoomOut = (boardId) => {
-    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    if (!canvas) return;
+  const handleScaleDown = (boardId) => {
+    const wrapper = boardId === 'board_1' ? wrapper1Ref.current : wrapper2Ref.current;
+    if (!wrapper) return;
     
-    const newZoom = Math.max(canvas.getZoom() / 1.2, 0.25); // Min 25%
-    canvas.setZoom(newZoom);
-    setZoomLevels(prev => ({ ...prev, [boardId]: newZoom }));
-    canvas.renderAll();
+    const currentScale = scaleFactors[boardId] || 1;
+    const newScale = Math.max(currentScale / 1.2, 0.1); // Min 10%
+    wrapper.style.transform = `scale(${newScale})`;
+    setScaleFactors(prev => ({ ...prev, [boardId]: newScale }));
   };
   
-  const handleZoomFit = (boardId) => {
-    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+  const handleScaleFit = (boardId) => {
     const container = boardId === 'board_1' ? container1Ref.current : container2Ref.current;
-    if (!canvas || !container) return;
+    const wrapper = boardId === 'board_1' ? wrapper1Ref.current : wrapper2Ref.current;
+    if (!container || !wrapper) return;
     
-    const optimalZoom = calculateOptimalZoom(container.clientWidth, container.clientHeight);
-    canvas.setZoom(optimalZoom);
-    setZoomLevels(prev => ({ ...prev, [boardId]: optimalZoom }));
-    canvas.renderAll();
+    const optimalScale = calculateOptimalScale(container.clientWidth, container.clientHeight);
+    wrapper.style.transform = `scale(${optimalScale})`;
+    setScaleFactors(prev => ({ ...prev, [boardId]: optimalScale }));
   };
 
   // Changer d'outil
@@ -1138,23 +1119,23 @@ const WhiteboardPage = () => {
       </div>
       
       {/* Indicateurs de connexion + Dimensions */}
-      <div className="absolute top-4 right-4 z-50 flex gap-4">
+      <div className="absolute top-4 right-4 z-50 flex flex-wrap gap-2 justify-end">
         {/* Info dimensions fixes */}
-        <div className="flex items-center gap-2 bg-blue-100 px-3 py-1.5 rounded-full shadow-md text-xs text-blue-700">
-          📐 {CANVAS_FIXED_WIDTH}×{CANVAS_FIXED_HEIGHT}px
+        <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full shadow-md text-xs text-green-700 font-medium">
+          🔒 {CANVAS_FIXED_WIDTH}×{CANVAS_FIXED_HEIGHT}px (fixe)
         </div>
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
           <div className={`w-2 h-2 rounded-full ${isConnected.board_1 ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span>Tableau 1</span>
-          <span className="text-xs text-gray-500">({Math.round(zoomLevels.board_1 * 100)}%)</span>
+          <span className="hidden sm:inline">Tableau 1</span>
+          <span className="text-xs text-gray-500">({Math.round(scaleFactors.board_1 * 100)}%)</span>
           {wsConnected.board_1 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
           <Users size={14} />
           <span>{connectedUsers.board_1?.length || 0}</span>
         </div>
         <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-md text-sm">
           <div className={`w-2 h-2 rounded-full ${isConnected.board_2 ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span>Tableau 2</span>
-          <span className="text-xs text-gray-500">({Math.round(zoomLevels.board_2 * 100)}%)</span>
+          <span className="hidden sm:inline">Tableau 2</span>
+          <span className="text-xs text-gray-500">({Math.round(scaleFactors.board_2 * 100)}%)</span>
           {wsConnected.board_2 ? <Wifi size={14} className="text-green-500" /> : <WifiOff size={14} className="text-gray-400" />}
           <Users size={14} />
           <span>{connectedUsers.board_2?.length || 0}</span>
@@ -1194,17 +1175,17 @@ const WhiteboardPage = () => {
             </div>
           </div>
           
-          {/* Contrôles de zoom */}
+          {/* Contrôles de zoom/scale */}
           <div className="mb-4">
-            <label className="text-xs text-gray-500 mb-2 block">Zoom ({Math.round(zoomLevels[activeBoard] * 100)}%)</label>
+            <label className="text-xs text-gray-500 mb-2 block">Affichage ({Math.round(scaleFactors[activeBoard] * 100)}%)</label>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleZoomOut(activeBoard)} title="Zoom arrière" className="flex-1">
+              <Button variant="outline" size="sm" onClick={() => handleScaleDown(activeBoard)} title="Réduire" className="flex-1">
                 <ZoomOut size={16} />
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleZoomFit(activeBoard)} title="Ajuster à l'écran" className="flex-1">
+              <Button variant="outline" size="sm" onClick={() => handleScaleFit(activeBoard)} title="Ajuster à l'écran" className="flex-1">
                 <Maximize2 size={16} />
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleZoomIn(activeBoard)} title="Zoom avant" className="flex-1">
+              <Button variant="outline" size="sm" onClick={() => handleScaleUp(activeBoard)} title="Agrandir" className="flex-1">
                 <ZoomIn size={16} />
               </Button>
             </div>
@@ -1266,7 +1247,6 @@ const WhiteboardPage = () => {
                   key={color}
                   onClick={() => {
                     setActiveColor(color);
-                    // Mettre à jour immédiatement le pinceau avec la nouvelle couleur
                     updateBrushColor(color);
                   }}
                   className={`w-6 h-6 rounded-full border-2 ${activeColor === color ? 'border-purple-500 ring-2 ring-purple-300' : 'border-gray-300'}`}
@@ -1285,7 +1265,6 @@ const WhiteboardPage = () => {
                   key={size}
                   onClick={() => {
                     setStrokeWidth(size);
-                    // Mettre à jour immédiatement le pinceau avec la nouvelle taille
                     updateBrushSize(size);
                   }}
                   className={`flex-1 h-8 rounded flex items-center justify-center ${strokeWidth === size ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-100 border border-gray-300'}`}
@@ -1312,27 +1291,47 @@ const WhiteboardPage = () => {
       )}
       
       {/* Zone des tableaux */}
-      <div className="flex-1 flex gap-4 p-4 pt-16">
+      <div className="flex-1 flex flex-col sm:flex-row gap-4 p-4 pt-16">
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
-          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative cursor-crosshair flex items-center justify-center`}
+          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative`}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
             Tableau 1
           </div>
+          {/* Wrapper pour le scale CSS - contient le canvas de taille fixe */}
+          <div 
+            ref={wrapper1Ref}
+            className="bg-white cursor-crosshair"
+            style={{ 
+              width: CANVAS_FIXED_WIDTH, 
+              height: CANVAS_FIXED_HEIGHT,
+              transformOrigin: 'top left'
+            }}
+          />
         </div>
         
         {/* Tableau 2 */}
         <div 
           ref={container2Ref}
-          className={`flex-1 bg-white rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative cursor-crosshair flex items-center justify-center`}
+          className={`flex-1 bg-gray-200 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg overflow-auto relative`}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-2 left-2 bg-gray-100 px-2 py-1 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
             Tableau 2
           </div>
+          {/* Wrapper pour le scale CSS - contient le canvas de taille fixe */}
+          <div 
+            ref={wrapper2Ref}
+            className="bg-white cursor-crosshair"
+            style={{ 
+              width: CANVAS_FIXED_WIDTH, 
+              height: CANVAS_FIXED_HEIGHT,
+              transformOrigin: 'top left'
+            }}
+          />
         </div>
       </div>
       
