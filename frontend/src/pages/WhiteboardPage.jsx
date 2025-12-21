@@ -584,6 +584,25 @@ const WhiteboardPage = () => {
     canvas.renderAll();
   };
 
+  // Fonction pour retourner au dashboard
+  const handleGoBack = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Fermer les WebSockets proprement
+    if (ws1Ref.current) {
+      ws1Ref.current.close();
+      ws1Ref.current = null;
+    }
+    if (ws2Ref.current) {
+      ws2Ref.current.close();
+      ws2Ref.current = null;
+    }
+    
+    // Naviguer vers le dashboard
+    navigate('/dashboard');
+  }, [navigate]);
+
   return (
     <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
       {/* Barre de contrôle minimale */}
@@ -591,7 +610,7 @@ const WhiteboardPage = () => {
         <Button
           variant="outline"
           size="icon"
-          onClick={() => navigate('/dashboard')}
+          onClick={handleGoBack}
           className="bg-white shadow-md hover:bg-gray-100"
           title="Retour au Dashboard"
         >
