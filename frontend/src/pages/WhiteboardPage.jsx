@@ -435,7 +435,7 @@ const WhiteboardPage = () => {
     }, 5000);
     
     return () => clearInterval(pollingInterval);
-  }, [wsConnected.board_1, wsConnected.board_2]);
+  }, [wsConnected.board_1, wsConnected.board_2, loadBoard]);
 
   // ==================== Sauvegarde ====================
 
