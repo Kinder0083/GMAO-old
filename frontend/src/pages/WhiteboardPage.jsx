@@ -544,6 +544,25 @@ const WhiteboardPage = () => {
     }
   }, [token, denormalizeCoordinates]);
 
+  // ==================== Polling de secours (comme Chat Live) ====================
+  // Si WebSocket déconnecté, recharger les données toutes les 5 secondes
+  
+  useEffect(() => {
+    const pollingInterval = setInterval(() => {
+      // Si au moins un WebSocket est déconnecté, recharger ce board
+      if (!wsConnected.board_1 && canvas1Ref.current && !isLoadingDataRef.current) {
+        console.log('[Polling] Rechargement board_1...');
+        loadBoard('board_1');
+      }
+      if (!wsConnected.board_2 && canvas2Ref.current && !isLoadingDataRef.current) {
+        console.log('[Polling] Rechargement board_2...');
+        loadBoard('board_2');
+      }
+    }, 5000);
+    
+    return () => clearInterval(pollingInterval);
+  }, [wsConnected.board_1, wsConnected.board_2, loadBoard]);
+
   // ==================== Initialisation Canvas ====================
 
   const initCanvas = useCallback((containerEl, boardId) => {
