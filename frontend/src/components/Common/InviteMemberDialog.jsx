@@ -196,7 +196,7 @@ const InviteMemberDialog = ({ open, onOpenChange, onSuccess }) => {
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  Un lien d'invitation valide 7 jours sera envoyé
+                  Un lien d&apos;invitation valide 7 jours sera envoyé
                 </p>
               </div>
 
