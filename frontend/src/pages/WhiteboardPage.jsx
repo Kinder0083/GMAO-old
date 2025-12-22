@@ -276,23 +276,9 @@ const WhiteboardPage = () => {
         break;
       
       case 'sync_response':
-        // Charger les données SEULEMENT si le canvas est vide (première connexion)
-        if (canvas && message.board && message.board.objects) {
-          const currentObjects = canvas.getObjects();
-          // Ne recharger QUE si le canvas est vide
-          if (currentObjects.length === 0) {
-            isLoadingDataRef.current = true;
-            const denormalized = denormalizeCoordinates(message.board.objects, dimensions.width, dimensions.height);
-            canvas.loadFromJSON({
-              version: '6.0.0',
-              objects: denormalized,
-              background: '#FFFFFF'
-            }).then(() => {
-              canvas.renderAll();
-              isLoadingDataRef.current = false;
-            });
-          }
-        }
+        // DÉSACTIVÉ: Le chargement initial se fait via HTTP (loadBoard)
+        // Ce cas ne devrait plus être atteint car on n'envoie plus sync_request
+        console.log(`[WS] sync_response reçu mais ignoré - utiliser HTTP pour charger`);
         break;
       
       case 'heartbeat_ack':
