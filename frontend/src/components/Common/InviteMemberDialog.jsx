@@ -137,7 +137,7 @@ const InviteMemberDialog = ({ open, onOpenChange, onSuccess }) => {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Link2 className="h-4 w-4" />
-                Lien d'invitation
+                Lien d&apos;invitation
               </Label>
               <div className="flex gap-2">
                 <Input
