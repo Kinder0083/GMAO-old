@@ -475,6 +475,7 @@ async def invite_member(request: InviteMemberRequest, current_user: dict = Depen
     """
     Envoyer une invitation par email (Admin uniquement)
     L'utilisateur recevra un lien pour compléter son inscription
+    Si l'email échoue, le lien d'invitation est retourné pour envoi manuel
     """
     # Vérifier si l'email existe déjà
     existing_user = await db.users.find_one({"email": request.email})
@@ -496,27 +497,47 @@ async def invite_member(request: InviteMemberRequest, current_user: dict = Depen
         expires_delta=timedelta(days=7)
     )
     
-    # Envoyer l'email d'invitation
-    email_sent = email_service.send_invitation_email(
-        to_email=request.email,
-        token=invitation_token,
-        role=request.role
-    )
+    # Construire le lien d'invitation
+    # Utiliser FRONTEND_URL s'il est défini, sinon APP_URL
+    frontend_url = os.environ.get('FRONTEND_URL') or os.environ.get('APP_URL', 'http://localhost:3000')
+    # Nettoyer l'URL (enlever /api si présent)
+    frontend_url = frontend_url.replace('/api', '').rstrip('/')
+    invitation_link = f"{frontend_url}/inscription?token={invitation_token}"
     
-    if not email_sent:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de l'envoi de l'email d'invitation"
+    # Tenter l'envoi de l'email
+    email_sent = False
+    email_error_msg = None
+    
+    try:
+        email_sent = email_service.send_invitation_email(
+            to_email=request.email,
+            token=invitation_token,
+            role=request.role
         )
+    except Exception as e:
+        email_error_msg = str(e)
+        logger.error(f"Erreur lors de l'envoi d'email d'invitation à {request.email}: {e}")
     
-    # Log l'invitation
-    logger.info(f"Invitation envoyée à {request.email} par {current_user.get('email')}")
-    
-    return {
-        "message": f"Invitation envoyée à {request.email}",
-        "email": request.email,
-        "role": request.role
-    }
+    # Log l'invitation (avec ou sans succès email)
+    if email_sent:
+        logger.info(f"✅ Invitation envoyée par email à {request.email} par {current_user.get('email')}")
+        return {
+            "message": f"Invitation envoyée par email à {request.email}",
+            "email": request.email,
+            "role": request.role,
+            "email_sent": True
+        }
+    else:
+        # L'email a échoué mais on retourne quand même le lien d'invitation
+        logger.warning(f"⚠️ Email non envoyé à {request.email} - Lien d'invitation généré pour envoi manuel")
+        return {
+            "message": f"L'email n'a pas pu être envoyé. Utilisez le lien ci-dessous pour inviter {request.email}",
+            "email": request.email,
+            "role": request.role,
+            "email_sent": False,
+            "invitation_link": invitation_link,
+            "warning": email_error_msg or "Vérifiez la configuration SMTP dans les paramètres"
+        }
 
 @api_router.post("/users/create-member", response_model=User)
 async def create_member(request: CreateMemberRequest, current_user: dict = Depends(get_current_admin_user)):
