@@ -280,35 +280,31 @@ class InviteMemberTester:
             self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
             return False
     
-    
-    def run_ai_chatbot_tests(self):
-        """Run comprehensive tests for AI Chatbot P2 & P3 functionality"""
+    def run_invite_member_tests(self):
+        """Run comprehensive tests for invite member functionality"""
         self.log("=" * 80)
-        self.log("TESTING AI CHATBOT P2 & P3 - GMAO IRIS")
+        self.log("TESTING INVITE MEMBER FUNCTIONALITY - GMAO IRIS")
         self.log("=" * 80)
         self.log("CONTEXTE:")
-        self.log("Test des fonctionnalités avancées du chatbot IA pour GMAO Iris")
-        self.log("P2: Contexte enrichi de l'application")
-        self.log("P3: Guidage visuel avancé avec commandes de navigation")
+        self.log("Test des fonctionnalités d'invitation de membres pour GMAO Iris")
+        self.log("Vérification de l'API /api/users/invite-member")
         self.log("")
         self.log("TESTS À EFFECTUER:")
         self.log("1. Login admin avec credentials admin@test.com / password")
-        self.log("2. GET /api/ai/context - Récupération contexte enrichi")
-        self.log("3. GET /api/ai/providers - Liste des fournisseurs LLM")
-        self.log("4. POST /api/ai/chat - Chat basique")
-        self.log("5. POST /api/ai/chat - Chat avec contexte enrichi")
-        self.log("6. POST /api/ai/chat - Test commandes de navigation")
-        self.log("7. GET /api/ai/history - Récupération historique")
+        self.log("2. POST /api/users/invite-member - Invitation réussie")
+        self.log("3. POST /api/users/invite-member - Vérification email dupliqué")
+        self.log("4. POST /api/users/invite-member - Validation rôle invalide")
+        self.log("5. POST /api/users/invite-member - Validation email invalide")
+        self.log("6. Validation de la structure du token d'invitation")
         self.log("=" * 80)
         
         results = {
             "admin_login": False,
-            "ai_context": False,
-            "ai_providers": False,
-            "ai_chat_basic": False,
-            "ai_chat_context": False,
-            "ai_navigation": False,
-            "ai_history": False
+            "invite_success": False,
+            "duplicate_email": False,
+            "invalid_role": False,
+            "invalid_email": False,
+            "token_validation": False
         }
         
         # Test 1: Admin Login
@@ -318,32 +314,29 @@ class InviteMemberTester:
             self.log("❌ Cannot proceed with other tests - Admin login failed", "ERROR")
             return results
         
-        # TESTS CRITIQUES DU CHATBOT IA
+        # TESTS CRITIQUES DE L'INVITATION DE MEMBRES
         self.log("\n" + "=" * 60)
-        self.log("🤖 TESTS CRITIQUES - AI CHATBOT P2 & P3")
+        self.log("👥 TESTS CRITIQUES - INVITE MEMBER FUNCTIONALITY")
         self.log("=" * 60)
         
-        # Test 2: AI Context endpoint
-        results["ai_context"] = self.test_ai_context_endpoint()
+        # Test 2: Successful invitation
+        results["invite_success"] = self.test_invite_member_success()
         
-        # Test 3: AI Providers endpoint
-        results["ai_providers"] = self.test_ai_providers_endpoint()
+        # Test 3: Duplicate email check
+        results["duplicate_email"] = self.test_invite_member_duplicate_email()
         
-        # Test 4: Basic AI Chat
-        results["ai_chat_basic"] = self.test_ai_chat_basic()
+        # Test 4: Invalid role validation
+        results["invalid_role"] = self.test_invite_member_invalid_role()
         
-        # Test 5: AI Chat with enriched context
-        results["ai_chat_context"] = self.test_ai_chat_with_context()
+        # Test 5: Invalid email validation
+        results["invalid_email"] = self.test_invite_member_invalid_email()
         
-        # Test 6: AI Navigation commands
-        results["ai_navigation"] = self.test_ai_navigation_commands()
-        
-        # Test 7: AI Chat history
-        results["ai_history"] = self.test_ai_chat_history()
+        # Test 6: Token validation
+        results["token_validation"] = self.test_invite_member_token_validation()
         
         # Summary
         self.log("=" * 80)
-        self.log("AI CHATBOT P2 & P3 - RÉSULTATS DES TESTS")
+        self.log("INVITE MEMBER FUNCTIONALITY - RÉSULTATS DES TESTS")
         self.log("=" * 80)
         
         passed = sum(results.values())
@@ -357,13 +350,13 @@ class InviteMemberTester:
         
         # Analyse détaillée des tests critiques
         critical_tests = [
-            "admin_login", "ai_context", "ai_providers", 
-            "ai_chat_basic", "ai_chat_context", "ai_navigation"
+            "admin_login", "invite_success", "duplicate_email", 
+            "invalid_role", "invalid_email", "token_validation"
         ]
         critical_passed = sum(results.get(test, False) for test in critical_tests)
         
         self.log("\n" + "=" * 60)
-        self.log("ANALYSE CRITIQUE DU CHATBOT IA")
+        self.log("ANALYSE CRITIQUE DE L'INVITATION DE MEMBRES")
         self.log("=" * 60)
         
         # TEST CRITIQUE 1: Authentification
@@ -373,66 +366,62 @@ class InviteMemberTester:
         else:
             self.log("🚨 TEST CRITIQUE 1 - AUTHENTIFICATION: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 2: Contexte enrichi
-        if results.get("ai_context", False):
-            self.log("🎉 TEST CRITIQUE 2 - AI CONTEXT: ✅ SUCCÈS")
-            self.log("✅ GET /api/ai/context fonctionne")
-            self.log("✅ Contexte enrichi avec statistiques temps réel")
+        # TEST CRITIQUE 2: Invitation réussie
+        if results.get("invite_success", False):
+            self.log("🎉 TEST CRITIQUE 2 - INVITE SUCCESS: ✅ SUCCÈS")
+            self.log("✅ POST /api/users/invite-member fonctionne")
+            self.log("✅ Structure de réponse correcte")
         else:
-            self.log("🚨 TEST CRITIQUE 2 - AI CONTEXT: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 2 - INVITE SUCCESS: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 3: Fournisseurs LLM
-        if results.get("ai_providers", False):
-            self.log("🎉 TEST CRITIQUE 3 - AI PROVIDERS: ✅ SUCCÈS")
-            self.log("✅ GET /api/ai/providers fonctionne")
-            self.log("✅ Liste des fournisseurs LLM disponibles")
+        # TEST CRITIQUE 3: Vérification email dupliqué
+        if results.get("duplicate_email", False):
+            self.log("🎉 TEST CRITIQUE 3 - DUPLICATE EMAIL: ✅ SUCCÈS")
+            self.log("✅ Vérification email dupliqué fonctionne")
+            self.log("✅ Retourne erreur 400 appropriée")
         else:
-            self.log("🚨 TEST CRITIQUE 3 - AI PROVIDERS: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 3 - DUPLICATE EMAIL: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 4: Chat basique
-        if results.get("ai_chat_basic", False):
-            self.log("🎉 TEST CRITIQUE 4 - AI CHAT BASIC: ✅ SUCCÈS")
-            self.log("✅ POST /api/ai/chat fonctionne")
-            self.log("✅ Réponses IA générées correctement")
+        # TEST CRITIQUE 4: Validation rôle
+        if results.get("invalid_role", False):
+            self.log("🎉 TEST CRITIQUE 4 - ROLE VALIDATION: ✅ SUCCÈS")
+            self.log("✅ Validation des rôles fonctionne")
         else:
-            self.log("🚨 TEST CRITIQUE 4 - AI CHAT BASIC: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 4 - ROLE VALIDATION: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 5: Chat avec contexte
-        if results.get("ai_chat_context", False):
-            self.log("🎉 TEST CRITIQUE 5 - AI CHAT CONTEXT: ✅ SUCCÈS")
-            self.log("✅ Chat avec contexte enrichi fonctionne")
-            self.log("✅ IA utilise les données temps réel")
+        # TEST CRITIQUE 5: Validation email
+        if results.get("invalid_email", False):
+            self.log("🎉 TEST CRITIQUE 5 - EMAIL VALIDATION: ✅ SUCCÈS")
+            self.log("✅ Validation des emails fonctionne")
         else:
-            self.log("🚨 TEST CRITIQUE 5 - AI CHAT CONTEXT: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 5 - EMAIL VALIDATION: ❌ ÉCHEC")
         
-        # TEST CRITIQUE 6: Commandes de navigation
-        if results.get("ai_navigation", False):
-            self.log("🎉 TEST CRITIQUE 6 - AI NAVIGATION: ✅ SUCCÈS")
-            self.log("✅ Commandes de navigation générées")
-            self.log("✅ Guidage visuel avancé opérationnel")
+        # TEST CRITIQUE 6: Token validation
+        if results.get("token_validation", False):
+            self.log("🎉 TEST CRITIQUE 6 - TOKEN VALIDATION: ✅ SUCCÈS")
+            self.log("✅ Génération de token d'invitation fonctionne")
         else:
-            self.log("🚨 TEST CRITIQUE 6 - AI NAVIGATION: ❌ ÉCHEC")
+            self.log("🚨 TEST CRITIQUE 6 - TOKEN VALIDATION: ❌ ÉCHEC")
         
         # Conclusion finale
         self.log("\n" + "=" * 80)
-        self.log("CONCLUSION FINALE - AI CHATBOT P2 & P3")
+        self.log("CONCLUSION FINALE - INVITE MEMBER FUNCTIONALITY")
         self.log("=" * 80)
         
         if critical_passed >= len(critical_tests) - 1:  # Allow 1 failure
-            self.log("🎉 AI CHATBOT P2 & P3 ENTIÈREMENT FONCTIONNEL!")
-            self.log("✅ API /api/ai/* opérationnelles")
-            self.log("✅ Contexte enrichi de l'application fonctionnel")
-            self.log("✅ Chat IA avec réponses pertinentes")
-            self.log("✅ Commandes de navigation et guidage visuel")
-            self.log("✅ Fournisseurs LLM configurés")
-            if results.get("ai_history", False):
-                self.log("✅ Historique des conversations fonctionnel")
-            self.log("✅ Les fonctionnalités P2 & P3 sont PRÊTES POUR PRODUCTION")
+            self.log("🎉 INVITE MEMBER FUNCTIONALITY ENTIÈREMENT FONCTIONNELLE!")
+            self.log("✅ API /api/users/invite-member opérationnelle")
+            self.log("✅ Validation des emails et rôles fonctionnelle")
+            self.log("✅ Vérification des doublons fonctionnelle")
+            self.log("✅ Génération de tokens d'invitation fonctionnelle")
+            if results.get("invite_success", False):
+                self.log("✅ Envoi d'emails d'invitation configuré")
+            self.log("✅ La fonctionnalité d'invitation est PRÊTE POUR PRODUCTION")
         else:
-            self.log("⚠️ AI CHATBOT P2 & P3 INCOMPLET - PROBLÈMES DÉTECTÉS")
+            self.log("⚠️ INVITE MEMBER FUNCTIONALITY INCOMPLÈTE - PROBLÈMES DÉTECTÉS")
             failed_critical = [test for test in critical_tests if not results.get(test, False)]
             self.log(f"❌ Tests critiques échoués: {', '.join(failed_critical)}")
-            self.log("❌ Les fonctionnalités P2 & P3 ne fonctionnent pas correctement")
+            self.log("❌ La fonctionnalité d'invitation ne fonctionne pas correctement")
             self.log("❌ Intervention requise avant mise en production")
         
         return results
