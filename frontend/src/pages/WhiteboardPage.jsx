@@ -371,11 +371,8 @@ const WhiteboardPage = () => {
           heartbeatIntervalRef.current = null;
         }
         
-        // Tenter une reconnexion automatique après 3 secondes
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log(`[WS] Tentative de reconnexion à ${boardId}...`);
-          connectWebSocket(boardId);
-        }, 3000);
+        // NE PAS tenter de reconnexion automatique - cela cause des problèmes de duplication
+        // L'utilisateur peut rafraîchir la page si nécessaire
       };
       
       ws.onerror = (error) => {
