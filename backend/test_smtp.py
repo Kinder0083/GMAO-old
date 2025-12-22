@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
 """
 Script de diagnostic SMTP pour tester l'envoi d'emails
+Usage: python3 test_smtp.py [email@destinataire.com]
 """
 import os
 import sys
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from pathlib import Path
 
-# Configuration SMTP depuis les variables d'environnement ou valeurs par défaut
+# Charger manuellement le fichier .env
+env_file = Path(__file__).parent / '.env'
+if env_file.exists():
+    with open(env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key not in os.environ:
+                    os.environ[key] = value
+
+# Configuration SMTP
 SMTP_SERVER = os.environ.get('SMTP_SERVER', 'localhost')
 SMTP_PORT = int(os.environ.get('SMTP_PORT', 25))
 SMTP_USERNAME = os.environ.get('SMTP_USERNAME', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-SMTP_FROM_EMAIL = os.environ.get('SMTP_FROM_EMAIL', 'noreply@gmao-iris.local')
+SMTP_FROM_EMAIL = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('SMTP_FROM_EMAIL', 'noreply@gmao-iris.local')
 SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'false').lower() == 'true'
 SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').lower() == 'true'
 
@@ -83,17 +98,17 @@ def test_send_email(to_email):
         msg['To'] = to_email
         msg['Subject'] = '[GMAO IRIS] Test SMTP - Diagnostic'
         
-        body = """
+        body = f"""
 Ceci est un email de test envoyé depuis GMAO IRIS.
 
 Si vous recevez cet email, la configuration SMTP fonctionne correctement.
 
 Configuration utilisée:
-- Serveur: {}
-- Port: {}
-- TLS: {}
-- SSL: {}
-""".format(SMTP_SERVER, SMTP_PORT, SMTP_USE_TLS, SMTP_USE_SSL)
+- Serveur: {SMTP_SERVER}
+- Port: {SMTP_PORT}
+- TLS: {SMTP_USE_TLS}
+- SSL: {SMTP_USE_SSL}
+"""
         
         msg.attach(MIMEText(body, 'plain'))
         
@@ -122,31 +137,6 @@ Configuration utilisée:
         return False
 
 if __name__ == "__main__":
-    # Charger les variables depuis .env si disponible
-    env_file = '/app/backend/.env'
-    if os.path.exists(env_file):
-        with open(env_file) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    if key.startswith('SMTP_') and key not in os.environ:
-                        os.environ[key] = value
-    
-    # Recharger les variables
-    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'localhost')
-    SMTP_PORT = int(os.environ.get('SMTP_PORT', 25))
-    SMTP_USERNAME = os.environ.get('SMTP_USERNAME', '')
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-    SMTP_FROM_EMAIL = os.environ.get('SMTP_FROM_EMAIL', 'noreply@gmao-iris.local')
-    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'false').lower() == 'true'
-    SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').lower() == 'true'
-    
-    print("\nConfiguration rechargée depuis .env:")
-    print(f"  SMTP_SERVER: {SMTP_SERVER}")
-    print(f"  SMTP_PORT: {SMTP_PORT}")
-    print()
-    
     # Test de connexion
     if test_smtp_connection():
         # Si un email est fourni, tester l'envoi
