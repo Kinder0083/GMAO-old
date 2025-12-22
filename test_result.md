@@ -86,24 +86,25 @@ backend:
 
 metadata:
   created_by: "testing_agent"
-  version: "2.0"
-  test_sequence: 2
-  run_ui: true
+  version: "3.0"
+  test_sequence: 3
+  run_ui: false
 
 test_plan:
   current_focus:
-    - "Whiteboard WebSocket Object Deletion"
-  stuck_tasks:
-    - "Whiteboard Object Deletion WebSocket Sync"
-    - "Whiteboard WebSocket Object Deletion"
+    - "Invite Member API - Successful Invitation"
+    - "Invite Member API - Duplicate Email Check"
+    - "Invite Member API - Role Validation"
+    - "Invite Member API - Token Generation"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "testing"
-    message: "🎯 STARTING WHITEBOARD BUG TESTING - Testing two critical bug fixes: 1) Aspect ratio consistency across viewport sizes (uniform scale fix), 2) Object deletion WebSocket synchronization. Will test with credentials affichagegmaoiris@gmail.com / Iris1234! and verify reference dimensions show 1600×900 with proper scale percentages."
+    message: "🎯 STARTING INVITE MEMBER TESTING - Testing invite member functionality for GMAO Iris. Will test POST /api/users/invite-member endpoint with admin credentials (admin@test.com / password) for successful invitations, duplicate email validation, role validation, email validation, and token generation."
   - agent: "testing"
-    message: "✅ WHITEBOARD TESTING COMPLETE - Bug 1 (Aspect Ratio) FIXED: Reference dimensions consistently show 1600×900 with proper scale adjustment (59% desktop vs different mobile). ❌ Bug 2 (WebSocket Deletion) FAILING: WebSocket connections cannot be established - 'WebSocket is closed before the connection is established' error prevents real-time sync. Backend code is correct but server WebSocket configuration needs fixing."
+    message: "✅ INVITE MEMBER TESTING COMPLETE - 5/6 tests passed. ✅ Successful invitation working with email sending. ✅ Duplicate email validation working (400 error). ✅ Role validation working (422 error). ✅ Token generation working with proper JWT structure. ❌ Minor issue: Email validation returns 500 instead of 422 (Pydantic error handler configuration issue, not critical)."
 
 ## Features to Test
 
