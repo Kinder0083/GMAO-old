@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend API Testing Script for AI Chatbot GMAO Iris
-Tests the AI chatbot API endpoints for P2 & P3 functionality
+Backend API Testing Script for GMAO Iris
+Tests the invite member functionality
 """
 
 import requests
@@ -17,7 +17,7 @@ BACKEND_URL = "https://drawshare-sync.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@test.com"
 ADMIN_PASSWORD = "password"
 
-class AIChatbotTester:
+class InviteMemberTester:
     def __init__(self):
         self.admin_session = requests.Session()
         self.admin_token = None
