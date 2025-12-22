@@ -348,8 +348,8 @@ const WhiteboardPage = () => {
         setWsConnected(prev => ({ ...prev, [boardId]: true }));
         console.log(`[WS] Connecté à ${boardId}`);
         
-        // Demander une synchronisation à la connexion
-        ws.send(JSON.stringify({ type: 'sync_request' }));
+        // NE PAS demander de sync - les données sont chargées via HTTP (loadBoard)
+        // Le WebSocket sert uniquement pour les mises à jour temps réel
         
         // Démarrer le heartbeat toutes les 30 secondes pour maintenir la connexion
         heartbeatIntervalRef.current = setInterval(() => {
