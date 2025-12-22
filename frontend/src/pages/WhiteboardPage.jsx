@@ -278,6 +278,10 @@ const WhiteboardPage = () => {
       case 'sync_response':
         if (canvas && message.board && message.board.objects) {
           isLoadingDataRef.current = true;
+          // ANTI-DUPLICATION: Vider le canvas avant de recharger
+          canvas.clear();
+          canvas.setBackgroundColor('#FFFFFF', () => {});
+          
           const denormalized = denormalizeCoordinates(message.board.objects, dimensions.width, dimensions.height);
           canvas.loadFromJSON({
             version: '6.0.0',
@@ -290,13 +294,35 @@ const WhiteboardPage = () => {
         }
         break;
       
+      case 'heartbeat_ack':
+        // Réponse au heartbeat, connexion toujours active
+        break;
+      
       default:
         break;
     }
   }, [toast, denormalizeCoordinates]);
   
+  // Référence pour les intervalles de heartbeat
+  const heartbeatInterval1Ref = useRef(null);
+  const heartbeatInterval2Ref = useRef(null);
+  const reconnectTimeout1Ref = useRef(null);
+  const reconnectTimeout2Ref = useRef(null);
+  
   const connectWebSocket = useCallback((boardId) => {
     const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+    const heartbeatIntervalRef = boardId === 'board_1' ? heartbeatInterval1Ref : heartbeatInterval2Ref;
+    const reconnectTimeoutRef = boardId === 'board_1' ? reconnectTimeout1Ref : reconnectTimeout2Ref;
+    
+    // Nettoyer les anciens timers
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       return;
@@ -319,17 +345,41 @@ const WhiteboardPage = () => {
       ws.onopen = () => {
         clearTimeout(connectionTimeout);
         setWsConnected(prev => ({ ...prev, [boardId]: true }));
+        console.log(`[WS] Connecté à ${boardId}`);
+        
+        // Demander une synchronisation à la connexion
         ws.send(JSON.stringify({ type: 'sync_request' }));
+        
+        // Démarrer le heartbeat toutes les 30 secondes pour maintenir la connexion
+        heartbeatIntervalRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'heartbeat' }));
+          }
+        }, 30000);
       };
       
       ws.onclose = () => {
         clearTimeout(connectionTimeout);
         setWsConnected(prev => ({ ...prev, [boardId]: false }));
         wsRef.current = null;
+        console.log(`[WS] Déconnecté de ${boardId}`);
+        
+        // Nettoyer le heartbeat
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
+          heartbeatIntervalRef.current = null;
+        }
+        
+        // Tenter une reconnexion automatique après 3 secondes
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log(`[WS] Tentative de reconnexion à ${boardId}...`);
+          connectWebSocket(boardId);
+        }, 3000);
       };
       
-      ws.onerror = () => {
+      ws.onerror = (error) => {
         clearTimeout(connectionTimeout);
+        console.error(`[WS] Erreur sur ${boardId}:`, error);
       };
       
       ws.onmessage = (event) => {
