@@ -244,7 +244,7 @@ const InviteMemberDialog = ({ open, onOpenChange, onSuccess }) => {
                 ) : (
                   <>
                     <Mail className="mr-2 h-4 w-4" />
-                    Envoyer l'invitation
+                    Envoyer l&apos;invitation
                   </>
                 )}
               </Button>
