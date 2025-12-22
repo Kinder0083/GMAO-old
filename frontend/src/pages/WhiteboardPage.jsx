@@ -1267,13 +1267,7 @@ const WhiteboardPage = () => {
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
-          className={`sm:flex-1 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden`}
-          style={{ 
-            // En mobile: hauteur fixe = 50% de l'espace disponible (moins le gap)
-            // En desktop: flex-1 gère la largeur
-            height: 'calc((100% - 0.5rem) / 2)',
-            minHeight: 0
-          }}
+          className={`flex-1 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden basis-1/2 sm:basis-auto`}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
@@ -1284,11 +1278,7 @@ const WhiteboardPage = () => {
         {/* Tableau 2 */}
         <div 
           ref={container2Ref}
-          className={`sm:flex-1 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden`}
-          style={{ 
-            height: 'calc((100% - 0.5rem) / 2)',
-            minHeight: 0
-          }}
+          className={`flex-1 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden basis-1/2 sm:basis-auto`}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
