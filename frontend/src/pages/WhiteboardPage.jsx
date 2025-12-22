@@ -1092,15 +1092,13 @@ const WhiteboardPage = () => {
         <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-md text-xs">
           <div className={`w-1.5 h-1.5 rounded-full ${isConnected.board_1 ? 'bg-green-500' : 'bg-red-500'}`} />
           <span>T1</span>
-          <span className="text-gray-400">{REFERENCE_WIDTH}×{REFERENCE_HEIGHT}</span>
-          <span className="text-blue-500">{Math.round(Math.min(canvasSizes.board_1.w / REFERENCE_WIDTH, canvasSizes.board_1.h / REFERENCE_HEIGHT) * 100)}%</span>
+          <span className="text-gray-400">{canvasSizes.board_1.w}×{canvasSizes.board_1.h}px</span>
           {wsConnected.board_1 ? <Wifi size={10} className="text-green-500" /> : <WifiOff size={10} className="text-gray-400" />}
         </div>
         <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-md text-xs">
           <div className={`w-1.5 h-1.5 rounded-full ${isConnected.board_2 ? 'bg-green-500' : 'bg-red-500'}`} />
           <span>T2</span>
-          <span className="text-gray-400">{REFERENCE_WIDTH}×{REFERENCE_HEIGHT}</span>
-          <span className="text-blue-500">{Math.round(Math.min(canvasSizes.board_2.w / REFERENCE_WIDTH, canvasSizes.board_2.h / REFERENCE_HEIGHT) * 100)}%</span>
+          <span className="text-gray-400">{canvasSizes.board_2.w}×{canvasSizes.board_2.h}px</span>
           {wsConnected.board_2 ? <Wifi size={10} className="text-green-500" /> : <WifiOff size={10} className="text-gray-400" />}
         </div>
       </div>
