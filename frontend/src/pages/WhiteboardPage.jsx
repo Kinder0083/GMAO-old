@@ -1263,7 +1263,7 @@ const WhiteboardPage = () => {
       {/* Zone des tableaux - REMPLIT TOUT L'ESPACE */}
       {/* En mode mobile (flex-col), chaque tableau prend exactement 50% de la hauteur */}
       {/* En mode desktop (flex-row), chaque tableau prend 50% de la largeur */}
-      <div className="flex-1 flex flex-col sm:flex-row gap-2 p-2 pt-12 min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col sm:flex-row gap-2 p-2 pt-12 min-h-0 overflow-hidden h-full">
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
