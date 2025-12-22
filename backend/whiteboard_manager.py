@@ -152,7 +152,11 @@ async def handle_whiteboard_message(websocket: WebSocket, board_id: str, user_id
     """Traite les messages WebSocket du tableau d'affichage"""
     msg_type = message.get("type")
     
-    if msg_type == "draw":
+    if msg_type == "heartbeat":
+        # Heartbeat pour maintenir la connexion active
+        await whiteboard_manager.send_personal(websocket, {"type": "heartbeat_ack"})
+    
+    elif msg_type == "draw":
         # Un utilisateur dessine
         await whiteboard_manager.broadcast_to_board(board_id, {
             "type": "draw",
