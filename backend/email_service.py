@@ -14,29 +14,41 @@ from typing import Optional, List, Dict
 import logging
 from datetime import datetime
 import base64
+import pathlib
 
 logger = logging.getLogger(__name__)
 
-# Charger les variables d'environnement depuis .env
-from dotenv import load_dotenv
-import pathlib
+# Charger manuellement le fichier .env (compatible avec ou sans python-dotenv)
 env_path = pathlib.Path(__file__).parent / '.env'
-load_dotenv(dotenv_path=env_path)
+if env_path.exists():
+    try:
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    if key not in os.environ:
+                        os.environ[key] = value
+    except Exception as e:
+        logger.warning(f"Impossible de charger .env: {e}")
 
-# Configuration depuis .env
-SMTP_SERVER = os.environ.get('SMTP_SERVER', 'localhost')
-SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
-SMTP_USERNAME = os.environ.get('SMTP_USERNAME', '')
+# Configuration depuis .env - COMPATIBLE avec les deux formats de noms de variables
+# Format 1: SMTP_SERVER, SMTP_USERNAME, etc. (email_service.py original)
+# Format 2: SMTP_HOST, SMTP_USER, etc. (setup-email.sh)
+SMTP_SERVER = os.environ.get('SMTP_SERVER') or os.environ.get('SMTP_HOST', 'localhost')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '25'))
+SMTP_USERNAME = os.environ.get('SMTP_USERNAME') or os.environ.get('SMTP_USER', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-SMTP_SENDER_EMAIL = os.environ.get('SMTP_SENDER_EMAIL', 'noreply@gmao-iris.com')
+SMTP_SENDER_EMAIL = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('SMTP_FROM', 'noreply@gmao-iris.com')
 SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'GMAO Iris')
-SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
+SMTP_USE_TLS = (os.environ.get('SMTP_USE_TLS') or os.environ.get('SMTP_TLS', 'false')).lower() == 'true'
 APP_URL = os.environ.get('APP_URL', 'http://localhost')
 
 # Log de la configuration au démarrage
 logger.info(f"📧 Configuration SMTP : {SMTP_SERVER}:{SMTP_PORT}")
-logger.info(f"👤 Username: {SMTP_USERNAME}")
-logger.info(f"🔐 Password: {'*' * len(SMTP_PASSWORD) if SMTP_PASSWORD else 'NOT SET'}")
+logger.info(f"📨 Sender: {SMTP_SENDER_EMAIL}")
 logger.info(f"🔒 TLS: {SMTP_USE_TLS}")
 
 
