@@ -1261,13 +1261,22 @@ const WhiteboardPage = () => {
       )}
       
       {/* Zone des tableaux - REMPLIT TOUT L'ESPACE */}
-      {/* En mode mobile (flex-col), chaque tableau prend exactement 50% de la hauteur */}
-      {/* En mode desktop (flex-row), chaque tableau prend 50% de la largeur */}
-      <div className="flex-1 flex flex-col sm:flex-row gap-2 p-2 pt-12 min-h-0 overflow-hidden h-full">
-        {/* Tableau 1 */}
+      {/* En mode mobile (flex-col): chaque tableau prend exactement 50% de la hauteur disponible */}
+      {/* En mode desktop (flex-row): chaque tableau prend 50% de la largeur */}
+      {/* Hauteur calculée: 100vh - 48px (pt-12) - 16px (p-2 * 2) - 8px (gap) = calc(100vh - 72px) */}
+      <div 
+        className="flex flex-col sm:flex-row gap-2 p-2 pt-12 overflow-hidden"
+        style={{ height: 'calc(100vh - 8px)' }}
+      >
+        {/* Tableau 1 - En mobile: 50% de la hauteur restante */}
         <div 
           ref={container1Ref}
-          className={`rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden flex-1 min-h-0`}
+          className={`rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden sm:flex-1`}
+          style={{ 
+            // Mobile: hauteur exacte = (100vh - 48px padding top - 8px padding - 8px gap) / 2
+            height: 'calc((100vh - 64px) / 2)',
+            flex: '1 1 auto'
+          }}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
@@ -1275,10 +1284,14 @@ const WhiteboardPage = () => {
           </div>
         </div>
         
-        {/* Tableau 2 */}
+        {/* Tableau 2 - En mobile: 50% de la hauteur restante */}
         <div 
           ref={container2Ref}
-          className={`rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden flex-1 min-h-0`}
+          className={`rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden sm:flex-1`}
+          style={{ 
+            height: 'calc((100vh - 64px) / 2)',
+            flex: '1 1 auto'
+          }}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
