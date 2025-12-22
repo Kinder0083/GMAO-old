@@ -491,6 +491,8 @@ const WhiteboardPage = () => {
     const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
     if (!canvas || !token) return;
     
+    // Éviter les chargements multiples simultanés
+    if (isLoadingDataRef.current) return;
     isLoadingDataRef.current = true;
     
     try {
@@ -500,13 +502,21 @@ const WhiteboardPage = () => {
       
       if (response.ok) {
         const data = await response.json();
+        const serverObjects = data.objects || [];
         
-        if (data.objects && data.objects.length > 0) {
-          canvas.clear();
+        // Obtenir les objets actuels du canvas
+        const currentObjects = canvas.getObjects();
+        const currentIds = new Set(currentObjects.map(o => o.id).filter(Boolean));
+        const serverIds = new Set(serverObjects.map(o => o.id).filter(Boolean));
+        
+        // Trouver les différences
+        const toAdd = serverObjects.filter(o => o.id && !currentIds.has(o.id));
+        const toRemove = currentObjects.filter(o => o.id && !serverIds.has(o.id));
+        
+        // Si le canvas est vide et on a des données serveur, charger tout
+        if (currentObjects.length === 0 && serverObjects.length > 0) {
           canvas.backgroundColor = '#FFFFFF';
-          
-          // Dénormaliser les coordonnées pour l'affichage
-          const denormalizedObjects = denormalizeCoordinates(data.objects, dimensions.width, dimensions.height);
+          const denormalizedObjects = denormalizeCoordinates(serverObjects, dimensions.width, dimensions.height);
           
           await canvas.loadFromJSON({
             version: '6.0.0',
@@ -514,7 +524,34 @@ const WhiteboardPage = () => {
             background: '#FFFFFF'
           });
           canvas.renderAll();
-          console.log(`Tableau ${boardId} chargé avec ${data.objects.length} objets`);
+          console.log(`Tableau ${boardId} chargé avec ${serverObjects.length} objets`);
+        } else {
+          // Sinon, faire des mises à jour incrémentales
+          let hasChanges = false;
+          
+          // Supprimer les objets qui n'existent plus sur le serveur
+          for (const obj of toRemove) {
+            canvas.remove(obj);
+            hasChanges = true;
+            console.log(`[Sync] Objet ${obj.id} supprimé (n'existe plus sur serveur)`);
+          }
+          
+          // Ajouter les nouveaux objets du serveur
+          if (toAdd.length > 0) {
+            const denormalized = denormalizeCoordinates(toAdd, dimensions.width, dimensions.height);
+            const enlivened = await fabric.util.enlivenObjects(denormalized);
+            for (let i = 0; i < enlivened.length; i++) {
+              enlivened[i].id = toAdd[i].id;
+              enlivened[i]._fromRemote = true;
+              canvas.add(enlivened[i]);
+              hasChanges = true;
+              console.log(`[Sync] Objet ${toAdd[i].id} ajouté depuis serveur`);
+            }
+          }
+          
+          if (hasChanges) {
+            canvas.renderAll();
+          }
         }
         
         setIsConnected(prev => ({ ...prev, [boardId]: true }));
