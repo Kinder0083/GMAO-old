@@ -1261,11 +1261,19 @@ const WhiteboardPage = () => {
       )}
       
       {/* Zone des tableaux - REMPLIT TOUT L'ESPACE */}
-      <div className="flex-1 flex flex-col sm:flex-row gap-2 p-2 pt-12 min-h-0">
+      {/* En mode mobile (flex-col), chaque tableau prend exactement 50% de la hauteur */}
+      {/* En mode desktop (flex-row), chaque tableau prend 50% de la largeur */}
+      <div className="flex-1 flex flex-col sm:flex-row gap-2 p-2 pt-12 min-h-0 overflow-hidden">
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
-          className={`flex-1 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative min-h-0 bg-white cursor-crosshair`}
+          className={`sm:flex-1 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden`}
+          style={{ 
+            // En mobile: hauteur fixe = 50% de l'espace disponible (moins le gap)
+            // En desktop: flex-1 gère la largeur
+            height: 'calc((100% - 0.5rem) / 2)',
+            minHeight: 0
+          }}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
@@ -1276,7 +1284,11 @@ const WhiteboardPage = () => {
         {/* Tableau 2 */}
         <div 
           ref={container2Ref}
-          className={`flex-1 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative min-h-0 bg-white cursor-crosshair`}
+          className={`sm:flex-1 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden`}
+          style={{ 
+            height: 'calc((100% - 0.5rem) / 2)',
+            minHeight: 0
+          }}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
