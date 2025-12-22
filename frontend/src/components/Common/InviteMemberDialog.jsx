@@ -114,7 +114,7 @@ const InviteMemberDialog = ({ open, onOpenChange, onSuccess }) => {
             Inviter un membre
           </DialogTitle>
           <DialogDescription>
-            Un email sera envoyé avec un lien d'inscription. Le membre pourra compléter son profil lui-même.
+            Un email sera envoyé avec un lien d&apos;inscription. Le membre pourra compléter son profil lui-même.
           </DialogDescription>
         </DialogHeader>
 
