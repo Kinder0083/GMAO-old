@@ -103,59 +103,46 @@ const WhiteboardPage = () => {
   const generateId = () => `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // ==================== Normalisation des coordonnées ====================
-  // IMPORTANT: Utiliser un SCALE UNIFORME unique pour TOUTES les transformations
-  // Cela garantit que les formes conservent leurs proportions (cercle = cercle)
-  // et que les dessins apparaissent aux mêmes positions relatives sur tous les écrans
+  // APPROCHE PAR POURCENTAGES: Chaque coordonnée est stockée en pourcentage (0-1)
+  // X = pourcentage de la largeur, Y = pourcentage de la hauteur
+  // Un point à (0.5, 0.5) sera TOUJOURS au centre, peu importe la taille de l'écran
   
-  // Calcule le facteur d'échelle uniforme pour adapter le canvas de référence au canvas réel
-  const getUniformScale = useCallback((canvasWidth, canvasHeight, toReference = false) => {
-    // Facteur d'échelle uniforme = MIN des deux ratios pour s'assurer que tout tient
-    const scaleX = canvasWidth / REFERENCE_WIDTH;
-    const scaleY = canvasHeight / REFERENCE_HEIGHT;
-    const scale = Math.min(scaleX, scaleY);
-    return toReference ? (1 / scale) : scale;
-  }, []);
-  
-  // Convertir les coordonnées du canvas vers les coordonnées de référence
+  // Convertir les coordonnées du canvas vers des pourcentages (0-1)
   const normalizeCoordinates = useCallback((objects, canvasWidth, canvasHeight) => {
-    // UN SEUL facteur d'échelle pour tout (positions ET tailles)
-    const scale = getUniformScale(canvasWidth, canvasHeight, true);
-    
     return objects.map(obj => {
       const normalized = JSON.parse(JSON.stringify(obj)); // Deep clone
       
-      // Positions - même scale uniforme
-      if (normalized.left !== undefined) normalized.left *= scale;
-      if (normalized.top !== undefined) normalized.top *= scale;
+      // Positions en pourcentage
+      if (normalized.left !== undefined) normalized.left = normalized.left / canvasWidth;
+      if (normalized.top !== undefined) normalized.top = normalized.top / canvasHeight;
       
-      // Tailles - même scale uniforme (préserve les proportions)
-      if (normalized.width !== undefined) normalized.width *= scale;
-      if (normalized.height !== undefined) normalized.height *= scale;
-      if (normalized.radius !== undefined) normalized.radius *= scale;
-      if (normalized.rx !== undefined) normalized.rx *= scale;
-      if (normalized.ry !== undefined) normalized.ry *= scale;
-      if (normalized.fontSize !== undefined) normalized.fontSize *= scale;
-      if (normalized.strokeWidth !== undefined) normalized.strokeWidth *= scale;
+      // Tailles en pourcentage (largeur relative à la largeur du canvas, hauteur relative à la hauteur)
+      if (normalized.width !== undefined) normalized.width = normalized.width / canvasWidth;
+      if (normalized.height !== undefined) normalized.height = normalized.height / canvasHeight;
+      if (normalized.radius !== undefined) normalized.radius = normalized.radius / canvasWidth; // Utiliser la largeur pour les cercles
+      if (normalized.rx !== undefined) normalized.rx = normalized.rx / canvasWidth;
+      if (normalized.ry !== undefined) normalized.ry = normalized.ry / canvasHeight;
+      if (normalized.fontSize !== undefined) normalized.fontSize = normalized.fontSize / canvasHeight;
+      if (normalized.strokeWidth !== undefined) normalized.strokeWidth = normalized.strokeWidth / canvasWidth;
       
-      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs internes de Fabric.js)
-      
-      // Pour les paths (dessins libres) - même scale uniforme pour X et Y
+      // Pour les paths (dessins libres) - alterner X et Y
       if (normalized.path && Array.isArray(normalized.path)) {
         normalized.path = normalized.path.map(cmd => {
           if (!Array.isArray(cmd)) return cmd;
           return cmd.map((val, idx) => {
             if (idx === 0) return val; // Commande (M, L, Q, C, etc.)
             if (typeof val !== 'number') return val;
-            return val * scale; // Même scale pour X et Y
+            // Indices impairs = X (largeur), indices pairs = Y (hauteur)
+            return idx % 2 === 1 ? val / canvasWidth : val / canvasHeight;
           });
         });
       }
       
       // Pour les lignes
-      if (normalized.x1 !== undefined) normalized.x1 *= scale;
-      if (normalized.y1 !== undefined) normalized.y1 *= scale;
-      if (normalized.x2 !== undefined) normalized.x2 *= scale;
-      if (normalized.y2 !== undefined) normalized.y2 *= scale;
+      if (normalized.x1 !== undefined) normalized.x1 = normalized.x1 / canvasWidth;
+      if (normalized.y1 !== undefined) normalized.y1 = normalized.y1 / canvasHeight;
+      if (normalized.x2 !== undefined) normalized.x2 = normalized.x2 / canvasWidth;
+      if (normalized.y2 !== undefined) normalized.y2 = normalized.y2 / canvasHeight;
       
       // Pour les groupes
       if (normalized.objects && Array.isArray(normalized.objects)) {
@@ -164,48 +151,44 @@ const WhiteboardPage = () => {
       
       return normalized;
     });
-  }, [getUniformScale]);
+  }, []);
   
-  // Convertir les coordonnées de référence vers les coordonnées du canvas (pour affichage)
+  // Convertir les pourcentages vers les coordonnées du canvas (pour affichage)
   const denormalizeCoordinates = useCallback((objects, canvasWidth, canvasHeight) => {
-    // UN SEUL facteur d'échelle pour tout (positions ET tailles)
-    const scale = getUniformScale(canvasWidth, canvasHeight, false);
-    
     return objects.map(obj => {
       const denormalized = JSON.parse(JSON.stringify(obj)); // Deep clone
       
-      // Positions - même scale uniforme
-      if (denormalized.left !== undefined) denormalized.left *= scale;
-      if (denormalized.top !== undefined) denormalized.top *= scale;
+      // Positions en pixels
+      if (denormalized.left !== undefined) denormalized.left = denormalized.left * canvasWidth;
+      if (denormalized.top !== undefined) denormalized.top = denormalized.top * canvasHeight;
       
-      // Tailles - même scale uniforme (préserve les proportions)
-      if (denormalized.width !== undefined) denormalized.width *= scale;
-      if (denormalized.height !== undefined) denormalized.height *= scale;
-      if (denormalized.radius !== undefined) denormalized.radius *= scale;
-      if (denormalized.rx !== undefined) denormalized.rx *= scale;
-      if (denormalized.ry !== undefined) denormalized.ry *= scale;
-      if (denormalized.fontSize !== undefined) denormalized.fontSize *= scale;
-      if (denormalized.strokeWidth !== undefined) denormalized.strokeWidth *= scale;
+      // Tailles en pixels
+      if (denormalized.width !== undefined) denormalized.width = denormalized.width * canvasWidth;
+      if (denormalized.height !== undefined) denormalized.height = denormalized.height * canvasHeight;
+      if (denormalized.radius !== undefined) denormalized.radius = denormalized.radius * canvasWidth;
+      if (denormalized.rx !== undefined) denormalized.rx = denormalized.rx * canvasWidth;
+      if (denormalized.ry !== undefined) denormalized.ry = denormalized.ry * canvasHeight;
+      if (denormalized.fontSize !== undefined) denormalized.fontSize = denormalized.fontSize * canvasHeight;
+      if (denormalized.strokeWidth !== undefined) denormalized.strokeWidth = denormalized.strokeWidth * canvasWidth;
       
-      // ScaleX/ScaleY: ne pas modifier (ce sont des multiplicateurs internes de Fabric.js)
-      
-      // Pour les paths (dessins libres) - même scale uniforme pour X et Y
+      // Pour les paths (dessins libres) - alterner X et Y
       if (denormalized.path && Array.isArray(denormalized.path)) {
         denormalized.path = denormalized.path.map(cmd => {
           if (!Array.isArray(cmd)) return cmd;
           return cmd.map((val, idx) => {
             if (idx === 0) return val; // Commande (M, L, Q, C, etc.)
             if (typeof val !== 'number') return val;
-            return val * scale; // Même scale pour X et Y
+            // Indices impairs = X (largeur), indices pairs = Y (hauteur)
+            return idx % 2 === 1 ? val * canvasWidth : val * canvasHeight;
           });
         });
       }
       
       // Pour les lignes
-      if (denormalized.x1 !== undefined) denormalized.x1 *= scale;
-      if (denormalized.y1 !== undefined) denormalized.y1 *= scale;
-      if (denormalized.x2 !== undefined) denormalized.x2 *= scale;
-      if (denormalized.y2 !== undefined) denormalized.y2 *= scale;
+      if (denormalized.x1 !== undefined) denormalized.x1 = denormalized.x1 * canvasWidth;
+      if (denormalized.y1 !== undefined) denormalized.y1 = denormalized.y1 * canvasHeight;
+      if (denormalized.x2 !== undefined) denormalized.x2 = denormalized.x2 * canvasWidth;
+      if (denormalized.y2 !== undefined) denormalized.y2 = denormalized.y2 * canvasHeight;
       
       // Pour les groupes
       if (denormalized.objects && Array.isArray(denormalized.objects)) {
@@ -214,7 +197,7 @@ const WhiteboardPage = () => {
       
       return denormalized;
     });
-  }, [getUniformScale]);
+  }, []);
 
   // ==================== WebSocket ====================
   
