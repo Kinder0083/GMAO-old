@@ -1267,7 +1267,7 @@ const WhiteboardPage = () => {
         {/* Tableau 1 */}
         <div 
           ref={container1Ref}
-          className={`flex-1 rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden basis-1/2 sm:basis-auto`}
+          className={`rounded-lg border-4 ${activeBoard === 'board_1' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden flex-1 min-h-0`}
           onClick={() => setActiveBoard('board_1')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
@@ -1278,7 +1278,7 @@ const WhiteboardPage = () => {
         {/* Tableau 2 */}
         <div 
           ref={container2Ref}
-          className={`flex-1 rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden basis-1/2 sm:basis-auto`}
+          className={`rounded-lg border-4 ${activeBoard === 'board_2' ? 'border-purple-500' : 'border-gray-300'} shadow-lg relative bg-white cursor-crosshair overflow-hidden flex-1 min-h-0`}
           onClick={() => setActiveBoard('board_2')}
         >
           <div className="absolute top-1 left-1 bg-white/80 px-2 py-0.5 rounded text-xs font-medium text-gray-600 z-10 pointer-events-none">
