@@ -221,7 +221,7 @@ const InviteMemberDialog = ({ open, onOpenChange, onSuccess }) => {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-gray-500">
-                  Le rôle sera défini et ne pourra pas être modifié par le membre lors de l'inscription
+                  Le rôle sera défini et ne pourra pas être modifié par le membre lors de l&apos;inscription
                 </p>
               </div>
             </div>
