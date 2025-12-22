@@ -427,13 +427,13 @@ class InviteMemberTester:
         return results
 
 if __name__ == "__main__":
-    tester = AIChatbotTester()
-    results = tester.run_ai_chatbot_tests()
+    tester = InviteMemberTester()
+    results = tester.run_invite_member_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "ai_context", "ai_providers", 
-        "ai_chat_basic", "ai_chat_context", "ai_navigation"
+        "admin_login", "invite_success", "duplicate_email", 
+        "invalid_role", "invalid_email", "token_validation"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
