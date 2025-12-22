@@ -62,309 +62,218 @@ class InviteMemberTester:
             self.log(f"❌ Admin login request failed - Error: {str(e)}", "ERROR")
             return False
     
-    def test_ai_context_endpoint(self):
-        """TEST 1: GET /api/ai/context - Get enriched app context"""
-        self.log("🧪 TEST 1: GET /api/ai/context - Get enriched app context")
+    def test_invite_member_success(self):
+        """TEST 1: POST /api/users/invite-member - Successful invitation"""
+        self.log("🧪 TEST 1: POST /api/users/invite-member - Successful invitation")
         
         try:
-            response = self.admin_session.get(f"{BACKEND_URL}/ai/context", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ GET /api/ai/context successful (200 OK)")
-                
-                # Verify response structure
-                if "context" not in data:
-                    self.log("❌ Missing 'context' field in response", "ERROR")
-                    return False
-                
-                context = data["context"]
-                
-                # Check required context fields
-                required_fields = [
-                    "current_user_name", "current_user_role", "active_work_orders", 
-                    "urgent_work_orders", "equipment_in_maintenance", "active_alerts", 
-                    "sensors_in_alert", "current_page", "last_action"
-                ]
-                
-                missing_fields = [field for field in required_fields if field not in context]
-                if missing_fields:
-                    self.log(f"❌ Missing required context fields: {missing_fields}", "ERROR")
-                    return False
-                
-                self.log("✅ All required context fields present")
-                self.log(f"   Current user: {context.get('current_user_name')} ({context.get('current_user_role')})")
-                self.log(f"   Active work orders: {context.get('active_work_orders')}")
-                self.log(f"   Urgent work orders: {context.get('urgent_work_orders')}")
-                self.log(f"   Equipment in maintenance: {context.get('equipment_in_maintenance')}")
-                self.log(f"   Active alerts: {context.get('active_alerts')}")
-                self.log(f"   Sensors in alert: {context.get('sensors_in_alert')}")
-                
-                return True
-            else:
-                self.log(f"❌ GET /api/ai/context failed - Status: {response.status_code}", "ERROR")
-                self.log(f"   Response: {response.text}")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_ai_providers_endpoint(self):
-        """TEST 2: GET /api/ai/providers - List available LLM providers"""
-        self.log("🧪 TEST 2: GET /api/ai/providers - List available LLM providers")
-        
-        try:
-            response = self.admin_session.get(f"{BACKEND_URL}/ai/providers", timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ GET /api/ai/providers successful (200 OK)")
-                
-                # Verify response structure
-                if "providers" not in data:
-                    self.log("❌ Missing 'providers' field in response", "ERROR")
-                    return False
-                
-                providers = data["providers"]
-                
-                if not isinstance(providers, list):
-                    self.log("❌ 'providers' should be a list", "ERROR")
-                    return False
-                
-                self.log(f"✅ Found {len(providers)} LLM providers")
-                
-                # Check each provider structure
-                for provider in providers:
-                    required_fields = ["id", "name", "models", "requires_api_key", "is_available"]
-                    missing_fields = [field for field in required_fields if field not in provider]
-                    
-                    if missing_fields:
-                        self.log(f"❌ Provider {provider.get('id', 'unknown')} missing fields: {missing_fields}", "ERROR")
-                        return False
-                    
-                    self.log(f"   Provider: {provider['name']} ({provider['id']}) - Available: {provider['is_available']}")
-                    self.log(f"     Models: {len(provider['models'])} available")
-                
-                return True
-            else:
-                self.log(f"❌ GET /api/ai/providers failed - Status: {response.status_code}", "ERROR")
-                self.log(f"   Response: {response.text}")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_ai_chat_basic(self):
-        """TEST 3: POST /api/ai/chat - Basic chat functionality"""
-        self.log("🧪 TEST 3: POST /api/ai/chat - Basic chat functionality")
-        
-        try:
-            chat_request = {
-                "message": "Bonjour, peux-tu m'aider avec GMAO Iris?",
-                "include_app_context": False
+            invite_request = {
+                "email": "new_test_user@example.com",
+                "role": "TECHNICIEN"
             }
             
             response = self.admin_session.post(
-                f"{BACKEND_URL}/ai/chat",
-                json=chat_request,
-                timeout=30  # AI responses can take longer
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ POST /api/ai/chat successful (200 OK)")
-                
-                # Verify response structure
-                required_fields = ["response", "session_id"]
-                missing_fields = [field for field in required_fields if field not in data]
-                
-                if missing_fields:
-                    self.log(f"❌ Missing required fields: {missing_fields}", "ERROR")
-                    return False
-                
-                self.test_session_id = data["session_id"]
-                response_text = data["response"]
-                
-                self.log("✅ Chat response received")
-                self.log(f"   Session ID: {self.test_session_id}")
-                self.log(f"   Response length: {len(response_text)} characters")
-                self.log(f"   Response preview: {response_text[:100]}...")
-                
-                # Check if response is relevant to GMAO
-                if any(keyword in response_text.lower() for keyword in ["gmao", "iris", "maintenance", "équipement", "ordre"]):
-                    self.log("✅ Response appears relevant to GMAO context")
-                else:
-                    self.log("⚠️ Response may not be GMAO-specific", "WARNING")
-                
-                return True
-            else:
-                self.log(f"❌ POST /api/ai/chat failed - Status: {response.status_code}", "ERROR")
-                self.log(f"   Response: {response.text}")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_ai_chat_with_context(self):
-        """TEST 4: POST /api/ai/chat - Chat with enriched app context"""
-        self.log("🧪 TEST 4: POST /api/ai/chat - Chat with enriched app context")
-        
-        try:
-            chat_request = {
-                "message": "Quel est l'état actuel de la maintenance?",
-                "session_id": self.test_session_id,
-                "context": "dashboard",
-                "include_app_context": True
-            }
-            
-            response = self.admin_session.post(
-                f"{BACKEND_URL}/ai/chat",
-                json=chat_request,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ POST /api/ai/chat with context successful (200 OK)")
-                
-                response_text = data["response"]
-                session_id = data["session_id"]
-                
-                self.log(f"   Session ID: {session_id}")
-                self.log(f"   Response length: {len(response_text)} characters")
-                self.log(f"   Response preview: {response_text[:150]}...")
-                
-                # Check if response uses context (mentions specific numbers or status)
-                context_indicators = ["ordre", "équipement", "alerte", "maintenance", "statut", "actuel"]
-                if any(indicator in response_text.lower() for indicator in context_indicators):
-                    self.log("✅ Response appears to use enriched context")
-                else:
-                    self.log("⚠️ Response may not be using enriched context", "WARNING")
-                
-                return True
-            else:
-                self.log(f"❌ POST /api/ai/chat with context failed - Status: {response.status_code}", "ERROR")
-                self.log(f"   Response: {response.text}")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_ai_navigation_commands(self):
-        """TEST 5: POST /api/ai/chat - Test navigation command generation"""
-        self.log("🧪 TEST 5: POST /api/ai/chat - Test navigation command generation")
-        
-        try:
-            chat_request = {
-                "message": "montre-moi comment créer un ordre de travail",
-                "session_id": self.test_session_id,
-                "include_app_context": True
-            }
-            
-            response = self.admin_session.post(
-                f"{BACKEND_URL}/ai/chat",
-                json=chat_request,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.log(f"✅ POST /api/ai/chat navigation request successful (200 OK)")
-                
-                response_text = data["response"]
-                
-                self.log(f"   Response length: {len(response_text)} characters")
-                self.log(f"   Full response: {response_text}")
-                
-                # Check for navigation commands
-                navigation_commands = [
-                    "[[NAVIGATE:", "[[ACTION:", "[[GUIDE:", 
-                    "[[SPOTLIGHT:", "[[PULSE:", "[[CELEBRATE]]"
-                ]
-                
-                found_commands = []
-                for command in navigation_commands:
-                    if command in response_text:
-                        found_commands.append(command.replace("[[", "").replace(":", ""))
-                
-                if found_commands:
-                    self.log(f"✅ Found navigation commands: {', '.join(found_commands)}")
-                    
-                    # Specifically check for work order creation commands
-                    if any(cmd in response_text for cmd in ["[[ACTION:creer-ot]]", "[[NAVIGATE:work-orders]]", "[[GUIDE:creer-ot]]"]):
-                        self.log("✅ Found appropriate work order creation command")
-                        return True
-                    else:
-                        self.log("⚠️ Navigation commands found but not specific to work order creation", "WARNING")
-                        return True
-                else:
-                    self.log("❌ No navigation commands found in response", "ERROR")
-                    return False
-                
-            else:
-                self.log(f"❌ POST /api/ai/chat navigation failed - Status: {response.status_code}", "ERROR")
-                self.log(f"   Response: {response.text}")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
-            return False
-    
-    def test_ai_chat_history(self):
-        """TEST 6: GET /api/ai/history/{session_id} - Retrieve chat history"""
-        self.log("🧪 TEST 6: GET /api/ai/history/{session_id} - Retrieve chat history")
-        
-        if not self.test_session_id:
-            self.log("❌ No session ID available for history test", "ERROR")
-            return False
-        
-        try:
-            response = self.admin_session.get(
-                f"{BACKEND_URL}/ai/history/{self.test_session_id}",
+                f"{BACKEND_URL}/users/invite-member",
+                json=invite_request,
                 timeout=15
             )
             
             if response.status_code == 200:
                 data = response.json()
-                self.log(f"✅ GET /api/ai/history/{self.test_session_id} successful (200 OK)")
+                self.log(f"✅ POST /api/users/invite-member successful (200 OK)")
                 
                 # Verify response structure
-                required_fields = ["history", "session_id"]
+                required_fields = ["message", "email", "role", "email_sent"]
                 missing_fields = [field for field in required_fields if field not in data]
                 
                 if missing_fields:
                     self.log(f"❌ Missing required fields: {missing_fields}", "ERROR")
                     return False
                 
-                history = data["history"]
-                session_id = data["session_id"]
-                
-                if not isinstance(history, list):
-                    self.log("❌ History should be a list", "ERROR")
+                # Verify field values
+                if data["email"] != invite_request["email"]:
+                    self.log(f"❌ Email mismatch: expected {invite_request['email']}, got {data['email']}", "ERROR")
                     return False
                 
-                self.log(f"✅ Retrieved chat history with {len(history)} messages")
-                self.log(f"   Session ID: {session_id}")
+                if data["role"] != invite_request["role"]:
+                    self.log(f"❌ Role mismatch: expected {invite_request['role']}, got {data['role']}", "ERROR")
+                    return False
                 
-                # Check message structure
-                for i, message in enumerate(history):
-                    required_msg_fields = ["role", "content", "timestamp"]
-                    missing_msg_fields = [field for field in required_msg_fields if field not in message]
-                    
-                    if missing_msg_fields:
-                        self.log(f"❌ Message {i} missing fields: {missing_msg_fields}", "ERROR")
+                # Check email_sent status
+                email_sent = data.get("email_sent", False)
+                self.log(f"   Email sent status: {email_sent}")
+                self.log(f"   Message: {data['message']}")
+                
+                if email_sent:
+                    self.log("✅ Email was sent successfully")
+                    # Should not have invitation_link or warning when email is sent
+                    if "invitation_link" in data:
+                        self.log("⚠️ invitation_link present when email_sent is True", "WARNING")
+                    if "warning" in data:
+                        self.log("⚠️ warning present when email_sent is True", "WARNING")
+                else:
+                    self.log("⚠️ Email was not sent - checking fallback response")
+                    # Should have invitation_link and warning when email fails
+                    if "invitation_link" not in data:
+                        self.log("❌ Missing invitation_link when email_sent is False", "ERROR")
+                        return False
+                    if "warning" not in data:
+                        self.log("❌ Missing warning when email_sent is False", "ERROR")
                         return False
                     
-                    self.log(f"   Message {i+1}: {message['role']} - {len(message['content'])} chars")
+                    self.log(f"   Invitation link: {data['invitation_link']}")
+                    self.log(f"   Warning: {data['warning']}")
                 
                 return True
             else:
-                self.log(f"❌ GET /api/ai/history failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ POST /api/users/invite-member failed - Status: {response.status_code}", "ERROR")
                 self.log(f"   Response: {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_invite_member_duplicate_email(self):
+        """TEST 2: POST /api/users/invite-member - Duplicate email check"""
+        self.log("🧪 TEST 2: POST /api/users/invite-member - Duplicate email check")
+        
+        try:
+            invite_request = {
+                "email": "admin@test.com",  # This email should already exist
+                "role": "TECHNICIEN"
+            }
+            
+            response = self.admin_session.post(
+                f"{BACKEND_URL}/users/invite-member",
+                json=invite_request,
+                timeout=15
+            )
+            
+            if response.status_code == 400:
+                data = response.json()
+                self.log(f"✅ POST /api/users/invite-member correctly returned 400 for duplicate email")
+                
+                # Check error message
+                detail = data.get("detail", "")
+                expected_message = "Un utilisateur avec cet email existe déjà"
+                
+                if expected_message in detail:
+                    self.log(f"✅ Correct error message: {detail}")
+                    return True
+                else:
+                    self.log(f"❌ Incorrect error message: expected '{expected_message}', got '{detail}'", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ Expected 400 status code for duplicate email, got {response.status_code}", "ERROR")
+                self.log(f"   Response: {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_invite_member_invalid_role(self):
+        """TEST 3: POST /api/users/invite-member - Invalid role validation"""
+        self.log("🧪 TEST 3: POST /api/users/invite-member - Invalid role validation")
+        
+        try:
+            invite_request = {
+                "email": "test_invalid_role@example.com",
+                "role": "INVALID_ROLE"
+            }
+            
+            response = self.admin_session.post(
+                f"{BACKEND_URL}/users/invite-member",
+                json=invite_request,
+                timeout=15
+            )
+            
+            if response.status_code == 422:  # Validation error
+                self.log(f"✅ POST /api/users/invite-member correctly returned 422 for invalid role")
+                return True
+            else:
+                self.log(f"❌ Expected 422 status code for invalid role, got {response.status_code}", "ERROR")
+                self.log(f"   Response: {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_invite_member_invalid_email(self):
+        """TEST 4: POST /api/users/invite-member - Invalid email validation"""
+        self.log("🧪 TEST 4: POST /api/users/invite-member - Invalid email validation")
+        
+        try:
+            invite_request = {
+                "email": "invalid-email-format",
+                "role": "TECHNICIEN"
+            }
+            
+            response = self.admin_session.post(
+                f"{BACKEND_URL}/users/invite-member",
+                json=invite_request,
+                timeout=15
+            )
+            
+            if response.status_code == 422:  # Validation error
+                self.log(f"✅ POST /api/users/invite-member correctly returned 422 for invalid email")
+                return True
+            else:
+                self.log(f"❌ Expected 422 status code for invalid email, got {response.status_code}", "ERROR")
+                self.log(f"   Response: {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Request failed - Error: {str(e)}", "ERROR")
+            return False
+    
+    def test_invite_member_token_validation(self):
+        """TEST 5: Validate invitation token structure"""
+        self.log("🧪 TEST 5: Validate invitation token structure")
+        
+        try:
+            invite_request = {
+                "email": "token_test_user@example.com",
+                "role": "TECHNICIEN"
+            }
+            
+            response = self.admin_session.post(
+                f"{BACKEND_URL}/users/invite-member",
+                json=invite_request,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # If email failed, we should have an invitation_link
+                if not data.get("email_sent", False) and "invitation_link" in data:
+                    invitation_link = data["invitation_link"]
+                    self.log(f"   Invitation link: {invitation_link}")
+                    
+                    # Check if link contains token parameter
+                    if "token=" in invitation_link:
+                        token_part = invitation_link.split("token=")[1]
+                        # JWT tokens typically have 3 parts separated by dots
+                        if token_part.count('.') == 2:
+                            self.log("✅ Invitation link contains valid JWT token structure")
+                            return True
+                        else:
+                            self.log("❌ Token does not appear to be valid JWT format", "ERROR")
+                            return False
+                    else:
+                        self.log("❌ Invitation link does not contain token parameter", "ERROR")
+                        return False
+                elif data.get("email_sent", False):
+                    self.log("✅ Email was sent successfully (no token validation needed)")
+                    return True
+                else:
+                    self.log("❌ No invitation link provided when email failed", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ Failed to create invitation - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
