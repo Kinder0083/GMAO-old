@@ -157,18 +157,21 @@ if [ -f "$BACKEND_ENV" ]; then
     # Supprimer les anciennes configurations SMTP si présentes
     sed -i '/^SMTP_/d' "$BACKEND_ENV"
     sed -i '/^EMAIL_/d' "$BACKEND_ENV"
+    sed -i '/^APP_URL/d' "$BACKEND_ENV"
     
-    # Ajouter les nouvelles configurations
+    # Ajouter les nouvelles configurations (noms compatibles avec email_service.py)
     cat >> "$BACKEND_ENV" << EOF
 
-# Configuration SMTP
-SMTP_HOST=localhost
+# Configuration SMTP (Postfix local comme relais)
+SMTP_SERVER=localhost
 SMTP_PORT=25
-SMTP_USER=
+SMTP_USERNAME=
 SMTP_PASSWORD=
-SMTP_FROM=$SMTP_USER
-SMTP_TLS=false
+SMTP_SENDER_EMAIL=$SMTP_USER
+SMTP_FROM_NAME=GMAO Iris
+SMTP_USE_TLS=false
 EMAIL_ENABLED=true
+APP_URL=http://$CONTAINER_IP
 EOF
     
     ok "Configuration backend mise à jour"
