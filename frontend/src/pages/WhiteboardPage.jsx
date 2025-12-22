@@ -36,12 +36,6 @@ const getWebSocketUrl = () => {
 };
 const WS_URL = getWebSocketUrl();
 
-// DIMENSIONS DE RÉFÉRENCE FIXES pour normaliser les coordonnées
-// Toutes les coordonnées sont stockées relatives à ces dimensions
-// Ratio 16:9 pour une meilleure compatibilité multi-écrans
-const REFERENCE_WIDTH = 1600;
-const REFERENCE_HEIGHT = 900;
-
 // Couleurs disponibles
 const COLORS = [
   '#000000', '#FF0000', '#0000FF', '#008000', '#FFA500',
