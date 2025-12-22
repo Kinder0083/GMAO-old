@@ -127,8 +127,8 @@ const InviteMemberDialog = ({ open, onOpenChange, onSuccess }) => {
                 <div className="flex-1">
                   <h4 className="font-medium text-yellow-800">Email non envoyé</h4>
                   <p className="text-sm text-yellow-700 mt-1">
-                    L'email d'invitation n'a pas pu être envoyé (vérifiez la configuration SMTP).
-                    Vous pouvez copier le lien ci-dessous et l'envoyer manuellement à <strong>{formData.email}</strong>.
+                    L&apos;email d&apos;invitation n&apos;a pas pu être envoyé (vérifiez la configuration SMTP).
+                    Vous pouvez copier le lien ci-dessous et l&apos;envoyer manuellement à <strong>{formData.email}</strong>.
                   </p>
                 </div>
               </div>
