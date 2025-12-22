@@ -276,21 +276,22 @@ const WhiteboardPage = () => {
         break;
       
       case 'sync_response':
+        // Charger les données SEULEMENT si le canvas est vide (première connexion)
         if (canvas && message.board && message.board.objects) {
-          isLoadingDataRef.current = true;
-          // ANTI-DUPLICATION: Vider le canvas avant de recharger
-          canvas.clear();
-          canvas.setBackgroundColor('#FFFFFF', () => {});
-          
-          const denormalized = denormalizeCoordinates(message.board.objects, dimensions.width, dimensions.height);
-          canvas.loadFromJSON({
-            version: '6.0.0',
-            objects: denormalized,
-            background: '#FFFFFF'
-          }).then(() => {
-            canvas.renderAll();
-            isLoadingDataRef.current = false;
-          });
+          const currentObjects = canvas.getObjects();
+          // Ne recharger QUE si le canvas est vide
+          if (currentObjects.length === 0) {
+            isLoadingDataRef.current = true;
+            const denormalized = denormalizeCoordinates(message.board.objects, dimensions.width, dimensions.height);
+            canvas.loadFromJSON({
+              version: '6.0.0',
+              objects: denormalized,
+              background: '#FFFFFF'
+            }).then(() => {
+              canvas.renderAll();
+              isLoadingDataRef.current = false;
+            });
+          }
         }
         break;
       
