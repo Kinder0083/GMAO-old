@@ -22,7 +22,6 @@ class InviteMemberTester:
         self.admin_session = requests.Session()
         self.admin_token = None
         self.admin_data = None
-        self.test_session_id = None
         
     def log(self, message, level="INFO"):
         """Log test messages with timestamp"""
