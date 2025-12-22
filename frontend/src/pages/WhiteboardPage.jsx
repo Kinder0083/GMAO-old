@@ -1086,7 +1086,7 @@ const WhiteboardPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-gray-100 flex flex-col overflow-hidden h-full">
       {/* Barre de contrôle */}
       <div className="absolute top-2 left-2 z-50 flex gap-1">
         <Button
