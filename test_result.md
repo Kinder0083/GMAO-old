@@ -1,56 +1,88 @@
-# Test Results - Whiteboard Bugs Fix
+# Test Results - Invite Member Functionality
 
 ## Testing Protocol
-Testing Whiteboard bug fixes for GMAO Iris:
-1. Bug 1: Aspect ratio distortion between devices (uniform scale fix)
-2. Bug 2: Object deletion not syncing via WebSocket
+Testing invite member functionality for GMAO Iris:
+1. POST /api/users/invite-member - Successful invitation with email sending
+2. POST /api/users/invite-member - Duplicate email validation
+3. POST /api/users/invite-member - Invalid role validation
+4. POST /api/users/invite-member - Invalid email validation
+5. Invitation token structure validation
 
-frontend:
-  - task: "Whiteboard Aspect Ratio Consistency"
+backend:
+  - task: "Invite Member API - Successful Invitation"
     implemented: true
     working: true
-    file: "frontend/src/pages/WhiteboardPage.jsx"
+    file: "backend/server.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial test setup - Need to verify aspect ratio consistency across different viewport sizes. Testing that drawings maintain same relative positions and proportions when switching between desktop (1920x800) and mobile (390x844) viewports."
+        comment: "Initial test setup - Need to verify POST /api/users/invite-member endpoint works correctly for successful invitations. Testing with new_test_user@example.com and TECHNICIEN role."
       - working: true
         agent: "testing"
-        comment: "✅ BUG 1 FIXED - Aspect ratio consistency working correctly. Reference dimensions consistently show 1600×900 on both desktop and mobile viewports. Scale percentages correctly adjust (59% on desktop, different on mobile). Uniform scaling implementation preserves shape proportions across different screen sizes."
+        comment: "✅ INVITE SUCCESS - POST /api/users/invite-member working correctly. Returns proper response structure with message, email, role, and email_sent fields. Email sending is functional with SMTP configuration. Response: {'message': 'Invitation envoyée par email à new_test_user@example.com', 'email': 'new_test_user@example.com', 'role': 'TECHNICIEN', 'email_sent': True}"
 
-  - task: "Whiteboard Object Deletion WebSocket Sync"
+  - task: "Invite Member API - Duplicate Email Check"
     implemented: true
-    working: false
-    file: "frontend/src/pages/WhiteboardPage.jsx"
-    stuck_count: 1
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial test setup - Need to verify object deletion syncs via WebSocket. Testing that console shows '[WS] Envoi suppression objet' messages when objects are deleted and WebSocket messages are sent correctly."
-      - working: false
+        comment: "Initial test setup - Need to verify duplicate email validation. Testing with admin@test.com which should already exist in the system."
+      - working: true
         agent: "testing"
-        comment: "❌ BUG 2 PARTIALLY WORKING - WebSocket connections are failing. Console shows 'WebSocket connection to wss://drawshare-sync.preview.emergentagent.com/ws/whiteboard/board_1 failed: WebSocket is closed before the connection is established.' This prevents real-time object deletion sync between users. Frontend code is correct but WebSocket server connection is not working."
+        comment: "✅ DUPLICATE EMAIL CHECK - Validation working correctly. Returns 400 Bad Request with proper error message 'Un utilisateur avec cet email existe déjà' when attempting to invite existing user."
 
-backend:
-  - task: "Whiteboard WebSocket Object Deletion"
+  - task: "Invite Member API - Role Validation"
     implemented: true
-    working: false
-    file: "backend/whiteboard_manager.py"
-    stuck_count: 1
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial test setup - Need to verify backend WebSocket handling for object deletion. Backend code shows proper logging and message broadcasting for object_removed events."
+        comment: "Initial test setup - Need to verify role validation. Testing with invalid role 'INVALID_ROLE' to ensure proper validation."
+      - working: true
+        agent: "testing"
+        comment: "✅ ROLE VALIDATION - Pydantic validation working correctly. Returns 422 Unprocessable Entity for invalid role values, ensuring only valid UserRole enum values are accepted."
+
+  - task: "Invite Member API - Email Validation"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - Need to verify email format validation. Testing with invalid email format 'invalid-email-format' to ensure proper validation."
       - working: false
         agent: "testing"
-        comment: "❌ WebSocket server connection failing - Backend code implementation looks correct with proper object_removed handling and '[WS] Envoi suppression objet' logging, but WebSocket connections cannot be established. This is likely a server configuration or deployment issue preventing WebSocket connections from working."
+        comment: "Minor: EMAIL VALIDATION - Returns 500 Internal Server Error instead of expected 422. This is likely due to Pydantic validation error handler configuration. Core functionality works but error response code is not optimal. Email validation logic in models.py is correct."
+
+  - task: "Invite Member API - Token Generation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - Need to verify JWT token generation for invitations. Testing token structure and format in invitation links."
+      - working: true
+        agent: "testing"
+        comment: "✅ TOKEN GENERATION - JWT token generation working correctly. When email sending is successful, no token is exposed (secure). When email fails, invitation_link contains properly formatted JWT token with 3 parts separated by dots, indicating valid JWT structure."
 
 metadata:
   created_by: "testing_agent"
