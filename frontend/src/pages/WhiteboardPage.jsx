@@ -399,8 +399,6 @@ const WhiteboardPage = () => {
   
   useEffect(() => {
     let timeout;
-    const ws1 = ws1Ref.current;
-    const ws2 = ws2Ref.current;
     
     if (canvasReady && user?.id && !wsConnectionAttemptedRef.current) {
       wsConnectionAttemptedRef.current = true;
@@ -411,9 +409,20 @@ const WhiteboardPage = () => {
     }
     
     return () => {
+      // Nettoyer les timers et fermer les connexions
       if (timeout) clearTimeout(timeout);
-      if (ws1) ws1.close();
-      if (ws2) ws2.close();
+      
+      // Fermer les WebSockets
+      if (ws1Ref.current) ws1Ref.current.close();
+      if (ws2Ref.current) ws2Ref.current.close();
+      
+      // Nettoyer les heartbeats
+      if (heartbeatInterval1Ref.current) clearInterval(heartbeatInterval1Ref.current);
+      if (heartbeatInterval2Ref.current) clearInterval(heartbeatInterval2Ref.current);
+      
+      // Nettoyer les reconnexions
+      if (reconnectTimeout1Ref.current) clearTimeout(reconnectTimeout1Ref.current);
+      if (reconnectTimeout2Ref.current) clearTimeout(reconnectTimeout2Ref.current);
     };
   }, [canvasReady, user?.id, connectWebSocket]);
 
