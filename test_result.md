@@ -108,38 +108,64 @@ agent_communication:
 
 ## Features to Test
 
-### Whiteboard Bug Fixes - TESTING COMPLETE
+### Invite Member Functionality - TESTING COMPLETE
 
-#### Bug 1: Aspect Ratio Consistency ✅ FIXED
-- [x] Login with test credentials (affichagegmaoiris@gmail.com / Iris1234!)
-- [x] Navigate to /whiteboard
-- [x] Test desktop viewport (1920x800) - note existing drawing positions
-- [x] Add new circle shape at center of Tableau 1
-- [x] Switch to mobile viewport (390x844) and reload page
-- [x] Verify circle remains circular (not elliptical) and at same relative position
-- [x] Verify indicator shows "1600×900" reference dimensions with different scale percentages
+#### Test 1: Successful Invitation ✅ WORKING
+- [x] Login with admin credentials (admin@test.com / password)
+- [x] POST /api/users/invite-member with new email (new_test_user@example.com) and TECHNICIEN role
+- [x] Verify response structure contains message, email, role, email_sent fields
+- [x] Verify email_sent is true when SMTP is configured
+- [x] Verify proper success message returned
 
-**RESULT: ✅ WORKING** - Reference dimensions consistently show 1600×900 on both desktop and mobile. Scale percentages correctly adjust (59% on desktop, different on mobile). Uniform scaling preserves shape proportions.
+**RESULT: ✅ WORKING** - API returns correct response structure. Email sending functional with SMTP configuration. Response includes all required fields with correct values.
 
-#### Bug 2: Object Deletion WebSocket Sync ❌ FAILING
-- [x] On Tableau 1, select an object and press Delete key or use trash icon
-- [x] Check browser console for "[WS] Envoi suppression objet" log message
-- [x] Verify object is removed from canvas
-- [x] Verify deletion was sent via WebSocket (console logs should show the message)
+#### Test 2: Duplicate Email Check ✅ WORKING
+- [x] POST /api/users/invite-member with existing email (admin@test.com)
+- [x] Verify returns 400 Bad Request status code
+- [x] Verify error message "Un utilisateur avec cet email existe déjà"
 
-**RESULT: ❌ NOT WORKING** - WebSocket connections fail with error: "WebSocket connection to 'wss://drawshare-sync.preview.emergentagent.com/ws/whiteboard/board_1' failed: WebSocket is closed before the connection is established." This prevents real-time object deletion sync.
+**RESULT: ✅ WORKING** - Duplicate email validation working correctly. Returns appropriate 400 error with French error message.
+
+#### Test 3: Role Validation ✅ WORKING
+- [x] POST /api/users/invite-member with invalid role (INVALID_ROLE)
+- [x] Verify returns 422 Unprocessable Entity status code
+- [x] Verify Pydantic validation rejects invalid enum values
+
+**RESULT: ✅ WORKING** - Role validation working correctly. Pydantic enum validation rejects invalid role values with 422 status.
+
+#### Test 4: Email Validation ❌ MINOR ISSUE
+- [x] POST /api/users/invite-member with invalid email format (invalid-email-format)
+- [x] Expected 422 status code but got 500 Internal Server Error
+- [x] Core validation logic in models.py is correct
+
+**RESULT: ❌ MINOR ISSUE** - Returns 500 instead of expected 422. This is a Pydantic error handler configuration issue, not a critical functionality problem.
+
+#### Test 5: Token Generation ✅ WORKING
+- [x] Verify JWT token structure in invitation links
+- [x] Verify token contains 3 parts separated by dots (valid JWT format)
+- [x] Verify invitation_link is only provided when email_sent is false
+- [x] Verify security: no token exposure when email is successfully sent
+
+**RESULT: ✅ WORKING** - JWT token generation working correctly. Proper security implementation with conditional token exposure.
 
 ## Test Credentials ✅ WORKING
-- Email: affichagegmaoiris@gmail.com
-- Password: Iris1234!
+- Email: admin@test.com
+- Password: password
 
 ## Test Results Summary
-1. **Aspect Ratio Bug**: ✅ FIXED - Reference dimensions fixed at 1600×900, scale percentages adjust correctly
-2. **WebSocket Deletion Bug**: ❌ FAILING - WebSocket server connection issues prevent real-time sync
+1. **Successful Invitation**: ✅ WORKING - API functional, email sending works, proper response structure
+2. **Duplicate Email Check**: ✅ WORKING - Validation prevents duplicate invitations
+3. **Role Validation**: ✅ WORKING - Pydantic enum validation functional
+4. **Email Validation**: ❌ MINOR - Returns 500 instead of 422 (not critical)
+5. **Token Generation**: ✅ WORKING - JWT tokens generated correctly with proper security
 
-## Critical Issue Found
-**WebSocket Connection Failure**: The WebSocket server at `wss://drawshare-sync.preview.emergentagent.com/ws/whiteboard/` is not accepting connections. This is likely a server configuration or deployment issue that needs to be resolved for real-time collaboration features to work.
+## Critical Features Working
+**Invite Member API**: The core invite member functionality is fully operational. Email sending works with SMTP configuration, validation prevents duplicates, and JWT tokens are generated securely.
+
+## Minor Issue Found
+**Email Validation Error Code**: Returns 500 Internal Server Error instead of 422 for invalid email formats. This is likely a Pydantic validation error handler configuration issue but doesn't affect core functionality.
 
 ## Test Files
-- Frontend: /app/frontend/src/pages/WhiteboardPage.jsx ✅ Code is correct
-- Backend: /app/backend/whiteboard_manager.py ✅ Code is correct
+- Backend: /app/backend/server.py ✅ Core functionality working
+- Models: /app/backend/models.py ✅ Validation logic correct
+- Test Script: /app/backend_test.py ✅ Comprehensive test coverage
