@@ -269,7 +269,7 @@ const WhiteboardPage = () => {
             canvas.renderAll();
             console.log(`[WS] Objet ${message.object_id} supprimé avec succès`);
           } else {
-            console.log(`[WS] Objet ${message.object_id} non trouvé sur le canvas`);
+            console.log(`[WS] Objet ${message.object_id} non trouvé sur le canvas (peut-être déjà supprimé)`);
           }
           isReceivingRemoteRef.current = false;
         }
