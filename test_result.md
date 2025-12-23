@@ -98,10 +98,12 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Whiteboard Canvas Initialization"
     - "Whiteboard WebSocket Real-time Sync"
     - "Whiteboard Object Deletion - Delete Key Synchronization"
   stuck_tasks:
     - "Whiteboard WebSocket Real-time Sync"
+    - "Whiteboard Object Deletion - Delete Key Synchronization"
   test_all: false
   test_priority: "high_first"
 
