@@ -34,8 +34,8 @@ echo "---------------------------------------"
 
 # Trouver le répertoire backend
 BACKEND_DIR=""
-for dir in /opt/gmao-iris/backend /app/backend; do
-    if [ -d "$dir" ]; then
+for dir in /opt/gmao-iris/backend /opt/gmao-iris /app/backend; do
+    if [ -d "$dir" ] && [ -f "$dir/.env" ]; then
         BACKEND_DIR="$dir"
         break
     fi
