@@ -16,9 +16,11 @@ if [ -f /var/log/gmao-iris-backend.out.log ]; then
     grep -i "whiteboard\|object_removed\|object_added" /var/log/gmao-iris-backend.out.log | tail -20
 elif [ -f /var/log/supervisor/gmao-iris-backend.out.log ]; then
     grep -i "whiteboard\|object_removed\|object_added" /var/log/supervisor/gmao-iris-backend.out.log | tail -20
+elif [ -f /opt/gmao-iris/logs/backend.log ]; then
+    grep -i "whiteboard\|object_removed\|object_added" /opt/gmao-iris/logs/backend.log | tail -20
 else
     echo "⚠️ Fichier de log non trouvé"
-    echo "   Cherchez dans /var/log/ les fichiers contenant 'gmao' ou 'backend'"
+    echo "   Cherchez dans /var/log/ ou /opt/gmao-iris/logs/"
 fi
 
 echo ""
