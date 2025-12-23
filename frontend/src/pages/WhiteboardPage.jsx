@@ -622,7 +622,7 @@ const WhiteboardPage = () => {
       canvas.add(rect);
       setActiveTool('select');
     } else if (tool === 'circle') {
-      const circle = new Circle({
+      const circle = new FabricCircle({
         left: 100,
         top: 100,
         radius: 50,
