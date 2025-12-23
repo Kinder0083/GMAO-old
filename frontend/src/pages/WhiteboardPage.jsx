@@ -758,7 +758,8 @@ const WhiteboardPage = () => {
         
         if (!initialLoadDoneRef.current && token) {
           initialLoadDoneRef.current = true;
-          isLoadingDataRef.current = true;
+          // NE PAS mettre isLoadingDataRef.current = true ici
+          // loadBoard gère son propre flag
           
           try {
             await Promise.all([
@@ -772,8 +773,6 @@ const WhiteboardPage = () => {
             });
           } catch (err) {
             console.error('Erreur chargement:', err);
-          } finally {
-            isLoadingDataRef.current = false;
           }
         }
       }
