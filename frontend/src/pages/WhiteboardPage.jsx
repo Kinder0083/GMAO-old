@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Canvas, Rect, Circle, IText, Path, Line } from 'fabric';
+import { Canvas, Rect, Circle, IText, FabricObject } from 'fabric';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import {
@@ -8,19 +8,11 @@ import {
   Eraser,
   Type,
   Square,
-  Circle,
-  ArrowRight,
-  ImageIcon,
-  StickyNote,
-  Undo2,
-  Redo2,
-  Palette,
+  Circle as CircleIcon,
   ChevronLeft,
   X,
   MousePointer2,
-  Highlighter,
   Trash2,
-  Users,
   Wifi,
   WifiOff
 } from 'lucide-react';
@@ -57,11 +49,13 @@ const WhiteboardPage = () => {
   const canViewWhiteboard = user?.permissions?.whiteboard?.view ?? false;
   const [hasCheckedPermission, setHasCheckedPermission] = useState(false);
   
-  // Refs pour les canvas
+  // Refs pour les containers DOM
   const container1Ref = useRef(null);
   const container2Ref = useRef(null);
-  const canvas1Ref = useRef(null);
-  const canvas2Ref = useRef(null);
+  
+  // States pour les canvas Fabric.js
+  const [canvas1, setCanvas1] = useState(null);
+  const [canvas2, setCanvas2] = useState(null);
   
   // Dimensions actuelles des canvas (pour le système de pourcentage)
   const canvasDimensions1Ref = useRef({ width: 800, height: 600 });
@@ -81,23 +75,16 @@ const WhiteboardPage = () => {
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [activeBoard, setActiveBoard] = useState('board_1');
   const [connectedUsers, setConnectedUsers] = useState({ board_1: [], board_2: [] });
-  const [undoStack, setUndoStack] = useState({ board_1: [], board_2: [] });
-  const [redoStack, setRedoStack] = useState({ board_1: [], board_2: [] });
   const [wsConnected, setWsConnected] = useState({ board_1: false, board_2: false });
-  const [canvasReady, setCanvasReady] = useState(false);
 
   // ==================== SYSTÈME DE POURCENTAGES ====================
-  // Les coordonnées sont stockées en pourcentages (0-1) pour la responsivité
   
   // Convertir coordonnées canvas → pourcentages (pour envoi au backend)
   const normalizeCoordinates = useCallback((obj, canvasWidth, canvasHeight) => {
     const normalized = {};
     
-    // Positions en pourcentage
     if (obj.left !== undefined) normalized.left = obj.left / canvasWidth;
     if (obj.top !== undefined) normalized.top = obj.top / canvasHeight;
-    
-    // Dimensions en pourcentage
     if (obj.width !== undefined) normalized.width = obj.width / canvasWidth;
     if (obj.height !== undefined) normalized.height = obj.height / canvasHeight;
     if (obj.radius !== undefined) normalized.radius = obj.radius / canvasWidth;
@@ -111,9 +98,8 @@ const WhiteboardPage = () => {
       normalized.path = obj.path.map(cmd => {
         if (!Array.isArray(cmd)) return cmd;
         return cmd.map((val, idx) => {
-          if (idx === 0) return val; // Commande (M, L, Q, C)
+          if (idx === 0) return val;
           if (typeof val !== 'number') return val;
-          // Indices impairs = X, indices pairs = Y
           return idx % 2 === 1 ? val / canvasWidth : val / canvasHeight;
         });
       });
@@ -139,11 +125,8 @@ const WhiteboardPage = () => {
   const denormalizeCoordinates = useCallback((obj, canvasWidth, canvasHeight) => {
     const denormalized = {};
     
-    // Positions en pixels
     if (obj.left !== undefined) denormalized.left = obj.left * canvasWidth;
     if (obj.top !== undefined) denormalized.top = obj.top * canvasHeight;
-    
-    // Dimensions en pixels
     if (obj.width !== undefined) denormalized.width = obj.width * canvasWidth;
     if (obj.height !== undefined) denormalized.height = obj.height * canvasHeight;
     if (obj.radius !== undefined) denormalized.radius = obj.radius * canvasWidth;
@@ -180,173 +163,14 @@ const WhiteboardPage = () => {
     return denormalized;
   }, []);
 
-  // ==================== WEBSOCKET ====================
-  
-  const handleWebSocketMessage = useCallback((boardId, message) => {
-    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
-    if (!canvas) return;
-    
-    console.log(`[WS ${boardId}] Message reçu:`, message.type);
-    
-    // Marquer qu'on applique un changement distant
-    isApplyingRemoteChangeRef.current = true;
-    
-    try {
-      if (message.type === 'object_added') {
-        // Un objet a été ajouté par un autre utilisateur
-        const denormalized = denormalizeCoordinates(message.object_data, dimensions.width, dimensions.height);
-        fabric.util.enlivenObjects([denormalized], (objects) => {
-          if (objects && objects[0]) {
-            objects[0].id = message.object_id;
-            canvas.add(objects[0]);
-            canvas.renderAll();
-            console.log(`[WS ${boardId}] Objet ajouté:`, message.object_id);
-          }
-        }, 'fabric');
-        
-      } else if (message.type === 'object_modified') {
-        // Un objet a été modifié
-        const existingObj = canvas.getObjects().find(o => o.id === message.object_id);
-        if (existingObj) {
-          const denormalized = denormalizeCoordinates(message.object_data, dimensions.width, dimensions.height);
-          existingObj.set(denormalized);
-          canvas.renderAll();
-          console.log(`[WS ${boardId}] Objet modifié:`, message.object_id);
-        }
-        
-      } else if (message.type === 'object_removed') {
-        // Un objet a été supprimé
-        const objToRemove = canvas.getObjects().find(o => o.id === message.object_id);
-        if (objToRemove) {
-          canvas.remove(objToRemove);
-          canvas.renderAll();
-          console.log(`[WS ${boardId}] Objet supprimé:`, message.object_id);
-        } else {
-          console.warn(`[WS ${boardId}] Objet non trouvé pour suppression:`, message.object_id);
-          // Recharger depuis la DB pour être sûr d'être synchronisé
-          loadBoardFromAPI(boardId);
-        }
-        
-      } else if (message.type === 'board_cleared') {
-        // Le tableau a été effacé
-        canvas.clear();
-        canvas.renderAll();
-        console.log(`[WS ${boardId}] Tableau effacé`);
-        
-      } else if (message.type === 'user_joined' || message.type === 'user_left' || message.type === 'users_list') {
-        // Mise à jour de la liste des utilisateurs
-        if (message.users) {
-          setConnectedUsers(prev => ({ ...prev, [boardId]: message.users }));
-        }
-      }
-    } finally {
-      // Réinitialiser le flag après un court délai
-      setTimeout(() => {
-        isApplyingRemoteChangeRef.current = false;
-      }, 100);
-    }
-  }, [denormalizeCoordinates]);
-
-  const connectWebSocket = useCallback((boardId) => {
-    if (!user?.id) return;
-    
-    const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
-    
-    // Fermer la connexion existante
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.close();
-    }
-    
-    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${user.id}&user_name=${encodeURIComponent(`${user.prenom || ''} ${user.nom || ''}`.trim() || user.email)}`;
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => {
-      console.log(`[WS ${boardId}] Connecté`);
-      setWsConnected(prev => ({ ...prev, [boardId]: true }));
-    };
-    
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      handleWebSocketMessage(boardId, message);
-    };
-    
-    ws.onerror = (error) => {
-      console.error(`[WS ${boardId}] Erreur:`, error);
-    };
-    
-    ws.onclose = () => {
-      console.log(`[WS ${boardId}] Déconnecté`);
-      setWsConnected(prev => ({ ...prev, [boardId]: false }));
-      
-      // Tentative de reconnexion après 3 secondes
-      setTimeout(() => connectWebSocket(boardId), 3000);
-    };
-    
-    wsRef.current = ws;
-  }, [user, handleWebSocketMessage]);
-
   // ==================== API CALLS ====================
   
-  // Charger les objets du tableau depuis l'API
-  const loadBoardFromAPI = useCallback(async (boardId) => {
-    const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-    const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
-    if (!canvas || !token) return;
-    
-    try {
-      const response = await fetch(`${API_URL}/objects/${boardId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const objects = data.objects || [];
-        
-        console.log(`[API ${boardId}] ${objects.length} objets chargés`);
-        
-        // Vider le canvas
-        canvas.clear();
-        
-        // Convertir les objets en pourcentages → pixels et les ajouter
-        isApplyingRemoteChangeRef.current = true;
-        
-        const denormalizedObjects = objects.map(obj => 
-          denormalizeCoordinates(obj.object_data, dimensions.width, dimensions.height)
-        );
-        
-        fabric.util.enlivenObjects(denormalizedObjects, (fabricObjects) => {
-          fabricObjects.forEach((fabricObj, index) => {
-            fabricObj.id = objects[index].id;
-            canvas.add(fabricObj);
-          });
-          canvas.renderAll();
-          
-          setTimeout(() => {
-            isApplyingRemoteChangeRef.current = false;
-          }, 100);
-        }, 'fabric');
-      }
-    } catch (error) {
-      console.error(`[API ${boardId}] Erreur chargement:`, error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: `Impossible de charger le tableau ${boardId}`
-      });
-    }
-  }, [token, denormalizeCoordinates, toast]);
-
-  // Créer un objet via l'API
   const createObjectAPI = useCallback(async (boardId, fabricObject) => {
     if (!token || !fabricObject) return null;
     const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
     
     try {
-      // Convertir l'objet Fabric.js en JSON
       const rawObject = fabricObject.toJSON(['id']);
-      
-      // Normaliser les coordonnées (pixels → pourcentages)
       const normalizedData = normalizeCoordinates(rawObject, dimensions.width, dimensions.height);
       
       const response = await fetch(`${API_URL}/objects`, {
@@ -364,7 +188,6 @@ const WhiteboardPage = () => {
       if (response.ok) {
         const data = await response.json();
         console.log(`[API ${boardId}] Objet créé:`, data.object_id);
-        // Assigner l'ID retourné par le serveur
         fabricObject.id = data.object_id;
         return data.object_id;
       }
@@ -375,7 +198,6 @@ const WhiteboardPage = () => {
     return null;
   }, [token, normalizeCoordinates]);
 
-  // Mettre à jour un objet via l'API
   const updateObjectAPI = useCallback(async (boardId, fabricObject) => {
     if (!token || !fabricObject || !fabricObject.id) return;
     const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
@@ -403,7 +225,6 @@ const WhiteboardPage = () => {
     }
   }, [token, normalizeCoordinates]);
 
-  // Supprimer un objet via l'API
   const deleteObjectAPI = useCallback(async (boardId, objectId) => {
     if (!token || !objectId) return;
     
@@ -423,6 +244,166 @@ const WhiteboardPage = () => {
     }
   }, [token]);
 
+  const loadBoardFromAPI = useCallback(async (boardId) => {
+    const canvas = boardId === 'board_1' ? canvas1 : canvas2;
+    const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
+    if (!canvas || !token) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/objects/${boardId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const objects = data.objects || [];
+        
+        console.log(`[API ${boardId}] ${objects.length} objets chargés`);
+        
+        isApplyingRemoteChangeRef.current = true;
+        canvas.clear();
+        
+        for (const obj of objects) {
+          const denormalized = denormalizeCoordinates(obj.object_data, dimensions.width, dimensions.height);
+          
+          // Créer l'objet Fabric.js en fonction du type
+          let fabricObj = null;
+          if (denormalized.type === 'rect') {
+            fabricObj = new Rect(denormalized);
+          } else if (denormalized.type === 'circle') {
+            fabricObj = new Circle(denormalized);
+          } else if (denormalized.type === 'i-text') {
+            fabricObj = new IText(denormalized.text || '', denormalized);
+          } else if (denormalized.type === 'path') {
+            fabricObj = FabricObject.fromObject(denormalized);
+          }
+          
+          if (fabricObj) {
+            fabricObj.id = obj.id;
+            canvas.add(fabricObj);
+          }
+        }
+        
+        canvas.renderAll();
+        
+        setTimeout(() => {
+          isApplyingRemoteChangeRef.current = false;
+        }, 100);
+      }
+    } catch (error) {
+      console.error(`[API ${boardId}] Erreur chargement:`, error);
+    }
+  }, [canvas1, canvas2, token, denormalizeCoordinates]);
+
+  // ==================== WEBSOCKET ====================
+  
+  const handleWebSocketMessage = useCallback((boardId, message) => {
+    const canvas = boardId === 'board_1' ? canvas1 : canvas2;
+    const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
+    if (!canvas) return;
+    
+    console.log(`[WS ${boardId}] Message reçu:`, message.type);
+    
+    isApplyingRemoteChangeRef.current = true;
+    
+    try {
+      if (message.type === 'object_added') {
+        const denormalized = denormalizeCoordinates(message.object_data, dimensions.width, dimensions.height);
+        
+        let fabricObj = null;
+        if (denormalized.type === 'rect') {
+          fabricObj = new Rect(denormalized);
+        } else if (denormalized.type === 'circle') {
+          fabricObj = new Circle(denormalized);
+        } else if (denormalized.type === 'i-text') {
+          fabricObj = new IText(denormalized.text || '', denormalized);
+        } else if (denormalized.type === 'path') {
+          fabricObj = FabricObject.fromObject(denormalized);
+        }
+        
+        if (fabricObj) {
+          fabricObj.id = message.object_id;
+          canvas.add(fabricObj);
+          canvas.renderAll();
+          console.log(`[WS ${boardId}] Objet ajouté:`, message.object_id);
+        }
+        
+      } else if (message.type === 'object_modified') {
+        const existingObj = canvas.getObjects().find(o => o.id === message.object_id);
+        if (existingObj) {
+          const denormalized = denormalizeCoordinates(message.object_data, dimensions.width, dimensions.height);
+          existingObj.set(denormalized);
+          canvas.renderAll();
+          console.log(`[WS ${boardId}] Objet modifié:`, message.object_id);
+        }
+        
+      } else if (message.type === 'object_removed') {
+        const objToRemove = canvas.getObjects().find(o => o.id === message.object_id);
+        if (objToRemove) {
+          canvas.remove(objToRemove);
+          canvas.renderAll();
+          console.log(`[WS ${boardId}] Objet supprimé:`, message.object_id);
+        } else {
+          console.warn(`[WS ${boardId}] Objet non trouvé pour suppression:`, message.object_id);
+          loadBoardFromAPI(boardId);
+        }
+        
+      } else if (message.type === 'board_cleared') {
+        canvas.clear();
+        canvas.renderAll();
+        console.log(`[WS ${boardId}] Tableau effacé`);
+        
+      } else if (message.type === 'user_joined' || message.type === 'user_left' || message.type === 'users_list') {
+        if (message.users) {
+          setConnectedUsers(prev => ({ ...prev, [boardId]: message.users }));
+        }
+      }
+    } finally {
+      setTimeout(() => {
+        isApplyingRemoteChangeRef.current = false;
+      }, 100);
+    }
+  }, [canvas1, canvas2, denormalizeCoordinates, loadBoardFromAPI]);
+
+  const connectWebSocket = useCallback((boardId) => {
+    if (!user?.id) return;
+    
+    const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
+    
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.close();
+    }
+    
+    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${user.id}&user_name=${encodeURIComponent(`${user.prenom || ''} ${user.nom || ''}`.trim() || user.email)}`;
+    console.log(`[WS ${boardId}] Connexion à:`, wsUrl);
+    
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      console.log(`[WS ${boardId}] Connecté ✅`);
+      setWsConnected(prev => ({ ...prev, [boardId]: true }));
+    };
+    
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      handleWebSocketMessage(boardId, message);
+    };
+    
+    ws.onerror = (error) => {
+      console.error(`[WS ${boardId}] Erreur:`, error);
+      setWsConnected(prev => ({ ...prev, [boardId]: false }));
+    };
+    
+    ws.onclose = () => {
+      console.log(`[WS ${boardId}] Déconnecté`);
+      setWsConnected(prev => ({ ...prev, [boardId]: false }));
+      
+      setTimeout(() => connectWebSocket(boardId), 3000);
+    };
+    
+    wsRef.current = ws;
+  }, [user, handleWebSocketMessage]);
+
   // ==================== INITIALISATION CANVAS ====================
   
   useEffect(() => {
@@ -439,17 +420,14 @@ const WhiteboardPage = () => {
       return;
     }
     
-    // Initialiser les deux canvas
-    const initCanvas = (containerId, canvasRef, dimensionsRef, boardId) => {
-      const container = containerId === 'board_1' ? container1Ref.current : container2Ref.current;
-      if (!container) return;
+    // Initialiser Canvas 1
+    if (container1Ref.current && !canvas1) {
+      const width = container1Ref.current.offsetWidth;
+      const height = container1Ref.current.offsetHeight;
       
-      const width = container.offsetWidth;
-      const height = container.offsetHeight;
+      canvasDimensions1Ref.current = { width, height };
       
-      dimensionsRef.current = { width, height };
-      
-      const canvas = new fabric.Canvas(`canvas-${boardId}`, {
+      const fabricCanvas = new Canvas('canvas-board_1', {
         width,
         height,
         backgroundColor: '#ffffff',
@@ -457,68 +435,136 @@ const WhiteboardPage = () => {
         selection: true
       });
       
-      canvasRef.current = canvas;
-      
-      // ========== ÉVÉNEMENTS FABRIC.JS ==========
-      
-      // Objet ajouté
-      canvas.on('object:added', async (e) => {
-        if (isApplyingRemoteChangeRef.current) return;
-        
-        const obj = e.target;
-        if (!obj.id) {
-          // Nouvel objet local → créer via API
-          await createObjectAPI(boardId, obj);
-        }
-      });
-      
-      // Objet modifié
-      canvas.on('object:modified', async (e) => {
-        if (isApplyingRemoteChangeRef.current) return;
-        
-        const obj = e.target;
-        if (obj.id) {
-          await updateObjectAPI(boardId, obj);
-        }
-      });
-      
-      // Objet supprimé
-      canvas.on('object:removed', async (e) => {
-        if (isApplyingRemoteChangeRef.current) return;
-        
-        const obj = e.target;
-        if (obj.id) {
-          console.log(`[Canvas ${boardId}] Suppression locale détectée:`, obj.id);
-          await deleteObjectAPI(boardId, obj.id);
-        }
-      });
-      
-      console.log(`[Canvas ${boardId}] Initialisé`);
-    };
+      setCanvas1(fabricCanvas);
+      console.log('[Canvas board_1] Initialisé ✅');
+    }
     
-    initCanvas('board_1', canvas1Ref, canvasDimensions1Ref, 'board_1');
-    initCanvas('board_2', canvas2Ref, canvasDimensions2Ref, 'board_2');
-    
-    setCanvasReady(true);
+    // Initialiser Canvas 2
+    if (container2Ref.current && !canvas2) {
+      const width = container2Ref.current.offsetWidth;
+      const height = container2Ref.current.offsetHeight;
+      
+      canvasDimensions2Ref.current = { width, height };
+      
+      const fabricCanvas = new Canvas('canvas-board_2', {
+        width,
+        height,
+        backgroundColor: '#ffffff',
+        isDrawingMode: false,
+        selection: true
+      });
+      
+      setCanvas2(fabricCanvas);
+      console.log('[Canvas board_2] Initialisé ✅');
+    }
     
     // Cleanup
     return () => {
-      if (canvas1Ref.current) canvas1Ref.current.dispose();
-      if (canvas2Ref.current) canvas2Ref.current.dispose();
+      if (canvas1) canvas1.dispose();
+      if (canvas2) canvas2.dispose();
     };
-  }, [canViewWhiteboard, hasCheckedPermission, navigate, toast, createObjectAPI, updateObjectAPI, deleteObjectAPI]);
+  }, [canViewWhiteboard, hasCheckedPermission, canvas1, canvas2, navigate, toast]);
+
+  // Attacher les événements aux canvas
+  useEffect(() => {
+    if (!canvas1) return;
+    
+    const handleObjectAdded = async (e) => {
+      if (isApplyingRemoteChangeRef.current) return;
+      
+      const obj = e.target;
+      if (!obj.id) {
+        console.log('[Canvas board_1] Nouvel objet détecté');
+        await createObjectAPI('board_1', obj);
+      }
+    };
+    
+    const handleObjectModified = async (e) => {
+      if (isApplyingRemoteChangeRef.current) return;
+      
+      const obj = e.target;
+      if (obj.id) {
+        console.log('[Canvas board_1] Objet modifié:', obj.id);
+        await updateObjectAPI('board_1', obj);
+      }
+    };
+    
+    const handleObjectRemoved = async (e) => {
+      if (isApplyingRemoteChangeRef.current) return;
+      
+      const obj = e.target;
+      if (obj.id) {
+        console.log('[Canvas board_1] Objet supprimé:', obj.id);
+        await deleteObjectAPI('board_1', obj.id);
+      }
+    };
+    
+    canvas1.on('object:added', handleObjectAdded);
+    canvas1.on('object:modified', handleObjectModified);
+    canvas1.on('object:removed', handleObjectRemoved);
+    
+    return () => {
+      canvas1.off('object:added', handleObjectAdded);
+      canvas1.off('object:modified', handleObjectModified);
+      canvas1.off('object:removed', handleObjectRemoved);
+    };
+  }, [canvas1, createObjectAPI, updateObjectAPI, deleteObjectAPI]);
+
+  useEffect(() => {
+    if (!canvas2) return;
+    
+    const handleObjectAdded = async (e) => {
+      if (isApplyingRemoteChangeRef.current) return;
+      
+      const obj = e.target;
+      if (!obj.id) {
+        console.log('[Canvas board_2] Nouvel objet détecté');
+        await createObjectAPI('board_2', obj);
+      }
+    };
+    
+    const handleObjectModified = async (e) => {
+      if (isApplyingRemoteChangeRef.current) return;
+      
+      const obj = e.target;
+      if (obj.id) {
+        console.log('[Canvas board_2] Objet modifié:', obj.id);
+        await updateObjectAPI('board_2', obj);
+      }
+    };
+    
+    const handleObjectRemoved = async (e) => {
+      if (isApplyingRemoteChangeRef.current) return;
+      
+      const obj = e.target;
+      if (obj.id) {
+        console.log('[Canvas board_2] Objet supprimé:', obj.id);
+        await deleteObjectAPI('board_2', obj.id);
+      }
+    };
+    
+    canvas2.on('object:added', handleObjectAdded);
+    canvas2.on('object:modified', handleObjectModified);
+    canvas2.on('object:removed', handleObjectRemoved);
+    
+    return () => {
+      canvas2.off('object:added', handleObjectAdded);
+      canvas2.off('object:modified', handleObjectModified);
+      canvas2.off('object:removed', handleObjectRemoved);
+    };
+  }, [canvas2, createObjectAPI, updateObjectAPI, deleteObjectAPI]);
 
   // Charger les objets depuis l'API
   useEffect(() => {
-    if (!canvasReady || !token) return;
+    if (!canvas1 || !canvas2 || !token) return;
     
     loadBoardFromAPI('board_1');
     loadBoardFromAPI('board_2');
-  }, [canvasReady, token, loadBoardFromAPI]);
+  }, [canvas1, canvas2, token, loadBoardFromAPI]);
 
   // Connecter les WebSockets
   useEffect(() => {
-    if (!canvasReady || !user?.id) return;
+    if (!canvas1 || !canvas2 || !user?.id) return;
     
     const timeout = setTimeout(() => {
       connectWebSocket('board_1');
@@ -530,16 +576,15 @@ const WhiteboardPage = () => {
       if (ws1Ref.current) ws1Ref.current.close();
       if (ws2Ref.current) ws2Ref.current.close();
     };
-  }, [canvasReady, user?.id, connectWebSocket]);
+  }, [canvas1, canvas2, user?.id, connectWebSocket]);
 
   // ==================== OUTILS ====================
   
   const handleToolChange = useCallback((tool) => {
     setActiveTool(tool);
-    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1 : canvas2;
     if (!canvas) return;
     
-    // Réinitialiser les modes
     canvas.isDrawingMode = false;
     canvas.selection = true;
     
@@ -554,7 +599,7 @@ const WhiteboardPage = () => {
       canvas.freeDrawingBrush.color = '#ffffff';
       canvas.freeDrawingBrush.width = strokeWidth * 2;
     } else if (tool === 'text') {
-      const text = new fabric.IText('Texte', {
+      const text = new IText('Texte', {
         left: 100,
         top: 100,
         fontSize: 24,
@@ -565,7 +610,7 @@ const WhiteboardPage = () => {
       text.enterEditing();
       setActiveTool('select');
     } else if (tool === 'rectangle') {
-      const rect = new fabric.Rect({
+      const rect = new Rect({
         left: 100,
         top: 100,
         width: 150,
@@ -577,7 +622,7 @@ const WhiteboardPage = () => {
       canvas.add(rect);
       setActiveTool('select');
     } else if (tool === 'circle') {
-      const circle = new fabric.Circle({
+      const circle = new Circle({
         left: 100,
         top: 100,
         radius: 50,
@@ -590,10 +635,10 @@ const WhiteboardPage = () => {
     }
     
     canvas.renderAll();
-  }, [activeBoard, activeColor, strokeWidth]);
+  }, [activeBoard, canvas1, canvas2, activeColor, strokeWidth]);
 
   const handleDelete = useCallback(() => {
-    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1 : canvas2;
     if (!canvas) return;
     
     const activeObjects = canvas.getActiveObjects();
@@ -602,12 +647,12 @@ const WhiteboardPage = () => {
       canvas.discardActiveObject();
       canvas.renderAll();
     }
-  }, [activeBoard]);
+  }, [activeBoard, canvas1, canvas2]);
 
   const handleClearBoard = useCallback(async () => {
     if (!window.confirm('Êtes-vous sûr de vouloir effacer tout le tableau ?')) return;
     
-    const canvas = activeBoard === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
+    const canvas = activeBoard === 'board_1' ? canvas1 : canvas2;
     if (!canvas || !token) return;
     
     try {
@@ -629,7 +674,7 @@ const WhiteboardPage = () => {
     } catch (error) {
       console.error('Erreur effacement tableau:', error);
     }
-  }, [activeBoard, token, toast]);
+  }, [activeBoard, canvas1, canvas2, token, toast]);
 
   // ==================== INTERFACE ====================
   
@@ -691,7 +736,7 @@ const WhiteboardPage = () => {
               { tool: 'eraser', icon: Eraser, label: 'Gomme' },
               { tool: 'text', icon: Type, label: 'Texte' },
               { tool: 'rectangle', icon: Square, label: 'Rectangle' },
-              { tool: 'circle', icon: Circle, label: 'Cercle' },
+              { tool: 'circle', icon: CircleIcon, label: 'Cercle' },
             ].map(({ tool, icon: Icon, label }) => (
               <Button
                 key={tool}
