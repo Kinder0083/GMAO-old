@@ -452,7 +452,7 @@ const WhiteboardPage = () => {
     }
     
     // Initialiser Canvas 2
-    if (container2Ref.current && !canvas2) {
+    if (container2Ref.current && !canvas2 && !canvas2InitializedRef.current) {
       const width = container2Ref.current.offsetWidth;
       const height = container2Ref.current.offsetHeight;
       
@@ -463,6 +463,8 @@ const WhiteboardPage = () => {
       if (existingCanvasElement && existingCanvasElement.__fabric) {
         existingCanvasElement.__fabric.dispose();
       }
+      
+      canvas2InitializedRef.current = true;
       
       const fabricCanvas = new Canvas('canvas-board_2', {
         width,
