@@ -485,6 +485,14 @@ const WhiteboardPage = () => {
         const data = await response.json();
         const serverObjects = data.objects || [];
         
+        // Détecter si les données sont dans l'ancien format (valeurs > 1 = anciennes données absolues)
+        // Nouveau format: toutes les valeurs de position sont entre 0 et 1 (pourcentages)
+        const isOldFormat = serverObjects.some(obj => {
+          const left = obj.left || 0;
+          const top = obj.top || 0;
+          return left > 1.5 || top > 1.5; // Si > 1.5, c'est certainement des pixels absolus
+        });
+        
         // Obtenir les objets actuels du canvas
         const currentObjects = canvas.getObjects();
         const currentIds = new Set(currentObjects.map(o => o.id).filter(Boolean));
@@ -497,11 +505,21 @@ const WhiteboardPage = () => {
         // Si le canvas est vide et on a des données serveur, charger tout
         if (currentObjects.length === 0 && serverObjects.length > 0) {
           canvas.backgroundColor = '#FFFFFF';
-          const denormalizedObjects = denormalizeCoordinates(serverObjects, dimensions.width, dimensions.height);
+          
+          let objectsToLoad;
+          if (isOldFormat) {
+            // Ancien format: les données sont déjà en pixels, pas besoin de dénormaliser
+            console.log(`[${boardId}] Données anciennes (format pixel), chargement direct`);
+            objectsToLoad = serverObjects;
+          } else {
+            // Nouveau format: dénormaliser les pourcentages en pixels
+            console.log(`[${boardId}] Données nouvelles (format pourcentage), dénormalisation`);
+            objectsToLoad = denormalizeCoordinates(serverObjects, dimensions.width, dimensions.height);
+          }
           
           await canvas.loadFromJSON({
             version: '6.0.0',
-            objects: denormalizedObjects,
+            objects: objectsToLoad,
             background: '#FFFFFF'
           });
           canvas.renderAll();
@@ -519,8 +537,14 @@ const WhiteboardPage = () => {
           
           // Ajouter les nouveaux objets du serveur
           if (toAdd.length > 0) {
-            const denormalized = denormalizeCoordinates(toAdd, dimensions.width, dimensions.height);
-            const enlivened = await fabric.util.enlivenObjects(denormalized);
+            let objectsToAdd;
+            if (isOldFormat) {
+              objectsToAdd = toAdd;
+            } else {
+              objectsToAdd = denormalizeCoordinates(toAdd, dimensions.width, dimensions.height);
+            }
+            
+            const enlivened = await fabric.util.enlivenObjects(objectsToAdd);
             for (let i = 0; i < enlivened.length; i++) {
               enlivened[i].id = toAdd[i].id;
               enlivened[i]._fromRemote = true;
