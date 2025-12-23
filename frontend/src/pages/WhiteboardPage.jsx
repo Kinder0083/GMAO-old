@@ -726,17 +726,17 @@ const WhiteboardPage = () => {
         const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
         
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && obj.id) {
-          // Envoyer via WebSocket - le backend supprime automatiquement
+          // Envoyer via WebSocket pour synchronisation temps réel
           console.log(`[WS] Envoi suppression objet ${obj.id} vers ${boardId}`);
           wsRef.current.send(JSON.stringify({
             type: 'object_removed',
             object_id: obj.id
           }));
-          // PAS de setupSaveHandler() - le backend supprime via WebSocket
-        } else if (obj.id) {
-          // Fallback HTTP si WebSocket déconnecté
-          setupSaveHandler();
         }
+        
+        // TOUJOURS sauvegarder après suppression pour synchroniser avec tous les clients
+        // Même si WebSocket fonctionne, la sauvegarde HTTP garantit la persistance
+        setupSaveHandler();
       }
     });
     
