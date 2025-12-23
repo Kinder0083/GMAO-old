@@ -427,6 +427,12 @@ const WhiteboardPage = () => {
       
       canvasDimensions1Ref.current = { width, height };
       
+      // Vérifier si un canvas Fabric.js existe déjà et le nettoyer
+      const existingCanvasElement = document.getElementById('canvas-board_1');
+      if (existingCanvasElement && existingCanvasElement.__fabric) {
+        existingCanvasElement.__fabric.dispose();
+      }
+      
       const fabricCanvas = new Canvas('canvas-board_1', {
         width,
         height,
