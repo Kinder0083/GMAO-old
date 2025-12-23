@@ -98,9 +98,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Whiteboard Canvas Initialization - Fabric.js v6 API"
+    - "Whiteboard WebSocket Real-time Sync"
   stuck_tasks:
-    - "Whiteboard Canvas Initialization - Fabric.js v6 API"
+    - "Whiteboard WebSocket Real-time Sync"
   test_all: false
   test_priority: "high_first"
 
