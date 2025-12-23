@@ -68,6 +68,10 @@ const WhiteboardPage = () => {
   // Refs pour éviter les boucles infinies
   const isApplyingRemoteChangeRef = useRef(false);
   
+  // Refs pour éviter la double initialisation
+  const canvas1InitializedRef = useRef(false);
+  const canvas2InitializedRef = useRef(false);
+  
   // États
   const [showToolbar, setShowToolbar] = useState(false);
   const [activeTool, setActiveTool] = useState('select');
