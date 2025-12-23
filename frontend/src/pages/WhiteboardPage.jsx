@@ -600,6 +600,11 @@ const WhiteboardPage = () => {
     }
   }, [token, denormalizeCoordinates, normalizeCoordinates]);
 
+  // Assigner loadBoard à la ref pour éviter les problèmes de closure
+  useEffect(() => {
+    loadBoardRef.current = loadBoard;
+  }, [loadBoard]);
+
   // ==================== Polling de synchronisation ====================
   // Recharger les données toutes les 5 secondes pour synchroniser les changements
   // Le polling fonctionne TOUJOURS, même si WebSocket est connecté
