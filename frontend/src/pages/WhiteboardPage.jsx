@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as fabric from 'fabric';
+import { Canvas, Rect, Circle, IText, Path, Line } from 'fabric';
 import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import {
