@@ -594,24 +594,24 @@ const WhiteboardPage = () => {
     }
   }, [token, denormalizeCoordinates, normalizeCoordinates]);
 
-  // ==================== Polling de secours (comme Chat Live) ====================
-  // Si WebSocket déconnecté, recharger les données toutes les 5 secondes
+  // ==================== Polling de synchronisation ====================
+  // Recharger les données toutes les 5 secondes pour synchroniser les changements
+  // Le polling fonctionne TOUJOURS, même si WebSocket est connecté
+  // Car le WebSocket peut ne pas broadcaster correctement les suppressions
   
   useEffect(() => {
     const pollingInterval = setInterval(() => {
-      // Si au moins un WebSocket est déconnecté, recharger ce board
-      if (!wsConnected.board_1 && canvas1Ref.current && !isLoadingDataRef.current) {
-        console.log('[Polling] Rechargement board_1...');
+      // Toujours recharger les boards pour synchroniser
+      if (canvas1Ref.current && !isLoadingDataRef.current) {
         loadBoard('board_1');
       }
-      if (!wsConnected.board_2 && canvas2Ref.current && !isLoadingDataRef.current) {
-        console.log('[Polling] Rechargement board_2...');
+      if (canvas2Ref.current && !isLoadingDataRef.current) {
         loadBoard('board_2');
       }
     }, 5000);
     
     return () => clearInterval(pollingInterval);
-  }, [wsConnected.board_1, wsConnected.board_2, loadBoard]);
+  }, [loadBoard]);
 
   // ==================== Initialisation Canvas ====================
 
