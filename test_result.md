@@ -91,64 +91,67 @@ agent_communication:
 
 ## Features to Test
 
-### Invite Member Functionality - TESTING COMPLETE
+### Whiteboard Object Deletion Functionality - TESTING IN PROGRESS
 
-#### Test 1: Successful Invitation ✅ WORKING
-- [x] Login with admin credentials (admin@test.com / password)
-- [x] POST /api/users/invite-member with new email (new_test_user@example.com) and TECHNICIEN role
-- [x] Verify response structure contains message, email, role, email_sent fields
-- [x] Verify email_sent is true when SMTP is configured
-- [x] Verify proper success message returned
+#### Test 1: Delete Key Synchronization ⏳ TESTING
+- [ ] Login with admin credentials (admin@test.com / password) on Client A
+- [ ] Login with admin credentials (admin@test.com / password) on Client B (separate browser context)
+- [ ] Navigate both clients to Whiteboard page (/whiteboard)
+- [ ] Add a shape (rectangle/circle) on Client A to board_1
+- [ ] Verify shape appears on Client B (WebSocket or 5s polling)
+- [ ] Select and delete shape using Delete/Backspace key on Client A
+- [ ] Verify shape disappears on Client B within 5 seconds
+- [ ] Reload both clients (F5) and verify shape remains deleted
 
-**RESULT: ✅ WORKING** - API returns correct response structure. Email sending functional with SMTP configuration. Response includes all required fields with correct values.
+**RESULT: ⏳ TESTING IN PROGRESS** - Multi-client deletion synchronization via keyboard keys
 
-#### Test 2: Duplicate Email Check ✅ WORKING
-- [x] POST /api/users/invite-member with existing email (admin@test.com)
-- [x] Verify returns 400 Bad Request status code
-- [x] Verify error message "Un utilisateur avec cet email existe déjà"
+#### Test 2: Trash Button Synchronization ⏳ TESTING
+- [ ] Add a shape (circle) on Client A to board_1
+- [ ] Verify shape appears on Client B
+- [ ] Select shape and use trash button (Trash2) in toolbar on Client A
+- [ ] Verify shape disappears on Client B within 5 seconds
+- [ ] Reload both clients (F5) and verify shape remains deleted
 
-**RESULT: ✅ WORKING** - Duplicate email validation working correctly. Returns appropriate 400 error with French error message.
+**RESULT: ⏳ TESTING IN PROGRESS** - Multi-client deletion synchronization via toolbar button
 
-#### Test 3: Role Validation ✅ WORKING
-- [x] POST /api/users/invite-member with invalid role (INVALID_ROLE)
-- [x] Verify returns 422 Unprocessable Entity status code
-- [x] Verify Pydantic validation rejects invalid enum values
+#### Test 3: Persistence After Reload ⏳ TESTING
+- [ ] Verify deleted objects from previous tests remain deleted after multiple reloads
+- [ ] Test persistence across different browser sessions
+- [ ] Verify HTTP sync mechanism maintains deletion state
 
-**RESULT: ✅ WORKING** - Role validation working correctly. Pydantic enum validation rejects invalid role values with 422 status.
+**RESULT: ⏳ TESTING IN PROGRESS** - Deletion persistence verification
 
-#### Test 4: Email Validation ❌ MINOR ISSUE
-- [x] POST /api/users/invite-member with invalid email format (invalid-email-format)
-- [x] Expected 422 status code but got 500 Internal Server Error
-- [x] Core validation logic in models.py is correct
+#### Test 4: WebSocket Real-time Sync ⏳ TESTING
+- [ ] Monitor browser console for WebSocket messages during deletion
+- [ ] Verify 'object_removed' message is sent with correct object_id
+- [ ] Verify debouncedSave() is triggered after deletion
+- [ ] Check POST /api/whiteboard/board/board_1/sync is called after 1.5s
 
-**RESULT: ❌ MINOR ISSUE** - Returns 500 instead of expected 422. This is a Pydantic error handler configuration issue, not a critical functionality problem.
+**RESULT: ⏳ TESTING IN PROGRESS** - WebSocket synchronization mechanism
 
-#### Test 5: Token Generation ✅ WORKING
-- [x] Verify JWT token structure in invitation links
-- [x] Verify token contains 3 parts separated by dots (valid JWT format)
-- [x] Verify invitation_link is only provided when email_sent is false
-- [x] Verify security: no token exposure when email is successfully sent
+#### Test 5: HTTP Polling Fallback ⏳ TESTING
+- [ ] Test deletion synchronization when WebSocket is disconnected
+- [ ] Verify 5-second polling mechanism syncs deletions
+- [ ] Monitor network requests for GET/POST API calls
 
-**RESULT: ✅ WORKING** - JWT token generation working correctly. Proper security implementation with conditional token exposure.
+**RESULT: ⏳ TESTING IN PROGRESS** - HTTP polling fallback mechanism
 
 ## Test Credentials ✅ WORKING
 - Email: admin@test.com
 - Password: password
+- Frontend URL: https://whitesync.preview.emergentagent.com/whiteboard
 
 ## Test Results Summary
-1. **Successful Invitation**: ✅ WORKING - API functional, email sending works, proper response structure
-2. **Duplicate Email Check**: ✅ WORKING - Validation prevents duplicate invitations
-3. **Role Validation**: ✅ WORKING - Pydantic enum validation functional
-4. **Email Validation**: ❌ MINOR - Returns 500 instead of 422 (not critical)
-5. **Token Generation**: ✅ WORKING - JWT tokens generated correctly with proper security
+1. **Delete Key Synchronization**: ⏳ TESTING - Multi-client keyboard deletion sync
+2. **Trash Button Synchronization**: ⏳ TESTING - Multi-client toolbar deletion sync  
+3. **Persistence After Reload**: ⏳ TESTING - Deletion persistence verification
+4. **WebSocket Real-time Sync**: ⏳ TESTING - Real-time message broadcasting
+5. **HTTP Polling Fallback**: ⏳ TESTING - Polling synchronization mechanism
 
-## Critical Features Working
-**Invite Member API**: The core invite member functionality is fully operational. Email sending works with SMTP configuration, validation prevents duplicates, and JWT tokens are generated securely.
-
-## Minor Issue Found
-**Email Validation Error Code**: Returns 500 Internal Server Error instead of 422 for invalid email formats. This is likely a Pydantic validation error handler configuration issue but doesn't affect core functionality.
+## Critical Features Testing
+**Whiteboard Object Deletion**: Testing comprehensive multi-client deletion synchronization with both WebSocket real-time updates and HTTP polling fallback mechanisms.
 
 ## Test Files
-- Backend: /app/backend/server.py ✅ Core functionality working
-- Models: /app/backend/models.py ✅ Validation logic correct
-- Test Script: /app/backend_test.py ✅ Comprehensive test coverage
+- Frontend: /app/frontend/src/pages/WhiteboardPage.jsx ⏳ Testing deletion functionality
+- Backend API: /api/whiteboard/board/board_1 (GET/POST) ⏳ Testing sync endpoints
+- WebSocket: /ws/whiteboard/board_1 ⏳ Testing real-time messaging
