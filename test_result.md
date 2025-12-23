@@ -11,9 +11,9 @@ Testing whiteboard object deletion behavior after WhiteboardPage.jsx modificatio
 frontend:
   - task: "Whiteboard Canvas Initialization - Fabric.js v6 API"
     implemented: true
-    working: false
+    working: true
     file: "frontend/src/pages/WhiteboardPage.jsx"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
@@ -23,6 +23,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL REACT COMPONENT CRASH - Canvas initialization is working correctly (logs show '[Canvas board_1] Initialisé ✅' and '[Canvas board_2] Initialisé ✅') but WhiteboardPage React component crashes with error 'An error occurred in the <WhiteboardPage> component'. This causes blank page display despite successful Fabric.js v6 API usage. Root cause: Unhandled JavaScript error in React component lifecycle after canvas initialization. Fabric.js v6 API (new Canvas()) is working correctly, but component error prevents UI rendering."
+      - working: true
+        agent: "testing"
+        comment: "✅ FIXED - React component crash resolved by fixing Fabric.js double initialization issue. Added initialization tracking refs (canvas1InitializedRef, canvas2InitializedRef) to prevent multiple Canvas() constructor calls on same DOM element. Canvas initialization now works correctly: both canvas elements found in DOM, whiteboard content displays properly, toolbar functions work, object creation successful with API calls. Fabric.js v6 API working perfectly. Only remaining issue is WebSocket connections (separate from canvas initialization)."
 
   - task: "Whiteboard Object Deletion - Trash Button Synchronization"
     implemented: true
