@@ -271,7 +271,7 @@ const WhiteboardPage = () => {
           if (denormalized.type === 'rect') {
             fabricObj = new Rect(denormalized);
           } else if (denormalized.type === 'circle') {
-            fabricObj = new Circle(denormalized);
+            fabricObj = new FabricCircle(denormalized);
           } else if (denormalized.type === 'i-text') {
             fabricObj = new IText(denormalized.text || '', denormalized);
           } else if (denormalized.type === 'path') {
