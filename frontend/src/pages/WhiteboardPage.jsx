@@ -736,7 +736,7 @@ const WhiteboardPage = () => {
               { tool: 'eraser', icon: Eraser, label: 'Gomme' },
               { tool: 'text', icon: Type, label: 'Texte' },
               { tool: 'rectangle', icon: Square, label: 'Rectangle' },
-              { tool: 'circle', icon: CircleIcon, label: 'Cercle' },
+              { tool: 'circle', icon: Circle, label: 'Cercle' },
             ].map(({ tool, icon: Icon, label }) => (
               <Button
                 key={tool}
