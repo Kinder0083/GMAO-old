@@ -485,11 +485,13 @@ const WhiteboardPage = () => {
         const data = await response.json();
         let serverObjects = data.objects || [];
         
-        // IMPORTANT: Assigner un ID à chaque objet qui n'en a pas
+        // IMPORTANT: Assigner un ID STABLE à chaque objet qui n'en a pas
+        // Utiliser un hash basé sur les propriétés pour générer un ID déterministe
         let needsIdUpdate = false;
-        serverObjects = serverObjects.map(obj => {
+        serverObjects = serverObjects.map((obj, index) => {
           if (!obj.id) {
-            obj.id = generateId();
+            // Générer un ID déterministe basé sur l'index et le type
+            obj.id = `${boardId}_obj_${index}_${obj.type || 'unknown'}`;
             needsIdUpdate = true;
           }
           return obj;
@@ -506,10 +508,6 @@ const WhiteboardPage = () => {
         const currentObjects = canvas.getObjects();
         const currentIds = new Set(currentObjects.map(o => o.id).filter(Boolean));
         const serverIds = new Set(serverObjects.map(o => o.id).filter(Boolean));
-        
-        // Trouver les différences
-        const toAdd = serverObjects.filter(o => o.id && !currentIds.has(o.id));
-        const toRemove = currentObjects.filter(o => o.id && !serverIds.has(o.id));
         
         // Si le canvas est vide et on a des données serveur, charger tout
         if (currentObjects.length === 0 && serverObjects.length > 0) {
@@ -539,50 +537,51 @@ const WhiteboardPage = () => {
           canvas.renderAll();
           console.log(`Tableau ${boardId} chargé avec ${serverObjects.length} objets`);
           
-          // Si on a dû générer des IDs, sauvegarder en base pour les avoir la prochaine fois
+          // Si on a dû générer des IDs, sauvegarder en base
           if (needsIdUpdate) {
-            console.log(`[${boardId}] Sauvegarde des nouveaux IDs en base...`);
-            // Utiliser saveBoard pour sauvegarder les IDs
-            const boardRef = boardId === 'board_1' ? canvas1Ref : canvas2Ref;
-            const dimRef = boardId === 'board_1' ? canvasDimensions1Ref : canvasDimensions2Ref;
-            if (boardRef.current && dimRef.current) {
-              const rawObjects = boardRef.current.toJSON(['id']).objects || [];
-              const normalized = normalizeCoordinates(rawObjects, dimRef.current.width, dimRef.current.height);
-              await fetch(`${API_URL}/board/${boardId}/sync`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ objects: normalized })
-              });
-            }
+            console.log(`[${boardId}] Sauvegarde des IDs en base...`);
+            const rawObjects = canvas.toJSON(['id']).objects || [];
+            const normalized = normalizeCoordinates(rawObjects, dimensions.width, dimensions.height);
+            await fetch(`${API_URL}/board/${boardId}/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ objects: normalized })
+            });
           }
-        } else {
-          // Mises à jour incrémentales
-          let hasChanges = false;
+        } else if (currentObjects.length > 0) {
+          // Mises à jour incrémentales - SEULEMENT si les IDs ne correspondent pas
+          const toAdd = serverObjects.filter(o => o.id && !currentIds.has(o.id));
+          const toRemove = currentObjects.filter(o => o.id && !serverIds.has(o.id));
           
-          for (const obj of toRemove) {
-            canvas.remove(obj);
-            hasChanges = true;
-            console.log(`[Sync] Objet ${obj.id} supprimé`);
-          }
-          
-          if (toAdd.length > 0) {
-            let objectsToAdd = isOldFormat ? toAdd : denormalizeCoordinates(toAdd, dimensions.width, dimensions.height);
+          // Ne faire des changements que si vraiment nécessaire
+          if (toAdd.length > 0 || toRemove.length > 0) {
+            let hasChanges = false;
             
-            const enlivened = await fabric.util.enlivenObjects(objectsToAdd);
-            for (let i = 0; i < enlivened.length; i++) {
-              enlivened[i].id = toAdd[i].id;
-              enlivened[i]._fromRemote = true;
-              canvas.add(enlivened[i]);
+            for (const obj of toRemove) {
+              canvas.remove(obj);
               hasChanges = true;
-              console.log(`[Sync] Objet ${toAdd[i].id} ajouté`);
+              console.log(`[Sync] Objet ${obj.id} supprimé`);
             }
-          }
-          
-          if (hasChanges) {
-            canvas.renderAll();
+            
+            if (toAdd.length > 0) {
+              let objectsToAdd = isOldFormat ? toAdd : denormalizeCoordinates(toAdd, dimensions.width, dimensions.height);
+              
+              const enlivened = await fabric.util.enlivenObjects(objectsToAdd);
+              for (let i = 0; i < enlivened.length; i++) {
+                enlivened[i].id = toAdd[i].id;
+                enlivened[i]._fromRemote = true;
+                canvas.add(enlivened[i]);
+                hasChanges = true;
+                console.log(`[Sync] Objet ${toAdd[i].id} ajouté`);
+              }
+            }
+            
+            if (hasChanges) {
+              canvas.renderAll();
+            }
           }
         }
         
