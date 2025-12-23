@@ -632,6 +632,7 @@ const WhiteboardPage = () => {
         
         const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          // Envoyer via WebSocket - le backend sauvegarde automatiquement
           const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
           const normalized = normalizeCoordinates([obj.toJSON(['id'])], dimensions.width, dimensions.height)[0];
           wsRef.current.send(JSON.stringify({
@@ -639,9 +640,11 @@ const WhiteboardPage = () => {
             object: normalized,
             object_id: obj.id
           }));
+          // PAS de setupSaveHandler() - le backend sauvegarde via WebSocket
+        } else {
+          // Fallback HTTP si WebSocket déconnecté
+          setupSaveHandler();
         }
-        
-        setupSaveHandler();
       }
     });
     
@@ -651,6 +654,7 @@ const WhiteboardPage = () => {
         
         const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          // Envoyer via WebSocket - le backend sauvegarde automatiquement
           const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
           const normalized = normalizeCoordinates([obj.toJSON(['id'])], dimensions.width, dimensions.height)[0];
           wsRef.current.send(JSON.stringify({
@@ -658,9 +662,11 @@ const WhiteboardPage = () => {
             object: normalized,
             object_id: obj.id
           }));
+          // PAS de setupSaveHandler() - le backend sauvegarde via WebSocket
+        } else {
+          // Fallback HTTP si WebSocket déconnecté
+          setupSaveHandler();
         }
-        
-        setupSaveHandler();
       }
     });
     
@@ -669,17 +675,18 @@ const WhiteboardPage = () => {
         const obj = e.target;
         const wsRef = boardId === 'board_1' ? ws1Ref : ws2Ref;
         
-        // Envoyer via WebSocket pour synchronisation temps réel
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && obj.id) {
+          // Envoyer via WebSocket - le backend supprime automatiquement
           console.log(`[WS] Envoi suppression objet ${obj.id} vers ${boardId}`);
           wsRef.current.send(JSON.stringify({
             type: 'object_removed',
             object_id: obj.id
           }));
+          // PAS de setupSaveHandler() - le backend supprime via WebSocket
+        } else if (obj.id) {
+          // Fallback HTTP si WebSocket déconnecté
+          setupSaveHandler();
         }
-        
-        // Sauvegarder aussi en base de données pour persistance
-        setupSaveHandler();
       }
     });
     
