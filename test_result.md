@@ -1,88 +1,73 @@
-# Test Results - Invite Member Functionality
+# Test Results - Whiteboard Object Deletion Functionality
 
 ## Testing Protocol
-Testing invite member functionality for GMAO Iris:
-1. POST /api/users/invite-member - Successful invitation with email sending
-2. POST /api/users/invite-member - Duplicate email validation
-3. POST /api/users/invite-member - Invalid role validation
-4. POST /api/users/invite-member - Invalid email validation
-5. Invitation token structure validation
+Testing whiteboard object deletion behavior after WhiteboardPage.jsx modifications:
+1. Multi-client object deletion synchronization via Delete/Backspace keys
+2. Multi-client object deletion synchronization via trash button in toolbar
+3. Persistence verification after page reload (F5) on both clients
+4. WebSocket real-time synchronization verification
+5. HTTP polling fallback synchronization verification
 
-backend:
-  - task: "Invite Member API - Successful Invitation"
+frontend:
+  - task: "Whiteboard Object Deletion - Delete Key Synchronization"
     implemented: true
-    working: true
-    file: "backend/server.py"
+    working: "NA"
+    file: "frontend/src/pages/WhiteboardPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial test setup - Need to verify POST /api/users/invite-member endpoint works correctly for successful invitations. Testing with new_test_user@example.com and TECHNICIEN role."
-      - working: true
-        agent: "testing"
-        comment: "✅ INVITE SUCCESS - POST /api/users/invite-member working correctly. Returns proper response structure with message, email, role, and email_sent fields. Email sending is functional with SMTP configuration. Response: {'message': 'Invitation envoyée par email à new_test_user@example.com', 'email': 'new_test_user@example.com', 'role': 'TECHNICIEN', 'email_sent': True}"
+        comment: "Initial test setup - Need to verify that objects deleted via Delete/Backspace keys on one client are properly removed on a second client and persist after page reload. Testing multi-client synchronization with WebSocket and HTTP polling mechanisms."
 
-  - task: "Invite Member API - Duplicate Email Check"
+  - task: "Whiteboard Object Deletion - Trash Button Synchronization"
     implemented: true
-    working: true
-    file: "backend/server.py"
+    working: "NA"
+    file: "frontend/src/pages/WhiteboardPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial test setup - Need to verify duplicate email validation. Testing with admin@test.com which should already exist in the system."
-      - working: true
-        agent: "testing"
-        comment: "✅ DUPLICATE EMAIL CHECK - Validation working correctly. Returns 400 Bad Request with proper error message 'Un utilisateur avec cet email existe déjà' when attempting to invite existing user."
+        comment: "Initial test setup - Need to verify that objects deleted via trash button (deleteSelected()) in toolbar on one client are properly removed on a second client and persist after page reload. Testing multi-client synchronization."
 
-  - task: "Invite Member API - Role Validation"
+  - task: "Whiteboard Object Deletion - Persistence After Reload"
     implemented: true
-    working: true
-    file: "backend/server.py"
+    working: "NA"
+    file: "frontend/src/pages/WhiteboardPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial test setup - Need to verify role validation. Testing with invalid role 'INVALID_ROLE' to ensure proper validation."
-      - working: true
-        agent: "testing"
-        comment: "✅ ROLE VALIDATION - Pydantic validation working correctly. Returns 422 Unprocessable Entity for invalid role values, ensuring only valid UserRole enum values are accepted."
+        comment: "Initial test setup - Need to verify that deleted objects remain deleted after page reload (F5) on both clients. Testing persistence of deletion operations through HTTP sync mechanism."
 
-  - task: "Invite Member API - Email Validation"
+  - task: "Whiteboard WebSocket Real-time Sync"
     implemented: true
-    working: false
-    file: "backend/server.py"
+    working: "NA"
+    file: "frontend/src/pages/WhiteboardPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Initial test setup - Need to verify WebSocket real-time synchronization for object deletion. Testing 'object_removed' message broadcasting and debouncedSave() trigger after 1.5s delay."
+
+  - task: "Whiteboard HTTP Polling Fallback Sync"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/WhiteboardPage.jsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "testing"
-        comment: "Initial test setup - Need to verify email format validation. Testing with invalid email format 'invalid-email-format' to ensure proper validation."
-      - working: false
-        agent: "testing"
-        comment: "Minor: EMAIL VALIDATION - Returns 500 Internal Server Error instead of expected 422. This is likely due to Pydantic validation error handler configuration. Core functionality works but error response code is not optimal. Email validation logic in models.py is correct."
-
-  - task: "Invite Member API - Token Generation"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: "NA"
-        agent: "testing"
-        comment: "Initial test setup - Need to verify JWT token generation for invitations. Testing token structure and format in invitation links."
-      - working: true
-        agent: "testing"
-        comment: "✅ TOKEN GENERATION - JWT token generation working correctly. When email sending is successful, no token is exposed (secure). When email fails, invitation_link contains properly formatted JWT token with 3 parts separated by dots, indicating valid JWT structure."
+        comment: "Initial test setup - Need to verify HTTP polling synchronization (5s interval) as fallback mechanism. Testing GET /api/whiteboard/board/board_1 and POST /api/whiteboard/board/board_1/sync endpoints for deletion persistence."
 
 metadata:
   created_by: "testing_agent"
