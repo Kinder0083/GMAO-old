@@ -483,14 +483,23 @@ const WhiteboardPage = () => {
       
       if (response.ok) {
         const data = await response.json();
-        const serverObjects = data.objects || [];
+        let serverObjects = data.objects || [];
+        
+        // IMPORTANT: Assigner un ID à chaque objet qui n'en a pas
+        let needsIdUpdate = false;
+        serverObjects = serverObjects.map(obj => {
+          if (!obj.id) {
+            obj.id = generateId();
+            needsIdUpdate = true;
+          }
+          return obj;
+        });
         
         // Détecter si les données sont dans l'ancien format (valeurs > 1 = anciennes données absolues)
-        // Nouveau format: toutes les valeurs de position sont entre 0 et 1 (pourcentages)
         const isOldFormat = serverObjects.some(obj => {
           const left = obj.left || 0;
           const top = obj.top || 0;
-          return left > 1.5 || top > 1.5; // Si > 1.5, c'est certainement des pixels absolus
+          return left > 1.5 || top > 1.5;
         });
         
         // Obtenir les objets actuels du canvas
@@ -508,11 +517,9 @@ const WhiteboardPage = () => {
           
           let objectsToLoad;
           if (isOldFormat) {
-            // Ancien format: les données sont déjà en pixels, pas besoin de dénormaliser
             console.log(`[${boardId}] Données anciennes (format pixel), chargement direct`);
             objectsToLoad = serverObjects;
           } else {
-            // Nouveau format: dénormaliser les pourcentages en pixels
             console.log(`[${boardId}] Données nouvelles (format pourcentage), dénormalisation`);
             objectsToLoad = denormalizeCoordinates(serverObjects, dimensions.width, dimensions.height);
           }
@@ -522,27 +529,47 @@ const WhiteboardPage = () => {
             objects: objectsToLoad,
             background: '#FFFFFF'
           });
+          
+          // IMPORTANT: Restaurer les IDs sur les objets du canvas
+          const loadedObjects = canvas.getObjects();
+          for (let i = 0; i < loadedObjects.length && i < serverObjects.length; i++) {
+            loadedObjects[i].id = serverObjects[i].id;
+          }
+          
           canvas.renderAll();
           console.log(`Tableau ${boardId} chargé avec ${serverObjects.length} objets`);
+          
+          // Si on a dû générer des IDs, sauvegarder en base pour les avoir la prochaine fois
+          if (needsIdUpdate) {
+            console.log(`[${boardId}] Sauvegarde des nouveaux IDs en base...`);
+            // Utiliser saveBoard pour sauvegarder les IDs
+            const boardRef = boardId === 'board_1' ? canvas1Ref : canvas2Ref;
+            const dimRef = boardId === 'board_1' ? canvasDimensions1Ref : canvasDimensions2Ref;
+            if (boardRef.current && dimRef.current) {
+              const rawObjects = boardRef.current.toJSON(['id']).objects || [];
+              const normalized = normalizeCoordinates(rawObjects, dimRef.current.width, dimRef.current.height);
+              await fetch(`${API_URL}/board/${boardId}/sync`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ objects: normalized })
+              });
+            }
+          }
         } else {
-          // Sinon, faire des mises à jour incrémentales
+          // Mises à jour incrémentales
           let hasChanges = false;
           
-          // Supprimer les objets qui n'existent plus sur le serveur
           for (const obj of toRemove) {
             canvas.remove(obj);
             hasChanges = true;
-            console.log(`[Sync] Objet ${obj.id} supprimé (n'existe plus sur serveur)`);
+            console.log(`[Sync] Objet ${obj.id} supprimé`);
           }
           
-          // Ajouter les nouveaux objets du serveur
           if (toAdd.length > 0) {
-            let objectsToAdd;
-            if (isOldFormat) {
-              objectsToAdd = toAdd;
-            } else {
-              objectsToAdd = denormalizeCoordinates(toAdd, dimensions.width, dimensions.height);
-            }
+            let objectsToAdd = isOldFormat ? toAdd : denormalizeCoordinates(toAdd, dimensions.width, dimensions.height);
             
             const enlivened = await fabric.util.enlivenObjects(objectsToAdd);
             for (let i = 0; i < enlivened.length; i++) {
@@ -550,7 +577,7 @@ const WhiteboardPage = () => {
               enlivened[i]._fromRemote = true;
               canvas.add(enlivened[i]);
               hasChanges = true;
-              console.log(`[Sync] Objet ${toAdd[i].id} ajouté depuis serveur`);
+              console.log(`[Sync] Objet ${toAdd[i].id} ajouté`);
             }
           }
           
@@ -566,7 +593,7 @@ const WhiteboardPage = () => {
     } finally {
       isLoadingDataRef.current = false;
     }
-  }, [token, denormalizeCoordinates]);
+  }, [token, denormalizeCoordinates, normalizeCoordinates]);
 
   // ==================== Polling de secours (comme Chat Live) ====================
   // Si WebSocket déconnecté, recharger les données toutes les 5 secondes
