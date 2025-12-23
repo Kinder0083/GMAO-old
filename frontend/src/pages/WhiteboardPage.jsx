@@ -463,7 +463,7 @@ const WhiteboardPage = () => {
       if (canvas1) canvas1.dispose();
       if (canvas2) canvas2.dispose();
     };
-  }, [canViewWhiteboard, hasCheckedPermission, canvas1, canvas2, navigate, toast]);
+  }, [canViewWhiteboard, hasCheckedPermission, navigate, toast]);
 
   // Attacher les événements aux canvas
   useEffect(() => {
