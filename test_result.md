@@ -71,25 +71,23 @@ frontend:
 
 metadata:
   created_by: "testing_agent"
-  version: "3.0"
-  test_sequence: 3
-  run_ui: false
+  version: "4.0"
+  test_sequence: 4
+  run_ui: true
 
 test_plan:
   current_focus:
-    - "Invite Member API - Successful Invitation"
-    - "Invite Member API - Duplicate Email Check"
-    - "Invite Member API - Role Validation"
-    - "Invite Member API - Token Generation"
+    - "Whiteboard Object Deletion - Delete Key Synchronization"
+    - "Whiteboard Object Deletion - Trash Button Synchronization"
+    - "Whiteboard Object Deletion - Persistence After Reload"
+    - "Whiteboard WebSocket Real-time Sync"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "testing"
-    message: "🎯 STARTING INVITE MEMBER TESTING - Testing invite member functionality for GMAO Iris. Will test POST /api/users/invite-member endpoint with admin credentials (admin@test.com / password) for successful invitations, duplicate email validation, role validation, email validation, and token generation."
-  - agent: "testing"
-    message: "✅ INVITE MEMBER TESTING COMPLETE - 5/6 tests passed. ✅ Successful invitation working with email sending. ✅ Duplicate email validation working (400 error). ✅ Role validation working (422 error). ✅ Token generation working with proper JWT structure. ❌ Minor issue: Email validation returns 500 instead of 422 (Pydantic error handler configuration issue, not critical)."
+    message: "🎯 STARTING WHITEBOARD DELETION TESTING - Testing object deletion behavior on Whiteboard after WhiteboardPage.jsx modifications. Will test multi-client synchronization for Delete/Backspace keys and trash button deletions, persistence after reload, WebSocket real-time sync, and HTTP polling fallback. Using admin@test.com credentials and dual browser contexts for multi-client testing."
 
 ## Features to Test
 
