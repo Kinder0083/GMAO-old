@@ -10,7 +10,7 @@ import os
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://whitesync.preview.emergentagent.com/api"
+BACKEND_URL = "https://board-fix.preview.emergentagent.com/api"
 
 # Test credentials - try both admin accounts
 ADMIN_EMAIL_1 = "admin@example.com"

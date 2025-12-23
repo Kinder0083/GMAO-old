@@ -25,7 +25,7 @@ Tous les fichiers de configuration pour le déploiement Proxmox sont dans le dos
 ### 1. 🔵 Emergent (Production Cloud)
 **Environnement actuel** - Déploiement automatique via Kubernetes
 
-**URL d'accès :** https://whitesync.preview.emergentagent.com
+**URL d'accès :** https://board-fix.preview.emergentagent.com
 
 **Caractéristiques :**
 - ✅ Déploiement automatique
