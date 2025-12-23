@@ -6562,9 +6562,11 @@ api_router.include_router(ai_router)
 
 # Whiteboard (Tableau d'affichage) routes
 from whiteboard_routes import router as whiteboard_router, init_whiteboards, init_whiteboard_audit
+from whiteboard_object_routes import router as whiteboard_object_router
 from whiteboard_manager import whiteboard_manager, handle_whiteboard_message
 init_whiteboard_audit(audit_service)  # Initialiser le service d'audit pour le whiteboard
 api_router.include_router(whiteboard_router)
+api_router.include_router(whiteboard_object_router)  # Nouvelles routes API granulaires
 
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
