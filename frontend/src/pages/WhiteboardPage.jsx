@@ -646,31 +646,13 @@ const WhiteboardPage = () => {
     
     // Événements avec sauvegarde normalisée
     const setupSaveHandler = () => {
-      const dimensions = boardId === 'board_1' ? canvasDimensions1Ref.current : canvasDimensions2Ref.current;
-      
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(() => {
-        const canvas = boardId === 'board_1' ? canvas1Ref.current : canvas2Ref.current;
-        if (canvas && !isLoadingDataRef.current) {
-          const rawObjects = canvas.toJSON(['id']).objects || [];
-          const normalizedObjects = normalizeCoordinates(rawObjects, dimensions.width, dimensions.height);
-          const tkn = localStorage.getItem('token');
-          const usr = JSON.parse(localStorage.getItem('user') || '{}');
-          
-          fetch(`${API_URL}/board/${boardId}/sync`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${tkn}`
-            },
-            body: JSON.stringify({
-              objects: normalizedObjects,
-              user_id: usr?.id,
-              user_name: `${usr?.prenom || ''} ${usr?.nom || ''}`.trim()
-            })
-          }).then(() => console.log(`Tableau ${boardId} sauvegardé`));
-        }
-      }, 1500);
+      if (isLoadingDataRef.current) {
+        return;
+      }
+      // Utiliser la fonction de sauvegarde centralisée (debounced)
+      // pour garantir un comportement identique pour tous les types
+      // de modifications (ajout, modification, suppression).
+      debouncedSave(boardId);
     };
     
     fabricCanvas.on('object:added', (e) => {
