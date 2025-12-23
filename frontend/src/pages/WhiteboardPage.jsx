@@ -77,6 +77,7 @@ const WhiteboardPage = () => {
   const initialLoadDoneRef = useRef(false);
   const isLoadingDataRef = useRef(false);
   const isReceivingRemoteRef = useRef(false);
+  const loadBoardRef = useRef(null);
   
   // États
   const [showToolbar, setShowToolbar] = useState(false);
@@ -268,10 +269,15 @@ const WhiteboardPage = () => {
             canvas.remove(objToRemove);
             canvas.renderAll();
             console.log(`[WS] Objet ${message.object_id} supprimé avec succès`);
+            isReceivingRemoteRef.current = false;
           } else {
-            console.log(`[WS] Objet ${message.object_id} non trouvé sur le canvas (peut-être déjà supprimé)`);
+            console.log(`[WS] Objet ${message.object_id} non trouvé sur le canvas (peut-être déjà supprimé, resynchronisation HTTP)`);
+            isReceivingRemoteRef.current = false;
+            // Fallback : recharger l'état complet depuis le serveur
+            if (loadBoardRef.current) {
+              loadBoardRef.current(boardId);
+            }
           }
-          isReceivingRemoteRef.current = false;
         }
         break;
       
