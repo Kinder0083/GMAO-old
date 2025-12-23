@@ -480,8 +480,14 @@ const WhiteboardPage = () => {
     
     // Cleanup
     return () => {
-      if (canvas1) canvas1.dispose();
-      if (canvas2) canvas2.dispose();
+      if (canvas1) {
+        canvas1.dispose();
+        canvas1InitializedRef.current = false;
+      }
+      if (canvas2) {
+        canvas2.dispose();
+        canvas2InitializedRef.current = false;
+      }
     };
   }, [canViewWhiteboard, hasCheckedPermission, navigate, toast]);
 
