@@ -112,6 +112,7 @@ test_plan:
     - "Whiteboard WebSocket Real-time Sync"
   test_all: false
   test_priority: "high_first"
+  websearch_needed: true
 
 agent_communication:
   - agent: "testing"
