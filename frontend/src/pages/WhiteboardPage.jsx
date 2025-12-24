@@ -20,11 +20,10 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API_URL = `${BACKEND_URL}/api/whiteboard`;
 
-// Construire l'URL WebSocket
+// Construire l'URL WebSocket - utiliser window.location pour passer par le proxy
 const getWebSocketUrl = () => {
-  const url = new URL(BACKEND_URL || window.location.origin);
-  const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${url.host}`;
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}`;
 };
 const WS_URL = getWebSocketUrl();
 
