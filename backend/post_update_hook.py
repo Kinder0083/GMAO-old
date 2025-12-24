@@ -120,8 +120,23 @@ def main():
     if package_json.exists():
         run_command("yarn build", "Build production frontend", cwd=frontend_dir)
     
+    # Exécuter setup-email.sh si présent
+    print_step("6", "Configuration Email (setup-email.sh)")
+    
+    setup_email_script = app_root / "setup-email.sh"
+    if setup_email_script.exists():
+        print(f"📧 Script setup-email.sh trouvé: {setup_email_script}")
+        # Rendre le script exécutable
+        os.chmod(setup_email_script, 0o755)
+        # Le script setup-email.sh est interactif, on le skip en mode automatique
+        print("ℹ️  setup-email.sh détecté mais skip en mode automatique")
+        print("   Pour configurer les emails, exécutez manuellement:")
+        print(f"   bash {setup_email_script}")
+    else:
+        print("ℹ️  setup-email.sh non trouvé (optionnel)")
+    
     # Redémarrer les services
-    print_step("6", "Redémarrage des services")
+    print_step("7", "Redémarrage des services")
     
     # Vérifier si supervisor est disponible
     supervisor_check = subprocess.run(
