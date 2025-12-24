@@ -619,18 +619,22 @@ const WhiteboardPage = () => {
       canvas.defaultCursor = 'default';
     } else if (tool === 'pen') {
       canvas.isDrawingMode = true;
-      // Attendre que freeDrawingBrush soit créé
-      if (canvas.freeDrawingBrush) {
-        canvas.freeDrawingBrush.color = activeColor;
-        canvas.freeDrawingBrush.width = strokeWidth;
-      }
+      // Le brush est créé après activation de isDrawingMode, utiliser setTimeout
+      setTimeout(() => {
+        if (canvas.freeDrawingBrush) {
+          canvas.freeDrawingBrush.color = activeColor;
+          canvas.freeDrawingBrush.width = strokeWidth;
+        }
+      }, 0);
     } else if (tool === 'eraser') {
       canvas.isDrawingMode = true;
-      // Attendre que freeDrawingBrush soit créé
-      if (canvas.freeDrawingBrush) {
-        canvas.freeDrawingBrush.color = '#ffffff';
-        canvas.freeDrawingBrush.width = strokeWidth * 2;
-      }
+      // Le brush est créé après activation de isDrawingMode, utiliser setTimeout
+      setTimeout(() => {
+        if (canvas.freeDrawingBrush) {
+          canvas.freeDrawingBrush.color = '#ffffff';
+          canvas.freeDrawingBrush.width = strokeWidth * 2;
+        }
+      }, 0);
     } else if (tool === 'text') {
       const text = new IText('Texte', {
         left: 100,
