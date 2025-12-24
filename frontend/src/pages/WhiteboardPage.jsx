@@ -652,8 +652,18 @@ const WhiteboardPage = () => {
   useEffect(() => {
     if (!canvas1 || !canvas2 || !token) return;
     
+    console.log('[Init] Chargement initial des objets...');
     loadBoardFromAPI('board_1');
     loadBoardFromAPI('board_2');
+    
+    // Rechargement automatique après 2 secondes (pour être sûr d'avoir les derniers objets)
+    const reloadTimeout = setTimeout(() => {
+      console.log('[Init] Rechargement automatique des objets...');
+      loadBoardFromAPI('board_1');
+      loadBoardFromAPI('board_2');
+    }, 2000);
+    
+    return () => clearTimeout(reloadTimeout);
   }, [canvas1, canvas2, token, loadBoardFromAPI]);
 
   // Connecter les WebSockets
