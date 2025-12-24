@@ -558,14 +558,26 @@ const WhiteboardPage = () => {
       }
     };
     
+    const handleTextChanged = async (e) => {
+      if (isApplyingRemoteChangeRef.current) return;
+      
+      const obj = e.target;
+      if (obj.id) {
+        console.log('[Canvas board_1] Texte modifié:', obj.id);
+        await updateObjectAPI('board_1', obj);
+      }
+    };
+    
     canvas1.on('object:added', handleObjectAdded);
     canvas1.on('object:modified', handleObjectModified);
     canvas1.on('object:removed', handleObjectRemoved);
+    canvas1.on('text:changed', handleTextChanged);
     
     return () => {
       canvas1.off('object:added', handleObjectAdded);
       canvas1.off('object:modified', handleObjectModified);
       canvas1.off('object:removed', handleObjectRemoved);
+      canvas1.off('text:changed', handleTextChanged);
     };
   }, [canvas1, createObjectAPI, updateObjectAPI, deleteObjectAPI]);
 
