@@ -119,15 +119,17 @@ frontend:
 
 metadata:
   created_by: "testing_agent"
-  version: "7.0"
-  test_sequence: 7
+  version: "8.0"
+  test_sequence: 8
   run_ui: true
 
 test_plan:
   current_focus:
     - "Whiteboard WebSocket Real-time Sync"
+    - "Whiteboard Text Object Real-time Synchronization"
   stuck_tasks:
     - "Whiteboard WebSocket Real-time Sync"
+    - "Whiteboard Text Object Real-time Synchronization"
   test_all: false
   test_priority: "high_first"
   websearch_needed: true
