@@ -619,22 +619,18 @@ const WhiteboardPage = () => {
       canvas.defaultCursor = 'default';
     } else if (tool === 'pen') {
       canvas.isDrawingMode = true;
-      // Le brush est créé après activation de isDrawingMode, utiliser setTimeout
-      setTimeout(() => {
-        if (canvas.freeDrawingBrush) {
-          canvas.freeDrawingBrush.color = activeColor;
-          canvas.freeDrawingBrush.width = strokeWidth;
-        }
-      }, 0);
+      // Créer et configurer le PencilBrush
+      const brush = new PencilBrush(canvas);
+      brush.color = activeColor;
+      brush.width = strokeWidth;
+      canvas.freeDrawingBrush = brush;
     } else if (tool === 'eraser') {
       canvas.isDrawingMode = true;
-      // Le brush est créé après activation de isDrawingMode, utiliser setTimeout
-      setTimeout(() => {
-        if (canvas.freeDrawingBrush) {
-          canvas.freeDrawingBrush.color = '#ffffff';
-          canvas.freeDrawingBrush.width = strokeWidth * 2;
-        }
-      }, 0);
+      // Créer et configurer le PencilBrush avec couleur blanche
+      const brush = new PencilBrush(canvas);
+      brush.color = '#ffffff';
+      brush.width = strokeWidth * 2;
+      canvas.freeDrawingBrush = brush;
     } else if (tool === 'text') {
       const text = new IText('Texte', {
         left: 100,
