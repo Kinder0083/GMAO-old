@@ -268,35 +268,39 @@ const WhiteboardPage = () => {
         isApplyingRemoteChangeRef.current = true;
         canvas.clear();
         
-        for (const obj of objects) {
-          const denormalized = denormalizeCoordinates(obj.object_data, dimensions.width, dimensions.height);
+        if (objects.length > 0) {
+          // Dénormaliser tous les objets
+          const denormalizedObjects = objects.map(obj => 
+            denormalizeCoordinates(obj.object_data, dimensions.width, dimensions.height)
+          );
           
-          // Créer l'objet Fabric.js en fonction du type
-          let fabricObj = null;
-          if (denormalized.type === 'rect') {
-            fabricObj = new Rect(denormalized);
-          } else if (denormalized.type === 'circle') {
-            fabricObj = new FabricCircle(denormalized);
-          } else if (denormalized.type === 'i-text') {
-            fabricObj = new IText(denormalized.text || '', denormalized);
-          } else if (denormalized.type === 'path') {
-            fabricObj = FabricObject.fromObject(denormalized);
-          }
-          
-          if (fabricObj) {
-            fabricObj.id = obj.id;
-            canvas.add(fabricObj);
-          }
+          // Utiliser enlivenObjects pour reconstruire les objets Fabric.js
+          util.enlivenObjects(denormalizedObjects).then((fabricObjects) => {
+            fabricObjects.forEach((fabricObj, index) => {
+              if (fabricObj) {
+                fabricObj.id = objects[index].id;
+                canvas.add(fabricObj);
+              }
+            });
+            canvas.renderAll();
+            console.log(`[API ${boardId}] ${fabricObjects.length} objets ajoutés au canvas`);
+            
+            setTimeout(() => {
+              isApplyingRemoteChangeRef.current = false;
+            }, 100);
+          }).catch(error => {
+            console.error(`[API ${boardId}] Erreur enlivenObjects:`, error);
+            isApplyingRemoteChangeRef.current = false;
+          });
+        } else {
+          setTimeout(() => {
+            isApplyingRemoteChangeRef.current = false;
+          }, 100);
         }
-        
-        canvas.renderAll();
-        
-        setTimeout(() => {
-          isApplyingRemoteChangeRef.current = false;
-        }, 100);
       }
     } catch (error) {
       console.error(`[API ${boardId}] Erreur chargement:`, error);
+      isApplyingRemoteChangeRef.current = false;
     }
   }, [canvas1, canvas2, token, denormalizeCoordinates]);
 
