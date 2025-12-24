@@ -356,7 +356,18 @@ const WhiteboardPage = () => {
         const existingObj = canvas.getObjects().find(o => o.id === message.object_id);
         if (existingObj) {
           const denormalized = denormalizeCoordinates(message.object_data, dimensions.width, dimensions.height);
-          existingObj.set(denormalized);
+          
+          // Filtrer les propriétés en lecture seule qui ne peuvent pas être modifiées
+          const readOnlyProps = ['type', 'version', 'originX', 'originY'];
+          const updatableProps = {};
+          
+          Object.keys(denormalized).forEach(key => {
+            if (!readOnlyProps.includes(key)) {
+              updatableProps[key] = denormalized[key];
+            }
+          });
+          
+          existingObj.set(updatableProps);
           canvas.renderAll();
           console.log(`[WS ${boardId}] Objet modifié:`, message.object_id);
         }
