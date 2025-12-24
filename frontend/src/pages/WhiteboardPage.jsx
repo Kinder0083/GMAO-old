@@ -430,6 +430,12 @@ const WhiteboardPage = () => {
     ws.onopen = () => {
       console.log(`[WS ${boardId}] Connecté ✅`);
       setWsConnected(prev => ({ ...prev, [boardId]: true }));
+      
+      // Rechargement automatique des objets après connexion WebSocket
+      setTimeout(() => {
+        console.log(`[WS ${boardId}] Rechargement post-connexion...`);
+        loadBoardFromAPI(boardId);
+      }, 500);
     };
     
     ws.onmessage = (event) => {
@@ -450,7 +456,7 @@ const WhiteboardPage = () => {
     };
     
     wsRef.current = ws;
-  }, [user, handleWebSocketMessage]);
+  }, [user, handleWebSocketMessage, loadBoardFromAPI]);
 
   // ==================== INITIALISATION CANVAS ====================
   
