@@ -319,23 +319,21 @@ const WhiteboardPage = () => {
       if (message.type === 'object_added') {
         const denormalized = denormalizeCoordinates(message.object_data, dimensions.width, dimensions.height);
         
-        let fabricObj = null;
-        if (denormalized.type === 'rect') {
-          fabricObj = new Rect(denormalized);
-        } else if (denormalized.type === 'circle') {
-          fabricObj = new FabricCircle(denormalized);
-        } else if (denormalized.type === 'i-text') {
-          fabricObj = new IText(denormalized.text || '', denormalized);
-        } else if (denormalized.type === 'path') {
-          fabricObj = FabricObject.fromObject(denormalized);
-        }
-        
-        if (fabricObj) {
-          fabricObj.id = message.object_id;
-          canvas.add(fabricObj);
-          canvas.renderAll();
-          console.log(`[WS ${boardId}] Objet ajouté:`, message.object_id);
-        }
+        // Utiliser enlivenObjects pour reconstruire l'objet correctement
+        util.enlivenObjects([denormalized]).then((fabricObjects) => {
+          if (fabricObjects && fabricObjects[0]) {
+            fabricObjects[0].id = message.object_id;
+            canvas.add(fabricObjects[0]);
+            canvas.renderAll();
+            console.log(`[WS ${boardId}] Objet ajouté:`, message.object_id);
+          }
+          setTimeout(() => {
+            isApplyingRemoteChangeRef.current = false;
+          }, 100);
+        }).catch(error => {
+          console.error(`[WS ${boardId}] Erreur création objet:`, error);
+          isApplyingRemoteChangeRef.current = false;
+        });
         
       } else if (message.type === 'object_modified') {
         const existingObj = canvas.getObjects().find(o => o.id === message.object_id);
@@ -345,6 +343,9 @@ const WhiteboardPage = () => {
           canvas.renderAll();
           console.log(`[WS ${boardId}] Objet modifié:`, message.object_id);
         }
+        setTimeout(() => {
+          isApplyingRemoteChangeRef.current = false;
+        }, 100);
         
       } else if (message.type === 'object_removed') {
         const objToRemove = canvas.getObjects().find(o => o.id === message.object_id);
@@ -356,18 +357,28 @@ const WhiteboardPage = () => {
           console.warn(`[WS ${boardId}] Objet non trouvé pour suppression:`, message.object_id);
           loadBoardFromAPI(boardId);
         }
+        setTimeout(() => {
+          isApplyingRemoteChangeRef.current = false;
+        }, 100);
         
       } else if (message.type === 'board_cleared') {
         canvas.clear();
         canvas.renderAll();
         console.log(`[WS ${boardId}] Tableau effacé`);
+        setTimeout(() => {
+          isApplyingRemoteChangeRef.current = false;
+        }, 100);
         
       } else if (message.type === 'user_joined' || message.type === 'user_left' || message.type === 'users_list') {
         if (message.users) {
           setConnectedUsers(prev => ({ ...prev, [boardId]: message.users }));
         }
+        setTimeout(() => {
+          isApplyingRemoteChangeRef.current = false;
+        }, 100);
       }
-    } finally {
+    } catch (error) {
+      console.error(`[WS ${boardId}] Erreur traitement message:`, error);
       setTimeout(() => {
         isApplyingRemoteChangeRef.current = false;
       }, 100);
