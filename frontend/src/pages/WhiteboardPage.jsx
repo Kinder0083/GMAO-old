@@ -22,7 +22,12 @@ const API_URL = `${BACKEND_URL}/api/whiteboard`;
 
 // Construire l'URL WebSocket
 const getWebSocketUrl = () => {
-  // Si BACKEND_URL est défini, utiliser son host et protocole
+  // En développement local (localhost), forcer ws://localhost:8001
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'ws://localhost:8001';
+  }
+  
+  // En production, utiliser BACKEND_URL
   if (BACKEND_URL) {
     try {
       const url = new URL(BACKEND_URL);
@@ -33,11 +38,13 @@ const getWebSocketUrl = () => {
     }
   }
   
-  // Fallback pour dev local : utiliser localhost:8001 (port du backend)
+  // Fallback final
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//localhost:8001`;
+  return `${protocol}//${window.location.host}`;
 };
 const WS_URL = getWebSocketUrl();
+
+console.log('[WebSocket] URL configurée:', WS_URL);
 
 // Couleurs disponibles
 const COLORS = [
