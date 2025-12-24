@@ -20,8 +20,15 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API_URL = `${BACKEND_URL}/api/whiteboard`;
 
-// Construire l'URL WebSocket - utiliser window.location pour passer par le proxy
+// Construire l'URL WebSocket - utiliser BACKEND_URL pour la production, window.location pour le dev
 const getWebSocketUrl = () => {
+  // Si BACKEND_URL est défini (production), l'utiliser
+  if (BACKEND_URL) {
+    const url = new URL(BACKEND_URL);
+    const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${url.host}`;
+  }
+  // Sinon (dev local), utiliser window.location
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}`;
 };
