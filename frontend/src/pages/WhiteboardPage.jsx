@@ -21,11 +21,21 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API_URL = `${BACKEND_URL}/api/whiteboard`;
 
 // Construire l'URL WebSocket
-// Dans Emergent preview, utiliser le même host que la page pour passer par l'ingress
 const getWebSocketUrl = () => {
+  // Si BACKEND_URL est défini, utiliser son host et protocole
+  if (BACKEND_URL) {
+    try {
+      const url = new URL(BACKEND_URL);
+      const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${url.host}`;
+    } catch (e) {
+      console.error('Erreur parsing BACKEND_URL:', e);
+    }
+  }
+  
+  // Fallback pour dev local : utiliser localhost:8001 (port du backend)
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host;
-  return `${protocol}//${host}`;
+  return `${protocol}//localhost:8001`;
 };
 const WS_URL = getWebSocketUrl();
 
