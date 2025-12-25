@@ -21,9 +21,16 @@ const WorkOrders = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { canEdit, canDelete } = usePermissions();
-  const [workOrders, setWorkOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  
+  // Utiliser le hook temps réel au lieu de l'ancien système
+  const { 
+    workOrders: allWorkOrders, 
+    loading: isLoading, 
+    wsConnected,
+    refresh: refreshWorkOrders,
+    setWorkOrders: setAllWorkOrders
+  } = useWorkOrders({});
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
