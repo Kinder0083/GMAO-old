@@ -1146,6 +1146,16 @@ async def delete_work_order(wo_id: str, current_user: dict = Depends(require_per
             details=f"Ordre de travail #{wo.get('numero')} supprimé"
         )
         
+        # Émettre événement temps réel
+        from realtime_manager import realtime_manager
+        from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+        await realtime_manager.emit_event(
+            RealtimeEntityType.WORK_ORDERS.value,
+            RealtimeEventType.DELETED.value,
+            {"id": str(wo["_id"])},
+            user_id=current_user.get("id")
+        )
+        
         return {"message": "Ordre de travail supprimé"}
     except HTTPException:
         raise
