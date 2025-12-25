@@ -215,8 +215,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       isConnectingRef.current = false;
       setWsConnected(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval]);
+  }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval, fetchDataFn]);
 
   /**
    * Initialisation - S'exécute une seule fois au montage
