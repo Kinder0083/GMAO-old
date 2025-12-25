@@ -151,11 +151,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Work Orders WiFi Status Icon"
+    - "Migration des pages vers WebSocket"
   stuck_tasks:
     - "Whiteboard WebSocket Real-time Sync"
     - "Whiteboard Text Object Real-time Synchronization"
-    - "Work Orders WiFi Status Icon"
   test_all: false
   test_priority: "high_first"
   websearch_needed: false
