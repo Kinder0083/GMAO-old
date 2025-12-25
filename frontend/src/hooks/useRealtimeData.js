@@ -204,7 +204,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         if (fallbackPolling && !pollingIntervalRef.current) {
           console.log(`[Realtime ${entityType}] Activation polling de secours`);
           pollingIntervalRef.current = setInterval(() => {
-            fetchDataFn().then(result => setData(result)).catch(console.error);
+            fetchDataFnRef.current().then(result => setData(result)).catch(console.error);
           }, pollingInterval);
         }
       };
