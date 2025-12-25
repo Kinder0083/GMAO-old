@@ -228,27 +228,9 @@ const WorkOrders = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Ordres de travail</h1>
-            <p className="text-gray-600 mt-1">Gérez vos interventions et maintenances</p>
-          </div>
-          
-          {/* Indicateur de synchronisation temps réel */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                {wsConnected ? (
-                  <Wifi className="h-5 w-5 text-green-500" />
-                ) : (
-                  <WifiOff className="h-5 w-5 text-gray-400" />
-                )}
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{wsConnected ? 'Synchronisation temps réel active' : 'Mode hors ligne'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Ordres de travail</h1>
+          <p className="text-gray-600 mt-1">Gérez vos interventions et maintenances</p>
         </div>
         {canEdit('workOrders') && (
           <Button 
