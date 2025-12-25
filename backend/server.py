@@ -375,7 +375,7 @@ async def login(login_request: LoginRequest):
         user_name=f"{user['prenom']} {user['nom']}",
         user_email=user["email"],
         action=ActionType.LOGIN,
-        entity_type=EntityType.USER,
+        entity_type=AuditEntityType.USER,
         entity_id=user.get("id", str(user["_id"])),
         entity_name=f"{user['prenom']} {user['nom']}"
     )
