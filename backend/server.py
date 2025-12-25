@@ -1035,6 +1035,32 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         if wo.get("equipement_id"):
             wo["equipement"] = await get_equipment_by_id(wo["equipement_id"])
         
+        # Émettre événement temps réel
+        from realtime_manager import realtime_manager
+        from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+        
+        # Si changement de statut, émettre événement spécifique
+        if "statut" in update_data and existing_wo.get("statut") != update_data["statut"]:
+            await realtime_manager.emit_event(
+                RealtimeEntityType.WORK_ORDERS.value,
+                RealtimeEventType.STATUS_CHANGED.value,
+                {
+                    "id": wo["id"],
+                    "old_status": existing_wo.get("statut"),
+                    "new_status": update_data["statut"],
+                    "work_order": wo
+                },
+                user_id=current_user.get("id")
+            )
+        
+        # Émettre événement de mise à jour générale
+        await realtime_manager.emit_event(
+            RealtimeEntityType.WORK_ORDERS.value,
+            RealtimeEventType.UPDATED.value,
+            wo,
+            user_id=current_user.get("id")
+        )
+        
         return WorkOrder(**wo)
     except HTTPException:
         raise
