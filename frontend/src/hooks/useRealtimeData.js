@@ -42,7 +42,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
    */
   const loadData = useCallback(async () => {
     try {
-      const result = await fetchDataFn();
+      const result = await fetchDataFnRef.current();
       setData(result);
       setError(null);
       
@@ -55,7 +55,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       setError(err.message);
       setLoading(false);
     }
-  }, [entityType, fetchDataFn]);
+  }, [entityType]);
 
   /**
    * Gérer les messages WebSocket
