@@ -67,15 +67,18 @@ frontend:
     
   - task: "Work Orders WiFi Status Icon"
     implemented: true
-    working: true
+    working: false
     file: "frontend/src/hooks/useRealtimeData.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "✅ FIXED - WiFi status icon now displays correctly (green when connected). Root cause was React hook dependency chains causing infinite re-renders. Fixed by using refs to store callbacks and simplified useEffect dependencies."
+      - working: false
+        agent: "testing"
+        comment: "❌ WIFI ICON NOT VISIBLE - Comprehensive testing reveals: ✅ Login successful (admin@test.com / password) ✅ Work Orders page loads correctly with title 'Ordres de travail' ✅ Work orders data displays properly (16 work orders shown) ✅ WebSocket URL configuration detected in console logs ❌ CRITICAL: WiFi icon not visible in header area next to title ❌ No WiFi icon found in DOM inspection ❌ WebSocket connection status cannot be verified without visible icon. The WiFi icon implementation in WorkOrders.jsx (lines 238-252) may not be rendering correctly. The wsConnected state from useWorkOrders hook may not be working as expected."
 
   - task: "Work Orders WebSocket Real-time Synchronization"
     implemented: true
