@@ -47,7 +47,7 @@ const WorkOrders = () => {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
   useEffect(() => {
-    loadWorkOrders();
+    refreshWorkOrders();
   }, [dateFilter, dateType, customStartDate, customEndDate]);
 
   // Gérer l'ouverture automatique d'un ordre via l'URL ?open=id
@@ -150,7 +150,7 @@ const WorkOrders = () => {
         title: 'Succès',
         description: 'Ordre de travail supprimé'
       });
-      loadWorkOrders();
+      refreshWorkOrders();
     } catch (error) {
       toast({
         title: 'Erreur',
