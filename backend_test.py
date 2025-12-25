@@ -401,18 +401,17 @@ class WorkOrdersWebSocketTester:
         return results
 
 if __name__ == "__main__":
-    tester = InviteMemberTester()
-    results = tester.run_invite_member_tests()
+    tester = WorkOrdersWebSocketTester()
+    results = tester.run_websocket_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "invite_success", "duplicate_email", 
-        "invalid_role", "invalid_email", "token_validation"
+        "admin_login", "websocket_connection", "work_orders_api", "realtime_sync"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
     
-    if critical_passed >= len(critical_tests) - 1:  # Allow 1 failure
+    if critical_passed >= len(critical_tests):
         exit(0)  # Success
     else:
         exit(1)  # Failure
