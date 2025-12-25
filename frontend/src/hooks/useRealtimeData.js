@@ -27,10 +27,15 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   const wsRef = useRef(null);
   const pollingIntervalRef = useRef(null);
   const isInitialMount = useRef(true);
+  const isConnectingRef = useRef(false); // Éviter les connexions multiples
 
   // Obtenir l'utilisateur et le backend URL
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+  
+  // Stocker les options dans une ref pour éviter les recréations infinies
+  const optionsRef = useRef({ onCreated, onUpdated, onDeleted, onStatusChanged });
+  optionsRef.current = { onCreated, onUpdated, onDeleted, onStatusChanged };
 
   /**
    * Charger les données depuis l'API
