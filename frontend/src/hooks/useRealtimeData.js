@@ -27,15 +27,18 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   const wsRef = useRef(null);
   const pollingIntervalRef = useRef(null);
   const isInitialMount = useRef(true);
-  const isConnectingRef = useRef(false); // Éviter les connexions multiples
+  const isConnectingRef = useRef(false);
+  
+  // IMPORTANT: Déclarer les refs AVANT leur utilisation
+  const fetchDataFnRef = useRef(fetchDataFn);
+  fetchDataFnRef.current = fetchDataFn;
+  
+  const optionsRef = useRef({ onCreated, onUpdated, onDeleted, onStatusChanged });
+  optionsRef.current = { onCreated, onUpdated, onDeleted, onStatusChanged };
 
   // Obtenir l'utilisateur et le backend URL
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-  
-  // Stocker les options dans une ref pour éviter les recréations infinies
-  const optionsRef = useRef({ onCreated, onUpdated, onDeleted, onStatusChanged });
-  optionsRef.current = { onCreated, onUpdated, onDeleted, onStatusChanged };
 
   /**
    * Charger les données depuis l'API
@@ -77,7 +80,6 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
           if (onCreated) {
             onCreated(message.data);
           } else {
-            // Comportement par défaut: ajouter au début de la liste
             setData(prevData => [message.data, ...prevData]);
           }
           console.log(`[Realtime ${entityType}] Item créé:`, message.data.id);
@@ -87,7 +89,6 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
           if (onUpdated) {
             onUpdated(message.data);
           } else {
-            // Comportement par défaut: mettre à jour dans la liste
             setData(prevData =>
               prevData.map(item =>
                 item.id === message.data.id ? message.data : item
@@ -101,7 +102,6 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
           if (onDeleted) {
             onDeleted(message.data.id);
           } else {
-            // Comportement par défaut: retirer de la liste
             setData(prevData =>
               prevData.filter(item => item.id !== message.data.id)
             );
@@ -217,10 +217,6 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
     }
   }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval]);
 
-  // Stocker fetchDataFn dans une ref pour l'utiliser dans les callbacks sans dépendances
-  const fetchDataFnRef = useRef(fetchDataFn);
-  fetchDataFnRef.current = fetchDataFn;
-
   /**
    * Initialisation - S'exécute une seule fois au montage
    */
@@ -257,7 +253,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       
       isConnectingRef.current = false;
     };
-  }, [entityType]);
+  }, [entityType, connectWebSocket]);
 
   /**
    * Envoyer un ping pour garder la connexion active
@@ -269,7 +265,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 30000); // Ping toutes les 30 secondes
+    }, 30000);
 
     return () => clearInterval(pingInterval);
   }, [wsConnected]);
@@ -287,7 +283,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
     error,
     wsConnected,
     refresh,
-    setData, // Permettre la mise à jour manuelle si nécessaire
+    setData,
   };
 };
 
