@@ -937,7 +937,7 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
         user_name=f"{current_user['prenom']} {current_user['nom']}",
         user_email=current_user["email"],
         action=ActionType.CREATE,
-        entity_type=EntityType.WORK_ORDER,
+        entity_type=AuditEntityType.WORK_ORDER,
         entity_id=wo_dict.get("id"),
         entity_name=wo_dict["titre"],
         details=f"Ordre de travail #{numero} créé"
@@ -1033,7 +1033,7 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.UPDATE,
-            entity_type=EntityType.WORK_ORDER,
+            entity_type=AuditEntityType.WORK_ORDER,
             entity_id=existing_wo.get("id"),
             entity_name=existing_wo["titre"],
             details=f"Modifications: {changes_desc}",
@@ -1113,7 +1113,7 @@ async def add_time_to_work_order(wo_id: str, time_data: AddTimeSpent, current_us
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.UPDATE,
-            entity_type=EntityType.WORK_ORDER,
+            entity_type=AuditEntityType.WORK_ORDER,
             entity_id=str(existing_wo["_id"]),
             entity_name=existing_wo["titre"],
             details=f"Ajout de temps passé: {time_data.hours}h{time_data.minutes:02d}min",
@@ -1155,7 +1155,7 @@ async def delete_work_order(wo_id: str, current_user: dict = Depends(require_per
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.DELETE,
-            entity_type=EntityType.WORK_ORDER,
+            entity_type=AuditEntityType.WORK_ORDER,
             entity_id=wo.get("id"),
             entity_name=wo.get("titre", ""),
             details=f"Ordre de travail #{wo.get('numero')} supprimé"
@@ -2627,7 +2627,7 @@ async def set_password_permanent(
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.UPDATE,
-            entity_type=EntityType.USER,
+            entity_type=AuditEntityType.USER,
             entity_id=user_id,
             entity_name=f"{user.get('prenom', '')} {user.get('nom', '')}".strip(),
             details=f"Mot de passe temporaire conservé comme permanent",
@@ -2683,7 +2683,7 @@ async def reset_password_admin(
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.UPDATE,
-            entity_type=EntityType.USER,
+            entity_type=AuditEntityType.USER,
             entity_id=user_id,
             entity_name=f"{user.get('prenom', '')} {user.get('nom', '')}".strip(),
             details=f"Réinitialisation du mot de passe par l'administrateur",
@@ -5057,7 +5057,7 @@ async def add_work_order_comment(
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.UPDATE,
-            entity_type=EntityType.WORK_ORDER,
+            entity_type=AuditEntityType.WORK_ORDER,
             entity_id=work_order_id,
             entity_name=work_order.get("titre", ""),
             details=details_text
@@ -5134,7 +5134,7 @@ async def add_work_order_parts(
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.UPDATE,
-            entity_type=EntityType.WORK_ORDER,
+            entity_type=AuditEntityType.WORK_ORDER,
             entity_id=work_order_id,
             entity_name=work_order.get("titre", ""),
             details=f"{len(parts_used_list)} pièce(s) utilisée(s) ajoutée(s)"
@@ -5206,7 +5206,7 @@ async def create_meter(meter: MeterCreate, current_user: dict = Depends(require_
             user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
             user_email=current_user["email"],
             action=ActionType.CREATE,
-            entity_type=EntityType.WORK_ORDER,  # Utilisons WORK_ORDER comme proxy
+            entity_type=AuditEntityType.WORK_ORDER,  # Utilisons WORK_ORDER comme proxy
             entity_id=meter_id,
             entity_name=meter.nom
         )
@@ -5273,7 +5273,7 @@ async def update_meter(
         user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
         user_email=current_user["email"],
         action=ActionType.UPDATE,
-        entity_type=EntityType.WORK_ORDER,
+        entity_type=AuditEntityType.WORK_ORDER,
         entity_id=meter_id,
         entity_name=updated_meter["nom"]
     )
@@ -5296,7 +5296,7 @@ async def delete_meter(meter_id: str, current_user: dict = Depends(require_permi
         user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
         user_email=current_user["email"],
         action=ActionType.DELETE,
-        entity_type=EntityType.WORK_ORDER,
+        entity_type=AuditEntityType.WORK_ORDER,
         entity_id=meter_id,
         entity_name=meter["nom"]
     )
@@ -5532,7 +5532,7 @@ async def create_intervention_request(
             user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
             user_email=current_user["email"],
             action=ActionType.CREATE,
-            entity_type=EntityType.WORK_ORDER,
+            entity_type=AuditEntityType.WORK_ORDER,
             entity_id=request_id,
             entity_name=request.titre,
             details=f"Création demande d'intervention"
@@ -5605,7 +5605,7 @@ async def update_intervention_request(
         user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
         user_email=current_user["email"],
         action=ActionType.UPDATE,
-        entity_type=EntityType.WORK_ORDER,
+        entity_type=AuditEntityType.WORK_ORDER,
         entity_id=request_id,
         entity_name=updated_req['titre'],
         details=f"Modification demande d'intervention"
@@ -5628,7 +5628,7 @@ async def delete_intervention_request(request_id: str, current_user: dict = Depe
         user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
         user_email=current_user["email"],
         action=ActionType.DELETE,
-        entity_type=EntityType.WORK_ORDER,
+        entity_type=AuditEntityType.WORK_ORDER,
         entity_id=request_id,
         entity_name=req['titre'],
         details=f"Suppression demande d'intervention"
