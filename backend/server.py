@@ -6600,6 +6600,44 @@ async def whiteboard_websocket(websocket: WebSocket, board_id: str):
         logger.error(f"Erreur WebSocket whiteboard: {e}")
         await whiteboard_manager.disconnect(board_id, user_id)
 
+# WebSocket Centralisé pour toutes les entités temps réel
+from realtime_manager import realtime_manager
+from realtime_events import EntityType
+
+@app.websocket("/ws/realtime/{entity_type}")
+async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: str):
+    """
+    WebSocket centralisé pour la synchronisation temps réel de toutes les entités
+    
+    Args:
+        entity_type: Type d'entité (work_orders, equipments, etc.)
+        user_id: ID de l'utilisateur connecté
+    """
+    try:
+        # Valider le type d'entité
+        if entity_type not in [e.value for e in EntityType]:
+            await websocket.close(code=1008, reason=f"Invalid entity type: {entity_type}")
+            return
+        
+        # Connecter l'utilisateur
+        await realtime_manager.connect(entity_type, user_id, websocket)
+        
+        # Garder la connexion ouverte
+        while True:
+            # Recevoir les messages du client (pour ping/pong ou autres commandes)
+            data = await websocket.receive_json()
+            
+            # Gérer les commandes spéciales si nécessaire
+            if data.get("type") == "ping":
+                await realtime_manager.send_to_user(entity_type, user_id, {"type": "pong"})
+            
+    except WebSocketDisconnect:
+        realtime_manager.disconnect(entity_type, user_id)
+        logger.info(f"[Realtime] WebSocket déconnecté: {entity_type}/{user_id}")
+    except Exception as e:
+        logger.error(f"[Realtime] Erreur WebSocket {entity_type}/{user_id}: {e}")
+        realtime_manager.disconnect(entity_type, user_id)
+
 # WebSocket pour le Chat Live
 from websocket_manager import manager as chat_manager
 
