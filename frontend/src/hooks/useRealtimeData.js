@@ -66,12 +66,12 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       const message = JSON.parse(event.data);
       console.log(`[Realtime ${entityType}] Message reçu:`, message.type);
 
+      const { onCreated, onUpdated, onDeleted, onStatusChanged } = optionsRef.current;
+
       switch (message.type) {
         case 'connected':
           console.log(`[Realtime ${entityType}] Connecté ✅`);
           setWsConnected(true);
-          // Recharger les données après connexion pour être sûr d'avoir les dernières
-          loadData();
           break;
 
         case 'created':
@@ -113,9 +113,6 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         case 'status_changed':
           if (onStatusChanged) {
             onStatusChanged(message.data);
-          } else {
-            // Recharger les données pour avoir le statut à jour
-            loadData();
           }
           console.log(`[Realtime ${entityType}] Statut changé:`, message.data);
           break;
@@ -134,7 +131,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
     } catch (err) {
       console.error(`[Realtime ${entityType}] Erreur traitement message:`, err);
     }
-  }, [entityType, onCreated, onUpdated, onDeleted, onStatusChanged, loadData]);
+  }, [entityType]);
 
   /**
    * Connecter au WebSocket
