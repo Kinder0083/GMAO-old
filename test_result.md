@@ -145,14 +145,13 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Whiteboard WebSocket Real-time Sync"
-    - "Whiteboard Text Object Real-time Synchronization"
+    - "Work Orders WebSocket Real-time Synchronization"
   stuck_tasks:
     - "Whiteboard WebSocket Real-time Sync"
     - "Whiteboard Text Object Real-time Synchronization"
   test_all: false
   test_priority: "high_first"
-  websearch_needed: true
+  websearch_needed: false
 
 agent_communication:
   - agent: "testing"
