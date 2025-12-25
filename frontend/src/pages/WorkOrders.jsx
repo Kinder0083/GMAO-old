@@ -26,7 +26,6 @@ const WorkOrders = () => {
   const { 
     workOrders: allWorkOrders, 
     loading: isLoading, 
-    wsConnected,
     refresh: refreshWorkOrders,
     setWorkOrders: setAllWorkOrders
   } = useWorkOrders({});
