@@ -215,14 +215,18 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       isConnectingRef.current = false;
       setWsConnected(false);
     }
-  }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval, fetchDataFn]);
+  }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval]);
+
+  // Stocker fetchDataFn dans une ref pour l'utiliser dans les callbacks sans dépendances
+  const fetchDataFnRef = useRef(fetchDataFn);
+  fetchDataFnRef.current = fetchDataFn;
 
   /**
    * Initialisation - S'exécute une seule fois au montage
    */
   useEffect(() => {
     // Charger les données initiales
-    fetchDataFn().then(result => {
+    fetchDataFnRef.current().then(result => {
       setData(result);
       setLoading(false);
       isInitialMount.current = false;
@@ -253,7 +257,8 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       
       isConnectingRef.current = false;
     };
-  }, [entityType, fetchDataFn, connectWebSocket]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityType]);
 
   /**
    * Envoyer un ping pour garder la connexion active
