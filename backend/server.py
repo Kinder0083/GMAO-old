@@ -22,7 +22,22 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 # Import our models and dependencies
-from models import *
+from models import (
+    EntityType as AuditEntityType,
+    ActionType,
+    Token, LoginRequest, ChangePasswordRequest, UserCreate, UserUpdate,
+    WorkOrder, WorkOrderCreate, WorkOrderUpdate, Equipment, EquipmentCreate,
+    EquipmentUpdate, MaintenanceTask, MaintenanceTaskCreate, MaintenanceTaskUpdate,
+    InterventionRequest, InterventionRequestCreate, InterventionRequestUpdate,
+    ImprovementRequest, ImprovementRequestCreate, ImprovementRequestUpdate,
+    Improvement, ImprovementCreate, ImprovementUpdate, Location, LocationCreate,
+    LocationUpdate, Vendor, VendorCreate, VendorUpdate, InventoryItem,
+    InventoryItemCreate, InventoryItemUpdate, PurchaseHistory, PurchaseHistoryCreate,
+    SurveillancePlan, SurveillancePlanCreate, SurveillanceReport,
+    SurveillanceReportCreate, PresquAccident, PresquAccidentCreate, 
+    Documentation, DocumentationCreate, TeamSchedule, TeamScheduleCreate,
+    User, Alert
+)
 from auth import get_password_hash, verify_password, create_access_token, decode_access_token
 import dependencies
 from dependencies import get_current_user, get_current_admin_user, check_permission, require_permission
