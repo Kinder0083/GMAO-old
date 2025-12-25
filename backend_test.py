@@ -85,7 +85,8 @@ class WorkOrdersWebSocketTester:
         self.ws_connection_logs.append(f"[Realtime work_orders] Connexion à: {ws_url_with_params}")
         
         try:
-            async with websockets.connect(ws_url_with_params, timeout=10) as websocket:
+            # Use connect_timeout instead of timeout
+            async with websockets.connect(ws_url_with_params, connect_timeout=10) as websocket:
                 self.log("[Realtime work_orders] WebSocket ouvert")
                 self.ws_connection_logs.append("[Realtime work_orders] WebSocket ouvert")
                 
