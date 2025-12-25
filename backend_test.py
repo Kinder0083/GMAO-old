@@ -309,15 +309,12 @@ class WorkOrdersWebSocketTester:
         created_wo = self.test_create_work_order()
         results["create_work_order"] = created_wo is not None
         
-        # Test 5: Real-time Sync Simulation
-        if results["websocket_connection"]:
-            try:
-                results["realtime_sync"] = asyncio.run(self.test_realtime_sync_simulation())
-            except Exception as e:
-                self.log(f"❌ Real-time sync test failed: {str(e)}", "ERROR")
-                results["realtime_sync"] = False
-        else:
-            self.log("⏭️ Skipping real-time sync test - WebSocket connection failed")
+        # Test 5: Real-time Infrastructure
+        try:
+            results["realtime_sync"] = asyncio.run(self.test_realtime_sync_simulation())
+        except Exception as e:
+            self.log(f"❌ Real-time infrastructure test failed: {str(e)}", "ERROR")
+            results["realtime_sync"] = False
         
         # Summary
         self.log("=" * 80)
