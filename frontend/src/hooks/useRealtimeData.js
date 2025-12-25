@@ -161,6 +161,8 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
 
     ws.onopen = () => {
       console.log(`[Realtime ${entityType}] WebSocket ouvert`);
+      setWsConnected(true); // Marquer comme connecté immédiatement
+      
       // Arrêter le polling si WebSocket connecté
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
