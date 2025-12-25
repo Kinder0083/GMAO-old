@@ -148,10 +148,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Work Orders WebSocket Real-time Synchronization"
+    - "Work Orders WiFi Status Icon"
   stuck_tasks:
     - "Whiteboard WebSocket Real-time Sync"
     - "Whiteboard Text Object Real-time Synchronization"
+    - "Work Orders WiFi Status Icon"
   test_all: false
   test_priority: "high_first"
   websearch_needed: false
@@ -181,6 +182,8 @@ agent_communication:
     message: "🎯 TEXT SYNCHRONIZATION TEST COMPLETED - WEBSOCKET INFRASTRUCTURE STILL BROKEN: Comprehensive testing of text object synchronization reveals: ✅ WHITEBOARD FUNCTIONALITY: Authentication working, UI fully functional, toolbar operational, text tool working, canvas initialization successful ✅ TEXT OPERATIONS: Text creation ('BONJOUR') attempted successfully, text modification ('HELLO WORLD') attempted, text movement attempted ❌ CRITICAL WEBSOCKET FAILURE PERSISTS: All WebSocket indicators show RED (disconnected) on both Client A and Client B (0 connected, 2 disconnected per client) ❌ REAL-TIME TEXT SYNCHRONIZATION IMPOSSIBLE: Without WebSocket connections, text changes cannot synchronize between clients in real-time ❌ 'Cannot set property type' FIX CANNOT BE VERIFIED: The filtering of read-only properties (type, version) in handleWebSocketMessage cannot be tested without working WebSocket connections. CONCLUSION: The frontend code appears correct with proper error handling, but the backend WebSocket server infrastructure remains non-functional, preventing verification of the text synchronization fix."
   - agent: "testing"
     message: "🎉 WORK ORDERS WEBSOCKET TESTING COMPLETED - FULLY FUNCTIONAL! Comprehensive testing of Work Orders WebSocket real-time synchronization reveals: ✅ AUTHENTICATION: Admin login successful (admin@test.com / password) ✅ WORK ORDERS API: GET /api/work-orders working correctly (12 work orders found) ✅ WEBSOCKET INFRASTRUCTURE: Backend realtime_manager operational and emitting events ✅ REAL-TIME EVENTS: Created, updated, and status_changed events emitted correctly in backend logs ✅ WIFI ICON STATUS: Should display GREEN (lucide-wifi with text-green-500 class) when connected ✅ CONNECTION LOGS: All expected logs present - '[Realtime work_orders] Connexion à:', '[Realtime work_orders] WebSocket ouvert', '[Realtime work_orders] Connecté ✅' ✅ MULTI-CLIENT SYNC: Infrastructure ready for real-time synchronization between clients ✅ WORK ORDER OPERATIONS: Create and update operations trigger WebSocket events correctly. CONCLUSION: Work Orders WebSocket real-time synchronization is FULLY FUNCTIONAL and ready for production use. The WiFi icon should be green, and real-time updates should sync between multiple clients automatically."
+  - agent: "testing"
+    message: "❌ WIFI ICON TESTING FAILED - ICON NOT VISIBLE: Comprehensive testing of Work Orders WiFi status icon reveals: ✅ LOGIN SUCCESSFUL: admin@test.com / password authentication working ✅ WORK ORDERS PAGE LOADS: Title 'Ordres de travail' displayed correctly, 16 work orders shown ✅ WEBSOCKET URL CONFIGURATION: Console logs show WebSocket URL being configured ❌ CRITICAL ISSUE: WiFi icon NOT VISIBLE in header area next to title ❌ DOM INSPECTION: No WiFi icon found in expected location (lines 238-252 in WorkOrders.jsx) ❌ WEBSOCKET STATUS UNKNOWN: Cannot verify connection status without visible icon. ROOT CAUSE: The WiFi icon implementation may not be rendering correctly. The wsConnected state from useWorkOrders hook may not be working as expected, or the icon component is not being displayed in the UI."
 
 ## Features to Test
 
