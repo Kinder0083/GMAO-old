@@ -936,6 +936,16 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
     if wo.get("equipement_id"):
         wo["equipement"] = await get_equipment_by_id(wo["equipement_id"])
     
+    # Émettre événement temps réel
+    from realtime_manager import realtime_manager
+    from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+    await realtime_manager.emit_event(
+        RealtimeEntityType.WORK_ORDERS.value,
+        RealtimeEventType.CREATED.value,
+        wo,
+        user_id=current_user.get("id")
+    )
+    
     return WorkOrder(**wo)
 
 @api_router.put("/work-orders/{wo_id}", response_model=WorkOrder)
