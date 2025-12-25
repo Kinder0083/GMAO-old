@@ -203,7 +203,7 @@ agent_communication:
 ## Test Credentials ✅ WORKING
 - Email: admin@test.com
 - Password: password
-- Frontend URL: https://board-fix.preview.emergentagent.com/whiteboard
+- Frontend URL: https://realtimesync.preview.emergentagent.com/whiteboard
 
 ## Test Results Summary
 1. **Delete Key Synchronization**: ❌ CRITICAL - Delete key not removing objects from canvas
@@ -249,8 +249,8 @@ agent_communication:
 - WebSocket: /ws/whiteboard/board_1 ❌ Connection establishment failing
 
 ## Network Activity Observed
-- POST https://board-fix.preview.emergentagent.com/api/whiteboard/board/board_1/sync (Working)
-- GET https://board-fix.preview.emergentagent.com/api/whiteboard/board/board_1 (Working, 5s intervals)
+- POST https://realtimesync.preview.emergentagent.com/api/whiteboard/board/board_1/sync (Working)
+- GET https://realtimesync.preview.emergentagent.com/api/whiteboard/board/board_1 (Working, 5s intervals)
 - WebSocket wss://whitesync.preview.emergentagent.com/ws/whiteboard/board_1 (Failing)
 
 ## Console Logs Analysis
