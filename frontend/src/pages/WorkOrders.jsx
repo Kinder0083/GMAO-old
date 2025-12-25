@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Plus, Search, Filter, Eye, Pencil, Trash2, Calendar, ArrowUpDown, Paperclip, Wifi, WifiOff } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Pencil, Trash2, Calendar, ArrowUpDown, Paperclip } from 'lucide-react';
 import WorkOrderDialog from '../components/WorkOrders/WorkOrderDialog';
 import WorkOrderFormDialog from '../components/WorkOrders/WorkOrderFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
