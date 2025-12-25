@@ -220,11 +220,19 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval]);
 
   /**
-   * Initialisation
+   * Initialisation - S'exécute une seule fois au montage
    */
   useEffect(() => {
     // Charger les données initiales
-    loadData();
+    fetchDataFn().then(result => {
+      setData(result);
+      setLoading(false);
+      isInitialMount.current = false;
+    }).catch(err => {
+      console.error(`[Realtime ${entityType}] Erreur chargement initial:`, err);
+      setError(err.message);
+      setLoading(false);
+    });
 
     // Connecter au WebSocket après un court délai
     const wsTimeout = setTimeout(() => {
@@ -237,13 +245,18 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
       
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
+      
+      isConnectingRef.current = false;
     };
-  }, [loadData, connectWebSocket]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityType]);
 
   /**
    * Envoyer un ping pour garder la connexion active
