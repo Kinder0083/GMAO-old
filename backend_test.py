@@ -185,8 +185,8 @@ class WorkOrdersWebSocketTester:
         
         try:
             # Simulate two clients connecting
-            async with websockets.connect(ws_url_with_params, timeout=10) as client1, \
-                       websockets.connect(ws_url_with_params, timeout=10) as client2:
+            async with websockets.connect(ws_url_with_params, connect_timeout=10) as client1, \
+                       websockets.connect(ws_url_with_params, connect_timeout=10) as client2:
                 
                 self.log("✅ Both WebSocket clients connected")
                 
