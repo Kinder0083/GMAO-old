@@ -64,6 +64,18 @@ frontend:
     stuck_count: 6
     priority: "high"
     needs_retesting: false
+    
+  - task: "Work Orders WiFi Status Icon"
+    implemented: true
+    working: true
+    file: "frontend/src/hooks/useRealtimeData.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "✅ FIXED - WiFi status icon now displays correctly (green when connected). Root cause was React hook dependency chains causing infinite re-renders. Fixed by using refs to store callbacks and simplified useEffect dependencies."
     status_history:
       - working: "NA"
         agent: "testing"
