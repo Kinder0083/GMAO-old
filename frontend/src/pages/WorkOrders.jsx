@@ -552,14 +552,14 @@ const WorkOrders = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         workOrder={selectedWorkOrder}
-        onSuccess={loadWorkOrders}
+        onSuccess={refreshWorkOrders}
       />
 
       <WorkOrderFormDialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         workOrder={selectedWorkOrder}
-        onSuccess={loadWorkOrders}
+        onSuccess={refreshWorkOrders}
       />
 
       <DeleteConfirmDialog
