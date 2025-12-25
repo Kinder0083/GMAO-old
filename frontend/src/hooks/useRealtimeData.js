@@ -55,7 +55,8 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       setError(err.message);
       setLoading(false);
     }
-  }, [entityType, fetchDataFn]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityType]);
 
   /**
    * Gérer les messages WebSocket
