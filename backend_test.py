@@ -85,30 +85,34 @@ class WorkOrdersWebSocketTester:
         self.ws_connection_logs.append(f"[Realtime work_orders] Connexion à: {ws_url_with_params}")
         
         try:
-            # Use connect_timeout instead of timeout
-            async with websockets.connect(ws_url_with_params, connect_timeout=10) as websocket:
-                self.log("[Realtime work_orders] WebSocket ouvert")
-                self.ws_connection_logs.append("[Realtime work_orders] WebSocket ouvert")
+            # Simple connection without timeout parameter
+            websocket = await websockets.connect(ws_url_with_params)
+            
+            self.log("[Realtime work_orders] WebSocket ouvert")
+            self.ws_connection_logs.append("[Realtime work_orders] WebSocket ouvert")
+            
+            # Wait for connection confirmation
+            try:
+                message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+                data = json.loads(message)
                 
-                # Wait for connection confirmation
-                try:
-                    message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-                    data = json.loads(message)
-                    
-                    if data.get('type') == 'connected':
-                        self.log("[Realtime work_orders] Connecté ✅")
-                        self.ws_connection_logs.append("[Realtime work_orders] Connecté ✅")
-                        self.ws_connected = True
-                        self.ws_messages.append(data)
-                        return True
-                    else:
-                        self.log(f"❌ Unexpected message type: {data.get('type')}", "ERROR")
-                        return False
-                        
-                except asyncio.TimeoutError:
-                    self.log("❌ Timeout waiting for connection confirmation", "ERROR")
+                if data.get('type') == 'connected':
+                    self.log("[Realtime work_orders] Connecté ✅")
+                    self.ws_connection_logs.append("[Realtime work_orders] Connecté ✅")
+                    self.ws_connected = True
+                    self.ws_messages.append(data)
+                    await websocket.close()
+                    return True
+                else:
+                    self.log(f"❌ Unexpected message type: {data.get('type')}", "ERROR")
+                    await websocket.close()
                     return False
                     
+            except asyncio.TimeoutError:
+                self.log("❌ Timeout waiting for connection confirmation", "ERROR")
+                await websocket.close()
+                return False
+                
         except Exception as e:
             self.log(f"❌ WebSocket connection failed: {str(e)}", "ERROR")
             return False
