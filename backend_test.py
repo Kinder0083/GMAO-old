@@ -189,76 +189,84 @@ class WorkOrdersWebSocketTester:
         
         try:
             # Simulate two clients connecting
-            async with websockets.connect(ws_url_with_params, connect_timeout=10) as client1, \
-                       websockets.connect(ws_url_with_params, connect_timeout=10) as client2:
+            client1 = await websockets.connect(ws_url_with_params)
+            client2 = await websockets.connect(ws_url_with_params)
+            
+            self.log("✅ Both WebSocket clients connected")
+            
+            # Wait for connection confirmations
+            try:
+                msg1 = await asyncio.wait_for(client1.recv(), timeout=5.0)
+                msg2 = await asyncio.wait_for(client2.recv(), timeout=5.0)
                 
-                self.log("✅ Both WebSocket clients connected")
+                client1_messages.append(json.loads(msg1))
+                client2_messages.append(json.loads(msg2))
                 
-                # Wait for connection confirmations
-                try:
-                    msg1 = await asyncio.wait_for(client1.recv(), timeout=5.0)
-                    msg2 = await asyncio.wait_for(client2.recv(), timeout=5.0)
+                self.log("✅ Both clients received connection confirmations")
+                
+                # Now create a work order and see if both clients receive the update
+                created_wo = self.test_create_work_order()
+                
+                if created_wo:
+                    self.log("⏳ Waiting for real-time updates...")
                     
-                    client1_messages.append(json.loads(msg1))
-                    client2_messages.append(json.loads(msg2))
-                    
-                    self.log("✅ Both clients received connection confirmations")
-                    
-                    # Now create a work order and see if both clients receive the update
-                    created_wo = self.test_create_work_order()
-                    
-                    if created_wo:
-                        self.log("⏳ Waiting for real-time updates...")
+                    # Wait for real-time messages
+                    try:
+                        # Set up listeners for both clients
+                        async def listen_client1():
+                            try:
+                                while True:
+                                    msg = await asyncio.wait_for(client1.recv(), timeout=2.0)
+                                    client1_messages.append(json.loads(msg))
+                            except asyncio.TimeoutError:
+                                pass
                         
-                        # Wait for real-time messages
-                        try:
-                            # Set up listeners for both clients
-                            async def listen_client1():
-                                try:
-                                    while True:
-                                        msg = await asyncio.wait_for(client1.recv(), timeout=2.0)
-                                        client1_messages.append(json.loads(msg))
-                                except asyncio.TimeoutError:
-                                    pass
-                            
-                            async def listen_client2():
-                                try:
-                                    while True:
-                                        msg = await asyncio.wait_for(client2.recv(), timeout=2.0)
-                                        client2_messages.append(json.loads(msg))
-                                except asyncio.TimeoutError:
-                                    pass
-                            
-                            # Listen for 5 seconds
-                            await asyncio.gather(
-                                asyncio.wait_for(listen_client1(), timeout=5.0),
-                                asyncio.wait_for(listen_client2(), timeout=5.0),
-                                return_exceptions=True
-                            )
-                            
-                        except Exception as e:
-                            self.log(f"Listening completed: {str(e)}")
+                        async def listen_client2():
+                            try:
+                                while True:
+                                    msg = await asyncio.wait_for(client2.recv(), timeout=2.0)
+                                    client2_messages.append(json.loads(msg))
+                            except asyncio.TimeoutError:
+                                pass
                         
-                        # Check if clients received real-time updates
-                        created_messages_client1 = [msg for msg in client1_messages if msg.get('type') == 'created']
-                        created_messages_client2 = [msg for msg in client2_messages if msg.get('type') == 'created']
+                        # Listen for 5 seconds
+                        await asyncio.gather(
+                            asyncio.wait_for(listen_client1(), timeout=5.0),
+                            asyncio.wait_for(listen_client2(), timeout=5.0),
+                            return_exceptions=True
+                        )
                         
-                        if created_messages_client1 and created_messages_client2:
-                            self.log("✅ Both clients received real-time 'created' events")
-                            return True
-                        else:
-                            self.log(f"❌ Real-time sync failed - Client1 msgs: {len(created_messages_client1)}, Client2 msgs: {len(created_messages_client2)}")
-                            self.log(f"   Client1 messages: {[msg.get('type') for msg in client1_messages]}")
-                            self.log(f"   Client2 messages: {[msg.get('type') for msg in client2_messages]}")
-                            return False
+                    except Exception as e:
+                        self.log(f"Listening completed: {str(e)}")
+                    
+                    # Check if clients received real-time updates
+                    created_messages_client1 = [msg for msg in client1_messages if msg.get('type') == 'created']
+                    created_messages_client2 = [msg for msg in client2_messages if msg.get('type') == 'created']
+                    
+                    if created_messages_client1 and created_messages_client2:
+                        self.log("✅ Both clients received real-time 'created' events")
+                        await client1.close()
+                        await client2.close()
+                        return True
                     else:
-                        self.log("❌ Failed to create work order for real-time testing")
+                        self.log(f"❌ Real-time sync failed - Client1 msgs: {len(created_messages_client1)}, Client2 msgs: {len(created_messages_client2)}")
+                        self.log(f"   Client1 messages: {[msg.get('type') for msg in client1_messages]}")
+                        self.log(f"   Client2 messages: {[msg.get('type') for msg in client2_messages]}")
+                        await client1.close()
+                        await client2.close()
                         return False
-                        
-                except asyncio.TimeoutError:
-                    self.log("❌ Timeout waiting for connection confirmations", "ERROR")
+                else:
+                    self.log("❌ Failed to create work order for real-time testing")
+                    await client1.close()
+                    await client2.close()
                     return False
                     
+            except asyncio.TimeoutError:
+                self.log("❌ Timeout waiting for connection confirmations", "ERROR")
+                await client1.close()
+                await client2.close()
+                return False
+                
         except Exception as e:
             self.log(f"❌ Real-time sync test failed: {str(e)}", "ERROR")
             return False
