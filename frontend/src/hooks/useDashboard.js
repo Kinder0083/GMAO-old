@@ -1,12 +1,13 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { workOrdersAPI, equipmentsAPI, reportsAPI } from '../services/api';
+import { usePermissions } from './usePermissions';
 
 /**
  * Hook pour le tableau de bord avec synchronisation temps réel
  * Charge les données de plusieurs sources et les rafraîchit automatiquement
  */
-export const useDashboard = (options = {}) => {
-  const { canView = () => true } = options;
+export const useDashboard = () => {
+  const { canView } = usePermissions();
   
   const [workOrders, setWorkOrders] = useState([]);
   const [equipments, setEquipments] = useState([]);
@@ -27,50 +28,35 @@ export const useDashboard = (options = {}) => {
 
       const promises = [];
 
-      // Work Orders
-      if (canView('workOrders')) {
-        promises.push(
-          workOrdersAPI.getAll()
-            .then(res => ({ type: 'workOrders', data: res?.data || [] }))
-            .catch(err => {
-              console.error('[useDashboard] Erreur work orders:', err);
-              return { type: 'workOrders', data: [] };
-            })
-        );
-      }
+      // Work Orders - toujours charger, les permissions seront vérifiées côté affichage
+      promises.push(
+        workOrdersAPI.getAll()
+          .then(res => ({ type: 'workOrders', data: res?.data || [] }))
+          .catch(err => {
+            console.error('[useDashboard] Erreur work orders:', err);
+            return { type: 'workOrders', data: [] };
+          })
+      );
 
       // Equipments
-      if (canView('assets')) {
-        promises.push(
-          equipmentsAPI.getAll()
-            .then(res => ({ type: 'equipments', data: res?.data || [] }))
-            .catch(err => {
-              console.error('[useDashboard] Erreur equipments:', err);
-              return { type: 'equipments', data: [] };
-            })
-        );
-      }
+      promises.push(
+        equipmentsAPI.getAll()
+          .then(res => ({ type: 'equipments', data: res?.data || [] }))
+          .catch(err => {
+            console.error('[useDashboard] Erreur equipments:', err);
+            return { type: 'equipments', data: [] };
+          })
+      );
 
       // Analytics
-      if (canView('reports')) {
-        promises.push(
-          reportsAPI.getAnalytics()
-            .then(res => ({ type: 'analytics', data: res?.data || null }))
-            .catch(err => {
-              console.error('[useDashboard] Erreur analytics:', err);
-              return { type: 'analytics', data: null };
-            })
-        );
-      }
-
-      if (promises.length === 0) {
-        setWorkOrders([]);
-        setEquipments([]);
-        setAnalytics(null);
-        setLoading(false);
-        isFirstLoad.current = false;
-        return;
-      }
+      promises.push(
+        reportsAPI.getAnalytics()
+          .then(res => ({ type: 'analytics', data: res?.data || null }))
+          .catch(err => {
+            console.error('[useDashboard] Erreur analytics:', err);
+            return { type: 'analytics', data: null };
+          })
+      );
 
       const results = await Promise.all(promises);
 
@@ -93,7 +79,7 @@ export const useDashboard = (options = {}) => {
         isFirstLoad.current = false;
       }
     }
-  }, [canView]);
+  }, []);
 
   // Chargement initial et polling automatique
   useEffect(() => {
@@ -120,7 +106,7 @@ export const useDashboard = (options = {}) => {
     equipments,
     analytics,
     loading,
-    wsConnected: false, // Pas de WebSocket pour le moment, juste polling
+    canView, // Exporter canView pour que le composant puisse l'utiliser
     refresh,
   };
 };
