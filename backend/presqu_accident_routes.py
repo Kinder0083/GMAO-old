@@ -127,6 +127,15 @@ async def create_presqu_accident_item(
         if "_id" in item_dict:
             del item_dict["_id"]
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "near_miss",
+                "created",
+                item_dict,
+                user_id=current_user["id"]
+            )
+        
         return item_dict
     except Exception as e:
         logger.error(f"Erreur création presqu'accident: {str(e)}")
