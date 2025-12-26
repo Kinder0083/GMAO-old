@@ -22,7 +22,7 @@ WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/purchase_requ
 ADMIN_EMAIL = "admin@test.com"
 ADMIN_PASSWORD = "password"
 
-class WorkOrdersWebSocketTester:
+class PurchaseRequestsWebSocketTester:
     def __init__(self):
         self.admin_session = requests.Session()
         self.admin_token = None
