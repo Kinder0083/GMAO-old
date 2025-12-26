@@ -1857,6 +1857,14 @@ async def create_location(loc_create: LocationCreate, current_user: dict = Depen
     loc_data['level'] = 0
     loc_data['hasChildren'] = False
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "zones",
+        "created",
+        loc_data,
+        user_id=current_user["id"]
+    )
+    
     return Location(**loc_data)
 
 @api_router.put("/locations/{loc_id}", response_model=Location)
