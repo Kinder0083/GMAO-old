@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Backend API Testing Script for GMAO Iris
-Tests the Documentations (Pôles de Service) WebSocket real-time synchronization functionality
+Tests Dashboard and Documentations pages functionality as requested in review
 """
 
 import requests
