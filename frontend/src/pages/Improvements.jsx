@@ -9,7 +9,7 @@ import ImprovementFormDialog from '../components/Improvements/ImprovementFormDia
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { improvementsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { useImprovements } from '../hooks/useImprovements';
 import { useSearchParams } from 'react-router-dom';
 import AvatarInitials from '../components/ui/avatar-initials';
 import { formatTimeToHoursMinutes } from '../utils/timeFormat';
@@ -18,9 +18,6 @@ import { formatErrorMessage } from '../utils/errorFormatter';
 const Improvements = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [improvements, setImprovements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,9 +33,12 @@ const Improvements = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
-  useEffect(() => {
-    loadImprovements();
-  }, [dateFilter, dateType, customStartDate, customEndDate]);
+  // Utiliser le hook temps réel
+  const { 
+    improvements, 
+    loading, 
+    refresh: refreshImprovements 
+  } = useImprovements();
 
   // Gérer l'ouverture automatique d'un ordre via l'URL ?open=id
   useEffect(() => {
