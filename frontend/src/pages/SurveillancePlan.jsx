@@ -83,35 +83,11 @@ function SurveillancePlan() {
   }, [location.state]);
 
   useEffect(() => {
-    applyFilters();
-    extractCategories();
-  }, [items, filters, showOverdueFilter]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // D'abord, vérifier et mettre à jour automatiquement les statuts selon les échéances
-      await surveillanceAPI.checkDueDates().catch(err => {
-        console.warn('Erreur vérification échéances (non bloquant):', err);
-      });
-      
-      // Ensuite, charger toutes les données
-      const [itemsData, statsData, alertsData] = await Promise.all([
-        surveillanceAPI.getItems(),
-        surveillanceAPI.getStats(),
-        surveillanceAPI.getAlerts()
-      ]);
-      setItems(itemsData);
-      setStats(statsData);
-      setAlerts(alertsData.alerts || []);
-    } catch (error) {
-      console.error('Erreur chargement données:', error);
-      toast({ title: 'Erreur', description: 'Erreur lors du chargement', variant: 'destructive' });
-    } finally {
-      setLoading(false);
+    if (items) {
+      applyFilters();
+      extractCategories();
     }
-  };
+  }, [items, filters, showOverdueFilter]);
 
   const applyFilters = () => {
     let filtered = [...items];
