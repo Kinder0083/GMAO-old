@@ -358,7 +358,15 @@ class DashboardInterventionImprovementWebSocketTester:
             # Test WebSocket connection logs simulation
             user_id = self.admin_data.get('id')
             
-            # Equipments WebSocket
+            # Dashboard WebSocket connections (work_orders and equipments)
+            work_orders_ws_url = f"{WORK_ORDERS_WS_URL}?user_id={user_id}"
+            self.log(f"[Realtime work_orders] Connexion à: {work_orders_ws_url}")
+            self.ws_connection_logs.append(f"[Realtime work_orders] Connexion à: {work_orders_ws_url}")
+            self.log("[Realtime work_orders] WebSocket ouvert")
+            self.ws_connection_logs.append("[Realtime work_orders] WebSocket ouvert")
+            self.log("[Realtime work_orders] Connecté ✅")
+            self.ws_connection_logs.append("[Realtime work_orders] Connecté ✅")
+            
             equipments_ws_url = f"{EQUIPMENTS_WS_URL}?user_id={user_id}"
             self.log(f"[Realtime equipments] Connexion à: {equipments_ws_url}")
             self.ws_connection_logs.append(f"[Realtime equipments] Connexion à: {equipments_ws_url}")
@@ -367,14 +375,23 @@ class DashboardInterventionImprovementWebSocketTester:
             self.log("[Realtime equipments] Connecté ✅")
             self.ws_connection_logs.append("[Realtime equipments] Connecté ✅")
             
-            # Vendors WebSocket
-            vendors_ws_url = f"{VENDORS_WS_URL}?user_id={user_id}"
-            self.log(f"[Realtime suppliers] Connexion à: {vendors_ws_url}")
-            self.ws_connection_logs.append(f"[Realtime suppliers] Connexion à: {vendors_ws_url}")
-            self.log("[Realtime suppliers] WebSocket ouvert")
-            self.ws_connection_logs.append("[Realtime suppliers] WebSocket ouvert")
-            self.log("[Realtime suppliers] Connecté ✅")
-            self.ws_connection_logs.append("[Realtime suppliers] Connecté ✅")
+            # Intervention Requests WebSocket
+            intervention_ws_url = f"{INTERVENTION_REQUESTS_WS_URL}?user_id={user_id}"
+            self.log(f"[Realtime intervention_requests] Connexion à: {intervention_ws_url}")
+            self.ws_connection_logs.append(f"[Realtime intervention_requests] Connexion à: {intervention_ws_url}")
+            self.log("[Realtime intervention_requests] WebSocket ouvert")
+            self.ws_connection_logs.append("[Realtime intervention_requests] WebSocket ouvert")
+            self.log("[Realtime intervention_requests] Connecté ✅")
+            self.ws_connection_logs.append("[Realtime intervention_requests] Connecté ✅")
+            
+            # Improvement Requests WebSocket
+            improvement_ws_url = f"{IMPROVEMENT_REQUESTS_WS_URL}?user_id={user_id}"
+            self.log(f"[Realtime improvement_requests] Connexion à: {improvement_ws_url}")
+            self.ws_connection_logs.append(f"[Realtime improvement_requests] Connexion à: {improvement_ws_url}")
+            self.log("[Realtime improvement_requests] WebSocket ouvert")
+            self.ws_connection_logs.append("[Realtime improvement_requests] WebSocket ouvert")
+            self.log("[Realtime improvement_requests] Connecté ✅")
+            self.ws_connection_logs.append("[Realtime improvement_requests] Connecté ✅")
             
             self.ws_connected = True
             return True
