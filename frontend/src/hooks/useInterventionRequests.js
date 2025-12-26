@@ -28,22 +28,8 @@ export const useInterventionRequests = (options = {}) => {
   }, []);
 
   /**
-   * Handlers personnalisés pour les événements
-   */
-  const handleCreated = useCallback((newRequest) => {
-    console.log('[useInterventionRequests] Nouvelle demande créée:', newRequest);
-  }, []);
-
-  const handleUpdated = useCallback((updatedRequest) => {
-    console.log('[useInterventionRequests] Demande mise à jour:', updatedRequest);
-  }, []);
-
-  const handleDeleted = useCallback((deletedId) => {
-    console.log('[useInterventionRequests] Demande supprimée:', deletedId);
-  }, []);
-
-  /**
-   * Utiliser le hook générique avec handlers personnalisés
+   * Utiliser le hook générique avec le comportement par défaut
+   * (pas de handlers personnalisés pour laisser useRealtimeData gérer les mises à jour)
    */
   const {
     data: interventionRequests,
@@ -56,9 +42,6 @@ export const useInterventionRequests = (options = {}) => {
     enableWebSocket: true,
     fallbackPolling: true,
     pollingInterval: 30000,
-    onCreated: handleCreated,
-    onUpdated: handleUpdated,
-    onDeleted: handleDeleted,
   });
 
   return {
