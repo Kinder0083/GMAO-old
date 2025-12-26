@@ -324,14 +324,14 @@ const ImprovementRequests = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         request={selectedRequest}
-        onSuccess={loadRequests}
+        onSuccess={refreshRequests}
       />
 
       <ConvertToImprovementDialog
         open={convertDialogOpen}
         onOpenChange={setConvertDialogOpen}
         request={selectedRequest}
-        onSuccess={loadRequests}
+        onSuccess={refreshRequests}
       />
 
       <DeleteConfirmDialog
