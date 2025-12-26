@@ -73,44 +73,74 @@ class DashboardInterventionImprovementWebSocketTester:
             self.log(f"❌ Admin login request failed - Error: {str(e)}", "ERROR")
             return False
 
-    def test_equipments_api(self):
-        """TEST: Equipments API Test"""
-        self.log("🧪 TEST: Equipments API Test")
+    def test_dashboard_data_sources(self):
+        """TEST: Dashboard Data Sources Test"""
+        self.log("🧪 TEST: Dashboard Data Sources Test")
         
         try:
-            # Test GET /api/equipments
-            response = self.admin_session.get(f"{BACKEND_URL}/equipments", timeout=10)
+            # Test work orders for dashboard
+            response = self.admin_session.get(f"{BACKEND_URL}/work-orders", timeout=10)
             
             if response.status_code == 200:
-                equipments = response.json()
-                self.log(f"✅ GET /api/equipments successful - Found {len(equipments)} equipments")
-                return True
+                work_orders = response.json()
+                self.log(f"✅ GET /api/work-orders successful - Found {len(work_orders)} work orders")
+                
+                # Test equipments for dashboard
+                response = self.admin_session.get(f"{BACKEND_URL}/equipments", timeout=10)
+                
+                if response.status_code == 200:
+                    equipments = response.json()
+                    self.log(f"✅ GET /api/equipments successful - Found {len(equipments)} equipments")
+                    return True
+                else:
+                    self.log(f"❌ GET /api/equipments failed - Status: {response.status_code}", "ERROR")
+                    return False
             else:
-                self.log(f"❌ GET /api/equipments failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ GET /api/work-orders failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Equipments API request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Dashboard data sources request failed - Error: {str(e)}", "ERROR")
             return False
 
-    def test_vendors_api(self):
-        """TEST: Vendors API Test"""
-        self.log("🧪 TEST: Vendors API Test")
+    def test_intervention_requests_api(self):
+        """TEST: Intervention Requests API Test"""
+        self.log("🧪 TEST: Intervention Requests API Test")
         
         try:
-            # Test GET /api/vendors
-            response = self.admin_session.get(f"{BACKEND_URL}/vendors", timeout=10)
+            # Test GET /api/intervention-requests
+            response = self.admin_session.get(f"{BACKEND_URL}/intervention-requests", timeout=10)
             
             if response.status_code == 200:
-                vendors = response.json()
-                self.log(f"✅ GET /api/vendors successful - Found {len(vendors)} vendors")
+                intervention_requests = response.json()
+                self.log(f"✅ GET /api/intervention-requests successful - Found {len(intervention_requests)} intervention requests")
                 return True
             else:
-                self.log(f"❌ GET /api/vendors failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ GET /api/intervention-requests failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Vendors API request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Intervention Requests API request failed - Error: {str(e)}", "ERROR")
+            return False
+
+    def test_improvement_requests_api(self):
+        """TEST: Improvement Requests API Test"""
+        self.log("🧪 TEST: Improvement Requests API Test")
+        
+        try:
+            # Test GET /api/improvement-requests
+            response = self.admin_session.get(f"{BACKEND_URL}/improvement-requests", timeout=10)
+            
+            if response.status_code == 200:
+                improvement_requests = response.json()
+                self.log(f"✅ GET /api/improvement-requests successful - Found {len(improvement_requests)} improvement requests")
+                return True
+            else:
+                self.log(f"❌ GET /api/improvement-requests failed - Status: {response.status_code}", "ERROR")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Improvement Requests API request failed - Error: {str(e)}", "ERROR")
             return False
 
     def test_create_equipment(self):
