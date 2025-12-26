@@ -27,67 +27,22 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import api from '../services/api';
+import { useIoTDashboard } from '../hooks/useIoTDashboard';
 
 const IoTDashboard = () => {
-  const [sensors, setSensors] = useState([]);
-  const [sensorReadings, setSensorReadings] = useState({});
-  const [statistics, setStatistics] = useState({});
-  const [groupsByType, setGroupsByType] = useState([]);
-  const [groupsByLocation, setGroupsByLocation] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(24); // heures
   const [activeTab, setActiveTab] = useState('overview'); // overview, groups-type, groups-location
 
-  useEffect(() => {
-    loadDashboardData();
-    
-    // Auto-refresh toutes les 30 secondes
-    const interval = setInterval(loadDashboardData, 30000);
-    return () => clearInterval(interval);
-  }, [timeRange]);
-
-  const loadDashboardData = async () => {
-    try {
-      // Charger tous les capteurs et groupes
-      const [sensorsResponse, groupsTypeResponse, groupsLocationResponse] = await Promise.all([
-        api.sensors.getAll(),
-        api.sensors.getGroupsByType(),
-        api.sensors.getGroupsByLocation()
-      ]);
-      
-      const allSensors = sensorsResponse.data;
-      setGroupsByType(groupsTypeResponse.data.groups || []);
-      setGroupsByLocation(groupsLocationResponse.data.groups || []);
-      setSensors(allSensors);
-
-      // Charger les relevés et statistiques pour chaque capteur
-      const readingsPromises = allSensors.map(sensor =>
-        api.sensors.getReadings(sensor.id, 100, timeRange)
-      );
-      const statsPromises = allSensors.map(sensor =>
-        api.sensors.getStatistics(sensor.id, timeRange)
-      );
-
-      const readingsResults = await Promise.all(readingsPromises);
-      const statsResults = await Promise.all(statsPromises);
-
-      // Organiser les données par sensor_id
-      const readingsMap = {};
-      const statsMap = {};
-      
-      allSensors.forEach((sensor, index) => {
-        readingsMap[sensor.id] = readingsResults[index].data;
-        statsMap[sensor.id] = statsResults[index].data;
-      });
-
-      setSensorReadings(readingsMap);
-      setStatistics(statsMap);
-    } catch (error) {
-      console.error('Erreur chargement dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Utiliser le hook temps réel
+  const {
+    sensors,
+    sensorReadings,
+    statistics,
+    groupsByType,
+    groupsByLocation,
+    loading,
+    refresh: loadDashboardData
+  } = useIoTDashboard(timeRange);
 
   const getKPICards = () => {
     const activeSensors = sensors.filter(s => s.actif).length;
