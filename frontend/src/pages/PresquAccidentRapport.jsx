@@ -16,8 +16,7 @@ const PresquAccidentRapport = () => {
   const [displayMode, setDisplayMode] = useState(() => {
     return localStorage.getItem('presqu_accident_rapport_display_mode') || 'cards';
   });
-  const previousItemsLengthRef = useRef(null);
-  const isInitialLoadRef = useRef(true);
+  const previousItemsRef = useRef(null);
 
   // Utiliser le hook temps réel pour détecter les changements
   const { items, loading: itemsLoading } = usePresquAccident();
@@ -42,28 +41,24 @@ const PresquAccidentRapport = () => {
   // Charger les stats au montage
   useEffect(() => {
     loadStats();
-    isInitialLoadRef.current = false;
   }, []);
 
   // Recharger les stats quand les items changent (via WebSocket)
   useEffect(() => {
-    // Ignorer le premier rendu
-    if (isInitialLoadRef.current) return;
+    // Ignorer si encore en chargement initial
+    if (itemsLoading || items === null) return;
     
-    // Ignorer si encore en chargement
-    if (itemsLoading) return;
+    // Créer une signature des données pour détecter les changements
+    const currentSignature = JSON.stringify(items.map(i => ({ id: i.id, status: i.status, severite: i.severite })));
     
-    // Calculer la longueur actuelle
-    const currentLength = items ? items.length : 0;
-    
-    // Si la longueur a changé, recharger les stats
-    if (previousItemsLengthRef.current !== null && previousItemsLengthRef.current !== currentLength) {
-      console.log('[Rapport] Items changed:', previousItemsLengthRef.current, '->', currentLength);
+    // Si les données ont changé, recharger les stats
+    if (previousItemsRef.current !== null && previousItemsRef.current !== currentSignature) {
+      console.log('[Rapport P.Accident] Données changées, rechargement des stats');
       loadStats();
     }
     
     // Mettre à jour la référence
-    previousItemsLengthRef.current = currentLength;
+    previousItemsRef.current = currentSignature;
   }, [items, itemsLoading, loadStats]);
 
   useEffect(() => {
