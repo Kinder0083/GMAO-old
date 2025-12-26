@@ -457,14 +457,14 @@ const Improvements = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         workOrder={selectedImprovement}
-        onSuccess={loadImprovements}
+        onSuccess={refreshImprovements}
       />
 
       <ImprovementFormDialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         workOrder={selectedImprovement}
-        onSuccess={loadImprovements}
+        onSuccess={refreshImprovements}
       />
 
       <DeleteConfirmDialog
