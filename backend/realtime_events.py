@@ -51,6 +51,7 @@ class EntityType(str, Enum):
     COUNTERS = "counters"
     SURVEILLANCE_PLANS = "surveillance_plans"
     SURVEILLANCE_REPORTS = "surveillance_reports"
+    SENSORS = "sensors"
     NEAR_MISS = "near_miss"
     NEAR_MISS_REPORTS = "near_miss_reports"
     DOCUMENTATIONS = "documentations"
