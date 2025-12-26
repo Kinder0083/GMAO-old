@@ -847,6 +847,9 @@ agent_communication:
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/improvement_requests (Working)
 
 ## Console Logs Analysis
+- ✅ "[Realtime documentations] Connexion à:" - WebSocket connection initiated
+- ✅ "[Realtime documentations] WebSocket ouvert" - WebSocket opened successfully
+- ✅ "[Realtime documentations] Connecté ✅" - WebSocket connected successfully
 - ✅ "[Realtime equipments] Connexion à:" - WebSocket connection initiated
 - ✅ "[Realtime equipments] WebSocket ouvert" - WebSocket opened successfully
 - ✅ "[Realtime equipments] Connecté ✅" - WebSocket connected successfully
