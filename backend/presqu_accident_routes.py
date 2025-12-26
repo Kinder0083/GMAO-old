@@ -191,6 +191,15 @@ async def update_presqu_accident_item(
         if "_id" in updated_item:
             del updated_item["_id"]
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "near_miss",
+                "updated",
+                updated_item,
+                user_id=current_user["id"]
+            )
+        
         return updated_item
     except HTTPException:
         raise
