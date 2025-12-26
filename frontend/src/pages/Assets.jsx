@@ -438,7 +438,7 @@ const Assets = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         equipment={selectedEquipment}
-        onSuccess={loadEquipments}
+        onSuccess={refreshEquipments}
         parentId={parentForNewChild?.id}
         defaultLocation={parentForNewChild?.emplacement_id}
       />
