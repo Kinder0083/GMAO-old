@@ -481,6 +481,8 @@ test_plan:
   websearch_needed: false
 
 agent_communication:
+  - agent: "main"
+    message: "🔧 BUG FIXES COMPLETED - Fixed 3 critical bugs: 1) Flash/flicker on PreventiveMaintenance dialog fixed by refactoring useConfirmDialog hook to use useRef for stable state. 2) Improvements creation form now closes properly after fixing EntityType.IMPROVEMENT typo (should be IMPROVEMENTS). 3) Inventory WebSocket sync is now working properly."
   - agent: "testing"
     message: "🎯 STARTING EQUIPMENTS & VENDORS WEBSOCKET TESTING - Testing real-time WebSocket synchronization on Equipments (Assets) and Vendors (Suppliers) pages. Will test page load, WebSocket connection logs, real-time CRUD operations, and multi-client synchronization. Using admin@test.com credentials for comprehensive testing."
   - agent: "testing"
