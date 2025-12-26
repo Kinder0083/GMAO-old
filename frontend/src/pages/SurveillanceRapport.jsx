@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -7,17 +7,36 @@ import { surveillanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
-import { useSurveillanceRapport } from '../hooks/useSurveillanceRapport';
 
 const SurveillanceRapport = () => {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
   const [displayMode, setDisplayMode] = useState(() => {
     // Récupérer le mode d'affichage sauvegardé ou utiliser 'cards' par défaut
     return localStorage.getItem('surveillance_rapport_display_mode') || 'cards';
   });
 
-  // Utiliser le hook temps réel
-  const { stats, loading, refresh: loadStats } = useSurveillanceRapport();
+  const loadStats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await surveillanceAPI.getRapportStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Erreur chargement statistiques:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Impossible de charger les statistiques'
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   // Sauvegarder le mode d'affichage choisi
   useEffect(() => {
