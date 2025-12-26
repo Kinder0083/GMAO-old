@@ -398,44 +398,68 @@ agent_communication:
 - Backend API URL: https://realtimesync.preview.emergentagent.com/api
 
 ## Test Results Summary
-1. **Page Load Test**: ✅ WORKING - Purchase Requests page loads correctly with data
-2. **WebSocket Connection**: ✅ WORKING - Connection established with correct logs
-3. **Real-time CRUD**: ✅ WORKING - All operations trigger WebSocket events
-4. **Backend API Endpoints**: ✅ WORKING - All CRUD endpoints functional
-5. **Multi-client Infrastructure**: ✅ READY - Backend and frontend infrastructure operational
+1. **Equipments Page Load Test**: ✅ WORKING - Equipments page loads correctly with data
+2. **Vendors Page Load Test**: ✅ WORKING - Vendors page loads correctly with data
+3. **Equipments WebSocket Connection**: ✅ WORKING - Connection established with correct logs
+4. **Vendors WebSocket Connection**: ✅ WORKING - Connection established with correct logs
+5. **Equipments Real-time CRUD**: ✅ WORKING - All operations trigger WebSocket events
+6. **Vendors Real-time CRUD**: ✅ WORKING - All operations trigger WebSocket events
+7. **Equipments Backend API Endpoints**: ✅ WORKING - All CRUD endpoints functional
+8. **Vendors Backend API Endpoints**: ✅ WORKING - All CRUD endpoints functional
+9. **Multi-client Infrastructure**: ✅ READY - Backend and frontend infrastructure operational
+10. **Purchase Requests WebSocket**: ✅ WORKING - Previously tested and confirmed working
 
 ## Working Features
 
-### 1. Purchase Requests API
+### 1. Equipments API
+**Status**: ✅ Fully functional
+**Evidence**: All CRUD endpoints working, proper authentication and authorization
+**Functionality**: GET, POST, PUT, PATCH, DELETE operations all working correctly
+
+### 2. Vendors API
 **Status**: ✅ Fully functional
 **Evidence**: All CRUD endpoints working, proper authentication and authorization
 **Functionality**: GET, POST, PUT, DELETE operations all working correctly
 
-### 2. WebSocket Infrastructure
+### 3. WebSocket Infrastructure
 **Status**: ✅ Fully functional
 **Evidence**: Backend realtime_manager emitting events, frontend hooks configured
 **Functionality**: Real-time event emission for created, updated, status_changed, deleted
 
-### 3. Frontend Integration
+### 4. Frontend Integration
 **Status**: ✅ Fully functional
-**Evidence**: usePurchaseRequests hook properly configured with useRealtimeData
-**Functionality**: Page loads correctly, WebSocket connection established, real-time updates ready
+**Evidence**: useEquipments and useVendors hooks properly configured with useRealtimeData
+**Functionality**: Pages load correctly, WebSocket connections established, real-time updates ready
 
 ## Test Files
-- Frontend: /app/frontend/src/pages/PurchaseRequests.jsx ✅ Page loads correctly
-- Frontend Hook: /app/frontend/src/hooks/usePurchaseRequests.js ✅ WebSocket integration working
-- Backend API: /app/backend/purchase_request_routes.py ✅ All endpoints working
-- WebSocket: /ws/realtime/purchase_requests ✅ Connection establishment working
+- Frontend: /app/frontend/src/pages/Assets.jsx ✅ Page loads correctly
+- Frontend: /app/frontend/src/pages/Vendors.jsx ✅ Page loads correctly
+- Frontend Hook: /app/frontend/src/hooks/useEquipments.js ✅ WebSocket integration working
+- Frontend Hook: /app/frontend/src/hooks/useVendors.js ✅ WebSocket integration working
+- Backend API: /app/backend/server.py ✅ All endpoints working
+- WebSocket: /ws/realtime/equipments ✅ Connection establishment working
+- WebSocket: /ws/realtime/suppliers ✅ Connection establishment working
 
 ## Network Activity Observed
-- GET https://realtimesync.preview.emergentagent.com/api/purchase-requests (Working)
-- POST https://realtimesync.preview.emergentagent.com/api/purchase-requests (Working)
-- PUT https://realtimesync.preview.emergentagent.com/api/purchase-requests/{id}/status (Working)
-- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/purchase_requests (Working)
+- GET https://realtimesync.preview.emergentagent.com/api/equipments (Working)
+- POST https://realtimesync.preview.emergentagent.com/api/equipments (Working)
+- PATCH https://realtimesync.preview.emergentagent.com/api/equipments/{id}/status (Working)
+- DELETE https://realtimesync.preview.emergentagent.com/api/equipments/{id} (Working)
+- GET https://realtimesync.preview.emergentagent.com/api/vendors (Working)
+- POST https://realtimesync.preview.emergentagent.com/api/vendors (Working)
+- PUT https://realtimesync.preview.emergentagent.com/api/vendors/{id} (Working)
+- DELETE https://realtimesync.preview.emergentagent.com/api/vendors/{id} (Working)
+- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments (Working)
+- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/suppliers (Working)
 
 ## Console Logs Analysis
-- ✅ "[Realtime purchase_requests] Connexion à:" - WebSocket connection initiated
-- ✅ "[Realtime purchase_requests] WebSocket ouvert" - WebSocket opened successfully
-- ✅ "[Realtime purchase_requests] Connecté ✅" - WebSocket connected successfully
-- ✅ Backend logs show "Event created émis pour purchase_requests" - Events emitted correctly
-- ✅ Backend logs show "Event status_changed émis pour purchase_requests" - Status changes emitted
+- ✅ "[Realtime equipments] Connexion à:" - WebSocket connection initiated
+- ✅ "[Realtime equipments] WebSocket ouvert" - WebSocket opened successfully
+- ✅ "[Realtime equipments] Connecté ✅" - WebSocket connected successfully
+- ✅ "[Realtime suppliers] Connexion à:" - WebSocket connection initiated
+- ✅ "[Realtime suppliers] WebSocket ouvert" - WebSocket opened successfully
+- ✅ "[Realtime suppliers] Connecté ✅" - WebSocket connected successfully
+- ✅ Backend logs show "Event created émis pour equipments" - Events emitted correctly
+- ✅ Backend logs show "Event status_changed émis pour equipments" - Status changes emitted
+- ✅ Backend logs show "Event created émis pour suppliers" - Events emitted correctly
+- ✅ Backend logs show "Event updated émis pour suppliers" - Updates emitted correctly
