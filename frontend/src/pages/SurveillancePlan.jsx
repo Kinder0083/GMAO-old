@@ -90,6 +90,7 @@ function SurveillancePlan() {
   }, [items, filters, showOverdueFilter]);
 
   const applyFilters = () => {
+    if (!items) return;
     let filtered = [...items];
     
     // Filtre spécial : contrôles en retard
