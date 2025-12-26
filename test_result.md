@@ -696,8 +696,20 @@ agent_communication:
 - POST https://realtimesync.preview.emergentagent.com/api/vendors (Working)
 - PUT https://realtimesync.preview.emergentagent.com/api/vendors/{id} (Working)
 - DELETE https://realtimesync.preview.emergentagent.com/api/vendors/{id} (Working)
+- GET https://realtimesync.preview.emergentagent.com/api/work-orders (Working)
+- GET https://realtimesync.preview.emergentagent.com/api/intervention-requests (Working)
+- POST https://realtimesync.preview.emergentagent.com/api/intervention-requests (Working)
+- PUT https://realtimesync.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- DELETE https://realtimesync.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- GET https://realtimesync.preview.emergentagent.com/api/improvement-requests (Working)
+- POST https://realtimesync.preview.emergentagent.com/api/improvement-requests (Working)
+- PUT https://realtimesync.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- DELETE https://realtimesync.preview.emergentagent.com/api/improvement-requests/{id} (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/suppliers (Working)
+- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/work_orders (Working)
+- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/intervention_requests (Working)
+- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/improvement_requests (Working)
 
 ## Console Logs Analysis
 - ✅ "[Realtime equipments] Connexion à:" - WebSocket connection initiated
