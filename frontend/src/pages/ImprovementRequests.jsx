@@ -64,7 +64,12 @@ const ImprovementRequests = () => {
 
   const handleWorkOrderClick = (workOrderId) => {
     // Naviguer vers les ordres de travail avec l'ID de l'ordre à ouvrir
-    navigate(`/improvements?open=${workOrderId}`);
+    navigate(`/work-orders?open=${workOrderId}`);
+  };
+
+  const handleImprovementClick = (improvementId) => {
+    // Naviguer vers les améliorations avec l'ID de l'amélioration à ouvrir
+    navigate(`/improvements?open=${improvementId}`);
   };
 
   const filteredRequests = requests.filter(req => {
