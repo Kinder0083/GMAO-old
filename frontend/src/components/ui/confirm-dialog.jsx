@@ -60,7 +60,7 @@ export function useConfirmDialog() {
     variant: 'default'
   });
 
-  const confirm = ({
+  const confirm = React.useCallback(({
     title,
     description,
     onConfirm,
@@ -77,20 +77,28 @@ export function useConfirmDialog() {
       cancelText,
       variant
     });
-  };
+  }, []);
 
-  const ConfirmDialogComponent = () => (
-    <ConfirmDialog
-      open={dialogState.open}
-      onOpenChange={(open) => setDialogState(prev => ({ ...prev, open }))}
-      title={dialogState.title}
-      description={dialogState.description}
-      onConfirm={dialogState.onConfirm}
-      confirmText={dialogState.confirmText}
-      cancelText={dialogState.cancelText}
-      variant={dialogState.variant}
-    />
-  );
+  const handleOpenChange = React.useCallback((open) => {
+    setDialogState(prev => ({ ...prev, open }));
+  }, []);
+
+  // Utiliser useMemo pour éviter de recréer le composant à chaque render
+  const ConfirmDialogComponent = React.useMemo(() => {
+    const DialogWrapper = () => (
+      <ConfirmDialog
+        open={dialogState.open}
+        onOpenChange={handleOpenChange}
+        title={dialogState.title}
+        description={dialogState.description}
+        onConfirm={dialogState.onConfirm}
+        confirmText={dialogState.confirmText}
+        cancelText={dialogState.cancelText}
+        variant={dialogState.variant}
+      />
+    );
+    return DialogWrapper;
+  }, [dialogState, handleOpenChange]);
 
   return { confirm, ConfirmDialog: ConfirmDialogComponent };
 }
