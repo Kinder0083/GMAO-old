@@ -79,7 +79,7 @@ const Inventory = () => {
         title: 'Succès',
         description: 'Article supprimé'
       });
-      loadInventory();
+      refreshInventory();
     } catch (error) {
       toast({
         title: 'Erreur',
@@ -101,7 +101,7 @@ const Inventory = () => {
         title: 'Succès',
         description: `Surveillance ${newStatus ? 'activée' : 'désactivée'} pour ${item.nom}`,
       });
-      loadInventory();
+      refreshInventory();
     } catch (error) {
       toast({
         title: 'Erreur',
