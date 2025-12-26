@@ -351,12 +351,12 @@ class DocumentationsWebSocketTester:
         return results
 
 if __name__ == "__main__":
-    tester = DashboardInterventionImprovementWebSocketTester()
+    tester = DocumentationsWebSocketTester()
     results = tester.run_comprehensive_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "dashboard_data_sources", "intervention_requests_api", "improvement_requests_api", "websocket_infrastructure"
+        "admin_login", "documentations_poles_api", "websocket_infrastructure"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
