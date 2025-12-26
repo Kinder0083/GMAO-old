@@ -280,29 +280,26 @@ const ImprovementRequests = () => {
                         </TooltipProvider>
                       </td>
                       <td className="py-3 px-4 text-sm">
-                        {req.work_order_numero ? (
+                        {req.improvement_numero ? (
                           <span 
-                            className="text-blue-600 font-medium cursor-pointer hover:underline"
-                            onClick={() => handleWorkOrderClick(req.work_order_id)}
-                            title="Cliquer pour ouvrir l'ordre de travail"
+                            className="text-purple-600 font-medium cursor-pointer hover:underline"
+                            onClick={() => handleImprovementClick(req.improvement_id)}
+                            title="Cliquer pour ouvrir l'amélioration"
                           >
-                            #{req.work_order_numero}
+                            #{req.improvement_numero}
                           </span>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-sm">
-                        {req.work_order_date_limite ? (
-                          <span className={isOverdue(req.work_order_date_limite, req.work_order_statut) ? 'text-red-600 font-medium' : 'text-gray-600'}>
-                            {formatDate(req.work_order_date_limite)}
+                        {req.improvement_date_limite ? (
+                          <span className="text-gray-600">
+                            {formatDate(req.improvement_date_limite)}
                           </span>
                         ) : (
                           <span className="text-gray-600">-</span>
                         )}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 font-medium">
-                        {req.work_order_temps_reel ? formatTimeToHoursMinutes(req.work_order_temps_reel) : '-'}
                       </td>
                     </tr>
                   ))}
