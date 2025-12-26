@@ -5442,6 +5442,14 @@ async def update_meter(
         entity_name=updated_meter["nom"]
     )
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "counters",
+        "updated",
+        dict(updated_meter),
+        user_id=current_user["id"]
+    )
+    
     return Meter(**updated_meter)
 
 @api_router.delete("/meters/{meter_id}")
