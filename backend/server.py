@@ -1967,7 +1967,17 @@ async def create_inventory_item(inv_create: InventoryCreate, current_user: dict 
     
     await db.inventory.insert_one(inv_dict)
     
-    return Inventory(**serialize_doc(inv_dict))
+    inv_data = serialize_doc(inv_dict)
+    
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "inventory",
+        "created",
+        inv_data,
+        user_id=current_user.get("id")
+    )
+    
+    return Inventory(**inv_data)
 
 @api_router.put("/inventory/{inv_id}", response_model=Inventory)
 async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, current_user: dict = Depends(require_permission("inventory", "edit"))):
@@ -1982,7 +1992,17 @@ async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, curren
         )
         
         inv = await db.inventory.find_one({"_id": ObjectId(inv_id)})
-        return Inventory(**serialize_doc(inv))
+        inv_data = serialize_doc(inv)
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "inventory",
+            "updated",
+            inv_data,
+            user_id=current_user.get("id")
+        )
+        
+        return Inventory(**inv_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -1990,10 +2010,25 @@ async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, curren
 async def delete_inventory_item(inv_id: str, current_user: dict = Depends(require_permission("inventory", "delete"))):
     """Supprimer un article de l'inventaire"""
     try:
+        # Récupérer l'article avant suppression pour le broadcast
+        item = await db.inventory.find_one({"_id": ObjectId(inv_id)})
+        item_name = item.get("nom", "Inconnu") if item else "Inconnu"
+        
         result = await db.inventory.delete_one({"_id": ObjectId(inv_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Article non trouvé")
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "inventory",
+            "deleted",
+            {"id": inv_id, "nom": item_name},
+            user_id=current_user.get("id")
+        )
+        
         return {"message": "Article supprimé"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
