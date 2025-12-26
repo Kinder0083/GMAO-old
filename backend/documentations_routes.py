@@ -201,6 +201,15 @@ async def update_pole(
         if "_id" in updated_pole:
             del updated_pole["_id"]
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "documentations",
+                "updated",
+                updated_pole,
+                user_id=current_user["id"]
+            )
+        
         return updated_pole
     except HTTPException:
         raise
@@ -240,6 +249,15 @@ async def delete_pole(
             entity_id=pole_id,
             entity_name=f"Pôle: {pole.get('nom')}"
         )
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "documentations",
+                "deleted",
+                {"id": pole_id, "nom": pole.get('nom')},
+                user_id=current_user["id"]
+            )
         
         return {"success": True, "message": "Pôle supprimé"}
     except HTTPException:
