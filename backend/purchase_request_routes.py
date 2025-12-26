@@ -234,6 +234,15 @@ async def update_purchase_request_status(
         
         logger.info(f"✅ Statut de la demande {request['numero']} changé: {old_status} → {new_status}")
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        updated_request = await db.purchase_requests.find_one({"id": request_id}, {"_id": 0})
+        await realtime_manager.emit_event(
+            "purchase_requests",
+            "status_changed",
+            updated_request,
+            user_id=current_user['id']
+        )
+        
         return {"message": "Statut mis à jour avec succès"}
         
     except HTTPException:
