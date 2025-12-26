@@ -126,6 +126,15 @@ async def create_surveillance_item(
         if "_id" in item_dict:
             del item_dict["_id"]
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "surveillance_plans",
+                "created",
+                item_dict,
+                user_id=current_user["id"]
+            )
+        
         return item_dict
     except Exception as e:
         logger.error(f"Erreur création item surveillance: {str(e)}")
