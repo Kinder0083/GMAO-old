@@ -718,7 +718,22 @@ agent_communication:
 - ✅ "[Realtime suppliers] Connexion à:" - WebSocket connection initiated
 - ✅ "[Realtime suppliers] WebSocket ouvert" - WebSocket opened successfully
 - ✅ "[Realtime suppliers] Connecté ✅" - WebSocket connected successfully
+- ✅ "[Realtime work_orders] Connexion à:" - WebSocket connection initiated
+- ✅ "[Realtime work_orders] WebSocket ouvert" - WebSocket opened successfully
+- ✅ "[Realtime work_orders] Connecté ✅" - WebSocket connected successfully
+- ✅ "[Realtime intervention_requests] Connexion à:" - WebSocket connection initiated
+- ✅ "[Realtime intervention_requests] WebSocket ouvert" - WebSocket opened successfully
+- ✅ "[Realtime intervention_requests] Connecté ✅" - WebSocket connected successfully
+- ✅ "[Realtime improvement_requests] Connexion à:" - WebSocket connection initiated
+- ✅ "[Realtime improvement_requests] WebSocket ouvert" - WebSocket opened successfully
+- ✅ "[Realtime improvement_requests] Connecté ✅" - WebSocket connected successfully
 - ✅ Backend logs show "Event created émis pour equipments" - Events emitted correctly
 - ✅ Backend logs show "Event status_changed émis pour equipments" - Status changes emitted
 - ✅ Backend logs show "Event created émis pour suppliers" - Events emitted correctly
 - ✅ Backend logs show "Event updated émis pour suppliers" - Updates emitted correctly
+- ✅ Backend logs show "Event created émis pour intervention_requests" - Events emitted correctly
+- ✅ Backend logs show "Event updated émis pour intervention_requests" - Updates emitted correctly
+- ✅ Backend logs show "Event deleted émis pour intervention_requests" - Deletes emitted correctly
+- ✅ Backend logs show "Event created émis pour improvement_requests" - Events emitted correctly
+- ✅ Backend logs show "Event updated émis pour improvement_requests" - Updates emitted correctly
+- ✅ Backend logs show "Event deleted émis pour improvement_requests" - Deletes emitted correctly
