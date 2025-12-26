@@ -202,62 +202,91 @@ class PurchaseRequestsWebSocketTester:
         # and verifying that events are being emitted
         
         try:
-            # Create multiple work orders to test event emission
-            work_orders_created = []
+            # Create multiple purchase requests to test event emission
+            purchase_requests_created = []
             
             for i in range(2):
-                work_order_data = {
-                    "id": f"test-realtime-{int(time.time())}-{i}",
-                    "titre": f"Real-time Test WO {i+1} - {datetime.now().strftime('%H:%M:%S')}",
-                    "description": f"Test work order {i+1} for real-time infrastructure testing",
-                    "type": "CURATIF",
-                    "priorite": "NORMALE",
-                    "statut": "OUVERT",
-                    "tempsEstime": 1.0,
-                    "dateLimite": (datetime.now() + timedelta(days=1)).isoformat()
+                purchase_request_data = {
+                    "designation": f"Real-time Test Item {i+1} - {datetime.now().strftime('%H:%M:%S')}",
+                    "reference": f"RT-TEST-{int(time.time())}-{i}",
+                    "quantite": i + 1,
+                    "unite": "pièce",
+                    "type": "CONSOMMABLE",
+                    "urgence": "NORMAL",
+                    "justification": f"Test purchase request {i+1} for real-time infrastructure testing",
+                    "destinataire_id": self.admin_data.get('id'),
+                    "destinataire_nom": f"{self.admin_data.get('prenom')} {self.admin_data.get('nom')}",
+                    "fournisseur_suggere": f"Test Supplier {i+1}"
                 }
                 
                 response = self.admin_session.post(
-                    f"{BACKEND_URL}/work-orders",
-                    json=work_order_data,
+                    f"{BACKEND_URL}/purchase-requests",
+                    json=purchase_request_data,
                     timeout=15
                 )
                 
                 if response.status_code == 200:
-                    created_wo = response.json()
-                    work_orders_created.append(created_wo)
-                    self.log(f"✅ Work order {i+1} created: {created_wo.get('numero')}")
+                    created_pr = response.json()
+                    purchase_requests_created.append(created_pr)
+                    self.log(f"✅ Purchase request {i+1} created: {created_pr.get('numero')}")
                     time.sleep(1)  # Small delay between creations
                 else:
-                    self.log(f"❌ Failed to create work order {i+1}", "ERROR")
+                    self.log(f"❌ Failed to create purchase request {i+1}", "ERROR")
                     return False
             
-            if len(work_orders_created) == 2:
-                self.log("✅ Multiple work orders created successfully")
+            if len(purchase_requests_created) == 2:
+                self.log("✅ Multiple purchase requests created successfully")
                 self.log("✅ Real-time events should be emitted in backend logs")
                 self.log("✅ WebSocket infrastructure appears to be working")
                 
-                # Test updating a work order to trigger update events
-                wo_to_update = work_orders_created[0]
-                update_data = {
-                    "statut": "EN_COURS"
-                }
+                # Test updating a purchase request status to trigger update events
+                pr_to_update = purchase_requests_created[0]
                 
-                response = self.admin_session.put(
-                    f"{BACKEND_URL}/work-orders/{wo_to_update['id']}",
-                    json=update_data,
-                    timeout=15
-                )
+                # Get the purchase request ID from the response
+                pr_id = pr_to_update.get('id')
+                if not pr_id:
+                    self.log("❌ No purchase request ID found in response", "ERROR")
+                    return False
                 
-                if response.status_code == 200:
-                    self.log("✅ Work order updated successfully")
-                    self.log("✅ Update event should be emitted to WebSocket clients")
-                    return True
+                # First, get the purchase request to find its actual ID
+                get_response = self.admin_session.get(f"{BACKEND_URL}/purchase-requests", timeout=10)
+                if get_response.status_code == 200:
+                    all_prs = get_response.json()
+                    # Find our created PR by numero
+                    target_pr = None
+                    for pr in all_prs:
+                        if pr.get('numero') == pr_to_update.get('numero'):
+                            target_pr = pr
+                            break
+                    
+                    if target_pr:
+                        update_data = {
+                            "status": "VALIDEE_N1",
+                            "comment": "Test status update for WebSocket synchronization"
+                        }
+                        
+                        response = self.admin_session.put(
+                            f"{BACKEND_URL}/purchase-requests/{target_pr['id']}/status",
+                            json=update_data,
+                            timeout=15
+                        )
+                        
+                        if response.status_code == 200:
+                            self.log("✅ Purchase request status updated successfully")
+                            self.log("✅ Status change event should be emitted to WebSocket clients")
+                            return True
+                        else:
+                            self.log(f"❌ Failed to update purchase request status - Status: {response.status_code}", "ERROR")
+                            self.log(f"   Response: {response.text}")
+                            return False
+                    else:
+                        self.log("❌ Could not find created purchase request for update", "ERROR")
+                        return False
                 else:
-                    self.log("❌ Failed to update work order", "ERROR")
+                    self.log("❌ Failed to retrieve purchase requests for update test", "ERROR")
                     return False
             else:
-                self.log("❌ Failed to create sufficient work orders for testing", "ERROR")
+                self.log("❌ Failed to create sufficient purchase requests for testing", "ERROR")
                 return False
                 
         except Exception as e:
