@@ -9,39 +9,23 @@ import {
   Package, Truck, Users, FileText 
 } from 'lucide-react';
 import PurchaseRequestFormDialog from '../components/PurchaseRequests/PurchaseRequestFormDialog';
-import { purchaseRequestsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
+import { usePurchaseRequests } from '../hooks/usePurchaseRequests';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 const PurchaseRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
 
-  useEffect(() => {
-    loadRequests();
-  }, [statusFilter]);
-
-  const loadRequests = async () => {
-    try {
-      setLoading(true);
-      const params = statusFilter !== 'all' ? { status: statusFilter } : {};
-      const response = await purchaseRequestsAPI.getAll(params);
-      setRequests(response.data);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les demandes',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Utiliser le hook temps réel
+  const { 
+    purchaseRequests: requests, 
+    loading, 
+    refresh: refreshRequests 
+  } = usePurchaseRequests({ status: statusFilter });
 
   const getStatusBadge = (status) => {
     const statusConfig = {
