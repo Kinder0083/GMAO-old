@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { workOrdersAPI, equipmentsAPI, reportsAPI } from '../services/api';
 import {
   ClipboardList,
   Wrench,
@@ -15,18 +14,21 @@ import {
   Users,
   Zap
 } from 'lucide-react';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { usePermissions } from '../hooks/usePermissions';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { useDashboard } from '../hooks/useDashboard';
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [workOrders, setWorkOrders] = useState([]);
-  const [equipments, setEquipments] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
   const { canView } = usePermissions();
   const { preferences } = usePreferences();
+
+  // Utiliser le hook temps réel pour le dashboard
+  const { 
+    workOrders, 
+    equipments, 
+    analytics, 
+    loading 
+  } = useDashboard();
 
   // Déterminer quels widgets afficher
   const enabledWidgets = preferences?.dashboard_widgets || [
@@ -42,98 +44,6 @@ const Dashboard = () => {
 
   // Fonction helper pour vérifier si un widget est activé
   const isWidgetEnabled = (widgetId) => enabledWidgets.includes(widgetId);
-
-  const loadData = async () => {
-    try {
-      // Ne montrer le loading que lors du premier chargement
-      if (initialLoad) {
-        setLoading(true);
-      }
-      
-      // Charger uniquement les données auxquelles l'utilisateur a accès
-      const promises = [];
-      
-      // Work Orders - si permission view
-      if (canView('workOrders')) {
-        promises.push(
-          workOrdersAPI.getAll()
-            .then(res => ({ type: 'workOrders', data: res.data }))
-            .catch(err => {
-              console.error('Erreur work orders:', err);
-              return { type: 'workOrders', data: [] };
-            })
-        );
-      }
-      
-      // Equipments - si permission view
-      if (canView('assets')) {
-        promises.push(
-          equipmentsAPI.getAll()
-            .then(res => ({ type: 'equipments', data: res.data }))
-            .catch(err => {
-              console.error('Erreur equipments:', err);
-              return { type: 'equipments', data: [] };
-            })
-        );
-      }
-      
-      // Analytics/Reports - si permission view
-      if (canView('reports')) {
-        promises.push(
-          reportsAPI.getAnalytics()
-            .then(res => ({ type: 'analytics', data: res.data }))
-            .catch(err => {
-              console.error('Erreur analytics:', err);
-              return { type: 'analytics', data: null };
-            })
-        );
-      }
-      
-      // Si aucune permission, afficher un dashboard vide
-      if (promises.length === 0) {
-        setWorkOrders([]);
-        setEquipments([]);
-        setAnalytics(null);
-        setLoading(false);
-        setInitialLoad(false);
-        return;
-      }
-      
-      const results = await Promise.all(promises);
-      
-      // Mettre à jour les données selon les résultats
-      results.forEach(result => {
-        if (result.type === 'workOrders') {
-          if (initialLoad || JSON.stringify(result.data) !== JSON.stringify(workOrders)) {
-            setWorkOrders(result.data);
-          }
-        } else if (result.type === 'equipments') {
-          if (initialLoad || JSON.stringify(result.data) !== JSON.stringify(equipments)) {
-            setEquipments(result.data);
-          }
-        } else if (result.type === 'analytics') {
-          if (initialLoad || JSON.stringify(result.data) !== JSON.stringify(analytics)) {
-            setAnalytics(result.data);
-          }
-        }
-      });
-      
-    } catch (error) {
-      console.error('Erreur générale de chargement:', error);
-      // En cas d'erreur, initialiser avec des données vides
-      setWorkOrders([]);
-      setEquipments([]);
-      setAnalytics(null);
-    } finally {
-      if (initialLoad) {
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    }
-  };
-
-  // Rafraîchissement automatique toutes les 5 secondes (invisible)
-  useAutoRefresh(loadData, []);
 
   // Calculer les stats dynamiquement selon les widgets activés
   const stats = React.useMemo(() => {
