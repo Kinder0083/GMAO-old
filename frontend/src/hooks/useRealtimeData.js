@@ -64,8 +64,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         case 'connected':
           console.log(`[Realtime ${entityType}] Connecté ✅`);
           setWsConnected(true);
-          // Recharger les données après connexion pour être sûr d'avoir les dernières
-          loadData();
+          // Ne pas recharger les données ici car elles sont déjà chargées au montage
           break;
 
         case 'created':
@@ -75,7 +74,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
             // Comportement par défaut: ajouter au début de la liste
             setData(prevData => [message.data, ...prevData]);
           }
-          console.log(`[Realtime ${entityType}] Item créé:`, message.data.id);
+          console.log(`[Realtime ${entityType}] Item créé:`, message.data?.id);
           break;
 
         case 'updated':
@@ -89,7 +88,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
               )
             );
           }
-          console.log(`[Realtime ${entityType}] Item mis à jour:`, message.data.id);
+          console.log(`[Realtime ${entityType}] Item mis à jour:`, message.data?.id);
           break;
 
         case 'deleted':
@@ -97,21 +96,26 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
             onDeleted(message.data.id);
           } else {
             // Comportement par défaut: retirer de la liste
+            const deletedId = message.data?.id || message.data;
             setData(prevData =>
-              prevData.filter(item => item.id !== message.data.id)
+              prevData.filter(item => item.id !== deletedId)
             );
           }
-          console.log(`[Realtime ${entityType}] Item supprimé:`, message.data.id);
+          console.log(`[Realtime ${entityType}] Item supprimé:`, message.data?.id);
           break;
 
         case 'status_changed':
           if (onStatusChanged) {
             onStatusChanged(message.data);
           } else {
-            // Recharger les données pour avoir le statut à jour
-            loadData();
+            // Comportement par défaut: mettre à jour dans la liste
+            setData(prevData =>
+              prevData.map(item =>
+                item.id === message.data.id ? message.data : item
+              )
+            );
           }
-          console.log(`[Realtime ${entityType}] Statut changé:`, message.data);
+          console.log(`[Realtime ${entityType}] Statut changé:`, message.data?.id);
           break;
 
         case 'user_joined':
@@ -128,7 +132,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
     } catch (err) {
       console.error(`[Realtime ${entityType}] Erreur traitement message:`, err);
     }
-  }, [entityType, onCreated, onUpdated, onDeleted, onStatusChanged, loadData]);
+  }, [entityType, onCreated, onUpdated, onDeleted, onStatusChanged]);
 
   /**
    * Connecter au WebSocket
