@@ -114,7 +114,8 @@ function Documentations() {
         try {
           await documentationsAPI.deletePole(poleId);
           toast({ title: 'Succès', description: 'Pôle supprimé' });
-          loadPoles();
+          // Le WebSocket mettra à jour automatiquement, mais on peut forcer un refresh
+          refresh();
         } catch (error) {
           toast({
             title: 'Erreur',
