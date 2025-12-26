@@ -524,9 +524,9 @@ frontend:
 
 metadata:
   created_by: "testing_agent"
-  version: "10.0"
-  test_sequence: 10
-  run_ui: true
+  version: "11.0"
+  test_sequence: 11
+  run_ui: false
 
 test_plan:
   current_focus:
