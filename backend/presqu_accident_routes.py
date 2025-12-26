@@ -232,6 +232,15 @@ async def delete_presqu_accident_item(
             entity_name=f"Presqu'accident: {item.get('titre')}"
         )
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "near_miss",
+                "deleted",
+                {"id": item_id, "titre": item.get('titre')},
+                user_id=current_user["id"]
+            )
+        
         return {"success": True, "message": "Presqu'accident supprimé"}
     except HTTPException:
         raise
