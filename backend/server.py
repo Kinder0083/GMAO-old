@@ -6454,6 +6454,33 @@ async def update_improvement(
 async def delete_improvement(imp_id: str, current_user: dict = Depends(require_permission("improvements", "delete"))):
     """Supprimer une amélioration"""
     imp = await db.improvements.find_one({"id": imp_id})
+    if not imp:
+        raise HTTPException(status_code=404, detail="Amélioration non trouvée")
+    
+    imp_titre = imp.get("titre", "Sans titre")
+    
+    await db.improvements.delete_one({"id": imp_id})
+    
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "improvements",
+        "deleted",
+        {"id": imp_id, "titre": imp_titre},
+        user_id=current_user["id"]
+    )
+    
+    await audit_service.log_action(
+        user_id=current_user["id"],
+        user_name=f"{current_user.get('nom', '')} {current_user.get('prenom', '')}",
+        user_email=current_user["email"],
+        action=ActionType.DELETE,
+        entity_type=EntityType.IMPROVEMENT,
+        entity_id=imp_id,
+        entity_name=imp_titre,
+        details="Suppression amélioration"
+    )
+    
+    return {"message": "Amélioration supprimée"}
 
 @api_router.post("/improvements/{imp_id}/add-time")
 async def add_time_to_improvement(imp_id: str, time_data: AddTimeSpent, current_user: dict = Depends(require_permission("improvements", "edit"))):
