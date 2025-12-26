@@ -247,59 +247,65 @@ class DashboardInterventionImprovementWebSocketTester:
             self.log(f"❌ Create improvement request failed - Error: {str(e)}", "ERROR")
             return None
 
-    def test_equipment_status_update(self, equipment_id):
-        """TEST: Equipment Status Update Test"""
-        self.log("🧪 TEST: Equipment Status Update Test")
+    def test_intervention_request_update(self, request_id):
+        """TEST: Intervention Request Update Test"""
+        self.log("🧪 TEST: Intervention Request Update Test")
         
         try:
-            # Update equipment status - send as query parameter
-            response = self.admin_session.patch(
-                f"{BACKEND_URL}/equipments/{equipment_id}/status",
-                params={"statut": "EN_MAINTENANCE"},
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                updated_eq = response.json()
-                self.log(f"✅ PATCH /api/equipments/{equipment_id}/status successful - Status: {updated_eq.get('statut')}")
-                return True
-            else:
-                self.log(f"❌ PATCH /api/equipments/{equipment_id}/status failed - Status: {response.status_code}", "ERROR")
-                self.log(f"   Response: {response.text}")
-                return False
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"❌ Equipment status update request failed - Error: {str(e)}", "ERROR")
-            return False
-
-    def test_vendor_update(self, vendor_id):
-        """TEST: Vendor Update Test"""
-        self.log("🧪 TEST: Vendor Update Test")
-        
-        try:
-            # Update vendor
+            # Update intervention request
             update_data = {
-                "contact": "Jane Smith (Updated)",
-                "notes": "Updated vendor for WebSocket testing"
+                "statut": "EN_COURS",
+                "description": "Updated intervention request for WebSocket testing"
             }
             
             response = self.admin_session.put(
-                f"{BACKEND_URL}/vendors/{vendor_id}",
+                f"{BACKEND_URL}/intervention-requests/{request_id}",
                 json=update_data,
                 timeout=15
             )
             
             if response.status_code == 200:
-                updated_vendor = response.json()
-                self.log(f"✅ PUT /api/vendors/{vendor_id} successful - Contact: {updated_vendor.get('contact')}")
+                updated_request = response.json()
+                self.log(f"✅ PUT /api/intervention-requests/{request_id} successful - Status: {updated_request.get('statut')}")
                 return True
             else:
-                self.log(f"❌ PUT /api/vendors/{vendor_id} failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ PUT /api/intervention-requests/{request_id} failed - Status: {response.status_code}", "ERROR")
                 self.log(f"   Response: {response.text}")
                 return False
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Vendor update request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Intervention request update failed - Error: {str(e)}", "ERROR")
+            return False
+
+    def test_improvement_request_update(self, request_id):
+        """TEST: Improvement Request Update Test"""
+        self.log("🧪 TEST: Improvement Request Update Test")
+        
+        try:
+            # Update improvement request
+            update_data = {
+                "statut": "EN_EVALUATION",
+                "description": "Updated improvement request for WebSocket testing",
+                "coutEstime": 7500.00
+            }
+            
+            response = self.admin_session.put(
+                f"{BACKEND_URL}/improvement-requests/{request_id}",
+                json=update_data,
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                updated_request = response.json()
+                self.log(f"✅ PUT /api/improvement-requests/{request_id} successful - Status: {updated_request.get('statut')}")
+                return True
+            else:
+                self.log(f"❌ PUT /api/improvement-requests/{request_id} failed - Status: {response.status_code}", "ERROR")
+                self.log(f"   Response: {response.text}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            self.log(f"❌ Improvement request update failed - Error: {str(e)}", "ERROR")
             return False
 
     def test_equipment_delete(self, equipment_id):
