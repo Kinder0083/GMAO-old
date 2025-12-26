@@ -7,19 +7,18 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
-import { usePermissions } from '../hooks/usePermissions';
 import { usePreferences } from '../contexts/PreferencesContext';
 
 const Dashboard = () => {
-  const { canView } = usePermissions();
   const { preferences } = usePreferences();
 
   // Utiliser le hook temps réel pour le dashboard
   const { 
     workOrders, 
     equipments, 
-    loading 
-  } = useDashboard({ canView });
+    loading,
+    canView
+  } = useDashboard();
 
   // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
   const enabledWidgets = useMemo(() => preferences?.dashboard_widgets || [
