@@ -28,26 +28,7 @@ export const useEquipments = (options = {}) => {
   }, []);
 
   /**
-   * Handlers personnalisés pour les événements
-   */
-  const handleCreated = useCallback((newEquipment) => {
-    console.log('[useEquipments] Nouvel équipement créé:', newEquipment);
-  }, []);
-
-  const handleUpdated = useCallback((updatedEquipment) => {
-    console.log('[useEquipments] Équipement mis à jour:', updatedEquipment);
-  }, []);
-
-  const handleDeleted = useCallback((deletedId) => {
-    console.log('[useEquipments] Équipement supprimé:', deletedId);
-  }, []);
-
-  const handleStatusChanged = useCallback((statusData) => {
-    console.log('[useEquipments] Statut changé:', statusData);
-  }, []);
-
-  /**
-   * Utiliser le hook générique avec handlers personnalisés
+   * Utiliser le hook générique avec le comportement par défaut
    */
   const {
     data: equipments,
@@ -60,10 +41,6 @@ export const useEquipments = (options = {}) => {
     enableWebSocket: true,
     fallbackPolling: true,
     pollingInterval: 30000,
-    onCreated: handleCreated,
-    onUpdated: handleUpdated,
-    onDeleted: handleDeleted,
-    onStatusChanged: handleStatusChanged,
   });
 
   return {

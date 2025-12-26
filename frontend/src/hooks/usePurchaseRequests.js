@@ -29,26 +29,7 @@ export const usePurchaseRequests = (filters = {}) => {
   }, [filters.status]);
 
   /**
-   * Handlers personnalisés pour les événements
-   */
-  const handleCreated = useCallback((newRequest) => {
-    console.log('[usePurchaseRequests] Nouvelle demande créée:', newRequest);
-  }, []);
-
-  const handleUpdated = useCallback((updatedRequest) => {
-    console.log('[usePurchaseRequests] Demande mise à jour:', updatedRequest);
-  }, []);
-
-  const handleDeleted = useCallback((deletedId) => {
-    console.log('[usePurchaseRequests] Demande supprimée:', deletedId);
-  }, []);
-
-  const handleStatusChanged = useCallback((statusData) => {
-    console.log('[usePurchaseRequests] Statut changé:', statusData);
-  }, []);
-
-  /**
-   * Utiliser le hook générique avec handlers personnalisés
+   * Utiliser le hook générique avec le comportement par défaut
    */
   const {
     data: purchaseRequests,
@@ -61,10 +42,6 @@ export const usePurchaseRequests = (filters = {}) => {
     enableWebSocket: true,
     fallbackPolling: true,
     pollingInterval: 30000,
-    onCreated: handleCreated,
-    onUpdated: handleUpdated,
-    onDeleted: handleDeleted,
-    onStatusChanged: handleStatusChanged,
   });
 
   return {

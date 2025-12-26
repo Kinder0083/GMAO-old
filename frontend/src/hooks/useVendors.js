@@ -28,22 +28,7 @@ export const useVendors = (options = {}) => {
   }, []);
 
   /**
-   * Handlers personnalisés pour les événements
-   */
-  const handleCreated = useCallback((newVendor) => {
-    console.log('[useVendors] Nouveau fournisseur créé:', newVendor);
-  }, []);
-
-  const handleUpdated = useCallback((updatedVendor) => {
-    console.log('[useVendors] Fournisseur mis à jour:', updatedVendor);
-  }, []);
-
-  const handleDeleted = useCallback((deletedId) => {
-    console.log('[useVendors] Fournisseur supprimé:', deletedId);
-  }, []);
-
-  /**
-   * Utiliser le hook générique avec handlers personnalisés
+   * Utiliser le hook générique avec le comportement par défaut
    */
   const {
     data: vendors,
@@ -56,9 +41,6 @@ export const useVendors = (options = {}) => {
     enableWebSocket: true,
     fallbackPolling: true,
     pollingInterval: 30000,
-    onCreated: handleCreated,
-    onUpdated: handleUpdated,
-    onDeleted: handleDeleted,
   });
 
   return {
