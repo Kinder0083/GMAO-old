@@ -840,6 +840,7 @@ agent_communication:
 - POST https://socketdata-hub.preview.emergentagent.com/api/improvement-requests (Working)
 - PUT https://socketdata-hub.preview.emergentagent.com/api/improvement-requests/{id} (Working)
 - DELETE https://socketdata-hub.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/documentations (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/suppliers (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/work_orders (Working)
