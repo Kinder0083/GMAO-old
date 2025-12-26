@@ -5927,6 +5927,7 @@ async def get_improvement_request(request_id: str, current_user: dict = Depends(
     req = await db.improvement_requests.find_one({"id": request_id})
     if not req:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
+    req = serialize_doc(req)
     return ImprovementRequest(**req)
 
 @api_router.put("/improvement-requests/{request_id}", response_model=ImprovementRequest)
