@@ -620,6 +620,17 @@ agent_communication:
 8. **Vendors Backend API Endpoints**: ✅ WORKING - All CRUD endpoints functional
 9. **Multi-client Infrastructure**: ✅ READY - Backend and frontend infrastructure operational
 10. **Purchase Requests WebSocket**: ✅ WORKING - Previously tested and confirmed working
+11. **Dashboard Page Load Test**: ✅ WORKING - Dashboard page loads correctly with aggregated data
+12. **Dashboard WebSocket Connection**: ✅ WORKING - Connections established for work_orders and equipments
+13. **Intervention Requests Page Load Test**: ✅ WORKING - Page loads correctly with data
+14. **Intervention Requests WebSocket Connection**: ✅ WORKING - Connection established with correct logs
+15. **Intervention Requests Real-time CRUD**: ✅ WORKING - All operations sync in real-time
+16. **Improvement Requests Page Load Test**: ✅ WORKING - Page loads correctly with data
+17. **Improvement Requests WebSocket Connection**: ✅ WORKING - Connection established with correct logs
+18. **Improvement Requests Real-time CRUD**: ✅ WORKING - All operations sync in real-time
+19. **Dashboard Backend API Data Sources**: ✅ WORKING - All data source endpoints functional
+20. **Intervention Requests Backend API Endpoints**: ✅ WORKING - All CRUD endpoints functional
+21. **Improvement Requests Backend API Endpoints**: ✅ WORKING - All CRUD endpoints functional (fixed ObjectId serialization)
 
 ## Working Features
 
