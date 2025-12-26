@@ -139,6 +139,15 @@ async def update_sensor(
         from mqtt_sensor_collector import mqtt_sensor_collector
         await mqtt_sensor_collector.refresh_subscriptions()
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    if realtime_manager:
+        await realtime_manager.emit_event(
+            "sensors",
+            "updated",
+            dict(updated_sensor),
+            user_id=current_user["id"]
+        )
+    
     return Sensor(**updated_sensor)
 
 
