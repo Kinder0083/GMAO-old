@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -7,36 +7,22 @@ import VendorFormDialog from '../components/Vendors/VendorFormDialog';
 import { vendorsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
+import { useVendors } from '../hooks/useVendors';
 
 const Vendors = () => {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
-  const [vendors, setVendors] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' ou 'list'
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
 
-  useEffect(() => {
-    loadVendors();
-  }, []);
-
-  const loadVendors = async () => {
-    try {
-      setLoading(true);
-      const response = await vendorsAPI.getAll();
-      setVendors(response.data);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les fournisseurs',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Utiliser le hook temps réel
+  const { 
+    vendors, 
+    loading, 
+    refresh: refreshVendors 
+  } = useVendors();
 
   const handleDelete = async (id) => {
     confirm({
