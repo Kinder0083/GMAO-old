@@ -5887,7 +5887,7 @@ async def create_improvement_request(
             user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
             user_email=current_user["email"],
             action=ActionType.CREATE,
-            entity_type=EntityType.IMPROVEMENT_REQUEST,
+            entity_type=EntityType_Audit.IMPROVEMENT_REQUEST,
             entity_id=request_id,
             entity_name=request.titre,
             details=f"Création demande d'amélioration"
