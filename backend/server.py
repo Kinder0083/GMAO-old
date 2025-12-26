@@ -5473,6 +5473,14 @@ async def delete_meter(meter_id: str, current_user: dict = Depends(require_permi
         entity_name=meter["nom"]
     )
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "counters",
+        "deleted",
+        {"id": meter_id, "nom": meter["nom"]},
+        user_id=current_user["id"]
+    )
+    
     return {"message": "Compteur supprimé"}
 
 # ==================== METER READINGS (RELEVÉS) ENDPOINTS ====================
