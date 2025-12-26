@@ -123,37 +123,6 @@ const Improvements = () => {
     return {};
   };
 
-  const loadImprovements = async () => {
-    try {
-      // Ne montrer le loading que lors du premier chargement
-      if (initialLoad) {
-        setLoading(true);
-      }
-      const params = getDateRange();
-      const response = await improvementsAPI.getAll(params);
-      
-      // Mise à jour silencieuse : comparer avant de mettre à jour
-      const newImprovements = response.data;
-      if (JSON.stringify(newImprovements) !== JSON.stringify(improvements)) {
-        setImprovements(newImprovements);
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les améliorations',
-        variant: 'destructive'
-      });
-    } finally {
-      if (initialLoad) {
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    }
-  };
-  
-  // Rafraîchissement automatique toutes les 5 secondes (invisible)
-  useAutoRefresh(loadImprovements, [dateFilter, dateType, customStartDate, customEndDate]);
-
   const handleDelete = async (id) => {
     setItemToDelete(id);
     setDeleteDialogOpen(true);
@@ -168,7 +137,7 @@ const Improvements = () => {
         title: 'Succès',
         description: 'Amélioration supprimé'
       });
-      loadImprovements();
+      refreshImprovements();
     } catch (error) {
       toast({
         title: 'Erreur',
