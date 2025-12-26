@@ -819,6 +819,10 @@ agent_communication:
 - WebSocket: /ws/realtime/improvement_requests ✅ Connection establishment working
 
 ## Network Activity Observed
+- GET https://socketdata-hub.preview.emergentagent.com/api/documentations/poles (Working)
+- POST https://socketdata-hub.preview.emergentagent.com/api/documentations/poles (Working)
+- PUT https://socketdata-hub.preview.emergentagent.com/api/documentations/poles/{id} (Working)
+- DELETE https://socketdata-hub.preview.emergentagent.com/api/documentations/poles/{id} (Working)
 - GET https://socketdata-hub.preview.emergentagent.com/api/equipments (Working)
 - POST https://socketdata-hub.preview.emergentagent.com/api/equipments (Working)
 - PATCH https://socketdata-hub.preview.emergentagent.com/api/equipments/{id}/status (Working)
