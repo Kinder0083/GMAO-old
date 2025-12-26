@@ -606,8 +606,8 @@ agent_communication:
 ## Test Credentials ✅ WORKING
 - Email: admin@test.com
 - Password: password
-- Frontend URL: https://realtimesync.preview.emergentagent.com/purchase-requests
-- Backend API URL: https://realtimesync.preview.emergentagent.com/api
+- Frontend URL: https://realtime-sync-13.preview.emergentagent.com/purchase-requests
+- Backend API URL: https://realtime-sync-13.preview.emergentagent.com/api
 
 ## Test Results Summary
 1. **Equipments Page Load Test**: ✅ WORKING - Equipments page loads correctly with data
@@ -688,23 +688,23 @@ agent_communication:
 - WebSocket: /ws/realtime/improvement_requests ✅ Connection establishment working
 
 ## Network Activity Observed
-- GET https://realtimesync.preview.emergentagent.com/api/equipments (Working)
-- POST https://realtimesync.preview.emergentagent.com/api/equipments (Working)
-- PATCH https://realtimesync.preview.emergentagent.com/api/equipments/{id}/status (Working)
-- DELETE https://realtimesync.preview.emergentagent.com/api/equipments/{id} (Working)
-- GET https://realtimesync.preview.emergentagent.com/api/vendors (Working)
-- POST https://realtimesync.preview.emergentagent.com/api/vendors (Working)
-- PUT https://realtimesync.preview.emergentagent.com/api/vendors/{id} (Working)
-- DELETE https://realtimesync.preview.emergentagent.com/api/vendors/{id} (Working)
-- GET https://realtimesync.preview.emergentagent.com/api/work-orders (Working)
-- GET https://realtimesync.preview.emergentagent.com/api/intervention-requests (Working)
-- POST https://realtimesync.preview.emergentagent.com/api/intervention-requests (Working)
-- PUT https://realtimesync.preview.emergentagent.com/api/intervention-requests/{id} (Working)
-- DELETE https://realtimesync.preview.emergentagent.com/api/intervention-requests/{id} (Working)
-- GET https://realtimesync.preview.emergentagent.com/api/improvement-requests (Working)
-- POST https://realtimesync.preview.emergentagent.com/api/improvement-requests (Working)
-- PUT https://realtimesync.preview.emergentagent.com/api/improvement-requests/{id} (Working)
-- DELETE https://realtimesync.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- GET https://realtime-sync-13.preview.emergentagent.com/api/equipments (Working)
+- POST https://realtime-sync-13.preview.emergentagent.com/api/equipments (Working)
+- PATCH https://realtime-sync-13.preview.emergentagent.com/api/equipments/{id}/status (Working)
+- DELETE https://realtime-sync-13.preview.emergentagent.com/api/equipments/{id} (Working)
+- GET https://realtime-sync-13.preview.emergentagent.com/api/vendors (Working)
+- POST https://realtime-sync-13.preview.emergentagent.com/api/vendors (Working)
+- PUT https://realtime-sync-13.preview.emergentagent.com/api/vendors/{id} (Working)
+- DELETE https://realtime-sync-13.preview.emergentagent.com/api/vendors/{id} (Working)
+- GET https://realtime-sync-13.preview.emergentagent.com/api/work-orders (Working)
+- GET https://realtime-sync-13.preview.emergentagent.com/api/intervention-requests (Working)
+- POST https://realtime-sync-13.preview.emergentagent.com/api/intervention-requests (Working)
+- PUT https://realtime-sync-13.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- DELETE https://realtime-sync-13.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- GET https://realtime-sync-13.preview.emergentagent.com/api/improvement-requests (Working)
+- POST https://realtime-sync-13.preview.emergentagent.com/api/improvement-requests (Working)
+- PUT https://realtime-sync-13.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- DELETE https://realtime-sync-13.preview.emergentagent.com/api/improvement-requests/{id} (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/suppliers (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/work_orders (Working)

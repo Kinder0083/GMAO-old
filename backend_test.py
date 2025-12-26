@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://realtimesync.preview.emergentagent.com/api"
+BACKEND_URL = "https://realtime-sync-13.preview.emergentagent.com/api"
 WORK_ORDERS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/work_orders"
 EQUIPMENTS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments"
 INTERVENTION_REQUESTS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/intervention_requests"
