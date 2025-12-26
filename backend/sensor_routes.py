@@ -15,11 +15,13 @@ router = APIRouter(prefix="/sensors", tags=["sensors"])
 
 # Variables globales (seront injectées depuis server.py)
 db = None
+realtime_manager = None
 
-def init_sensor_routes(database):
+def init_sensor_routes(database, realtime_mgr=None):
     """Initialize sensor routes with database"""
-    global db
+    global db, realtime_manager
     db = database
+    realtime_manager = realtime_mgr
 
 # =======================
 # Sensors CRUD
