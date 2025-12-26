@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -10,16 +10,13 @@ import ConvertToWorkOrderDialog from '../components/InterventionRequests/Convert
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { interventionRequestsAPI, workOrdersAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { useInterventionRequests } from '../hooks/useInterventionRequests';
 import { useNavigate } from 'react-router-dom';
 
 const InterventionRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -29,34 +26,12 @@ const InterventionRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  useEffect(() => {
-    loadRequests();
-  }, []);
-
-  const loadRequests = async () => {
-    try {
-      if (initialLoad) {
-        setLoading(true);
-      }
-      const response = await interventionRequestsAPI.getAll();
-      const newRequests = response.data;
-      
-      if (JSON.stringify(newRequests) !== JSON.stringify(requests)) {
-        setRequests(newRequests);
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les demandes',
-        variant: 'destructive'
-      });
-    } finally {
-      if (initialLoad) {
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    }
-  };
+  // Utiliser le hook temps réel
+  const { 
+    interventionRequests: requests, 
+    loading, 
+    refresh: refreshRequests 
+  } = useInterventionRequests();
 
   useAutoRefresh(loadRequests, []);
 
