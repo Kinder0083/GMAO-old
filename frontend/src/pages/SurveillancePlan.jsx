@@ -117,6 +117,7 @@ function SurveillancePlan() {
   };
 
   const extractCategories = () => {
+    if (!items) return;
     // Extraire toutes les catégories uniques des items
     const uniqueCategories = [...new Set(items.map(item => item.category))].filter(Boolean).sort();
     setCategories(uniqueCategories);
