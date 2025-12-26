@@ -164,6 +164,15 @@ async def delete_sensor(
     # Soft delete
     await db.sensors.update_one({"id": sensor_id}, {"$set": {"actif": False}})
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    if realtime_manager:
+        await realtime_manager.emit_event(
+            "sensors",
+            "deleted",
+            {"id": sensor_id, "nom": sensor.get("nom")},
+            user_id=current_user["id"]
+        )
+    
     return {"message": "Capteur supprimé"}
 
 
