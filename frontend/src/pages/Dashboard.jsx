@@ -104,6 +104,13 @@ const Dashboard = () => {
     const safeWorkOrders = workOrders || [];
     const safeEquipments = equipments || [];
     
+    console.log('[Dashboard Stats] Calcul des stats...');
+    console.log('[Dashboard Stats] workOrders:', safeWorkOrders.length);
+    console.log('[Dashboard Stats] equipments:', safeEquipments.length);
+    console.log('[Dashboard Stats] canView workOrders:', canView('workOrders'));
+    console.log('[Dashboard Stats] canView assets:', canView('assets'));
+    console.log('[Dashboard Stats] enabledWidgets:', enabledWidgets);
+    
     const allStats = [];
     
     // Ordres de travail actifs
