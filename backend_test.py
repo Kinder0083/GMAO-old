@@ -194,9 +194,10 @@ class EquipmentsVendorsWebSocketTester:
         self.log("🧪 TEST: Equipment Status Update Test")
         
         try:
-            # Update equipment status - need to send as query parameter
+            # Update equipment status - send as query parameter
             response = self.admin_session.patch(
-                f"{BACKEND_URL}/equipments/{equipment_id}/status?statut=EN_MAINTENANCE",
+                f"{BACKEND_URL}/equipments/{equipment_id}/status",
+                params={"statut": "EN_MAINTENANCE"},
                 timeout=15
             )
             
