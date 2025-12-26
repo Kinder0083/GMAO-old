@@ -21,8 +21,8 @@ const Dashboard = () => {
     loading 
   } = useDashboard({ canView });
 
-  // Déterminer quels widgets afficher
-  const enabledWidgets = preferences?.dashboard_widgets || [
+  // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
+  const enabledWidgets = useMemo(() => preferences?.dashboard_widgets || [
     'work_orders_active',
     'equipment_maintenance',
     'overdue_tasks',
@@ -31,7 +31,7 @@ const Dashboard = () => {
     'maintenance_stats',
     'upcoming_maintenance',
     'quick_actions'
-  ];
+  ], [preferences?.dashboard_widgets]);
 
   // Calculer les stats dynamiquement selon les widgets activés
   const stats = useMemo(() => {
