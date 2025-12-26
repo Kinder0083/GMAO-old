@@ -1,32 +1,25 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { workOrdersAPI, equipmentsAPI, reportsAPI } from '../services/api';
 import {
   ClipboardList,
   Wrench,
-  TrendingUp,
-  Clock,
   AlertCircle,
   CheckCircle2,
-  Activity,
-  Package,
-  Calendar,
-  BarChart3,
-  Users,
-  Zap
 } from 'lucide-react';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { useDashboard } from '../hooks/useDashboard';
 import { usePermissions } from '../hooks/usePermissions';
 import { usePreferences } from '../contexts/PreferencesContext';
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [workOrders, setWorkOrders] = useState([]);
-  const [equipments, setEquipments] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
   const { canView } = usePermissions();
   const { preferences } = usePreferences();
+
+  // Utiliser le hook temps réel pour le dashboard
+  const { 
+    workOrders, 
+    equipments, 
+    loading 
+  } = useDashboard({ canView });
 
   // Déterminer quels widgets afficher
   const enabledWidgets = preferences?.dashboard_widgets || [
