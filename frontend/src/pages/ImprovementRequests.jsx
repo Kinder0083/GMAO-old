@@ -175,9 +175,8 @@ const ImprovementRequests = () => {
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date Limite Désirée</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date Création</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Ordre N°</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date Limite Ordre</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Temps réel</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Amélioration N°</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date Limite Amélio.</th>
                   </tr>
                 </thead>
                 <tbody>
