@@ -2,46 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { AlertCircle, TrendingUp, BarChart3, Table2, Grid3X3, PieChart } from 'lucide-react';
+import { AlertCircle, TrendingUp, BarChart3, Table2, Grid3X3, PieChart, RefreshCw } from 'lucide-react';
 import { surveillanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
+import { useSurveillanceRapport } from '../hooks/useSurveillanceRapport';
 
 const SurveillanceRapport = () => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState(null);
   const [displayMode, setDisplayMode] = useState(() => {
     // Récupérer le mode d'affichage sauvegardé ou utiliser 'cards' par défaut
     return localStorage.getItem('surveillance_rapport_display_mode') || 'cards';
   });
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  // Utiliser le hook temps réel
+  const { stats, loading, refresh: loadStats } = useSurveillanceRapport();
 
   // Sauvegarder le mode d'affichage choisi
   useEffect(() => {
     localStorage.setItem('surveillance_rapport_display_mode', displayMode);
   }, [displayMode]);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const data = await surveillanceAPI.getRapportStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Erreur chargement statistiques:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de charger les statistiques'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading || !stats) {
     return (
