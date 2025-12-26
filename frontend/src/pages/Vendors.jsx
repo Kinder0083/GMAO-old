@@ -311,7 +311,7 @@ const Vendors = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         vendor={selectedVendor}
-        onSuccess={loadVendors}
+        onSuccess={refreshVendors}
       />
       
       {/* Confirm Dialog */}
