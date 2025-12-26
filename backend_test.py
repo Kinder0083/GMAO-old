@@ -458,12 +458,12 @@ class EquipmentsVendorsWebSocketTester:
         return results
 
 if __name__ == "__main__":
-    tester = PurchaseRequestsWebSocketTester()
-    results = tester.run_websocket_tests()
+    tester = EquipmentsVendorsWebSocketTester()
+    results = tester.run_comprehensive_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "websocket_connection", "purchase_requests_api", "realtime_sync"
+        "admin_login", "equipments_api", "vendors_api", "websocket_infrastructure"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
