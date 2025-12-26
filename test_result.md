@@ -1,12 +1,12 @@
-# Test Results - Whiteboard Object Deletion Functionality
+# Test Results - Purchase Requests WebSocket Real-time Synchronization
 
 ## Testing Protocol
-Testing whiteboard object deletion behavior after WhiteboardPage.jsx modifications:
-1. Multi-client object deletion synchronization via Delete/Backspace keys
-2. Multi-client object deletion synchronization via trash button in toolbar
-3. Persistence verification after page reload (F5) on both clients
-4. WebSocket real-time synchronization verification
-5. HTTP polling fallback synchronization verification
+Testing Purchase Requests WebSocket real-time synchronization functionality:
+1. Page load test - verify Purchase Requests page loads with existing data
+2. WebSocket connection test - verify connection logs and WiFi icon status
+3. Real-time CRUD test - create, update, delete operations sync instantly
+4. Multi-client sync test - verify synchronization between multiple browser tabs
+5. Backend API endpoints verification
 
 frontend:
   - task: "Whiteboard Canvas Initialization - Fabric.js v6 API"
