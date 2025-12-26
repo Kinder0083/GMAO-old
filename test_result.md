@@ -137,10 +137,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Migration des pages vers WebSocket"
-  stuck_tasks:
-    - "Whiteboard WebSocket Real-time Sync"
-    - "Whiteboard Text Object Real-time Synchronization"
+    - "Purchase Requests WebSocket Real-time Synchronization"
+    - "Purchase Requests Page Load and Data Display"
+    - "Purchase Requests Real-time CRUD Operations"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
   websearch_needed: false
