@@ -75,6 +75,7 @@ function PresquAccidentList() {
   };
 
   const applyFilters = () => {
+    if (!items) return;
     let filtered = [...items];
     if (filters.service) filtered = filtered.filter(item => item.service === filters.service);
     if (filters.status) filtered = filtered.filter(item => item.status === filters.status);
