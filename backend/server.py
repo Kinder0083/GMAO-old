@@ -5871,8 +5871,10 @@ async def create_improvement_request(
         
         await db.improvement_requests.insert_one(request_data)
         
-        # Serialize for response
+        # Serialize for response but preserve the original UUID id
+        original_id = request_data["id"]
         request_data = serialize_doc(request_data)
+        request_data["id"] = original_id
         
         # Broadcast WebSocket pour la synchronisation temps réel
         await realtime_manager.emit_event(
