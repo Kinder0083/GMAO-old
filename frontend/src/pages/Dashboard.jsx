@@ -39,49 +39,35 @@ const Dashboard = () => {
   // Charger les données
   useEffect(() => {
     // Attendre que les permissions soient chargées
-    console.log('[Dashboard] userRole:', userRole);
-    if (userRole === null) {
-      console.log('[Dashboard] Permissions pas encore chargées, attente...');
-      return;
-    }
+    if (userRole === null) return;
 
     const loadData = async () => {
-      console.log('[Dashboard] Chargement des données...');
       try {
         setLoading(true);
         
         const promises = [];
         
         // Work Orders
-        console.log('[Dashboard] Appel API work-orders...');
         promises.push(
           workOrdersAPI.getAll()
-            .then(res => {
-              console.log('[Dashboard] Work orders reçus:', res?.data?.length || 0);
-              return { type: 'workOrders', data: res?.data || [] };
-            })
+            .then(res => ({ type: 'workOrders', data: res?.data || [] }))
             .catch(err => {
-              console.error('[Dashboard] Erreur work orders:', err);
+              console.error('Erreur work orders:', err);
               return { type: 'workOrders', data: [] };
             })
         );
         
         // Equipments
-        console.log('[Dashboard] Appel API equipments...');
         promises.push(
           equipmentsAPI.getAll()
-            .then(res => {
-              console.log('[Dashboard] Equipments reçus:', res?.data?.length || 0);
-              return { type: 'equipments', data: res?.data || [] };
-            })
+            .then(res => ({ type: 'equipments', data: res?.data || [] }))
             .catch(err => {
-              console.error('[Dashboard] Erreur equipments:', err);
+              console.error('Erreur equipments:', err);
               return { type: 'equipments', data: [] };
             })
         );
         
         const results = await Promise.all(promises);
-        console.log('[Dashboard] Résultats reçus:', results);
         
         results.forEach(result => {
           if (result.type === 'workOrders') {
@@ -92,10 +78,9 @@ const Dashboard = () => {
         });
         
       } catch (error) {
-        console.error('[Dashboard] Erreur générale de chargement:', error);
+        console.error('Erreur générale de chargement:', error);
       } finally {
         setLoading(false);
-        console.log('[Dashboard] Chargement terminé');
       }
     };
 
