@@ -1392,6 +1392,14 @@ async def create_equipment(eq_create: EquipmentCreate, current_user: dict = Depe
     
     eq["hasChildren"] = False
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "equipments",
+        "created",
+        eq,
+        user_id=current_user.get("id")
+    )
+    
     return Equipment(**eq)
 
 @api_router.get("/equipments/{eq_id}", response_model=Equipment)
