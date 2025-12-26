@@ -196,10 +196,11 @@ const ImprovementFormDialog = ({ open, onOpenChange, workOrder, onSuccess }) => 
         setSavedImprovementStatus(submitData.statut);
       } else {
         const response = await improvementsAPI.create(submitData);
-        const newImprovementId = response.data.id;
+        const newImprovement = response.data;
+        const newImprovementId = newImprovement.id;
         
         // Upload des fichiers si présents
-        if (attachments.length > 0) {
+        if (attachments.length > 0 && newImprovementId) {
           for (const attachment of attachments) {
             try {
               await improvementsAPI.uploadAttachment(newImprovementId, attachment.file);
@@ -217,15 +218,17 @@ const ImprovementFormDialog = ({ open, onOpenChange, workOrder, onSuccess }) => 
         // Émettre un événement pour rafraîchir les notifications instantanément
         window.dispatchEvent(new Event('workOrderCreated'));
         
-        // Mettre à jour le statut pour le dialog de changement
-        setSavedImprovementId(newImprovementId);
-        setSavedImprovementStatus(submitData.statut);
+        // Fermer le formulaire et rafraîchir la liste
+        onSuccess();
+        onOpenChange(false);
+        return; // Sortir pour éviter d'ouvrir le dialog de statut
       }
 
       onSuccess();
-      // Ne pas fermer directement, afficher le dialog de changement de statut
+      // Ne pas fermer directement, afficher le dialog de changement de statut pour les modifications
       setShowStatusDialog(true);
     } catch (error) {
+      console.error('Erreur création/modification amélioration:', error);
       toast({
         title: 'Erreur',
         description: formatErrorMessage(error, 'Une erreur est survenue'),
