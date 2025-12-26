@@ -17,16 +17,15 @@ import GridView from '../components/Surveillance/GridView';
 import CalendarView from '../components/Surveillance/CalendarView';
 import SurveillanceItemForm from '../components/Surveillance/SurveillanceItemForm';
 import CategoryOrderDialog from '../components/Surveillance/CategoryOrderDialog';
+import { useSurveillancePlan } from '../hooks/useSurveillancePlan';
 
 function SurveillancePlan() {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const location = useLocation();
-  const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [stats, setStats] = useState(null);
   const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
@@ -40,9 +39,36 @@ function SurveillancePlan() {
     status: ''
   });
 
+  // Utiliser le hook temps réel
+  const { items, loading, refresh: loadItems } = useSurveillancePlan();
+
+  // Charger les stats et alertes séparément
   useEffect(() => {
-    loadData();
+    loadStatsAndAlerts();
   }, []);
+
+  const loadStatsAndAlerts = async () => {
+    try {
+      // Vérifier et mettre à jour automatiquement les statuts selon les échéances
+      await surveillanceAPI.checkDueDates().catch(err => {
+        console.warn('Erreur vérification échéances (non bloquant):', err);
+      });
+      
+      const [statsData, alertsData] = await Promise.all([
+        surveillanceAPI.getStats(),
+        surveillanceAPI.getAlerts()
+      ]);
+      setStats(statsData);
+      setAlerts(alertsData.alerts || []);
+    } catch (error) {
+      console.error('Erreur chargement stats/alertes:', error);
+    }
+  };
+
+  const loadData = async () => {
+    await loadItems();
+    await loadStatsAndAlerts();
+  };
 
   // Détecter si on vient du badge "contrôles en retard"
   useEffect(() => {
