@@ -1,12 +1,15 @@
-# Test Results - Purchase Requests WebSocket Real-time Synchronization
+# Test Results - Documentations WebSocket Real-time Synchronization
 
 ## Testing Protocol
-Testing Purchase Requests WebSocket real-time synchronization functionality:
-1. Page load test - verify Purchase Requests page loads with existing data
-2. WebSocket connection test - verify connection logs and WiFi icon status
+Testing Documentations (Pôles de Service) WebSocket real-time synchronization functionality:
+1. Page load test - verify Documentations page loads with existing poles
+2. WebSocket connection test - verify WebSocket connection to /ws/realtime/documentations
 3. Real-time CRUD test - create, update, delete operations sync instantly
-4. Multi-client sync test - verify synchronization between multiple browser tabs
-5. Backend API endpoints verification
+4. Backend API endpoints verification for /api/documentations/poles
+
+### Test Credentials
+- Admin: admin@test.com / password
+- User: user@test.com / password
 
 backend:
   - task: "Equipments WebSocket Real-time Synchronization"
