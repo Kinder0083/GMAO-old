@@ -298,27 +298,27 @@ class PurchaseRequestsWebSocketTester:
         return self.test_realtime_infrastructure()
 
     def run_websocket_tests(self):
-        """Run comprehensive WebSocket tests for Work Orders"""
+        """Run comprehensive WebSocket tests for Purchase Requests"""
         self.log("=" * 80)
-        self.log("TESTING WORK ORDERS WEBSOCKET REAL-TIME SYNCHRONIZATION")
+        self.log("TESTING PURCHASE REQUESTS WEBSOCKET REAL-TIME SYNCHRONIZATION")
         self.log("=" * 80)
         self.log("CONTEXTE:")
-        self.log("Test de la synchronisation temps réel WebSocket pour les Work Orders")
+        self.log("Test de la synchronisation temps réel WebSocket pour les Purchase Requests")
         self.log("Vérification de l'icône WiFi et de la synchronisation multi-clients")
         self.log("")
         self.log("TESTS À EFFECTUER:")
         self.log("1. Login admin avec credentials admin@test.com / password")
         self.log("2. Test de connexion WebSocket")
-        self.log("3. Test de l'API Work Orders")
-        self.log("4. Test de création d'ordre de travail")
+        self.log("3. Test de l'API Purchase Requests")
+        self.log("4. Test de création de demande d'achat")
         self.log("5. Test de synchronisation temps réel (simulation 2 clients)")
         self.log("=" * 80)
         
         results = {
             "admin_login": False,
             "websocket_connection": False,
-            "work_orders_api": False,
-            "create_work_order": False,
+            "purchase_requests_api": False,
+            "create_purchase_request": False,
             "realtime_sync": False
         }
         
@@ -329,8 +329,8 @@ class PurchaseRequestsWebSocketTester:
             self.log("❌ Cannot proceed with other tests - Admin login failed", "ERROR")
             return results
         
-        # Test 2: Work Orders API
-        results["work_orders_api"] = self.test_work_orders_api()
+        # Test 2: Purchase Requests API
+        results["purchase_requests_api"] = self.test_purchase_requests_api()
         
         # Test 3: WebSocket Connection
         try:
@@ -339,9 +339,9 @@ class PurchaseRequestsWebSocketTester:
             self.log(f"❌ WebSocket connection test failed: {str(e)}", "ERROR")
             results["websocket_connection"] = False
         
-        # Test 4: Create Work Order
-        created_wo = self.test_create_work_order()
-        results["create_work_order"] = created_wo is not None
+        # Test 4: Create Purchase Request
+        created_pr = self.test_create_purchase_request()
+        results["create_purchase_request"] = created_pr is not None
         
         # Test 5: Real-time Infrastructure
         try:
@@ -352,7 +352,7 @@ class PurchaseRequestsWebSocketTester:
         
         # Summary
         self.log("=" * 80)
-        self.log("WORK ORDERS WEBSOCKET TESTING - RÉSULTATS DES TESTS")
+        self.log("PURCHASE REQUESTS WEBSOCKET TESTING - RÉSULTATS DES TESTS")
         self.log("=" * 80)
         
         passed = sum(results.values())
@@ -370,9 +370,9 @@ class PurchaseRequestsWebSocketTester:
         self.log("=" * 60)
         
         expected_logs = [
-            "[Realtime work_orders] Connexion à:",
-            "[Realtime work_orders] WebSocket ouvert",
-            "[Realtime work_orders] Connecté ✅"
+            "[Realtime purchase_requests] Connexion à:",
+            "[Realtime purchase_requests] WebSocket ouvert",
+            "[Realtime purchase_requests] Connecté ✅"
         ]
         
         for expected_log in expected_logs:
@@ -400,7 +400,8 @@ class PurchaseRequestsWebSocketTester:
         if results["realtime_sync"]:
             self.log("✅ Real-time synchronization working")
             self.log("✅ Multiple clients receive updates automatically")
-            self.log("✅ Work order creation broadcasts to all connected clients")
+            self.log("✅ Purchase request creation broadcasts to all connected clients")
+            self.log("✅ Status changes broadcast to all connected clients")
         else:
             self.log("❌ Real-time synchronization not working")
             self.log("❌ Updates not synchronized between clients")
@@ -408,14 +409,14 @@ class PurchaseRequestsWebSocketTester:
         
         # Final Conclusion
         self.log("\n" + "=" * 80)
-        self.log("CONCLUSION FINALE - WORK ORDERS WEBSOCKET FUNCTIONALITY")
+        self.log("CONCLUSION FINALE - PURCHASE REQUESTS WEBSOCKET FUNCTIONALITY")
         self.log("=" * 80)
         
-        critical_tests = ["admin_login", "websocket_connection", "work_orders_api", "realtime_sync"]
+        critical_tests = ["admin_login", "websocket_connection", "purchase_requests_api", "realtime_sync"]
         critical_passed = sum(results.get(test, False) for test in critical_tests)
         
         if critical_passed >= len(critical_tests):
-            self.log("🎉 WORK ORDERS WEBSOCKET FUNCTIONALITY ENTIÈREMENT FONCTIONNELLE!")
+            self.log("🎉 PURCHASE REQUESTS WEBSOCKET FUNCTIONALITY ENTIÈREMENT FONCTIONNELLE!")
             self.log("✅ WebSocket connections établies avec succès")
             self.log("✅ Icône WiFi verte (connecté)")
             self.log("✅ Synchronisation temps réel entre clients")
