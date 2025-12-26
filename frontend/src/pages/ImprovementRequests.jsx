@@ -259,7 +259,7 @@ const ImprovementRequests = () => {
                               <TooltipContent>Supprimer la demande</TooltipContent>
                             </Tooltip>
                             
-                            {canConvert && !req.work_order_id && (
+                            {canConvert && !req.improvement_id && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
