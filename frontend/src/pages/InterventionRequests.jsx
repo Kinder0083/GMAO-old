@@ -307,14 +307,14 @@ const InterventionRequests = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         request={selectedRequest}
-        onSuccess={loadRequests}
+        onSuccess={refreshRequests}
       />
 
       <ConvertToWorkOrderDialog
         open={convertDialogOpen}
         onOpenChange={setConvertDialogOpen}
         request={selectedRequest}
-        onSuccess={loadRequests}
+        onSuccess={refreshRequests}
       />
 
       <DeleteConfirmDialog
