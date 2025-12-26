@@ -308,46 +308,46 @@ class DashboardInterventionImprovementWebSocketTester:
             self.log(f"❌ Improvement request update failed - Error: {str(e)}", "ERROR")
             return False
 
-    def test_equipment_delete(self, equipment_id):
-        """TEST: Equipment Delete Test"""
-        self.log("🧪 TEST: Equipment Delete Test")
+    def test_intervention_request_delete(self, request_id):
+        """TEST: Intervention Request Delete Test"""
+        self.log("🧪 TEST: Intervention Request Delete Test")
         
         try:
             response = self.admin_session.delete(
-                f"{BACKEND_URL}/equipments/{equipment_id}",
+                f"{BACKEND_URL}/intervention-requests/{request_id}",
                 timeout=15
             )
             
             if response.status_code == 200:
-                self.log(f"✅ DELETE /api/equipments/{equipment_id} successful")
+                self.log(f"✅ DELETE /api/intervention-requests/{request_id} successful")
                 return True
             else:
-                self.log(f"❌ DELETE /api/equipments/{equipment_id} failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ DELETE /api/intervention-requests/{request_id} failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Equipment delete request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Intervention request delete failed - Error: {str(e)}", "ERROR")
             return False
 
-    def test_vendor_delete(self, vendor_id):
-        """TEST: Vendor Delete Test"""
-        self.log("🧪 TEST: Vendor Delete Test")
+    def test_improvement_request_delete(self, request_id):
+        """TEST: Improvement Request Delete Test"""
+        self.log("🧪 TEST: Improvement Request Delete Test")
         
         try:
             response = self.admin_session.delete(
-                f"{BACKEND_URL}/vendors/{vendor_id}",
+                f"{BACKEND_URL}/improvement-requests/{request_id}",
                 timeout=15
             )
             
             if response.status_code == 200:
-                self.log(f"✅ DELETE /api/vendors/{vendor_id} successful")
+                self.log(f"✅ DELETE /api/improvement-requests/{request_id} successful")
                 return True
             else:
-                self.log(f"❌ DELETE /api/vendors/{vendor_id} failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ DELETE /api/improvement-requests/{request_id} failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Vendor delete request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Improvement request delete failed - Error: {str(e)}", "ERROR")
             return False
 
     def test_websocket_infrastructure(self):
