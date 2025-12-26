@@ -670,7 +670,7 @@ const PreventiveMaintenance = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         maintenance={selectedMaintenance}
-        onSuccess={loadMaintenance}
+        onSuccess={refreshMaintenance}
         checklists={checklists}
       />
 
