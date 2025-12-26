@@ -2134,6 +2134,14 @@ async def create_preventive_maintenance(pm_create: PreventiveMaintenanceCreate, 
     if pm.get("assigne_a_id"):
         pm["assigneA"] = await get_user_by_id(pm["assigne_a_id"])
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "preventive_maintenance",
+        "created",
+        pm,
+        user_id=current_user.get("id")
+    )
+    
     return PreventiveMaintenance(**pm)
 
 @api_router.put("/preventive-maintenance/{pm_id}", response_model=PreventiveMaintenance)
@@ -2155,6 +2163,14 @@ async def update_preventive_maintenance(pm_id: str, pm_update: PreventiveMainten
         if pm.get("assigne_a_id"):
             pm["assigneA"] = await get_user_by_id(pm["assigne_a_id"])
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "preventive_maintenance",
+            "updated",
+            pm,
+            user_id=current_user.get("id")
+        )
+        
         return PreventiveMaintenance(**pm)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -2163,10 +2179,25 @@ async def update_preventive_maintenance(pm_id: str, pm_update: PreventiveMainten
 async def delete_preventive_maintenance(pm_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "delete"))):
     """Supprimer une maintenance préventive"""
     try:
+        # Récupérer la maintenance avant suppression pour le broadcast
+        pm = await db.preventive_maintenances.find_one({"_id": ObjectId(pm_id)})
+        pm_nom = pm.get("nom", "Inconnu") if pm else "Inconnu"
+        
         result = await db.preventive_maintenances.delete_one({"_id": ObjectId(pm_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Maintenance préventive non trouvée")
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "preventive_maintenance",
+            "deleted",
+            {"id": pm_id, "nom": pm_nom},
+            user_id=current_user.get("id")
+        )
+        
         return {"message": "Maintenance préventive supprimée"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
