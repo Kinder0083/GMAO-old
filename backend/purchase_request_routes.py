@@ -81,6 +81,14 @@ async def create_purchase_request(
         
         logger.info(f"✅ Demande d'achat {numero} créée par {demandeur_nom}")
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "purchase_requests",
+            "created",
+            purchase_request.model_dump(),
+            user_id=current_user['id']
+        )
+        
         return {
             "message": "Demande d'achat créée avec succès",
             "id": purchase_request.id,
