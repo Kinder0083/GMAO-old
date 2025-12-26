@@ -17,13 +17,12 @@ import ChecklistHistoryView from '../components/PreventiveMaintenance/ChecklistH
 import { preventiveMaintenanceAPI, workOrdersAPI, checklistsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
+import { usePreventiveMaintenance } from '../hooks/usePreventiveMaintenance';
 
 const PreventiveMaintenance = () => {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [maintenance, setMaintenance] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'tree', ou 'checklists'
@@ -41,6 +40,13 @@ const PreventiveMaintenance = () => {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [checklistToExecute, setChecklistToExecute] = useState(null);
   const [executionContext, setExecutionContext] = useState({});
+
+  // Utiliser le hook temps réel
+  const { 
+    maintenance, 
+    loading, 
+    refresh: refreshMaintenance 
+  } = usePreventiveMaintenance();
 
   // Vérifier les permissions
   const canDelete = user?.permissions?.preventiveMaintenance?.delete === true;
