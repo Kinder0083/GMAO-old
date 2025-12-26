@@ -57,6 +57,15 @@ async def create_sensor(
         
         logger.info(f"Capteur créé: {sensor.nom} (type: {sensor.type})")
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "sensors",
+                "created",
+                sensor_data,
+                user_id=current_user["id"]
+            )
+        
         return Sensor(**sensor_data)
         
     except Exception as e:
