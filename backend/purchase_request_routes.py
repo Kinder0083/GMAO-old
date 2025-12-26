@@ -17,6 +17,7 @@ from models import (
 )
 from dependencies import get_current_user, get_database
 from purchase_request_service import PurchaseRequestService
+from realtime_manager import realtime_manager
 
 logger = logging.getLogger(__name__)
 
