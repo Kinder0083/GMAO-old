@@ -351,6 +351,15 @@ async def create_document(
         if "_id" in doc_dict:
             del doc_dict["_id"]
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "documentations",
+                "created",
+                doc_dict,
+                user_id=current_user["id"]
+            )
+        
         return doc_dict
     except HTTPException:
         raise
@@ -398,6 +407,15 @@ async def update_document(
         
         if "_id" in updated_doc:
             del updated_doc["_id"]
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "documentations",
+                "updated",
+                updated_doc,
+                user_id=current_user["id"]
+            )
         
         return updated_doc
     except HTTPException:
