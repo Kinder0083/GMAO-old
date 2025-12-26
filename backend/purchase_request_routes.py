@@ -330,6 +330,14 @@ async def delete_purchase_request(
         
         logger.info(f"✅ Demande {request['numero']} supprimée")
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "purchase_requests",
+            "deleted",
+            {"id": request_id, "numero": request['numero']},
+            user_id=current_user['id']
+        )
+        
         return {"message": "Demande supprimée avec succès"}
         
     except HTTPException:
