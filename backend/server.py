@@ -1538,6 +1538,14 @@ async def update_equipment(eq_id: str, eq_update: EquipmentUpdate, current_user:
         children_count = await db.equipments.count_documents({"parent_id": eq["id"]})
         eq["hasChildren"] = children_count > 0
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "equipments",
+            "updated",
+            eq,
+            user_id=current_user.get("id")
+        )
+        
         return Equipment(**eq)
     except HTTPException:
         raise
