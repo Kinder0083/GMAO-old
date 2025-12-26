@@ -111,9 +111,10 @@ class DocumentationsWebSocketTester:
             pole_data = {
                 "nom": f"Test WebSocket Pole - {datetime.now().strftime('%H:%M:%S')}",
                 "description": "Test pole for WebSocket real-time synchronization testing",
-                "service": "MAINTENANCE",
-                "responsable_id": self.admin_data.get("id"),
-                "statut": "ACTIF"
+                "pole": "MAINTENANCE",  # Use 'pole' instead of 'service'
+                "responsable": self.admin_data.get("prenom") + " " + self.admin_data.get("nom"),
+                "couleur": "#3b82f6",
+                "icon": "Folder"
             }
             
             response = self.admin_session.post(
