@@ -456,6 +456,42 @@ frontend:
     priority: "high"
     needs_retesting: false
 
+  - task: "PreventiveMaintenance Flash/Flicker Bug Fix (P0)"
+    implemented: true
+    working: false
+    file: "frontend/src/pages/PreventiveMaintenance.jsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL BUG: PreventiveMaintenance 'Exécuter maintenant' button does not open confirm dialog. API requests to /api/preventive-maintenance are failing with net::ERR_ABORTED. The useConfirmDialog hook appears to be implemented correctly, but the dialog is not appearing when the button is clicked. This is a P0 bug that prevents work order creation from preventive maintenance."
+
+  - task: "Improvements Form Not Closing Bug Fix (P1)"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Improvements.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ BUG FIX WORKING: Improvements form dialog closes automatically after successful creation. Tested creating new improvement with title 'Test Amélioration Bug Fix' and description, form closed properly after clicking 'Créer' button. The EntityType.IMPROVEMENT fix appears to be working correctly."
+
+  - task: "Inventory WebSocket Sync Bug Fix (P1)"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Inventory.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ BUG FIX WORKING: Inventory WebSocket sync is functioning properly. New items appear in the list without page refresh (real-time sync working). Tested creating 'Test Article WebSocket Sync' with all required fields, form closed automatically, item appeared in list immediately. Quantity adjustment buttons (+/-) are working correctly. WebSocket real-time synchronization is operational."
+
 metadata:
   created_by: "testing_agent"
   version: "10.0"
