@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Activity,
   TrendingUp,
@@ -27,22 +27,79 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import api from '../services/api';
-import { useIoTDashboard } from '../hooks/useIoTDashboard';
+import { useSensors } from '../hooks/useSensors';
 
 const IoTDashboard = () => {
+  const [sensorReadings, setSensorReadings] = useState({});
+  const [statistics, setStatistics] = useState({});
+  const [groupsByType, setGroupsByType] = useState([]);
+  const [groupsByLocation, setGroupsByLocation] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(24); // heures
   const [activeTab, setActiveTab] = useState('overview'); // overview, groups-type, groups-location
 
-  // Utiliser le hook temps réel
-  const {
-    sensors,
-    sensorReadings,
-    statistics,
-    groupsByType,
-    groupsByLocation,
-    loading,
-    refresh: loadDashboardData
-  } = useIoTDashboard(timeRange);
+  // Utiliser le hook temps réel pour les capteurs
+  const { sensors: realtimeSensors, loading: loadingSensors, refresh: refreshSensors } = useSensors();
+
+  // Charger les données détaillées quand les capteurs changent ou au premier chargement
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Utiliser les capteurs temps réel s'ils sont disponibles, sinon charger
+      const sensorsToUse = realtimeSensors && realtimeSensors.length > 0 
+        ? realtimeSensors 
+        : (await api.sensors.getAll()).data;
+      
+      // Charger les groupes
+      const [groupsTypeResponse, groupsLocationResponse] = await Promise.all([
+        api.sensors.getGroupsByType(),
+        api.sensors.getGroupsByLocation()
+      ]);
+      
+      setGroupsByType(groupsTypeResponse.data.groups || []);
+      setGroupsByLocation(groupsLocationResponse.data.groups || []);
+
+      if (sensorsToUse.length > 0) {
+        // Charger les relevés et statistiques pour chaque capteur
+        const readingsPromises = sensorsToUse.map(sensor =>
+          api.sensors.getReadings(sensor.id, 100, timeRange).catch(() => ({ data: [] }))
+        );
+        const statsPromises = sensorsToUse.map(sensor =>
+          api.sensors.getStatistics(sensor.id, timeRange).catch(() => ({ data: {} }))
+        );
+
+        const readingsResults = await Promise.all(readingsPromises);
+        const statsResults = await Promise.all(statsPromises);
+
+        // Organiser les données par sensor_id
+        const readingsMap = {};
+        const statsMap = {};
+        
+        sensorsToUse.forEach((sensor, index) => {
+          readingsMap[sensor.id] = readingsResults[index].data;
+          statsMap[sensor.id] = statsResults[index].data;
+        });
+
+        setSensorReadings(readingsMap);
+        setStatistics(statsMap);
+      }
+    } catch (error) {
+      console.error('Erreur chargement dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [realtimeSensors, timeRange]);
+
+  // Charger au montage et quand timeRange change
+  useEffect(() => {
+    if (!loadingSensors) {
+      loadDashboardData();
+    }
+  }, [loadingSensors, timeRange]);
+
+  // Récupérer les capteurs depuis le hook temps réel ou l'état local
+  const sensors = realtimeSensors || [];
 
   const getKPICards = () => {
     const activeSensors = sensors.filter(s => s.actif).length;
