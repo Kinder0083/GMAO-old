@@ -7,7 +7,7 @@ import { usePermissions } from './usePermissions';
  * Charge les données de plusieurs sources et les rafraîchit automatiquement
  */
 export const useDashboard = () => {
-  const { canView } = usePermissions();
+  const { canView, userRole } = usePermissions();
   
   const [workOrders, setWorkOrders] = useState([]);
   const [equipments, setEquipments] = useState([]);
@@ -15,11 +15,17 @@ export const useDashboard = () => {
   const [loading, setLoading] = useState(true);
   const isFirstLoad = useRef(true);
   const intervalRef = useRef(null);
+  
+  // Vérifier si les permissions sont prêtes
+  const permissionsReady = userRole !== null;
 
   /**
    * Charger toutes les données du dashboard
    */
   const loadData = useCallback(async () => {
+    // Ne pas charger si les permissions ne sont pas prêtes
+    if (!permissionsReady) return;
+    
     try {
       // Ne montrer le loading que lors du premier chargement
       if (isFirstLoad.current) {
@@ -79,10 +85,12 @@ export const useDashboard = () => {
         isFirstLoad.current = false;
       }
     }
-  }, []);
+  }, [permissionsReady]);
 
   // Chargement initial et polling automatique
   useEffect(() => {
+    if (!permissionsReady) return;
+    
     // Charger les données immédiatement
     loadData();
 
@@ -94,7 +102,7 @@ export const useDashboard = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [loadData]);
+  }, [loadData, permissionsReady]);
 
   // Fonction pour rafraîchir manuellement
   const refresh = useCallback(() => {
@@ -105,7 +113,7 @@ export const useDashboard = () => {
     workOrders,
     equipments,
     analytics,
-    loading,
+    loading: loading || !permissionsReady,
     canView, // Exporter canView pour que le composant puisse l'utiliser
     refresh,
   };
