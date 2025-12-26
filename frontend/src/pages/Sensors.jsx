@@ -24,11 +24,10 @@ import { Input } from '../components/ui/input';
 import { useToast } from '../hooks/use-toast';
 import api from '../services/api';
 import SensorFormDialog from '../components/Sensors/SensorFormDialog';
+import { useSensors } from '../hooks/useSensors';
 
 const Sensors = () => {
-  const [sensors, setSensors] = useState([]);
   const [filteredSensors, setFilteredSensors] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -42,41 +41,12 @@ const Sensors = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user?.role === 'ADMIN';
 
-  useEffect(() => {
-    loadSensors();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadSensors, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Utiliser le hook temps réel
+  const { sensors, loading, refresh: loadSensors } = useSensors();
 
   useEffect(() => {
     filterSensors();
   }, [sensors, searchTerm, typeFilter]);
-
-  const loadSensors = async (showSuccessToast = false) => {
-    try {
-      setLoading(true);
-      const response = await api.sensors.getAll();
-      setSensors(response.data);
-      
-      if (showSuccessToast) {
-        toast({
-          title: 'Succès',
-          description: `${response.data.length} capteur(s) actualisé(s)`
-        });
-      }
-    } catch (error) {
-      console.error('Erreur chargement capteurs:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les capteurs',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filterSensors = () => {
     let filtered = sensors;
