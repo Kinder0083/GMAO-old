@@ -5367,6 +5367,14 @@ async def create_meter(meter: MeterCreate, current_user: dict = Depends(require_
             entity_name=meter.nom
         )
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "counters",
+            "created",
+            meter_data,
+            user_id=current_user["id"]
+        )
+        
         return Meter(**meter_data)
     except Exception as e:
         logger.error(f"Erreur création compteur: {str(e)}")
