@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -10,7 +10,7 @@ import ConvertToImprovementDialog from '../components/ImprovementRequests/Conver
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { improvementRequestsAPI, improvementsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { useImprovementRequests } from '../hooks/useImprovementRequests';
 import { useNavigate } from 'react-router-dom';
 import AvatarInitials from '../components/ui/avatar-initials';
 import { formatTimeToHoursMinutes } from '../utils/timeFormat';
@@ -19,9 +19,6 @@ const ImprovementRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -31,33 +28,12 @@ const ImprovementRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  useEffect(() => {
-    loadRequests();
-  }, []);
-
-  const loadRequests = async () => {
-    try {
-      if (initialLoad) {
-        setLoading(true);
-      }
-      const response = await improvementRequestsAPI.getAll();
-      const newRequests = response.data;
-      
-      if (JSON.stringify(newRequests) !== JSON.stringify(requests)) {
-        setRequests(newRequests);
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les demandes',
-        variant: 'destructive'
-      });
-    } finally {
-      if (initialLoad) {
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    }
+  // Utiliser le hook temps réel
+  const { 
+    improvementRequests: requests, 
+    loading, 
+    refresh: refreshRequests 
+  } = useImprovementRequests();
   };
 
   useAutoRefresh(loadRequests, []);
