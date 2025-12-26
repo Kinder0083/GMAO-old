@@ -5870,6 +5870,14 @@ async def create_improvement_request(
         
         await db.improvement_requests.insert_one(request_data)
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "improvement_requests",
+            "created",
+            request_data,
+            user_id=current_user["id"]
+        )
+        
         await audit_service.log_action(
             user_id=current_user["id"],
             user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
