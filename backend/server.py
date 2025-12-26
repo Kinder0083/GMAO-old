@@ -1956,6 +1956,15 @@ async def delete_location(loc_id: str, current_user: dict = Depends(require_perm
         result = await db.locations.delete_one({"_id": ObjectId(loc_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Zone non trouvée")
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "zones",
+            "deleted",
+            {"id": loc_id},
+            user_id=current_user["id"]
+        )
+        
         return {"message": "Zone supprimée"}
     except HTTPException:
         raise
