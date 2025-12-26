@@ -135,24 +135,24 @@ class PurchaseRequestsWebSocketTester:
         """TEST 1: WebSocket Connection Test - Simplified"""
         return self.test_websocket_endpoint_availability()
 
-    def test_work_orders_api(self):
-        """TEST 2: Work Orders API Test"""
-        self.log("🧪 TEST 2: Work Orders API Test")
+    def test_purchase_requests_api(self):
+        """TEST 2: Purchase Requests API Test"""
+        self.log("🧪 TEST 2: Purchase Requests API Test")
         
         try:
-            # Test GET /api/work-orders
-            response = self.admin_session.get(f"{BACKEND_URL}/work-orders", timeout=10)
+            # Test GET /api/purchase-requests
+            response = self.admin_session.get(f"{BACKEND_URL}/purchase-requests", timeout=10)
             
             if response.status_code == 200:
-                work_orders = response.json()
-                self.log(f"✅ GET /api/work-orders successful - Found {len(work_orders)} work orders")
+                purchase_requests = response.json()
+                self.log(f"✅ GET /api/purchase-requests successful - Found {len(purchase_requests)} purchase requests")
                 return True
             else:
-                self.log(f"❌ GET /api/work-orders failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ GET /api/purchase-requests failed - Status: {response.status_code}", "ERROR")
                 return False
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Work Orders API request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Purchase Requests API request failed - Error: {str(e)}", "ERROR")
             return False
 
     def test_create_work_order(self):
