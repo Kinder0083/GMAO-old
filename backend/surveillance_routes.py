@@ -233,6 +233,15 @@ async def delete_surveillance_item(
             entity_name=f"Plan surveillance: {item.get('classe_type')}"
         )
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "surveillance_plans",
+                "deleted",
+                {"id": item_id},
+                user_id=current_user["id"]
+            )
+        
         return {"success": True, "message": "Item supprimé"}
     except HTTPException:
         raise
