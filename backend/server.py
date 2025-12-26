@@ -6429,6 +6429,14 @@ async def update_improvement(
     if updated_imp.get("equipement_id"):
         updated_imp["equipement"] = await get_equipment_by_id(updated_imp["equipement_id"])
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "improvements",
+        "updated",
+        updated_imp,
+        user_id=current_user["id"]
+    )
+    
     await audit_service.log_action(
         user_id=current_user["id"],
         user_name=f"{current_user.get('nom', '')} {current_user.get('prenom', '')}",
