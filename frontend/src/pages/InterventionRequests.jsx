@@ -33,8 +33,6 @@ const InterventionRequests = () => {
     refresh: refreshRequests 
   } = useInterventionRequests();
 
-  useAutoRefresh(loadRequests, []);
-
   const handleDelete = async (id) => {
     setItemToDelete(id);
     setDeleteDialogOpen(true);
@@ -49,7 +47,7 @@ const InterventionRequests = () => {
         title: 'Succès',
         description: 'Demande supprimée'
       });
-      loadRequests();
+      refreshRequests();
     } catch (error) {
       toast({
         title: 'Erreur',
