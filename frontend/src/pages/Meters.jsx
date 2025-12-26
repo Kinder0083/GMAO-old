@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -8,11 +8,10 @@ import MeterFormDialog from '../components/Meters/MeterFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { metersAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
+import { useMeters } from '../hooks/useMeters';
 
 const Meters = () => {
   const { toast } = useToast();
-  const [meters, setMeters] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('ALL');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'tree'
@@ -23,25 +22,8 @@ const Meters = () => {
   const [selectedMeter, setSelectedMeter] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  useEffect(() => {
-    loadMeters();
-  }, []);
-
-  const loadMeters = async () => {
-    try {
-      setLoading(true);
-      const response = await metersAPI.getAll();
-      setMeters(response.data);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les compteurs',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Utiliser le hook temps réel
+  const { meters, loading, refresh: loadMeters } = useMeters();
 
   const handleDelete = async (id) => {
     setItemToDelete(id);
