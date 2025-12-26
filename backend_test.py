@@ -437,12 +437,13 @@ class DashboardAndDocumentationsTester:
         return results
 
 if __name__ == "__main__":
-    tester = DocumentationsWebSocketTester()
+    tester = DashboardAndDocumentationsTester()
     results = tester.run_comprehensive_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "documentations_poles_api", "websocket_infrastructure"
+        "admin_login", "dashboard_work_orders_api", "dashboard_equipments_api", 
+        "documentations_poles_api"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
