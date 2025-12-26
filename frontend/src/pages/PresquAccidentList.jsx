@@ -11,17 +11,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
+import { usePresquAccident } from '../hooks/usePresquAccident';
 
 function PresquAccidentList() {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const importInputRef = useRef(null);
-  const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [openForm, setOpenForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  
+  // Utiliser le hook temps réel
+  const { items, loading, refresh: loadItems } = usePresquAccident();
   
   const [filters, setFilters] = useState({
     service: '',
@@ -47,29 +49,29 @@ function PresquAccidentList() {
     commentaire: ''
   });
 
+  // Charger les stats séparément
   useEffect(() => {
-    loadData();
+    loadStats();
   }, []);
 
   useEffect(() => {
-    applyFilters();
+    if (items) {
+      applyFilters();
+    }
   }, [items, filters]);
 
-  const loadData = async () => {
+  const loadStats = async () => {
     try {
-      setLoading(true);
-      const [itemsData, statsData] = await Promise.all([
-        presquAccidentAPI.getItems(),
-        presquAccidentAPI.getStats()
-      ]);
-      setItems(itemsData);
+      const statsData = await presquAccidentAPI.getStats();
       setStats(statsData);
     } catch (error) {
-      console.error('Erreur chargement données:', error);
-      toast({ title: 'Erreur', description: 'Erreur lors du chargement', variant: 'destructive' });
-    } finally {
-      setLoading(false);
+      console.error('Erreur chargement stats:', error);
     }
+  };
+
+  const loadData = async () => {
+    await loadItems();
+    await loadStats();
   };
 
   const applyFilters = () => {
