@@ -530,14 +530,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "PreventiveMaintenance Flash/Flicker Bug Fix (P0)"
-    - "Improvements Form Not Closing Bug Fix (P1)"
-    - "Inventory WebSocket Sync Bug Fix (P1)"
-  stuck_tasks:
-    - "PreventiveMaintenance Flash/Flicker Bug Fix (P0)"
+    - "Documentations WebSocket Real-time Synchronization"
+    - "Documentations API Endpoints"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
-  websearch_needed: true
+  websearch_needed: false
 
 agent_communication:
   - agent: "testing"
