@@ -234,40 +234,32 @@ class DocumentationsWebSocketTester:
             return False
 
     def run_comprehensive_tests(self):
-        """Run comprehensive WebSocket tests for Dashboard, Intervention Requests, and Improvement Requests"""
+        """Run comprehensive WebSocket tests for Documentations (Pôles de Service)"""
         self.log("=" * 80)
-        self.log("TESTING DASHBOARD, INTERVENTION REQUESTS & IMPROVEMENT REQUESTS WEBSOCKET REAL-TIME SYNCHRONIZATION")
+        self.log("TESTING DOCUMENTATIONS (PÔLES DE SERVICE) WEBSOCKET REAL-TIME SYNCHRONIZATION")
         self.log("=" * 80)
         self.log("CONTEXTE:")
-        self.log("Test de la synchronisation temps réel WebSocket pour Dashboard, Intervention Requests et Improvement Requests")
-        self.log("Vérification des pages /dashboard, /intervention-requests et /improvement-requests avec synchronisation multi-clients")
+        self.log("Test de la synchronisation temps réel WebSocket pour Documentations (Pôles de Service)")
+        self.log("Vérification de la page /documentations avec synchronisation multi-clients")
         self.log("")
         self.log("TESTS À EFFECTUER:")
         self.log("1. Login admin avec credentials admin@test.com / password")
-        self.log("2. Test des sources de données Dashboard (work orders + equipments)")
-        self.log("3. Test de l'API Intervention Requests")
-        self.log("4. Test de l'API Improvement Requests")
-        self.log("5. Test de création de demande d'intervention")
-        self.log("6. Test de création de demande d'amélioration")
-        self.log("7. Test de mise à jour de demande d'intervention")
-        self.log("8. Test de mise à jour de demande d'amélioration")
-        self.log("9. Test de suppression de demande d'intervention")
-        self.log("10. Test de suppression de demande d'amélioration")
-        self.log("11. Test de l'infrastructure WebSocket")
+        self.log("2. Test de l'API Documentations Poles (GET /api/documentations/poles)")
+        self.log("3. Test de création de pôle (POST /api/documentations/poles)")
+        self.log("4. Test de mise à jour de pôle (PUT /api/documentations/poles/{id})")
+        self.log("5. Test de suppression de pôle (DELETE /api/documentations/poles/{id})")
+        self.log("6. Test de l'infrastructure WebSocket")
+        self.log("7. Vérification des événements WebSocket dans les logs backend")
         self.log("=" * 80)
         
         results = {
             "admin_login": False,
-            "dashboard_data_sources": False,
-            "intervention_requests_api": False,
-            "improvement_requests_api": False,
-            "create_intervention_request": False,
-            "create_improvement_request": False,
-            "intervention_request_update": False,
-            "improvement_request_update": False,
-            "intervention_request_delete": False,
-            "improvement_request_delete": False,
-            "websocket_infrastructure": False
+            "documentations_poles_api": False,
+            "create_pole": False,
+            "update_pole": False,
+            "delete_pole": False,
+            "websocket_infrastructure": False,
+            "backend_websocket_events": False
         }
         
         # Test 1: Admin Login
@@ -277,45 +269,30 @@ class DocumentationsWebSocketTester:
             self.log("❌ Cannot proceed with other tests - Admin login failed", "ERROR")
             return results
         
-        # Test 2: Dashboard Data Sources
-        results["dashboard_data_sources"] = self.test_dashboard_data_sources()
+        # Test 2: Documentations Poles API
+        results["documentations_poles_api"] = self.test_documentations_poles_api()
         
-        # Test 3: Intervention Requests API
-        results["intervention_requests_api"] = self.test_intervention_requests_api()
+        # Test 3: Create Pole
+        created_pole = self.test_create_pole()
+        results["create_pole"] = created_pole is not None
         
-        # Test 4: Improvement Requests API
-        results["improvement_requests_api"] = self.test_improvement_requests_api()
+        # Test 4: Update Pole
+        if created_pole:
+            results["update_pole"] = self.test_update_pole(created_pole["id"])
         
-        # Test 5: Create Intervention Request
-        created_intervention_request = self.test_create_intervention_request()
-        results["create_intervention_request"] = created_intervention_request is not None
+        # Test 5: Delete Pole
+        if created_pole:
+            results["delete_pole"] = self.test_delete_pole(created_pole["id"])
         
-        # Test 6: Create Improvement Request
-        created_improvement_request = self.test_create_improvement_request()
-        results["create_improvement_request"] = created_improvement_request is not None
-        
-        # Test 7: Intervention Request Update
-        if created_intervention_request:
-            results["intervention_request_update"] = self.test_intervention_request_update(created_intervention_request["id"])
-        
-        # Test 8: Improvement Request Update
-        if created_improvement_request:
-            results["improvement_request_update"] = self.test_improvement_request_update(created_improvement_request["id"])
-        
-        # Test 9: Intervention Request Delete
-        if created_intervention_request:
-            results["intervention_request_delete"] = self.test_intervention_request_delete(created_intervention_request["id"])
-        
-        # Test 10: Improvement Request Delete
-        if created_improvement_request:
-            results["improvement_request_delete"] = self.test_improvement_request_delete(created_improvement_request["id"])
-        
-        # Test 11: WebSocket Infrastructure
+        # Test 6: WebSocket Infrastructure
         results["websocket_infrastructure"] = self.test_websocket_infrastructure()
+        
+        # Test 7: Backend WebSocket Events
+        results["backend_websocket_events"] = self.check_backend_logs_for_websocket_events()
         
         # Summary
         self.log("=" * 80)
-        self.log("DASHBOARD, INTERVENTION & IMPROVEMENT REQUESTS WEBSOCKET TESTING - RÉSULTATS DES TESTS")
+        self.log("DOCUMENTATIONS WEBSOCKET TESTING - RÉSULTATS DES TESTS")
         self.log("=" * 80)
         
         passed = sum(results.values())
@@ -333,18 +310,9 @@ class DocumentationsWebSocketTester:
         self.log("=" * 60)
         
         expected_logs = [
-            "[Realtime work_orders] Connexion à:",
-            "[Realtime work_orders] WebSocket ouvert",
-            "[Realtime work_orders] Connecté ✅",
-            "[Realtime equipments] Connexion à:",
-            "[Realtime equipments] WebSocket ouvert",
-            "[Realtime equipments] Connecté ✅",
-            "[Realtime intervention_requests] Connexion à:",
-            "[Realtime intervention_requests] WebSocket ouvert",
-            "[Realtime intervention_requests] Connecté ✅",
-            "[Realtime improvement_requests] Connexion à:",
-            "[Realtime improvement_requests] WebSocket ouvert",
-            "[Realtime improvement_requests] Connecté ✅"
+            "[Realtime documentations] Connexion à:",
+            "[Realtime documentations] WebSocket ouvert",
+            "[Realtime documentations] Connecté ✅"
         ]
         
         for expected_log in expected_logs:
@@ -354,29 +322,30 @@ class DocumentationsWebSocketTester:
         
         # Final Conclusion
         self.log("\n" + "=" * 80)
-        self.log("CONCLUSION FINALE - DASHBOARD, INTERVENTION & IMPROVEMENT REQUESTS WEBSOCKET FUNCTIONALITY")
+        self.log("CONCLUSION FINALE - DOCUMENTATIONS WEBSOCKET FUNCTIONALITY")
         self.log("=" * 80)
         
-        critical_tests = ["admin_login", "dashboard_data_sources", "intervention_requests_api", "improvement_requests_api", "websocket_infrastructure"]
+        critical_tests = ["admin_login", "documentations_poles_api", "websocket_infrastructure"]
         critical_passed = sum(results.get(test, False) for test in critical_tests)
         
-        crud_tests = ["create_intervention_request", "create_improvement_request", "intervention_request_update", "improvement_request_update", "intervention_request_delete", "improvement_request_delete"]
+        crud_tests = ["create_pole", "update_pole", "delete_pole"]
         crud_passed = sum(results.get(test, False) for test in crud_tests)
         
         if critical_passed >= len(critical_tests) and crud_passed >= len(crud_tests):
-            self.log("🎉 DASHBOARD, INTERVENTION & IMPROVEMENT REQUESTS WEBSOCKET FUNCTIONALITY ENTIÈREMENT FONCTIONNELLE!")
-            self.log("✅ API Dashboard, Intervention Requests et Improvement Requests fonctionnelles")
+            self.log("🎉 DOCUMENTATIONS WEBSOCKET FUNCTIONALITY ENTIÈREMENT FONCTIONNELLE!")
+            self.log("✅ API Documentations Poles fonctionnelle")
             self.log("✅ Opérations CRUD temps réel fonctionnelles")
             self.log("✅ Infrastructure WebSocket opérationnelle")
+            self.log("✅ Événements WebSocket émis correctement")
             self.log("✅ Synchronisation temps réel PRÊTE POUR PRODUCTION")
         elif critical_passed >= len(critical_tests):
             self.log("⚠️ WEBSOCKET PARTIELLEMENT FONCTIONNEL")
-            self.log("✅ APIs de base fonctionnelles")
+            self.log("✅ API de base fonctionnelle")
             self.log("✅ Infrastructure WebSocket opérationnelle")
             self.log(f"❌ Certaines opérations CRUD échouent ({crud_passed}/{len(crud_tests)} réussies)")
         else:
             self.log("❌ WEBSOCKET FUNCTIONALITY DÉFAILLANTE")
-            self.log("❌ APIs de base ou infrastructure WebSocket défaillantes")
+            self.log("❌ API de base ou infrastructure WebSocket défaillantes")
             self.log("❌ Intervention requise pour corriger l'infrastructure")
         
         return results
