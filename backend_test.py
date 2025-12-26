@@ -143,82 +143,108 @@ class DashboardInterventionImprovementWebSocketTester:
             self.log(f"❌ Improvement Requests API request failed - Error: {str(e)}", "ERROR")
             return False
 
-    def test_create_equipment(self):
-        """TEST: Create Equipment Test"""
-        self.log("🧪 TEST: Create Equipment Test")
+    def test_create_intervention_request(self):
+        """TEST: Create Intervention Request Test"""
+        self.log("🧪 TEST: Create Intervention Request Test")
         
         try:
-            # Create a test equipment
-            equipment_data = {
-                "nom": f"Test Equipment WebSocket - {datetime.now().strftime('%H:%M:%S')}",
-                "numeroSerie": f"TEST-EQ-{int(time.time())}",
-                "categorie": "MACHINE",
-                "statut": "OPERATIONNEL",
+            # Create a test intervention request
+            intervention_data = {
+                "titre": f"Test Intervention Request - {datetime.now().strftime('%H:%M:%S')}",
+                "description": "Test intervention request for WebSocket real-time synchronization testing",
+                "priorite": "NORMALE",
+                "statut": "OUVERTE",
+                "type": "MAINTENANCE",
+                "equipement_id": None,  # Will need to get a valid equipment ID
                 "emplacement_id": None,  # Will need to get a valid location ID
-                "description": "Test equipment for WebSocket real-time synchronization testing",
-                "anneeFabrication": 2024,
-                "coutAchat": 15000.00
+                "demandeur_id": self.admin_data.get("id"),
+                "dateEcheance": (datetime.now() + timedelta(days=7)).isoformat()
             }
             
-            # First, get locations to use a valid emplacement_id
+            # First, get equipments to use a valid equipment_id
+            equipments_response = self.admin_session.get(f"{BACKEND_URL}/equipments", timeout=10)
+            if equipments_response.status_code == 200:
+                equipments = equipments_response.json()
+                if equipments:
+                    intervention_data["equipement_id"] = equipments[0]["id"]
+            
+            # Get locations to use a valid emplacement_id
             locations_response = self.admin_session.get(f"{BACKEND_URL}/locations", timeout=10)
             if locations_response.status_code == 200:
                 locations = locations_response.json()
                 if locations:
-                    equipment_data["emplacement_id"] = locations[0]["id"]
+                    intervention_data["emplacement_id"] = locations[0]["id"]
             
             response = self.admin_session.post(
-                f"{BACKEND_URL}/equipments",
-                json=equipment_data,
+                f"{BACKEND_URL}/intervention-requests",
+                json=intervention_data,
                 timeout=15
             )
             
-            if response.status_code == 200:
-                created_eq = response.json()
-                self.log(f"✅ POST /api/equipments successful - Created Equipment: {created_eq.get('nom')}")
-                return created_eq
+            if response.status_code == 201:
+                created_request = response.json()
+                self.log(f"✅ POST /api/intervention-requests successful - Created Request: {created_request.get('titre')}")
+                return created_request
             else:
-                self.log(f"❌ POST /api/equipments failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ POST /api/intervention-requests failed - Status: {response.status_code}", "ERROR")
                 self.log(f"   Response: {response.text}")
                 return None
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Create equipment request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Create intervention request failed - Error: {str(e)}", "ERROR")
             return None
 
-    def test_create_vendor(self):
-        """TEST: Create Vendor Test"""
-        self.log("🧪 TEST: Create Vendor Test")
+    def test_create_improvement_request(self):
+        """TEST: Create Improvement Request Test"""
+        self.log("🧪 TEST: Create Improvement Request Test")
         
         try:
-            # Create a test vendor
-            vendor_data = {
-                "nom": f"Test Vendor WebSocket - {datetime.now().strftime('%H:%M:%S')}",
-                "contact": "John Doe",
-                "email": f"test.vendor.{int(time.time())}@example.com",
-                "telephone": "+33123456789",
-                "adresse": "123 Test Street, Test City, France",
-                "specialite": "MAINTENANCE",
-                "notes": "Test vendor for WebSocket real-time synchronization testing"
+            # Create a test improvement request
+            improvement_data = {
+                "titre": f"Test Improvement Request - {datetime.now().strftime('%H:%M:%S')}",
+                "description": "Test improvement request for WebSocket real-time synchronization testing",
+                "priorite": "NORMALE",
+                "statut": "SOUMISE",
+                "type": "AMELIORATION",
+                "equipement_id": None,  # Will need to get a valid equipment ID
+                "emplacement_id": None,  # Will need to get a valid location ID
+                "demandeur_id": self.admin_data.get("id"),
+                "dateEcheance": (datetime.now() + timedelta(days=14)).isoformat(),
+                "beneficesAttendus": "Improved efficiency and reduced maintenance costs",
+                "coutEstime": 5000.00
             }
             
+            # First, get equipments to use a valid equipment_id
+            equipments_response = self.admin_session.get(f"{BACKEND_URL}/equipments", timeout=10)
+            if equipments_response.status_code == 200:
+                equipments = equipments_response.json()
+                if equipments:
+                    improvement_data["equipement_id"] = equipments[0]["id"]
+            
+            # Get locations to use a valid emplacement_id
+            locations_response = self.admin_session.get(f"{BACKEND_URL}/locations", timeout=10)
+            if locations_response.status_code == 200:
+                locations = locations_response.json()
+                if locations:
+                    improvement_data["emplacement_id"] = locations[0]["id"]
+            
             response = self.admin_session.post(
-                f"{BACKEND_URL}/vendors",
-                json=vendor_data,
+                f"{BACKEND_URL}/improvement-requests",
+                json=improvement_data,
                 timeout=15
             )
             
-            if response.status_code == 200:
-                created_vendor = response.json()
-                self.log(f"✅ POST /api/vendors successful - Created Vendor: {created_vendor.get('nom')}")
-                return created_vendor
+            if response.status_code == 201:
+                created_request = response.json()
+                self.log(f"✅ POST /api/improvement-requests successful - Created Request: {created_request.get('titre')}")
+                return created_request
             else:
-                self.log(f"❌ POST /api/vendors failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ POST /api/improvement-requests failed - Status: {response.status_code}", "ERROR")
                 self.log(f"   Response: {response.text}")
                 return None
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Create vendor request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Create improvement request failed - Error: {str(e)}", "ERROR")
             return None
 
     def test_equipment_status_update(self, equipment_id):
