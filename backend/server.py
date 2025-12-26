@@ -5965,12 +5965,13 @@ async def update_improvement_request(
     
     await db.improvement_requests.update_one({"id": request_id}, {"$set": update_data})
     updated_req = await db.improvement_requests.find_one({"id": request_id})
+    updated_req = serialize_doc(updated_req)
     
     # Broadcast WebSocket pour la synchronisation temps réel
     await realtime_manager.emit_event(
         "improvement_requests",
         "updated",
-        dict(updated_req),
+        updated_req,
         user_id=current_user["id"]
     )
     
