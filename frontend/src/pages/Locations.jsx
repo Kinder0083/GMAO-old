@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -8,12 +8,11 @@ import { locationsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { formatErrorMessage } from '../utils/errorFormatter';
+import { useLocations } from '../hooks/useLocations';
 
 const Locations = () => {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
-  const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [expandedZones, setExpandedZones] = useState(new Set());
@@ -21,25 +20,8 @@ const Locations = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [parentForNew, setParentForNew] = useState(null);
 
-  useEffect(() => {
-    loadLocations();
-  }, []);
-
-  const loadLocations = async () => {
-    try {
-      setLoading(true);
-      const response = await locationsAPI.getAll();
-      setLocations(response.data);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les zones',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Utiliser le hook temps réel
+  const { locations, loading, refresh: loadLocations } = useLocations();
 
   const handleDelete = async (id) => {
     confirm({
