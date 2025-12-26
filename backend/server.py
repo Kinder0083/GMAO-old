@@ -5961,6 +5961,14 @@ async def update_improvement_request(
     await db.improvement_requests.update_one({"id": request_id}, {"$set": update_data})
     updated_req = await db.improvement_requests.find_one({"id": request_id})
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "improvement_requests",
+        "updated",
+        dict(updated_req),
+        user_id=current_user["id"]
+    )
+    
     await audit_service.log_action(
         user_id=current_user["id"],
         user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
@@ -5981,7 +5989,17 @@ async def delete_improvement_request(request_id: str, current_user: dict = Depen
     if not req:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
+    req_title = req.get('titre', 'Sans titre')
+    
     await db.improvement_requests.delete_one({"id": request_id})
+    
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "improvement_requests",
+        "deleted",
+        {"id": request_id, "titre": req_title},
+        user_id=current_user["id"]
+    )
     
     await audit_service.log_action(
         user_id=current_user["id"],
@@ -5990,7 +6008,7 @@ async def delete_improvement_request(request_id: str, current_user: dict = Depen
         action=ActionType.DELETE,
         entity_type=EntityType.IMPROVEMENT_REQUEST,
         entity_id=request_id,
-        entity_name=req['titre'],
+        entity_name=req_title,
         details=f"Suppression demande d'amélioration"
     )
     
