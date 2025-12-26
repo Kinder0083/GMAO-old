@@ -1605,3 +1605,7 @@ backend/.env.backup.*
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
