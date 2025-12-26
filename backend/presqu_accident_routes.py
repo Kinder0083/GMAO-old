@@ -28,12 +28,14 @@ router = APIRouter(prefix="/presqu-accident", tags=["presqu-accident"])
 # Variables globales (seront injectées depuis server.py)
 db = None
 audit_service = None
+realtime_manager = None
 
-def init_presqu_accident_routes(database, audit_svc):
-    """Initialise les routes avec la connexion DB et audit service"""
-    global db, audit_service
+def init_presqu_accident_routes(database, audit_svc, realtime_mgr=None):
+    """Initialise les routes avec la connexion DB, audit service et realtime manager"""
+    global db, audit_service, realtime_manager
     db = database
     audit_service = audit_svc
+    realtime_manager = realtime_mgr
 
 
 # ==================== CRUD Routes ====================
