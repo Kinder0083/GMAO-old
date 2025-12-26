@@ -5980,7 +5980,7 @@ async def update_improvement_request(
         user_name=current_user.get("nom", "") + " " + current_user.get("prenom", ""),
         user_email=current_user["email"],
         action=ActionType.UPDATE,
-        entity_type=EntityType.IMPROVEMENT_REQUEST,
+        entity_type=EntityType_Audit.IMPROVEMENT_REQUEST,
         entity_id=request_id,
         entity_name=updated_req['titre'],
         details=f"Modification demande d'amélioration"
