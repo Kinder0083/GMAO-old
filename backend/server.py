@@ -1640,6 +1640,17 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
         # Mettre à jour le statut du parent si nécessaire
         await check_and_update_parent_status(eq_id)
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        updated_eq = await db.equipments.find_one({"_id": ObjectId(eq_id)})
+        if updated_eq:
+            updated_eq = serialize_doc(updated_eq)
+            await realtime_manager.emit_event(
+                "equipments",
+                "status_changed",
+                updated_eq,
+                user_id=current_user.get("id")
+            )
+        
         return {"message": "Statut mis à jour", "statut": statut}
     except HTTPException:
         raise
@@ -1650,10 +1661,25 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
 async def delete_equipment(eq_id: str, current_user: dict = Depends(require_permission("assets", "delete"))):
     """Supprimer un équipement"""
     try:
+        # Récupérer l'équipement avant suppression pour le broadcast
+        equipment = await db.equipments.find_one({"_id": ObjectId(eq_id)})
+        eq_name = equipment.get("nom", "Inconnu") if equipment else "Inconnu"
+        
         result = await db.equipments.delete_one({"_id": ObjectId(eq_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Équipement non trouvé")
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "equipments",
+            "deleted",
+            {"id": eq_id, "nom": eq_name},
+            user_id=current_user.get("id")
+        )
+        
         return {"message": "Équipement supprimé"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
