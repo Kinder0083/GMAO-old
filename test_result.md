@@ -464,12 +464,17 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Equipments WebSocket Real-time Synchronization"
-    - "Vendors WebSocket Real-time Synchronization"
-    - "Equipments Page Load and Data Display"
-    - "Vendors Page Load and Data Display"
-    - "Equipments Real-time CRUD Operations"
-    - "Vendors Real-time CRUD Operations"
+    - "Dashboard WebSocket Real-time Synchronization"
+    - "Intervention Requests WebSocket Real-time Synchronization"
+    - "Improvement Requests WebSocket Real-time Synchronization"
+    - "Dashboard Page Load and Data Display"
+    - "Intervention Requests Page Load and Data Display"
+    - "Improvement Requests Page Load and Data Display"
+    - "Dashboard WebSocket Connection"
+    - "Intervention Requests WebSocket Connection"
+    - "Improvement Requests WebSocket Connection"
+    - "Intervention Requests Real-time CRUD Operations"
+    - "Improvement Requests Real-time CRUD Operations"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
