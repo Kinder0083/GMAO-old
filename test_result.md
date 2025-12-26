@@ -865,6 +865,9 @@ agent_communication:
 - ✅ "[Realtime improvement_requests] Connexion à:" - WebSocket connection initiated
 - ✅ "[Realtime improvement_requests] WebSocket ouvert" - WebSocket opened successfully
 - ✅ "[Realtime improvement_requests] Connecté ✅" - WebSocket connected successfully
+- ✅ Backend logs show "Event created émis pour documentations" - Events emitted correctly
+- ✅ Backend logs show "Event updated émis pour documentations" - Updates emitted correctly
+- ✅ Backend logs show "Event deleted émis pour documentations" - Deletes emitted correctly
 - ✅ Backend logs show "Event created émis pour equipments" - Events emitted correctly
 - ✅ Backend logs show "Event status_changed émis pour equipments" - Status changes emitted
 - ✅ Backend logs show "Event created émis pour suppliers" - Events emitted correctly
