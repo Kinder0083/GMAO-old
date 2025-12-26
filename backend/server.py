@@ -5857,6 +5857,7 @@ async def create_improvement_request(
         request_data["improvement_date_limite"] = None
         request_data["converted_at"] = None
         request_data["converted_by"] = None
+        request_data["_id"] = ObjectId()
         
         if request_data.get("equipement_id"):
             equipment = await db.equipments.find_one({"id": request_data["equipement_id"]})
@@ -5869,6 +5870,9 @@ async def create_improvement_request(
                 request_data["emplacement"] = {"id": location["id"], "nom": location["nom"]}
         
         await db.improvement_requests.insert_one(request_data)
+        
+        # Serialize for response
+        request_data = serialize_doc(request_data)
         
         # Broadcast WebSocket pour la synchronisation temps réel
         await realtime_manager.emit_event(
