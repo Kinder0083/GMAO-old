@@ -137,9 +137,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Purchase Requests WebSocket Real-time Synchronization"
-    - "Purchase Requests Page Load and Data Display"
-    - "Purchase Requests Real-time CRUD Operations"
+    - "Equipments WebSocket Real-time Synchronization"
+    - "Vendors WebSocket Real-time Synchronization"
+    - "Equipments Page Load and Data Display"
+    - "Vendors Page Load and Data Display"
+    - "Equipments Real-time CRUD Operations"
+    - "Vendors Real-time CRUD Operations"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
