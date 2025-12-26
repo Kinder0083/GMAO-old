@@ -1,108 +1,126 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { useRealtimeData } from './useRealtimeData';
 import { workOrdersAPI, equipmentsAPI, reportsAPI } from '../services/api';
 
 /**
  * Hook pour le tableau de bord avec synchronisation temps réel
- * Agrège les données de plusieurs sources (work_orders, equipments)
+ * Charge les données de plusieurs sources et les rafraîchit automatiquement
  */
 export const useDashboard = (options = {}) => {
   const { canView = () => true } = options;
   
+  const [workOrders, setWorkOrders] = useState([]);
+  const [equipments, setEquipments] = useState([]);
   const [analytics, setAnalytics] = useState(null);
-  const analyticsLoadedRef = useRef(false);
+  const [loading, setLoading] = useState(true);
+  const isFirstLoad = useRef(true);
+  const intervalRef = useRef(null);
 
   /**
-   * Fonction pour charger les ordres de travail
+   * Charger toutes les données du dashboard
    */
-  const fetchWorkOrders = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      if (!canView('workOrders')) return [];
-      const response = await workOrdersAPI.getAll();
-      return response?.data || [];
-    } catch (error) {
-      console.error('[useDashboard] Erreur chargement work orders:', error);
-      return [];
-    }
-  }, [canView]);
+      // Ne montrer le loading que lors du premier chargement
+      if (isFirstLoad.current) {
+        setLoading(true);
+      }
 
-  /**
-   * Fonction pour charger les équipements
-   */
-  const fetchEquipments = useCallback(async () => {
-    try {
-      if (!canView('assets')) return [];
-      const response = await equipmentsAPI.getAll();
-      return response?.data || [];
-    } catch (error) {
-      console.error('[useDashboard] Erreur chargement equipments:', error);
-      return [];
-    }
-  }, [canView]);
+      const promises = [];
 
-  // Hook temps réel pour les ordres de travail
-  const {
-    data: workOrders,
-    loading: loadingWorkOrders,
-    wsConnected: wsWorkOrders,
-    refresh: refreshWorkOrders,
-  } = useRealtimeData('work_orders', fetchWorkOrders, {
-    enableWebSocket: true,
-    fallbackPolling: true,
-    pollingInterval: 30000,
-  });
+      // Work Orders
+      if (canView('workOrders')) {
+        promises.push(
+          workOrdersAPI.getAll()
+            .then(res => ({ type: 'workOrders', data: res?.data || [] }))
+            .catch(err => {
+              console.error('[useDashboard] Erreur work orders:', err);
+              return { type: 'workOrders', data: [] };
+            })
+        );
+      }
 
-  // Hook temps réel pour les équipements
-  const {
-    data: equipments,
-    loading: loadingEquipments,
-    wsConnected: wsEquipments,
-    refresh: refreshEquipments,
-  } = useRealtimeData('equipments', fetchEquipments, {
-    enableWebSocket: true,
-    fallbackPolling: true,
-    pollingInterval: 30000,
-  });
+      // Equipments
+      if (canView('assets')) {
+        promises.push(
+          equipmentsAPI.getAll()
+            .then(res => ({ type: 'equipments', data: res?.data || [] }))
+            .catch(err => {
+              console.error('[useDashboard] Erreur equipments:', err);
+              return { type: 'equipments', data: [] };
+            })
+        );
+      }
 
-  // Charger les analytics une seule fois au montage
-  useEffect(() => {
-    const loadAnalytics = async () => {
-      if (analyticsLoadedRef.current) return;
-      if (!canView('reports')) {
+      // Analytics
+      if (canView('reports')) {
+        promises.push(
+          reportsAPI.getAnalytics()
+            .then(res => ({ type: 'analytics', data: res?.data || null }))
+            .catch(err => {
+              console.error('[useDashboard] Erreur analytics:', err);
+              return { type: 'analytics', data: null };
+            })
+        );
+      }
+
+      if (promises.length === 0) {
+        setWorkOrders([]);
+        setEquipments([]);
         setAnalytics(null);
+        setLoading(false);
+        isFirstLoad.current = false;
         return;
       }
-      
-      try {
-        const response = await reportsAPI.getAnalytics();
-        setAnalytics(response?.data || null);
-        analyticsLoadedRef.current = true;
-      } catch (error) {
-        console.error('[useDashboard] Erreur chargement analytics:', error);
-        setAnalytics(null);
+
+      const results = await Promise.all(promises);
+
+      // Mettre à jour les données
+      results.forEach(result => {
+        if (result.type === 'workOrders') {
+          setWorkOrders(result.data);
+        } else if (result.type === 'equipments') {
+          setEquipments(result.data);
+        } else if (result.type === 'analytics') {
+          setAnalytics(result.data);
+        }
+      });
+
+    } catch (error) {
+      console.error('[useDashboard] Erreur générale:', error);
+    } finally {
+      if (isFirstLoad.current) {
+        setLoading(false);
+        isFirstLoad.current = false;
       }
-    };
-    
-    loadAnalytics();
+    }
   }, [canView]);
 
-  // Fonction pour tout rafraîchir
-  const refresh = useCallback(() => {
-    refreshWorkOrders();
-    refreshEquipments();
-    // Recharger aussi analytics
-    analyticsLoadedRef.current = false;
-  }, [refreshWorkOrders, refreshEquipments]);
+  // Chargement initial et polling automatique
+  useEffect(() => {
+    // Charger les données immédiatement
+    loadData();
 
-  const loading = loadingWorkOrders || loadingEquipments;
-  const wsConnected = wsWorkOrders || wsEquipments;
+    // Rafraîchir toutes les 10 secondes
+    intervalRef.current = setInterval(loadData, 10000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [loadData]);
+
+  // Fonction pour rafraîchir manuellement
+  const refresh = useCallback(() => {
+    loadData();
+  }, [loadData]);
 
   return {
     workOrders,
     equipments,
     analytics,
     loading,
-    wsConnected,
+    wsConnected: false, // Pas de WebSocket pour le moment, juste polling
     refresh,
   };
 };
