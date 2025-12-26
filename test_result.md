@@ -672,11 +672,20 @@ agent_communication:
 ## Test Files
 - Frontend: /app/frontend/src/pages/Assets.jsx ✅ Page loads correctly
 - Frontend: /app/frontend/src/pages/Vendors.jsx ✅ Page loads correctly
+- Frontend: /app/frontend/src/pages/Dashboard.jsx ✅ Page loads correctly with aggregated data
+- Frontend: /app/frontend/src/pages/InterventionRequests.jsx ✅ Page loads correctly
+- Frontend: /app/frontend/src/pages/ImprovementRequests.jsx ✅ Page loads correctly
 - Frontend Hook: /app/frontend/src/hooks/useEquipments.js ✅ WebSocket integration working
 - Frontend Hook: /app/frontend/src/hooks/useVendors.js ✅ WebSocket integration working
+- Frontend Hook: /app/frontend/src/hooks/useDashboard.js ✅ WebSocket integration working
+- Frontend Hook: /app/frontend/src/hooks/useInterventionRequests.js ✅ WebSocket integration working
+- Frontend Hook: /app/frontend/src/hooks/useImprovementRequests.js ✅ WebSocket integration working
 - Backend API: /app/backend/server.py ✅ All endpoints working
 - WebSocket: /ws/realtime/equipments ✅ Connection establishment working
 - WebSocket: /ws/realtime/suppliers ✅ Connection establishment working
+- WebSocket: /ws/realtime/work_orders ✅ Connection establishment working
+- WebSocket: /ws/realtime/intervention_requests ✅ Connection establishment working
+- WebSocket: /ws/realtime/improvement_requests ✅ Connection establishment working
 
 ## Network Activity Observed
 - GET https://realtimesync.preview.emergentagent.com/api/equipments (Working)
