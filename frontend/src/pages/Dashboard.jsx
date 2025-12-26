@@ -38,6 +38,9 @@ const Dashboard = () => {
     const safeWorkOrders = workOrders || [];
     const safeEquipments = equipments || [];
     
+    // Si canView n'est pas encore défini, retourner un tableau vide
+    if (!canView) return [];
+    
     const allStats = [];
     
     // Ordres de travail actifs
