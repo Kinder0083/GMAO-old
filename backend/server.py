@@ -5590,6 +5590,14 @@ async def create_intervention_request(
         
         await db.intervention_requests.insert_one(request_data)
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "intervention_requests",
+            "created",
+            request_data,
+            user_id=current_user["id"]
+        )
+        
         # Audit log
         await audit_service.log_action(
             user_id=current_user["id"],
