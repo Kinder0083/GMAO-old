@@ -5900,7 +5900,7 @@ async def get_all_improvement_requests(current_user: dict = Depends(require_perm
     try:
         requests = []
         async for req in db.improvement_requests.find().sort("date_creation", -1):
-            req_dict = dict(req)
+            req_dict = serialize_doc(req)
             
             # Enrichir avec les informations du créateur
             if req.get("created_by_id"):
