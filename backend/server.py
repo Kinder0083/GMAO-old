@@ -6114,7 +6114,18 @@ async def convert_to_improvement(
         raise HTTPException(status_code=403, detail="Accès refusé")
     
     try:
+        # Essayer d'abord avec le champ 'id' (nouveaux documents UUID)
         req = await db.improvement_requests.find_one({"id": request_id})
+        query_field = "id"
+        
+        # Si non trouvé, essayer avec _id (anciens documents ObjectId)
+        if not req:
+            try:
+                req = await db.improvement_requests.find_one({"_id": ObjectId(request_id)})
+                query_field = "_id"
+            except:
+                pass
+        
         if not req:
             raise HTTPException(status_code=404, detail="Demande non trouvée")
         
@@ -6166,8 +6177,14 @@ async def convert_to_improvement(
         
         await db.improvements.insert_one(improvement_data)
         
+        # Utiliser le bon champ pour la mise à jour
+        if query_field == "id":
+            update_query = {"id": request_id}
+        else:
+            update_query = {"_id": req["_id"]}
+        
         await db.improvement_requests.update_one(
-            {"id": request_id},
+            update_query,
             {"$set": {
                 "improvement_id": improvement_id,
                 "improvement_numero": numero,
