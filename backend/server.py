@@ -6060,17 +6060,26 @@ async def update_improvement_request(
 @api_router.delete("/improvement-requests/{request_id}")
 async def delete_improvement_request(request_id: str, current_user: dict = Depends(require_permission("improvementRequests", "delete"))):
     """Supprimer une demande d'amélioration"""
-    try:
-        req = await db.improvement_requests.find_one({"_id": ObjectId(request_id)})
-    except:
-        raise HTTPException(status_code=400, detail="ID invalide")
+    # Essayer d'abord avec le champ 'id' (pour les nouveaux documents avec UUID)
+    req = await db.improvement_requests.find_one({"id": request_id})
+    
+    # Si non trouvé, essayer avec _id (pour les anciens documents)
+    if not req:
+        try:
+            req = await db.improvement_requests.find_one({"_id": ObjectId(request_id)})
+        except:
+            pass
     
     if not req:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
     req_title = req.get('titre', 'Sans titre')
     
-    await db.improvement_requests.delete_one({"_id": ObjectId(request_id)})
+    # Supprimer avec le même critère utilisé pour trouver
+    if req.get("id") == request_id:
+        await db.improvement_requests.delete_one({"id": request_id})
+    else:
+        await db.improvement_requests.delete_one({"_id": req["_id"]})
     
     # Broadcast WebSocket pour la synchronisation temps réel
     await realtime_manager.emit_event(
