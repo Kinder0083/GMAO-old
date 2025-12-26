@@ -6353,6 +6353,14 @@ async def create_improvement(imp_create: ImprovementCreate, current_user: dict =
     
     await db.improvements.insert_one(improvement_data)
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "improvements",
+        "created",
+        improvement_data,
+        user_id=current_user["id"]
+    )
+    
     await audit_service.log_action(
         user_id=current_user["id"],
         user_name=f"{current_user.get('nom', '')} {current_user.get('prenom', '')}",
