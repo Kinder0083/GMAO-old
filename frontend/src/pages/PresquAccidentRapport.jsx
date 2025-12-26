@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -16,6 +16,8 @@ const PresquAccidentRapport = () => {
   const [displayMode, setDisplayMode] = useState(() => {
     return localStorage.getItem('presqu_accident_rapport_display_mode') || 'cards';
   });
+  const previousItemsLengthRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
 
   // Utiliser le hook temps réel pour détecter les changements
   const { items, loading: itemsLoading } = usePresquAccident();
@@ -40,20 +42,35 @@ const PresquAccidentRapport = () => {
   // Charger les stats au montage
   useEffect(() => {
     loadStats();
+    isInitialLoadRef.current = false;
   }, []);
 
   // Recharger les stats quand les items changent (via WebSocket)
   useEffect(() => {
-    if (!itemsLoading && items !== null) {
+    // Ignorer le premier rendu
+    if (isInitialLoadRef.current) return;
+    
+    // Ignorer si encore en chargement
+    if (itemsLoading) return;
+    
+    // Calculer la longueur actuelle
+    const currentLength = items ? items.length : 0;
+    
+    // Si la longueur a changé, recharger les stats
+    if (previousItemsLengthRef.current !== null && previousItemsLengthRef.current !== currentLength) {
+      console.log('[Rapport] Items changed:', previousItemsLengthRef.current, '->', currentLength);
       loadStats();
     }
-  }, [items, itemsLoading]);
+    
+    // Mettre à jour la référence
+    previousItemsLengthRef.current = currentLength;
+  }, [items, itemsLoading, loadStats]);
 
   useEffect(() => {
     localStorage.setItem('presqu_accident_rapport_display_mode', displayMode);
   }, [displayMode]);
 
-  if ((loading && !stats) || itemsLoading) {
+  if ((loading && !stats) || (itemsLoading && !stats)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-500">Chargement des statistiques...</p>
