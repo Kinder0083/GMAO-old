@@ -45,9 +45,10 @@ function Documentations() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
-  const [poles, setPoles] = useState([]);
-  const [filteredPoles, setFilteredPoles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Utiliser le hook temps réel pour les pôles
+  const { poles, loading, refresh } = useDocumentations();
+  
   const [openForm, setOpenForm] = useState(false);
   const [selectedPole, setSelectedPole] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,41 +67,15 @@ function Documentations() {
     icon: 'Folder'
   });
 
-  useEffect(() => {
-    loadPoles();
-  }, []);
-
-  useEffect(() => {
-    if (searchTerm) {
-      const filtered = poles.filter(pole =>
-        pole.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pole.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredPoles(filtered);
-    } else {
-      setFilteredPoles(poles);
-    }
+  // Filtrer les pôles selon la recherche (mémorisé pour éviter les re-calculs)
+  const filteredPoles = useMemo(() => {
+    if (!poles) return [];
+    if (!searchTerm) return poles;
+    return poles.filter(pole =>
+      pole.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pole.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }, [searchTerm, poles]);
-
-  const loadPoles = async () => {
-    try {
-      setLoading(true);
-      const polesData = await documentationsAPI.getPoles();
-      
-      // Les pôles retournés contiennent déjà les documents et bons de travail
-      setPoles(polesData);
-      setFilteredPoles(polesData);
-    } catch (error) {
-      console.error('Erreur chargement pôles:', error);
-      toast({
-        title: 'Erreur',
-        description: formatErrorMessage(error, 'Erreur lors du chargement'),
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreate = () => {
     setSelectedPole(null);
