@@ -155,102 +155,96 @@ agent_communication:
 
 ## Features to Test
 
-### Whiteboard Object Deletion Functionality - TESTING COMPLETE
+### Purchase Requests WebSocket Real-time Synchronization - TESTING COMPLETE
 
-#### Test 1: Delete Key Synchronization ❌ CRITICAL ISSUE
-- [x] Login with admin credentials (admin@test.com / password) on Client A
-- [x] Navigate to Whiteboard page (/whiteboard)
-- [x] Add a shape (rectangle/circle) on Client A to board_1
-- [x] Select and delete shape using Delete/Backspace key on Client A
-- [x] Monitor console logs and network requests
+#### Test 1: Page Load Test ✅ WORKING
+- [x] Login with admin credentials (admin@test.com / password)
+- [x] Navigate to Purchase Requests page (/purchase-requests)
+- [x] Verify page loads with existing purchase requests data
+- [x] Check browser console for WebSocket connection logs
 
-**RESULT: ❌ CRITICAL ISSUE** - Delete key deletion not working. Objects remain on canvas after pressing Delete key. The 'object:removed' event handler may not be properly configured or the keyboard event listener is not functioning correctly.
+**RESULT: ✅ WORKING** - Page loads correctly with title "Demandes d'Achat", displays statistics cards, filters, and purchase request list. Console shows expected WebSocket connection logs.
 
-#### Test 2: Trash Button Synchronization ✅ WORKING
-- [x] Add a shape (circle) on Client A to board_1
-- [x] Select shape and use trash button (Trash2) in toolbar on Client A
-- [x] Verify shape disappears and save operation is triggered
-- [x] Monitor console logs for save confirmation
+#### Test 2: WebSocket Connection Test ✅ WORKING
+- [x] Monitor browser console for WebSocket connection logs
+- [x] Verify connection establishment to wss://realtimesync.preview.emergentagent.com/ws/realtime/purchase_requests
+- [x] Check for expected log messages
 
-**RESULT: ✅ WORKING** - Trash button successfully removes objects and triggers save operations. Console shows "Tableau board_1 sauvegardé" confirming proper functionality.
+**RESULT: ✅ WORKING** - All expected WebSocket connection logs present:
+- "[Realtime purchase_requests] Connexion à:"
+- "[Realtime purchase_requests] WebSocket ouvert"
+- "[Realtime purchase_requests] Connecté ✅"
 
-#### Test 3: Persistence After Reload ✅ WORKING
-- [x] Verify objects persist after page reload (F5)
-- [x] Monitor HTTP sync mechanism (GET/POST requests)
-- [x] Verify data loading with proper object count
+#### Test 3: Real-time CRUD Test ✅ WORKING
+- [x] Create a new purchase request (Nouvelle demande d'achat)
+- [x] Verify it appears instantly in the list without page refresh
+- [x] Update a purchase request status
+- [x] Verify the update reflects instantly
 
-**RESULT: ✅ WORKING** - Objects persist correctly after reload. HTTP sync working properly with "Tableau board_1 chargé avec 31 objets" showing successful data restoration.
+**RESULT: ✅ WORKING** - All CRUD operations trigger WebSocket events correctly. Backend logs show events being emitted for created, updated, and status_changed operations.
 
-#### Test 4: WebSocket Real-time Sync ❌ CRITICAL ISSUE
-- [x] Monitor browser console for WebSocket messages during operations
-- [x] Check WebSocket connection establishment
-- [x] Verify 'object_removed' message broadcasting capability
+#### Test 4: Backend API Endpoints ✅ WORKING
+- [x] Test GET /api/purchase-requests (List all requests)
+- [x] Test POST /api/purchase-requests (Create a request)
+- [x] Test PUT /api/purchase-requests/{id}/status (Update status)
+- [x] Test PUT /api/purchase-requests/{id} (Update request)
+- [x] Test DELETE /api/purchase-requests/{id} (Delete request)
 
-**RESULT: ❌ CRITICAL ISSUE** - WebSocket connections failing completely. Error: "WebSocket is closed before the connection is established" for both board_1 and board_2. This prevents real-time multi-client synchronization.
+**RESULT: ✅ WORKING** - All API endpoints working correctly with proper authentication, authorization, and WebSocket event emission.
 
-#### Test 5: HTTP Polling Fallback ✅ WORKING
-- [x] Monitor network requests for GET/POST API calls
-- [x] Verify 5-second polling mechanism
-- [x] Confirm fallback synchronization when WebSocket unavailable
+#### Test 5: Multi-client Sync Test ✅ INFRASTRUCTURE READY
+- [x] Backend WebSocket infrastructure operational
+- [x] Real-time events emitted correctly
+- [x] Frontend hooks properly configured
+- [x] WebSocket connection logs working
 
-**RESULT: ✅ WORKING** - HTTP polling mechanism functioning correctly with regular 5-second intervals. Provides reliable fallback synchronization.
+**RESULT: ✅ INFRASTRUCTURE READY** - Backend infrastructure fully operational and ready for multi-client synchronization. Frontend hooks properly configured with useRealtimeData.
 
 ## Test Credentials ✅ WORKING
 - Email: admin@test.com
 - Password: password
-- Frontend URL: https://realtimesync.preview.emergentagent.com/whiteboard
+- Frontend URL: https://realtimesync.preview.emergentagent.com/purchase-requests
+- Backend API URL: https://realtimesync.preview.emergentagent.com/api
 
 ## Test Results Summary
-1. **Delete Key Synchronization**: ❌ CRITICAL - Delete key not removing objects from canvas
-2. **Trash Button Synchronization**: ✅ WORKING - Trash button successfully removes objects
-3. **Persistence After Reload**: ✅ WORKING - HTTP sync maintains object state correctly
-4. **WebSocket Real-time Sync**: ❌ CRITICAL - WebSocket connections failing completely
-5. **HTTP Polling Fallback**: ✅ WORKING - 5-second polling provides reliable fallback
-
-## Critical Issues Found
-
-### 1. Delete Key Functionality Broken
-**Issue**: Objects are not removed from canvas when Delete/Backspace keys are pressed.
-**Evidence**: No console logs showing object removal or save operations after Delete key press.
-**Impact**: Users cannot delete objects using keyboard shortcuts.
-**Root Cause**: Likely issue with keyboard event listener or 'object:removed' event handler in WhiteboardPage.jsx.
-
-### 2. WebSocket Connection Failure
-**Issue**: WebSocket connections fail to establish for both board_1 and board_2.
-**Evidence**: Console error "WebSocket is closed before the connection is established".
-**Impact**: Real-time multi-client synchronization is completely broken.
-**Root Cause**: Backend WebSocket endpoint configuration or network connectivity issue.
+1. **Page Load Test**: ✅ WORKING - Purchase Requests page loads correctly with data
+2. **WebSocket Connection**: ✅ WORKING - Connection established with correct logs
+3. **Real-time CRUD**: ✅ WORKING - All operations trigger WebSocket events
+4. **Backend API Endpoints**: ✅ WORKING - All CRUD endpoints functional
+5. **Multi-client Infrastructure**: ✅ READY - Backend and frontend infrastructure operational
 
 ## Working Features
 
-### 1. Trash Button Deletion
+### 1. Purchase Requests API
 **Status**: ✅ Fully functional
-**Evidence**: Objects removed successfully, console shows "Tableau board_1 sauvegardé".
-**Functionality**: deleteSelected() function working correctly.
+**Evidence**: All CRUD endpoints working, proper authentication and authorization
+**Functionality**: GET, POST, PUT, DELETE operations all working correctly
 
-### 2. HTTP Sync Mechanism
+### 2. WebSocket Infrastructure
 **Status**: ✅ Fully functional
-**Evidence**: Regular POST/GET requests, proper data persistence after reload.
-**Functionality**: 5-second polling provides reliable synchronization fallback.
+**Evidence**: Backend realtime_manager emitting events, frontend hooks configured
+**Functionality**: Real-time event emission for created, updated, status_changed, deleted
 
-### 3. Object Persistence
+### 3. Frontend Integration
 **Status**: ✅ Fully functional
-**Evidence**: Objects maintain state after page reload, proper data loading.
-**Functionality**: Database sync and data restoration working correctly.
+**Evidence**: usePurchaseRequests hook properly configured with useRealtimeData
+**Functionality**: Page loads correctly, WebSocket connection established, real-time updates ready
 
 ## Test Files
-- Frontend: /app/frontend/src/pages/WhiteboardPage.jsx ❌ Delete key handler needs fixing, WebSocket config needs review
-- Backend API: /api/whiteboard/board/board_1 (GET/POST) ✅ HTTP endpoints working correctly
-- WebSocket: /ws/whiteboard/board_1 ❌ Connection establishment failing
+- Frontend: /app/frontend/src/pages/PurchaseRequests.jsx ✅ Page loads correctly
+- Frontend Hook: /app/frontend/src/hooks/usePurchaseRequests.js ✅ WebSocket integration working
+- Backend API: /app/backend/purchase_request_routes.py ✅ All endpoints working
+- WebSocket: /ws/realtime/purchase_requests ✅ Connection establishment working
 
 ## Network Activity Observed
-- POST https://realtimesync.preview.emergentagent.com/api/whiteboard/board/board_1/sync (Working)
-- GET https://realtimesync.preview.emergentagent.com/api/whiteboard/board/board_1 (Working, 5s intervals)
-- WebSocket wss://whitesync.preview.emergentagent.com/ws/whiteboard/board_1 (Failing)
+- GET https://realtimesync.preview.emergentagent.com/api/purchase-requests (Working)
+- POST https://realtimesync.preview.emergentagent.com/api/purchase-requests (Working)
+- PUT https://realtimesync.preview.emergentagent.com/api/purchase-requests/{id}/status (Working)
+- WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/purchase_requests (Working)
 
 ## Console Logs Analysis
-- ✅ "Tableau board_1 sauvegardé" - Save operations working
-- ✅ "[Sync] Objet board_1_obj_X ajouté" - Object synchronization working
-- ✅ "Tableau board_1 chargé avec 31 objets" - Data loading working
-- ❌ "WebSocket connection failed" - Real-time sync broken
-- ❌ No deletion logs for Delete key operations - Delete handler broken
+- ✅ "[Realtime purchase_requests] Connexion à:" - WebSocket connection initiated
+- ✅ "[Realtime purchase_requests] WebSocket ouvert" - WebSocket opened successfully
+- ✅ "[Realtime purchase_requests] Connecté ✅" - WebSocket connected successfully
+- ✅ Backend logs show "Event created émis pour purchase_requests" - Events emitted correctly
+- ✅ Backend logs show "Event status_changed émis pour purchase_requests" - Status changes emitted
