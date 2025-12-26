@@ -144,7 +144,8 @@ function Documentations() {
         toast({ title: 'Succès', description: 'Pôle créé' });
       }
       setOpenForm(false);
-      loadPoles();
+      // Le WebSocket mettra à jour automatiquement, mais on peut forcer un refresh
+      refresh();
     } catch (error) {
       toast({
         title: 'Erreur',
