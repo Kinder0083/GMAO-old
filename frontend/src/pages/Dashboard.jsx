@@ -33,9 +33,6 @@ const Dashboard = () => {
     'quick_actions'
   ];
 
-  // Fonction helper pour vérifier si un widget est activé
-  const isWidgetEnabled = (widgetId) => enabledWidgets.includes(widgetId);
-
   // Calculer les stats dynamiquement selon les widgets activés
   const stats = useMemo(() => {
     // Initialiser workOrders et equipments avec des tableaux vides si undefined
