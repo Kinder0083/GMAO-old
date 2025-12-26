@@ -401,37 +401,39 @@ class DashboardInterventionImprovementWebSocketTester:
             return False
 
     def run_comprehensive_tests(self):
-        """Run comprehensive WebSocket tests for Equipments and Vendors"""
+        """Run comprehensive WebSocket tests for Dashboard, Intervention Requests, and Improvement Requests"""
         self.log("=" * 80)
-        self.log("TESTING EQUIPMENTS & VENDORS WEBSOCKET REAL-TIME SYNCHRONIZATION")
+        self.log("TESTING DASHBOARD, INTERVENTION REQUESTS & IMPROVEMENT REQUESTS WEBSOCKET REAL-TIME SYNCHRONIZATION")
         self.log("=" * 80)
         self.log("CONTEXTE:")
-        self.log("Test de la synchronisation temps réel WebSocket pour les Equipments et Vendors")
-        self.log("Vérification des pages /assets et /vendors avec synchronisation multi-clients")
+        self.log("Test de la synchronisation temps réel WebSocket pour Dashboard, Intervention Requests et Improvement Requests")
+        self.log("Vérification des pages /dashboard, /intervention-requests et /improvement-requests avec synchronisation multi-clients")
         self.log("")
         self.log("TESTS À EFFECTUER:")
         self.log("1. Login admin avec credentials admin@test.com / password")
-        self.log("2. Test de l'API Equipments")
-        self.log("3. Test de l'API Vendors")
-        self.log("4. Test de création d'équipement")
-        self.log("5. Test de création de fournisseur")
-        self.log("6. Test de mise à jour de statut d'équipement")
-        self.log("7. Test de mise à jour de fournisseur")
-        self.log("8. Test de suppression d'équipement")
-        self.log("9. Test de suppression de fournisseur")
-        self.log("10. Test de l'infrastructure WebSocket")
+        self.log("2. Test des sources de données Dashboard (work orders + equipments)")
+        self.log("3. Test de l'API Intervention Requests")
+        self.log("4. Test de l'API Improvement Requests")
+        self.log("5. Test de création de demande d'intervention")
+        self.log("6. Test de création de demande d'amélioration")
+        self.log("7. Test de mise à jour de demande d'intervention")
+        self.log("8. Test de mise à jour de demande d'amélioration")
+        self.log("9. Test de suppression de demande d'intervention")
+        self.log("10. Test de suppression de demande d'amélioration")
+        self.log("11. Test de l'infrastructure WebSocket")
         self.log("=" * 80)
         
         results = {
             "admin_login": False,
-            "equipments_api": False,
-            "vendors_api": False,
-            "create_equipment": False,
-            "create_vendor": False,
-            "equipment_status_update": False,
-            "vendor_update": False,
-            "equipment_delete": False,
-            "vendor_delete": False,
+            "dashboard_data_sources": False,
+            "intervention_requests_api": False,
+            "improvement_requests_api": False,
+            "create_intervention_request": False,
+            "create_improvement_request": False,
+            "intervention_request_update": False,
+            "improvement_request_update": False,
+            "intervention_request_delete": False,
+            "improvement_request_delete": False,
             "websocket_infrastructure": False
         }
         
@@ -442,42 +444,45 @@ class DashboardInterventionImprovementWebSocketTester:
             self.log("❌ Cannot proceed with other tests - Admin login failed", "ERROR")
             return results
         
-        # Test 2: Equipments API
-        results["equipments_api"] = self.test_equipments_api()
+        # Test 2: Dashboard Data Sources
+        results["dashboard_data_sources"] = self.test_dashboard_data_sources()
         
-        # Test 3: Vendors API
-        results["vendors_api"] = self.test_vendors_api()
+        # Test 3: Intervention Requests API
+        results["intervention_requests_api"] = self.test_intervention_requests_api()
         
-        # Test 4: Create Equipment
-        created_equipment = self.test_create_equipment()
-        results["create_equipment"] = created_equipment is not None
+        # Test 4: Improvement Requests API
+        results["improvement_requests_api"] = self.test_improvement_requests_api()
         
-        # Test 5: Create Vendor
-        created_vendor = self.test_create_vendor()
-        results["create_vendor"] = created_vendor is not None
+        # Test 5: Create Intervention Request
+        created_intervention_request = self.test_create_intervention_request()
+        results["create_intervention_request"] = created_intervention_request is not None
         
-        # Test 6: Equipment Status Update
-        if created_equipment:
-            results["equipment_status_update"] = self.test_equipment_status_update(created_equipment["id"])
+        # Test 6: Create Improvement Request
+        created_improvement_request = self.test_create_improvement_request()
+        results["create_improvement_request"] = created_improvement_request is not None
         
-        # Test 7: Vendor Update
-        if created_vendor:
-            results["vendor_update"] = self.test_vendor_update(created_vendor["id"])
+        # Test 7: Intervention Request Update
+        if created_intervention_request:
+            results["intervention_request_update"] = self.test_intervention_request_update(created_intervention_request["id"])
         
-        # Test 8: Equipment Delete
-        if created_equipment:
-            results["equipment_delete"] = self.test_equipment_delete(created_equipment["id"])
+        # Test 8: Improvement Request Update
+        if created_improvement_request:
+            results["improvement_request_update"] = self.test_improvement_request_update(created_improvement_request["id"])
         
-        # Test 9: Vendor Delete
-        if created_vendor:
-            results["vendor_delete"] = self.test_vendor_delete(created_vendor["id"])
+        # Test 9: Intervention Request Delete
+        if created_intervention_request:
+            results["intervention_request_delete"] = self.test_intervention_request_delete(created_intervention_request["id"])
         
-        # Test 10: WebSocket Infrastructure
+        # Test 10: Improvement Request Delete
+        if created_improvement_request:
+            results["improvement_request_delete"] = self.test_improvement_request_delete(created_improvement_request["id"])
+        
+        # Test 11: WebSocket Infrastructure
         results["websocket_infrastructure"] = self.test_websocket_infrastructure()
         
         # Summary
         self.log("=" * 80)
-        self.log("EQUIPMENTS & VENDORS WEBSOCKET TESTING - RÉSULTATS DES TESTS")
+        self.log("DASHBOARD, INTERVENTION & IMPROVEMENT REQUESTS WEBSOCKET TESTING - RÉSULTATS DES TESTS")
         self.log("=" * 80)
         
         passed = sum(results.values())
@@ -495,12 +500,18 @@ class DashboardInterventionImprovementWebSocketTester:
         self.log("=" * 60)
         
         expected_logs = [
+            "[Realtime work_orders] Connexion à:",
+            "[Realtime work_orders] WebSocket ouvert",
+            "[Realtime work_orders] Connecté ✅",
             "[Realtime equipments] Connexion à:",
             "[Realtime equipments] WebSocket ouvert",
             "[Realtime equipments] Connecté ✅",
-            "[Realtime suppliers] Connexion à:",
-            "[Realtime suppliers] WebSocket ouvert",
-            "[Realtime suppliers] Connecté ✅"
+            "[Realtime intervention_requests] Connexion à:",
+            "[Realtime intervention_requests] WebSocket ouvert",
+            "[Realtime intervention_requests] Connecté ✅",
+            "[Realtime improvement_requests] Connexion à:",
+            "[Realtime improvement_requests] WebSocket ouvert",
+            "[Realtime improvement_requests] Connecté ✅"
         ]
         
         for expected_log in expected_logs:
@@ -510,18 +521,18 @@ class DashboardInterventionImprovementWebSocketTester:
         
         # Final Conclusion
         self.log("\n" + "=" * 80)
-        self.log("CONCLUSION FINALE - EQUIPMENTS & VENDORS WEBSOCKET FUNCTIONALITY")
+        self.log("CONCLUSION FINALE - DASHBOARD, INTERVENTION & IMPROVEMENT REQUESTS WEBSOCKET FUNCTIONALITY")
         self.log("=" * 80)
         
-        critical_tests = ["admin_login", "equipments_api", "vendors_api", "websocket_infrastructure"]
+        critical_tests = ["admin_login", "dashboard_data_sources", "intervention_requests_api", "improvement_requests_api", "websocket_infrastructure"]
         critical_passed = sum(results.get(test, False) for test in critical_tests)
         
-        crud_tests = ["create_equipment", "create_vendor", "equipment_status_update", "vendor_update", "equipment_delete", "vendor_delete"]
+        crud_tests = ["create_intervention_request", "create_improvement_request", "intervention_request_update", "improvement_request_update", "intervention_request_delete", "improvement_request_delete"]
         crud_passed = sum(results.get(test, False) for test in crud_tests)
         
         if critical_passed >= len(critical_tests) and crud_passed >= len(crud_tests):
-            self.log("🎉 EQUIPMENTS & VENDORS WEBSOCKET FUNCTIONALITY ENTIÈREMENT FONCTIONNELLE!")
-            self.log("✅ API Equipments et Vendors fonctionnelles")
+            self.log("🎉 DASHBOARD, INTERVENTION & IMPROVEMENT REQUESTS WEBSOCKET FUNCTIONALITY ENTIÈREMENT FONCTIONNELLE!")
+            self.log("✅ API Dashboard, Intervention Requests et Improvement Requests fonctionnelles")
             self.log("✅ Opérations CRUD temps réel fonctionnelles")
             self.log("✅ Infrastructure WebSocket opérationnelle")
             self.log("✅ Synchronisation temps réel PRÊTE POUR PRODUCTION")
