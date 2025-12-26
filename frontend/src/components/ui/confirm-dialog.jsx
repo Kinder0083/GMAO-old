@@ -48,10 +48,27 @@ export function ConfirmDialog({
   );
 }
 
+// Composant interne pour le dialogue de confirmation qui utilise les refs
+const InternalConfirmDialog = React.memo(function InternalConfirmDialog({ stateRef, openState, onOpenChange }) {
+  const state = stateRef.current;
+  return (
+    <ConfirmDialog
+      open={openState}
+      onOpenChange={onOpenChange}
+      title={state.title}
+      description={state.description}
+      onConfirm={state.onConfirm}
+      confirmText={state.confirmText}
+      cancelText={state.cancelText}
+      variant={state.variant}
+    />
+  );
+});
+
 // Hook personnalisé pour faciliter l'utilisation
 export function useConfirmDialog() {
-  const [dialogState, setDialogState] = React.useState({
-    open: false,
+  const [open, setOpen] = React.useState(false);
+  const stateRef = React.useRef({
     title: '',
     description: '',
     onConfirm: () => {},
@@ -68,37 +85,31 @@ export function useConfirmDialog() {
     cancelText = 'Annuler',
     variant = 'default'
   }) => {
-    setDialogState({
-      open: true,
+    // Stocker les valeurs dans le ref (ne cause pas de re-render)
+    stateRef.current = {
       title,
       description,
       onConfirm,
       confirmText,
       cancelText,
       variant
-    });
+    };
+    // Seul setOpen cause un re-render
+    setOpen(true);
   }, []);
 
-  const handleOpenChange = React.useCallback((open) => {
-    setDialogState(prev => ({ ...prev, open }));
+  const handleOpenChange = React.useCallback((newOpen) => {
+    setOpen(newOpen);
   }, []);
 
-  // Utiliser useMemo pour éviter de recréer le composant à chaque render
-  const ConfirmDialogComponent = React.useMemo(() => {
-    const DialogWrapper = () => (
-      <ConfirmDialog
-        open={dialogState.open}
-        onOpenChange={handleOpenChange}
-        title={dialogState.title}
-        description={dialogState.description}
-        onConfirm={dialogState.onConfirm}
-        confirmText={dialogState.confirmText}
-        cancelText={dialogState.cancelText}
-        variant={dialogState.variant}
-      />
-    );
-    return DialogWrapper;
-  }, [dialogState, handleOpenChange]);
+  // Composant stable qui ne change jamais d'identité
+  const ConfirmDialogComponent = React.useCallback(() => (
+    <InternalConfirmDialog
+      stateRef={stateRef}
+      openState={open}
+      onOpenChange={handleOpenChange}
+    />
+  ), [open, handleOpenChange]);
 
   return { confirm, ConfirmDialog: ConfirmDialogComponent };
 }
