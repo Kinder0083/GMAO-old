@@ -22,7 +22,7 @@ DOCUMENTATIONS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtim
 ADMIN_EMAIL = "admin@test.com"
 ADMIN_PASSWORD = "password"
 
-class DashboardInterventionImprovementWebSocketTester:
+class DocumentationsWebSocketTester:
     def __init__(self):
         self.admin_session = requests.Session()
         self.admin_token = None
