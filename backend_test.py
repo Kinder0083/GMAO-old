@@ -438,12 +438,12 @@ class PurchaseRequestsWebSocketTester:
         return results
 
 if __name__ == "__main__":
-    tester = WorkOrdersWebSocketTester()
+    tester = PurchaseRequestsWebSocketTester()
     results = tester.run_websocket_tests()
     
     # Exit with appropriate code
     critical_tests = [
-        "admin_login", "websocket_connection", "work_orders_api", "realtime_sync"
+        "admin_login", "websocket_connection", "purchase_requests_api", "realtime_sync"
     ]
     
     critical_passed = sum(results.get(test, False) for test in critical_tests)
