@@ -3435,7 +3435,17 @@ async def create_vendor(vendor_create: VendorCreate, current_user: dict = Depend
     
     await db.vendors.insert_one(vendor_dict)
     
-    return Vendor(**serialize_doc(vendor_dict))
+    vendor_data = serialize_doc(vendor_dict)
+    
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "suppliers",
+        "created",
+        vendor_data,
+        user_id=current_user.get("id")
+    )
+    
+    return Vendor(**vendor_data)
 
 @api_router.put("/vendors/{vendor_id}", response_model=Vendor)
 async def update_vendor(vendor_id: str, vendor_update: VendorUpdate, current_user: dict = Depends(require_permission("vendors", "edit"))):
@@ -3449,7 +3459,17 @@ async def update_vendor(vendor_id: str, vendor_update: VendorUpdate, current_use
         )
         
         vendor = await db.vendors.find_one({"_id": ObjectId(vendor_id)})
-        return Vendor(**serialize_doc(vendor))
+        vendor_data = serialize_doc(vendor)
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "suppliers",
+            "updated",
+            vendor_data,
+            user_id=current_user.get("id")
+        )
+        
+        return Vendor(**vendor_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -3457,10 +3477,25 @@ async def update_vendor(vendor_id: str, vendor_update: VendorUpdate, current_use
 async def delete_vendor(vendor_id: str, current_user: dict = Depends(require_permission("vendors", "delete"))):
     """Supprimer un fournisseur"""
     try:
+        # Récupérer le fournisseur avant suppression pour le broadcast
+        vendor = await db.vendors.find_one({"_id": ObjectId(vendor_id)})
+        vendor_name = vendor.get("nom", "Inconnu") if vendor else "Inconnu"
+        
         result = await db.vendors.delete_one({"_id": ObjectId(vendor_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Fournisseur non trouvé")
+        
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "suppliers",
+            "deleted",
+            {"id": vendor_id, "nom": vendor_name},
+            user_id=current_user.get("id")
+        )
+        
         return {"message": "Fournisseur supprimé"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
