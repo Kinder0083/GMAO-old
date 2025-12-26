@@ -6849,8 +6849,8 @@ api_router.include_router(surveillance_router)
 # Import presqu'accident routes
 from presqu_accident_routes import router as presqu_accident_router, init_presqu_accident_routes
 
-# Initialize presqu'accident routes with database and audit service
-init_presqu_accident_routes(db, audit_service)
+# Initialize presqu'accident routes with database, audit service and realtime manager
+init_presqu_accident_routes(db, audit_service, realtime_manager)
 
 # Include presqu'accident routes
 api_router.include_router(presqu_accident_router)
