@@ -10,15 +10,22 @@ export const useIoTDashboard = (timeRange = 24) => {
   const [statistics, setStatistics] = useState({});
   const [groupsByType, setGroupsByType] = useState([]);
   const [groupsByLocation, setGroupsByLocation] = useState([]);
-  const [loadingDetails, setLoadingDetails] = useState(true);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Utiliser le hook temps réel pour les capteurs
   const { sensors, loading: loadingSensors, wsConnected, refresh: refreshSensors } = useSensors();
 
   // Charger les données détaillées quand les capteurs changent
   const loadDetails = useCallback(async () => {
+    // Attendre que les capteurs soient chargés
+    if (loadingSensors) return;
+    
+    // Si pas de capteurs, ne pas charger les détails
     if (!sensors || sensors.length === 0) {
-      setLoadingDetails(false);
+      setGroupsByType([]);
+      setGroupsByLocation([]);
+      setSensorReadings({});
+      setStatistics({});
       return;
     }
 
@@ -63,7 +70,7 @@ export const useIoTDashboard = (timeRange = 24) => {
     } finally {
       setLoadingDetails(false);
     }
-  }, [sensors, timeRange]);
+  }, [sensors, loadingSensors, timeRange]);
 
   // Recharger les détails quand les capteurs ou le timeRange changent
   useEffect(() => {
@@ -72,11 +79,10 @@ export const useIoTDashboard = (timeRange = 24) => {
 
   const refresh = useCallback(async () => {
     await refreshSensors();
-    await loadDetails();
-  }, [refreshSensors, loadDetails]);
+  }, [refreshSensors]);
 
   return {
-    sensors,
+    sensors: sensors || [],
     sensorReadings,
     statistics,
     groupsByType,
