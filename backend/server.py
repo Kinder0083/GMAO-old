@@ -6838,6 +6838,7 @@ async def get_recent_update_info(current_user: dict = Depends(get_current_user))
 
 # Import surveillance routes
 from surveillance_routes import router as surveillance_router, init_surveillance_routes
+from realtime_manager import realtime_manager
 
 # Initialize surveillance routes with database, audit service and realtime manager
 init_surveillance_routes(db, audit_service, realtime_manager)
