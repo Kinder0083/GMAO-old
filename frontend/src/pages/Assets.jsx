@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -10,12 +10,11 @@ import QuickStatusChanger from '../components/Equipment/QuickStatusChanger';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
+import { useEquipments } from '../hooks/useEquipments';
 
 const Assets = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [equipments, setEquipments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -25,25 +24,12 @@ const Assets = () => {
   const [viewMode, setViewMode] = useState('list'); // 'list' ou 'tree'
   const [parentForNewChild, setParentForNewChild] = useState(null);
 
-  useEffect(() => {
-    loadEquipments();
-  }, []);
-
-  const loadEquipments = async () => {
-    try {
-      setLoading(true);
-      const response = await equipmentsAPI.getAll();
-      setEquipments(response.data);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les équipements',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Utiliser le hook temps réel
+  const { 
+    equipments, 
+    loading, 
+    refresh: refreshEquipments 
+  } = useEquipments();
 
   const handleDelete = async (equipment) => {
     setItemToDelete(equipment);
