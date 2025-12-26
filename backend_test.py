@@ -155,40 +155,43 @@ class PurchaseRequestsWebSocketTester:
             self.log(f"❌ Purchase Requests API request failed - Error: {str(e)}", "ERROR")
             return False
 
-    def test_create_work_order(self):
-        """TEST 3: Create Work Order Test"""
-        self.log("🧪 TEST 3: Create Work Order Test")
+    def test_create_purchase_request(self):
+        """TEST 3: Create Purchase Request Test"""
+        self.log("🧪 TEST 3: Create Purchase Request Test")
         
         try:
-            # Create a test work order
-            work_order_data = {
-                "id": f"test-wo-{int(time.time())}",
-                "titre": f"Test WebSocket Work Order - {datetime.now().strftime('%H:%M:%S')}",
-                "description": "Test work order for WebSocket real-time synchronization testing",
-                "type": "CURATIF",
-                "priorite": "NORMALE",
-                "statut": "OUVERT",
-                "tempsEstime": 2.0,
-                "dateLimite": (datetime.now() + timedelta(days=7)).isoformat()
+            # Create a test purchase request
+            purchase_request_data = {
+                "designation": f"Test WebSocket Purchase Request - {datetime.now().strftime('%H:%M:%S')}",
+                "reference": f"TEST-PR-{int(time.time())}",
+                "quantite": 5,
+                "unite": "pièces",
+                "type": "PIECE_DETACHEE",
+                "urgence": "URGENT",
+                "justification": "Test purchase request for WebSocket real-time synchronization testing",
+                "destinataire_id": self.admin_data.get('id'),
+                "destinataire_nom": f"{self.admin_data.get('prenom')} {self.admin_data.get('nom')}",
+                "fournisseur_suggere": "Test Supplier Ltd",
+                "prix_unitaire_estime": 25.50
             }
             
             response = self.admin_session.post(
-                f"{BACKEND_URL}/work-orders",
-                json=work_order_data,
+                f"{BACKEND_URL}/purchase-requests",
+                json=purchase_request_data,
                 timeout=15
             )
             
             if response.status_code == 200:
-                created_wo = response.json()
-                self.log(f"✅ POST /api/work-orders successful - Created WO: {created_wo.get('numero')}")
-                return created_wo
+                created_pr = response.json()
+                self.log(f"✅ POST /api/purchase-requests successful - Created PR: {created_pr.get('numero')}")
+                return created_pr
             else:
-                self.log(f"❌ POST /api/work-orders failed - Status: {response.status_code}", "ERROR")
+                self.log(f"❌ POST /api/purchase-requests failed - Status: {response.status_code}", "ERROR")
                 self.log(f"   Response: {response.text}")
                 return None
                 
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Create work order request failed - Error: {str(e)}", "ERROR")
+            self.log(f"❌ Create purchase request request failed - Error: {str(e)}", "ERROR")
             return None
 
     def test_realtime_infrastructure(self):
