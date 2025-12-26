@@ -395,7 +395,7 @@ const Inventory = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         item={selectedItem}
-        onSuccess={loadInventory}
+        onSuccess={refreshInventory}
       />
 
       <DeleteConfirmDialog
