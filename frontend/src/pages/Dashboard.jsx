@@ -127,7 +127,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        <p className="text-gray-600 mt-1">Vue d'ensemble de vos opérations</p>
+        <p className="text-gray-600 mt-1">Vue d&apos;ensemble de vos opérations</p>
       </div>
 
       {/* Stats Cards */}
