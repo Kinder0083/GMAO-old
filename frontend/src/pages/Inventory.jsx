@@ -8,12 +8,11 @@ import InventoryFormDialog from '../components/Inventory/InventoryFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { inventoryAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
+import { useInventory } from '../hooks/useInventory';
 
 const Inventory = () => {
   const { toast } = useToast();
   const location = useLocation();
-  const [inventory, setInventory] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAlert, setFilterAlert] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -21,29 +20,20 @@ const Inventory = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
 
+  // Utiliser le hook temps réel
+  const { 
+    inventory, 
+    loading, 
+    refresh: refreshInventory,
+    setInventory 
+  } = useInventory();
+
   useEffect(() => {
-    loadInventory();
     // Vérifier si on doit afficher le filtre alerte
     if (location.state?.filterAlert) {
       setFilterAlert(true);
     }
   }, [location]);
-
-  const loadInventory = async () => {
-    try {
-      setLoading(true);
-      const response = await inventoryAPI.getAll();
-      setInventory(response.data);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger l\'inventaire',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const adjustQuantity = async (item, delta) => {
     try {
