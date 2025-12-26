@@ -5671,6 +5671,14 @@ async def update_intervention_request(
     # Récupérer la demande mise à jour
     updated_req = await db.intervention_requests.find_one({"id": request_id})
     
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "intervention_requests",
+        "updated",
+        dict(updated_req),
+        user_id=current_user["id"]
+    )
+    
     # Audit log
     await audit_service.log_action(
         user_id=current_user["id"],
@@ -5692,7 +5700,17 @@ async def delete_intervention_request(request_id: str, current_user: dict = Depe
     if not req:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
+    req_title = req.get('titre', 'Sans titre')
+    
     await db.intervention_requests.delete_one({"id": request_id})
+    
+    # Broadcast WebSocket pour la synchronisation temps réel
+    await realtime_manager.emit_event(
+        "intervention_requests",
+        "deleted",
+        {"id": request_id, "titre": req_title},
+        user_id=current_user["id"]
+    )
     
     # Audit log
     await audit_service.log_action(
@@ -5702,7 +5720,7 @@ async def delete_intervention_request(request_id: str, current_user: dict = Depe
         action=ActionType.DELETE,
         entity_type=EntityType_Audit.WORK_ORDER,
         entity_id=request_id,
-        entity_name=req['titre'],
+        entity_name=req_title,
         details=f"Suppression demande d'intervention"
     )
     
