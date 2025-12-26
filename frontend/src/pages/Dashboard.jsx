@@ -154,7 +154,7 @@ const Dashboard = () => {
       </div>
 
       {/* Ordres de travail récents */}
-      {canView('workOrders') && isWidgetEnabled('work_orders_active') && (
+      {canView('workOrders') && enabledWidgets.includes('work_orders_active') && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -163,7 +163,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {workOrders.length === 0 ? (
+            {!workOrders || workOrders.length === 0 ? (
               <p className="text-gray-500 text-center py-4">Aucun ordre de travail</p>
             ) : (
               <div className="space-y-3">
@@ -190,7 +190,7 @@ const Dashboard = () => {
       )}
 
       {/* État des équipements */}
-      {canView('assets') && isWidgetEnabled('equipment_maintenance') && (
+      {canView('assets') && enabledWidgets.includes('equipment_maintenance') && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -199,7 +199,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {equipments.length === 0 ? (
+            {!equipments || equipments.length === 0 ? (
               <p className="text-gray-500 text-center py-4">Aucun équipement</p>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
