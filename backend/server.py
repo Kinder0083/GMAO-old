@@ -6863,8 +6863,8 @@ from surveillance_history_routes import router as surveillance_history_router
 from tailscale_routes import router as tailscale_router
 from autorisation_routes import router as autorisation_router
 
-# Initialize documentations routes with database and audit service
-init_documentations_routes(db, audit_service)
+# Initialize documentations routes with database, audit service and realtime manager
+init_documentations_routes(db, audit_service, realtime_manager)
 
 # Include documentations routes
 api_router.include_router(documentations_router)
