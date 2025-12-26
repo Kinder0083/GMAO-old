@@ -45,7 +45,7 @@ const Assets = () => {
         title: 'Succès',
         description: 'Équipement supprimé'
       });
-      loadEquipments();
+      refreshEquipments();
     } catch (error) {
       toast({
         title: 'Erreur',
