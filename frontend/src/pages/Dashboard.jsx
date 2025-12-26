@@ -38,37 +38,41 @@ const Dashboard = () => {
 
   // Calculer les stats dynamiquement selon les widgets activés
   const stats = useMemo(() => {
+    // Initialiser workOrders et equipments avec des tableaux vides si undefined
+    const safeWorkOrders = workOrders || [];
+    const safeEquipments = equipments || [];
+    
     const allStats = [];
     
     // Ordres de travail actifs
-    if (isWidgetEnabled('work_orders_active') && canView('workOrders')) {
-      const activeOrders = workOrders.filter(wo => wo.statut !== 'TERMINE' && wo.statut !== 'ANNULE');
+    if (enabledWidgets.includes('work_orders_active') && canView('workOrders')) {
+      const activeOrders = safeWorkOrders.filter(wo => wo.statut !== 'TERMINE' && wo.statut !== 'ANNULE');
       allStats.push({
         title: 'Ordres Actifs',
         value: activeOrders.length,
         icon: ClipboardList,
         color: 'blue',
-        trend: `${workOrders.filter(wo => wo.statut === 'EN_COURS').length} en cours`
+        trend: `${safeWorkOrders.filter(wo => wo.statut === 'EN_COURS').length} en cours`
       });
     }
     
     // Équipements en maintenance
-    if (isWidgetEnabled('equipment_maintenance') && canView('assets')) {
-      const inMaintenance = equipments.filter(eq => eq.statut === 'EN_PANNE' || eq.statut === 'EN_MAINTENANCE');
+    if (enabledWidgets.includes('equipment_maintenance') && canView('assets')) {
+      const inMaintenance = safeEquipments.filter(eq => eq.statut === 'EN_PANNE' || eq.statut === 'EN_MAINTENANCE');
       allStats.push({
         title: 'Équipements en maintenance',
         value: inMaintenance.length,
         icon: Wrench,
         color: 'orange',
-        trend: `${equipments.filter(eq => eq.statut === 'OPERATIONNEL').length} opérationnels`
+        trend: `${safeEquipments.filter(eq => eq.statut === 'OPERATIONNEL').length} opérationnels`
       });
     }
     
     // Tâches en retard
-    if (isWidgetEnabled('overdue_tasks') && canView('workOrders')) {
+    if (enabledWidgets.includes('overdue_tasks') && canView('workOrders')) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const overdue = workOrders.filter(wo => {
+      const overdue = safeWorkOrders.filter(wo => {
         if (wo.statut === 'TERMINE' || wo.statut === 'ANNULE') return false;
         if (!wo.dateLimite) return false;
         const dueDate = new Date(wo.dateLimite);
@@ -84,11 +88,11 @@ const Dashboard = () => {
     }
     
     // Terminés ce mois
-    if (isWidgetEnabled('maintenance_stats') && canView('workOrders')) {
+    if (enabledWidgets.includes('maintenance_stats') && canView('workOrders')) {
       const thisMonth = new Date();
       thisMonth.setDate(1);
       thisMonth.setHours(0, 0, 0, 0);
-      const completedThisMonth = workOrders.filter(wo => {
+      const completedThisMonth = safeWorkOrders.filter(wo => {
         if (wo.statut !== 'TERMINE') return false;
         const completedDate = new Date(wo.dateModification || wo.dateCreation);
         return completedDate >= thisMonth;
@@ -103,7 +107,7 @@ const Dashboard = () => {
     }
     
     return allStats;
-  }, [workOrders, equipments, canView, isWidgetEnabled]);
+  }, [workOrders, equipments, canView, enabledWidgets]);
 
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
