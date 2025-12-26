@@ -1,11 +1,11 @@
-# Test Results - Documentations WebSocket Real-time Synchronization
+# Test Results - Dashboard and Documentations WebSocket
 
 ## Testing Protocol
-Testing Documentations (Pôles de Service) WebSocket real-time synchronization functionality:
-1. Page load test - verify Documentations page loads with existing poles
-2. WebSocket connection test - verify WebSocket connection to /ws/realtime/documentations
-3. Real-time CRUD test - create, update, delete operations sync instantly
-4. Backend API endpoints verification for /api/documentations/poles
+Testing Dashboard and Documentations pages functionality:
+1. Dashboard page - verify stats cards load with real data
+2. Dashboard page - verify work orders and equipments display correctly  
+3. Documentations page - verify poles load and display correctly
+4. Documentations page - verify CRUD operations work with WebSocket events
 
 ### Test Credentials
 - Admin: admin@test.com / password
