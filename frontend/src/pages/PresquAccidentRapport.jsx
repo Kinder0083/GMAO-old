@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -15,16 +15,9 @@ const PresquAccidentRapport = () => {
   const [displayMode, setDisplayMode] = useState(() => {
     return localStorage.getItem('presqu_accident_rapport_display_mode') || 'cards';
   });
+  const wsRef = useRef(null);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('presqu_accident_rapport_display_mode', displayMode);
-  }, [displayMode]);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true);
       const data = await presquAccidentAPI.getRapportStats();
@@ -39,7 +32,57 @@ const PresquAccidentRapport = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  // Écouter les événements WebSocket pour les mises à jour temps réel
+  useEffect(() => {
+    loadStats();
+
+    // Connexion WebSocket pour écouter les changements
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const wsUrl = process.env.REACT_APP_BACKEND_URL?.replace('https://', 'wss://').replace('http://', 'ws://') || 'ws://localhost:8001';
+    const ws = new WebSocket(`${wsUrl}/ws/realtime?token=${token}`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('[Rapport P.Accident] WebSocket connecté');
+      // S'abonner aux événements near_miss
+      ws.send(JSON.stringify({ type: 'subscribe', entity: 'near_miss' }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        // Recharger les stats quand un événement near_miss est reçu
+        if (message.entity === 'near_miss' && ['created', 'updated', 'deleted'].includes(message.event)) {
+          console.log('[Rapport P.Accident] Événement reçu, rechargement des stats');
+          loadStats();
+        }
+      } catch (error) {
+        console.error('[Rapport P.Accident] Erreur parsing message:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('[Rapport P.Accident] WebSocket erreur:', error);
+    };
+
+    ws.onclose = () => {
+      console.log('[Rapport P.Accident] WebSocket fermé');
+    };
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [loadStats]);
+
+  useEffect(() => {
+    localStorage.setItem('presqu_accident_rapport_display_mode', displayMode);
+  }, [displayMode]);
 
   if (loading || !stats) {
     return (
