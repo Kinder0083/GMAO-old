@@ -147,6 +147,15 @@ async def create_pole(
         if "_id" in pole_dict:
             del pole_dict["_id"]
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        if realtime_manager:
+            await realtime_manager.emit_event(
+                "documentations",
+                "created",
+                pole_dict,
+                user_id=current_user["id"]
+            )
+        
         return pole_dict
     except Exception as e:
         logger.error(f"Erreur création pôle: {str(e)}")
