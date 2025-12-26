@@ -38,7 +38,7 @@ const Vendors = () => {
             title: 'Succès',
             description: 'Fournisseur supprimé'
           });
-          loadVendors();
+          refreshVendors();
         } catch (error) {
           toast({
             title: 'Erreur',
