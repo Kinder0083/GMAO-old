@@ -2039,7 +2039,7 @@ async def toggle_inventory_monitoring(inv_id: str, current_user: dict = Depends(
     """Active/Désactive la surveillance du stock d'un article"""
     try:
         # Récupérer l'article actuel
-        item = await db.inventory.find_one({"id": inv_id})
+        item = await db.inventory.find_one({"_id": ObjectId(inv_id)})
         if not item:
             raise HTTPException(status_code=404, detail="Article non trouvé")
         
@@ -2049,7 +2049,7 @@ async def toggle_inventory_monitoring(inv_id: str, current_user: dict = Depends(
         
         # Mettre à jour
         await db.inventory.update_one(
-            {"id": inv_id},
+            {"_id": ObjectId(inv_id)},
             {
                 "$set": {
                     "stock_monitoring_enabled": new_monitoring,
