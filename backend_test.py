@@ -194,11 +194,9 @@ class EquipmentsVendorsWebSocketTester:
         self.log("🧪 TEST: Equipment Status Update Test")
         
         try:
-            # Update equipment status
+            # Update equipment status - need to send as query parameter
             response = self.admin_session.patch(
-                f"{BACKEND_URL}/equipments/{equipment_id}/status",
-                json="EN_MAINTENANCE",
-                headers={"Content-Type": "application/json"},
+                f"{BACKEND_URL}/equipments/{equipment_id}/status?statut=EN_MAINTENANCE",
                 timeout=15
             )
             
