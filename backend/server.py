@@ -6907,7 +6907,7 @@ from mqtt_meter_collector import mqtt_meter_collector
 
 # Sensor routes
 from sensor_routes import router as sensor_router, init_sensor_routes
-init_sensor_routes(db)
+init_sensor_routes(db, realtime_manager)
 api_router.include_router(sensor_router)
 
 # MQTT Sensor Collector
