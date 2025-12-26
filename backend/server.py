@@ -1921,6 +1921,14 @@ async def update_location(loc_id: str, loc_update: LocationUpdate, current_user:
                     "nom": parent.get("nom")
                 }
         
+        # Broadcast WebSocket pour la synchronisation temps réel
+        await realtime_manager.emit_event(
+            "zones",
+            "updated",
+            loc_data,
+            user_id=current_user["id"]
+        )
+        
         return Location(**loc_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
