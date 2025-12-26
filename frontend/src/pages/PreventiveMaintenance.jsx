@@ -70,7 +70,6 @@ const PreventiveMaintenance = () => {
   };
 
   useEffect(() => {
-    loadMaintenance();
     loadChecklists();
   }, []);
 
@@ -86,22 +85,6 @@ const PreventiveMaintenance = () => {
     }
   };
 
-  const loadMaintenance = async () => {
-    try {
-      setLoading(true);
-      const response = await preventiveMaintenanceAPI.getAll();
-      setMaintenance(response.data);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les maintenances préventives',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!maintenanceToDelete) return;
 
@@ -113,7 +96,7 @@ const PreventiveMaintenance = () => {
       });
       setDeleteDialogOpen(false);
       setMaintenanceToDelete(null);
-      loadMaintenance();
+      refreshMaintenance();
     } catch (error) {
       toast({
         title: 'Erreur',
