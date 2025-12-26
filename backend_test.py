@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Backend API Testing Script for GMAO Iris
-Tests the Equipments and Vendors WebSocket real-time synchronization functionality
+Tests the Dashboard, Intervention Requests, and Improvement Requests WebSocket real-time synchronization functionality
 """
 
 import requests
@@ -16,14 +16,16 @@ from concurrent.futures import ThreadPoolExecutor
 
 # Use the correct backend URL from frontend .env
 BACKEND_URL = "https://realtimesync.preview.emergentagent.com/api"
+WORK_ORDERS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/work_orders"
 EQUIPMENTS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments"
-VENDORS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/suppliers"
+INTERVENTION_REQUESTS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/intervention_requests"
+IMPROVEMENT_REQUESTS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/improvement_requests"
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"
 ADMIN_PASSWORD = "password"
 
-class EquipmentsVendorsWebSocketTester:
+class DashboardInterventionImprovementWebSocketTester:
     def __init__(self):
         self.admin_session = requests.Session()
         self.admin_token = None
