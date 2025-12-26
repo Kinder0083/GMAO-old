@@ -34,9 +34,6 @@ const ImprovementRequests = () => {
     loading, 
     refresh: refreshRequests 
   } = useImprovementRequests();
-  };
-
-  useAutoRefresh(loadRequests, []);
 
   const handleDelete = async (id) => {
     setItemToDelete(id);
@@ -52,7 +49,7 @@ const ImprovementRequests = () => {
         title: 'Succès',
         description: 'Demande supprimée'
       });
-      loadRequests();
+      refreshRequests();
     } catch (error) {
       toast({
         title: 'Erreur',
