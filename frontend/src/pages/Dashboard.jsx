@@ -18,16 +18,23 @@ const Dashboard = () => {
   const { preferences } = usePreferences();
 
   // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
-  const enabledWidgets = useMemo(() => preferences?.dashboard_widgets || [
-    'work_orders_active',
-    'equipment_maintenance',
-    'overdue_tasks',
-    'low_stock',
-    'recent_incidents',
-    'maintenance_stats',
-    'upcoming_maintenance',
-    'quick_actions'
-  ], [preferences?.dashboard_widgets]);
+  // Si dashboard_widgets est vide ou non défini, utiliser la liste par défaut
+  const enabledWidgets = useMemo(() => {
+    const widgets = preferences?.dashboard_widgets;
+    if (!widgets || widgets.length === 0) {
+      return [
+        'work_orders_active',
+        'equipment_maintenance',
+        'overdue_tasks',
+        'low_stock',
+        'recent_incidents',
+        'maintenance_stats',
+        'upcoming_maintenance',
+        'quick_actions'
+      ];
+    }
+    return widgets;
+  }, [preferences?.dashboard_widgets]);
 
   // Charger les données
   useEffect(() => {
