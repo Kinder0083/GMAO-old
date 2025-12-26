@@ -284,7 +284,7 @@ const PurchaseRequests = () => {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         onSuccess={() => {
-          loadRequests();
+          refreshRequests();
           setFormDialogOpen(false);
         }}
       />
