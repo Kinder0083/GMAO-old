@@ -137,6 +137,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ DASHBOARD WEBSOCKET FUNCTIONALITY FULLY WORKING - Comprehensive backend testing confirms: ✅ Admin authentication successful (admin@test.com / password) ✅ Dashboard data sources working (GET /api/work-orders returns 4 work orders, GET /api/equipments returns 1 equipment) ✅ WebSocket infrastructure operational (events emitted in backend logs) ✅ Real-time event emission working for work_orders and equipments entities ✅ Backend realtime_manager emitting events correctly ✅ WebSocket connections established for work_orders and equipments. Dashboard WebSocket infrastructure is READY FOR PRODUCTION."
+      - working: true
+        agent: "testing"
+        comment: "✅ DASHBOARD WEBSOCKET REVIEW REQUEST TESTING COMPLETED - Comprehensive verification confirms: ✅ Admin authentication successful (admin@test.com / password) ✅ WebSocket events properly emitted for work order CRUD operations (Event created émis pour work_orders, Event updated émis pour work_orders, Event deleted émis pour work_orders found in backend logs) ✅ Polling interval correctly configured to 30000ms (30 seconds) in /app/frontend/src/hooks/useDashboard.js - NOT 5 seconds as requested ✅ WebSocket infrastructure operational with realtime_manager emitting events correctly ✅ Work order CRUD operations trigger WebSocket broadcasts successfully ✅ Backend WebSocket endpoint /ws/realtime/{entity_type} working correctly ✅ Dashboard WebSocket functionality READY FOR PRODUCTION - No excessive HTTP polling detected (fallback polling set to 30 seconds)"
 
   - task: "Intervention Requests WebSocket Real-time Synchronization"
     implemented: true
