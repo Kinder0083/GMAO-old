@@ -1,21 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { workOrdersAPI, equipmentsAPI, reportsAPI } from '../services/api';
 import {
   ClipboardList,
   Wrench,
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
+import { useDashboard } from '../hooks/useDashboard';
 import { usePermissions } from '../hooks/usePermissions';
 import { usePreferences } from '../contexts/PreferencesContext';
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [workOrders, setWorkOrders] = useState([]);
-  const [equipments, setEquipments] = useState([]);
-  const { canView, userRole } = usePermissions();
+  const { canView } = usePermissions();
   const { preferences } = usePreferences();
+
+  // Utiliser le hook temps réel WebSocket pour le dashboard
+  const { 
+    workOrders, 
+    equipments, 
+    loading,
+  } = useDashboard();
 
   // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
   // Si dashboard_widgets est vide ou non défini, utiliser la liste par défaut
@@ -35,61 +39,6 @@ const Dashboard = () => {
     }
     return widgets;
   }, [preferences?.dashboard_widgets]);
-
-  // Charger les données
-  useEffect(() => {
-    // Attendre que les permissions soient chargées
-    if (userRole === null) return;
-
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        
-        const promises = [];
-        
-        // Work Orders
-        promises.push(
-          workOrdersAPI.getAll()
-            .then(res => ({ type: 'workOrders', data: res?.data || [] }))
-            .catch(err => {
-              console.error('Erreur work orders:', err);
-              return { type: 'workOrders', data: [] };
-            })
-        );
-        
-        // Equipments
-        promises.push(
-          equipmentsAPI.getAll()
-            .then(res => ({ type: 'equipments', data: res?.data || [] }))
-            .catch(err => {
-              console.error('Erreur equipments:', err);
-              return { type: 'equipments', data: [] };
-            })
-        );
-        
-        const results = await Promise.all(promises);
-        
-        results.forEach(result => {
-          if (result.type === 'workOrders') {
-            setWorkOrders(result.data);
-          } else if (result.type === 'equipments') {
-            setEquipments(result.data);
-          }
-        });
-        
-      } catch (error) {
-        console.error('Erreur générale de chargement:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-
-    // Rafraîchir toutes les 10 secondes
-    const interval = setInterval(loadData, 10000);
-    return () => clearInterval(interval);
-  }, [userRole]);
 
   // Calculer les stats dynamiquement selon les widgets activés
   const stats = useMemo(() => {
