@@ -24,8 +24,6 @@ const EquipmentFormDialog = ({ open, onOpenChange, equipment, onSuccess, parentI
     categorie: '',
     emplacement_id: '',
     statut: 'OPERATIONNEL',
-    dateAchat: '',
-    coutAchat: '',
     numeroSerie: '',
     anneeFabrication: '',
     garantie: '',
