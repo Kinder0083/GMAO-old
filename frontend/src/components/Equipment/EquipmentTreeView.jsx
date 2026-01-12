@@ -15,7 +15,7 @@ const EquipmentTreeNode = ({
   allEquipments,
   onStatusChange
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false); // Fermé par défaut
   const navigate = useNavigate();
 
   // Récupérer les enfants de cet équipement
