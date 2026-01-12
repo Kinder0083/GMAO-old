@@ -158,11 +158,13 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
               <select
                 id="service"
                 name="service"
-                value={PREDEFINED_SERVICES.includes(formData.service) ? formData.service : (formData.service ? '__custom__' : '')}
+                value={isCustomService ? '__custom__' : formData.service}
                 onChange={(e) => {
                   if (e.target.value === '__custom__') {
+                    setIsCustomService(true);
                     setFormData({ ...formData, service: '' });
                   } else {
+                    setIsCustomService(false);
                     setFormData({ ...formData, service: e.target.value });
                   }
                 }}
@@ -175,13 +177,14 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
                 ))}
                 <option value="__custom__">Autre (saisir manuellement)</option>
               </select>
-              {(!PREDEFINED_SERVICES.includes(formData.service) && formData.service !== '') && (
+              {isCustomService && (
                 <Input
                   name="service"
                   value={formData.service}
                   onChange={handleChange}
                   placeholder="Saisir le nom du service"
                   className="mt-2"
+                  autoFocus
                   data-testid="service-custom-input"
                 />
               )}
