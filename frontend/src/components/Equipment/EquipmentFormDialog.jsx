@@ -83,8 +83,6 @@ const EquipmentFormDialog = ({ open, onOpenChange, equipment, onSuccess, parentI
       if (formData.categorie) submitData.categorie = formData.categorie;
       if (formData.numeroSerie) submitData.numeroSerie = formData.numeroSerie;
       if (formData.anneeFabrication) submitData.anneeFabrication = parseInt(formData.anneeFabrication);
-      if (formData.dateAchat) submitData.dateAchat = new Date(formData.dateAchat).toISOString();
-      if (formData.coutAchat) submitData.coutAchat = parseFloat(formData.coutAchat);
       if (formData.garantie) submitData.garantie = formData.garantie;
       if (formData.parent_id) submitData.parent_id = formData.parent_id;
 
