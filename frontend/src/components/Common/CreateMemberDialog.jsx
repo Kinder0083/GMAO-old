@@ -181,13 +181,16 @@ const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
                     Service (pour le Planning)
                   </Label>
                   <Select 
-                    value={PREDEFINED_SERVICES.includes(formData.service) ? formData.service : (formData.service ? '__custom__' : '__none__')} 
+                    value={isCustomService ? '__custom__' : (formData.service || '__none__')} 
                     onValueChange={(value) => {
                       if (value === '__custom__') {
+                        setIsCustomService(true);
                         handleChange('service', '');
                       } else if (value === '__none__') {
+                        setIsCustomService(false);
                         handleChange('service', '');
                       } else {
+                        setIsCustomService(false);
                         handleChange('service', value);
                       }
                     }}
@@ -203,12 +206,13 @@ const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
                       <SelectItem value="__custom__">Autre (saisir manuellement)</SelectItem>
                     </SelectContent>
                   </Select>
-                  {(!PREDEFINED_SERVICES.includes(formData.service) && formData.service !== '') && (
+                  {isCustomService && (
                     <Input
                       value={formData.service}
                       onChange={(e) => handleChange('service', e.target.value)}
                       placeholder="Saisir le nom du service"
                       className="mt-1"
+                      autoFocus
                       data-testid="create-service-custom-input"
                     />
                   )}
