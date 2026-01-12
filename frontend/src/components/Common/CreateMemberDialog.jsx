@@ -228,6 +228,26 @@ const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
                 </div>
 
                 <div className="grid gap-2">
+                  <Label htmlFor="regime" className="flex items-center gap-2">
+                    <Clock size={14} className="text-purple-600" />
+                    Régime de travail
+                  </Label>
+                  <Select 
+                    value={formData.regime} 
+                    onValueChange={(value) => handleChange('regime', value)}
+                  >
+                    <SelectTrigger data-testid="create-regime-select">
+                      <SelectValue placeholder="Sélectionner un régime" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REGIMES.map(r => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
                   <Label htmlFor="role">Rôle *</Label>
                   <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
                     <SelectTrigger>
