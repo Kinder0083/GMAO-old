@@ -680,6 +680,7 @@ class CreateMemberRequest(BaseModel):
     role: UserRole
     telephone: Optional[str] = None
     service: Optional[str] = None
+    regime: Optional[UserRegime] = UserRegime.JOURNEE  # Régime de travail
     password: str
     
     @field_validator('email')
