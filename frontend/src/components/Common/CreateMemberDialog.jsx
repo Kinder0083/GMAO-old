@@ -91,6 +91,7 @@ const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
         password: '',
         permissions: {}
       });
+      setIsCustomService(false);
 
       onOpenChange(false);
       if (onSuccess) onSuccess();
