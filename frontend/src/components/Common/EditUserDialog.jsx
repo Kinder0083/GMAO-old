@@ -147,14 +147,43 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="service">Service</Label>
-              <Input
+              <Label htmlFor="service" className="flex items-center gap-2">
+                <Building2 size={16} className="text-blue-600" />
+                Service (pour le Planning)
+              </Label>
+              <select
                 id="service"
                 name="service"
-                value={formData.service}
-                onChange={handleChange}
-                placeholder="Ex: Maintenance, Production..."
-              />
+                value={PREDEFINED_SERVICES.includes(formData.service) ? formData.service : (formData.service ? '__custom__' : '')}
+                onChange={(e) => {
+                  if (e.target.value === '__custom__') {
+                    setFormData({ ...formData, service: '' });
+                  } else {
+                    setFormData({ ...formData, service: e.target.value });
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                data-testid="service-select"
+              >
+                <option value="">-- Aucun service --</option>
+                {PREDEFINED_SERVICES.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+                <option value="__custom__">Autre (saisir manuellement)</option>
+              </select>
+              {(!PREDEFINED_SERVICES.includes(formData.service) && formData.service !== '') && (
+                <Input
+                  name="service"
+                  value={formData.service}
+                  onChange={handleChange}
+                  placeholder="Saisir le nom du service"
+                  className="mt-2"
+                  data-testid="service-custom-input"
+                />
+              )}
+              <p className="text-xs text-gray-500">
+                Le service permet de regrouper le personnel dans le Planning
+              </p>
             </div>
 
             <div className="space-y-2">
