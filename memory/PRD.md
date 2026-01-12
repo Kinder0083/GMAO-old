@@ -24,10 +24,19 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 - **Fichier**: `/app/frontend/src/pages/Planning.jsx`
 - Affichage du mois complet sans défilement horizontal
 - Regroupement du personnel par service avec sections pliables
+- **Services repliés par défaut** pour une vue compacte
 - Statistiques par service (disponibles/total)
 - Navigation entre mois et bouton "Aujourd'hui"
 - Mise en évidence du jour actuel et des weekends
 - Tests validés à 100%
+
+#### ✅ Assignation de Service aux Utilisateurs (Complété)
+- **Fichiers modifiés**:
+  - `/app/frontend/src/components/Common/EditUserDialog.jsx`
+  - `/app/frontend/src/components/Common/CreateMemberDialog.jsx`
+- Dropdown avec services prédéfinis (Maintenance, Production, QHSE, etc.)
+- Option de saisie manuelle pour services personnalisés
+- Icône et texte explicatif pour l'intégration avec le Planning
 
 ### Sessions Précédentes
 
@@ -96,11 +105,26 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
         │   ├── useRealtimeData.js  # Hook WebSocket central
         │   ├── useDashboard.js     # Hook Dashboard
         │   └── useDocumentations.js # Hook Documentations
-        └── components/Equipment/
-            ├── EquipmentFormDialog.jsx
-            ├── EquipmentTreeView.jsx
-            └── QuickStatusChanger.jsx
+        └── components/
+            ├── Equipment/
+            │   ├── EquipmentFormDialog.jsx
+            │   ├── EquipmentTreeView.jsx
+            │   └── QuickStatusChanger.jsx
+            └── Common/
+                ├── EditUserDialog.jsx      # Service dropdown ajouté
+                └── CreateMemberDialog.jsx  # Service dropdown ajouté
 ```
+
+## Services Prédéfinis pour le Planning
+- Maintenance
+- Production
+- QHSE
+- Logistique
+- Laboratoire
+- Industrialisation
+- Administration
+- Direction
+- ADV
 
 ## Intégrations Tierces
 - Google Gemini 2.5 Flash (Emergent LLM Key)
