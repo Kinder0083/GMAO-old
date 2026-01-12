@@ -61,6 +61,8 @@ class EntityType(str, Enum):
     SUPPLIERS = "suppliers"
     PURCHASE_HISTORY = "purchase_history"
     DASHBOARD = "dashboard"
+    USERS = "users"
+    AVAILABILITIES = "availabilities"
 
 
 def create_event(event_type: EventType, entity_type: EntityType, data: Any, user_id: str = None) -> Dict:
