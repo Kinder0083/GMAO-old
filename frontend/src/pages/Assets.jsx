@@ -21,7 +21,7 @@ const Assets = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list' ou 'tree'
+  const [viewMode, setViewMode] = useState('tree'); // 'list' ou 'tree' - arborescence par défaut
   const [parentForNewChild, setParentForNewChild] = useState(null);
 
   // Utiliser le hook temps réel
