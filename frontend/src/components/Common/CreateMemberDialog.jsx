@@ -174,13 +174,42 @@ const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Rôle et accès</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="service">Service</Label>
-                  <Input
-                    id="service"
-                    value={formData.service}
-                    onChange={(e) => handleChange('service', e.target.value)}
-                    placeholder="Ex: Maintenance, Production, Logistique..."
-                  />
+                  <Label htmlFor="service" className="flex items-center gap-2">
+                    <Building2 size={14} className="text-blue-600" />
+                    Service (pour le Planning)
+                  </Label>
+                  <Select 
+                    value={PREDEFINED_SERVICES.includes(formData.service) ? formData.service : (formData.service ? '__custom__' : '__none__')} 
+                    onValueChange={(value) => {
+                      if (value === '__custom__') {
+                        handleChange('service', '');
+                      } else if (value === '__none__') {
+                        handleChange('service', '');
+                      } else {
+                        handleChange('service', value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger data-testid="create-service-select">
+                      <SelectValue placeholder="Sélectionner un service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">-- Aucun service --</SelectItem>
+                      {PREDEFINED_SERVICES.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                      <SelectItem value="__custom__">Autre (saisir manuellement)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(!PREDEFINED_SERVICES.includes(formData.service) && formData.service !== '') && (
+                    <Input
+                      value={formData.service}
+                      onChange={(e) => handleChange('service', e.target.value)}
+                      placeholder="Saisir le nom du service"
+                      className="mt-1"
+                      data-testid="create-service-custom-input"
+                    />
+                  )}
                 </div>
 
                 <div className="grid gap-2">
