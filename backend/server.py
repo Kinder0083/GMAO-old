@@ -1728,6 +1728,18 @@ async def create_availability(
     if avail.get("user_id"):
         avail["user"] = await get_user_by_id(avail["user_id"])
     
+    # Émettre l'événement WebSocket
+    try:
+        from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+        await realtime_manager.emit_event(
+            RealtimeEntityType.AVAILABILITIES.value,
+            RealtimeEventType.CREATED.value,
+            avail,
+            current_user.get("id")
+        )
+    except Exception as e:
+        logger.error(f"Erreur émission événement WebSocket availabilities: {e}")
+    
     return avail
 
 @api_router.put("/availabilities/{avail_id}")
@@ -1751,6 +1763,18 @@ async def update_availability(
         if avail.get("user_id"):
             avail["user"] = await get_user_by_id(avail["user_id"])
         
+        # Émettre l'événement WebSocket
+        try:
+            from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+            await realtime_manager.emit_event(
+                RealtimeEntityType.AVAILABILITIES.value,
+                RealtimeEventType.UPDATED.value,
+                avail,
+                current_user.get("id")
+            )
+        except Exception as e:
+            logger.error(f"Erreur émission événement WebSocket availabilities: {e}")
+        
         return avail
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -1765,6 +1789,19 @@ async def delete_availability(
         result = await db.availabilities.delete_one({"_id": ObjectId(avail_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Disponibilité non trouvée")
+        
+        # Émettre l'événement WebSocket
+        try:
+            from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+            await realtime_manager.emit_event(
+                RealtimeEntityType.AVAILABILITIES.value,
+                RealtimeEventType.DELETED.value,
+                {"id": avail_id},
+                current_user.get("id")
+            )
+        except Exception as e:
+            logger.error(f"Erreur émission événement WebSocket availabilities: {e}")
+        
         return {"message": "Disponibilité supprimée"}
     except HTTPException:
         raise
