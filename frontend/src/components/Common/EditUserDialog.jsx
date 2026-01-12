@@ -24,6 +24,7 @@ const PREDEFINED_SERVICES = [
 const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isCustomService, setIsCustomService] = useState(false);
   const [formData, setFormData] = useState({
     prenom: '',
     nom: '',
@@ -35,12 +36,15 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
 
   useEffect(() => {
     if (user) {
+      const userService = user.service || '';
+      const isCustom = userService && !PREDEFINED_SERVICES.includes(userService);
+      setIsCustomService(isCustom);
       setFormData({
         prenom: user.prenom || '',
         nom: user.nom || '',
         email: user.email || '',
         telephone: user.telephone || '',
-        service: user.service || '',
+        service: userService,
         role: user.role || 'VISUALISEUR'
       });
     }
