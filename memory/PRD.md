@@ -20,15 +20,25 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 12 Janvier 2026
 
-#### ✅ Refonte Page "Planning" (P0 - Complété)
+#### ✅ Migration WebSocket - Page "Planning" (Complété)
+- **Fichiers créés/modifiés**:
+  - `/app/frontend/src/hooks/usePlanning.js` (nouveau)
+  - `/app/frontend/src/pages/Planning.jsx` (mis à jour)
+  - `/app/backend/server.py` (événements WebSocket ajoutés)
+  - `/app/backend/realtime_events.py` (entités USERS et AVAILABILITIES ajoutées)
+- Synchronisation temps réel des utilisateurs et disponibilités
+- Indicateur de connexion WebSocket (Temps réel / Hors ligne)
+- Fallback au polling HTTP si WebSocket indisponible
+
+#### ✅ Refonte Page "Planning" (Complété)
 - **Fichier**: `/app/frontend/src/pages/Planning.jsx`
 - Affichage du mois complet sans défilement horizontal
 - Regroupement du personnel par service avec sections pliables
 - **Services repliés par défaut** pour une vue compacte
+- Support des services personnalisés (saisis manuellement)
 - Statistiques par service (disponibles/total)
 - Navigation entre mois et bouton "Aujourd'hui"
 - Mise en évidence du jour actuel et des weekends
-- Tests validés à 100%
 
 #### ✅ Assignation de Service aux Utilisateurs (Complété)
 - **Fichiers modifiés**:
@@ -42,23 +52,15 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 #### ✅ Migration WebSocket - Tableau de bord
 - **Fichiers**: `/app/frontend/src/pages/Dashboard.jsx`, `/app/frontend/src/hooks/useDashboard.js`
-- Correction du bug des widgets vides
-- Migration du polling HTTP vers WebSockets
 
 #### ✅ Migration WebSocket - Documentations
 - **Fichiers**: `/app/frontend/src/pages/Documentations.jsx`, `/app/frontend/src/hooks/useDocumentations.js`
-- Mise à jour temps réel via WebSockets
 
 #### ✅ Correction Chat Live - Téléchargements
 - **Fichier**: `/app/frontend/src/pages/ChatLive.jsx`
-- Remplacement de window.open par fetch avec Authorization header
 
 #### ✅ Améliorations Page "Équipements"
 - **Fichiers**: `/app/frontend/src/pages/Assets.jsx`, `/app/frontend/src/components/Equipment/*`
-- Vue arborescence par défaut (collapsed)
-- Nouveaux statuts: "En Fonctionnement", "A l'arrêt"
-- Tuiles de statut adaptatives (masquées si count=0)
-- Formulaire simplifié (retrait date/coût d'achat)
 
 ---
 
@@ -89,30 +91,27 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 ```
 /app/
 ├── backend/
-│   ├── server.py               # FastAPI principal
-│   ├── models.py               # Modèles Pydantic (EquipmentStatus enum)
+│   ├── server.py               # FastAPI principal + événements WebSocket
+│   ├── models.py               # Modèles Pydantic
 │   ├── realtime_manager.py     # Gestion WebSocket
-│   └── chat_routes.py          # Routes chat avec téléchargement
+│   ├── realtime_events.py      # Définitions entités (USERS, AVAILABILITIES ajoutés)
+│   └── chat_routes.py          # Routes chat
 └── frontend/
     └── src/
         ├── pages/
-        │   ├── Dashboard.jsx       # WebSocket
-        │   ├── Documentations.jsx  # WebSocket
+        │   ├── Dashboard.jsx       # WebSocket ✅
+        │   ├── Documentations.jsx  # WebSocket ✅
+        │   ├── Planning.jsx        # WebSocket ✅ (migré cette session)
         │   ├── ChatLive.jsx        # Download corrigé
-        │   ├── Assets.jsx          # Vue tree, nouveaux statuts
-        │   └── Planning.jsx        # REFAIT - Mois complet, groupement service
+        │   └── Assets.jsx          # Vue tree, nouveaux statuts
         ├── hooks/
         │   ├── useRealtimeData.js  # Hook WebSocket central
         │   ├── useDashboard.js     # Hook Dashboard
-        │   └── useDocumentations.js # Hook Documentations
-        └── components/
-            ├── Equipment/
-            │   ├── EquipmentFormDialog.jsx
-            │   ├── EquipmentTreeView.jsx
-            │   └── QuickStatusChanger.jsx
-            └── Common/
-                ├── EditUserDialog.jsx      # Service dropdown ajouté
-                └── CreateMemberDialog.jsx  # Service dropdown ajouté
+        │   ├── useDocumentations.js # Hook Documentations
+        │   └── usePlanning.js      # Hook Planning (nouveau)
+        └── components/Common/
+            ├── EditUserDialog.jsx      # Service dropdown
+            └── CreateMemberDialog.jsx  # Service dropdown
 ```
 
 ## Services Prédéfinis pour le Planning
