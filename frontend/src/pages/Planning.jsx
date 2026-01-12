@@ -1,94 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, UserCheck, UserX, Users } from 'lucide-react';
-import { usersAPI } from '../services/api';
+import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, UserCheck, UserX, Users, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '../hooks/use-toast';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { usePlanning } from '../hooks/usePlanning';
 import { getBackendURL } from '../utils/config';
 
 const Planning = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [availabilities, setAvailabilities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [expandedServices, setExpandedServices] = useState({});
 
-  const loadUsers = async () => {
-    try {
-      const response = await usersAPI.getAll();
-      const newUsers = response.data.filter(u => u.email !== 'buenogy@gmail.com');
-      
-      if (JSON.stringify(newUsers) !== JSON.stringify(users)) {
-        setUsers(newUsers);
-        // Initialiser tous les services comme repliés par défaut
-        const services = [...new Set(newUsers.map(u => u.service || 'Sans service'))];
-        const initialExpanded = {};
-        services.forEach(s => {
-          if (expandedServices[s] === undefined) {
-            initialExpanded[s] = false; // Replié par défaut
-          } else {
-            initialExpanded[s] = expandedServices[s];
-          }
-        });
-        setExpandedServices(prev => ({ ...initialExpanded, ...prev }));
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les utilisateurs',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const loadAvailabilities = async () => {
-    try {
-      if (initialLoad) {
-        setLoading(true);
-      }
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      
-      const backend_url = getBackendURL();
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(`${backend_url}/api/availabilities`, {
-        params: {
-          start_date: startOfMonth.toISOString(),
-          end_date: endOfMonth.toISOString()
-        },
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      const newAvailabilities = response.data;
-      if (JSON.stringify(newAvailabilities) !== JSON.stringify(availabilities)) {
-        setAvailabilities(newAvailabilities);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des disponibilités:', error);
-    } finally {
-      if (initialLoad) {
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    loadUsers();
-    loadAvailabilities();
-  }, [currentDate]);
-  
-  useAutoRefresh(() => {
-    loadUsers();
-    loadAvailabilities();
-  }, [currentDate]);
+  // Hook WebSocket pour les données temps réel
+  const { 
+    users, 
+    availabilities, 
+    loading, 
+    wsConnected,
+    refreshAvailabilities 
+  } = usePlanning(currentDate);
 
   const toggleAvailability = async (userId, date) => {
     try {
@@ -118,7 +49,9 @@ const Planning = () => {
         );
       }
 
-      loadAvailabilities();
+      // Rafraîchir les données (le WebSocket devrait aussi notifier)
+      refreshAvailabilities();
+      
       toast({
         title: 'Succès',
         description: 'Disponibilité mise à jour'
@@ -216,7 +149,20 @@ const Planning = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900" data-testid="planning-title">Planning du Personnel</h1>
-          <p className="text-gray-600 text-sm">Gérez la disponibilité de votre équipe</p>
+          <p className="text-gray-600 text-sm flex items-center gap-2">
+            Gérez la disponibilité de votre équipe
+            {wsConnected ? (
+              <span className="flex items-center gap-1 text-green-600 text-xs">
+                <Wifi size={12} />
+                Temps réel
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-orange-500 text-xs">
+                <WifiOff size={12} />
+                Hors ligne
+              </span>
+            )}
+          </p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={goToToday} data-testid="today-btn">
           <Calendar size={18} className="mr-2" />
@@ -306,7 +252,7 @@ const Planning = () => {
               {/* Corps - Services et utilisateurs */}
               {Object.entries(usersByService).map(([service, serviceUsers]) => {
                 const stats = getServiceStats(serviceUsers);
-                const isExpanded = expandedServices[service] !== false;
+                const isExpanded = expandedServices[service] === true;
                 
                 return (
                   <div key={service} data-testid={`service-section-${service}`}>
