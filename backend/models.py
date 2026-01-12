@@ -407,6 +407,8 @@ class WorkOrderCategory(str, Enum):
 
 class EquipmentStatus(str, Enum):
     OPERATIONNEL = "OPERATIONNEL"
+    EN_FONCTIONNEMENT = "EN_FONCTIONNEMENT"
+    A_LARRET = "A_LARRET"
     EN_MAINTENANCE = "EN_MAINTENANCE"
     HORS_SERVICE = "HORS_SERVICE"
     EN_CT = "EN_CT"
