@@ -40,6 +40,8 @@ const QuickStatusChanger = ({ equipment, onStatusChange }) => {
   const getStatusColor = (status) => {
     const colors = {
       'OPERATIONNEL': 'bg-green-100 text-green-700 hover:bg-green-200',
+      'EN_FONCTIONNEMENT': 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+      'A_LARRET': 'bg-gray-100 text-gray-700 hover:bg-gray-200',
       'EN_MAINTENANCE': 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
       'EN_CT': 'bg-purple-100 text-purple-700 hover:bg-purple-200',
       'HORS_SERVICE': 'bg-red-100 text-red-700 hover:bg-red-200',
@@ -51,6 +53,8 @@ const QuickStatusChanger = ({ equipment, onStatusChange }) => {
   const getStatusLabel = (status) => {
     const labels = {
       'OPERATIONNEL': 'Opérationnel',
+      'EN_FONCTIONNEMENT': 'En Fonctionnement',
+      'A_LARRET': 'A l\'arrêt',
       'EN_MAINTENANCE': 'En maintenance',
       'EN_CT': 'En C.T',
       'HORS_SERVICE': 'Hors service',
