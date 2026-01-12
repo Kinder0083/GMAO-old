@@ -203,6 +203,28 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="regime" className="flex items-center gap-2">
+                <Clock size={16} className="text-purple-600" />
+                Régime de travail
+              </Label>
+              <select
+                id="regime"
+                name="regime"
+                value={formData.regime}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                data-testid="regime-select"
+              >
+                {REGIMES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500">
+                Définit l'affichage dans le Planning (case pleine, 2 parties ou 3 secteurs)
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="role">Rôle *</Label>
               <select
                 id="role"
