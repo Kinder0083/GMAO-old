@@ -95,6 +95,7 @@ const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
         email: '',
         telephone: '',
         service: '',
+        regime: 'Journée',
         role: 'TECHNICIEN',
         password: '',
         permissions: {}
