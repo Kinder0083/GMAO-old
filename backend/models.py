@@ -905,17 +905,29 @@ class PreventiveMaintenance(PreventiveMaintenanceBase):
 class UserAvailability(BaseModel):
     user_id: str
     date: datetime
-    disponible: bool = True
+    # Pour régime Journée
+    disponible: Optional[bool] = None  # None = non défini (blanc), True = disponible (vert), False = indisponible (rouge)
+    # Pour régime 2*8
+    disponible_matin: Optional[bool] = None
+    disponible_aprem: Optional[bool] = None
+    # Pour régime 3*8
+    disponible_nuit: Optional[bool] = None
     motif: Optional[str] = None  # Raison de l'indisponibilité (congé, maladie, etc.)
 
 class UserAvailabilityCreate(BaseModel):
     user_id: str
     date: datetime
-    disponible: bool = True
+    disponible: Optional[bool] = None
+    disponible_matin: Optional[bool] = None
+    disponible_aprem: Optional[bool] = None
+    disponible_nuit: Optional[bool] = None
     motif: Optional[str] = None
 
 class UserAvailabilityUpdate(BaseModel):
     disponible: Optional[bool] = None
+    disponible_matin: Optional[bool] = None
+    disponible_aprem: Optional[bool] = None
+    disponible_nuit: Optional[bool] = None
     motif: Optional[str] = None
 
 class UserAvailabilityResponse(UserAvailability):
