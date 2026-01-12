@@ -24,8 +24,12 @@ const EquipmentTreeNode = ({
   const getStatusColor = (status) => {
     const colors = {
       'OPERATIONNEL': 'bg-green-100 text-green-700',
+      'EN_FONCTIONNEMENT': 'bg-emerald-100 text-emerald-700',
+      'A_LARRET': 'bg-gray-100 text-gray-700',
       'EN_MAINTENANCE': 'bg-yellow-100 text-yellow-700',
-      'HORS_SERVICE': 'bg-red-100 text-red-700'
+      'EN_CT': 'bg-purple-100 text-purple-700',
+      'HORS_SERVICE': 'bg-red-100 text-red-700',
+      'ALERTE_S_EQUIP': 'bg-orange-100 text-orange-700'
     };
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
@@ -33,8 +37,12 @@ const EquipmentTreeNode = ({
   const getStatusLabel = (status) => {
     const labels = {
       'OPERATIONNEL': 'Opérationnel',
+      'EN_FONCTIONNEMENT': 'En Fonctionnement',
+      'A_LARRET': 'A l\'arrêt',
       'EN_MAINTENANCE': 'En maintenance',
-      'HORS_SERVICE': 'Hors service'
+      'EN_CT': 'En C.T',
+      'HORS_SERVICE': 'Hors service',
+      'ALERTE_S_EQUIP': 'Alerte S.Equip'
     };
     return labels[status] || status;
   };
