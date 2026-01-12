@@ -139,10 +139,13 @@ const Planning = () => {
     );
   }, [availabilities]);
 
-  // Fonction pour basculer la valeur (null -> true -> false -> null)
+  // Fonction pour basculer la valeur en cycle : Blanc → Vert → Rouge → Blanc
   const cycleValue = (currentValue) => {
+    // Blanc (null/undefined) → Vert (true)
     if (currentValue === null || currentValue === undefined) return true;
+    // Vert (true) → Rouge (false)
     if (currentValue === true) return false;
+    // Rouge (false) → Blanc (null)
     return null;
   };
 
