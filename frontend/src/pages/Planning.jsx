@@ -24,12 +24,12 @@ const Planning = () => {
       
       if (JSON.stringify(newUsers) !== JSON.stringify(users)) {
         setUsers(newUsers);
-        // Initialiser tous les services comme dépliés
+        // Initialiser tous les services comme repliés par défaut
         const services = [...new Set(newUsers.map(u => u.service || 'Sans service'))];
         const initialExpanded = {};
         services.forEach(s => {
           if (expandedServices[s] === undefined) {
-            initialExpanded[s] = true;
+            initialExpanded[s] = false; // Replié par défaut
           } else {
             initialExpanded[s] = expandedServices[s];
           }
