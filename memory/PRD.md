@@ -20,69 +20,56 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 12 Janvier 2026
 
+#### ✅ Régimes de Travail avec Cellules Adaptatives (Complété)
+- **Fichiers modifiés**:
+  - `/app/backend/models.py` (UserRegime enum, champs disponibilités étendus)
+  - `/app/frontend/src/pages/Planning.jsx` (cellules adaptatives)
+  - `/app/frontend/src/components/Common/EditUserDialog.jsx`
+  - `/app/frontend/src/components/Common/CreateMemberDialog.jsx`
+- **Régimes disponibles**:
+  - **Journée**: Case pleine carrée (vert/rouge/blanc)
+  - **2×8**: Case divisée horizontalement (Matin en haut, Après-midi en bas)
+  - **3×8**: Cercle divisé en 3 secteurs à 120° (Matin haut-gauche, Après-midi haut-droite, Nuit bas)
+- **Fonctionnalités**:
+  - Clic = Basculer entre Non défini → Disponible → Indisponible
+  - Glisser vers la droite = Copier la cellule sur les jours suivants
+  - Badge du régime (2×8 ou 3×8) affiché à côté du nom
+- **Tests**: 100% réussite (13 tests backend + tests frontend)
+
 #### ✅ Migration WebSocket - Page "Planning" (Complété)
-- **Fichiers créés/modifiés**:
-  - `/app/frontend/src/hooks/usePlanning.js` (nouveau)
-  - `/app/frontend/src/pages/Planning.jsx` (mis à jour)
-  - `/app/backend/server.py` (événements WebSocket ajoutés)
-  - `/app/backend/realtime_events.py` (entités USERS et AVAILABILITIES ajoutées)
+- **Fichiers**: `/app/frontend/src/hooks/usePlanning.js`, `/app/frontend/src/pages/Planning.jsx`
 - Synchronisation temps réel des utilisateurs et disponibilités
-- Indicateur de connexion WebSocket (Temps réel / Hors ligne)
 - Fallback au polling HTTP si WebSocket indisponible
 
 #### ✅ Refonte Page "Planning" (Complété)
-- **Fichier**: `/app/frontend/src/pages/Planning.jsx`
 - Affichage du mois complet sans défilement horizontal
 - Regroupement du personnel par service avec sections pliables
-- **Services repliés par défaut** pour une vue compacte
-- Support des services personnalisés (saisis manuellement)
-- Statistiques par service (disponibles/total)
-- Navigation entre mois et bouton "Aujourd'hui"
-- Mise en évidence du jour actuel et des weekends
+- Services repliés par défaut
+- Support des services personnalisés
 
 #### ✅ Assignation de Service aux Utilisateurs (Complété)
-- **Fichiers modifiés**:
-  - `/app/frontend/src/components/Common/EditUserDialog.jsx`
-  - `/app/frontend/src/components/Common/CreateMemberDialog.jsx`
-- Dropdown avec services prédéfinis (Maintenance, Production, QHSE, etc.)
-- Option de saisie manuelle pour services personnalisés
-- Icône et texte explicatif pour l'intégration avec le Planning
+- Dropdown avec services prédéfinis + saisie manuelle
 
 ### Sessions Précédentes
 
-#### ✅ Migration WebSocket - Tableau de bord
-- **Fichiers**: `/app/frontend/src/pages/Dashboard.jsx`, `/app/frontend/src/hooks/useDashboard.js`
-
-#### ✅ Migration WebSocket - Documentations
-- **Fichiers**: `/app/frontend/src/pages/Documentations.jsx`, `/app/frontend/src/hooks/useDocumentations.js`
-
+#### ✅ Migration WebSocket - Tableau de bord & Documentations
 #### ✅ Correction Chat Live - Téléchargements
-- **Fichier**: `/app/frontend/src/pages/ChatLive.jsx`
-
 #### ✅ Améliorations Page "Équipements"
-- **Fichiers**: `/app/frontend/src/pages/Assets.jsx`, `/app/frontend/src/components/Equipment/*`
 
 ---
 
 ## Issues en Attente
 
 ### 🟡 P1 - "Rapport P.accident" temps réel (Vérification utilisateur requise)
-- **Fichier**: `/app/frontend/src/pages/PresquAccidentRapport.jsx`
-- Fix appliqué dans session précédente, attente de validation
-- **Récurrence**: 2 fois signalé
 
 ---
 
 ## Tâches Futures
 
 ### 🟢 P1 - Migration WebSocket (Pages restantes)
-- Planning M.Prev.
-- Rapports
-- Equipes
-- Historique Achat
+- Planning M.Prev., Rapports, Equipes, Historique Achat
 
-### 🔵 P2 - Chatbot IA
-- Dé-priorisé par l'utilisateur
+### 🔵 P2 - Chatbot IA (dé-priorisé)
 
 ---
 
@@ -91,39 +78,31 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 ```
 /app/
 ├── backend/
-│   ├── server.py               # FastAPI principal + événements WebSocket
-│   ├── models.py               # Modèles Pydantic
+│   ├── server.py               # FastAPI + WebSocket events
+│   ├── models.py               # UserRegime enum, disponibilités étendues
 │   ├── realtime_manager.py     # Gestion WebSocket
-│   ├── realtime_events.py      # Définitions entités (USERS, AVAILABILITIES ajoutés)
-│   └── chat_routes.py          # Routes chat
+│   └── realtime_events.py      # USERS, AVAILABILITIES entities
 └── frontend/
     └── src/
         ├── pages/
-        │   ├── Dashboard.jsx       # WebSocket ✅
-        │   ├── Documentations.jsx  # WebSocket ✅
-        │   ├── Planning.jsx        # WebSocket ✅ (migré cette session)
-        │   ├── ChatLive.jsx        # Download corrigé
-        │   └── Assets.jsx          # Vue tree, nouveaux statuts
+        │   ├── Planning.jsx        # Cellules adaptatives (Journée/2×8/3×8)
+        │   └── ...
         ├── hooks/
-        │   ├── useRealtimeData.js  # Hook WebSocket central
-        │   ├── useDashboard.js     # Hook Dashboard
-        │   ├── useDocumentations.js # Hook Documentations
-        │   └── usePlanning.js      # Hook Planning (nouveau)
+        │   └── usePlanning.js      # WebSocket hook
         └── components/Common/
-            ├── EditUserDialog.jsx      # Service dropdown
-            └── CreateMemberDialog.jsx  # Service dropdown
+            ├── EditUserDialog.jsx  # Champ régime
+            └── CreateMemberDialog.jsx
 ```
 
-## Services Prédéfinis pour le Planning
-- Maintenance
-- Production
-- QHSE
-- Logistique
-- Laboratoire
-- Industrialisation
-- Administration
-- Direction
-- ADV
+## Régimes de Travail
+| Régime | Affichage | Parties |
+|--------|-----------|---------|
+| Journée | Case pleine | 1 (journée entière) |
+| 2×8 | Case divisée horizontalement | 2 (Matin, Après-midi) |
+| 3×8 | Cercle 3 secteurs | 3 (Matin, Après-midi, Nuit) |
+
+## Services Prédéfinis
+Maintenance, Production, QHSE, Logistique, Laboratoire, Industrialisation, Administration, Direction, ADV
 
 ## Intégrations Tierces
 - Google Gemini 2.5 Flash (Emergent LLM Key)
