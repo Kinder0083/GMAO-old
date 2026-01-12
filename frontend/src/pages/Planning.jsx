@@ -598,15 +598,15 @@ const Planning = () => {
           <div className="mt-3 text-sm text-gray-600 space-y-2">
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-500" />
+                <div className="w-5 h-5 rounded bg-green-500" />
                 <span>Disponible</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-red-500" />
+                <div className="w-5 h-5 rounded bg-red-500" />
                 <span>Indisponible</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-white border border-gray-300" />
+                <div className="w-5 h-5 rounded bg-white border border-gray-300" />
                 <span>Non défini</span>
               </div>
             </div>
