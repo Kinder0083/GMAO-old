@@ -101,6 +101,20 @@ const Assets = () => {
         icon: CheckCircle2,
         iconColor: 'text-green-600'
       },
+      'EN_FONCTIONNEMENT': { 
+        bg: 'bg-emerald-100', 
+        text: 'text-emerald-700', 
+        label: 'En Fonctionnement',
+        icon: CheckCircle2,
+        iconColor: 'text-emerald-600'
+      },
+      'A_LARRET': { 
+        bg: 'bg-gray-100', 
+        text: 'text-gray-700', 
+        label: 'A l\'arrêt',
+        icon: Clock,
+        iconColor: 'text-gray-600'
+      },
       'EN_MAINTENANCE': { 
         bg: 'bg-orange-100', 
         text: 'text-orange-700', 
@@ -121,6 +135,13 @@ const Assets = () => {
         label: 'En C.T',
         icon: FileCheck,
         iconColor: 'text-purple-600'
+      },
+      'ALERTE_S_EQUIP': { 
+        bg: 'bg-yellow-100', 
+        text: 'text-yellow-700', 
+        label: 'Alerte S.Equip',
+        icon: AlertCircle,
+        iconColor: 'text-yellow-600'
       }
     };
     const badge = badges[statut] || badges['OPERATIONNEL'];
@@ -133,14 +154,20 @@ const Assets = () => {
     );
   };
 
-  const statuses = [
+  // Définition de tous les statuts avec leurs compteurs
+  const allStatuses = [
     { value: 'ALL', label: 'Tous', count: equipments.length },
     { value: 'OPERATIONNEL', label: 'Opérationnel', count: equipments.filter(e => e.statut === 'OPERATIONNEL').length },
+    { value: 'EN_FONCTIONNEMENT', label: 'En Fonctionnement', count: equipments.filter(e => e.statut === 'EN_FONCTIONNEMENT').length },
+    { value: 'A_LARRET', label: 'A l\'arrêt', count: equipments.filter(e => e.statut === 'A_LARRET').length },
     { value: 'EN_MAINTENANCE', label: 'En maintenance', count: equipments.filter(e => e.statut === 'EN_MAINTENANCE').length },
     { value: 'HORS_SERVICE', label: 'Hors service', count: equipments.filter(e => e.statut === 'HORS_SERVICE').length },
     { value: 'EN_CT', label: 'En C.T', count: equipments.filter(e => e.statut === 'EN_CT').length },
     { value: 'ALERTE_S_EQUIP', label: 'Alerte S.Equip', count: equipments.filter(e => e.statut === 'ALERTE_S_EQUIP').length }
   ];
+
+  // Filtrer pour n'afficher que les statuts avec count > 0 (sauf "Tous")
+  const statuses = allStatuses.filter(s => s.value === 'ALL' || s.count > 0);
 
   return (
     <div className="space-y-6">
