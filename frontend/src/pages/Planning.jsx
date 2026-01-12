@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight, UserCheck, UserX, Users } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, UserCheck, UserX, Users } from 'lucide-react';
 import { usersAPI } from '../services/api';
 import axios from 'axios';
 import { useToast } from '../hooks/use-toast';
@@ -15,16 +15,26 @@ const Planning = () => {
   const [availabilities, setAvailabilities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [expandedServices, setExpandedServices] = useState({});
 
   const loadUsers = async () => {
     try {
       const response = await usersAPI.getAll();
-      // Filtrer le compte de secours du planning
       const newUsers = response.data.filter(u => u.email !== 'buenogy@gmail.com');
       
-      // Mise à jour silencieuse : comparer avant de mettre à jour
       if (JSON.stringify(newUsers) !== JSON.stringify(users)) {
         setUsers(newUsers);
+        // Initialiser tous les services comme dépliés
+        const services = [...new Set(newUsers.map(u => u.service || 'Sans service'))];
+        const initialExpanded = {};
+        services.forEach(s => {
+          if (expandedServices[s] === undefined) {
+            initialExpanded[s] = true;
+          } else {
+            initialExpanded[s] = expandedServices[s];
+          }
+        });
+        setExpandedServices(prev => ({ ...initialExpanded, ...prev }));
       }
     } catch (error) {
       toast({
@@ -37,7 +47,6 @@ const Planning = () => {
 
   const loadAvailabilities = async () => {
     try {
-      // Ne montrer le loading que lors du premier chargement
       if (initialLoad) {
         setLoading(true);
       }
@@ -57,7 +66,6 @@ const Planning = () => {
         }
       });
       
-      // Mise à jour silencieuse : comparer avant de mettre à jour
       const newAvailabilities = response.data;
       if (JSON.stringify(newAvailabilities) !== JSON.stringify(availabilities)) {
         setAvailabilities(newAvailabilities);
@@ -77,7 +85,6 @@ const Planning = () => {
     loadAvailabilities();
   }, [currentDate]);
   
-  // Rafraîchissement automatique toutes les 5 secondes (invisible)
   useAutoRefresh(() => {
     loadUsers();
     loadAvailabilities();
@@ -136,7 +143,6 @@ const Planning = () => {
   const getDaysInMonth = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const days = [];
 
@@ -159,155 +165,230 @@ const Planning = () => {
     setCurrentDate(new Date());
   };
 
+  const toggleService = (service) => {
+    setExpandedServices(prev => ({
+      ...prev,
+      [service]: !prev[service]
+    }));
+  };
+
   const monthNames = [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
   ];
 
+  const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+
   const days = getDaysInMonth();
   const today = new Date().toISOString().split('T')[0];
 
+  // Grouper les utilisateurs par service
+  const usersByService = useMemo(() => {
+    const grouped = {};
+    users.forEach(user => {
+      const service = user.service || 'Sans service';
+      if (!grouped[service]) {
+        grouped[service] = [];
+      }
+      grouped[service].push(user);
+    });
+    // Trier les services alphabétiquement, mais mettre "Sans service" à la fin
+    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+      if (a === 'Sans service') return 1;
+      if (b === 'Sans service') return -1;
+      return a.localeCompare(b);
+    });
+    const sortedGrouped = {};
+    sortedKeys.forEach(key => {
+      sortedGrouped[key] = grouped[key];
+    });
+    return sortedGrouped;
+  }, [users]);
+
+  // Calculer les stats par service
+  const getServiceStats = (serviceUsers) => {
+    const available = serviceUsers.filter(u => isAvailable(u.id, new Date())).length;
+    return { total: serviceUsers.length, available, unavailable: serviceUsers.length - available };
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Planning du Personnel</h1>
-          <p className="text-gray-600 mt-1">Gérez la disponibilité de votre équipe</p>
+          <h1 className="text-2xl font-bold text-gray-900" data-testid="planning-title">Planning du Personnel</h1>
+          <p className="text-gray-600 text-sm">Gérez la disponibilité de votre équipe</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={goToToday}>
-          <Calendar size={20} className="mr-2" />
+        <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={goToToday} data-testid="today-btn">
+          <Calendar size={18} className="mr-2" />
           Aujourd'hui
         </Button>
       </div>
 
-      {/* Month Navigation */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-6">
-            <Button variant="outline" onClick={goToPreviousMonth}>
-              <ChevronLeft size={20} />
+        <CardContent className="pt-4 pb-4">
+          {/* Navigation du mois */}
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="outline" size="sm" onClick={goToPreviousMonth} data-testid="prev-month-btn">
+              <ChevronLeft size={18} />
             </Button>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900" data-testid="current-month">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
-            <Button variant="outline" onClick={goToNextMonth}>
-              <ChevronRight size={20} />
+            <Button variant="outline" size="sm" onClick={goToNextMonth} data-testid="next-month-btn">
+              <ChevronRight size={18} />
             </Button>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
+          {/* Stats globales */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-blue-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Personnel total</p>
-                  <p className="text-2xl font-bold text-blue-700">{users.length}</p>
+                  <p className="text-xs text-gray-600">Personnel total</p>
+                  <p className="text-xl font-bold text-blue-700">{users.length}</p>
                 </div>
-                <Users size={32} className="text-blue-600" />
+                <Users size={24} className="text-blue-600" />
               </div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
+            <div className="bg-green-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Disponibles aujourd'hui</p>
-                  <p className="text-2xl font-bold text-green-700">
+                  <p className="text-xs text-gray-600">Disponibles aujourd'hui</p>
+                  <p className="text-xl font-bold text-green-700">
                     {users.filter(u => isAvailable(u.id, new Date())).length}
                   </p>
                 </div>
-                <UserCheck size={32} className="text-green-600" />
+                <UserCheck size={24} className="text-green-600" />
               </div>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg">
+            <div className="bg-red-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Indisponibles aujourd'hui</p>
-                  <p className="text-2xl font-bold text-red-700">
+                  <p className="text-xs text-gray-600">Indisponibles</p>
+                  <p className="text-xl font-bold text-red-700">
                     {users.filter(u => !isAvailable(u.id, new Date())).length}
                   </p>
                 </div>
-                <UserX size={32} className="text-red-600" />
+                <UserX size={24} className="text-red-600" />
               </div>
             </div>
           </div>
 
-          {/* Calendar Grid */}
+          {/* Grille du calendrier */}
           {loading ? (
             <div className="text-center py-8">
               <p className="text-gray-500">Chargement...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="border p-2 bg-gray-100 sticky left-0 z-10 min-w-[150px]">
-                      Personnel
-                    </th>
-                    {days.map((day, index) => {
-                      const isToday = day.toISOString().split('T')[0] === today;
-                      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                      return (
-                        <th
-                          key={index}
-                          className={`border p-2 text-center min-w-[50px] ${
-                            isToday ? 'bg-blue-100' : isWeekend ? 'bg-gray-50' : 'bg-white'
-                          }`}
-                        >
-                          <div className="text-xs text-gray-500">
-                            {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][day.getDay()]}
-                          </div>
-                          <div className="font-semibold">{day.getDate()}</div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map(user => (
-                    <tr key={user.id}>
-                      <td className="border p-2 bg-gray-50 sticky left-0 z-10">
-                        <div className="font-medium text-sm">{user.prenom} {user.nom}</div>
-                        {user.service && (
-                          <div className="text-xs text-gray-600">{user.service}</div>
-                        )}
-                      </td>
-                      {days.map((day, index) => {
-                        const available = isAvailable(user.id, day);
-                        const isToday = day.toISOString().split('T')[0] === today;
-                        const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                        return (
-                          <td
-                            key={index}
-                            className={`border p-1 text-center cursor-pointer hover:bg-gray-100 ${
-                              isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50' : 'bg-white'
-                            }`}
-                            onClick={() => toggleAvailability(user.id, day)}
-                          >
-                            {available ? (
-                              <UserCheck size={20} className="text-green-600 mx-auto" />
-                            ) : (
-                              <UserX size={20} className="text-red-600 mx-auto" />
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="border rounded-lg overflow-hidden" data-testid="planning-grid">
+              {/* En-tête des jours */}
+              <div className="grid bg-gray-100 border-b" style={{ gridTemplateColumns: '180px repeat(' + days.length + ', 1fr)' }}>
+                <div className="p-2 font-semibold text-sm text-gray-700 border-r sticky left-0 bg-gray-100 z-10">
+                  Personnel
+                </div>
+                {days.map((day, index) => {
+                  const isToday = day.toISOString().split('T')[0] === today;
+                  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                  return (
+                    <div
+                      key={index}
+                      className={`p-1 text-center border-r last:border-r-0 ${
+                        isToday ? 'bg-blue-200' : isWeekend ? 'bg-gray-200' : ''
+                      }`}
+                    >
+                      <div className="text-[10px] text-gray-500">{dayNames[day.getDay()]}</div>
+                      <div className="text-xs font-semibold">{day.getDate()}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Corps - Services et utilisateurs */}
+              {Object.entries(usersByService).map(([service, serviceUsers]) => {
+                const stats = getServiceStats(serviceUsers);
+                const isExpanded = expandedServices[service] !== false;
+                
+                return (
+                  <div key={service} data-testid={`service-section-${service}`}>
+                    {/* En-tête du service (cliquable) */}
+                    <div 
+                      className="grid bg-gray-50 border-b cursor-pointer hover:bg-gray-100 transition-colors"
+                      style={{ gridTemplateColumns: '180px 1fr' }}
+                      onClick={() => toggleService(service)}
+                      data-testid={`service-header-${service}`}
+                    >
+                      <div className="p-2 flex items-center gap-2 border-r sticky left-0 bg-gray-50 z-10">
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <span className="font-semibold text-sm text-gray-800 truncate">{service}</span>
+                        <span className="text-xs text-gray-500 ml-auto">
+                          ({stats.available}/{stats.total})
+                        </span>
+                      </div>
+                      <div className="flex items-center px-2 text-xs text-gray-500">
+                        <span className="text-green-600 mr-3">✓ {stats.available}</span>
+                        <span className="text-red-600">✗ {stats.unavailable}</span>
+                      </div>
+                    </div>
+
+                    {/* Lignes des utilisateurs du service */}
+                    {isExpanded && serviceUsers.map(user => (
+                      <div 
+                        key={user.id} 
+                        className="grid border-b last:border-b-0"
+                        style={{ gridTemplateColumns: '180px repeat(' + days.length + ', 1fr)' }}
+                        data-testid={`user-row-${user.id}`}
+                      >
+                        <div className="p-2 bg-white border-r sticky left-0 z-10">
+                          <div className="font-medium text-sm truncate">{user.prenom} {user.nom}</div>
+                        </div>
+                        {days.map((day, index) => {
+                          const available = isAvailable(user.id, day);
+                          const isToday = day.toISOString().split('T')[0] === today;
+                          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                          return (
+                            <div
+                              key={index}
+                              className={`flex items-center justify-center border-r last:border-r-0 cursor-pointer hover:opacity-80 transition-opacity ${
+                                isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50' : 'bg-white'
+                              }`}
+                              onClick={() => toggleAvailability(user.id, day)}
+                              data-testid={`availability-cell-${user.id}-${day.getDate()}`}
+                            >
+                              {available ? (
+                                <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                                  <span className="text-white text-[10px]">✓</span>
+                                </div>
+                              ) : (
+                                <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                                  <span className="text-white text-[10px]">✗</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          <div className="mt-4 text-sm text-gray-600 flex items-center gap-4">
+          <div className="mt-3 text-sm text-gray-600 flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <UserCheck size={16} className="text-green-600" />
+              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                <span className="text-white text-[10px]">✓</span>
+              </div>
               <span>Disponible</span>
             </div>
             <div className="flex items-center gap-2">
-              <UserX size={16} className="text-red-600" />
+              <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                <span className="text-white text-[10px]">✗</span>
+              </div>
               <span>Indisponible</span>
             </div>
-            <span className="text-gray-500">• Cliquez pour changer la disponibilité</span>
+            <span className="text-gray-500">• Cliquez sur une cellule pour changer la disponibilité</span>
+            <span className="text-gray-500">• Cliquez sur un service pour le plier/déplier</span>
           </div>
         </CardContent>
       </Card>
