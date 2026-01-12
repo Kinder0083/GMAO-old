@@ -14,7 +14,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { usersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
-import { Loader2, UserPlus, Building2 } from 'lucide-react';
+import { Loader2, UserPlus, Building2, Clock } from 'lucide-react';
 import PermissionsGrid from './PermissionsGrid';
 import { formatErrorMessage } from '../../utils/errorFormatter';
 
@@ -31,6 +31,13 @@ const PREDEFINED_SERVICES = [
   'ADV'
 ];
 
+// Régimes de travail
+const REGIMES = [
+  { value: 'Journée', label: 'Journée' },
+  { value: '2*8', label: '2×8 (Matin/Après-midi)' },
+  { value: '3*8', label: '3×8 (Matin/Après-midi/Nuit)' }
+];
+
 const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -41,6 +48,7 @@ const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
     email: '',
     telephone: '',
     service: '',
+    regime: 'Journée',
     role: 'TECHNICIEN',
     password: '',
     permissions: {}
