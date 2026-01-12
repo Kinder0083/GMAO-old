@@ -86,6 +86,18 @@ const QuickStatusChanger = ({ equipment, onStatusChange }) => {
             Opérationnel
           </span>
         </SelectItem>
+        <SelectItem value="EN_FONCTIONNEMENT">
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+            En Fonctionnement
+          </span>
+        </SelectItem>
+        <SelectItem value="A_LARRET">
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-gray-600"></span>
+            A l&apos;arrêt
+          </span>
+        </SelectItem>
         <SelectItem value="EN_MAINTENANCE">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-yellow-600"></span>
