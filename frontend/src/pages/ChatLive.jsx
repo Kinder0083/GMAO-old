@@ -544,11 +544,53 @@ const ChatLive = () => {
   };
 
   // Télécharger un fichier
-  const downloadFile = (attachmentId) => {
-    const token = localStorage.getItem('token');
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
-    window.open(`${backendUrl}/api/chat/download/${attachmentId}?token=${token}`, '_blank');
-    setContextMenu(null);
+  const downloadFile = async (attachmentId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      
+      // Utiliser fetch avec le header Authorization
+      const response = await fetch(`${backendUrl}/api/chat/download/${attachmentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur de téléchargement');
+      }
+      
+      // Récupérer le nom du fichier depuis le header Content-Disposition
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'fichier';
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (matches && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      // Créer un blob et déclencher le téléchargement
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setContextMenu(null);
+    } catch (error) {
+      console.error('Erreur téléchargement:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de télécharger le fichier',
+        variant: 'destructive'
+      });
+    }
   };
 
   // Ouvrir modal de transfert
