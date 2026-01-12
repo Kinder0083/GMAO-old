@@ -119,7 +119,7 @@ const EquipmentFormDialog = ({ open, onOpenChange, equipment, onSuccess, parentI
         <DialogHeader>
           <DialogTitle>{equipment ? 'Modifier' : 'Nouvel'} équipement</DialogTitle>
           <DialogDescription>
-            Remplissez les informations de l'équipement
+            Remplissez les informations de l&apos;équipement
           </DialogDescription>
         </DialogHeader>
 
