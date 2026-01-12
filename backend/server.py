@@ -554,6 +554,7 @@ async def create_member(request: CreateMemberRequest, current_user: dict = Depen
         "telephone": request.telephone or "",
         "role": request.role,
         "service": request.service,
+        "regime": request.regime if request.regime else "Journée",  # Régime de travail
         "hashed_password": hashed_password,
         "statut": "actif",
         "dateCreation": datetime.utcnow(),
