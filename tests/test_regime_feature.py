@@ -153,9 +153,11 @@ class TestUserRegimeFeature:
         )
         assert response.status_code == 200, f"Update failed: {response.text}"
         
-        # Verify
-        response = requests.get(f"{BASE_URL}/api/users/{user_id}", headers=self.headers)
-        updated_user = response.json()
+        # Verify - use list endpoint
+        response = requests.get(f"{BASE_URL}/api/users", headers=self.headers)
+        users = response.json()
+        updated_user = next((u for u in users if u["id"] == user_id), None)
+        assert updated_user is not None
         assert updated_user["regime"] == "3*8"
         
         # Restore
