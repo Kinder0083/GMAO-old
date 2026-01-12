@@ -547,6 +547,7 @@ class UserInvite(BaseModel):
     telephone: Optional[str] = None
     role: UserRole = UserRole.VISUALISEUR
     service: Optional[str] = None
+    regime: Optional[UserRegime] = UserRegime.JOURNEE
     permissions: Optional[UserPermissions] = None
     
     @field_validator('email')
@@ -565,6 +566,7 @@ class UserUpdate(BaseModel):
     telephone: Optional[str] = None
     role: Optional[UserRole] = None
     service: Optional[str] = None
+    regime: Optional[UserRegime] = None
     
     @field_validator('email')
     @classmethod
@@ -584,6 +586,7 @@ class UserProfileUpdate(BaseModel):
     email: Optional[str] = None
     telephone: Optional[str] = None
     service: Optional[str] = None
+    regime: Optional[UserRegime] = None
     
     @field_validator('email')
     @classmethod
