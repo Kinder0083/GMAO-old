@@ -93,10 +93,12 @@ class TestUserRegimeFeature:
         )
         assert response.status_code == 200, f"Update failed: {response.text}"
         
-        # Verify update
-        response = requests.get(f"{BASE_URL}/api/users/{user_id}", headers=self.headers)
+        # Verify update - use list endpoint and find user
+        response = requests.get(f"{BASE_URL}/api/users", headers=self.headers)
         assert response.status_code == 200
-        updated_user = response.json()
+        users = response.json()
+        updated_user = next((u for u in users if u["id"] == user_id), None)
+        assert updated_user is not None
         assert updated_user["regime"] == "Journée"
         
         # Restore original regime
