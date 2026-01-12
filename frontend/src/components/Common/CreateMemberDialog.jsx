@@ -34,6 +34,7 @@ const PREDEFINED_SERVICES = [
 const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isCustomService, setIsCustomService] = useState(false);
   const [formData, setFormData] = useState({
     prenom: '',
     nom: '',
