@@ -14,7 +14,7 @@ const JourneeCell = ({ value, onClick, isToday, isWeekend }) => {
   
   return (
     <div
-      className={`w-5 h-5 rounded cursor-pointer hover:opacity-80 transition-opacity ${bgColor} border ${borderColor}`}
+      className={`w-7 h-7 rounded cursor-pointer hover:opacity-80 transition-opacity ${bgColor} border ${borderColor}`}
       onClick={onClick}
       title={value === true ? 'Disponible' : value === false ? 'Indisponible' : 'Non défini'}
     />
@@ -29,7 +29,7 @@ const DeuxHuitCell = ({ valueMatin, valueAprem, onClickMatin, onClickAprem, isTo
   const borderAprem = valueAprem === null ? 'border-gray-300' : 'border-transparent';
   
   return (
-    <div className="w-5 h-5 flex flex-col gap-[1px]">
+    <div className="w-7 h-7 flex flex-col gap-[1px]">
       <div
         className={`flex-1 rounded-t cursor-pointer hover:opacity-80 transition-opacity ${bgMatin} border-t border-l border-r ${borderMatin}`}
         onClick={onClickMatin}
@@ -54,12 +54,8 @@ const TroisHuitCell = ({ valueMatin, valueAprem, valueNuit, onClickMatin, onClic
   const strokeNuit = valueNuit === null ? '#d1d5db' : 'transparent';
   
   // Calcul des points pour les 3 secteurs à 120°
-  // Centre: 10, 10 - Rayon: 9
-  const cx = 10, cy = 10, r = 9;
-  
-  // Secteur haut-gauche (Matin): de -150° à -30° (en partant du haut)
-  // Secteur haut-droit (Après-midi): de -30° à 90°
-  // Secteur bas (Nuit): de 90° à 210° (ou -150°)
+  // Centre: 14, 14 - Rayon: 13 (pour SVG 28x28)
+  const cx = 14, cy = 14, r = 13;
   
   const getPoint = (angle) => {
     const rad = (angle - 90) * Math.PI / 180;
@@ -80,7 +76,7 @@ const TroisHuitCell = ({ valueMatin, valueAprem, valueNuit, onClickMatin, onClic
   const pathNuit = `M ${cx} ${cy} L ${p3.x} ${p3.y} A ${r} ${r} 0 0 1 ${p1.x} ${p1.y} Z`;
   
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" className="cursor-pointer">
+    <svg width="28" height="28" viewBox="0 0 28 28" className="cursor-pointer">
       <path
         d={pathMatin}
         fill={colorMatin}
