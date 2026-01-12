@@ -14,9 +14,22 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { usersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus, Building2 } from 'lucide-react';
 import PermissionsGrid from './PermissionsGrid';
 import { formatErrorMessage } from '../../utils/errorFormatter';
+
+// Services prédéfinis pour le regroupement dans le Planning
+const PREDEFINED_SERVICES = [
+  'Maintenance',
+  'Production',
+  'QHSE',
+  'Logistique',
+  'Laboratoire',
+  'Industrialisation',
+  'Administration',
+  'Direction',
+  'ADV'
+];
 
 const CreateMemberDialog = ({ open, onOpenChange, onSuccess }) => {
   const { toast } = useToast();
