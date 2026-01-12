@@ -3,10 +3,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Edit } from 'lucide-react';
+import { Edit, Building2 } from 'lucide-react';
 import { usersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { formatErrorMessage } from '../../utils/errorFormatter';
+
+// Services prédéfinis pour le regroupement dans le Planning
+const PREDEFINED_SERVICES = [
+  'Maintenance',
+  'Production',
+  'QHSE',
+  'Logistique',
+  'Laboratoire',
+  'Industrialisation',
+  'Administration',
+  'Direction',
+  'ADV'
+];
 
 const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
   const { toast } = useToast();
