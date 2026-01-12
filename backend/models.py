@@ -512,6 +512,12 @@ class PartUsedCreate(BaseModel):
     custom_source: Optional[str] = None
 
 # User Models
+class UserRegime(str, Enum):
+    """Régime de travail de l'utilisateur"""
+    JOURNEE = "Journée"
+    DEUX_HUIT = "2*8"
+    TROIS_HUIT = "3*8"
+
 class UserBase(BaseModel):
     nom: str
     prenom: str
@@ -519,6 +525,7 @@ class UserBase(BaseModel):
     telephone: Optional[str] = None
     role: UserRole = UserRole.VISUALISEUR
     service: Optional[str] = None
+    regime: UserRegime = UserRegime.JOURNEE  # Régime de travail par défaut
     responsable_hierarchique_id: Optional[str] = None  # ID du N+1
     
     @field_validator('email')
