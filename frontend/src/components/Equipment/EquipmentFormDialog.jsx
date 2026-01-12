@@ -198,29 +198,6 @@ const EquipmentFormDialog = ({ open, onOpenChange, equipment, onSuccess, parentI
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dateAchat">Date d'achat</Label>
-              <Input
-                id="dateAchat"
-                type="date"
-                value={formData.dateAchat}
-                onChange={(e) => setFormData({ ...formData, dateAchat: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="coutAchat">Coût d'achat (€)</Label>
-              <Input
-                id="coutAchat"
-                type="number"
-                step="0.01"
-                value={formData.coutAchat}
-                onChange={(e) => setFormData({ ...formData, coutAchat: e.target.value })}
-              />
-            </div>
-          </div>
-
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
