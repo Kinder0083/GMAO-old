@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Edit, Building2 } from 'lucide-react';
+import { Edit, Building2, Clock } from 'lucide-react';
 import { usersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { formatErrorMessage } from '../../utils/errorFormatter';
@@ -21,6 +21,13 @@ const PREDEFINED_SERVICES = [
   'ADV'
 ];
 
+// Régimes de travail
+const REGIMES = [
+  { value: 'Journée', label: 'Journée' },
+  { value: '2*8', label: '2×8 (Matin/Après-midi)' },
+  { value: '3*8', label: '3×8 (Matin/Après-midi/Nuit)' }
+];
+
 const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -31,6 +38,7 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
     email: '',
     telephone: '',
     service: '',
+    regime: 'Journée',
     role: 'VISUALISEUR'
   });
 
@@ -45,6 +53,7 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
         email: user.email || '',
         telephone: user.telephone || '',
         service: userService,
+        regime: user.regime || 'Journée',
         role: user.role || 'VISUALISEUR'
       });
     }
