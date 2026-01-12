@@ -152,6 +152,8 @@ const EquipmentFormDialog = ({ open, onOpenChange, equipment, onSuccess, parentI
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OPERATIONNEL">Opérationnel</SelectItem>
+                  <SelectItem value="EN_FONCTIONNEMENT">En Fonctionnement</SelectItem>
+                  <SelectItem value="A_LARRET">A l&apos;arrêt</SelectItem>
                   <SelectItem value="EN_MAINTENANCE">En maintenance</SelectItem>
                   <SelectItem value="EN_CT">En C.T</SelectItem>
                   <SelectItem value="HORS_SERVICE">Hors service</SelectItem>
