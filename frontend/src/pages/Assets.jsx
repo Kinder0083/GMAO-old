@@ -211,72 +211,49 @@ const Assets = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Opérationnel</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {equipments.filter(e => e.statut === 'OPERATIONNEL').length}
-                </p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-xl">
-                <CheckCircle2 size={24} className="text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">En maintenance</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {equipments.filter(e => e.statut === 'EN_MAINTENANCE').length}
-                </p>
-              </div>
-              <div className="bg-orange-100 p-3 rounded-xl">
-                <Clock size={24} className="text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">En C.T</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {equipments.filter(e => e.statut === 'EN_CT').length}
-                </p>
-              </div>
-              <div className="bg-purple-100 p-3 rounded-xl">
-                <FileCheck size={24} className="text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Hors service</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {equipments.filter(e => e.statut === 'HORS_SERVICE').length}
-                </p>
-              </div>
-              <div className="bg-red-100 p-3 rounded-xl">
-                <AlertCircle size={24} className="text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Stats Cards - Affichage adaptatif (uniquement les statuts avec count > 0) */}
+      {(() => {
+        const statsCards = [
+          { statut: 'OPERATIONNEL', label: 'Opérationnel', bg: 'bg-green-100', iconColor: 'text-green-600', icon: CheckCircle2 },
+          { statut: 'EN_FONCTIONNEMENT', label: 'En Fonctionnement', bg: 'bg-emerald-100', iconColor: 'text-emerald-600', icon: CheckCircle2 },
+          { statut: 'A_LARRET', label: 'A l\'arrêt', bg: 'bg-gray-100', iconColor: 'text-gray-600', icon: Clock },
+          { statut: 'EN_MAINTENANCE', label: 'En maintenance', bg: 'bg-orange-100', iconColor: 'text-orange-600', icon: Clock },
+          { statut: 'EN_CT', label: 'En C.T', bg: 'bg-purple-100', iconColor: 'text-purple-600', icon: FileCheck },
+          { statut: 'HORS_SERVICE', label: 'Hors service', bg: 'bg-red-100', iconColor: 'text-red-600', icon: AlertCircle },
+          { statut: 'ALERTE_S_EQUIP', label: 'Alerte S.Equip', bg: 'bg-yellow-100', iconColor: 'text-yellow-600', icon: AlertCircle },
+        ];
+        
+        // Filtrer pour n'afficher que les cartes avec count > 0
+        const visibleCards = statsCards.filter(card => 
+          equipments.filter(e => e.statut === card.statut).length > 0
+        );
+        
+        if (visibleCards.length === 0) return null;
+        
+        return (
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${Math.min(visibleCards.length, 4)} gap-6`}>
+            {visibleCards.map(card => {
+              const count = equipments.filter(e => e.statut === card.statut).length;
+              const Icon = card.icon;
+              return (
+                <Card key={card.statut} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">{card.label}</p>
+                        <p className="text-3xl font-bold text-gray-900 mt-2">{count}</p>
+                      </div>
+                      <div className={`${card.bg} p-3 rounded-xl`}>
+                        <Icon size={24} className={card.iconColor} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Filters */}
       <Card>
