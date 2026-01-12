@@ -2622,7 +2622,21 @@ async def update_user(user_id: str, user_update: UserUpdate, current_user: dict 
         )
         
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-        return User(**serialize_doc(user))
+        user_response = User(**serialize_doc(user))
+        
+        # Émettre l'événement WebSocket
+        try:
+            from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+            await realtime_manager.emit_event(
+                RealtimeEntityType.USERS.value,
+                RealtimeEventType.UPDATED.value,
+                user_response.model_dump(),
+                current_user.get("id")
+            )
+        except Exception as e:
+            logger.error(f"Erreur émission événement WebSocket users: {e}")
+        
+        return user_response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -2637,6 +2651,19 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_current_adm
         result = await db.users.delete_one({"_id": ObjectId(user_id)})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        # Émettre l'événement WebSocket
+        try:
+            from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+            await realtime_manager.emit_event(
+                RealtimeEntityType.USERS.value,
+                RealtimeEventType.DELETED.value,
+                {"id": user_id},
+                current_user.get("id")
+            )
+        except Exception as e:
+            logger.error(f"Erreur émission événement WebSocket users: {e}")
+        
         return {"message": "Utilisateur supprimé"}
     except HTTPException:
         raise
