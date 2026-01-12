@@ -1,0 +1,96 @@
+{
+  "summary": "Completed testing of User Regime feature. All features working correctly: regime field in Edit/Create dialogs, different cell types in Planning (Journée=square, 2×8=split horizontal, 3×8=circular with 3 sectors), cell click functionality, and regime badges. Fixed bug in CreateMemberRequest model missing regime field.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/tests/test_regime_feature.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fixed: CreateMemberRequest model was missing 'regime' field - added it with default value 'Journée'",
+    "Fixed: create_member endpoint in server.py was not including regime field when creating user"
+  ],
+  "updated_files": [
+    "/app/backend/models.py - Added regime field to CreateMemberRequest",
+    "/app/backend/server.py - Added regime field to user_dict in create_member endpoint",
+    "/app/tests/test_regime_feature.py - Created comprehensive test suite for regime feature"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_email": "admin@test.com",
+    "admin_password": "password"
+  },
+  "seed_data_creation": "Created test users with different regimes during testing, cleaned up after",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "User Regime feature fully tested. Features verified: 1) Regime field visible in Edit User dialog with 3 options (Journée, 2×8, 3×8), 2) Regime field visible in Create Member dialog, 3) Planning page shows different cell types based on regime: Journée=full square, 2×8=horizontally split, 3×8=circular with 3 sectors, 4) Cell click toggles availability correctly for all regimes, 5) Regime badges (2×8, 3×8) displayed next to user names in Planning, 6) Backend API supports regime field in user CRUD operations and availability fields (disponible, disponible_matin, disponible_aprem, disponible_nuit).",
+  "features_tested": {
+    "regime_field_in_edit_dialog": {
+      "status": "PASS",
+      "details": "Regime select field found with 3 options: Journée, 2×8 (Matin/Après-midi), 3×8 (Matin/Après-midi/Nuit)"
+    },
+    "regime_field_in_create_dialog": {
+      "status": "PASS",
+      "details": "Regime select field found in Create Member dialog with same 3 options"
+    },
+    "journee_cells_in_planning": {
+      "status": "PASS",
+      "details": "Users with Journée regime have full square cells"
+    },
+    "2x8_cells_in_planning": {
+      "status": "PASS",
+      "details": "Users with 2×8 regime have horizontally split cells (matin/aprem)"
+    },
+    "3x8_cells_in_planning": {
+      "status": "PASS",
+      "details": "Users with 3×8 regime have circular cells with 3 sectors (SVG)"
+    },
+    "journee_cell_click": {
+      "status": "PASS",
+      "details": "Clicking toggles between green/red/white"
+    },
+    "2x8_cell_click": {
+      "status": "PASS",
+      "details": "Clicking on matin/aprem parts changes only that part"
+    },
+    "3x8_cell_click": {
+      "status": "PASS",
+      "details": "Clicking on sectors changes only that sector"
+    },
+    "regime_badges": {
+      "status": "PASS",
+      "details": "2×8 and 3×8 badges displayed next to user names in Planning"
+    },
+    "backend_regime_api": {
+      "status": "PASS",
+      "details": "All 13 backend tests passed - regime field in login, users list, user update, create member"
+    },
+    "availability_fields": {
+      "status": "PASS",
+      "details": "Availability API supports disponible, disponible_matin, disponible_aprem, disponible_nuit fields"
+    }
+  },
+  "bugs_fixed": [
+    {
+      "file": "/app/backend/models.py",
+      "issue": "CreateMemberRequest model missing regime field",
+      "fix": "Added 'regime: Optional[UserRegime] = UserRegime.JOURNEE' field"
+    },
+    {
+      "file": "/app/backend/server.py",
+      "issue": "create_member endpoint not including regime in user_dict",
+      "fix": "Added 'regime': request.regime if request.regime else 'Journée' to user_dict"
+    }
+  ]
+}
