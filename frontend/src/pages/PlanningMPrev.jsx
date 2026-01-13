@@ -54,7 +54,6 @@ const PlanningMPrev = () => {
     loadPlanningEntries();
   }, [currentDate.getFullYear()]);
 
-  // Rafraîchissement automatique toutes les 30 secondes
   useAutoRefresh(() => {
     loadEquipments();
     loadPlanningEntries();
@@ -70,51 +69,71 @@ const PlanningMPrev = () => {
     return days;
   };
 
-  // Obtenir le statut de l'équipement pour une demi-journée spécifique
-  const getEquipmentStatusForHalfDay = (equipmentId, date, isAM) => {
+  // Obtenir les entrées de maintenance pour un équipement et un jour donné
+  const getMaintenanceEntriesForDay = (equipmentId, date) => {
     const dateStr = date.toISOString().split('T')[0];
     
-    const entry = planningEntries.find(e => {
+    return planningEntries.filter(e => {
       if (e.equipement_id !== equipmentId) return false;
       
       const entryStart = new Date(e.date_debut);
       const entryEnd = new Date(e.date_fin);
       const currentDate = new Date(dateStr);
       
-      if (currentDate < entryStart || currentDate > entryEnd) return false;
+      // Normaliser les dates pour la comparaison (ignorer l'heure)
+      entryStart.setHours(0, 0, 0, 0);
+      entryEnd.setHours(0, 0, 0, 0);
+      currentDate.setHours(0, 0, 0, 0);
       
-      // Vérifier la demi-journée pour le premier jour
-      if (currentDate.toISOString().split('T')[0] === e.date_debut) {
-        if (e.periode_debut === 'APRES_MIDI' && isAM) return false;
-      }
-      
-      // Vérifier la demi-journée pour le dernier jour
-      if (currentDate.toISOString().split('T')[0] === e.date_fin) {
-        if (e.periode_fin === 'MATIN' && !isAM) return false;
-      }
-      
-      return true;
+      return currentDate >= entryStart && currentDate <= entryEnd;
     });
+  };
 
-    if (entry) {
-      return entry.statut || 'EN_MAINTENANCE';
+  // Calculer la position et largeur d'un bloc de maintenance dans une cellule (0-100%)
+  const getMaintenanceBlockStyle = (entry, day) => {
+    const dayStr = day.toISOString().split('T')[0];
+    const entryStartDate = entry.date_debut;
+    const entryEndDate = entry.date_fin;
+    
+    // Heures par défaut si non spécifiées
+    let startHour = 0;
+    let endHour = 24;
+    
+    // Si c'est le premier jour de l'arrêt
+    if (dayStr === entryStartDate) {
+      if (entry.heure_debut) {
+        const [h, m] = entry.heure_debut.split(':').map(Number);
+        startHour = h + (m / 60);
+      } else if (entry.periode_debut === 'APRES_MIDI') {
+        startHour = 12;
+      }
     }
-
-    const equipment = equipments.find(e => e.id === equipmentId);
-    return equipment?.status || equipment?.statut || 'OPERATIONNEL';
+    
+    // Si c'est le dernier jour de l'arrêt
+    if (dayStr === entryEndDate) {
+      if (entry.heure_fin) {
+        const [h, m] = entry.heure_fin.split(':').map(Number);
+        endHour = h + (m / 60);
+      } else if (entry.periode_fin === 'MATIN') {
+        endHour = 12;
+      }
+    }
+    
+    // Calculer left et width en pourcentage (24h = 100%)
+    const left = (startHour / 24) * 100;
+    const width = ((endHour - startHour) / 24) * 100;
+    
+    return { left: `${left}%`, width: `${width}%` };
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'OPERATIONNEL':
-      case 'OPERATIONAL':
-        return '#10b981'; // Vert
       case 'EN_MAINTENANCE':
         return '#f59e0b'; // Orange
       case 'HORS_SERVICE':
         return '#ef4444'; // Rouge
       default:
-        return '#9ca3af'; // Gris
+        return '#f59e0b'; // Orange par défaut pour maintenance
     }
   };
 
@@ -142,47 +161,58 @@ const PlanningMPrev = () => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Calculer les statistiques annuelles (en excluant les weekends)
+  // Calculer les statistiques annuelles (weekends inclus)
   const calculateAnnualStats = () => {
     let totalOperational = 0;
     let totalMaintenance = 0;
     let totalOutOfService = 0;
-    let totalHalfDays = 0;
+    let totalHours = 0;
     
     equipments.forEach(equipment => {
       for (let m = 0; m < 12; m++) {
         const daysInMonth = new Date(year, m + 1, 0).getDate();
         for (let day = 1; day <= daysInMonth; day++) {
           const date = new Date(year, m, day);
-          const dayOfWeek = date.getDay();
-          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+          const entries = getMaintenanceEntriesForDay(equipment.id, date);
           
-          const statusAM = getEquipmentStatusForHalfDay(equipment.id, date, true);
-          const statusPM = getEquipmentStatusForHalfDay(equipment.id, date, false);
+          // Calculer les heures de maintenance pour ce jour
+          let maintenanceHours = 0;
+          let outOfServiceHours = 0;
           
-          [statusAM, statusPM].forEach(status => {
-            totalHalfDays++;
-            if (status === 'OPERATIONNEL' || status === 'OPERATIONAL') {
-              totalOperational++;
-            } else if (status === 'EN_MAINTENANCE') {
-              totalMaintenance++;
-            } else if (status === 'HORS_SERVICE') {
-              totalOutOfService++;
+          entries.forEach(entry => {
+            const style = getMaintenanceBlockStyle(entry, date);
+            const widthPercent = parseFloat(style.width) / 100;
+            const hours = widthPercent * 24;
+            
+            if (entry.statut === 'HORS_SERVICE') {
+              outOfServiceHours += hours;
+            } else {
+              maintenanceHours += hours;
             }
           });
+          
+          // Limiter à 24h max par jour
+          maintenanceHours = Math.min(maintenanceHours, 24);
+          outOfServiceHours = Math.min(outOfServiceHours, 24 - maintenanceHours);
+          const operationalHours = 24 - maintenanceHours - outOfServiceHours;
+          
+          totalOperational += operationalHours;
+          totalMaintenance += maintenanceHours;
+          totalOutOfService += outOfServiceHours;
+          totalHours += 24;
         }
       }
     });
     
-    const operationalPercent = totalHalfDays > 0 ? Math.round((totalOperational / totalHalfDays) * 100) : 0;
-    const maintenancePercent = totalHalfDays > 0 ? Math.round((totalMaintenance / totalHalfDays) * 100) : 0;
-    const outOfServicePercent = totalHalfDays > 0 ? Math.round((totalOutOfService / totalHalfDays) * 100) : 0;
+    const operationalPercent = totalHours > 0 ? Math.round((totalOperational / totalHours) * 100) : 100;
+    const maintenancePercent = totalHours > 0 ? Math.round((totalMaintenance / totalHours) * 100) : 0;
+    const outOfServicePercent = totalHours > 0 ? Math.round((totalOutOfService / totalHours) * 100) : 0;
     
     return {
-      operational: totalOperational,
-      maintenance: totalMaintenance,
-      outOfService: totalOutOfService,
-      total: totalHalfDays,
+      operational: Math.round(totalOperational),
+      maintenance: Math.round(totalMaintenance),
+      outOfService: Math.round(totalOutOfService),
+      total: totalHours,
       operationalPercent,
       maintenancePercent,
       outOfServicePercent
@@ -232,7 +262,7 @@ const PlanningMPrev = () => {
                 </div>
                 <div className="text-sm text-green-600 font-medium mt-1">Opérationnel</div>
                 <div className="text-xs text-green-500 mt-1">
-                  {annualStats.operational} demi-journées
+                  {annualStats.operational}h
                 </div>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
@@ -251,7 +281,7 @@ const PlanningMPrev = () => {
                 </div>
                 <div className="text-sm text-orange-600 font-medium mt-1">En Maintenance</div>
                 <div className="text-xs text-orange-500 mt-1">
-                  {annualStats.maintenance} demi-journées
+                  {annualStats.maintenance}h
                 </div>
               </div>
               <div className="h-12 w-12 rounded-full bg-orange-500 flex items-center justify-center">
@@ -270,7 +300,7 @@ const PlanningMPrev = () => {
                 </div>
                 <div className="text-sm text-red-600 font-medium mt-1">Hors Service</div>
                 <div className="text-xs text-red-500 mt-1">
-                  {annualStats.outOfService} demi-journées
+                  {annualStats.outOfService}h
                 </div>
               </div>
               <div className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center">
@@ -285,7 +315,7 @@ const PlanningMPrev = () => {
       <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center gap-2">
         <Calendar className="h-4 w-4" />
         <span>
-          Statistiques annuelles {year} : <strong>{annualStats.total} demi-journées</strong> (hors weekends) pour <strong>{equipments.length} équipement(s)</strong>
+          Statistiques annuelles {year} pour <strong>{equipments.length} équipement(s)</strong> (weekends inclus)
         </span>
       </div>
 
@@ -327,7 +357,9 @@ const PlanningMPrev = () => {
               <div className="w-4 h-4 bg-red-500 rounded"></div>
               <span className="text-sm">Hors Service</span>
             </div>
-            <span className="text-xs text-gray-500 ml-4">• Triangle gauche = Matin (8h-12h) • Triangle droit = Après-midi (13h-17h)</span>
+            <span className="text-xs text-gray-500 ml-4">
+              • Trait vertical = 12h00 • Chaque case = 24h (0h à gauche, 24h à droite)
+            </span>
           </div>
 
           {/* Planning du mois */}
@@ -347,11 +379,13 @@ const PlanningMPrev = () => {
                     return (
                       <th 
                         key={dayIndex} 
-                        className={`border p-1 text-center min-w-[40px] ${
-                          isWeekend ? 'bg-gray-200 text-gray-400' : 'bg-gray-100'
+                        className={`border p-1 text-center min-w-[50px] ${
+                          isWeekend ? 'bg-blue-50' : 'bg-gray-100'
                         } ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
                       >
-                        <div className="text-xs font-normal text-gray-500">{dayNames[day.getDay()]}</div>
+                        <div className={`text-xs font-normal ${isWeekend ? 'text-blue-600' : 'text-gray-500'}`}>
+                          {dayNames[day.getDay()]}
+                        </div>
                         <div className={`text-sm font-bold ${isToday ? 'text-blue-600' : ''}`}>
                           {day.getDate()}
                         </div>
@@ -366,8 +400,8 @@ const PlanningMPrev = () => {
                     <td className="border p-2 bg-white sticky left-0 z-10 font-medium">
                       <div className="flex items-center gap-2">
                         <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: getStatusColor(equipment.status || equipment.statut) }}
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: '#10b981' }}
                         />
                         <span className="truncate max-w-[150px]" title={equipment.nom}>
                           {equipment.nom}
@@ -377,41 +411,39 @@ const PlanningMPrev = () => {
                     {days.map((day, dayIndex) => {
                       const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                       const isToday = day.toISOString().split('T')[0] === today;
-                      
-                      if (isWeekend) {
-                        return (
-                          <td 
-                            key={dayIndex} 
-                            className="border p-0 bg-gray-100"
-                          >
-                            <div className="h-8 w-full"></div>
-                          </td>
-                        );
-                      }
-                      
-                      const statusAM = getEquipmentStatusForHalfDay(equipment.id, day, true);
-                      const statusPM = getEquipmentStatusForHalfDay(equipment.id, day, false);
+                      const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
                       
                       return (
                         <td 
                           key={dayIndex} 
-                          className={`border p-0 ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                          className={`border p-0 ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''} ${
+                            isWeekend ? 'bg-blue-50/30' : ''
+                          }`}
                         >
-                          <div className="flex h-8 w-full">
-                            {/* Triangle Matin (gauche) */}
-                            <svg viewBox="0 0 20 20" className="w-1/2 h-full">
-                              <polygon 
-                                points="0,0 20,0 0,20" 
-                                fill={getStatusColor(statusAM)}
-                              />
-                            </svg>
-                            {/* Triangle Après-midi (droite) */}
-                            <svg viewBox="0 0 20 20" className="w-1/2 h-full">
-                              <polygon 
-                                points="0,0 20,0 20,20" 
-                                fill={getStatusColor(statusPM)}
-                              />
-                            </svg>
+                          {/* Cellule représentant 24h */}
+                          <div className="relative h-8 w-full bg-green-400">
+                            {/* Trait vertical à 12h (50%) */}
+                            <div 
+                              className="absolute top-0 bottom-0 w-px bg-green-600/30"
+                              style={{ left: '50%' }}
+                            />
+                            
+                            {/* Blocs de maintenance */}
+                            {maintenanceEntries.map((entry, idx) => {
+                              const style = getMaintenanceBlockStyle(entry, day);
+                              return (
+                                <div
+                                  key={idx}
+                                  className="absolute top-0 bottom-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                  style={{
+                                    left: style.left,
+                                    width: style.width,
+                                    backgroundColor: getStatusColor(entry.statut),
+                                  }}
+                                  title={`${entry.motif || 'Maintenance'}\n${entry.heure_debut || '00:00'} - ${entry.heure_fin || '24:00'}`}
+                                />
+                              );
+                            })}
                           </div>
                         </td>
                       );
