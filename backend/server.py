@@ -2111,7 +2111,7 @@ async def create_auto_purchase_request(inventory_item: dict, current_user: dict)
         purchase_request = {
             "_id": ObjectId(),
             "numero": numero,
-            "type": PurchaseRequestType.REAPPROVISIONNEMENT.value,
+            "type": PurchaseRequestType.CONSOMMABLE.value,
             "designation": inventory_item.get("nom", "Article inconnu"),
             "description": f"Demande automatique - Rupture de stock détectée pour l'article '{inventory_item.get('nom')}'",
             "quantite": inventory_item.get("quantiteMin", 10),  # Commander au moins le seuil minimum
