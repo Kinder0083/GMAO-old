@@ -80,6 +80,11 @@ const Assets = () => {
     navigate(`/assets/${equipment.id}`);
   };
 
+  // Naviguer vers l'inventaire avec le filtre sur l'équipement
+  const handleViewInventory = (equipment) => {
+    navigate('/inventory', { state: { filterEquipment: equipment.id } });
+  };
+
   const handleStatusChange = async (equipmentId, newStatus) => {
     // Recharger toute la liste pour obtenir les changements de statut parent
     await refreshEquipments();
