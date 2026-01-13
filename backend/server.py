@@ -2098,7 +2098,7 @@ async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, curren
 async def create_auto_purchase_request(inventory_item: dict, current_user: dict):
     """Créer automatiquement une demande d'achat pour un article en rupture de stock"""
     try:
-        from models import PurchaseRequestType, PurchaseRequestUrgency, PurchaseRequestStatus
+        from models import PurchaseRequest, PurchaseRequestType, PurchaseRequestUrgency, PurchaseRequestStatus, PurchaseRequestHistoryEntry
         
         # Générer un numéro unique pour la demande
         year = datetime.utcnow().year
@@ -2107,46 +2107,47 @@ async def create_auto_purchase_request(inventory_item: dict, current_user: dict)
         })
         numero = f"DA-{year}-{str(count + 1).zfill(5)}"
         
-        # Créer la demande d'achat
-        purchase_request = {
-            "_id": ObjectId(),
-            "numero": numero,
-            "type": PurchaseRequestType.CONSOMMABLE.value,
-            "designation": inventory_item.get("nom", "Article inconnu"),
-            "description": f"Demande automatique - Rupture de stock détectée pour l'article '{inventory_item.get('nom')}'",
-            "quantite": inventory_item.get("quantiteMin", 10),  # Commander au moins le seuil minimum
-            "unite": "Unité",
-            "reference": inventory_item.get("reference", ""),
-            "fournisseur_suggere": inventory_item.get("fournisseur", ""),
-            "urgence": PurchaseRequestUrgency.URGENT.value,
-            "justification": f"Rupture de stock automatiquement détectée. L'article '{inventory_item.get('nom')}' (Réf: {inventory_item.get('reference', 'N/A')}) a atteint une quantité de 0. Emplacement: {inventory_item.get('emplacement', 'N/A')}",
-            "destinataire_id": None,
-            "destinataire_nom": "Service Maintenance",
-            "inventory_item_id": inventory_item.get("id"),
-            "attached_files": [],
-            "demandeur_id": "SYSTEM",
-            "demandeur_nom": "Système automatique",
-            "demandeur_email": "system@gmao.local",
-            "status": PurchaseRequestStatus.SOUMISE.value,
-            "date_creation": datetime.utcnow(),
-            "date_modification": datetime.utcnow(),
-            "historique": [{
-                "date": datetime.utcnow().isoformat(),
-                "action": "Création automatique",
-                "user_id": "SYSTEM",
-                "user_name": "Système automatique",
-                "details": f"Demande créée automatiquement suite à la rupture de stock de l'article '{inventory_item.get('nom')}'"
-            }]
-        }
+        # Créer la demande d'achat avec le modèle Pydantic (génère automatiquement l'UUID)
+        purchase_request = PurchaseRequest(
+            numero=numero,
+            type=PurchaseRequestType.CONSOMMABLE,
+            designation=inventory_item.get("nom", "Article inconnu"),
+            description=f"Demande automatique - Rupture de stock détectée pour l'article '{inventory_item.get('nom')}'",
+            quantite=inventory_item.get("quantiteMin", 10),  # Commander au moins le seuil minimum
+            unite="Unité",
+            reference=inventory_item.get("reference", ""),
+            fournisseur_suggere=inventory_item.get("fournisseur", ""),
+            urgence=PurchaseRequestUrgency.URGENT,
+            justification=f"Rupture de stock automatiquement détectée. L'article '{inventory_item.get('nom')}' (Réf: {inventory_item.get('reference', 'N/A')}) a atteint une quantité de 0. Emplacement: {inventory_item.get('emplacement', 'N/A')}",
+            destinataire_id=None,
+            destinataire_nom="Service Maintenance",
+            inventory_item_id=inventory_item.get("id"),
+            attached_files=[],
+            demandeur_id="SYSTEM",
+            demandeur_nom="Système automatique",
+            demandeur_email="system@gmao.local",
+            status=PurchaseRequestStatus.SOUMISE,
+            responsable_n1_id=None,
+            responsable_n1_nom=None,
+            history=[
+                PurchaseRequestHistoryEntry(
+                    user_id="SYSTEM",
+                    user_name="Système automatique",
+                    action="Création automatique - Rupture de stock",
+                    new_status=PurchaseRequestStatus.SOUMISE.value,
+                    comment=f"Article '{inventory_item.get('nom')}' en rupture de stock"
+                )
+            ]
+        )
         
-        await db.purchase_requests.insert_one(purchase_request)
+        # Sauvegarder dans la DB
+        await db.purchase_requests.insert_one(purchase_request.model_dump())
         
         # Broadcast WebSocket pour notifier
-        pr_data = serialize_doc(purchase_request)
         await realtime_manager.emit_event(
             "purchase_requests",
             "created",
-            pr_data,
+            purchase_request.model_dump(),
             user_id=current_user.get("id")
         )
         
@@ -2154,6 +2155,8 @@ async def create_auto_purchase_request(inventory_item: dict, current_user: dict)
         
     except Exception as e:
         logger.error(f"Erreur création demande d'achat automatique: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
 
 @api_router.delete("/inventory/{inv_id}")
