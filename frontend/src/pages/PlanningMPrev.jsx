@@ -499,11 +499,23 @@ const PlanningMPrev = () => {
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               Planning Maintenance Préventive
+              {pendingDemandesCount > 0 && (
+                <Badge className="bg-yellow-100 text-yellow-700 ml-2">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {pendingDemandesCount} en attente
+                </Badge>
+              )}
             </CardTitle>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Demande d'Arrêt
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setHistoriqueDialogOpen(true)}>
+                <History className="h-4 w-4 mr-2" />
+                Historique des demandes
+              </Button>
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Demande d'Arrêt
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
