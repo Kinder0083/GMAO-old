@@ -118,10 +118,10 @@ const QuickStatusChanger = ({ equipment, onStatusChange }) => {
             Hors service
           </span>
         </SelectItem>
-        <SelectItem value="MAINT_PREV">
+        <SelectItem value="DEGRADE">
           <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-orange-600"></span>
-            Maint. Prev.
+            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+            Dégradé
           </span>
         </SelectItem>
       </SelectContent>
