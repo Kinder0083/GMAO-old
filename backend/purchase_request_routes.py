@@ -106,22 +106,29 @@ async def get_purchase_requests(
     current_user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    """Récupérer les demandes d'achat"""
+    """Récupérer les demandes d'achat (exclut les archivées)"""
     try:
-        query = {}
+        # Exclure les demandes archivées par défaut
+        query = {"$or": [{"archived": False}, {"archived": {"$exists": False}}]}
         
         # Si pas admin, ne voir que ses propres demandes ou celles dont on est N+1
         if current_user.get('role') != 'ADMIN':
             query = {
-                "$or": [
-                    {"demandeur_id": current_user['id']},
-                    {"responsable_n1_id": current_user['id']}
+                "$and": [
+                    {"$or": [{"archived": False}, {"archived": {"$exists": False}}]},
+                    {"$or": [
+                        {"demandeur_id": current_user['id']},
+                        {"responsable_n1_id": current_user['id']}
+                    ]}
                 ]
             }
         
         # Filtrer par statut si demandé
         if status:
-            query["status"] = status
+            if "$and" in query:
+                query["$and"].append({"status": status})
+            else:
+                query["status"] = status
         
         requests = await db.purchase_requests.find(query, {"_id": 0}).sort("date_creation", -1).to_list(1000)
         
