@@ -187,16 +187,27 @@ async def update_purchase_request_status(
         old_status = request['status']
         new_status = status_update.status.value
         
-        # Logique de validation selon le rôle
-        if new_status in [PurchaseRequestStatus.VALIDEE_N1.value, PurchaseRequestStatus.REFUSEE_N1.value]:
-            # Seul le N+1 peut valider/refuser
-            if request.get('responsable_n1_id') != current_user['id'] and current_user.get('role') != 'ADMIN':
-                raise HTTPException(status_code=403, detail="Seul le N+1 peut effectuer cette action")
+        # Vérifier si l'utilisateur a la permission "achat"
+        user_permissions = current_user.get('permissions', {})
+        has_achat_permission = (
+            current_user.get('role') == 'ADMIN' or
+            (isinstance(user_permissions, dict) and 
+             user_permissions.get('achat', {}).get('edit', False))
+        )
         
-        elif new_status in [PurchaseRequestStatus.APPROUVEE_ACHAT.value, PurchaseRequestStatus.REFUSEE_ACHAT.value]:
-            # Seul l'admin (service achat) peut approuver/refuser l'achat
-            if current_user.get('role') != 'ADMIN':
-                raise HTTPException(status_code=403, detail="Seul le service achat peut effectuer cette action")
+        # Logique de validation selon le rôle et permissions
+        if new_status in [PurchaseRequestStatus.VALIDEE_N1.value, PurchaseRequestStatus.REFUSEE_N1.value]:
+            # Seul le N+1 ou un utilisateur avec permission achat peut valider/refuser N+1
+            is_n1 = request.get('responsable_n1_id') == current_user['id']
+            if not is_n1 and not has_achat_permission:
+                raise HTTPException(status_code=403, detail="Seul le N+1 ou un utilisateur avec la permission Achat peut effectuer cette action")
+        
+        elif new_status in [PurchaseRequestStatus.APPROUVEE_ACHAT.value, PurchaseRequestStatus.REFUSEE_ACHAT.value,
+                           PurchaseRequestStatus.ACHAT_EFFECTUE.value, PurchaseRequestStatus.RECEPTIONNEE.value,
+                           PurchaseRequestStatus.DISTRIBUEE.value]:
+            # Utilisateurs avec permission achat ou admin peuvent effectuer ces actions
+            if not has_achat_permission:
+                raise HTTPException(status_code=403, detail="Seuls les utilisateurs avec la permission Achat peuvent effectuer cette action")
         
         # Créer l'entrée d'historique
         user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}"
