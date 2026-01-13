@@ -18,6 +18,18 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
+### Session du 13 Janvier 2026 (après-midi)
+
+#### ✅ Refonte Page "Planning M.Prev" - Orientation Verticale (Complété)
+- **Fichiers modifiés**:
+  - `/app/frontend/src/pages/PlanningMPrev.jsx`
+- **Modifications**:
+  - Orientation des cellules 24h : **0h en haut, 24h en bas** (verticale)
+  - Trait horizontal à 12h00 au milieu de chaque cellule
+  - Bordure bleue du jour actuel appliquée **uniquement à l'en-tête** (date), pas aux lignes d'équipement
+  - Légende mise à jour pour refléter la nouvelle orientation
+  - Cellules légèrement plus hautes (h-12) pour meilleure visibilité
+
 ### Session du 13 Janvier 2026
 
 #### ✅ Appartenance des Articles aux Équipements (Complété)
