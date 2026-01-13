@@ -1,30 +1,41 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight, Wrench, Plus } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Wrench, Plus, CheckCircle2, Clock, AlertCircle, FileCheck } from 'lucide-react';
 import { equipmentsAPI, demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import DemandeArretDialog from '../components/PlanningMPrev/DemandeArretDialog';
 
-// Couleurs pour les 7 statuts d'équipement
+// Couleurs EXACTES de la page Équipements (Tailwind CSS hex equivalents)
 const STATUS_COLORS = {
-  OPERATIONNEL: '#22c55e',      // Vert
-  EN_FONCTIONNEMENT: '#3b82f6', // Bleu
-  A_LARRET: '#f59e0b',          // Orange/Jaune
-  EN_MAINTENANCE: '#f97316',    // Orange
-  HORS_SERVICE: '#ef4444',      // Rouge
-  EN_CT: '#8b5cf6',             // Violet
-  ALERTE_S_EQUIP: '#ec4899',    // Rose
+  OPERATIONNEL: '#22c55e',      // green-500 (bg-green-100 équivalent pour la cellule)
+  EN_FONCTIONNEMENT: '#10b981', // emerald-500
+  A_LARRET: '#6b7280',          // gray-500
+  EN_MAINTENANCE: '#f97316',    // orange-500
+  HORS_SERVICE: '#ef4444',      // red-500
+  EN_CT: '#a855f7',             // purple-500
+  ALERTE_S_EQUIP: '#eab308',    // yellow-500
+};
+
+// Couleurs de fond plus claires pour les cellules (comme dans Equipements)
+const STATUS_BG_COLORS = {
+  OPERATIONNEL: '#dcfce7',      // green-100
+  EN_FONCTIONNEMENT: '#d1fae5', // emerald-100
+  A_LARRET: '#f3f4f6',          // gray-100
+  EN_MAINTENANCE: '#ffedd5',    // orange-100
+  HORS_SERVICE: '#fee2e2',      // red-100
+  EN_CT: '#f3e8ff',             // purple-100
+  ALERTE_S_EQUIP: '#fef9c3',    // yellow-100
 };
 
 const STATUS_LABELS = {
   OPERATIONNEL: 'Opérationnel',
-  EN_FONCTIONNEMENT: 'En fonctionnement',
+  EN_FONCTIONNEMENT: 'En Fonctionnement',
   A_LARRET: 'À l\'arrêt',
   EN_MAINTENANCE: 'En maintenance',
   HORS_SERVICE: 'Hors service',
-  EN_CT: 'En CT',
+  EN_CT: 'En C.T',
   ALERTE_S_EQUIP: 'Alerte S.Équip',
 };
 
@@ -148,14 +159,85 @@ const PlanningMPrev = () => {
     return { top: `${top}%`, height: `${height}%` };
   };
 
-  // Obtenir la couleur selon le statut de l'équipement ou de l'entrée
-  const getStatusColor = (equipment, entry) => {
-    // Si l'entrée a un statut spécifique, l'utiliser
-    if (entry && entry.statut) {
-      return STATUS_COLORS[entry.statut] || STATUS_COLORS.EN_MAINTENANCE;
+  // Déterminer le statut d'un équipement pour une heure donnée
+  // Le statut actuel ne s'applique qu'à partir du moment où il a été changé
+  const getEquipmentStatusForHour = (equipment, dayDate, hour) => {
+    // Créer la date/heure complète pour cette heure du jour
+    const checkDateTime = new Date(dayDate);
+    checkDateTime.setHours(hour, 0, 0, 0);
+    
+    // Si l'équipement a une date de changement de statut
+    if (equipment.statut_changed_at) {
+      const statusChangedAt = new Date(equipment.statut_changed_at);
+      
+      // Si on vérifie une date/heure AVANT le changement de statut
+      // On affiche OPERATIONNEL (statut par défaut avant le changement)
+      if (checkDateTime < statusChangedAt) {
+        return 'OPERATIONNEL';
+      }
     }
-    // Sinon utiliser le statut actuel de l'équipement
-    return STATUS_COLORS[equipment?.statut] || STATUS_COLORS.OPERATIONNEL;
+    
+    // Sinon, utiliser le statut actuel de l'équipement
+    return equipment.statut || 'OPERATIONNEL';
+  };
+
+  // Calculer les blocs de statut pour un jour donné (en fonction du changement de statut)
+  const getStatusBlocksForDay = (equipment, day) => {
+    const blocks = [];
+    const dayStart = new Date(day);
+    dayStart.setHours(0, 0, 0, 0);
+    
+    const dayEnd = new Date(day);
+    dayEnd.setHours(23, 59, 59, 999);
+    
+    // Si pas de date de changement de statut, tout le jour a le statut actuel
+    if (!equipment.statut_changed_at) {
+      return [{
+        startHour: 0,
+        endHour: 24,
+        status: equipment.statut || 'OPERATIONNEL'
+      }];
+    }
+    
+    const statusChangedAt = new Date(equipment.statut_changed_at);
+    const changeHour = statusChangedAt.getHours();
+    
+    // Comparer les dates (sans l'heure)
+    const dayDateStr = day.toISOString().split('T')[0];
+    const changeDateStr = statusChangedAt.toISOString().split('T')[0];
+    
+    if (dayDateStr < changeDateStr) {
+      // Jour entièrement AVANT le changement -> OPERATIONNEL
+      return [{
+        startHour: 0,
+        endHour: 24,
+        status: 'OPERATIONNEL'
+      }];
+    } else if (dayDateStr > changeDateStr) {
+      // Jour entièrement APRÈS le changement -> statut actuel
+      return [{
+        startHour: 0,
+        endHour: 24,
+        status: equipment.statut || 'OPERATIONNEL'
+      }];
+    } else {
+      // Jour DU changement -> deux blocs
+      if (changeHour > 0) {
+        blocks.push({
+          startHour: 0,
+          endHour: changeHour,
+          status: 'OPERATIONNEL'
+        });
+      }
+      if (changeHour < 24) {
+        blocks.push({
+          startHour: changeHour,
+          endHour: 24,
+          status: equipment.statut || 'OPERATIONNEL'
+        });
+      }
+      return blocks;
+    }
   };
 
   // Navigation par mois
@@ -284,7 +366,7 @@ const PlanningMPrev = () => {
                 </div>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
-                <span className="text-white text-xl">✓</span>
+                <CheckCircle2 className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>
@@ -322,7 +404,7 @@ const PlanningMPrev = () => {
                 </div>
               </div>
               <div className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center">
-                <span className="text-white text-xl">✕</span>
+                <AlertCircle className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>
@@ -358,8 +440,8 @@ const PlanningMPrev = () => {
             </Button>
           </div>
 
-          {/* Légende des statuts */}
-          <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-gray-50 rounded">
+          {/* Légende des statuts - mêmes couleurs que page Équipements */}
+          <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded">
             <span className="text-sm font-semibold">Légende :</span>
             {Object.entries(STATUS_COLORS).map(([status, color]) => (
               <div key={status} className="flex items-center gap-1">
@@ -426,7 +508,9 @@ const PlanningMPrev = () => {
                 {days.map((day, dayIndex) => {
                   const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                   const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
-                  const baseColor = STATUS_COLORS[equipment.statut] || STATUS_COLORS.OPERATIONNEL;
+                  
+                  // Obtenir les blocs de statut pour ce jour (en fonction du changement de statut)
+                  const statusBlocks = getStatusBlocksForDay(equipment, day);
                   
                   return (
                     <div 
@@ -434,24 +518,39 @@ const PlanningMPrev = () => {
                       className={`border-r last:border-r-0 ${isWeekend ? 'bg-blue-50/30' : ''}`}
                     >
                       {/* Cellule 24h verticale (0h en haut, 24h en bas) */}
-                      <div 
-                        className="relative h-10 w-full"
-                        style={{ backgroundColor: baseColor }}
-                      >
+                      <div className="relative h-10 w-full bg-gray-100">
+                        {/* Blocs de statut de base (selon le changement de statut) */}
+                        {statusBlocks.map((block, blockIdx) => {
+                          const top = (block.startHour / 24) * 100;
+                          const height = ((block.endHour - block.startHour) / 24) * 100;
+                          return (
+                            <div
+                              key={`status-${blockIdx}`}
+                              className="absolute left-0 right-0"
+                              style={{
+                                top: `${top}%`,
+                                height: `${height}%`,
+                                backgroundColor: STATUS_COLORS[block.status] || STATUS_COLORS.OPERATIONNEL,
+                              }}
+                              title={`${STATUS_LABELS[block.status]} (${block.startHour}h - ${block.endHour}h)`}
+                            />
+                          );
+                        })}
+                        
                         {/* Trait horizontal à 12h (50%) */}
                         <div 
-                          className="absolute left-0 right-0 h-px opacity-30"
+                          className="absolute left-0 right-0 h-px opacity-30 z-10"
                           style={{ top: '50%', backgroundColor: '#000' }}
                         />
                         
-                        {/* Blocs de maintenance superposés */}
+                        {/* Blocs de maintenance superposés (demandes d'arrêt) */}
                         {maintenanceEntries.map((entry, idx) => {
                           const style = getMaintenanceBlockStyle(entry, day);
                           const entryColor = STATUS_COLORS[entry.statut] || STATUS_COLORS.EN_MAINTENANCE;
                           return (
                             <div
                               key={idx}
-                              className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity"
+                              className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity z-20"
                               style={{
                                 top: style.top,
                                 height: style.height,
