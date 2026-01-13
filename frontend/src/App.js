@@ -135,6 +135,7 @@ function App() {
             <Route path="vendors" element={<Vendors />} />
             <Route path="purchase-history" element={<PurchaseHistory />} />
             <Route path="purchase-requests" element={<PurchaseRequests />} />
+            <Route path="purchase-requests/archives" element={<PurchaseRequestsArchives />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />
             <Route path="import-export" element={<ImportExport />} />
             <Route path="settings" element={<Settings />} />
