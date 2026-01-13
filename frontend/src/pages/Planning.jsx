@@ -295,14 +295,27 @@ const Planning = () => {
   };
 
   // Drag to copy - fin
-  const handleDragEnd = () => {
-    // Rafraîchir les données une seule fois à la fin du drag
-    if (isDragging) {
-      refreshAvailabilities();
-    }
+  const handleDragEnd = async () => {
+    const wasDragging = isDragging;
     setIsDragging(false);
     setDragStartCell(null);
     dragRef.current = { userId: null, startDay: null, startAvail: null };
+    
+    // Attendre que toutes les mises à jour soient terminées avant de rafraîchir
+    if (wasDragging) {
+      // Attendre un peu pour que les dernières requêtes se terminent
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Attendre que le compteur de mises à jour soit à 0
+      let attempts = 0;
+      while (pendingUpdates.current > 0 && attempts < 20) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      // Rafraîchir les données une seule fois
+      refreshAvailabilities();
+    }
   };
 
   const getDaysInMonth = () => {
