@@ -20,24 +20,27 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 13 Janvier 2026 (soir)
 
-#### ✅ Refonte Complète Page "Planning M.Prev" (Complété)
+#### ✅ Refonte Complète Page "Planning M.Prev" avec Historique des Statuts (Complété)
 - **Fichiers modifiés**:
   - `/app/frontend/src/pages/PlanningMPrev.jsx`
-  - `/app/backend/models.py` (ajout `statut_changed_at`)
-  - `/app/backend/server.py` (enregistrement date changement statut)
-- **Modifications UI**:
-  - Suppression du texte inutile "Trait vertical = 12h00..."
-  - Affichage du **mois complet sans barre de défilement horizontale** (même style que page Planning)
-  - **Couleurs identiques** à la page Équipements pour les 7 statuts
-  - Légende complète avec tous les statuts
-  - Orientation verticale des cellules (0h en haut, 24h en bas)
-  - Bordure bleue du jour actuel uniquement sur l'en-tête
-- **Logique des statuts**:
-  - Nouveau champ `statut_changed_at` sur les équipements
-  - Le statut actuel ne s'applique qu'à **partir du moment du changement** (arrondi à l'heure inférieure)
-  - Mois/jours **précédents** le changement affichent le statut OPERATIONNEL
-  - Le **jour du changement** affiche une transition visuelle (partie avant/après)
-  - Mois/jours **suivants** affichent le nouveau statut
+  - `/app/backend/models.py` (ajout modèle `EquipmentStatusHistory`)
+  - `/app/backend/server.py` (endpoints PUT et PATCH modifiés + nouvel endpoint GET)
+  - `/app/frontend/src/services/api.js` (ajout `getStatusHistory`)
+- **Nouvelle collection MongoDB**: `equipment_status_history`
+  - `equipment_id`: ID de l'équipement
+  - `statut`: Statut enregistré
+  - `changed_at`: Date/heure du changement (arrondie à l'heure inférieure)
+  - `changed_by`: ID de l'utilisateur
+  - `changed_by_name`: Nom de l'utilisateur
+- **Logique implémentée**:
+  - Historique complet des changements de statut conservé
+  - Cellules grises (sans données) pour les périodes sans historique
+  - Statistiques basées uniquement sur les données historiques
+  - Changement de statut = nouveau point de départ (arrondi à l'heure inférieure)
+  - Si changement à la même heure, l'ancien est écrasé (upsert)
+  - Le statut précédent est conservé, seul le futur change
+- **Bug corrigé**: L'endpoint PATCH (changement rapide) n'enregistrait pas l'historique
+- **Couleurs harmonisées** avec la page Équipements (7 statuts)
 
 ### Session du 13 Janvier 2026 (après-midi)
 
