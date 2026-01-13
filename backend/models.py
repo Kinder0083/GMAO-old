@@ -2558,6 +2558,12 @@ class PurchaseRequest(PurchaseRequestBase):
     demandeur_email: str
     status: PurchaseRequestStatus = PurchaseRequestStatus.SOUMISE
     
+    # Archivage
+    archived: bool = False
+    archived_at: Optional[str] = None
+    archived_by: Optional[str] = None
+    archived_by_name: Optional[str] = None
+    
     # Responsables
     responsable_n1_id: Optional[str] = None
     responsable_n1_nom: Optional[str] = None
