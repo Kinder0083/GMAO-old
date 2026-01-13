@@ -1751,12 +1751,15 @@ async def update_availability(
 ):
     """Mettre à jour une disponibilité (admin uniquement)"""
     try:
-        # Récupérer les données envoyées (inclure les null pour permettre de remettre à blanc)
-        update_data = availability_update.model_dump(exclude_unset=False)
-        # Filtrer seulement les champs qui ne sont pas dans la requête originale
-        # mais garder les valeurs null explicites
-        raw_data = availability_update.model_dump(exclude_unset=True)
-        update_data = {k: v for k, v in update_data.items() if k in raw_data}
+        # Utiliser model_dump() pour obtenir toutes les valeurs, y compris None
+        # On accepte explicitement les valeurs null pour pouvoir remettre à blanc
+        update_data = {}
+        raw_dict = availability_update.model_dump()
+        
+        # Pour chaque champ de disponibilité, vérifier s'il a été envoyé
+        for field in ['disponible', 'disponible_matin', 'disponible_aprem', 'disponible_nuit', 'motif']:
+            if field in raw_dict:
+                update_data[field] = raw_dict[field]
         
         if update_data:
             await db.availabilities.update_one(
