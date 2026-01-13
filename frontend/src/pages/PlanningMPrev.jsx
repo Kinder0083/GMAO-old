@@ -358,7 +358,7 @@ const PlanningMPrev = () => {
               <span className="text-sm">Hors Service</span>
             </div>
             <span className="text-xs text-gray-500 ml-4">
-              • Trait vertical = 12h00 • Chaque case = 24h (0h à gauche, 24h à droite)
+              • Trait horizontal = 12h00 • Chaque case = 24h (0h en haut, 24h en bas)
             </span>
           </div>
 
