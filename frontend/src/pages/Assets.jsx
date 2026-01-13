@@ -168,7 +168,7 @@ const Assets = () => {
     { value: 'EN_MAINTENANCE', label: 'En maintenance', count: equipments.filter(e => e.statut === 'EN_MAINTENANCE').length },
     { value: 'HORS_SERVICE', label: 'Hors service', count: equipments.filter(e => e.statut === 'HORS_SERVICE').length },
     { value: 'EN_CT', label: 'En C.T', count: equipments.filter(e => e.statut === 'EN_CT').length },
-    { value: 'ALERTE_S_EQUIP', label: 'Alerte S.Equip', count: equipments.filter(e => e.statut === 'ALERTE_S_EQUIP').length }
+    { value: 'MAINT_PREV', label: 'Maint. Prev.', count: equipments.filter(e => e.statut === 'MAINT_PREV').length }
   ];
 
   // Filtrer pour n'afficher que les statuts avec count > 0 (sauf "Tous")
@@ -225,7 +225,7 @@ const Assets = () => {
           { statut: 'EN_MAINTENANCE', label: 'En maintenance', bg: 'bg-orange-100', iconColor: 'text-orange-600', icon: Clock },
           { statut: 'EN_CT', label: 'En C.T', bg: 'bg-purple-100', iconColor: 'text-purple-600', icon: FileCheck },
           { statut: 'HORS_SERVICE', label: 'Hors service', bg: 'bg-red-100', iconColor: 'text-red-600', icon: AlertCircle },
-          { statut: 'ALERTE_S_EQUIP', label: 'Alerte S.Equip', bg: 'bg-yellow-100', iconColor: 'text-yellow-600', icon: AlertCircle },
+          { statut: 'MAINT_PREV', label: 'Maint. Prev.', bg: 'bg-orange-100', iconColor: 'text-orange-600', icon: Wrench },
         ];
         
         // Filtrer pour n'afficher que les cartes avec count > 0
