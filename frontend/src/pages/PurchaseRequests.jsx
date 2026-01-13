@@ -1,24 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { 
   Plus, Search, ShoppingCart, Clock, CheckCircle, XCircle, 
-  Package, Truck, Users, FileText 
+  Package, Users, FileText, Archive, BookOpen
 } from 'lucide-react';
 import PurchaseRequestFormDialog from '../components/PurchaseRequests/PurchaseRequestFormDialog';
 import { useToast } from '../hooks/use-toast';
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 const PurchaseRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [archivingId, setArchivingId] = useState(null);
+
+  const isAdmin = user?.role === 'ADMIN';
+  const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Utiliser le hook temps réel
   const { 
@@ -26,6 +33,45 @@ const PurchaseRequests = () => {
     loading, 
     refresh: refreshRequests 
   } = usePurchaseRequests({ status: statusFilter });
+
+  const handleArchive = async (e, requestId, requestNumero) => {
+    e.stopPropagation(); // Empêcher la navigation vers le détail
+    
+    if (!isAdmin) {
+      toast({
+        title: "Accès refusé",
+        description: "Seuls les administrateurs peuvent archiver les demandes",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setArchivingId(requestId);
+      const token = localStorage.getItem('token');
+      
+      await axios.post(
+        `${backendUrl}/api/purchase-requests/${requestId}/archive`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast({
+        title: "Demande archivée",
+        description: `La demande ${requestNumero} a été archivée avec succès`,
+      });
+      
+      refreshRequests();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible d'archiver la demande",
+        variant: "destructive"
+      });
+    } finally {
+      setArchivingId(null);
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -118,10 +164,24 @@ const PurchaseRequests = () => {
           <h1 className="text-2xl font-bold">Demandes d'Achat</h1>
           <p className="text-gray-600">Gérez vos demandes d'achat et leur suivi</p>
         </div>
-        <Button onClick={() => setFormDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nouvelle Demande
-        </Button>
+        <div className="flex gap-2">
+          {/* Bouton Archives - visible uniquement pour les admins */}
+          {isAdmin && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/purchase-requests/archives')}
+              className="gap-2"
+              data-testid="archives-btn"
+            >
+              <Archive className="h-4 w-4" />
+              Archives
+            </Button>
+          )}
+          <Button onClick={() => setFormDialogOpen(true)} className="gap-2" data-testid="new-request-btn">
+            <Plus className="h-4 w-4" />
+            Nouvelle Demande
+          </Button>
+        </div>
       </div>
 
       {/* Statistiques */}
@@ -231,11 +291,12 @@ const PurchaseRequests = () => {
               key={request.id} 
               className="hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => navigate(`/purchase-requests/${request.id}`)}
+              data-testid={`purchase-request-card-${request.id}`}
             >
               <CardContent className="pt-6">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   {/* Colonne 1: Numéro et type */}
-                  <div className="lg:w-1/5">
+                  <div className="lg:w-1/6">
                     <div className="font-semibold text-lg">{request.numero}</div>
                     <div className="mt-1">{getTypeBadge(request.type)}</div>
                     <div className="text-xs text-gray-500 mt-1">
@@ -244,7 +305,7 @@ const PurchaseRequests = () => {
                   </div>
 
                   {/* Colonne 2: Article */}
-                  <div className="lg:w-2/5">
+                  <div className="lg:w-2/6">
                     <div className="text-sm text-gray-500">
                       Réf: {request.reference || 'N/A'}
                     </div>
@@ -258,7 +319,7 @@ const PurchaseRequests = () => {
                   </div>
 
                   {/* Colonne 3: Destinataire et urgence */}
-                  <div className="lg:w-1/5">
+                  <div className="lg:w-1/6">
                     <div className="text-sm text-gray-600">
                       <Users className="h-4 w-4 inline mr-1" />
                       {request.destinataire_nom}
@@ -269,8 +330,29 @@ const PurchaseRequests = () => {
                   </div>
 
                   {/* Colonne 4: Statut */}
-                  <div className="lg:w-1/5 text-right">
+                  <div className="lg:w-1/6 text-center">
                     {getStatusBadge(request.status)}
+                  </div>
+
+                  {/* Colonne 5: Actions (Archivage) */}
+                  <div className="lg:w-1/6 flex justify-end items-center">
+                    <button
+                      onClick={(e) => handleArchive(e, request.id, request.numero)}
+                      disabled={!isAdmin || archivingId === request.id}
+                      className={`p-2 rounded-lg transition-colors ${
+                        isAdmin 
+                          ? 'text-amber-600 hover:bg-amber-50 hover:text-amber-700 cursor-pointer' 
+                          : 'text-gray-300 cursor-not-allowed'
+                      }`}
+                      title={isAdmin ? "Archiver cette demande" : "Seuls les administrateurs peuvent archiver"}
+                      data-testid={`archive-btn-${request.id}`}
+                    >
+                      {archivingId === request.id ? (
+                        <div className="animate-spin h-5 w-5 border-2 border-amber-600 border-t-transparent rounded-full" />
+                      ) : (
+                        <BookOpen className="h-5 w-5" />
+                      )}
+                    </button>
                   </div>
                 </div>
               </CardContent>
