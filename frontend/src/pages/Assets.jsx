@@ -121,11 +121,11 @@ const Assets = () => {
         iconColor: 'text-gray-600'
       },
       'EN_MAINTENANCE': { 
-        bg: 'bg-orange-100', 
-        text: 'text-orange-700', 
+        bg: 'bg-yellow-100', 
+        text: 'text-yellow-700', 
         label: 'En maintenance',
         icon: Clock,
-        iconColor: 'text-orange-600'
+        iconColor: 'text-yellow-600'
       },
       'HORS_SERVICE': { 
         bg: 'bg-red-100', 
@@ -141,12 +141,12 @@ const Assets = () => {
         icon: FileCheck,
         iconColor: 'text-purple-600'
       },
-      'ALERTE_S_EQUIP': { 
-        bg: 'bg-yellow-100', 
-        text: 'text-yellow-700', 
-        label: 'Alerte S.Equip',
-        icon: AlertCircle,
-        iconColor: 'text-yellow-600'
+      'MAINT_PREV': { 
+        bg: 'bg-orange-100', 
+        text: 'text-orange-700', 
+        label: 'Maint. Prev.',
+        icon: Wrench,
+        iconColor: 'text-orange-600'
       }
     };
     const badge = badges[statut] || badges['OPERATIONNEL'];
