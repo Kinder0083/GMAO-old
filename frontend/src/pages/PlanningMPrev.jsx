@@ -184,18 +184,15 @@ const PlanningMPrev = () => {
   // Calculer les blocs de statut pour un jour donné (en fonction du changement de statut)
   const getStatusBlocksForDay = (equipment, day) => {
     const blocks = [];
-    const dayStart = new Date(day);
-    dayStart.setHours(0, 0, 0, 0);
-    
-    const dayEnd = new Date(day);
-    dayEnd.setHours(23, 59, 59, 999);
+    const currentStatus = equipment.statut || 'OPERATIONNEL';
     
     // Si pas de date de changement de statut, tout le jour a le statut actuel
+    // (le statut n'a jamais changé, donc c'est le statut de base depuis toujours)
     if (!equipment.statut_changed_at) {
       return [{
         startHour: 0,
         endHour: 24,
-        status: equipment.statut || 'OPERATIONNEL'
+        status: currentStatus
       }];
     }
     
@@ -207,7 +204,7 @@ const PlanningMPrev = () => {
     const changeDateStr = statusChangedAt.toISOString().split('T')[0];
     
     if (dayDateStr < changeDateStr) {
-      // Jour entièrement AVANT le changement -> OPERATIONNEL
+      // Jour entièrement AVANT le changement -> OPERATIONNEL (statut par défaut avant tout changement)
       return [{
         startHour: 0,
         endHour: 24,
@@ -218,7 +215,7 @@ const PlanningMPrev = () => {
       return [{
         startHour: 0,
         endHour: 24,
-        status: equipment.statut || 'OPERATIONNEL'
+        status: currentStatus
       }];
     } else {
       // Jour DU changement -> deux blocs
@@ -233,7 +230,7 @@ const PlanningMPrev = () => {
         blocks.push({
           startHour: changeHour,
           endHour: 24,
-          status: equipment.statut || 'OPERATIONNEL'
+          status: currentStatus
         });
       }
       return blocks;
