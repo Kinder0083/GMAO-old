@@ -152,6 +152,7 @@ const Planning = () => {
 
   // Fonction pour mettre à jour/créer une disponibilité
   const updateAvailability = async (userId, date, field, value, skipRefresh = false) => {
+    pendingUpdates.current++;
     try {
       const dateStr = date.toISOString().split('T')[0];
       const existing = getAvailability(userId, date);
@@ -186,6 +187,8 @@ const Planning = () => {
         description: 'Impossible de mettre à jour la disponibilité',
         variant: 'destructive'
       });
+    } finally {
+      pendingUpdates.current--;
     }
   };
 
