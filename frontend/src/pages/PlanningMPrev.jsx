@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight, Wrench, Plus, CheckCircle2, Clock, AlertCircle, FileCheck } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Wrench, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { equipmentsAPI, demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
@@ -9,24 +9,13 @@ import DemandeArretDialog from '../components/PlanningMPrev/DemandeArretDialog';
 
 // Couleurs EXACTES de la page Équipements (Tailwind CSS hex equivalents)
 const STATUS_COLORS = {
-  OPERATIONNEL: '#22c55e',      // green-500 (bg-green-100 équivalent pour la cellule)
+  OPERATIONNEL: '#22c55e',      // green-500
   EN_FONCTIONNEMENT: '#10b981', // emerald-500
   A_LARRET: '#6b7280',          // gray-500
   EN_MAINTENANCE: '#f97316',    // orange-500
   HORS_SERVICE: '#ef4444',      // red-500
   EN_CT: '#a855f7',             // purple-500
   ALERTE_S_EQUIP: '#eab308',    // yellow-500
-};
-
-// Couleurs de fond plus claires pour les cellules (comme dans Equipements)
-const STATUS_BG_COLORS = {
-  OPERATIONNEL: '#dcfce7',      // green-100
-  EN_FONCTIONNEMENT: '#d1fae5', // emerald-100
-  A_LARRET: '#f3f4f6',          // gray-100
-  EN_MAINTENANCE: '#ffedd5',    // orange-100
-  HORS_SERVICE: '#fee2e2',      // red-100
-  EN_CT: '#f3e8ff',             // purple-100
-  ALERTE_S_EQUIP: '#fef9c3',    // yellow-100
 };
 
 const STATUS_LABELS = {
@@ -39,11 +28,15 @@ const STATUS_LABELS = {
   ALERTE_S_EQUIP: 'Alerte S.Équip',
 };
 
+// Couleur pour les cellules sans historique
+const NO_HISTORY_COLOR = '#e5e7eb'; // gray-200
+
 const PlanningMPrev = () => {
   const { toast } = useToast();
   const [equipments, setEquipments] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [planningEntries, setPlanningEntries] = useState([]);
+  const [statusHistory, setStatusHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -63,7 +56,6 @@ const PlanningMPrev = () => {
 
   const loadPlanningEntries = async () => {
     try {
-      setLoading(true);
       const year = currentDate.getFullYear();
       const startDate = new Date(year, 0, 1).toISOString().split('T')[0];
       const endDate = new Date(year, 11, 31).toISOString().split('T')[0];
@@ -76,19 +68,34 @@ const PlanningMPrev = () => {
       setPlanningEntries(entries);
     } catch (error) {
       console.error('Erreur chargement planning:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
+  const loadStatusHistory = async () => {
+    try {
+      const response = await equipmentsAPI.getStatusHistory({});
+      setStatusHistory(response.data || []);
+    } catch (error) {
+      console.error('Erreur chargement historique statuts:', error);
+    }
+  };
+
+  const loadAllData = async () => {
+    setLoading(true);
+    await Promise.all([
+      loadEquipments(),
+      loadPlanningEntries(),
+      loadStatusHistory()
+    ]);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    loadEquipments();
-    loadPlanningEntries();
+    loadAllData();
   }, [currentDate.getFullYear()]);
 
   useAutoRefresh(() => {
-    loadEquipments();
-    loadPlanningEntries();
+    loadAllData();
   }, [currentDate]);
 
   // Obtenir tous les jours d'un mois spécifique
@@ -99,6 +106,108 @@ const PlanningMPrev = () => {
       days.push(new Date(year, month, d));
     }
     return days;
+  };
+
+  // Construire un index de l'historique par équipement (trié par date)
+  const historyByEquipment = useMemo(() => {
+    const index = {};
+    statusHistory.forEach(entry => {
+      if (!index[entry.equipment_id]) {
+        index[entry.equipment_id] = [];
+      }
+      index[entry.equipment_id].push({
+        ...entry,
+        changed_at: new Date(entry.changed_at)
+      });
+    });
+    // Trier chaque liste par date croissante
+    Object.keys(index).forEach(eqId => {
+      index[eqId].sort((a, b) => a.changed_at - b.changed_at);
+    });
+    return index;
+  }, [statusHistory]);
+
+  // Obtenir le statut d'un équipement pour une date/heure donnée
+  // Retourne null si aucun historique n'existe avant cette date
+  const getStatusForDateTime = (equipmentId, dateTime) => {
+    const history = historyByEquipment[equipmentId];
+    if (!history || history.length === 0) {
+      return null; // Pas d'historique -> cellule vide
+    }
+    
+    // Trouver le dernier changement de statut AVANT ou ÉGAL à cette date/heure
+    let lastStatus = null;
+    for (const entry of history) {
+      if (entry.changed_at <= dateTime) {
+        lastStatus = entry.statut;
+      } else {
+        break; // Les entrées sont triées, on peut arrêter
+      }
+    }
+    
+    return lastStatus; // null si aucun changement avant cette date
+  };
+
+  // Calculer les blocs de statut pour un jour donné
+  const getStatusBlocksForDay = (equipmentId, day) => {
+    const blocks = [];
+    const history = historyByEquipment[equipmentId];
+    
+    // Si pas d'historique du tout pour cet équipement -> cellule vide
+    if (!history || history.length === 0) {
+      return [{ startHour: 0, endHour: 24, status: null }];
+    }
+    
+    const dayStart = new Date(day);
+    dayStart.setHours(0, 0, 0, 0);
+    
+    const dayEnd = new Date(day);
+    dayEnd.setHours(23, 59, 59, 999);
+    
+    // Trouver tous les changements qui se produisent CE jour
+    const changesThisDay = history.filter(entry => {
+      const changeDate = entry.changed_at;
+      return changeDate >= dayStart && changeDate <= dayEnd;
+    });
+    
+    // Trouver le statut au début de la journée (dernier changement avant ce jour)
+    const statusAtDayStart = getStatusForDateTime(equipmentId, dayStart);
+    
+    if (changesThisDay.length === 0) {
+      // Pas de changement ce jour -> statut constant toute la journée
+      return [{ startHour: 0, endHour: 24, status: statusAtDayStart }];
+    }
+    
+    // Il y a des changements ce jour -> créer des blocs
+    let currentHour = 0;
+    let currentStatus = statusAtDayStart;
+    
+    for (const change of changesThisDay) {
+      const changeHour = change.changed_at.getHours();
+      
+      // Bloc avant ce changement (si on n'est pas déjà à cette heure)
+      if (changeHour > currentHour) {
+        blocks.push({
+          startHour: currentHour,
+          endHour: changeHour,
+          status: currentStatus
+        });
+      }
+      
+      currentHour = changeHour;
+      currentStatus = change.statut;
+    }
+    
+    // Bloc final jusqu'à minuit
+    if (currentHour < 24) {
+      blocks.push({
+        startHour: currentHour,
+        endHour: 24,
+        status: currentStatus
+      });
+    }
+    
+    return blocks;
   };
 
   // Obtenir les entrées de maintenance pour un équipement et un jour donné
@@ -112,7 +221,6 @@ const PlanningMPrev = () => {
       const entryEnd = new Date(e.date_fin);
       const currentDate = new Date(dateStr);
       
-      // Normaliser les dates pour la comparaison (ignorer l'heure)
       entryStart.setHours(0, 0, 0, 0);
       entryEnd.setHours(0, 0, 0, 0);
       currentDate.setHours(0, 0, 0, 0);
@@ -121,120 +229,37 @@ const PlanningMPrev = () => {
     });
   };
 
-  // Calculer la position verticale et hauteur d'un bloc (0h en haut, 24h en bas)
-  // Arrondi à l'heure inférieure
+  // Calculer la position verticale et hauteur d'un bloc de maintenance
   const getMaintenanceBlockStyle = (entry, day) => {
     const dayStr = day.toISOString().split('T')[0];
     const entryStartDate = entry.date_debut;
     const entryEndDate = entry.date_fin;
     
-    // Heures par défaut si non spécifiées
     let startHour = 0;
     let endHour = 24;
     
-    // Si c'est le premier jour de l'arrêt
     if (dayStr === entryStartDate) {
       if (entry.heure_debut) {
         const [h] = entry.heure_debut.split(':').map(Number);
-        startHour = h; // Arrondi à l'heure inférieure (pas de minutes)
+        startHour = h;
       } else if (entry.periode_debut === 'APRES_MIDI') {
         startHour = 12;
       }
     }
     
-    // Si c'est le dernier jour de l'arrêt
     if (dayStr === entryEndDate) {
       if (entry.heure_fin) {
         const [h] = entry.heure_fin.split(':').map(Number);
-        endHour = h; // Arrondi à l'heure inférieure
+        endHour = h;
       } else if (entry.periode_fin === 'MATIN') {
         endHour = 12;
       }
     }
     
-    // Calculer top et height en pourcentage (24h = 100%)
     const top = (startHour / 24) * 100;
     const height = ((endHour - startHour) / 24) * 100;
     
     return { top: `${top}%`, height: `${height}%` };
-  };
-
-  // Déterminer le statut d'un équipement pour une heure donnée
-  // Le statut actuel ne s'applique qu'à partir du moment où il a été changé
-  const getEquipmentStatusForHour = (equipment, dayDate, hour) => {
-    // Créer la date/heure complète pour cette heure du jour
-    const checkDateTime = new Date(dayDate);
-    checkDateTime.setHours(hour, 0, 0, 0);
-    
-    // Si l'équipement a une date de changement de statut
-    if (equipment.statut_changed_at) {
-      const statusChangedAt = new Date(equipment.statut_changed_at);
-      
-      // Si on vérifie une date/heure AVANT le changement de statut
-      // On affiche OPERATIONNEL (statut par défaut avant le changement)
-      if (checkDateTime < statusChangedAt) {
-        return 'OPERATIONNEL';
-      }
-    }
-    
-    // Sinon, utiliser le statut actuel de l'équipement
-    return equipment.statut || 'OPERATIONNEL';
-  };
-
-  // Calculer les blocs de statut pour un jour donné (en fonction du changement de statut)
-  const getStatusBlocksForDay = (equipment, day) => {
-    const blocks = [];
-    const currentStatus = equipment.statut || 'OPERATIONNEL';
-    
-    // Si pas de date de changement de statut, tout le jour a le statut actuel
-    // (le statut n'a jamais changé, donc c'est le statut de base depuis toujours)
-    if (!equipment.statut_changed_at) {
-      return [{
-        startHour: 0,
-        endHour: 24,
-        status: currentStatus
-      }];
-    }
-    
-    const statusChangedAt = new Date(equipment.statut_changed_at);
-    const changeHour = statusChangedAt.getHours();
-    
-    // Comparer les dates (sans l'heure)
-    const dayDateStr = day.toISOString().split('T')[0];
-    const changeDateStr = statusChangedAt.toISOString().split('T')[0];
-    
-    if (dayDateStr < changeDateStr) {
-      // Jour entièrement AVANT le changement -> OPERATIONNEL (statut par défaut avant tout changement)
-      return [{
-        startHour: 0,
-        endHour: 24,
-        status: 'OPERATIONNEL'
-      }];
-    } else if (dayDateStr > changeDateStr) {
-      // Jour entièrement APRÈS le changement -> statut actuel
-      return [{
-        startHour: 0,
-        endHour: 24,
-        status: currentStatus
-      }];
-    } else {
-      // Jour DU changement -> deux blocs
-      if (changeHour > 0) {
-        blocks.push({
-          startHour: 0,
-          endHour: changeHour,
-          status: 'OPERATIONNEL'
-        });
-      }
-      if (changeHour < 24) {
-        blocks.push({
-          startHour: changeHour,
-          endHour: 24,
-          status: currentStatus
-        });
-      }
-      return blocks;
-    }
   };
 
   // Navigation par mois
@@ -261,62 +286,54 @@ const PlanningMPrev = () => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Calculer les statistiques annuelles
+  // Calculer les statistiques annuelles (seulement pour les périodes avec historique)
   const annualStats = useMemo(() => {
     let totalOperational = 0;
     let totalMaintenance = 0;
     let totalOutOfService = 0;
-    let totalHours = 0;
+    let totalHoursWithData = 0;
     
     equipments.forEach(equipment => {
       for (let m = 0; m < 12; m++) {
         const daysInMonth = new Date(year, m + 1, 0).getDate();
         for (let day = 1; day <= daysInMonth; day++) {
           const date = new Date(year, m, day);
-          const entries = getMaintenanceEntriesForDay(equipment.id, date);
+          const statusBlocks = getStatusBlocksForDay(equipment.id, date);
           
-          // Calculer les heures de maintenance pour ce jour
-          let maintenanceHours = 0;
-          let outOfServiceHours = 0;
-          
-          entries.forEach(entry => {
-            const style = getMaintenanceBlockStyle(entry, date);
-            const heightPercent = parseFloat(style.height) / 100;
-            const hours = heightPercent * 24;
+          statusBlocks.forEach(block => {
+            const hours = block.endHour - block.startHour;
             
-            if (entry.statut === 'HORS_SERVICE') {
-              outOfServiceHours += hours;
-            } else {
-              maintenanceHours += hours;
+            // Ne compter que si on a un statut (pas null = pas d'historique)
+            if (block.status !== null) {
+              totalHoursWithData += hours;
+              
+              if (block.status === 'HORS_SERVICE') {
+                totalOutOfService += hours;
+              } else if (block.status === 'EN_MAINTENANCE') {
+                totalMaintenance += hours;
+              } else {
+                totalOperational += hours;
+              }
             }
           });
-          
-          maintenanceHours = Math.min(maintenanceHours, 24);
-          outOfServiceHours = Math.min(outOfServiceHours, 24 - maintenanceHours);
-          const operationalHours = 24 - maintenanceHours - outOfServiceHours;
-          
-          totalOperational += operationalHours;
-          totalMaintenance += maintenanceHours;
-          totalOutOfService += outOfServiceHours;
-          totalHours += 24;
         }
       }
     });
     
-    const operationalPercent = totalHours > 0 ? Math.round((totalOperational / totalHours) * 100) : 100;
-    const maintenancePercent = totalHours > 0 ? Math.round((totalMaintenance / totalHours) * 100) : 0;
-    const outOfServicePercent = totalHours > 0 ? Math.round((totalOutOfService / totalHours) * 100) : 0;
+    const operationalPercent = totalHoursWithData > 0 ? Math.round((totalOperational / totalHoursWithData) * 100) : 0;
+    const maintenancePercent = totalHoursWithData > 0 ? Math.round((totalMaintenance / totalHoursWithData) * 100) : 0;
+    const outOfServicePercent = totalHoursWithData > 0 ? Math.round((totalOutOfService / totalHoursWithData) * 100) : 0;
     
     return {
       operational: Math.round(totalOperational),
       maintenance: Math.round(totalMaintenance),
       outOfService: Math.round(totalOutOfService),
-      total: totalHours,
+      total: totalHoursWithData,
       operationalPercent,
       maintenancePercent,
       outOfServicePercent
     };
-  }, [equipments, planningEntries, year]);
+  }, [equipments, statusHistory, year]);
 
   // Jours du mois actuel
   const days = getDaysInMonth(year, month);
@@ -412,7 +429,8 @@ const PlanningMPrev = () => {
       <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 flex items-center gap-2">
         <Calendar className="h-4 w-4" />
         <span>
-          Statistiques annuelles {year} pour <strong>{equipments.length} équipement(s)</strong> (weekends inclus)
+          Statistiques annuelles {year} pour <strong>{equipments.length} équipement(s)</strong> 
+          {annualStats.total > 0 ? ` - ${annualStats.total}h de données enregistrées` : ' - Aucune donnée enregistrée'}
         </span>
       </div>
 
@@ -437,9 +455,16 @@ const PlanningMPrev = () => {
             </Button>
           </div>
 
-          {/* Légende des statuts - mêmes couleurs que page Équipements */}
+          {/* Légende des statuts */}
           <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded">
             <span className="text-sm font-semibold">Légende :</span>
+            <div className="flex items-center gap-1">
+              <div 
+                className="w-3 h-3 rounded border border-gray-300"
+                style={{ backgroundColor: NO_HISTORY_COLOR }}
+              />
+              <span className="text-xs">Sans données</span>
+            </div>
             {Object.entries(STATUS_COLORS).map(([status, color]) => (
               <div key={status} className="flex items-center gap-1">
                 <div 
@@ -451,7 +476,7 @@ const PlanningMPrev = () => {
             ))}
           </div>
 
-          {/* Grille du planning - Style similaire à Planning.jsx */}
+          {/* Grille du planning */}
           <div className="border rounded-lg overflow-hidden select-none" data-testid="planning-mprev-grid">
             {/* En-tête des jours */}
             <div 
@@ -505,9 +530,7 @@ const PlanningMPrev = () => {
                 {days.map((day, dayIndex) => {
                   const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                   const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
-                  
-                  // Obtenir les blocs de statut pour ce jour (en fonction du changement de statut)
-                  const statusBlocks = getStatusBlocksForDay(equipment, day);
+                  const statusBlocks = getStatusBlocksForDay(equipment.id, day);
                   
                   return (
                     <div 
@@ -516,10 +539,14 @@ const PlanningMPrev = () => {
                     >
                       {/* Cellule 24h verticale (0h en haut, 24h en bas) */}
                       <div className="relative h-10 w-full bg-gray-100">
-                        {/* Blocs de statut de base (selon le changement de statut) */}
+                        {/* Blocs de statut */}
                         {statusBlocks.map((block, blockIdx) => {
                           const top = (block.startHour / 24) * 100;
                           const height = ((block.endHour - block.startHour) / 24) * 100;
+                          const bgColor = block.status ? STATUS_COLORS[block.status] : NO_HISTORY_COLOR;
+                          const title = block.status 
+                            ? `${STATUS_LABELS[block.status]} (${block.startHour}h - ${block.endHour}h)`
+                            : `Sans données (${block.startHour}h - ${block.endHour}h)`;
                           return (
                             <div
                               key={`status-${blockIdx}`}
@@ -527,9 +554,9 @@ const PlanningMPrev = () => {
                               style={{
                                 top: `${top}%`,
                                 height: `${height}%`,
-                                backgroundColor: STATUS_COLORS[block.status] || STATUS_COLORS.OPERATIONNEL,
+                                backgroundColor: bgColor,
                               }}
-                              title={`${STATUS_LABELS[block.status]} (${block.startHour}h - ${block.endHour}h)`}
+                              title={title}
                             />
                           );
                         })}
