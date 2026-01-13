@@ -697,8 +697,15 @@ const PlanningMPrev = () => {
         equipments={equipments}
         onSuccess={() => {
           loadPlanningEntries();
+          loadPendingDemandesCount();
           setDialogOpen(false);
         }}
+      />
+
+      {/* Dialog historique des demandes */}
+      <HistoriqueDemandesDialog
+        open={historiqueDialogOpen}
+        onOpenChange={setHistoriqueDialogOpen}
       />
     </div>
   );
