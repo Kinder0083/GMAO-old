@@ -52,6 +52,10 @@ const Inventory = () => {
     if (location.state?.filterAlert) {
       setFilterAlert(true);
     }
+    // Vérifier si on doit filtrer par équipement (depuis la page Équipements)
+    if (location.state?.filterEquipment) {
+      setFilterEquipment(location.state.filterEquipment);
+    }
   }, [location]);
 
   // Construire la hiérarchie des équipements pour le filtre
