@@ -809,11 +809,173 @@ async def get_vendors_list(
         logger.error(f"❌ Erreur récupération fournisseurs: {str(e)}")
         return []
 
+
+# ==================== ARCHIVAGE DES DEMANDES D'ACHAT ====================
+
+@router.post("/{request_id}/archive", response_model=dict)
+async def archive_purchase_request(
+    request_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Archiver une demande d'achat (Administrateurs uniquement)"""
+    try:
+        # Vérifier que l'utilisateur est admin
+        if current_user.get('role') != 'ADMIN':
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent archiver les demandes")
+        
+        # Vérifier que la demande existe
+        request = await db.purchase_requests.find_one({"id": request_id}, {"_id": 0})
+        if not request:
+            raise HTTPException(status_code=404, detail="Demande introuvable")
+        
+        # Archiver la demande
+        archive_data = {
+            "archived": True,
+            "archived_at": datetime.now(timezone.utc).isoformat(),
+            "archived_by": current_user.get('id'),
+            "archived_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}"
+        }
+        
+        await db.purchase_requests.update_one(
+            {"id": request_id},
+            {"$set": archive_data}
+        )
+        
+        # Ajouter à l'historique
+        history_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "user_id": current_user.get('id'),
+            "user_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+            "action": "Archivage de la demande",
+            "old_status": request.get('status'),
+            "new_status": request.get('status'),
+            "comment": "Demande archivée par un administrateur"
+        }
+        
+        await db.purchase_requests.update_one(
+            {"id": request_id},
+            {"$push": {"history": history_entry}}
+        )
+        
+        logger.info(f"✅ Demande {request.get('numero')} archivée par {current_user.get('email')}")
+        
+        return {"message": "Demande archivée avec succès", "id": request_id}
+        
+    except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Erreur ajout à l'inventaire existant: {str(e)}")
+        logger.error(f"❌ Erreur archivage demande: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-        logger.error(f"❌ Erreur récupération utilisateurs: {str(e)}")
+
+@router.post("/{request_id}/unarchive", response_model=dict)
+async def unarchive_purchase_request(
+    request_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Désarchiver une demande d'achat (Administrateurs uniquement)"""
+    try:
+        # Vérifier que l'utilisateur est admin
+        if current_user.get('role') != 'ADMIN':
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent désarchiver les demandes")
+        
+        # Vérifier que la demande existe
+        request = await db.purchase_requests.find_one({"id": request_id}, {"_id": 0})
+        if not request:
+            raise HTTPException(status_code=404, detail="Demande introuvable")
+        
+        # Désarchiver la demande
+        await db.purchase_requests.update_one(
+            {"id": request_id},
+            {
+                "$set": {
+                    "archived": False,
+                    "archived_at": None,
+                    "archived_by": None,
+                    "archived_by_name": None
+                }
+            }
+        )
+        
+        # Ajouter à l'historique
+        history_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "user_id": current_user.get('id'),
+            "user_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+            "action": "Désarchivage de la demande",
+            "old_status": request.get('status'),
+            "new_status": request.get('status'),
+            "comment": "Demande désarchivée par un administrateur"
+        }
+        
+        await db.purchase_requests.update_one(
+            {"id": request_id},
+            {"$push": {"history": history_entry}}
+        )
+        
+        logger.info(f"✅ Demande {request.get('numero')} désarchivée par {current_user.get('email')}")
+        
+        return {"message": "Demande désarchivée avec succès", "id": request_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur désarchivage demande: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/archived/list", response_model=List[dict])
+async def get_archived_purchase_requests(
+    search: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    status: Optional[str] = None,
+    demandeur: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Récupérer les demandes d'achat archivées avec filtres"""
+    try:
+        # Seuls les admins peuvent voir les archives
+        if current_user.get('role') != 'ADMIN':
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent consulter les archives")
+        
+        # Construire la requête
+        query = {"archived": True}
+        
+        # Filtres
+        if search:
+            query["$or"] = [
+                {"numero": {"$regex": search, "$options": "i"}},
+                {"designation": {"$regex": search, "$options": "i"}},
+                {"demandeur_nom": {"$regex": search, "$options": "i"}},
+                {"reference": {"$regex": search, "$options": "i"}}
+            ]
+        
+        if date_from:
+            query["date_creation"] = {"$gte": date_from}
+        
+        if date_to:
+            if "date_creation" in query:
+                query["date_creation"]["$lte"] = date_to
+            else:
+                query["date_creation"] = {"$lte": date_to}
+        
+        if status:
+            query["status"] = status
+        
+        if demandeur:
+            query["demandeur_nom"] = {"$regex": demandeur, "$options": "i"}
+        
+        requests = await db.purchase_requests.find(query, {"_id": 0}).sort("archived_at", -1).to_list(1000)
+        
+        return requests
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération archives: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
