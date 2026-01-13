@@ -141,12 +141,19 @@ const Assets = () => {
         icon: FileCheck,
         iconColor: 'text-purple-600'
       },
-      'MAINT_PREV': { 
-        bg: 'bg-orange-100', 
-        text: 'text-orange-700', 
-        label: 'Maint. Prev.',
+      'DEGRADE': { 
+        bg: 'bg-blue-100', 
+        text: 'text-blue-700', 
+        label: 'Dégradé',
         icon: Wrench,
-        iconColor: 'text-orange-600'
+        iconColor: 'text-blue-600'
+      },
+      'ALERTE_S_EQUIP': { 
+        bg: 'bg-pink-100', 
+        text: 'text-pink-700', 
+        label: 'Alerte S.Équip',
+        icon: AlertTriangle,
+        iconColor: 'text-pink-600'
       }
     };
     const badge = badges[statut] || badges['OPERATIONNEL'];
@@ -168,7 +175,8 @@ const Assets = () => {
     { value: 'EN_MAINTENANCE', label: 'En maintenance', count: equipments.filter(e => e.statut === 'EN_MAINTENANCE').length },
     { value: 'HORS_SERVICE', label: 'Hors service', count: equipments.filter(e => e.statut === 'HORS_SERVICE').length },
     { value: 'EN_CT', label: 'En C.T', count: equipments.filter(e => e.statut === 'EN_CT').length },
-    { value: 'MAINT_PREV', label: 'Maint. Prev.', count: equipments.filter(e => e.statut === 'MAINT_PREV').length }
+    { value: 'DEGRADE', label: 'Dégradé', count: equipments.filter(e => e.statut === 'DEGRADE').length },
+    { value: 'ALERTE_S_EQUIP', label: 'Alerte S.Équip', count: equipments.filter(e => e.statut === 'ALERTE_S_EQUIP').length }
   ];
 
   // Filtrer pour n'afficher que les statuts avec count > 0 (sauf "Tous")
