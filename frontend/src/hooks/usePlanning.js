@@ -52,6 +52,7 @@ export const usePlanning = (currentDate) => {
   }, [currentDate, backend_url, token]);
 
   // Hook temps réel pour les utilisateurs
+  // Polling plus rapide (5s) pour détecter rapidement les changements de service
   const {
     data: users,
     loading: loadingUsers,
@@ -60,7 +61,7 @@ export const usePlanning = (currentDate) => {
   } = useRealtimeData('users', fetchUsers, {
     enableWebSocket: true,
     fallbackPolling: true,
-    pollingInterval: 30000,
+    pollingInterval: 5000,  // 5 secondes pour une meilleure réactivité
   });
 
   // Hook temps réel pour les disponibilités
