@@ -1403,6 +1403,47 @@ async def create_equipment(eq_create: EquipmentCreate, current_user: dict = Depe
     
     return Equipment(**eq)
 
+@api_router.get("/equipments/status-history")
+async def get_equipment_status_history(
+    equipment_ids: Optional[str] = None,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    current_user: dict = Depends(require_permission("assets", "view"))
+):
+    """Récupérer l'historique des statuts des équipements pour le Planning M.Prev"""
+    try:
+        query = {}
+        
+        # Filtrer par équipements si spécifié
+        if equipment_ids:
+            ids_list = equipment_ids.split(",")
+            query["equipment_id"] = {"$in": ids_list}
+        
+        # Filtrer par date si spécifié
+        if date_debut or date_fin:
+            query["changed_at"] = {}
+            if date_debut:
+                query["changed_at"]["$gte"] = datetime.fromisoformat(date_debut.replace('Z', '+00:00'))
+            if date_fin:
+                query["changed_at"]["$lte"] = datetime.fromisoformat(date_fin.replace('Z', '+00:00'))
+        
+        # Récupérer l'historique trié par date
+        history = await db.equipment_status_history.find(query).sort("changed_at", 1).to_list(10000)
+        
+        # Sérialiser les documents
+        result = []
+        for entry in history:
+            entry["id"] = str(entry["_id"])
+            del entry["_id"]
+            # Convertir datetime en ISO string
+            if isinstance(entry.get("changed_at"), datetime):
+                entry["changed_at"] = entry["changed_at"].isoformat()
+            result.append(entry)
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @api_router.get("/equipments/{eq_id}", response_model=Equipment)
 async def get_equipment_detail(eq_id: str, current_user: dict = Depends(require_permission("assets", "view"))):
     """Récupérer les détails d'un équipement"""
