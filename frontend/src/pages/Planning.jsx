@@ -264,24 +264,25 @@ const Planning = () => {
     const regime = dragRef.current.regime;
 
     try {
+      // skipRefresh = true pour éviter les conflits pendant le drag
       if (regime === 'Journée') {
-        await updateAvailability(userId, targetDate, 'disponible', sourceAvail?.disponible ?? null);
+        await updateAvailability(userId, targetDate, 'disponible', sourceAvail?.disponible ?? null, true);
       } else if (regime === '2*8') {
         if (sourceAvail?.disponible_matin !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_matin', sourceAvail.disponible_matin);
+          await updateAvailability(userId, targetDate, 'disponible_matin', sourceAvail.disponible_matin, true);
         }
         if (sourceAvail?.disponible_aprem !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_aprem', sourceAvail.disponible_aprem);
+          await updateAvailability(userId, targetDate, 'disponible_aprem', sourceAvail.disponible_aprem, true);
         }
       } else if (regime === '3*8') {
         if (sourceAvail?.disponible_matin !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_matin', sourceAvail.disponible_matin);
+          await updateAvailability(userId, targetDate, 'disponible_matin', sourceAvail.disponible_matin, true);
         }
         if (sourceAvail?.disponible_aprem !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_aprem', sourceAvail.disponible_aprem);
+          await updateAvailability(userId, targetDate, 'disponible_aprem', sourceAvail.disponible_aprem, true);
         }
         if (sourceAvail?.disponible_nuit !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_nuit', sourceAvail.disponible_nuit);
+          await updateAvailability(userId, targetDate, 'disponible_nuit', sourceAvail.disponible_nuit, true);
         }
       }
     } catch (error) {
@@ -291,6 +292,10 @@ const Planning = () => {
 
   // Drag to copy - fin
   const handleDragEnd = () => {
+    // Rafraîchir les données une seule fois à la fin du drag
+    if (isDragging) {
+      refreshAvailabilities();
+    }
     setIsDragging(false);
     setDragStartCell(null);
     dragRef.current = { userId: null, startDay: null, startAvail: null };
