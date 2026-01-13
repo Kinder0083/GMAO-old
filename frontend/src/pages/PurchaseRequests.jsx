@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -6,13 +6,105 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { 
   Plus, Search, ShoppingCart, Clock, CheckCircle, XCircle, 
-  Package, Users, FileText, Archive, BookOpen
+  Package, Users, FileText, Archive, BookOpen, ChevronDown
 } from 'lucide-react';
 import PurchaseRequestFormDialog from '../components/PurchaseRequests/PurchaseRequestFormDialog';
 import { useToast } from '../hooks/use-toast';
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import axios from 'axios';
+
+// Liste des statuts disponibles
+const STATUS_OPTIONS = [
+  { value: 'SOUMISE', label: 'Transmise au N+1', color: 'bg-blue-100 text-blue-800', icon: Clock },
+  { value: 'VALIDEE_N1', label: 'Validée par N+1', color: 'bg-purple-100 text-purple-800', icon: CheckCircle },
+  { value: 'APPROUVEE_ACHAT', label: 'Approuvée Achat', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  { value: 'ACHAT_EFFECTUE', label: 'Achat Effectué', color: 'bg-teal-100 text-teal-800', icon: ShoppingCart },
+  { value: 'RECEPTIONNEE', label: 'Réceptionnée', color: 'bg-indigo-100 text-indigo-800', icon: Package },
+  { value: 'DISTRIBUEE', label: 'Distribuée', color: 'bg-emerald-100 text-emerald-800', icon: Users },
+  { value: 'REFUSEE_N1', label: 'Refusée par N+1', color: 'bg-red-100 text-red-800', icon: XCircle },
+  { value: 'REFUSEE_ACHAT', label: 'Refusée Achat', color: 'bg-orange-100 text-orange-800', icon: XCircle }
+];
+
+// Composant Dropdown pour le statut
+const StatusDropdown = ({ currentStatus, requestId, onStatusChange, canEdit }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Fermer le dropdown en cliquant à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentConfig = STATUS_OPTIONS.find(s => s.value === currentStatus) || STATUS_OPTIONS[0];
+  const Icon = currentConfig.icon;
+
+  const handleStatusClick = (e) => {
+    e.stopPropagation();
+    if (canEdit) {
+      setIsOpen(!isOpen);
+    }
+  };
+
+  const handleSelectStatus = async (e, newStatus) => {
+    e.stopPropagation();
+    if (newStatus !== currentStatus) {
+      await onStatusChange(requestId, newStatus);
+    }
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={handleStatusClick}
+        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium transition-all ${currentConfig.color} ${
+          canEdit ? 'cursor-pointer hover:shadow-md hover:scale-105' : 'cursor-default'
+        }`}
+        title={canEdit ? "Cliquez pour modifier le statut" : "Vous n'avez pas la permission de modifier le statut"}
+        data-testid={`status-badge-${requestId}`}
+      >
+        <Icon className="h-3 w-3" />
+        {currentConfig.label}
+        {canEdit && <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
+      </button>
+
+      {isOpen && canEdit && (
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
+          <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b">
+            Modifier le statut
+          </div>
+          {STATUS_OPTIONS.map((option) => {
+            const OptionIcon = option.icon;
+            const isSelected = option.value === currentStatus;
+            return (
+              <button
+                key={option.value}
+                onClick={(e) => handleSelectStatus(e, option.value)}
+                className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-50 transition-colors ${
+                  isSelected ? 'bg-gray-100' : ''
+                }`}
+                data-testid={`status-option-${option.value}`}
+              >
+                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${option.color}`}>
+                  <OptionIcon className="h-3 w-3" />
+                  {option.label}
+                </span>
+                {isSelected && <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PurchaseRequests = () => {
   const { toast } = useToast();
@@ -21,10 +113,15 @@ const PurchaseRequests = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [archivingId, setArchivingId] = useState(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   // Récupérer l'utilisateur depuis localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user?.role === 'ADMIN';
+  
+  // Vérifier la permission "achat" - edit permet de modifier les statuts
+  const hasAchatPermission = isAdmin || user?.permissions?.achat?.edit === true;
+  
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   // Utiliser le hook temps réel
@@ -34,8 +131,39 @@ const PurchaseRequests = () => {
     refresh: refreshRequests 
   } = usePurchaseRequests({ status: statusFilter });
 
+  // Fonction pour modifier le statut d'une demande
+  const handleStatusChange = async (requestId, newStatus) => {
+    try {
+      setUpdatingStatusId(requestId);
+      const token = localStorage.getItem('token');
+      
+      await axios.put(
+        `${backendUrl}/api/purchase-requests/${requestId}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const statusLabel = STATUS_OPTIONS.find(s => s.value === newStatus)?.label || newStatus;
+      
+      toast({
+        title: "Statut modifié",
+        description: `Le statut a été changé en "${statusLabel}"`,
+      });
+      
+      refreshRequests();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error.response?.data?.detail || "Impossible de modifier le statut",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const handleArchive = async (e, requestId, requestNumero) => {
-    e.stopPropagation(); // Empêcher la navigation vers le détail
+    e.stopPropagation();
     
     if (!isAdmin) {
       toast({
@@ -71,29 +199,6 @@ const PurchaseRequests = () => {
     } finally {
       setArchivingId(null);
     }
-  };
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      SOUMISE: { label: 'Transmise au N+1', color: 'bg-blue-100 text-blue-800', icon: Clock },
-      VALIDEE_N1: { label: 'Validée par N+1', color: 'bg-purple-100 text-purple-800', icon: CheckCircle },
-      APPROUVEE_ACHAT: { label: 'Approuvée Achat', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      ACHAT_EFFECTUE: { label: 'Achat Effectué', color: 'bg-teal-100 text-teal-800', icon: ShoppingCart },
-      RECEPTIONNEE: { label: 'Réceptionnée', color: 'bg-indigo-100 text-indigo-800', icon: Package },
-      DISTRIBUEE: { label: 'Distribuée', color: 'bg-emerald-100 text-emerald-800', icon: Users },
-      REFUSEE_N1: { label: 'Refusée par N+1', color: 'bg-red-100 text-red-800', icon: XCircle },
-      REFUSEE_ACHAT: { label: 'Refusée Achat', color: 'bg-orange-100 text-orange-800', icon: XCircle }
-    };
-
-    const config = statusConfig[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: Clock };
-    const Icon = config.icon;
-
-    return (
-      <Badge className={`${config.color} flex items-center gap-1`}>
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
   };
 
   const getUrgencyBadge = (urgency) => {
@@ -162,7 +267,14 @@ const PurchaseRequests = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Demandes d'Achat</h1>
-          <p className="text-gray-600">Gérez vos demandes d'achat et leur suivi</p>
+          <p className="text-gray-600">
+            Gérez vos demandes d'achat et leur suivi
+            {hasAchatPermission && (
+              <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                Permission Achat active
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           {/* Bouton Archives - visible uniquement pour les admins */}
@@ -329,9 +441,21 @@ const PurchaseRequests = () => {
                     </div>
                   </div>
 
-                  {/* Colonne 4: Statut */}
-                  <div className="lg:w-1/6 text-center">
-                    {getStatusBadge(request.status)}
+                  {/* Colonne 4: Statut cliquable */}
+                  <div className="lg:w-1/6 flex justify-center">
+                    {updatingStatusId === request.id ? (
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                        <span className="text-sm">Mise à jour...</span>
+                      </div>
+                    ) : (
+                      <StatusDropdown
+                        currentStatus={request.status}
+                        requestId={request.id}
+                        onStatusChange={handleStatusChange}
+                        canEdit={hasAchatPermission}
+                      />
+                    )}
                   </div>
 
                   {/* Colonne 5: Actions (Archivage) */}
