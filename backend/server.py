@@ -1728,6 +1728,7 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
             )
             
             # Enregistrer dans le journal d'audit
+            new_statut_value = statut.value if hasattr(statut, 'value') else statut
             await audit_service.log_action(
                 user_id=current_user.get("id"),
                 user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
@@ -1736,8 +1737,8 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
                 entity_type=EntityType.EQUIPMENT,
                 entity_id=eq_id,
                 entity_name=equipment.get("nom"),
-                details=f"Changement de statut: {old_statut} → {statut}",
-                changes={"statut": {"old": old_statut, "new": statut}}
+                details=f"Changement de statut: {old_statut} → {new_statut_value}",
+                changes={"statut": {"old": old_statut, "new": new_statut_value}}
             )
             
             # Mettre à jour le statut ET la date de changement
