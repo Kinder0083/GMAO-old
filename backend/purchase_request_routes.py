@@ -954,12 +954,8 @@ async def get_archived_purchase_requests(
     current_user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    """Récupérer les demandes d'achat archivées avec filtres"""
+    """Récupérer les demandes d'achat archivées avec filtres - accessible à tous les utilisateurs"""
     try:
-        # Seuls les admins peuvent voir les archives
-        if current_user.get('role') != 'ADMIN':
-            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent consulter les archives")
-        
         # Construire la requête
         query = {"archived": True}
         
