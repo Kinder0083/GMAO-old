@@ -74,6 +74,7 @@ const PlanningMPrev = () => {
   const loadStatusHistory = async () => {
     try {
       const response = await equipmentsAPI.getStatusHistory({});
+      console.log('Status history loaded:', response.data);
       setStatusHistory(response.data || []);
     } catch (error) {
       console.error('Erreur chargement historique statuts:', error);
