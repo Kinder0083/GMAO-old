@@ -417,15 +417,15 @@ const PlanningMPrev = () => {
                           key={dayIndex} 
                           className={`border p-0 ${isWeekend ? 'bg-blue-50/30' : ''}`}
                         >
-                          {/* Cellule représentant 24h - coupe horizontale (0h en haut, 24h en bas) */}
-                          <div className="relative h-10 w-full bg-green-400">
+                          {/* Cellule représentant 24h - coupe verticale (0h en haut, 24h en bas) */}
+                          <div className="relative h-12 w-full bg-green-400">
                             {/* Trait horizontal à 12h (50%) */}
                             <div 
                               className="absolute left-0 right-0 h-px bg-green-600/40"
                               style={{ top: '50%' }}
                             />
                             
-                            {/* Blocs de maintenance - positionnés verticalement */}
+                            {/* Blocs de maintenance - positionnés verticalement (top/height) */}
                             {maintenanceEntries.map((entry, idx) => {
                               const style = getMaintenanceBlockStyle(entry, day);
                               // Convertir left/width horizontal en top/height vertical
