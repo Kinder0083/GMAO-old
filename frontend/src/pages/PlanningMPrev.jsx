@@ -381,12 +381,12 @@ const PlanningMPrev = () => {
                         key={dayIndex} 
                         className={`border p-1 text-center min-w-[50px] ${
                           isWeekend ? 'bg-blue-50' : 'bg-gray-100'
-                        }`}
+                        } ${isToday ? 'border-2 border-blue-500 bg-blue-100' : ''}`}
                       >
                         <div className={`text-xs font-normal ${isWeekend ? 'text-blue-600' : 'text-gray-500'}`}>
                           {dayNames[day.getDay()]}
                         </div>
-                        <div className={`text-sm font-bold ${isToday ? 'text-blue-600 bg-blue-100 rounded-full w-7 h-7 flex items-center justify-center mx-auto' : ''}`}>
+                        <div className={`text-sm font-bold ${isToday ? 'text-blue-600' : ''}`}>
                           {day.getDate()}
                         </div>
                       </th>
