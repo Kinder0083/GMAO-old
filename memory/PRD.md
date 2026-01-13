@@ -18,17 +18,32 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
+### Session du 13 Janvier 2026 (soir)
+
+#### ✅ Refonte Complète Page "Planning M.Prev" (Complété)
+- **Fichiers modifiés**:
+  - `/app/frontend/src/pages/PlanningMPrev.jsx`
+  - `/app/backend/models.py` (ajout `statut_changed_at`)
+  - `/app/backend/server.py` (enregistrement date changement statut)
+- **Modifications UI**:
+  - Suppression du texte inutile "Trait vertical = 12h00..."
+  - Affichage du **mois complet sans barre de défilement horizontale** (même style que page Planning)
+  - **Couleurs identiques** à la page Équipements pour les 7 statuts
+  - Légende complète avec tous les statuts
+  - Orientation verticale des cellules (0h en haut, 24h en bas)
+  - Bordure bleue du jour actuel uniquement sur l'en-tête
+- **Logique des statuts**:
+  - Nouveau champ `statut_changed_at` sur les équipements
+  - Le statut actuel ne s'applique qu'à **partir du moment du changement** (arrondi à l'heure inférieure)
+  - Mois/jours **précédents** le changement affichent le statut OPERATIONNEL
+  - Le **jour du changement** affiche une transition visuelle (partie avant/après)
+  - Mois/jours **suivants** affichent le nouveau statut
+
 ### Session du 13 Janvier 2026 (après-midi)
 
 #### ✅ Refonte Page "Planning M.Prev" - Orientation Verticale (Complété)
-- **Fichiers modifiés**:
-  - `/app/frontend/src/pages/PlanningMPrev.jsx`
-- **Modifications**:
-  - Orientation des cellules 24h : **0h en haut, 24h en bas** (verticale)
-  - Trait horizontal à 12h00 au milieu de chaque cellule
-  - Bordure bleue du jour actuel appliquée **uniquement à l'en-tête** (date), pas aux lignes d'équipement
-  - Légende mise à jour pour refléter la nouvelle orientation
-  - Cellules légèrement plus hautes (h-12) pour meilleure visibilité
+- Orientation des cellules 24h : **0h en haut, 24h en bas** (verticale)
+- Bordure bleue du jour actuel appliquée **uniquement à l'en-tête**
 
 ### Session du 13 Janvier 2026
 
