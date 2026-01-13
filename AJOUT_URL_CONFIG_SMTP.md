@@ -79,7 +79,7 @@ import {
         className="w-full px-4 py-2 border border-gray-300 rounded-lg..."
       />
       <p className="text-xs text-gray-500 mt-1">
-        Exemple : https://easyfix-3.preview.emergentagent.com
+        Exemple : https://equip-status-3.preview.emergentagent.com
       </p>
     </div>
 
@@ -96,7 +96,7 @@ import {
         className="w-full px-4 py-2 border border-gray-300 rounded-lg..."
       />
       <p className="text-xs text-gray-500 mt-1">
-        Exemple : https://easyfix-3.preview.emergentagent.com
+        Exemple : https://equip-status-3.preview.emergentagent.com
       </p>
     </div>
   </div>
@@ -196,11 +196,11 @@ if smtp_update.backend_url is not None:          # ✅ NOUVEAU
 
 ### **Modification des URLs :**
 1. Remplir **"URL Frontend (Interface utilisateur)"** :
-   - Exemple : `https://easyfix-3.preview.emergentagent.com`
+   - Exemple : `https://equip-status-3.preview.emergentagent.com`
    - Correspond à l'adresse où les utilisateurs accèdent à l'interface
 
 2. Remplir **"URL Backend (API)"** :
-   - Exemple : `https://easyfix-3.preview.emergentagent.com`
+   - Exemple : `https://equip-status-3.preview.emergentagent.com`
    - Généralement identique au Frontend (même domaine)
 
 3. Cliquer sur **"Sauvegarder la configuration SMTP"**

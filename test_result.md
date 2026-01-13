@@ -782,8 +782,8 @@ agent_communication:
 ## Test Credentials ✅ WORKING
 - Email: admin@test.com
 - Password: password
-- Frontend URL: https://easyfix-3.preview.emergentagent.com/purchase-requests
-- Backend API URL: https://easyfix-3.preview.emergentagent.com/api
+- Frontend URL: https://equip-status-3.preview.emergentagent.com/purchase-requests
+- Backend API URL: https://equip-status-3.preview.emergentagent.com/api
 
 ## Test Results Summary
 1. **Documentations Page Load Test**: ✅ WORKING - Documentations page loads correctly with data
@@ -882,27 +882,27 @@ agent_communication:
 - WebSocket: /ws/realtime/improvement_requests ✅ Connection establishment working
 
 ## Network Activity Observed
-- GET https://easyfix-3.preview.emergentagent.com/api/documentations/poles (Working)
-- POST https://easyfix-3.preview.emergentagent.com/api/documentations/poles (Working)
-- PUT https://easyfix-3.preview.emergentagent.com/api/documentations/poles/{id} (Working)
-- DELETE https://easyfix-3.preview.emergentagent.com/api/documentations/poles/{id} (Working)
-- GET https://easyfix-3.preview.emergentagent.com/api/equipments (Working)
-- POST https://easyfix-3.preview.emergentagent.com/api/equipments (Working)
-- PATCH https://easyfix-3.preview.emergentagent.com/api/equipments/{id}/status (Working)
-- DELETE https://easyfix-3.preview.emergentagent.com/api/equipments/{id} (Working)
-- GET https://easyfix-3.preview.emergentagent.com/api/vendors (Working)
-- POST https://easyfix-3.preview.emergentagent.com/api/vendors (Working)
-- PUT https://easyfix-3.preview.emergentagent.com/api/vendors/{id} (Working)
-- DELETE https://easyfix-3.preview.emergentagent.com/api/vendors/{id} (Working)
-- GET https://easyfix-3.preview.emergentagent.com/api/work-orders (Working)
-- GET https://easyfix-3.preview.emergentagent.com/api/intervention-requests (Working)
-- POST https://easyfix-3.preview.emergentagent.com/api/intervention-requests (Working)
-- PUT https://easyfix-3.preview.emergentagent.com/api/intervention-requests/{id} (Working)
-- DELETE https://easyfix-3.preview.emergentagent.com/api/intervention-requests/{id} (Working)
-- GET https://easyfix-3.preview.emergentagent.com/api/improvement-requests (Working)
-- POST https://easyfix-3.preview.emergentagent.com/api/improvement-requests (Working)
-- PUT https://easyfix-3.preview.emergentagent.com/api/improvement-requests/{id} (Working)
-- DELETE https://easyfix-3.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- GET https://equip-status-3.preview.emergentagent.com/api/documentations/poles (Working)
+- POST https://equip-status-3.preview.emergentagent.com/api/documentations/poles (Working)
+- PUT https://equip-status-3.preview.emergentagent.com/api/documentations/poles/{id} (Working)
+- DELETE https://equip-status-3.preview.emergentagent.com/api/documentations/poles/{id} (Working)
+- GET https://equip-status-3.preview.emergentagent.com/api/equipments (Working)
+- POST https://equip-status-3.preview.emergentagent.com/api/equipments (Working)
+- PATCH https://equip-status-3.preview.emergentagent.com/api/equipments/{id}/status (Working)
+- DELETE https://equip-status-3.preview.emergentagent.com/api/equipments/{id} (Working)
+- GET https://equip-status-3.preview.emergentagent.com/api/vendors (Working)
+- POST https://equip-status-3.preview.emergentagent.com/api/vendors (Working)
+- PUT https://equip-status-3.preview.emergentagent.com/api/vendors/{id} (Working)
+- DELETE https://equip-status-3.preview.emergentagent.com/api/vendors/{id} (Working)
+- GET https://equip-status-3.preview.emergentagent.com/api/work-orders (Working)
+- GET https://equip-status-3.preview.emergentagent.com/api/intervention-requests (Working)
+- POST https://equip-status-3.preview.emergentagent.com/api/intervention-requests (Working)
+- PUT https://equip-status-3.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- DELETE https://equip-status-3.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- GET https://equip-status-3.preview.emergentagent.com/api/improvement-requests (Working)
+- POST https://equip-status-3.preview.emergentagent.com/api/improvement-requests (Working)
+- PUT https://equip-status-3.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- DELETE https://equip-status-3.preview.emergentagent.com/api/improvement-requests/{id} (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/documentations (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/suppliers (Working)
