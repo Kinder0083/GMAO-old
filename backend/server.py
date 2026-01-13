@@ -1692,11 +1692,38 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
                 detail="Le statut 'Alerte S.Equip' est automatique et ne peut pas être défini manuellement"
             )
         
-        # Mettre à jour le statut
-        result = await db.equipments.update_one(
-            {"_id": ObjectId(eq_id)},
-            {"$set": {"statut": statut}}
-        )
+        # Si le statut change, enregistrer dans l'historique
+        old_statut = equipment.get("statut")
+        if old_statut != statut:
+            now = datetime.now(timezone.utc)
+            # Arrondir à l'heure inférieure
+            rounded_hour = now.replace(minute=0, second=0, microsecond=0)
+            
+            # Enregistrer dans l'historique (upsert pour écraser si même heure)
+            history_entry = {
+                "equipment_id": eq_id,
+                "statut": statut,
+                "changed_at": rounded_hour,
+                "changed_by": current_user.get("id"),
+                "changed_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+            }
+            await db.equipment_status_history.update_one(
+                {"equipment_id": eq_id, "changed_at": rounded_hour},
+                {"$set": history_entry},
+                upsert=True
+            )
+            
+            # Mettre à jour le statut ET la date de changement
+            result = await db.equipments.update_one(
+                {"_id": ObjectId(eq_id)},
+                {"$set": {"statut": statut, "statut_changed_at": rounded_hour}}
+            )
+        else:
+            # Mettre à jour seulement le statut (pas de changement réel)
+            result = await db.equipments.update_one(
+                {"_id": ObjectId(eq_id)},
+                {"$set": {"statut": statut}}
+            )
         
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Équipement non trouvé")
