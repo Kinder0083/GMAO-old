@@ -1686,18 +1686,8 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
         if not equipment:
             raise HTTPException(status_code=404, detail="Équipement non trouvé")
         
-        # Vérifier si l'équipement a des enfants
-        children = await db.equipments.find({"parent_id": eq_id}).to_list(1000)
-        
-        # Si l'équipement a des enfants et qu'on essaie de changer depuis MAINT_PREV
-        if children and equipment.get("statut") == "MAINT_PREV":
-            # Vérifier si tous les enfants sont opérationnels
-            all_operational = all(child.get("statut") == "OPERATIONNEL" for child in children)
-            if not all_operational:
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Impossible de changer le statut : des sous-équipements ne sont pas opérationnels"
-                )
+        # Note: La validation des sous-équipements a été retirée pour permettre
+        # aux utilisateurs de changer librement le statut des équipements parents
         
         # Si le statut change, enregistrer dans l'historique et le journal
         old_statut = equipment.get("statut")
