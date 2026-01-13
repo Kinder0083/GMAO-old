@@ -10,13 +10,11 @@ import {
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
 const PurchaseRequestsArchives = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
@@ -26,6 +24,8 @@ const PurchaseRequestsArchives = () => {
   const [loading, setLoading] = useState(true);
   const [unarchivingId, setUnarchivingId] = useState(null);
 
+  // Récupérer l'utilisateur depuis localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user?.role === 'ADMIN';
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
