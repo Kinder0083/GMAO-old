@@ -414,7 +414,8 @@ class EquipmentStatus(str, Enum):
     EN_MAINTENANCE = "EN_MAINTENANCE"
     HORS_SERVICE = "HORS_SERVICE"
     EN_CT = "EN_CT"
-    MAINT_PREV = "MAINT_PREV"  # Maintenance Préventive
+    DEGRADE = "DEGRADE"  # Dégradé (statut manuel)
+    ALERTE_S_EQUIP = "ALERTE_S_EQUIP"  # Alerte automatique quand sous-équipement est Hors Service
 
 class Frequency(str, Enum):
     HEBDOMADAIRE = "HEBDOMADAIRE"

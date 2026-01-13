@@ -1660,14 +1660,14 @@ async def update_parent_alert_status(parent_id: str):
         return
     
     if has_problematic_child:
-        # Mettre le parent en MAINT_PREV
+        # Mettre le parent en ALERTE_S_EQUIP (alerte automatique)
         await db.equipments.update_one(
             {"_id": ObjectId(parent_id)},
-            {"$set": {"statut": "MAINT_PREV"}}
+            {"$set": {"statut": "ALERTE_S_EQUIP"}}
         )
     else:
         # Si tous les enfants sont OPERATIONNEL et le parent est en ALERTE, remettre à OPERATIONNEL
-        if parent.get("statut") == "MAINT_PREV":
+        if parent.get("statut") == "ALERTE_S_EQUIP":
             all_operational = all(
                 child.get("statut") == "OPERATIONNEL" 
                 for child in children
