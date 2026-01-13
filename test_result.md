@@ -782,8 +782,8 @@ agent_communication:
 ## Test Credentials ✅ WORKING
 - Email: admin@test.com
 - Password: password
-- Frontend URL: https://dashboard-live.preview.emergentagent.com/purchase-requests
-- Backend API URL: https://dashboard-live.preview.emergentagent.com/api
+- Frontend URL: https://resource-tracker-48.preview.emergentagent.com/purchase-requests
+- Backend API URL: https://resource-tracker-48.preview.emergentagent.com/api
 
 ## Test Results Summary
 1. **Documentations Page Load Test**: ✅ WORKING - Documentations page loads correctly with data
@@ -882,27 +882,27 @@ agent_communication:
 - WebSocket: /ws/realtime/improvement_requests ✅ Connection establishment working
 
 ## Network Activity Observed
-- GET https://dashboard-live.preview.emergentagent.com/api/documentations/poles (Working)
-- POST https://dashboard-live.preview.emergentagent.com/api/documentations/poles (Working)
-- PUT https://dashboard-live.preview.emergentagent.com/api/documentations/poles/{id} (Working)
-- DELETE https://dashboard-live.preview.emergentagent.com/api/documentations/poles/{id} (Working)
-- GET https://dashboard-live.preview.emergentagent.com/api/equipments (Working)
-- POST https://dashboard-live.preview.emergentagent.com/api/equipments (Working)
-- PATCH https://dashboard-live.preview.emergentagent.com/api/equipments/{id}/status (Working)
-- DELETE https://dashboard-live.preview.emergentagent.com/api/equipments/{id} (Working)
-- GET https://dashboard-live.preview.emergentagent.com/api/vendors (Working)
-- POST https://dashboard-live.preview.emergentagent.com/api/vendors (Working)
-- PUT https://dashboard-live.preview.emergentagent.com/api/vendors/{id} (Working)
-- DELETE https://dashboard-live.preview.emergentagent.com/api/vendors/{id} (Working)
-- GET https://dashboard-live.preview.emergentagent.com/api/work-orders (Working)
-- GET https://dashboard-live.preview.emergentagent.com/api/intervention-requests (Working)
-- POST https://dashboard-live.preview.emergentagent.com/api/intervention-requests (Working)
-- PUT https://dashboard-live.preview.emergentagent.com/api/intervention-requests/{id} (Working)
-- DELETE https://dashboard-live.preview.emergentagent.com/api/intervention-requests/{id} (Working)
-- GET https://dashboard-live.preview.emergentagent.com/api/improvement-requests (Working)
-- POST https://dashboard-live.preview.emergentagent.com/api/improvement-requests (Working)
-- PUT https://dashboard-live.preview.emergentagent.com/api/improvement-requests/{id} (Working)
-- DELETE https://dashboard-live.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- GET https://resource-tracker-48.preview.emergentagent.com/api/documentations/poles (Working)
+- POST https://resource-tracker-48.preview.emergentagent.com/api/documentations/poles (Working)
+- PUT https://resource-tracker-48.preview.emergentagent.com/api/documentations/poles/{id} (Working)
+- DELETE https://resource-tracker-48.preview.emergentagent.com/api/documentations/poles/{id} (Working)
+- GET https://resource-tracker-48.preview.emergentagent.com/api/equipments (Working)
+- POST https://resource-tracker-48.preview.emergentagent.com/api/equipments (Working)
+- PATCH https://resource-tracker-48.preview.emergentagent.com/api/equipments/{id}/status (Working)
+- DELETE https://resource-tracker-48.preview.emergentagent.com/api/equipments/{id} (Working)
+- GET https://resource-tracker-48.preview.emergentagent.com/api/vendors (Working)
+- POST https://resource-tracker-48.preview.emergentagent.com/api/vendors (Working)
+- PUT https://resource-tracker-48.preview.emergentagent.com/api/vendors/{id} (Working)
+- DELETE https://resource-tracker-48.preview.emergentagent.com/api/vendors/{id} (Working)
+- GET https://resource-tracker-48.preview.emergentagent.com/api/work-orders (Working)
+- GET https://resource-tracker-48.preview.emergentagent.com/api/intervention-requests (Working)
+- POST https://resource-tracker-48.preview.emergentagent.com/api/intervention-requests (Working)
+- PUT https://resource-tracker-48.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- DELETE https://resource-tracker-48.preview.emergentagent.com/api/intervention-requests/{id} (Working)
+- GET https://resource-tracker-48.preview.emergentagent.com/api/improvement-requests (Working)
+- POST https://resource-tracker-48.preview.emergentagent.com/api/improvement-requests (Working)
+- PUT https://resource-tracker-48.preview.emergentagent.com/api/improvement-requests/{id} (Working)
+- DELETE https://resource-tracker-48.preview.emergentagent.com/api/improvement-requests/{id} (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/documentations (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/equipments (Working)
 - WebSocket wss://realtimesync.preview.emergentagent.com/ws/realtime/suppliers (Working)
