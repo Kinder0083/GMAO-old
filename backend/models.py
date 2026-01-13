@@ -810,6 +810,23 @@ class Equipment(EquipmentBase):
     class Config:
         from_attributes = True
 
+# Modèle pour l'historique des changements de statut des équipements
+class EquipmentStatusHistoryBase(BaseModel):
+    equipment_id: str
+    statut: EquipmentStatus
+    changed_at: datetime  # Date/heure du changement (arrondie à l'heure inférieure)
+    changed_by: Optional[str] = None  # ID de l'utilisateur qui a fait le changement
+    changed_by_name: Optional[str] = None  # Nom de l'utilisateur pour affichage
+
+class EquipmentStatusHistoryCreate(EquipmentStatusHistoryBase):
+    pass
+
+class EquipmentStatusHistory(EquipmentStatusHistoryBase):
+    id: str
+
+    class Config:
+        from_attributes = True
+
 # Location Models (renommées en Zone)
 class LocationBase(BaseModel):
     nom: str
