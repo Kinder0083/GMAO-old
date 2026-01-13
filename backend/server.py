@@ -1699,13 +1699,6 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
                     detail="Impossible de changer le statut : des sous-équipements ne sont pas opérationnels"
                 )
         
-        # Interdire de mettre manuellement en MAINT_PREV
-        if statut == EquipmentStatus.MAINT_PREV:
-            raise HTTPException(
-                status_code=400,
-                detail="Le statut 'Alerte S.Equip' est automatique et ne peut pas être défini manuellement"
-            )
-        
         # Si le statut change, enregistrer dans l'historique et le journal
         old_statut = equipment.get("statut")
         if old_statut != statut:
