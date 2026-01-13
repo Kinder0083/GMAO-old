@@ -1751,12 +1751,18 @@ async def update_availability(
 ):
     """Mettre à jour une disponibilité (admin uniquement)"""
     try:
-        update_data = {k: v for k, v in availability_update.model_dump().items() if v is not None}
+        # Récupérer les données envoyées (inclure les null pour permettre de remettre à blanc)
+        update_data = availability_update.model_dump(exclude_unset=False)
+        # Filtrer seulement les champs qui ne sont pas dans la requête originale
+        # mais garder les valeurs null explicites
+        raw_data = availability_update.model_dump(exclude_unset=True)
+        update_data = {k: v for k, v in update_data.items() if k in raw_data}
         
-        await db.availabilities.update_one(
-            {"_id": ObjectId(avail_id)},
-            {"$set": update_data}
-        )
+        if update_data:
+            await db.availabilities.update_one(
+                {"_id": ObjectId(avail_id)},
+                {"$set": update_data}
+            )
         
         avail = await db.availabilities.find_one({"_id": ObjectId(avail_id)})
         avail = serialize_doc(avail)
