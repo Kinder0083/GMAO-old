@@ -161,6 +161,7 @@ const EquipmentTreeNode = ({
               onAddChild={onAddChild}
               onViewDetails={onViewDetails}
               onStatusChange={onStatusChange}
+              onViewInventory={onViewInventory}
               allEquipments={allEquipments}
             />
           ))}
@@ -170,7 +171,7 @@ const EquipmentTreeNode = ({
   );
 };
 
-const EquipmentTreeView = ({ equipments, onEdit, onDelete, onAddChild, onViewDetails, onStatusChange }) => {
+const EquipmentTreeView = ({ equipments, onEdit, onDelete, onAddChild, onViewDetails, onStatusChange, onViewInventory }) => {
   // Filtrer uniquement les équipements racines (sans parent)
   const rootEquipments = equipments.filter(eq => !eq.parent_id);
 
@@ -194,6 +195,7 @@ const EquipmentTreeView = ({ equipments, onEdit, onDelete, onAddChild, onViewDet
           onAddChild={onAddChild}
           onViewDetails={onViewDetails}
           onStatusChange={onStatusChange}
+          onViewInventory={onViewInventory}
           allEquipments={equipments}
         />
       ))}
