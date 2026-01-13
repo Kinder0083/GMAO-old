@@ -29,19 +29,7 @@ const PurchaseRequestsArchives = () => {
   const isAdmin = user?.role === 'ADMIN';
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
-  // Rediriger si non admin
-  useEffect(() => {
-    if (!isAdmin) {
-      toast({
-        title: "Accès refusé",
-        description: "Seuls les administrateurs peuvent accéder aux archives",
-        variant: "destructive"
-      });
-      navigate('/purchase-requests');
-    }
-  }, [isAdmin, navigate, toast]);
-
-  // Charger les demandes archivées
+  // Charger les demandes archivées - accessible à tous les utilisateurs
   const fetchArchivedRequests = async () => {
     try {
       setLoading(true);
@@ -72,10 +60,8 @@ const PurchaseRequestsArchives = () => {
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchArchivedRequests();
-    }
-  }, [isAdmin]);
+    fetchArchivedRequests();
+  }, []);
 
   // Recherche avec debounce
   useEffect(() => {
