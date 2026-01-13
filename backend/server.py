@@ -3211,7 +3211,9 @@ async def update_user_preferences(
             
             return UserPreferences(**serialize_doc(updated_prefs))
     except Exception as e:
+        import traceback
         logger.error(f"Erreur lors de la mise à jour des préférences : {str(e)}")
+        logger.error(f"Traceback complet: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 @api_router.post("/user-preferences/reset")
