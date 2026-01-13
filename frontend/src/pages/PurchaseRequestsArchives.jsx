@@ -340,23 +340,29 @@ const PurchaseRequestsArchives = () => {
                     {getStatusBadge(request.status)}
                   </div>
 
-                  {/* Colonne 5: Actions (Désarchiver) */}
+                  {/* Colonne 5: Actions (Désarchiver) - visible uniquement pour les admins */}
                   <div className="lg:w-1/6 flex justify-end items-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => handleUnarchive(e, request.id, request.numero)}
-                      disabled={unarchivingId === request.id}
-                      className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
-                      data-testid={`unarchive-btn-${request.id}`}
-                    >
-                      {unarchivingId === request.id ? (
-                        <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full" />
-                      ) : (
-                        <RotateCcw className="h-4 w-4" />
-                      )}
-                      Restaurer
-                    </Button>
+                    {isAdmin ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => handleUnarchive(e, request.id, request.numero)}
+                        disabled={unarchivingId === request.id}
+                        className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        data-testid={`unarchive-btn-${request.id}`}
+                      >
+                        {unarchivingId === request.id ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full" />
+                        ) : (
+                          <RotateCcw className="h-4 w-4" />
+                        )}
+                        Restaurer
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">
+                        Lecture seule
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardContent>
