@@ -1522,12 +1522,22 @@ async def update_equipment(eq_id: str, eq_update: EquipmentUpdate, current_user:
         
         update_data = {k: v for k, v in eq_update.model_dump().items() if v is not None}
         
-        # Si le statut change, enregistrer la date/heure du changement (arrondie à l'heure inférieure)
+        # Si le statut change, enregistrer dans l'historique
         if "statut" in update_data and existing_eq.get("statut") != update_data["statut"]:
             now = datetime.now(timezone.utc)
             # Arrondir à l'heure inférieure (supprimer minutes, secondes, microsecondes)
             rounded_hour = now.replace(minute=0, second=0, microsecond=0)
             update_data["statut_changed_at"] = rounded_hour
+            
+            # Enregistrer dans l'historique des statuts
+            history_entry = {
+                "equipment_id": eq_id,
+                "statut": update_data["statut"],
+                "changed_at": rounded_hour,
+                "changed_by": current_user.get("id"),
+                "changed_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+            }
+            await db.equipment_status_history.insert_one(history_entry)
         
         await db.equipments.update_one(
             {"_id": ObjectId(eq_id)},
