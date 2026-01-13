@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import { ChevronRight, ChevronDown, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Edit, Trash2, Eye, Cog } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QuickStatusChanger from './QuickStatusChanger';
 
@@ -13,7 +13,8 @@ const EquipmentTreeNode = ({
   onAddChild,
   onViewDetails,
   allEquipments,
-  onStatusChange
+  onStatusChange,
+  onViewInventory
 }) => {
   const [isExpanded, setIsExpanded] = useState(false); // Fermé par défaut
   const navigate = useNavigate();
