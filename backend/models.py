@@ -844,6 +844,7 @@ class InventoryBase(BaseModel):
     prixUnitaire: float
     fournisseur: str
     emplacement: str
+    equipment_ids: Optional[List[str]] = []  # Liste des IDs d'équipements/sous-équipements associés
 
 class InventoryCreate(InventoryBase):
     pass
@@ -857,6 +858,7 @@ class InventoryUpdate(BaseModel):
     prixUnitaire: Optional[float] = None
     fournisseur: Optional[str] = None
     emplacement: Optional[str] = None
+    equipment_ids: Optional[List[str]] = None  # Liste des IDs d'équipements associés
 
 class Inventory(InventoryBase):
     id: str
