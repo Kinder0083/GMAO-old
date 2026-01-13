@@ -1563,8 +1563,9 @@ async def update_equipment(eq_id: str, eq_update: EquipmentUpdate, current_user:
         
         update_data = {k: v for k, v in eq_update.model_dump().items() if v is not None}
         
-        # Si le statut change, enregistrer dans l'historique
-        if "statut" in update_data and existing_eq.get("statut") != update_data["statut"]:
+        # Si le statut change, enregistrer dans l'historique et le journal
+        old_statut = existing_eq.get("statut")
+        if "statut" in update_data and old_statut != update_data["statut"]:
             now = datetime.now(timezone.utc)
             # Arrondir à l'heure inférieure (supprimer minutes, secondes, microsecondes)
             rounded_hour = now.replace(minute=0, second=0, microsecond=0)
@@ -1583,6 +1584,19 @@ async def update_equipment(eq_id: str, eq_update: EquipmentUpdate, current_user:
                 {"equipment_id": eq_id, "changed_at": rounded_hour},
                 {"$set": history_entry},
                 upsert=True
+            )
+            
+            # Enregistrer dans le journal d'audit
+            await audit_service.log_action(
+                user_id=current_user.get("id"),
+                user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+                user_email=current_user.get("email", ""),
+                action=ActionType.UPDATE,
+                entity_type=EntityType.EQUIPMENT,
+                entity_id=eq_id,
+                entity_name=existing_eq.get("nom"),
+                details=f"Changement de statut: {old_statut} → {update_data['statut']}",
+                changes={"statut": {"old": old_statut, "new": update_data["statut"]}}
             )
         
         await db.equipments.update_one(
