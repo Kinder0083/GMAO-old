@@ -261,6 +261,11 @@ const Planning = () => {
     if (!isDragging || !dragRef.current.userId) return;
     if (dragRef.current.userId !== userId) return;
     if (dayIndex <= dragRef.current.startDay) return;
+    
+    // Éviter de traiter la même cellule plusieurs fois
+    if (dragRef.current.processedDays?.includes(dayIndex)) return;
+    if (!dragRef.current.processedDays) dragRef.current.processedDays = [];
+    dragRef.current.processedDays.push(dayIndex);
 
     // Copier la disponibilité de la cellule source vers la cellule cible
     const sourceAvail = dragRef.current.startAvail;
@@ -268,28 +273,50 @@ const Planning = () => {
     const regime = dragRef.current.regime;
 
     try {
-      // skipRefresh = true pour éviter les conflits pendant le drag
+      // Créer ou mettre à jour la disponibilité pour cette date
+      const dateStr = targetDate.toISOString().split('T')[0];
+      
+      // Chercher si un enregistrement existe déjà pour cette date
+      const existing = availabilities.find(
+        a => a.user_id === userId && a.date.split('T')[0] === dateStr
+      );
+
+      const payload = {};
+      
       if (regime === 'Journée') {
-        await updateAvailability(userId, targetDate, 'disponible', sourceAvail?.disponible ?? null, true);
+        payload.disponible = sourceAvail?.disponible ?? null;
       } else if (regime === '2*8') {
-        if (sourceAvail?.disponible_matin !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_matin', sourceAvail.disponible_matin, true);
-        }
-        if (sourceAvail?.disponible_aprem !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_aprem', sourceAvail.disponible_aprem, true);
-        }
+        payload.disponible_matin = sourceAvail?.disponible_matin ?? null;
+        payload.disponible_aprem = sourceAvail?.disponible_aprem ?? null;
       } else if (regime === '3*8') {
-        if (sourceAvail?.disponible_matin !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_matin', sourceAvail.disponible_matin, true);
-        }
-        if (sourceAvail?.disponible_aprem !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_aprem', sourceAvail.disponible_aprem, true);
-        }
-        if (sourceAvail?.disponible_nuit !== undefined) {
-          await updateAvailability(userId, targetDate, 'disponible_nuit', sourceAvail.disponible_nuit, true);
-        }
+        payload.disponible_matin = sourceAvail?.disponible_matin ?? null;
+        payload.disponible_aprem = sourceAvail?.disponible_aprem ?? null;
+        payload.disponible_nuit = sourceAvail?.disponible_nuit ?? null;
       }
+
+      pendingUpdates.current++;
+      
+      if (existing) {
+        await axios.put(
+          `${backend_url}/api/availabilities/${existing.id}`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        await axios.post(
+          `${backend_url}/api/availabilities`,
+          {
+            user_id: userId,
+            date: targetDate.toISOString(),
+            ...payload
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+      
+      pendingUpdates.current--;
     } catch (error) {
+      pendingUpdates.current--;
       console.error('Erreur copie:', error);
     }
   };
@@ -299,19 +326,24 @@ const Planning = () => {
     const wasDragging = isDragging;
     setIsDragging(false);
     setDragStartCell(null);
+    
+    // Réinitialiser les jours traités
+    if (dragRef.current.processedDays) {
+      dragRef.current.processedDays = [];
+    }
     dragRef.current = { userId: null, startDay: null, startAvail: null };
     
     // Attendre que toutes les mises à jour soient terminées avant de rafraîchir
     if (wasDragging) {
-      // Attendre un peu pour que les dernières requêtes se terminent
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       // Attendre que le compteur de mises à jour soit à 0
       let attempts = 0;
-      while (pendingUpdates.current > 0 && attempts < 20) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+      while (pendingUpdates.current > 0 && attempts < 30) {
+        await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
       }
+      
+      // Petit délai supplémentaire pour s'assurer que le serveur a bien enregistré
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Rafraîchir les données une seule fois
       refreshAvailabilities();
