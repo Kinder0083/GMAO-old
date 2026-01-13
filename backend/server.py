@@ -2711,14 +2711,15 @@ async def update_user(user_id: str, user_update: UserUpdate, current_user: dict 
         user = await db.users.find_one({"_id": ObjectId(user_id)})
         user_response = User(**serialize_doc(user))
         
-        # Émettre l'événement WebSocket
+        # Émettre l'événement WebSocket à TOUS les utilisateurs (y compris celui qui fait la modification)
+        # Important pour la synchronisation du Planning quand on modifie un service
         try:
             from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
             await realtime_manager.emit_event(
                 RealtimeEntityType.USERS.value,
                 RealtimeEventType.UPDATED.value,
                 user_response.model_dump(),
-                current_user.get("id")
+                None  # Ne pas exclure l'utilisateur actuel pour assurer la synchro du Planning
             )
         except Exception as e:
             logger.error(f"Erreur émission événement WebSocket users: {e}")
