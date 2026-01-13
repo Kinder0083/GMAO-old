@@ -7136,7 +7136,7 @@ async def whiteboard_websocket(websocket: WebSocket, board_id: str):
 
 # WebSocket Centralisé pour toutes les entités temps réel
 from realtime_manager import realtime_manager
-from realtime_events import EntityType
+from realtime_events import EntityType as RealtimeEntityType
 
 @app.websocket("/ws/realtime/{entity_type}")
 async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: str):
