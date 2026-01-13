@@ -12,18 +12,18 @@ import PurchaseRequestFormDialog from '../components/PurchaseRequests/PurchaseRe
 import { useToast } from '../hooks/use-toast';
 import { usePurchaseRequests } from '../hooks/usePurchaseRequests';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
 const PurchaseRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [archivingId, setArchivingId] = useState(null);
 
+  // Récupérer l'utilisateur depuis localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user?.role === 'ADMIN';
   const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
