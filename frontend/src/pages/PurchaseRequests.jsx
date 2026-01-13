@@ -277,18 +277,16 @@ const PurchaseRequests = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* Bouton Archives - visible uniquement pour les admins */}
-          {isAdmin && (
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/purchase-requests/archives')}
-              className="gap-2"
-              data-testid="archives-btn"
-            >
-              <Archive className="h-4 w-4" />
-              Archives
-            </Button>
-          )}
+          {/* Bouton Archives - accessible à tous les utilisateurs */}
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/purchase-requests/archives')}
+            className="gap-2"
+            data-testid="archives-btn"
+          >
+            <Archive className="h-4 w-4" />
+            Archives
+          </Button>
           <Button onClick={() => setFormDialogOpen(true)} className="gap-2" data-testid="new-request-btn">
             <Plus className="h-4 w-4" />
             Nouvelle Demande
