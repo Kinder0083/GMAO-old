@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight, Wrench, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Wrench, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { equipmentsAPI, demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
@@ -39,6 +39,7 @@ const PlanningMPrev = () => {
   const [statusHistory, setStatusHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [expandedEquipments, setExpandedEquipments] = useState(new Set()); // IDs des équipements développés
 
   const loadEquipments = async () => {
     try {
@@ -74,7 +75,6 @@ const PlanningMPrev = () => {
   const loadStatusHistory = async () => {
     try {
       const response = await equipmentsAPI.getStatusHistory({});
-      console.log('Status history loaded:', response.data);
       setStatusHistory(response.data || []);
     } catch (error) {
       console.error('Erreur chargement historique statuts:', error);
@@ -98,6 +98,36 @@ const PlanningMPrev = () => {
   useAutoRefresh(() => {
     loadAllData();
   }, [currentDate]);
+
+  // Organiser les équipements en hiérarchie (parents et enfants)
+  const { parentEquipments, childrenByParent } = useMemo(() => {
+    const parents = equipments.filter(eq => !eq.parent_id);
+    const childrenMap = {};
+    
+    equipments.forEach(eq => {
+      if (eq.parent_id) {
+        if (!childrenMap[eq.parent_id]) {
+          childrenMap[eq.parent_id] = [];
+        }
+        childrenMap[eq.parent_id].push(eq);
+      }
+    });
+    
+    return { parentEquipments: parents, childrenByParent: childrenMap };
+  }, [equipments]);
+
+  // Toggle expand/collapse d'un équipement
+  const toggleExpand = (equipmentId) => {
+    setExpandedEquipments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(equipmentId)) {
+        newSet.delete(equipmentId);
+      } else {
+        newSet.add(equipmentId);
+      }
+      return newSet;
+    });
+  };
 
   // Obtenir tous les jours d'un mois spécifique
   const getDaysInMonth = (year, month) => {
@@ -129,24 +159,22 @@ const PlanningMPrev = () => {
   }, [statusHistory]);
 
   // Obtenir le statut d'un équipement pour une date/heure donnée
-  // Retourne null si aucun historique n'existe avant cette date
   const getStatusForDateTime = (equipmentId, dateTime) => {
     const history = historyByEquipment[equipmentId];
     if (!history || history.length === 0) {
-      return null; // Pas d'historique -> cellule vide
+      return null;
     }
     
-    // Trouver le dernier changement de statut AVANT ou ÉGAL à cette date/heure
     let lastStatus = null;
     for (const entry of history) {
       if (entry.changed_at <= dateTime) {
         lastStatus = entry.statut;
       } else {
-        break; // Les entrées sont triées, on peut arrêter
+        break;
       }
     }
     
-    return lastStatus; // null si aucun changement avant cette date
+    return lastStatus;
   };
 
   // Calculer les blocs de statut pour un jour donné
@@ -154,7 +182,6 @@ const PlanningMPrev = () => {
     const blocks = [];
     const history = historyByEquipment[equipmentId];
     
-    // Si pas d'historique du tout pour cet équipement -> cellule vide
     if (!history || history.length === 0) {
       return [{ startHour: 0, endHour: 24, status: null }];
     }
@@ -165,28 +192,23 @@ const PlanningMPrev = () => {
     const dayEnd = new Date(day);
     dayEnd.setHours(23, 59, 59, 999);
     
-    // Trouver tous les changements qui se produisent CE jour
     const changesThisDay = history.filter(entry => {
       const changeDate = entry.changed_at;
       return changeDate >= dayStart && changeDate <= dayEnd;
     });
     
-    // Trouver le statut au début de la journée (dernier changement avant ce jour)
     const statusAtDayStart = getStatusForDateTime(equipmentId, dayStart);
     
     if (changesThisDay.length === 0) {
-      // Pas de changement ce jour -> statut constant toute la journée
       return [{ startHour: 0, endHour: 24, status: statusAtDayStart }];
     }
     
-    // Il y a des changements ce jour -> créer des blocs
     let currentHour = 0;
     let currentStatus = statusAtDayStart;
     
     for (const change of changesThisDay) {
       const changeHour = change.changed_at.getHours();
       
-      // Bloc avant ce changement (si on n'est pas déjà à cette heure)
       if (changeHour > currentHour) {
         blocks.push({
           startHour: currentHour,
@@ -199,7 +221,6 @@ const PlanningMPrev = () => {
       currentStatus = change.statut;
     }
     
-    // Bloc final jusqu'à minuit
     if (currentHour < 24) {
       blocks.push({
         startHour: currentHour,
@@ -304,7 +325,6 @@ const PlanningMPrev = () => {
           statusBlocks.forEach(block => {
             const hours = block.endHour - block.startHour;
             
-            // Ne compter que si on a un statut (pas null = pas d'historique)
             if (block.status !== null) {
               totalHoursWithData += hours;
               
@@ -339,6 +359,112 @@ const PlanningMPrev = () => {
   // Jours du mois actuel
   const days = getDaysInMonth(year, month);
   const isCurrentMonth = month === new Date().getMonth() && year === new Date().getFullYear();
+
+  // Composant pour afficher une ligne d'équipement
+  const EquipmentRow = ({ equipment, isChild = false }) => {
+    const hasChildren = childrenByParent[equipment.id]?.length > 0;
+    const isExpanded = expandedEquipments.has(equipment.id);
+    
+    return (
+      <div 
+        className="grid border-b last:border-b-0"
+        style={{ gridTemplateColumns: `180px repeat(${days.length}, 1fr)` }}
+      >
+        {/* Nom de l'équipement */}
+        <div 
+          className={`p-2 bg-white border-r font-medium flex items-center gap-1 ${isChild ? 'bg-gray-50' : ''}`}
+          style={{ paddingLeft: isChild ? '24px' : '8px' }}
+        >
+          {/* Chevron pour les équipements avec enfants */}
+          {hasChildren ? (
+            <button
+              onClick={() => toggleExpand(equipment.id)}
+              className="p-0.5 hover:bg-gray-200 rounded flex-shrink-0"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronRightIcon className="h-4 w-4 text-gray-500" />
+              )}
+            </button>
+          ) : (
+            <div className="w-5 flex-shrink-0" /> 
+          )}
+          
+          <div 
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: STATUS_COLORS[equipment.statut] || STATUS_COLORS.OPERATIONNEL }}
+          />
+          <span className={`truncate text-sm ${isChild ? 'text-gray-600' : ''}`} title={equipment.nom}>
+            {equipment.nom}
+          </span>
+        </div>
+        
+        {/* Cellules des jours */}
+        {days.map((day, dayIndex) => {
+          const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+          const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
+          const statusBlocks = getStatusBlocksForDay(equipment.id, day);
+          
+          return (
+            <div 
+              key={dayIndex} 
+              className={`border-r last:border-r-0 ${isWeekend ? 'bg-blue-50/30' : ''}`}
+            >
+              {/* Cellule 24h verticale (0h en haut, 24h en bas) */}
+              <div className="relative h-10 w-full bg-gray-100">
+                {/* Blocs de statut */}
+                {statusBlocks.map((block, blockIdx) => {
+                  const top = (block.startHour / 24) * 100;
+                  const height = ((block.endHour - block.startHour) / 24) * 100;
+                  const bgColor = block.status ? STATUS_COLORS[block.status] : NO_HISTORY_COLOR;
+                  const title = block.status 
+                    ? `${STATUS_LABELS[block.status]} (${block.startHour}h - ${block.endHour}h)`
+                    : `Sans données (${block.startHour}h - ${block.endHour}h)`;
+                  return (
+                    <div
+                      key={`status-${blockIdx}`}
+                      className="absolute left-0 right-0"
+                      style={{
+                        top: `${top}%`,
+                        height: `${height}%`,
+                        backgroundColor: bgColor,
+                      }}
+                      title={title}
+                    />
+                  );
+                })}
+                
+                {/* Trait horizontal à 12h (50%) */}
+                <div 
+                  className="absolute left-0 right-0 h-px opacity-30 z-10"
+                  style={{ top: '50%', backgroundColor: '#000' }}
+                />
+                
+                {/* Blocs de maintenance superposés (demandes d'arrêt) */}
+                {maintenanceEntries.map((entry, idx) => {
+                  const style = getMaintenanceBlockStyle(entry, day);
+                  const entryColor = STATUS_COLORS[entry.statut] || STATUS_COLORS.EN_MAINTENANCE;
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity z-20"
+                      style={{
+                        top: style.top,
+                        height: style.height,
+                        backgroundColor: entryColor,
+                      }}
+                      title={`${entry.motif || 'Maintenance'}\nStatut: ${STATUS_LABELS[entry.statut] || 'En maintenance'}\n${entry.heure_debut || '00:00'} - ${entry.heure_fin || '24:00'}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   if (loading && equipments.length === 0) {
     return (
@@ -509,87 +635,19 @@ const PlanningMPrev = () => {
               })}
             </div>
 
-            {/* Corps - Équipements */}
-            {equipments.map((equipment) => (
-              <div 
-                key={equipment.id} 
-                className="grid border-b last:border-b-0"
-                style={{ gridTemplateColumns: `180px repeat(${days.length}, 1fr)` }}
-              >
-                {/* Nom de l'équipement */}
-                <div className="p-2 bg-white border-r font-medium flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: STATUS_COLORS[equipment.statut] || STATUS_COLORS.OPERATIONNEL }}
-                  />
-                  <span className="truncate text-sm" title={equipment.nom}>
-                    {equipment.nom}
-                  </span>
-                </div>
+            {/* Corps - Équipements hiérarchiques */}
+            {parentEquipments.map((parentEquipment) => (
+              <React.Fragment key={parentEquipment.id}>
+                {/* Équipement principal */}
+                <EquipmentRow equipment={parentEquipment} isChild={false} />
                 
-                {/* Cellules des jours */}
-                {days.map((day, dayIndex) => {
-                  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                  const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
-                  const statusBlocks = getStatusBlocksForDay(equipment.id, day);
-                  
-                  return (
-                    <div 
-                      key={dayIndex} 
-                      className={`border-r last:border-r-0 ${isWeekend ? 'bg-blue-50/30' : ''}`}
-                    >
-                      {/* Cellule 24h verticale (0h en haut, 24h en bas) */}
-                      <div className="relative h-10 w-full bg-gray-100">
-                        {/* Blocs de statut */}
-                        {statusBlocks.map((block, blockIdx) => {
-                          const top = (block.startHour / 24) * 100;
-                          const height = ((block.endHour - block.startHour) / 24) * 100;
-                          const bgColor = block.status ? STATUS_COLORS[block.status] : NO_HISTORY_COLOR;
-                          const title = block.status 
-                            ? `${STATUS_LABELS[block.status]} (${block.startHour}h - ${block.endHour}h)`
-                            : `Sans données (${block.startHour}h - ${block.endHour}h)`;
-                          return (
-                            <div
-                              key={`status-${blockIdx}`}
-                              className="absolute left-0 right-0"
-                              style={{
-                                top: `${top}%`,
-                                height: `${height}%`,
-                                backgroundColor: bgColor,
-                              }}
-                              title={title}
-                            />
-                          );
-                        })}
-                        
-                        {/* Trait horizontal à 12h (50%) */}
-                        <div 
-                          className="absolute left-0 right-0 h-px opacity-30 z-10"
-                          style={{ top: '50%', backgroundColor: '#000' }}
-                        />
-                        
-                        {/* Blocs de maintenance superposés (demandes d'arrêt) */}
-                        {maintenanceEntries.map((entry, idx) => {
-                          const style = getMaintenanceBlockStyle(entry, day);
-                          const entryColor = STATUS_COLORS[entry.statut] || STATUS_COLORS.EN_MAINTENANCE;
-                          return (
-                            <div
-                              key={idx}
-                              className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity z-20"
-                              style={{
-                                top: style.top,
-                                height: style.height,
-                                backgroundColor: entryColor,
-                              }}
-                              title={`${entry.motif || 'Maintenance'}\nStatut: ${STATUS_LABELS[entry.statut] || 'En maintenance'}\n${entry.heure_debut || '00:00'} - ${entry.heure_fin || '24:00'}`}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                {/* Sous-équipements (si développé) */}
+                {expandedEquipments.has(parentEquipment.id) && 
+                  childrenByParent[parentEquipment.id]?.map((childEquipment) => (
+                    <EquipmentRow key={childEquipment.id} equipment={childEquipment} isChild={true} />
+                  ))
+                }
+              </React.Fragment>
             ))}
           </div>
 
