@@ -1909,6 +1909,12 @@ class DemandeArretMaintenance(BaseModel):
     # Commentaire libre
     commentaire: str = ""
     
+    # Priorité de la demande
+    priorite: str = "NORMALE"  # URGENTE, NORMALE, BASSE
+    
+    # Pièces jointes
+    attachments: List[Dict] = []  # [{filename, url, size, type}]
+    
     # Destinataire
     destinataire_id: str
     destinataire_nom: str
@@ -1939,6 +1945,8 @@ class DemandeArretMaintenanceCreate(BaseModel):
     work_order_id: Optional[str] = None
     maintenance_preventive_id: Optional[str] = None
     commentaire: str = ""
+    priorite: str = "NORMALE"
+    attachments: List[Dict] = []
     destinataire_id: str  # Si non fourni, prendre le premier user avec rôle RSP_PROD
 
 class DemandeArretMaintenanceUpdate(BaseModel):
