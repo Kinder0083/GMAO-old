@@ -102,6 +102,7 @@ const EquipmentTreeNode = ({
                   size="sm"
                   onClick={() => navigate(`/assets/${equipment.id}`)}
                   className="hover:bg-blue-50 h-8 w-8 p-0"
+                  title="Voir les détails"
                 >
                   <Eye size={16} />
                 </Button>
@@ -119,14 +120,25 @@ const EquipmentTreeNode = ({
                   size="sm"
                   onClick={() => onEdit(equipment)}
                   className="hover:bg-yellow-50 h-8 w-8 p-0"
+                  title="Modifier"
                 >
                   <Edit size={16} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => onViewInventory(equipment)}
+                  className="hover:bg-purple-50 h-8 w-8 p-0"
+                  title="Voir les pièces de l'inventaire"
+                >
+                  <Cog size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onDelete(equipment)}
                   className="hover:bg-red-50 h-8 w-8 p-0"
+                  title="Supprimer"
                 >
                   <Trash2 size={16} />
                 </Button>
