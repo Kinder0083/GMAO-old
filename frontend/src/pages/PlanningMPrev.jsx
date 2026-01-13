@@ -17,7 +17,8 @@ const STATUS_COLORS = {
   EN_MAINTENANCE: '#fde047',    // yellow-300 (jaune clair)
   HORS_SERVICE: '#ef4444',      // red-500
   EN_CT: '#a855f7',             // purple-500
-  MAINT_PREV: '#f97316',        // orange-500 (Maintenance Préventive)
+  DEGRADE: '#60a5fa',            // blue-400 (Dégradé - bleu clair)
+  ALERTE_S_EQUIP: '#f472b6',     // pink-400 (Alerte S.Équip - rose)
 };
 
 const STATUS_LABELS = {
@@ -27,7 +28,8 @@ const STATUS_LABELS = {
   EN_MAINTENANCE: 'En maintenance',
   HORS_SERVICE: 'Hors service',
   EN_CT: 'En C.T',
-  MAINT_PREV: 'Maint. Prev.',
+  DEGRADE: 'Dégradé',
+  ALERTE_S_EQUIP: 'Alerte S.Équip',
 };
 
 // Couleur pour les cellules sans historique
