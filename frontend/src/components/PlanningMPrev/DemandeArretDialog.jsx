@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,9 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from '../ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
 import { equipmentsAPI, workOrdersAPI, preventiveMaintenanceAPI, usersAPI, demandesArretAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, ChevronRight, ChevronDown, AlertTriangle, AlertCircle, Minus, Paperclip, X } from 'lucide-react';
 
 const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
   const { toast } = useToast();
@@ -27,6 +28,7 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
   const [preventiveMaintenances, setPreventiveMaintenances] = useState([]);
   const [users, setUsers] = useState([]);
   const [rspProdUser, setRspProdUser] = useState(null);
+  const [expandedEquipments, setExpandedEquipments] = useState(new Set());
 
   const [formData, setFormData] = useState({
     date_debut: '',
@@ -37,8 +39,27 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
     work_order_id: null,
     maintenance_preventive_id: null,
     commentaire: '',
-    destinataire_id: ''
+    destinataire_id: '',
+    priorite: 'NORMALE',
+    attachments: []
   });
+
+  // Organiser les équipements en hiérarchie
+  const { parentEquipments, childrenByParent } = useMemo(() => {
+    const parents = equipments.filter(eq => !eq.parent_id);
+    const childrenMap = {};
+    
+    equipments.forEach(eq => {
+      if (eq.parent_id) {
+        if (!childrenMap[eq.parent_id]) {
+          childrenMap[eq.parent_id] = [];
+        }
+        childrenMap[eq.parent_id].push(eq);
+      }
+    });
+    
+    return { parentEquipments: parents, childrenByParent: childrenMap };
+  }, [equipments]);
 
   useEffect(() => {
     if (open) {
@@ -48,23 +69,18 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
 
   const loadData = async () => {
     try {
-      // Charger équipements
       const eqResponse = await equipmentsAPI.getAll();
       setEquipments(eqResponse.data || []);
 
-      // Charger work orders
       const woResponse = await workOrdersAPI.getAll();
       setWorkOrders(woResponse.data || []);
 
-      // Charger maintenances préventives
       const pmResponse = await preventiveMaintenanceAPI.getAll();
       setPreventiveMaintenances(pmResponse.data || []);
 
-      // Charger utilisateurs
       const usersResponse = await usersAPI.getAll();
       setUsers(usersResponse.data || []);
 
-      // Trouver l'utilisateur avec le rôle RSP_PROD
       const rspProd = (usersResponse.data || []).find(user => user.role === 'RSP_PROD');
       if (rspProd) {
         setRspProdUser(rspProd);
@@ -81,25 +97,55 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
   };
 
   const handleEquipmentToggle = (equipmentId) => {
-    setFormData(prev => {
-      const isSelected = prev.equipement_ids.includes(equipmentId);
-      return {
-        ...prev,
-        equipement_ids: isSelected
-          ? prev.equipement_ids.filter(id => id !== equipmentId)
-          : [...prev.equipement_ids, equipmentId]
-      };
+    setFormData(prev => ({
+      ...prev,
+      equipement_ids: prev.equipement_ids.includes(equipmentId)
+        ? prev.equipement_ids.filter(id => id !== equipmentId)
+        : [...prev.equipement_ids, equipmentId]
+    }));
+  };
+
+  const toggleExpand = (equipmentId) => {
+    setExpandedEquipments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(equipmentId)) {
+        newSet.delete(equipmentId);
+      } else {
+        newSet.add(equipmentId);
+      }
+      return newSet;
     });
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    // Pour l'instant, on stocke juste les noms des fichiers
+    // L'upload réel serait géré par un endpoint dédié
+    const newAttachments = files.map(file => ({
+      filename: file.name,
+      size: file.size,
+      type: file.type
+    }));
+    setFormData(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, ...newAttachments]
+    }));
+  };
+
+  const removeAttachment = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.date_debut || !formData.date_fin) {
       toast({
         title: 'Erreur',
-        description: 'Les dates de début et fin sont obligatoires',
+        description: 'Veuillez renseigner les dates de début et de fin',
         variant: 'destructive'
       });
       return;
@@ -123,16 +169,27 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
       return;
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
-      await demandesArretAPI.create(formData);
+      await demandesArretAPI.create({
+        date_debut: formData.date_debut,
+        date_fin: formData.date_fin,
+        periode_debut: formData.periode_debut,
+        periode_fin: formData.periode_fin,
+        equipement_ids: formData.equipement_ids,
+        work_order_id: formData.work_order_id,
+        maintenance_preventive_id: formData.maintenance_preventive_id,
+        commentaire: formData.commentaire,
+        destinataire_id: formData.destinataire_id,
+        priorite: formData.priorite,
+        attachments: formData.attachments
+      });
       
       toast({
         title: 'Succès',
         description: 'Demande d\'arrêt envoyée avec succès'
       });
       
-      // Réinitialiser le formulaire
       setFormData({
         date_debut: '',
         date_fin: '',
@@ -142,7 +199,9 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
         work_order_id: null,
         maintenance_preventive_id: null,
         commentaire: '',
-        destinataire_id: rspProdUser?.id || ''
+        destinataire_id: rspProdUser?.id || '',
+        priorite: 'NORMALE',
+        attachments: []
       });
       
       onOpenChange(false);
@@ -159,6 +218,65 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
     }
   };
 
+  const getPriorityBadge = (priority) => {
+    const badges = {
+      'URGENTE': { bg: 'bg-red-100', text: 'text-red-700', icon: AlertTriangle },
+      'NORMALE': { bg: 'bg-blue-100', text: 'text-blue-700', icon: Minus },
+      'BASSE': { bg: 'bg-gray-100', text: 'text-gray-700', icon: AlertCircle }
+    };
+    return badges[priority] || badges['NORMALE'];
+  };
+
+  // Composant pour afficher un équipement avec ses enfants
+  const EquipmentItem = ({ equipment, isChild = false }) => {
+    const hasChildren = childrenByParent[equipment.id]?.length > 0;
+    const isExpanded = expandedEquipments.has(equipment.id);
+    const isSelected = formData.equipement_ids.includes(equipment.id);
+
+    return (
+      <>
+        <div 
+          className={`flex items-center space-x-2 p-2 hover:bg-gray-50 rounded ${isChild ? 'ml-6' : ''}`}
+        >
+          {hasChildren ? (
+            <button
+              type="button"
+              onClick={() => toggleExpand(equipment.id)}
+              className="p-0.5 hover:bg-gray-200 rounded flex-shrink-0"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-500" />
+              )}
+            </button>
+          ) : (
+            <div className="w-5 flex-shrink-0" />
+          )}
+          
+          <Checkbox
+            id={`eq-${equipment.id}`}
+            checked={isSelected}
+            onCheckedChange={() => handleEquipmentToggle(equipment.id)}
+          />
+          <label htmlFor={`eq-${equipment.id}`} className={`text-sm cursor-pointer flex-1 ${isChild ? 'text-gray-600' : ''}`}>
+            <span className={isChild ? '' : 'font-medium'}>{equipment.name || equipment.nom}</span>
+            {(equipment.category || equipment.categorie) && (
+              <span className="text-gray-500 ml-2">• {equipment.category || equipment.categorie}</span>
+            )}
+          </label>
+        </div>
+        
+        {/* Enfants si développé */}
+        {hasChildren && isExpanded && (
+          childrenByParent[equipment.id].map(child => (
+            <EquipmentItem key={child.id} equipment={child} isChild={true} />
+          ))
+        )}
+      </>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -171,6 +289,40 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-6 py-4">
+            {/* Priorité */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Priorité de la demande *
+                </h3>
+                <RadioGroup
+                  value={formData.priorite}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, priorite: value }))}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="URGENTE" id="priorite_urgente" />
+                    <label htmlFor="priorite_urgente" className="text-sm cursor-pointer flex items-center gap-1">
+                      <Badge className="bg-red-100 text-red-700">Urgente</Badge>
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="NORMALE" id="priorite_normale" />
+                    <label htmlFor="priorite_normale" className="text-sm cursor-pointer flex items-center gap-1">
+                      <Badge className="bg-blue-100 text-blue-700">Normale</Badge>
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="BASSE" id="priorite_basse" />
+                    <label htmlFor="priorite_basse" className="text-sm cursor-pointer flex items-center gap-1">
+                      <Badge className="bg-gray-100 text-gray-700">Basse</Badge>
+                    </label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
+
             {/* Période d'arrêt */}
             <Card>
               <CardContent className="pt-6 space-y-4">
@@ -247,26 +399,16 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
               </CardContent>
             </Card>
 
-            {/* Équipements */}
+            {/* Équipements avec hiérarchie */}
             <Card>
               <CardContent className="pt-6">
                 <h3 className="font-semibold mb-3">Équipements concernés *</h3>
-                <div className="max-h-60 overflow-y-auto space-y-2 border rounded p-3">
-                  {equipments.length === 0 ? (
+                <div className="max-h-60 overflow-y-auto space-y-1 border rounded p-3">
+                  {parentEquipments.length === 0 ? (
                     <p className="text-sm text-gray-500">Aucun équipement disponible</p>
                   ) : (
-                    equipments.map((equipment) => (
-                      <div key={equipment.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded">
-                        <Checkbox
-                          id={`eq-${equipment.id}`}
-                          checked={formData.equipement_ids.includes(equipment.id)}
-                          onCheckedChange={() => handleEquipmentToggle(equipment.id)}
-                        />
-                        <label htmlFor={`eq-${equipment.id}`} className="text-sm cursor-pointer flex-1">
-                          <span className="font-medium">{equipment.name || equipment.nom}</span>
-                          {(equipment.category || equipment.categorie) && <span className="text-gray-500 ml-2">• {equipment.category || equipment.categorie}</span>}
-                        </label>
-                      </div>
+                    parentEquipments.map((equipment) => (
+                      <EquipmentItem key={equipment.id} equipment={equipment} isChild={false} />
                     ))
                   )}
                 </div>
@@ -288,7 +430,7 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
                     onValueChange={(value) => setFormData(prev => ({
                       ...prev,
                       work_order_id: value === 'none' ? null : value,
-                      maintenance_preventive_id: null // Reset l'autre
+                      maintenance_preventive_id: null
                     }))}
                   >
                     <SelectTrigger>
@@ -312,7 +454,7 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
                     onValueChange={(value) => setFormData(prev => ({
                       ...prev,
                       maintenance_preventive_id: value === 'none' ? null : value,
-                      work_order_id: null // Reset l'autre
+                      work_order_id: null
                     }))}
                   >
                     <SelectTrigger>
@@ -327,6 +469,43 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pièces jointes */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Paperclip className="h-4 w-4" />
+                  Pièces jointes (optionnel)
+                </h3>
+                
+                <div className="space-y-3">
+                  <Input
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    className="cursor-pointer"
+                  />
+                  
+                  {formData.attachments.length > 0 && (
+                    <div className="space-y-2">
+                      {formData.attachments.map((attachment, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm truncate">{attachment.filename}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAttachment(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -366,7 +545,7 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
                 </Select>
                 {rspProdUser && (
                   <p className="text-xs text-gray-500 mt-2">
-                    Par défaut : {rspProdUser.first_name} {rspProdUser.last_name} (Responsable Production)
+                    Par défaut : {rspProdUser.first_name || rspProdUser.prenom} {rspProdUser.last_name || rspProdUser.nom} (Responsable Production)
                   </p>
                 )}
               </CardContent>
