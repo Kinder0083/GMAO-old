@@ -1571,6 +1571,7 @@ async def update_equipment(eq_id: str, eq_update: EquipmentUpdate, current_user:
             update_data["statut_changed_at"] = rounded_hour
             
             # Enregistrer dans l'historique des statuts
+            # Si une entrée existe déjà pour cet équipement à la même heure, l'écraser
             history_entry = {
                 "equipment_id": eq_id,
                 "statut": update_data["statut"],
@@ -1578,7 +1579,11 @@ async def update_equipment(eq_id: str, eq_update: EquipmentUpdate, current_user:
                 "changed_by": current_user.get("id"),
                 "changed_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
             }
-            await db.equipment_status_history.insert_one(history_entry)
+            await db.equipment_status_history.update_one(
+                {"equipment_id": eq_id, "changed_at": rounded_hour},
+                {"$set": history_entry},
+                upsert=True
+            )
         
         await db.equipments.update_one(
             {"_id": ObjectId(eq_id)},
