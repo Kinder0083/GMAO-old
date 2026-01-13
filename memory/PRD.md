@@ -18,6 +18,20 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
+### Session du 13 Janvier 2026
+
+#### ✅ Appartenance des Articles aux Équipements (Complété)
+- **Fichiers modifiés**:
+  - `/app/backend/models.py` (ajout `equipment_ids` à InventoryBase/Update)
+  - `/app/frontend/src/components/Inventory/InventoryFormDialog.jsx` (sélecteur en cascade)
+  - `/app/frontend/src/pages/Inventory.jsx` (colonne Appartenance + filtre)
+- **Fonctionnalités**:
+  - Un article peut appartenir à **plusieurs** équipements/sous-équipements
+  - Sélecteur en cascade : équipement principal → sous-équipement (optionnel)
+  - Colonne "Appartenance" dans le tableau avec badges
+  - Filtre dropdown pour trier par équipement
+  - Les sous-équipements n'apparaissent que si l'équipement principal en possède
+
 ### Session du 12 Janvier 2026
 
 #### ✅ Régimes de Travail avec Cellules Adaptatives (Complété)
