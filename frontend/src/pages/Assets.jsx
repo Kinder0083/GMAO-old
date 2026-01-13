@@ -424,14 +424,25 @@ const Assets = () => {
                         size="sm"
                         className="hover:bg-yellow-50 hover:text-yellow-600 h-9 w-9 p-0"
                         onClick={() => handleEdit(equipment)}
+                        title="Modifier"
                       >
                         <Pencil size={16} />
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
+                        className="hover:bg-purple-50 hover:text-purple-600 h-9 w-9 p-0"
+                        onClick={() => handleViewInventory(equipment)}
+                        title="Voir les pièces de l'inventaire"
+                      >
+                        <Cog size={16} />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
                         className="hover:bg-red-50 hover:text-red-600 h-9 w-9 p-0"
                         onClick={() => handleDelete(equipment)}
+                        title="Supprimer"
                       >
                         <Trash2 size={16} />
                       </Button>
