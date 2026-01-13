@@ -59,18 +59,9 @@ const PurchaseRequestsArchives = () => {
       
       setArchivedRequests(response.data);
       
-      // Initialiser toutes les années comme dépliées par défaut
-      const years = {};
-      const months = {};
-      response.data.forEach(req => {
-        const date = new Date(req.archived_at || req.date_creation);
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        years[year] = true;
-        months[`${year}-${month}`] = true;
-      });
-      setExpandedYears(years);
-      setExpandedMonths(months);
+      // Par défaut, toutes les sections sont repliées
+      setExpandedYears({});
+      setExpandedMonths({});
       
     } catch (error) {
       toast({
