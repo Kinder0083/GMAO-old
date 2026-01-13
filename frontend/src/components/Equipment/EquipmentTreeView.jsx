@@ -30,7 +30,8 @@ const EquipmentTreeNode = ({
       'EN_MAINTENANCE': 'bg-yellow-100 text-yellow-700',
       'EN_CT': 'bg-purple-100 text-purple-700',
       'HORS_SERVICE': 'bg-red-100 text-red-700',
-      'MAINT_PREV': 'bg-orange-100 text-orange-700'
+      'DEGRADE': 'bg-blue-100 text-blue-700',
+      'ALERTE_S_EQUIP': 'bg-pink-100 text-pink-700'
     };
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
@@ -43,7 +44,8 @@ const EquipmentTreeNode = ({
       'EN_MAINTENANCE': 'En maintenance',
       'EN_CT': 'En C.T',
       'HORS_SERVICE': 'Hors service',
-      'MAINT_PREV': 'Maint. Prev.'
+      'DEGRADE': 'Dégradé',
+      'ALERTE_S_EQUIP': 'Alerte S.Équip'
     };
     return labels[status] || status;
   };
