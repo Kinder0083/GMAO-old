@@ -308,6 +308,7 @@ const Assets = () => {
                 onAddChild={handleAddChild}
                 onViewDetails={handleViewDetails}
                 onStatusChange={handleStatusChange}
+                onViewInventory={handleViewInventory}
               />
             )}
           </CardContent>
