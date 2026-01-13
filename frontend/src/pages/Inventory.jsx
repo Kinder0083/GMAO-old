@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye } from 'lucide-react';
+import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye, Settings, Filter } from 'lucide-react';
 import InventoryFormDialog from '../components/Inventory/InventoryFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
-import { inventoryAPI } from '../services/api';
+import { inventoryAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useInventory } from '../hooks/useInventory';
 
@@ -15,10 +15,13 @@ const Inventory = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAlert, setFilterAlert] = useState(false);
+  const [filterEquipment, setFilterEquipment] = useState(''); // Filtre par équipement
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [equipments, setEquipments] = useState([]);
+  const [loadingEquipments, setLoadingEquipments] = useState(false);
 
   // Utiliser le hook temps réel
   const { 
@@ -28,12 +31,57 @@ const Inventory = () => {
     setInventory 
   } = useInventory();
 
+  // Charger les équipements
+  useEffect(() => {
+    const loadEquipments = async () => {
+      setLoadingEquipments(true);
+      try {
+        const response = await equipmentsAPI.getAll();
+        setEquipments(response.data || []);
+      } catch (error) {
+        console.error('Erreur chargement équipements:', error);
+      } finally {
+        setLoadingEquipments(false);
+      }
+    };
+    loadEquipments();
+  }, []);
+
   useEffect(() => {
     // Vérifier si on doit afficher le filtre alerte
     if (location.state?.filterAlert) {
       setFilterAlert(true);
     }
   }, [location]);
+
+  // Construire la hiérarchie des équipements pour le filtre
+  const equipmentOptions = useMemo(() => {
+    const mainEquipments = equipments.filter(e => !e.parent_id);
+    const options = [];
+    
+    mainEquipments.forEach(main => {
+      options.push({ id: main.id, name: main.nom, isMain: true });
+      // Ajouter les sous-équipements
+      const subs = equipments.filter(e => e.parent_id === main.id);
+      subs.forEach(sub => {
+        options.push({ id: sub.id, name: `  └─ ${sub.nom}`, isMain: false, parentName: main.nom });
+      });
+    });
+    
+    return options;
+  }, [equipments]);
+
+  // Obtenir le nom d'un équipement par ID
+  const getEquipmentName = (id) => {
+    const equipment = equipments.find(e => e.id === id);
+    if (!equipment) return null;
+    
+    if (equipment.parent_id) {
+      const parent = equipments.find(e => e.id === equipment.parent_id);
+      return parent ? `${parent.nom} > ${equipment.nom}` : equipment.nom;
+    }
+    return equipment.nom;
+  };
 
   const adjustQuantity = async (item, delta) => {
     try {
@@ -120,7 +168,26 @@ const Inventory = () => {
     // Filtre alerte (rupture ou niveau bas)
     if (filterAlert) {
       const isAlert = item.quantite <= item.quantiteMin;
-      return matchesSearch && isAlert;
+      if (!isAlert) return false;
+    }
+    
+    // Filtre par équipement
+    if (filterEquipment) {
+      const equipmentIds = item.equipment_ids || [];
+      if (!equipmentIds.includes(filterEquipment)) {
+        // Vérifier aussi si c'est un sous-équipement du filtre
+        const filterEq = equipments.find(e => e.id === filterEquipment);
+        if (filterEq && !filterEq.parent_id) {
+          // C'est un équipement principal, vérifier si l'article appartient à un de ses sous-équipements
+          const subIds = equipments.filter(e => e.parent_id === filterEquipment).map(e => e.id);
+          const hasSubEquipment = equipmentIds.some(id => subIds.includes(id));
+          if (!hasSubEquipment && !equipmentIds.includes(filterEquipment)) {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
     }
     
     return matchesSearch;
@@ -233,34 +300,67 @@ const Inventory = () => {
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <Input
-                placeholder="Rechercher par nom, référence ou catégorie..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Input
+                  placeholder="Rechercher par nom, référence ou catégorie..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              {/* Filtre par équipement */}
+              <div className="w-72">
+                <select
+                  value={filterEquipment}
+                  onChange={(e) => setFilterEquipment(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  data-testid="equipment-filter"
+                >
+                  <option value="">🔧 Tous les équipements</option>
+                  {equipmentOptions.map(eq => (
+                    <option key={eq.id} value={eq.id}>
+                      {eq.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             
-            {/* Badge filtre actif */}
-            {filterAlert && (
-              <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg p-3">
-                <AlertTriangle size={18} className="text-orange-600" />
-                <span className="text-sm text-orange-800 font-medium">
-                  Affichage des articles en alerte uniquement (Rupture + Niveau bas)
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFilterAlert(false)}
-                  className="ml-auto text-orange-600 hover:text-orange-800 hover:bg-orange-100"
-                >
-                  <X size={16} className="mr-1" />
-                  Réinitialiser
-                </Button>
-              </div>
-            )}
+            {/* Badges filtres actifs */}
+            <div className="flex flex-wrap gap-2">
+              {filterAlert && (
+                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                  <AlertTriangle size={16} className="text-orange-600" />
+                  <span className="text-sm text-orange-800 font-medium">
+                    Articles en alerte
+                  </span>
+                  <button
+                    onClick={() => setFilterAlert(false)}
+                    className="text-orange-600 hover:text-orange-800"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+              
+              {filterEquipment && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  <Settings size={16} className="text-blue-600" />
+                  <span className="text-sm text-blue-800 font-medium">
+                    {getEquipmentName(filterEquipment) || 'Équipement'}
+                  </span>
+                  <button
+                    onClick={() => setFilterEquipment('')}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -283,12 +383,10 @@ const Inventory = () => {
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Référence</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Nom</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Catégorie</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Appartenance</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Quantité</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Min.</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Prix unitaire</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Valeur totale</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Fournisseur</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Emplacement</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Prix unit.</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Statut</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
@@ -297,6 +395,10 @@ const Inventory = () => {
                   {filteredInventory.map((item) => {
                     const status = getStockStatus(item);
                     const StatusIcon = status.icon;
+                    const equipmentNames = (item.equipment_ids || [])
+                      .map(id => getEquipmentName(id))
+                      .filter(Boolean);
+                    
                     return (
                       <tr key={item.id} className={`border-b hover:bg-gray-50 transition-colors ${item.stock_monitoring_enabled === false ? 'opacity-60' : ''}`}>
                         <td className="py-3 px-4 text-sm text-gray-900 font-medium">{item.reference}</td>
@@ -311,6 +413,29 @@ const Inventory = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-700">{item.categorie}</td>
+                        <td className="py-3 px-4">
+                          {equipmentNames.length > 0 ? (
+                            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                              {equipmentNames.slice(0, 2).map((name, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs"
+                                  title={name}
+                                >
+                                  <Settings size={10} />
+                                  <span className="truncate max-w-[100px]">{name}</span>
+                                </span>
+                              ))}
+                              {equipmentNames.length > 2 && (
+                                <span className="text-xs text-gray-500">
+                                  +{equipmentNames.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <Button
@@ -338,11 +463,6 @@ const Inventory = () => {
                         <td className="py-3 px-4 text-sm text-gray-700">
                           {(item.prixUnitaire || item.prix_unitaire || 0).toFixed(2)} €
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">
-                          {((item.quantite || 0) * (item.prixUnitaire || item.prix_unitaire || 0)).toFixed(2)} €
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-700">{item.fournisseur || '-'}</td>
-                        <td className="py-3 px-4 text-sm text-gray-600">{item.emplacement || '-'}</td>
                         <td className="py-3 px-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color} flex items-center gap-1 w-fit`}>
                             <StatusIcon size={14} />
@@ -403,7 +523,7 @@ const Inventory = () => {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Supprimer l'article"
-        description="Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible."
+        message="Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible."
       />
     </div>
   );
