@@ -381,12 +381,12 @@ const PlanningMPrev = () => {
                         key={dayIndex} 
                         className={`border p-1 text-center min-w-[50px] ${
                           isWeekend ? 'bg-blue-50' : 'bg-gray-100'
-                        } ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                        }`}
                       >
                         <div className={`text-xs font-normal ${isWeekend ? 'text-blue-600' : 'text-gray-500'}`}>
                           {dayNames[day.getDay()]}
                         </div>
-                        <div className={`text-sm font-bold ${isToday ? 'text-blue-600' : ''}`}>
+                        <div className={`text-sm font-bold ${isToday ? 'text-blue-600 bg-blue-100 rounded-full w-7 h-7 flex items-center justify-center mx-auto' : ''}`}>
                           {day.getDate()}
                         </div>
                       </th>
@@ -410,34 +410,34 @@ const PlanningMPrev = () => {
                     </td>
                     {days.map((day, dayIndex) => {
                       const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                      const isToday = day.toISOString().split('T')[0] === today;
                       const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
                       
                       return (
                         <td 
                           key={dayIndex} 
-                          className={`border p-0 ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''} ${
-                            isWeekend ? 'bg-blue-50/30' : ''
-                          }`}
+                          className={`border p-0 ${isWeekend ? 'bg-blue-50/30' : ''}`}
                         >
-                          {/* Cellule représentant 24h */}
-                          <div className="relative h-8 w-full bg-green-400">
-                            {/* Trait vertical à 12h (50%) */}
+                          {/* Cellule représentant 24h - coupe horizontale (0h en haut, 24h en bas) */}
+                          <div className="relative h-10 w-full bg-green-400">
+                            {/* Trait horizontal à 12h (50%) */}
                             <div 
-                              className="absolute top-0 bottom-0 w-px bg-green-600/30"
-                              style={{ left: '50%' }}
+                              className="absolute left-0 right-0 h-px bg-green-600/40"
+                              style={{ top: '50%' }}
                             />
                             
-                            {/* Blocs de maintenance */}
+                            {/* Blocs de maintenance - positionnés verticalement */}
                             {maintenanceEntries.map((entry, idx) => {
                               const style = getMaintenanceBlockStyle(entry, day);
+                              // Convertir left/width horizontal en top/height vertical
+                              const topPercent = parseFloat(style.left);
+                              const heightPercent = parseFloat(style.width);
                               return (
                                 <div
                                   key={idx}
-                                  className="absolute top-0 bottom-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity"
                                   style={{
-                                    left: style.left,
-                                    width: style.width,
+                                    top: `${topPercent}%`,
+                                    height: `${heightPercent}%`,
                                     backgroundColor: getStatusColor(entry.statut),
                                   }}
                                   title={`${entry.motif || 'Maintenance'}\n${entry.heure_debut || '00:00'} - ${entry.heure_fin || '24:00'}`}
