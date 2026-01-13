@@ -150,7 +150,7 @@ const Planning = () => {
   };
 
   // Fonction pour mettre à jour/créer une disponibilité
-  const updateAvailability = async (userId, date, field, value) => {
+  const updateAvailability = async (userId, date, field, value, skipRefresh = false) => {
     try {
       const dateStr = date.toISOString().split('T')[0];
       const existing = getAvailability(userId, date);
@@ -174,7 +174,10 @@ const Planning = () => {
         );
       }
 
-      refreshAvailabilities();
+      // Ne pas rafraîchir pendant le drag pour éviter les conflits
+      if (!skipRefresh) {
+        refreshAvailabilities();
+      }
     } catch (error) {
       console.error('Erreur mise à jour disponibilité:', error);
       toast({
