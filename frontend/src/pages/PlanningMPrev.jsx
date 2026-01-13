@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight, Wrench, Plus } from 'lucide-react';
@@ -6,6 +6,27 @@ import { equipmentsAPI, demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import DemandeArretDialog from '../components/PlanningMPrev/DemandeArretDialog';
+
+// Couleurs pour les 7 statuts d'équipement
+const STATUS_COLORS = {
+  OPERATIONNEL: '#22c55e',      // Vert
+  EN_FONCTIONNEMENT: '#3b82f6', // Bleu
+  A_LARRET: '#f59e0b',          // Orange/Jaune
+  EN_MAINTENANCE: '#f97316',    // Orange
+  HORS_SERVICE: '#ef4444',      // Rouge
+  EN_CT: '#8b5cf6',             // Violet
+  ALERTE_S_EQUIP: '#ec4899',    // Rose
+};
+
+const STATUS_LABELS = {
+  OPERATIONNEL: 'Opérationnel',
+  EN_FONCTIONNEMENT: 'En fonctionnement',
+  A_LARRET: 'À l\'arrêt',
+  EN_MAINTENANCE: 'En maintenance',
+  HORS_SERVICE: 'Hors service',
+  EN_CT: 'En CT',
+  ALERTE_S_EQUIP: 'Alerte S.Équip',
+};
 
 const PlanningMPrev = () => {
   const { toast } = useToast();
@@ -89,7 +110,8 @@ const PlanningMPrev = () => {
     });
   };
 
-  // Calculer la position et largeur d'un bloc de maintenance dans une cellule (0-100%)
+  // Calculer la position verticale et hauteur d'un bloc (0h en haut, 24h en bas)
+  // Arrondi à l'heure inférieure
   const getMaintenanceBlockStyle = (entry, day) => {
     const dayStr = day.toISOString().split('T')[0];
     const entryStartDate = entry.date_debut;
@@ -102,8 +124,8 @@ const PlanningMPrev = () => {
     // Si c'est le premier jour de l'arrêt
     if (dayStr === entryStartDate) {
       if (entry.heure_debut) {
-        const [h, m] = entry.heure_debut.split(':').map(Number);
-        startHour = h + (m / 60);
+        const [h] = entry.heure_debut.split(':').map(Number);
+        startHour = h; // Arrondi à l'heure inférieure (pas de minutes)
       } else if (entry.periode_debut === 'APRES_MIDI') {
         startHour = 12;
       }
@@ -112,29 +134,28 @@ const PlanningMPrev = () => {
     // Si c'est le dernier jour de l'arrêt
     if (dayStr === entryEndDate) {
       if (entry.heure_fin) {
-        const [h, m] = entry.heure_fin.split(':').map(Number);
-        endHour = h + (m / 60);
+        const [h] = entry.heure_fin.split(':').map(Number);
+        endHour = h; // Arrondi à l'heure inférieure
       } else if (entry.periode_fin === 'MATIN') {
         endHour = 12;
       }
     }
     
-    // Calculer left et width en pourcentage (24h = 100%)
-    const left = (startHour / 24) * 100;
-    const width = ((endHour - startHour) / 24) * 100;
+    // Calculer top et height en pourcentage (24h = 100%)
+    const top = (startHour / 24) * 100;
+    const height = ((endHour - startHour) / 24) * 100;
     
-    return { left: `${left}%`, width: `${width}%` };
+    return { top: `${top}%`, height: `${height}%` };
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'EN_MAINTENANCE':
-        return '#f59e0b'; // Orange
-      case 'HORS_SERVICE':
-        return '#ef4444'; // Rouge
-      default:
-        return '#f59e0b'; // Orange par défaut pour maintenance
+  // Obtenir la couleur selon le statut de l'équipement ou de l'entrée
+  const getStatusColor = (equipment, entry) => {
+    // Si l'entrée a un statut spécifique, l'utiliser
+    if (entry && entry.statut) {
+      return STATUS_COLORS[entry.statut] || STATUS_COLORS.EN_MAINTENANCE;
     }
+    // Sinon utiliser le statut actuel de l'équipement
+    return STATUS_COLORS[equipment?.statut] || STATUS_COLORS.OPERATIONNEL;
   };
 
   // Navigation par mois
@@ -155,14 +176,14 @@ const PlanningMPrev = () => {
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
   ];
 
-  const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
   const today = new Date().toISOString().split('T')[0];
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Calculer les statistiques annuelles (weekends inclus)
-  const calculateAnnualStats = () => {
+  // Calculer les statistiques annuelles
+  const annualStats = useMemo(() => {
     let totalOperational = 0;
     let totalMaintenance = 0;
     let totalOutOfService = 0;
@@ -181,8 +202,8 @@ const PlanningMPrev = () => {
           
           entries.forEach(entry => {
             const style = getMaintenanceBlockStyle(entry, date);
-            const widthPercent = parseFloat(style.width) / 100;
-            const hours = widthPercent * 24;
+            const heightPercent = parseFloat(style.height) / 100;
+            const hours = heightPercent * 24;
             
             if (entry.statut === 'HORS_SERVICE') {
               outOfServiceHours += hours;
@@ -191,7 +212,6 @@ const PlanningMPrev = () => {
             }
           });
           
-          // Limiter à 24h max par jour
           maintenanceHours = Math.min(maintenanceHours, 24);
           outOfServiceHours = Math.min(outOfServiceHours, 24 - maintenanceHours);
           const operationalHours = 24 - maintenanceHours - outOfServiceHours;
@@ -217,9 +237,7 @@ const PlanningMPrev = () => {
       maintenancePercent,
       outOfServicePercent
     };
-  };
-
-  const annualStats = calculateAnnualStats();
+  }, [equipments, planningEntries, year]);
 
   // Jours du mois actuel
   const days = getDaysInMonth(year, month);
@@ -323,135 +341,132 @@ const PlanningMPrev = () => {
       <Card>
         <CardContent className="pt-6">
           {/* Navigation par mois */}
-          <div className="flex items-center justify-between mb-6 pb-4 border-b">
-            <Button variant="outline" size="lg" onClick={goToPreviousMonth} className="gap-2">
-              <ChevronLeft className="h-5 w-5" />
-              Mois précédent
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-4">
-              <h2 className={`text-2xl font-bold ${isCurrentMonth ? 'text-blue-600' : ''}`}>
+              <h2 className={`text-xl font-bold ${isCurrentMonth ? 'text-blue-600' : ''}`}>
                 {monthNames[month]} {year}
               </h2>
               <Button variant="ghost" size="sm" onClick={goToCurrentMonth}>
                 Mois actuel
               </Button>
             </div>
-            <Button variant="outline" size="lg" onClick={goToNextMonth} className="gap-2">
-              Mois suivant
-              <ChevronRight className="h-5 w-5" />
+            <Button variant="outline" size="sm" onClick={goToNextMonth}>
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Légende */}
-          <div className="flex items-center gap-6 mb-4 p-3 bg-gray-50 rounded">
+          {/* Légende des statuts */}
+          <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-gray-50 rounded">
             <span className="text-sm font-semibold">Légende :</span>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm">Opérationnel</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-orange-500 rounded"></div>
-              <span className="text-sm">En Maintenance</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm">Hors Service</span>
-            </div>
-            <span className="text-xs text-gray-500 ml-4">
-              • Trait horizontal = 12h00 • Chaque case = 24h (0h en haut, 24h en bas)
-            </span>
+            {Object.entries(STATUS_COLORS).map(([status, color]) => (
+              <div key={status} className="flex items-center gap-1">
+                <div 
+                  className="w-3 h-3 rounded"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-xs">{STATUS_LABELS[status]}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Planning du mois */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-max">
-              <thead>
-                <tr>
-                  <th className="border p-2 bg-gray-100 sticky left-0 z-10 min-w-[180px]">
-                    <div className="flex items-center gap-2">
-                      <Wrench className="h-4 w-4" />
-                      Équipement
+          {/* Grille du planning - Style similaire à Planning.jsx */}
+          <div className="border rounded-lg overflow-hidden select-none" data-testid="planning-mprev-grid">
+            {/* En-tête des jours */}
+            <div 
+              className="grid bg-gray-100 border-b" 
+              style={{ gridTemplateColumns: `180px repeat(${days.length}, 1fr)` }}
+            >
+              <div className="p-2 font-semibold text-sm text-gray-700 border-r flex items-center gap-2">
+                <Wrench className="h-4 w-4" />
+                Équipement
+              </div>
+              {days.map((day, index) => {
+                const isToday = day.toISOString().split('T')[0] === today;
+                const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                return (
+                  <div
+                    key={index}
+                    className={`p-1 text-center border-r last:border-r-0 ${
+                      isToday ? 'bg-blue-200 border-2 border-blue-500' : isWeekend ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className={`text-[10px] ${isWeekend ? 'text-blue-600' : 'text-gray-500'}`}>
+                      {dayNames[day.getDay()]}
                     </div>
-                  </th>
-                  {days.map((day, dayIndex) => {
-                    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                    const isToday = day.toISOString().split('T')[0] === today;
-                    return (
-                      <th 
-                        key={dayIndex} 
-                        className={`border p-1 text-center min-w-[50px] ${
-                          isWeekend ? 'bg-blue-50' : 'bg-gray-100'
-                        } ${isToday ? 'border-2 border-blue-500 bg-blue-100' : ''}`}
+                    <div className={`text-xs font-semibold ${isToday ? 'text-blue-600' : ''}`}>
+                      {day.getDate()}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Corps - Équipements */}
+            {equipments.map((equipment) => (
+              <div 
+                key={equipment.id} 
+                className="grid border-b last:border-b-0"
+                style={{ gridTemplateColumns: `180px repeat(${days.length}, 1fr)` }}
+              >
+                {/* Nom de l'équipement */}
+                <div className="p-2 bg-white border-r font-medium flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: STATUS_COLORS[equipment.statut] || STATUS_COLORS.OPERATIONNEL }}
+                  />
+                  <span className="truncate text-sm" title={equipment.nom}>
+                    {equipment.nom}
+                  </span>
+                </div>
+                
+                {/* Cellules des jours */}
+                {days.map((day, dayIndex) => {
+                  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                  const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
+                  const baseColor = STATUS_COLORS[equipment.statut] || STATUS_COLORS.OPERATIONNEL;
+                  
+                  return (
+                    <div 
+                      key={dayIndex} 
+                      className={`border-r last:border-r-0 ${isWeekend ? 'bg-blue-50/30' : ''}`}
+                    >
+                      {/* Cellule 24h verticale (0h en haut, 24h en bas) */}
+                      <div 
+                        className="relative h-10 w-full"
+                        style={{ backgroundColor: baseColor }}
                       >
-                        <div className={`text-xs font-normal ${isWeekend ? 'text-blue-600' : 'text-gray-500'}`}>
-                          {dayNames[day.getDay()]}
-                        </div>
-                        <div className={`text-sm font-bold ${isToday ? 'text-blue-600' : ''}`}>
-                          {day.getDate()}
-                        </div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {equipments.map((equipment) => (
-                  <tr key={equipment.id}>
-                    <td className="border p-2 bg-white sticky left-0 z-10 font-medium">
-                      <div className="flex items-center gap-2">
+                        {/* Trait horizontal à 12h (50%) */}
                         <div 
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: '#10b981' }}
+                          className="absolute left-0 right-0 h-px opacity-30"
+                          style={{ top: '50%', backgroundColor: '#000' }}
                         />
-                        <span className="truncate max-w-[150px]" title={equipment.nom}>
-                          {equipment.nom}
-                        </span>
-                      </div>
-                    </td>
-                    {days.map((day, dayIndex) => {
-                      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                      const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
-                      
-                      return (
-                        <td 
-                          key={dayIndex} 
-                          className={`border p-0 ${isWeekend ? 'bg-blue-50/30' : ''}`}
-                        >
-                          {/* Cellule représentant 24h - coupe verticale (0h en haut, 24h en bas) */}
-                          <div className="relative h-12 w-full bg-green-400">
-                            {/* Trait horizontal à 12h (50%) */}
-                            <div 
-                              className="absolute left-0 right-0 h-px bg-green-600/40"
-                              style={{ top: '50%' }}
+                        
+                        {/* Blocs de maintenance superposés */}
+                        {maintenanceEntries.map((entry, idx) => {
+                          const style = getMaintenanceBlockStyle(entry, day);
+                          const entryColor = STATUS_COLORS[entry.statut] || STATUS_COLORS.EN_MAINTENANCE;
+                          return (
+                            <div
+                              key={idx}
+                              className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity"
+                              style={{
+                                top: style.top,
+                                height: style.height,
+                                backgroundColor: entryColor,
+                              }}
+                              title={`${entry.motif || 'Maintenance'}\nStatut: ${STATUS_LABELS[entry.statut] || 'En maintenance'}\n${entry.heure_debut || '00:00'} - ${entry.heure_fin || '24:00'}`}
                             />
-                            
-                            {/* Blocs de maintenance - positionnés verticalement (top/height) */}
-                            {maintenanceEntries.map((entry, idx) => {
-                              const style = getMaintenanceBlockStyle(entry, day);
-                              // Convertir left/width horizontal en top/height vertical
-                              const topPercent = parseFloat(style.left);
-                              const heightPercent = parseFloat(style.width);
-                              return (
-                                <div
-                                  key={idx}
-                                  className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity"
-                                  style={{
-                                    top: `${topPercent}%`,
-                                    height: `${heightPercent}%`,
-                                    backgroundColor: getStatusColor(entry.statut),
-                                  }}
-                                  title={`${entry.motif || 'Maintenance'}\n${entry.heure_debut || '00:00'} - ${entry.heure_fin || '24:00'}`}
-                                />
-                              );
-                            })}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           {/* Message si pas d'équipements */}
