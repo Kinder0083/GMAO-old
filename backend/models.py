@@ -762,6 +762,7 @@ class EquipmentBase(BaseModel):
     categorie: Optional[str] = None
     emplacement_id: str
     statut: EquipmentStatus = EquipmentStatus.OPERATIONNEL
+    statut_changed_at: Optional[datetime] = None  # Date/heure du dernier changement de statut (arrondie à l'heure)
     dateAchat: Optional[datetime] = None
     coutAchat: Optional[float] = None
     numeroSerie: Optional[str] = None
@@ -774,6 +775,7 @@ class EquipmentCreate(BaseModel):
     categorie: Optional[str] = None
     emplacement_id: Optional[str] = None  # Optional to allow inheritance from parent
     statut: EquipmentStatus = EquipmentStatus.OPERATIONNEL
+    statut_changed_at: Optional[datetime] = None
     dateAchat: Optional[datetime] = None
     coutAchat: Optional[float] = None
     numeroSerie: Optional[str] = None
@@ -786,6 +788,7 @@ class EquipmentUpdate(BaseModel):
     categorie: Optional[str] = None
     emplacement_id: Optional[str] = None
     statut: Optional[EquipmentStatus] = None
+    statut_changed_at: Optional[datetime] = None
     dateAchat: Optional[datetime] = None
     coutAchat: Optional[float] = None
     numeroSerie: Optional[str] = None
@@ -802,6 +805,7 @@ class Equipment(EquipmentBase):
     parent: Optional[dict] = None
     hasChildren: bool = False
     createdBy: Optional[str] = None  # ID de l'utilisateur créateur
+    statut_changed_at: Optional[datetime] = None  # Date/heure du dernier changement de statut
 
     class Config:
         from_attributes = True
