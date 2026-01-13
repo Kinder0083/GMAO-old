@@ -230,10 +230,11 @@ const Assets = () => {
           { statut: 'OPERATIONNEL', label: 'Opérationnel', bg: 'bg-green-100', iconColor: 'text-green-600', icon: CheckCircle2 },
           { statut: 'EN_FONCTIONNEMENT', label: 'En Fonctionnement', bg: 'bg-emerald-100', iconColor: 'text-emerald-600', icon: CheckCircle2 },
           { statut: 'A_LARRET', label: 'A l\'arrêt', bg: 'bg-gray-100', iconColor: 'text-gray-600', icon: Clock },
-          { statut: 'EN_MAINTENANCE', label: 'En maintenance', bg: 'bg-orange-100', iconColor: 'text-orange-600', icon: Clock },
+          { statut: 'EN_MAINTENANCE', label: 'En maintenance', bg: 'bg-yellow-100', iconColor: 'text-yellow-600', icon: Clock },
           { statut: 'EN_CT', label: 'En C.T', bg: 'bg-purple-100', iconColor: 'text-purple-600', icon: FileCheck },
           { statut: 'HORS_SERVICE', label: 'Hors service', bg: 'bg-red-100', iconColor: 'text-red-600', icon: AlertCircle },
-          { statut: 'MAINT_PREV', label: 'Maint. Prev.', bg: 'bg-orange-100', iconColor: 'text-orange-600', icon: Wrench },
+          { statut: 'DEGRADE', label: 'Dégradé', bg: 'bg-blue-100', iconColor: 'text-blue-600', icon: Wrench },
+          { statut: 'ALERTE_S_EQUIP', label: 'Alerte S.Équip', bg: 'bg-pink-100', iconColor: 'text-pink-600', icon: AlertTriangle },
         ];
         
         // Filtrer pour n'afficher que les cartes avec count > 0
