@@ -47,6 +47,8 @@ const PermissionsGrid = ({ role, permissions, onChange }) => {
     { key: 'people', label: 'Équipes' },
     { key: 'planning', label: 'Planning' },
     { key: 'purchaseHistory', label: 'Historique Achat' },
+    { key: 'purchaseRequests', label: 'Demandes d\'achat' },
+    { key: 'achat', label: 'Achat (Gestion statuts)' },
     { key: 'importExport', label: 'Import / Export' },
     { key: 'journal', label: 'Journal d\'audit' },
     { key: 'settings', label: 'Paramètres' },
@@ -55,7 +57,6 @@ const PermissionsGrid = ({ role, permissions, onChange }) => {
     { key: 'sensors', label: 'Capteurs MQTT' },
     { key: 'iotDashboard', label: 'Dashboard IoT' },
     { key: 'mqttLogs', label: 'Logs MQTT' },
-    { key: 'purchaseRequests', label: 'Demandes d\'achat' },
     { key: 'whiteboard', label: 'Tableau d\'affichage' }
   ];
 
