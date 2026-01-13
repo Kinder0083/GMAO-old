@@ -118,6 +118,7 @@ const Planning = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartCell, setDragStartCell] = useState(null);
   const dragRef = useRef({ userId: null, startDay: null, startAvail: null });
+  const pendingUpdates = useRef(0); // Compteur de mises à jour en cours
 
   // Hook WebSocket pour les données temps réel
   const { 
