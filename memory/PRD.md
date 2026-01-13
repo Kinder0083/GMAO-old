@@ -18,6 +18,36 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
+### Session du 13 Janvier 2026 (soir - suite)
+
+#### ✅ Améliorations Majeures "Planning M.Prev" (Complété)
+- **Renommage statut**: ALERTE_S_EQUIP → MAINT_PREV (Maintenance Préventive)
+- **Couleurs mises à jour**:
+  - EN_MAINTENANCE: Jaune clair (#fde047)
+  - MAINT_PREV: Orange (#f97316)
+- **Vue hiérarchique des équipements**:
+  - Affichage par défaut réduit (équipements principaux uniquement)
+  - Chevron pour développer/réduire les sous-équipements
+  - Indentation visuelle des sous-équipements
+- **Bouton "Historique des demandes"**:
+  - Statistiques (Total, En attente, Approuvées, Refusées)
+  - Filtres (Statut, Équipement, Période)
+  - Liste détaillée avec badges de statut et priorité
+  - Affichage des commentaires de refus
+- **Badge de demandes en attente** dans le header
+- **Journal d'audit**: Enregistrement des changements de statut des équipements
+
+#### ✅ Améliorations "Demande d'Arrêt pour Maintenance" (Complété)
+- **Priorité de la demande**: Urgente / Normale / Basse
+- **Pièces jointes** (optionnel)
+- **Sélecteur d'équipements hiérarchique**:
+  - Vue réduite par défaut
+  - Chevron pour développer les sous-équipements
+  - Checkbox pour sélection multiple
+- **Nouveau modèle backend** avec champs:
+  - `priorite`: URGENTE / NORMALE / BASSE
+  - `attachments`: Liste de fichiers joints
+
 ### Session du 13 Janvier 2026 (soir)
 
 #### ✅ Refonte Complète Page "Planning M.Prev" avec Historique des Statuts (Complété)
