@@ -13,7 +13,7 @@ const Vendors = () => {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' ou 'list'
+  const [viewMode, setViewMode] = useState('list'); // 'grid' ou 'list'
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
 
