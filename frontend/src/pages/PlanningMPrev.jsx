@@ -85,12 +85,24 @@ const PlanningMPrev = () => {
     }
   };
 
+  const loadPendingDemandesCount = async () => {
+    try {
+      const response = await demandesArretAPI.getAll();
+      const demandes = response.data || response || [];
+      const pendingCount = demandes.filter(d => d.statut === 'EN_ATTENTE').length;
+      setPendingDemandesCount(pendingCount);
+    } catch (error) {
+      console.error('Erreur chargement demandes:', error);
+    }
+  };
+
   const loadAllData = async () => {
     setLoading(true);
     await Promise.all([
       loadEquipments(),
       loadPlanningEntries(),
-      loadStatusHistory()
+      loadStatusHistory(),
+      loadPendingDemandesCount()
     ]);
     setLoading(false);
   };
