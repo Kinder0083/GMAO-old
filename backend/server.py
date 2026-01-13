@@ -2056,6 +2056,13 @@ async def create_inventory_item(inv_create: InventoryCreate, current_user: dict 
 async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, current_user: dict = Depends(require_permission("inventory", "edit"))):
     """Modifier un article de l'inventaire"""
     try:
+        # Récupérer l'article actuel pour vérifier la quantité avant modification
+        current_item = await db.inventory.find_one({"_id": ObjectId(inv_id)})
+        if not current_item:
+            raise HTTPException(status_code=404, detail="Article non trouvé")
+        
+        old_quantity = current_item.get("quantite", 0)
+        
         update_data = {k: v for k, v in inv_update.model_dump().items() if v is not None}
         update_data["derniereModification"] = datetime.utcnow()
         
@@ -2067,6 +2074,12 @@ async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, curren
         inv = await db.inventory.find_one({"_id": ObjectId(inv_id)})
         inv_data = serialize_doc(inv)
         
+        # Vérifier si la quantité est passée à 0
+        new_quantity = inv_data.get("quantite", 0)
+        if new_quantity == 0 and old_quantity > 0:
+            # Créer automatiquement une demande d'achat
+            await create_auto_purchase_request(inv_data, current_user)
+        
         # Broadcast WebSocket pour la synchronisation temps réel
         await realtime_manager.emit_event(
             "inventory",
@@ -2076,8 +2089,72 @@ async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, curren
         )
         
         return Inventory(**inv_data)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+async def create_auto_purchase_request(inventory_item: dict, current_user: dict):
+    """Créer automatiquement une demande d'achat pour un article en rupture de stock"""
+    try:
+        from models import PurchaseRequestType, PurchaseRequestUrgency, PurchaseRequestStatus
+        
+        # Générer un numéro unique pour la demande
+        year = datetime.utcnow().year
+        count = await db.purchase_requests.count_documents({
+            "numero": {"$regex": f"^DA-{year}-"}
+        })
+        numero = f"DA-{year}-{str(count + 1).zfill(5)}"
+        
+        # Créer la demande d'achat
+        purchase_request = {
+            "_id": ObjectId(),
+            "numero": numero,
+            "type": PurchaseRequestType.REAPPROVISIONNEMENT.value,
+            "designation": inventory_item.get("nom", "Article inconnu"),
+            "description": f"Demande automatique - Rupture de stock détectée pour l'article '{inventory_item.get('nom')}'",
+            "quantite": inventory_item.get("quantiteMin", 10),  # Commander au moins le seuil minimum
+            "unite": "Unité",
+            "reference": inventory_item.get("reference", ""),
+            "fournisseur_suggere": inventory_item.get("fournisseur", ""),
+            "urgence": PurchaseRequestUrgency.URGENT.value,
+            "justification": f"Rupture de stock automatiquement détectée. L'article '{inventory_item.get('nom')}' (Réf: {inventory_item.get('reference', 'N/A')}) a atteint une quantité de 0. Emplacement: {inventory_item.get('emplacement', 'N/A')}",
+            "destinataire_id": None,
+            "destinataire_nom": "Service Maintenance",
+            "inventory_item_id": inventory_item.get("id"),
+            "attached_files": [],
+            "demandeur_id": "SYSTEM",
+            "demandeur_nom": "Système automatique",
+            "demandeur_email": "system@gmao.local",
+            "status": PurchaseRequestStatus.SOUMISE.value,
+            "date_creation": datetime.utcnow(),
+            "date_modification": datetime.utcnow(),
+            "historique": [{
+                "date": datetime.utcnow().isoformat(),
+                "action": "Création automatique",
+                "user_id": "SYSTEM",
+                "user_name": "Système automatique",
+                "details": f"Demande créée automatiquement suite à la rupture de stock de l'article '{inventory_item.get('nom')}'"
+            }]
+        }
+        
+        await db.purchase_requests.insert_one(purchase_request)
+        
+        # Broadcast WebSocket pour notifier
+        pr_data = serialize_doc(purchase_request)
+        await realtime_manager.emit_event(
+            "purchase_requests",
+            "created",
+            pr_data,
+            user_id=current_user.get("id")
+        )
+        
+        logger.info(f"Demande d'achat automatique créée: {numero} pour article {inventory_item.get('nom')}")
+        
+    except Exception as e:
+        logger.error(f"Erreur création demande d'achat automatique: {e}")
+
 
 @api_router.delete("/inventory/{inv_id}")
 async def delete_inventory_item(inv_id: str, current_user: dict = Depends(require_permission("inventory", "delete"))):
