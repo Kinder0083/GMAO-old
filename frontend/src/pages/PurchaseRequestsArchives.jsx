@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -6,11 +6,17 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { 
   ArrowLeft, Search, ShoppingCart, Clock, CheckCircle, XCircle, 
-  Package, Users, Archive, RotateCcw, Calendar, Filter
+  Package, Users, Archive, RotateCcw, Calendar, Filter, ChevronDown, ChevronRight, Folder
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import axios from 'axios';
+
+// Noms des mois en français
+const MONTHS_FR = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+];
 
 const PurchaseRequestsArchives = () => {
   const { toast } = useToast();
@@ -23,6 +29,10 @@ const PurchaseRequestsArchives = () => {
   const [archivedRequests, setArchivedRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unarchivingId, setUnarchivingId] = useState(null);
+  
+  // État pour les sections dépliées/repliées
+  const [expandedYears, setExpandedYears] = useState({});
+  const [expandedMonths, setExpandedMonths] = useState({});
 
   // Récupérer l'utilisateur depuis localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -48,6 +58,20 @@ const PurchaseRequestsArchives = () => {
       );
       
       setArchivedRequests(response.data);
+      
+      // Initialiser toutes les années comme dépliées par défaut
+      const years = {};
+      const months = {};
+      response.data.forEach(req => {
+        const date = new Date(req.archived_at || req.date_creation);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        years[year] = true;
+        months[`${year}-${month}`] = true;
+      });
+      setExpandedYears(years);
+      setExpandedMonths(months);
+      
     } catch (error) {
       toast({
         title: "Erreur",
@@ -66,15 +90,61 @@ const PurchaseRequestsArchives = () => {
   // Recherche avec debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (isAdmin) {
-        fetchArchivedRequests();
-      }
+      fetchArchivedRequests();
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm, statusFilter, dateFrom, dateTo, demandeurFilter]);
 
+  // Grouper les demandes par année puis par mois
+  const groupedRequests = useMemo(() => {
+    const grouped = {};
+    
+    archivedRequests.forEach(request => {
+      const date = new Date(request.archived_at || request.date_creation);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      
+      if (!grouped[year]) {
+        grouped[year] = {};
+      }
+      if (!grouped[year][month]) {
+        grouped[year][month] = [];
+      }
+      grouped[year][month].push(request);
+    });
+    
+    // Trier les années par ordre décroissant
+    const sortedYears = Object.keys(grouped).sort((a, b) => b - a);
+    
+    return { grouped, sortedYears };
+  }, [archivedRequests]);
+
+  const toggleYear = (year) => {
+    setExpandedYears(prev => ({
+      ...prev,
+      [year]: !prev[year]
+    }));
+  };
+
+  const toggleMonth = (year, month) => {
+    const key = `${year}-${month}`;
+    setExpandedMonths(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   const handleUnarchive = async (e, requestId, requestNumero) => {
     e.stopPropagation();
+    
+    if (!isAdmin) {
+      toast({
+        title: "Accès refusé",
+        description: "Seuls les administrateurs peuvent désarchiver les demandes",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       setUnarchivingId(requestId);
@@ -161,6 +231,36 @@ const PurchaseRequestsArchives = () => {
     setDemandeurFilter('');
   };
 
+  const collapseAll = () => {
+    setExpandedYears({});
+    setExpandedMonths({});
+  };
+
+  const expandAll = () => {
+    const years = {};
+    const months = {};
+    archivedRequests.forEach(req => {
+      const date = new Date(req.archived_at || req.date_creation);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      years[year] = true;
+      months[`${year}-${month}`] = true;
+    });
+    setExpandedYears(years);
+    setExpandedMonths(months);
+  };
+
+  // Compter les demandes par année et par mois
+  const getYearCount = (year) => {
+    const yearData = groupedRequests.grouped[year];
+    if (!yearData) return 0;
+    return Object.values(yearData).reduce((acc, monthData) => acc + monthData.length, 0);
+  };
+
+  const getMonthCount = (year, month) => {
+    return groupedRequests.grouped[year]?.[month]?.length || 0;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -189,6 +289,14 @@ const PurchaseRequestsArchives = () => {
             </h1>
             <p className="text-gray-600">{archivedRequests.length} demande(s) archivée(s)</p>
           </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={expandAll}>
+            Tout déplier
+          </Button>
+          <Button variant="outline" size="sm" onClick={collapseAll}>
+            Tout replier
+          </Button>
         </div>
       </div>
 
@@ -276,8 +384,8 @@ const PurchaseRequestsArchives = () => {
         </CardContent>
       </Card>
 
-      {/* Liste des demandes archivées */}
-      <div className="grid gap-4">
+      {/* Liste des demandes archivées groupées par année/mois */}
+      <div className="space-y-4">
         {archivedRequests.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -289,84 +397,140 @@ const PurchaseRequestsArchives = () => {
             </CardContent>
           </Card>
         ) : (
-          archivedRequests.map((request) => (
-            <Card 
-              key={request.id} 
-              className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-amber-400"
-              onClick={() => navigate(`/purchase-requests/${request.id}`)}
-              data-testid={`archived-request-card-${request.id}`}
-            >
-              <CardContent className="pt-6">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  {/* Colonne 1: Numéro et type */}
-                  <div className="lg:w-1/6">
-                    <div className="font-semibold text-lg">{request.numero}</div>
-                    <div className="mt-1">{getTypeBadge(request.type)}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Créé le: {new Date(request.date_creation).toLocaleDateString('fr-FR')}
-                    </div>
-                  </div>
-
-                  {/* Colonne 2: Article */}
-                  <div className="lg:w-2/6">
-                    <div className="text-sm text-gray-500">
-                      Réf: {request.reference || 'N/A'}
-                    </div>
-                    <div className="font-medium mt-1">{request.designation}</div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      Quantité: {request.quantite} {request.unite}
-                    </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      Demandeur: {request.demandeur_nom}
-                    </div>
-                  </div>
-
-                  {/* Colonne 3: Info archivage */}
-                  <div className="lg:w-1/6">
-                    <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                      <Archive className="h-3 w-3 inline mr-1" />
-                      Archivé le {request.archived_at ? new Date(request.archived_at).toLocaleDateString('fr-FR') : 'N/A'}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Par: {request.archived_by_name || 'N/A'}
-                    </div>
-                    <div className="mt-2">
-                      {getUrgencyBadge(request.urgence)}
-                    </div>
-                  </div>
-
-                  {/* Colonne 4: Statut */}
-                  <div className="lg:w-1/6 text-center">
-                    {getStatusBadge(request.status)}
-                  </div>
-
-                  {/* Colonne 5: Actions (Désarchiver) - visible uniquement pour les admins */}
-                  <div className="lg:w-1/6 flex justify-end items-center">
-                    {isAdmin ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => handleUnarchive(e, request.id, request.numero)}
-                        disabled={unarchivingId === request.id}
-                        className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
-                        data-testid={`unarchive-btn-${request.id}`}
-                      >
-                        {unarchivingId === request.id ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full" />
-                        ) : (
-                          <RotateCcw className="h-4 w-4" />
-                        )}
-                        Restaurer
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-gray-400 italic">
-                        Lecture seule
-                      </span>
-                    )}
-                  </div>
+          groupedRequests.sortedYears.map((year) => (
+            <div key={year} className="border rounded-lg overflow-hidden bg-white shadow-sm">
+              {/* Header de l'année */}
+              <button
+                onClick={() => toggleYear(year)}
+                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedYears[year] ? (
+                    <ChevronDown className="h-5 w-5 text-amber-600" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-amber-600" />
+                  )}
+                  <Folder className="h-5 w-5 text-amber-500" />
+                  <span className="text-lg font-bold text-gray-800">{year}</span>
                 </div>
-              </CardContent>
-            </Card>
+                <Badge className="bg-amber-100 text-amber-800">
+                  {getYearCount(year)} demande(s)
+                </Badge>
+              </button>
+
+              {/* Contenu de l'année (mois) */}
+              {expandedYears[year] && (
+                <div className="border-t">
+                  {Object.keys(groupedRequests.grouped[year])
+                    .sort((a, b) => b - a) // Trier les mois par ordre décroissant
+                    .map((month) => (
+                      <div key={`${year}-${month}`} className="border-b last:border-b-0">
+                        {/* Header du mois */}
+                        <button
+                          onClick={() => toggleMonth(year, month)}
+                          className="w-full flex items-center justify-between p-3 pl-8 bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            {expandedMonths[`${year}-${month}`] ? (
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <span className="font-medium text-gray-700">{MONTHS_FR[month]}</span>
+                          </div>
+                          <Badge variant="outline" className="text-gray-600">
+                            {getMonthCount(year, month)} demande(s)
+                          </Badge>
+                        </button>
+
+                        {/* Liste des demandes du mois */}
+                        {expandedMonths[`${year}-${month}`] && (
+                          <div className="bg-white">
+                            {groupedRequests.grouped[year][month].map((request) => (
+                              <div
+                                key={request.id}
+                                className="p-4 pl-12 border-t hover:bg-gray-50 cursor-pointer transition-colors"
+                                onClick={() => navigate(`/purchase-requests/${request.id}`)}
+                                data-testid={`archived-request-card-${request.id}`}
+                              >
+                                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                                  {/* Colonne 1: Numéro et type */}
+                                  <div className="lg:w-1/6">
+                                    <div className="font-semibold text-blue-600">{request.numero}</div>
+                                    <div className="mt-1">{getTypeBadge(request.type)}</div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Créé le: {new Date(request.date_creation).toLocaleDateString('fr-FR')}
+                                    </div>
+                                  </div>
+
+                                  {/* Colonne 2: Article */}
+                                  <div className="lg:w-2/6">
+                                    <div className="text-sm text-gray-500">
+                                      Réf: {request.reference || 'N/A'}
+                                    </div>
+                                    <div className="font-medium mt-1">{request.designation}</div>
+                                    <div className="text-sm text-gray-600 mt-1">
+                                      Quantité: {request.quantite} {request.unite}
+                                    </div>
+                                    <div className="text-sm text-gray-500 mt-1">
+                                      Demandeur: {request.demandeur_nom}
+                                    </div>
+                                  </div>
+
+                                  {/* Colonne 3: Info archivage */}
+                                  <div className="lg:w-1/6">
+                                    <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded inline-block">
+                                      <Archive className="h-3 w-3 inline mr-1" />
+                                      {request.archived_at ? new Date(request.archived_at).toLocaleDateString('fr-FR') : 'N/A'}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Par: {request.archived_by_name || 'N/A'}
+                                    </div>
+                                    <div className="mt-2">
+                                      {getUrgencyBadge(request.urgence)}
+                                    </div>
+                                  </div>
+
+                                  {/* Colonne 4: Statut */}
+                                  <div className="lg:w-1/6 text-center">
+                                    {getStatusBadge(request.status)}
+                                  </div>
+
+                                  {/* Colonne 5: Actions (Désarchiver) - visible uniquement pour les admins */}
+                                  <div className="lg:w-1/6 flex justify-end items-center">
+                                    {isAdmin ? (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => handleUnarchive(e, request.id, request.numero)}
+                                        disabled={unarchivingId === request.id}
+                                        className="gap-2 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        data-testid={`unarchive-btn-${request.id}`}
+                                      >
+                                        {unarchivingId === request.id ? (
+                                          <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full" />
+                                        ) : (
+                                          <RotateCcw className="h-4 w-4" />
+                                        )}
+                                        Restaurer
+                                      </Button>
+                                    ) : (
+                                      <span className="text-xs text-gray-400 italic">
+                                        Lecture seule
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           ))
         )}
       </div>
