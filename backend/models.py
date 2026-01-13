@@ -414,7 +414,7 @@ class EquipmentStatus(str, Enum):
     EN_MAINTENANCE = "EN_MAINTENANCE"
     HORS_SERVICE = "HORS_SERVICE"
     EN_CT = "EN_CT"
-    ALERTE_S_EQUIP = "MAINT_PREV"  # Maintenance Préventive (anciennement ALERTE_S_EQUIP)
+    MAINT_PREV = "MAINT_PREV"  # Maintenance Préventive
 
 class Frequency(str, Enum):
     HEBDOMADAIRE = "HEBDOMADAIRE"
