@@ -3128,10 +3128,12 @@ async def update_user_preferences(
     """Mettre à jour les préférences de l'utilisateur connecté"""
     try:
         user_id = current_user.get("id")
+        logger.info(f"[PREFS] Mise à jour pour user_id: {user_id}")
         
         # Préparer les données de mise à jour
         update_data = {k: v for k, v in preferences_update.model_dump().items() if v is not None}
         update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        logger.info(f"[PREFS] Données à mettre à jour: {list(update_data.keys())}")
         
         # Vérifier si les préférences existent
         existing = await db.user_preferences.find_one({"user_id": user_id})
