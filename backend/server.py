@@ -1660,14 +1660,14 @@ async def update_parent_alert_status(parent_id: str):
         return
     
     if has_problematic_child:
-        # Mettre le parent en ALERTE_S_EQUIP
+        # Mettre le parent en MAINT_PREV
         await db.equipments.update_one(
             {"_id": ObjectId(parent_id)},
-            {"$set": {"statut": "ALERTE_S_EQUIP"}}
+            {"$set": {"statut": "MAINT_PREV"}}
         )
     else:
         # Si tous les enfants sont OPERATIONNEL et le parent est en ALERTE, remettre à OPERATIONNEL
-        if parent.get("statut") == "ALERTE_S_EQUIP":
+        if parent.get("statut") == "MAINT_PREV":
             all_operational = all(
                 child.get("statut") == "OPERATIONNEL" 
                 for child in children
@@ -1689,8 +1689,8 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
         # Vérifier si l'équipement a des enfants
         children = await db.equipments.find({"parent_id": eq_id}).to_list(1000)
         
-        # Si l'équipement a des enfants et qu'on essaie de changer depuis ALERTE_S_EQUIP
-        if children and equipment.get("statut") == "ALERTE_S_EQUIP":
+        # Si l'équipement a des enfants et qu'on essaie de changer depuis MAINT_PREV
+        if children and equipment.get("statut") == "MAINT_PREV":
             # Vérifier si tous les enfants sont opérationnels
             all_operational = all(child.get("statut") == "OPERATIONNEL" for child in children)
             if not all_operational:
@@ -1699,8 +1699,8 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
                     detail="Impossible de changer le statut : des sous-équipements ne sont pas opérationnels"
                 )
         
-        # Interdire de mettre manuellement en ALERTE_S_EQUIP
-        if statut == EquipmentStatus.ALERTE_S_EQUIP:
+        # Interdire de mettre manuellement en MAINT_PREV
+        if statut == EquipmentStatus.MAINT_PREV:
             raise HTTPException(
                 status_code=400,
                 detail="Le statut 'Alerte S.Equip' est automatique et ne peut pas être défini manuellement"
