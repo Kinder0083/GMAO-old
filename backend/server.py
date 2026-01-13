@@ -1706,7 +1706,7 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
                 detail="Le statut 'Alerte S.Equip' est automatique et ne peut pas être défini manuellement"
             )
         
-        # Si le statut change, enregistrer dans l'historique
+        # Si le statut change, enregistrer dans l'historique et le journal
         old_statut = equipment.get("statut")
         if old_statut != statut:
             now = datetime.now(timezone.utc)
@@ -1725,6 +1725,19 @@ async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_u
                 {"equipment_id": eq_id, "changed_at": rounded_hour},
                 {"$set": history_entry},
                 upsert=True
+            )
+            
+            # Enregistrer dans le journal d'audit
+            await audit_service.log_action(
+                user_id=current_user.get("id"),
+                user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+                user_email=current_user.get("email", ""),
+                action=ActionType.UPDATE,
+                entity_type=EntityType.EQUIPMENT,
+                entity_id=eq_id,
+                entity_name=equipment.get("nom"),
+                details=f"Changement de statut: {old_statut} → {statut}",
+                changes={"statut": {"old": old_statut, "new": statut}}
             )
             
             # Mettre à jour le statut ET la date de changement
