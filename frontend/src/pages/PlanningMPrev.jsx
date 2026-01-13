@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Wrench, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
+import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Wrench, Plus, CheckCircle2, AlertCircle, History, Clock } from 'lucide-react';
 import { equipmentsAPI, demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import DemandeArretDialog from '../components/PlanningMPrev/DemandeArretDialog';
+import HistoriqueDemandesDialog from '../components/PlanningMPrev/HistoriqueDemandesDialog';
 
 // Couleurs EXACTES de la page Équipements (Tailwind CSS hex equivalents)
 const STATUS_COLORS = {
@@ -39,7 +41,9 @@ const PlanningMPrev = () => {
   const [statusHistory, setStatusHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [expandedEquipments, setExpandedEquipments] = useState(new Set()); // IDs des équipements développés
+  const [historiqueDialogOpen, setHistoriqueDialogOpen] = useState(false);
+  const [expandedEquipments, setExpandedEquipments] = useState(new Set());
+  const [pendingDemandesCount, setPendingDemandesCount] = useState(0);
 
   const loadEquipments = async () => {
     try {
