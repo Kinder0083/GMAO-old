@@ -496,7 +496,20 @@ export const demandesArretAPI = {
     } 
   }).then(res => res.data),
   acceptReport: (id) => api.post(`/demandes-arret/${id}/accept-report`).then(res => res.data),
-  getReportsHistory: () => api.get('/demandes-arret/reports/history').then(res => res.data)
+  getReportsHistory: () => api.get('/demandes-arret/reports/history').then(res => res.data),
+  // Pièces jointes
+  uploadAttachment: (demandeId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/demandes-arret/${demandeId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(res => res.data);
+  },
+  getAttachments: (demandeId) => api.get(`/demandes-arret/${demandeId}/attachments`).then(res => res.data),
+  downloadAttachment: (demandeId, attachmentId) => api.get(`/demandes-arret/${demandeId}/attachments/${attachmentId}`, { responseType: 'blob' }),
+  deleteAttachment: (demandeId, attachmentId) => api.delete(`/demandes-arret/${demandeId}/attachments/${attachmentId}`).then(res => res.data),
+  // Rappels automatiques
+  triggerReminders: () => api.get('/demandes-arret/trigger-reminders').then(res => res.data)
 };
 
 // User Preferences API
