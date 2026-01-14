@@ -161,6 +161,150 @@ async def get_demandes_arret(
         logger.error(f"Erreur récupération demandes: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ==================== ROUTES SANS PARAMÈTRE ID (à placer AVANT /{demande_id}) ====================
+
+@router.get("/trigger-reminders")
+async def trigger_reminders(current_user: dict = Depends(get_current_user)):
+    """
+    Point d'entrée pour déclencher les vérifications de rappels.
+    Appelé automatiquement lors de la visite du dashboard.
+    Retourne silencieusement pour ne pas bloquer l'utilisateur.
+    """
+    try:
+        result = await check_pending_reminders_internal()
+        return {"status": "ok", "reminders_triggered": result.get("reminders_sent", 0)}
+    except Exception as e:
+        logger.error(f"Erreur trigger rappels: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+
+@router.post("/check-pending-reminders")
+async def check_pending_reminders_endpoint():
+    """
+    Vérifier et envoyer des rappels pour les demandes en attente depuis longtemps.
+    Cette fonction peut être appelée à chaque visite du dashboard ou via l'endpoint.
+    Envoie un rappel si la demande est en attente depuis plus de 3 jours.
+    """
+    return await check_pending_reminders_internal()
+
+
+async def check_pending_reminders_internal():
+    """Logique interne pour vérifier les rappels"""
+    try:
+        now = datetime.now(timezone.utc)
+        three_days_ago = now - timedelta(days=3)
+        
+        # Trouver les demandes en attente créées il y a plus de 3 jours
+        demandes_pending = await db.demandes_arret.find({
+            "statut": DemandeArretStatus.EN_ATTENTE,
+            "date_creation": {"$lt": three_days_ago.isoformat()},
+            "reminder_sent": {"$ne": True}
+        }).to_list(length=None)
+        
+        count = 0
+        for demande in demandes_pending:
+            date_expiration = datetime.fromisoformat(demande["date_expiration"].replace("Z", "+00:00"))
+            days_remaining = (date_expiration - now).days
+            
+            if days_remaining <= 4 and days_remaining > 0:
+                await send_reminder_email(demande, days_remaining)
+                
+                await db.demandes_arret.update_one(
+                    {"id": demande["id"]},
+                    {"$set": {
+                        "reminder_sent": True,
+                        "reminder_sent_at": now.isoformat()
+                    }}
+                )
+                
+                logger.info(f"Rappel envoyé pour demande {demande['id']} - {days_remaining} jours restants")
+                count += 1
+        
+        return {
+            "reminders_sent": count,
+            "message": f"{count} rappel(s) envoyé(s)"
+        }
+    except Exception as e:
+        logger.error(f"Erreur vérification rappels: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reports/history")
+async def get_reports_history(
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer l'historique des reports avec statistiques"""
+    try:
+        reports = await db.reports_historique.find().sort("created_at", -1).to_list(1000)
+        reports = [serialize_doc(r) for r in reports]
+        
+        total_demandes = await db.demandes_arret.count_documents({})
+        
+        total_reports = len(reports)
+        reports_acceptes = len([r for r in reports if r.get("statut") == "ACCEPTE"])
+        reports_en_attente = len([r for r in reports if r.get("statut") == "EN_ATTENTE"])
+        reports_refuses = len([r for r in reports if r.get("statut") == "REFUSE"])
+        
+        durees_reports = []
+        for report in reports:
+            if report.get("statut") == "ACCEPTE":
+                try:
+                    date_orig = datetime.fromisoformat(report.get("date_debut_originale", "").replace("Z", "+00:00"))
+                    date_new = datetime.fromisoformat(report.get("nouvelle_date_debut", "").replace("Z", "+00:00"))
+                    duree = (date_new - date_orig).days
+                    if duree > 0:
+                        durees_reports.append(duree)
+                except:
+                    pass
+        
+        duree_moyenne = round(sum(durees_reports) / len(durees_reports), 1) if durees_reports else 0
+        
+        equipements_count = {}
+        for report in reports:
+            for eq_nom in report.get("equipement_noms", []):
+                equipements_count[eq_nom] = equipements_count.get(eq_nom, 0) + 1
+        
+        top_equipements = sorted(equipements_count.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        taux_acceptation = round((reports_acceptes / total_reports * 100), 1) if total_reports > 0 else 0
+        
+        delais_reponse = []
+        for report in reports:
+            if report.get("statut") == "ACCEPTE" and report.get("date_acceptation"):
+                try:
+                    date_demande = datetime.fromisoformat(report.get("created_at", "").replace("Z", "+00:00"))
+                    date_acceptation = datetime.fromisoformat(report.get("date_acceptation", "").replace("Z", "+00:00"))
+                    delai = (date_acceptation - date_demande).total_seconds() / 3600
+                    delais_reponse.append(delai)
+                except:
+                    pass
+        
+        delai_moyen_heures = round(sum(delais_reponse) / len(delais_reponse), 1) if delais_reponse else 0
+        
+        return {
+            "reports": reports,
+            "statistiques": {
+                "total_demandes": total_demandes,
+                "total_reports": total_reports,
+                "reports_vs_total": f"{total_reports}/{total_demandes}",
+                "pourcentage_reports": round((total_reports / total_demandes * 100), 1) if total_demandes > 0 else 0,
+                "reports_acceptes": reports_acceptes,
+                "reports_en_attente": reports_en_attente,
+                "reports_refuses": reports_refuses,
+                "taux_acceptation": taux_acceptation,
+                "duree_moyenne_report_jours": duree_moyenne,
+                "delai_moyen_reponse_heures": delai_moyen_heures,
+                "top_equipements_reportes": top_equipements
+            }
+        }
+    except Exception as e:
+        logger.error(f"Erreur récupération historique reports: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== ROUTES AVEC PARAMÈTRE /{demande_id} ====================
+
 @router.get("/{demande_id}")
 async def get_demande_by_id(
     demande_id: str,
