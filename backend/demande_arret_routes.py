@@ -1259,3 +1259,105 @@ async def delete_attachment(
         logger.error(f"Erreur suppression pièce jointe: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+# ==================== FONCTION EMAIL RAPPEL ====================
+
+async def send_reminder_email(demande: dict, days_remaining: int):
+    """Envoyer un email de rappel pour une demande en attente"""
+    try:
+        FRONTEND_URL = os.environ.get('FRONTEND_URL', os.environ.get('APP_URL', 'http://localhost:3000'))
+        
+        approve_link = f"{FRONTEND_URL}/validate-demande-arret?token={demande['validation_token']}&action=approve"
+        refuse_link = f"{FRONTEND_URL}/validate-demande-arret?token={demande['validation_token']}&action=refuse"
+        
+        equipements_str = ", ".join(demande.get("equipement_noms", []))
+        
+        subject = f"⏰ RAPPEL - Demande d'Arrêt en attente ({days_remaining} jour(s) restant(s))"
+        
+        urgency_color = "#dc2626" if days_remaining <= 2 else "#f59e0b"
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: {urgency_color}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #2563eb; }}
+        .urgency-box {{ background: #fef2f2; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid {urgency_color}; text-align: center; }}
+        .button {{ display: inline-block; padding: 12px 30px; margin: 10px 5px; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; }}
+        .btn-approve {{ background-color: #10b981; color: white; }}
+        .btn-refuse {{ background-color: #ef4444; color: white; }}
+        .countdown {{ font-size: 48px; font-weight: bold; color: {urgency_color}; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ RAPPEL - Demande en Attente</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{demande.get('destinataire_nom', '')}</strong>,</p>
+            <p>Ceci est un <strong>rappel</strong> concernant une demande d'arrêt pour maintenance qui attend votre réponse.</p>
+            
+            <div class="urgency-box">
+                <p class="countdown">{days_remaining}</p>
+                <p style="font-weight: bold; font-size: 18px;">jour(s) restant(s) avant expiration automatique</p>
+            </div>
+            
+            <div class="info-box">
+                <h3>📋 Rappel de la demande</h3>
+                <p><strong>Demandeur:</strong> {demande.get('demandeur_nom', '')}</p>
+                <p><strong>Équipements:</strong> {equipements_str}</p>
+                <p><strong>Période demandée:</strong> Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}</p>
+                <p><strong>Priorité:</strong> {demande.get('priorite', 'NORMALE')}</p>
+            </div>
+            
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{approve_link}" class="button btn-approve">✓ Approuver</a>
+                <a href="{refuse_link}" class="button btn-refuse">✗ Refuser</a>
+            </p>
+            
+            <p style="color: {urgency_color}; font-weight: bold; text-align: center;">
+                ⚠️ Sans réponse de votre part, cette demande sera automatiquement refusée le {demande.get('date_expiration', '')[:10]}.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        text_content = f"""
+RAPPEL - Demande d'Arrêt en Attente
+
+{days_remaining} jour(s) restant(s) avant expiration automatique
+
+Rappel de la demande:
+- Demandeur: {demande.get('demandeur_nom', '')}
+- Équipements: {equipements_str}
+- Période: Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}
+
+Approuver: {approve_link}
+Refuser: {refuse_link}
+
+Sans réponse, cette demande sera automatiquement refusée le {demande.get('date_expiration', '')[:10]}.
+        """
+        
+        success = email_service.send_email(
+            to_email=demande.get('destinataire_email', ''),
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        if not success:
+            logger.warning(f"Échec envoi email rappel: {demande.get('id', '')}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email rappel: {str(e)}")
+        return False
