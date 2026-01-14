@@ -1238,11 +1238,18 @@ async def send_expiration_email(demande: dict):
     # À implémenter
     pass
 
-async def send_report_request_email(demande: dict, report: dict, requested_by: dict):
-    """Envoyer email de demande de report au destinataire"""
+async def send_report_request_email(demande: dict, report: dict):
+    """Envoyer email de demande de report au destinataire avec boutons d'action"""
     try:
+        FRONTEND_URL = os.environ.get('FRONTEND_URL', os.environ.get('APP_URL', 'http://localhost:3000'))
+        
         equipements_str = ", ".join(demande.get("equipement_noms", []))
-        requested_by_name = f"{requested_by.get('prenom', '')} {requested_by.get('nom', '')}"
+        token = report.get("validation_token")
+        
+        # URLs d'action
+        approve_url = f"{FRONTEND_URL}/validate-report?token={token}&action=approve"
+        refuse_url = f"{FRONTEND_URL}/validate-report?token={token}&action=refuse"
+        counter_url = f"{FRONTEND_URL}/validate-report?token={token}&action=counter_propose"
         
         subject = f"📅 Demande de Report - Maintenance {equipements_str}"
         
@@ -1261,6 +1268,11 @@ async def send_report_request_email(demande: dict, report: dict, requested_by: d
         .raison-box {{ background: #f3f4f6; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #6b7280; }}
         .footer {{ text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }}
         .highlight {{ font-weight: bold; color: #f59e0b; }}
+        .button {{ display: inline-block; padding: 12px 25px; margin: 8px 5px; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; }}
+        .btn-approve {{ background-color: #10b981; color: white; }}
+        .btn-refuse {{ background-color: #ef4444; color: white; }}
+        .btn-counter {{ background-color: #3b82f6; color: white; }}
+        .actions {{ text-align: center; margin: 25px 0; padding: 20px; background: white; border-radius: 8px; }}
     </style>
 </head>
 <body>
@@ -1270,13 +1282,13 @@ async def send_report_request_email(demande: dict, report: dict, requested_by: d
         </div>
         <div class="content">
             <p>Bonjour <strong>{demande.get('destinataire_nom', '')}</strong>,</p>
-            <p>Une demande de <span class="highlight">report de maintenance</span> a été soumise.</p>
+            <p>Une demande de <span class="highlight">report de maintenance</span> a été soumise et nécessite votre réponse.</p>
             
             <div class="info-box">
                 <h3>📋 Rappel de la demande initiale</h3>
                 <p><strong>Demandeur:</strong> {demande.get('demandeur_nom', '')}</p>
                 <p><strong>Équipements:</strong> {equipements_str}</p>
-                <p><strong>Dates prévues:</strong> Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}</p>
+                <p><strong>Dates prévues actuellement:</strong> Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}</p>
             </div>
             
             <div class="dates-box">
@@ -1287,11 +1299,17 @@ async def send_report_request_email(demande: dict, report: dict, requested_by: d
             
             <div class="raison-box">
                 <h3>📝 Raison du report</h3>
-                <p><strong>Demandé par:</strong> {requested_by_name}</p>
+                <p><strong>Demandé par:</strong> {report.get('demandeur_report_nom', '')}</p>
                 <p>{report.get('raison', '')}</p>
             </div>
             
-            <p>Veuillez vous connecter à l'application GMAO pour accepter ou refuser cette demande de report.</p>
+            <div class="actions">
+                <p><strong>Quelle est votre décision ?</strong></p>
+                <a href="{approve_url}" class="button btn-approve">✓ Approuver le report</a>
+                <a href="{refuse_url}" class="button btn-refuse">✗ Refuser</a>
+                <br><br>
+                <a href="{counter_url}" class="button btn-counter">📅 Proposer d'autres dates</a>
+            </div>
         </div>
         <div class="footer">
             <p>GMAO Iris - Système de Gestion de Maintenance</p>
@@ -1314,14 +1332,278 @@ Nouvelles dates demandées:
 - Au: {report.get('nouvelle_date_fin', '')}
 
 Raison du report:
-- Demandé par: {requested_by_name}
+- Demandé par: {report.get('demandeur_report_nom', '')}
 - {report.get('raison', '')}
 
-Veuillez vous connecter à l'application GMAO pour accepter ou refuser cette demande.
+Pour répondre à cette demande:
+- Approuver: {approve_url}
+- Refuser: {refuse_url}
+- Proposer d'autres dates: {counter_url}
 
 ---
 GMAO Iris - Système de Gestion de Maintenance
         """
+        
+        success = email_service.send_email(
+            to_email=demande.get('destinataire_email', ''),
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        if not success:
+            logger.warning(f"Échec envoi email demande report: {report.get('id', '')}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email demande report: {str(e)}")
+        return False
+
+
+async def send_report_decision_email(demande: dict, report: dict, decision: str):
+    """Envoyer email au demandeur du report pour l'informer de la décision"""
+    try:
+        equipements_str = ", ".join(demande.get("equipement_noms", []))
+        demandeur_email = report.get("demandeur_report_email", "")
+        
+        if not demandeur_email:
+            logger.warning("Email du demandeur de report non trouvé")
+            return False
+        
+        if decision == "ACCEPTE":
+            subject = f"✅ Report ACCEPTÉ - Maintenance {equipements_str}"
+            status_color = "#10b981"
+            status_text = "ACCEPTÉ"
+            message = f"Votre demande de report a été <strong style='color: {status_color};'>acceptée</strong>. Les nouvelles dates sont maintenant effectives."
+        else:
+            subject = f"❌ Report REFUSÉ - Maintenance {equipements_str}"
+            status_color = "#ef4444"
+            status_text = "REFUSÉ"
+            message = f"Votre demande de report a été <strong style='color: {status_color};'>refusée</strong>. Les dates initiales sont maintenues."
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: {status_color}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid {status_color}; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Report {status_text}</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{report.get('demandeur_report_nom', '')}</strong>,</p>
+            <p>{message}</p>
+            
+            <div class="info-box">
+                <h3>📋 Détails</h3>
+                <p><strong>Équipements:</strong> {equipements_str}</p>
+                <p><strong>Dates demandées:</strong> Du {report.get('nouvelle_date_debut', '')} au {report.get('nouvelle_date_fin', '')}</p>
+                <p><strong>Décision par:</strong> {demande.get('destinataire_nom', '')}</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        text_content = f"""
+Report {status_text}
+
+{message.replace('<strong>', '').replace('</strong>', '').replace(f"<strong style='color: {status_color};'>", '').replace("</strong>", '')}
+
+Équipements: {equipements_str}
+Dates demandées: Du {report.get('nouvelle_date_debut', '')} au {report.get('nouvelle_date_fin', '')}
+        """
+        
+        success = email_service.send_email(
+            to_email=demandeur_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email décision report: {str(e)}")
+        return False
+
+
+async def send_counter_proposal_email(demande: dict, report: dict, counter: dict):
+    """Envoyer email au demandeur du report avec la contre-proposition"""
+    try:
+        FRONTEND_URL = os.environ.get('FRONTEND_URL', os.environ.get('APP_URL', 'http://localhost:3000'))
+        
+        equipements_str = ", ".join(demande.get("equipement_noms", []))
+        demandeur_email = report.get("demandeur_report_email", "")
+        token = counter.get("validation_token")
+        
+        if not demandeur_email:
+            logger.warning("Email du demandeur de report non trouvé pour contre-proposition")
+            return False
+        
+        accept_url = f"{FRONTEND_URL}/validate-counter-proposal?token={token}&action=accept"
+        refuse_url = f"{FRONTEND_URL}/validate-counter-proposal?token={token}&action=refuse"
+        
+        subject = f"📅 Contre-proposition de dates - Maintenance {equipements_str}"
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #3b82f6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #6b7280; }}
+        .dates-box {{ background: #dbeafe; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #3b82f6; }}
+        .button {{ display: inline-block; padding: 12px 30px; margin: 10px 5px; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; }}
+        .btn-accept {{ background-color: #10b981; color: white; }}
+        .btn-refuse {{ background-color: #ef4444; color: white; }}
+        .actions {{ text-align: center; margin: 25px 0; padding: 20px; background: white; border-radius: 8px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Contre-proposition de Dates</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{report.get('demandeur_report_nom', '')}</strong>,</p>
+            <p>Suite à votre demande de report, <strong>{demande.get('destinataire_nom', '')}</strong> vous propose des dates alternatives.</p>
+            
+            <div class="info-box">
+                <h3>📋 Votre demande initiale</h3>
+                <p><strong>Équipements:</strong> {equipements_str}</p>
+                <p><strong>Dates demandées:</strong> Du {report.get('nouvelle_date_debut', '')} au {report.get('nouvelle_date_fin', '')}</p>
+            </div>
+            
+            <div class="dates-box">
+                <h3>📆 Dates proposées par {demande.get('destinataire_nom', '')}</h3>
+                <p><strong>Du:</strong> {counter.get('date_debut', '')}</p>
+                <p><strong>Au:</strong> {counter.get('date_fin', '')}</p>
+                {f"<p><strong>Commentaire:</strong> {counter.get('commentaire', '')}</p>" if counter.get('commentaire') else ""}
+            </div>
+            
+            <div class="actions">
+                <p><strong>Acceptez-vous ces nouvelles dates ?</strong></p>
+                <a href="{accept_url}" class="button btn-accept">✓ Accepter ces dates</a>
+                <a href="{refuse_url}" class="button btn-refuse">✗ Refuser</a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 12px; text-align: center;">
+                Si vous refusez, les dates initiales de la maintenance seront maintenues.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        text_content = f"""
+Contre-proposition de Dates
+
+Suite à votre demande de report, {demande.get('destinataire_nom', '')} vous propose des dates alternatives.
+
+Votre demande initiale:
+- Équipements: {equipements_str}
+- Dates demandées: Du {report.get('nouvelle_date_debut', '')} au {report.get('nouvelle_date_fin', '')}
+
+Dates proposées:
+- Du: {counter.get('date_debut', '')}
+- Au: {counter.get('date_fin', '')}
+{f"- Commentaire: {counter.get('commentaire', '')}" if counter.get('commentaire') else ""}
+
+Pour répondre:
+- Accepter: {accept_url}
+- Refuser: {refuse_url}
+        """
+        
+        success = email_service.send_email(
+            to_email=demandeur_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email contre-proposition: {str(e)}")
+        return False
+
+
+async def send_counter_proposal_decision_email(demande: dict, report: dict, counter: dict, decision: str):
+    """Envoyer email au responsable pour l'informer de la décision sur sa contre-proposition"""
+    try:
+        equipements_str = ", ".join(demande.get("equipement_noms", []))
+        destinataire_email = demande.get("destinataire_email", "")
+        
+        if decision == "ACCEPTE":
+            subject = f"✅ Contre-proposition ACCEPTÉE - {equipements_str}"
+            status_color = "#10b981"
+            status_text = "ACCEPTÉE"
+            message = "Votre contre-proposition a été acceptée. Les nouvelles dates sont maintenant effectives."
+        else:
+            subject = f"❌ Contre-proposition REFUSÉE - {equipements_str}"
+            status_color = "#ef4444"
+            status_text = "REFUSÉE"
+            message = "Votre contre-proposition a été refusée. Les dates initiales de la maintenance sont maintenues."
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: {status_color}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid {status_color}; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Contre-proposition {status_text}</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{demande.get('destinataire_nom', '')}</strong>,</p>
+            <p>{message}</p>
+            
+            <div class="info-box">
+                <h3>📋 Détails</h3>
+                <p><strong>Équipements:</strong> {equipements_str}</p>
+                <p><strong>Dates que vous aviez proposées:</strong> Du {counter.get('date_debut', '')} au {counter.get('date_fin', '')}</p>
+                <p><strong>Réponse de:</strong> {report.get('demandeur_report_nom', '')}</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        success = email_service.send_email(
+            to_email=destinataire_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=message
+        )
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email décision contre-proposition: {str(e)}")
+        return False
         
         success = email_service.send_email(
             to_email=demande.get('destinataire_email', ''),
