@@ -1881,6 +1881,7 @@ class DemandeArretStatus(str, Enum):
     EXPIREE = "EXPIREE"  # Auto-refusée après 7 jours
     ANNULEE = "ANNULEE"  # Annulée par l'utilisateur
     TERMINEE = "TERMINEE"  # Maintenance terminée
+    EN_ATTENTE_REPORT = "EN_ATTENTE_REPORT"  # En attente de validation du report
 
 class PeriodeType(str, Enum):
     JOURNEE_COMPLETE = "JOURNEE_COMPLETE"
