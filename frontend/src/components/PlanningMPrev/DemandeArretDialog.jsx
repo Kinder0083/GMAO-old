@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,17 +18,22 @@ import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { equipmentsAPI, workOrdersAPI, preventiveMaintenanceAPI, usersAPI, demandesArretAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
-import { Calendar, Clock, ChevronRight, ChevronDown, AlertTriangle, AlertCircle, Minus, Paperclip, X } from 'lucide-react';
+import { Calendar, Clock, ChevronRight, ChevronDown, AlertTriangle, AlertCircle, Minus, Paperclip, X, Upload, FileIcon, Loader2 } from 'lucide-react';
 
 const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const [equipments, setEquipments] = useState([]);
   const [workOrders, setWorkOrders] = useState([]);
   const [preventiveMaintenances, setPreventiveMaintenances] = useState([]);
   const [users, setUsers] = useState([]);
   const [rspProdUser, setRspProdUser] = useState(null);
   const [expandedEquipments, setExpandedEquipments] = useState(new Set());
+  const fileInputRef = useRef(null);
+  
+  // Fichiers sélectionnés (avant upload)
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const [formData, setFormData] = useState({
     date_debut: '',
