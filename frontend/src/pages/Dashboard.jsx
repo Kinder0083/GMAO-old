@@ -374,9 +374,13 @@ const Dashboard = () => {
             <div
               ref={droppableProvided.innerRef}
               {...droppableProvided.droppableProps}
-              className={`flex flex-wrap gap-4 min-h-[100px] ${
+              className={`min-h-[100px] ${
                 droppableSnapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
-              } ${visibleItems.length === 0 && !isEditMode ? 'hidden' : ''}`}
+              } ${visibleItems.length === 0 && !isEditMode ? 'hidden' : ''} ${
+                isEditMode 
+                  ? 'space-y-3' 
+                  : 'flex flex-wrap gap-4'
+              }`}
             >
               {visibleItems.map((item, index) => {
                 // Pre-check pour widgets
@@ -402,26 +406,26 @@ const Dashboard = () => {
                             ref={draggableProvided.innerRef}
                             {...draggableProvided.draggableProps}
                             {...draggableProvided.dragHandleProps}
-                            className={`w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)] ${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50' : ''}`}
+                            className={`${isEditMode ? 'w-full' : 'w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]'} ${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50 bg-white rounded-lg' : ''}`}
                             style={draggableProvided.draggableProps.style}
                           >
                             <Card className={`relative group h-full ${isEditMode ? 'border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-grab active:cursor-grabbing' : ''}`}>
                               {isEditMode && (
                                 <>
-                                  <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                    <GripVertical className="h-4 w-4 text-gray-500" />
+                                  <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-gray-100 rounded p-1.5 opacity-50 group-hover:opacity-100 transition-opacity z-20">
+                                    <GripVertical className="h-5 w-5 text-gray-500" />
                                   </div>
                                   <Button
                                     variant="outline"
                                     size="icon"
-                                    className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                    className="absolute top-2 right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
                                     onClick={(e) => { e.stopPropagation(); handleDeleteElement(item.id); }}
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </>
                               )}
-                              <CardContent className="pt-6">
+                              <CardContent className={`pt-6 ${isEditMode ? 'pl-12' : ''}`}>
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <p className="text-sm font-medium text-gray-500">{stat.title}</p>
@@ -458,13 +462,13 @@ const Dashboard = () => {
                           >
                             {isEditMode && (
                               <>
-                                <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                  <GripVertical className="h-4 w-4 text-gray-500" />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-gray-100 rounded p-1.5 opacity-50 group-hover:opacity-100 transition-opacity z-20">
+                                  <GripVertical className="h-5 w-5 text-gray-500" />
                                 </div>
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                  className="absolute top-2 right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
                                   onClick={(e) => { e.stopPropagation(); handleDeleteElement(item.id); }}
                                 >
                                   <Trash2 className="h-3 w-3" />
@@ -472,7 +476,7 @@ const Dashboard = () => {
                               </>
                             )}
                             <h2 
-                              className={`${item.fontSize || 'text-xl'} font-semibold ${getAlignmentClass()} py-2`}
+                              className={`${item.fontSize || 'text-xl'} font-semibold ${getAlignmentClass()} py-2 ${isEditMode ? 'pl-10' : ''}`}
                               style={{ color: item.color || '#1f2937' }}
                             >
                               {item.text}
@@ -488,25 +492,25 @@ const Dashboard = () => {
                             ref={draggableProvided.innerRef}
                             {...draggableProvided.draggableProps}
                             {...draggableProvided.dragHandleProps}
-                            className={`w-full relative group ${isEditMode ? 'py-4 cursor-grab active:cursor-grabbing' : 'py-2'} ${draggableSnapshot.isDragging ? 'opacity-90 z-50 bg-white rounded' : ''}`}
+                            className={`w-full relative group ${isEditMode ? 'py-4 cursor-grab active:cursor-grabbing border-2 border-dashed border-transparent hover:border-gray-300 rounded-lg' : 'py-2'} ${draggableSnapshot.isDragging ? 'opacity-90 z-50 bg-white rounded' : ''}`}
                             style={draggableProvided.draggableProps.style}
                           >
                             {isEditMode && (
                               <>
-                                <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                  <GripVertical className="h-4 w-4 text-gray-500" />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-gray-100 rounded p-1.5 opacity-50 group-hover:opacity-100 transition-opacity z-20">
+                                  <GripVertical className="h-5 w-5 text-gray-500" />
                                 </div>
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                  className="absolute top-1/2 -translate-y-1/2 right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
                                   onClick={(e) => { e.stopPropagation(); handleDeleteElement(item.id); }}
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                               </>
                             )}
-                            <hr className={`border-gray-300 ${isEditMode ? 'border-dashed hover:border-blue-400 transition-colors' : ''}`} />
+                            <hr className={`border-gray-300 ${isEditMode ? 'ml-10 mr-10 border-dashed hover:border-blue-400 transition-colors' : ''}`} />
                           </div>
                         );
                       }
