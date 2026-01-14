@@ -123,24 +123,36 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    // Pour l'instant, on stocke juste les noms des fichiers
-    // L'upload réel serait géré par un endpoint dédié
-    const newAttachments = files.map(file => ({
-      filename: file.name,
-      size: file.size,
-      type: file.type
-    }));
-    setFormData(prev => ({
-      ...prev,
-      attachments: [...prev.attachments, ...newAttachments]
-    }));
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    
+    const validFiles = files.filter(file => {
+      if (file.size > MAX_SIZE) {
+        toast({
+          title: 'Fichier trop volumineux',
+          description: `${file.name} dépasse la limite de 10MB`,
+          variant: 'destructive'
+        });
+        return false;
+      }
+      return true;
+    });
+    
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    
+    // Reset input pour permettre de sélectionner le même fichier à nouveau
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const removeAttachment = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index)
-    }));
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   const handleSubmit = async (e) => {
