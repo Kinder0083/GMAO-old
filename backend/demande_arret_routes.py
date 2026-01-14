@@ -1026,3 +1026,351 @@ async def check_expired_demandes_cron():
         logger.info(f"✅ Vérification terminée: {result['expired_count']} demande(s) expirée(s)")
     except Exception as e:
         logger.error(f"❌ Erreur vérification cron: {str(e)}")
+
+# ==================== PIÈCES JOINTES ====================
+
+@router.post("/{demande_id}/attachments")
+async def upload_attachment(
+    demande_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Uploader une pièce jointe à une demande d'arrêt (max 10MB)"""
+    try:
+        # Vérifier que la demande existe
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier la taille du fichier
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="Fichier trop volumineux (max 10MB)")
+        
+        # Générer un nom de fichier unique
+        file_ext = Path(file.filename).suffix
+        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        file_path = UPLOAD_DIR / unique_filename
+        
+        # Sauvegarder le fichier
+        async with aiofiles.open(file_path, 'wb') as f:
+            await f.write(content)
+        
+        # Créer l'entrée attachment
+        attachment = {
+            "id": str(uuid.uuid4()),
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "size": len(content),
+            "mime_type": file.content_type or mimetypes.guess_type(file.filename)[0] or "application/octet-stream",
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "uploaded_by_id": current_user.get("id"),
+            "uploaded_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}"
+        }
+        
+        # Ajouter à la base de données
+        await db.demandes_arret.update_one(
+            {"id": demande_id},
+            {"$push": {"attachments": attachment}}
+        )
+        
+        attachment["url"] = f"/api/demandes-arret/{demande_id}/attachments/{attachment['id']}"
+        
+        logger.info(f"Pièce jointe uploadée: {attachment['original_filename']} pour demande {demande_id}")
+        return attachment
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur upload pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{demande_id}/attachments")
+async def get_attachments(
+    demande_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Lister les pièces jointes d'une demande d'arrêt"""
+    try:
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        attachments = demande.get("attachments", [])
+        
+        # Ajouter les URLs de téléchargement
+        for att in attachments:
+            att["url"] = f"/api/demandes-arret/{demande_id}/attachments/{att['id']}"
+        
+        return attachments
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération pièces jointes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{demande_id}/attachments/{attachment_id}")
+async def download_attachment(
+    demande_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Télécharger une pièce jointe"""
+    try:
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Trouver l'attachment
+        attachment = None
+        for att in demande.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        file_path = UPLOAD_DIR / attachment["filename"]
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
+        
+        return FileResponse(
+            path=file_path,
+            filename=attachment["original_filename"],
+            media_type=attachment["mime_type"]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur téléchargement pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{demande_id}/attachments/{attachment_id}")
+async def delete_attachment(
+    demande_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer une pièce jointe"""
+    try:
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que l'utilisateur est le créateur ou un admin
+        user_role = current_user.get("role")
+        if user_role != "ADMIN" and demande.get("demandeur_id") != current_user.get("id"):
+            raise HTTPException(status_code=403, detail="Vous n'avez pas la permission de supprimer cette pièce jointe")
+        
+        # Trouver l'attachment
+        attachment = None
+        for att in demande.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        # Supprimer le fichier physique
+        file_path = UPLOAD_DIR / attachment["filename"]
+        if file_path.exists():
+            file_path.unlink()
+        
+        # Retirer de la base de données
+        await db.demandes_arret.update_one(
+            {"id": demande_id},
+            {"$pull": {"attachments": {"id": attachment_id}}}
+        )
+        
+        logger.info(f"Pièce jointe supprimée: {attachment['original_filename']} de demande {demande_id}")
+        return {"message": "Pièce jointe supprimée"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur suppression pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== RAPPEL AUTOMATIQUE 7 JOURS ====================
+
+@router.post("/check-pending-reminders")
+async def check_pending_reminders():
+    """
+    Vérifier et envoyer des rappels pour les demandes en attente depuis longtemps.
+    Cette fonction peut être appelée à chaque visite du dashboard ou via l'endpoint.
+    Envoie un rappel si la demande est en attente depuis plus de 3 jours.
+    """
+    try:
+        now = datetime.now(timezone.utc)
+        three_days_ago = now - timedelta(days=3)
+        
+        # Trouver les demandes en attente créées il y a plus de 3 jours
+        # qui n'ont pas encore reçu de rappel
+        demandes_pending = await db.demandes_arret.find({
+            "statut": DemandeArretStatus.EN_ATTENTE,
+            "date_creation": {"$lt": three_days_ago.isoformat()},
+            "reminder_sent": {"$ne": True}
+        }).to_list(length=None)
+        
+        count = 0
+        for demande in demandes_pending:
+            # Calculer les jours restants avant expiration
+            date_expiration = datetime.fromisoformat(demande["date_expiration"].replace("Z", "+00:00"))
+            days_remaining = (date_expiration - now).days
+            
+            if days_remaining <= 4 and days_remaining > 0:  # Rappel entre 1 et 4 jours avant expiration
+                # Envoyer email de rappel
+                await send_reminder_email(demande, days_remaining)
+                
+                # Marquer comme rappelé
+                await db.demandes_arret.update_one(
+                    {"id": demande["id"]},
+                    {"$set": {
+                        "reminder_sent": True,
+                        "reminder_sent_at": now.isoformat()
+                    }}
+                )
+                
+                logger.info(f"Rappel envoyé pour demande {demande['id']} - {days_remaining} jours restants")
+                count += 1
+        
+        return {
+            "reminders_sent": count,
+            "message": f"{count} rappel(s) envoyé(s)"
+        }
+    except Exception as e:
+        logger.error(f"Erreur vérification rappels: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def send_reminder_email(demande: dict, days_remaining: int):
+    """Envoyer un email de rappel pour une demande en attente"""
+    try:
+        FRONTEND_URL = os.environ.get('FRONTEND_URL', os.environ.get('APP_URL', 'http://localhost:3000'))
+        
+        approve_link = f"{FRONTEND_URL}/validate-demande-arret?token={demande['validation_token']}&action=approve"
+        refuse_link = f"{FRONTEND_URL}/validate-demande-arret?token={demande['validation_token']}&action=refuse"
+        
+        equipements_str = ", ".join(demande.get("equipement_noms", []))
+        
+        subject = f"⏰ RAPPEL - Demande d'Arrêt en attente ({days_remaining} jour(s) restant(s))"
+        
+        urgency_class = "urgent" if days_remaining <= 2 else "warning"
+        urgency_color = "#dc2626" if days_remaining <= 2 else "#f59e0b"
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: {urgency_color}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #2563eb; }}
+        .urgency-box {{ background: #fef2f2; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid {urgency_color}; text-align: center; }}
+        .button {{ display: inline-block; padding: 12px 30px; margin: 10px 5px; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; }}
+        .btn-approve {{ background-color: #10b981; color: white; }}
+        .btn-refuse {{ background-color: #ef4444; color: white; }}
+        .footer {{ text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }}
+        .countdown {{ font-size: 48px; font-weight: bold; color: {urgency_color}; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ RAPPEL - Demande en Attente</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{demande.get('destinataire_nom', '')}</strong>,</p>
+            <p>Ceci est un <strong>rappel</strong> concernant une demande d'arrêt pour maintenance qui attend votre réponse.</p>
+            
+            <div class="urgency-box">
+                <p class="countdown">{days_remaining}</p>
+                <p style="font-weight: bold; font-size: 18px;">jour(s) restant(s) avant expiration automatique</p>
+            </div>
+            
+            <div class="info-box">
+                <h3>📋 Rappel de la demande</h3>
+                <p><strong>Demandeur:</strong> {demande.get('demandeur_nom', '')}</p>
+                <p><strong>Équipements:</strong> {equipements_str}</p>
+                <p><strong>Période demandée:</strong> Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}</p>
+                <p><strong>Priorité:</strong> {demande.get('priorite', 'NORMALE')}</p>
+                {f"<p><strong>Commentaire:</strong> {demande.get('commentaire', '')}</p>" if demande.get('commentaire') else ""}
+            </div>
+            
+            <p style="text-align: center; margin: 30px 0;">
+                <a href="{approve_link}" class="button btn-approve">✓ Approuver</a>
+                <a href="{refuse_link}" class="button btn-refuse">✗ Refuser</a>
+            </p>
+            
+            <p style="color: {urgency_color}; font-weight: bold; text-align: center;">
+                ⚠️ Sans réponse de votre part, cette demande sera automatiquement refusée le {demande.get('date_expiration', '')[:10]}.
+            </p>
+        </div>
+        <div class="footer">
+            <p>GMAO Iris - Système de Gestion de Maintenance</p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        text_content = f"""
+RAPPEL - Demande d'Arrêt en Attente
+
+{days_remaining} jour(s) restant(s) avant expiration automatique
+
+Rappel de la demande:
+- Demandeur: {demande.get('demandeur_nom', '')}
+- Équipements: {equipements_str}
+- Période: Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}
+- Priorité: {demande.get('priorite', 'NORMALE')}
+
+Approuver: {approve_link}
+Refuser: {refuse_link}
+
+Sans réponse, cette demande sera automatiquement refusée le {demande.get('date_expiration', '')[:10]}.
+
+---
+GMAO Iris - Système de Gestion de Maintenance
+        """
+        
+        success = email_service.send_email(
+            to_email=demande.get('destinataire_email', ''),
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        if not success:
+            logger.warning(f"Échec envoi email rappel: {demande.get('id', '')}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email rappel: {str(e)}")
+        return False
+
+
+# ==================== TRIGGER DE RAPPEL À LA CONNEXION ====================
+
+@router.get("/trigger-reminders")
+async def trigger_reminders(current_user: dict = Depends(get_current_user)):
+    """
+    Point d'entrée pour déclencher les vérifications de rappels.
+    Appelé automatiquement lors de la visite du dashboard.
+    Retourne silencieusement pour ne pas bloquer l'utilisateur.
+    """
+    try:
+        # Exécuter en arrière-plan (non bloquant)
+        result = await check_pending_reminders()
+        return {"status": "ok", "reminders_triggered": result.get("reminders_sent", 0)}
+    except Exception as e:
+        logger.error(f"Erreur trigger rappels: {str(e)}")
+        # Ne pas lever d'exception pour ne pas bloquer l'utilisateur
+        return {"status": "error", "message": str(e)}
