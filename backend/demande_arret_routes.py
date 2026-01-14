@@ -303,6 +303,292 @@ async def get_reports_history(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== VALIDATION REPORT PAR TOKEN (SANS AUTH - ROUTE PUBLIQUE) ====================
+# Ces routes doivent être AVANT /{demande_id} pour ne pas être capturées
+
+@router.get("/validate-report")
+async def validate_report_public(
+    token: str,
+    action: str
+):
+    """Valider ou refuser un report via token email (sans authentification requise)"""
+    try:
+        report = await db.reports_historique.find_one({"validation_token": token})
+        if not report:
+            raise HTTPException(status_code=404, detail="Token invalide ou report non trouvé")
+        
+        if report.get("statut") != "EN_ATTENTE":
+            return {
+                "status": "already_processed",
+                "message": f"Ce report a déjà été traité (statut: {report.get('statut')})",
+                "report_id": report.get("id")
+            }
+        
+        now = datetime.now(timezone.utc)
+        demande_id = report.get("demande_id")
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande associée non trouvée")
+        
+        if action == "approve":
+            await db.reports_historique.update_one(
+                {"id": report["id"]},
+                {"$set": {"statut": "ACCEPTE", "date_acceptation": now.isoformat()}}
+            )
+            
+            dates_originales = demande.get("dates_originales") or {
+                "date_debut": demande.get("date_debut"),
+                "date_fin": demande.get("date_fin")
+            }
+            nb_reports = (demande.get("nb_reports") or 0) + 1
+            
+            await db.demandes_arret.update_one(
+                {"id": demande_id},
+                {"$set": {
+                    "statut": DemandeArretStatus.APPROUVEE,
+                    "date_debut": report["nouvelle_date_debut"],
+                    "date_fin": report["nouvelle_date_fin"],
+                    "dates_originales": dates_originales,
+                    "dernier_report_accepte_le": now.isoformat(),
+                    "nb_reports": nb_reports,
+                    "report_en_cours": None,
+                    "updated_at": now.isoformat()
+                }}
+            )
+            
+            await send_report_decision_email(demande, report, "ACCEPTE")
+            
+            return {
+                "status": "approved",
+                "message": "Report accepté avec succès",
+                "demande_id": demande_id,
+                "nouvelles_dates": {"debut": report["nouvelle_date_debut"], "fin": report["nouvelle_date_fin"]}
+            }
+        
+        elif action == "refuse":
+            await db.reports_historique.update_one(
+                {"id": report["id"]},
+                {"$set": {"statut": "REFUSE", "date_refus": now.isoformat()}}
+            )
+            
+            await db.demandes_arret.update_one(
+                {"id": demande_id},
+                {"$set": {
+                    "statut": DemandeArretStatus.APPROUVEE,
+                    "report_en_cours": None,
+                    "updated_at": now.isoformat()
+                }}
+            )
+            
+            await send_report_decision_email(demande, report, "REFUSE")
+            
+            return {"status": "refused", "message": "Report refusé", "demande_id": demande_id}
+        
+        elif action == "counter_propose":
+            return {
+                "status": "need_counter_proposal",
+                "message": "Veuillez proposer de nouvelles dates",
+                "report_id": report["id"],
+                "demande_id": demande_id,
+                "current_proposal": {
+                    "date_debut": report["nouvelle_date_debut"],
+                    "date_fin": report["nouvelle_date_fin"]
+                },
+                "original_dates": {
+                    "date_debut": report["date_debut_originale"],
+                    "date_fin": report["date_fin_originale"]
+                },
+                "demandeur_report": report.get("demandeur_report_nom")
+            }
+        
+        else:
+            raise HTTPException(status_code=400, detail="Action invalide")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur validation report: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/submit-counter-proposal")
+async def submit_counter_proposal_public(
+    token: str,
+    nouvelle_date_debut: str,
+    nouvelle_date_fin: str,
+    commentaire: str = ""
+):
+    """Soumettre une contre-proposition de dates pour un report"""
+    try:
+        report = await db.reports_historique.find_one({"validation_token": token})
+        if not report:
+            raise HTTPException(status_code=404, detail="Token invalide")
+        
+        if report.get("statut") != "EN_ATTENTE":
+            raise HTTPException(status_code=400, detail="Ce report a déjà été traité")
+        
+        now = datetime.now(timezone.utc)
+        demande_id = report.get("demande_id")
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        counter_token = str(uuid.uuid4())
+        
+        await db.reports_historique.update_one(
+            {"id": report["id"]},
+            {"$set": {
+                "statut": "CONTRE_PROPOSITION",
+                "contre_proposition": {
+                    "date_debut": nouvelle_date_debut,
+                    "date_fin": nouvelle_date_fin,
+                    "commentaire": commentaire,
+                    "proposee_le": now.isoformat(),
+                    "validation_token": counter_token
+                }
+            }}
+        )
+        
+        await db.demandes_arret.update_one(
+            {"id": demande_id},
+            {"$set": {
+                "report_en_cours.contre_proposition": {
+                    "date_debut": nouvelle_date_debut,
+                    "date_fin": nouvelle_date_fin,
+                    "commentaire": commentaire,
+                    "validation_token": counter_token
+                },
+                "updated_at": now.isoformat()
+            }}
+        )
+        
+        await send_counter_proposal_email(demande, report, {
+            "date_debut": nouvelle_date_debut,
+            "date_fin": nouvelle_date_fin,
+            "commentaire": commentaire,
+            "validation_token": counter_token
+        })
+        
+        return {
+            "status": "counter_proposal_sent",
+            "message": "Contre-proposition envoyée",
+            "report_id": report["id"]
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur contre-proposition: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/validate-counter-proposal")
+async def validate_counter_proposal_public(
+    token: str,
+    action: str
+):
+    """Valider ou refuser une contre-proposition"""
+    try:
+        report = await db.reports_historique.find_one({"contre_proposition.validation_token": token})
+        
+        if not report:
+            raise HTTPException(status_code=404, detail="Token invalide")
+        
+        if report.get("statut") != "CONTRE_PROPOSITION":
+            return {
+                "status": "already_processed",
+                "message": f"Cette contre-proposition a déjà été traitée"
+            }
+        
+        now = datetime.now(timezone.utc)
+        demande_id = report.get("demande_id")
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        counter = report.get("contre_proposition", {})
+        
+        if action == "accept":
+            await db.reports_historique.update_one(
+                {"id": report["id"]},
+                {"$set": {
+                    "statut": "ACCEPTE",
+                    "nouvelle_date_debut": counter["date_debut"],
+                    "nouvelle_date_fin": counter["date_fin"],
+                    "date_acceptation": now.isoformat(),
+                    "accepte_via_contre_proposition": True
+                }}
+            )
+            
+            dates_originales = demande.get("dates_originales") or {
+                "date_debut": demande.get("date_debut"),
+                "date_fin": demande.get("date_fin")
+            }
+            nb_reports = (demande.get("nb_reports") or 0) + 1
+            
+            await db.demandes_arret.update_one(
+                {"id": demande_id},
+                {"$set": {
+                    "statut": DemandeArretStatus.APPROUVEE,
+                    "date_debut": counter["date_debut"],
+                    "date_fin": counter["date_fin"],
+                    "dates_originales": dates_originales,
+                    "dernier_report_accepte_le": now.isoformat(),
+                    "nb_reports": nb_reports,
+                    "report_en_cours": None,
+                    "updated_at": now.isoformat()
+                }}
+            )
+            
+            await send_counter_proposal_decision_email(demande, report, counter, "ACCEPTE")
+            
+            return {
+                "status": "accepted",
+                "message": "Contre-proposition acceptée",
+                "demande_id": demande_id,
+                "dates_finales": {"debut": counter["date_debut"], "fin": counter["date_fin"]}
+            }
+        
+        elif action == "refuse":
+            await db.reports_historique.update_one(
+                {"id": report["id"]},
+                {"$set": {
+                    "statut": "REFUSE",
+                    "date_refus": now.isoformat(),
+                    "refuse_via_contre_proposition": True
+                }}
+            )
+            
+            await db.demandes_arret.update_one(
+                {"id": demande_id},
+                {"$set": {
+                    "statut": DemandeArretStatus.APPROUVEE,
+                    "report_en_cours": None,
+                    "updated_at": now.isoformat()
+                }}
+            )
+            
+            await send_counter_proposal_decision_email(demande, report, counter, "REFUSE")
+            
+            return {
+                "status": "refused",
+                "message": "Contre-proposition refusée",
+                "demande_id": demande_id
+            }
+        
+        else:
+            raise HTTPException(status_code=400, detail="Action invalide")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur validation contre-proposition: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== ROUTES AVEC PARAMÈTRE /{demande_id} ====================
 
 @router.get("/{demande_id}")
