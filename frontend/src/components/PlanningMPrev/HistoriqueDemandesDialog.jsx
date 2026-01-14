@@ -324,8 +324,14 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
 
         {/* Liste des demandes */}
         <div 
-          className="flex-1 min-h-0 overflow-y-scroll border rounded-md bg-gray-50/50 pr-1" 
-          style={{maxHeight: '400px', minHeight: '300px'}}
+          className="flex-1 min-h-0 border rounded-md bg-gray-50/50" 
+          style={{
+            maxHeight: '400px', 
+            minHeight: '300px',
+            overflowY: 'scroll',
+            scrollbarWidth: 'auto',
+            scrollbarColor: '#94a3b8 #e2e8f0'
+          }}
         >
           <div className="p-2 space-y-3">
           {loading ? (
