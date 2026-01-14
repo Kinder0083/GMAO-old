@@ -12,7 +12,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   const {
     enableWebSocket = true,
     fallbackPolling = true,
-    pollingInterval = 30000, // 30s fallback si WebSocket échoue
+    pollingInterval = 60000, // 60s fallback (augmenté pour éviter rate limiting)
     onCreated = null,
     onUpdated = null,
     onDeleted = null,
@@ -24,217 +24,223 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   const [wsConnected, setWsConnected] = useState(false);
   const [error, setError] = useState(null);
 
+  // Refs pour éviter les re-renders et boucles
   const wsRef = useRef(null);
   const pollingIntervalRef = useRef(null);
-  const isInitialMount = useRef(true);
-  const hasLoadedInitialData = useRef(false);
   const reconnectTimeoutRef = useRef(null);
+  const hasInitialized = useRef(false);
+  const isMounted = useRef(true);
 
-  // Refs stables pour éviter les boucles
+  // Refs stables pour les fonctions
   const fetchDataFnRef = useRef(fetchDataFn);
-  fetchDataFnRef.current = fetchDataFn;
+  const onCreatedRef = useRef(onCreated);
+  const onUpdatedRef = useRef(onUpdated);
+  const onDeletedRef = useRef(onDeleted);
+  const onStatusChangedRef = useRef(onStatusChanged);
 
-  // Obtenir l'utilisateur et le backend URL
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+  // Mettre à jour les refs quand les props changent
+  useEffect(() => {
+    fetchDataFnRef.current = fetchDataFn;
+    onCreatedRef.current = onCreated;
+    onUpdatedRef.current = onUpdated;
+    onDeletedRef.current = onDeleted;
+    onStatusChangedRef.current = onStatusChanged;
+  });
+
+  // Obtenir l'utilisateur et le backend URL (stable)
+  const userIdRef = useRef(null);
+  const backendUrlRef = useRef(process.env.REACT_APP_BACKEND_URL || '');
+  
+  useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      userIdRef.current = user?.id;
+    } catch (e) {
+      userIdRef.current = null;
+    }
+  }, []);
 
   /**
-   * Charger les données depuis l'API
+   * Charger les données depuis l'API (stable)
    */
   const loadData = useCallback(async () => {
+    if (!isMounted.current) return;
+    
     try {
       const result = await fetchDataFnRef.current();
-      setData(result);
-      setError(null);
-      
-      if (isInitialMount.current) {
+      if (isMounted.current) {
+        setData(result);
+        setError(null);
         setLoading(false);
-        isInitialMount.current = false;
       }
-      hasLoadedInitialData.current = true;
     } catch (err) {
       console.error(`[Realtime ${entityType}] Erreur chargement:`, err);
-      setError(err.message);
-      setLoading(false);
+      if (isMounted.current) {
+        setError(err.message);
+        setLoading(false);
+      }
     }
   }, [entityType]);
 
   /**
    * Gérer les messages WebSocket
    */
-  const handleWebSocketMessage = useCallback((event) => {
+  const handleMessage = useCallback((event) => {
+    if (!isMounted.current) return;
+    
     try {
       const message = JSON.parse(event.data);
-      console.log(`[Realtime ${entityType}] Message reçu:`, message.type);
 
       switch (message.type) {
         case 'connected':
           console.log(`[Realtime ${entityType}] Connecté ✅`);
           setWsConnected(true);
-          // Ne PAS recharger les données ici - déjà chargées à l'initialisation
           break;
 
         case 'created':
-          if (onCreated) {
-            onCreated(message.data);
+          if (onCreatedRef.current) {
+            onCreatedRef.current(message.data);
           } else {
-            // Comportement par défaut: ajouter au début de la liste
             setData(prevData => [message.data, ...prevData]);
           }
-          console.log(`[Realtime ${entityType}] Item créé:`, message.data.id);
           break;
 
         case 'updated':
-          if (onUpdated) {
-            onUpdated(message.data);
+          if (onUpdatedRef.current) {
+            onUpdatedRef.current(message.data);
           } else {
-            // Comportement par défaut: mettre à jour dans la liste
             setData(prevData =>
               prevData.map(item =>
                 item.id === message.data.id ? message.data : item
               )
             );
           }
-          console.log(`[Realtime ${entityType}] Item mis à jour:`, message.data.id);
           break;
 
         case 'deleted':
-          if (onDeleted) {
-            onDeleted(message.data.id);
+          if (onDeletedRef.current) {
+            onDeletedRef.current(message.data.id);
           } else {
-            // Comportement par défaut: retirer de la liste
             setData(prevData =>
               prevData.filter(item => item.id !== message.data.id)
             );
           }
-          console.log(`[Realtime ${entityType}] Item supprimé:`, message.data.id);
           break;
 
         case 'status_changed':
-          if (onStatusChanged) {
-            onStatusChanged(message.data);
+          if (onStatusChangedRef.current) {
+            onStatusChangedRef.current(message.data);
           } else {
-            // Recharger les données pour avoir le statut à jour
             loadData();
           }
-          console.log(`[Realtime ${entityType}] Statut changé:`, message.data);
-          break;
-
-        case 'user_joined':
-          console.log(`[Realtime ${entityType}] Utilisateur connecté:`, message.user_id);
           break;
 
         case 'pong':
-          // Réponse au ping
+        case 'user_joined':
+          // Messages silencieux
           break;
 
         default:
-          console.log(`[Realtime ${entityType}] Type de message inconnu:`, message.type);
+          break;
       }
     } catch (err) {
-      console.error(`[Realtime ${entityType}] Erreur traitement message:`, err);
+      console.error(`[Realtime ${entityType}] Erreur message:`, err);
     }
-  }, [entityType, onCreated, onUpdated, onDeleted, onStatusChanged, loadData]);
+  }, [entityType, loadData]);
 
   /**
-   * Connecter au WebSocket
-   */
-  const connectWebSocket = useCallback(() => {
-    if (!enableWebSocket || !user?.id) return;
-    
-    // Éviter les connexions multiples
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    let wsHost;
-
-    // En local, utiliser localhost:8001
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      wsHost = 'localhost:8001';
-    } else if (BACKEND_URL) {
-      // En production, extraire le host de BACKEND_URL
-      try {
-        const url = new URL(BACKEND_URL);
-        wsHost = url.host;
-      } catch (e) {
-        wsHost = window.location.host;
-      }
-    } else {
-      wsHost = window.location.host;
-    }
-
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/realtime/${entityType}?user_id=${user.id}`;
-    console.log(`[Realtime ${entityType}] Connexion à:`, wsUrl);
-
-    const ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-      console.log(`[Realtime ${entityType}] WebSocket ouvert`);
-      setWsConnected(true);
-      
-      // Arrêter le polling si WebSocket connecté
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    };
-
-    ws.onmessage = handleWebSocketMessage;
-
-    ws.onerror = (error) => {
-      console.error(`[Realtime ${entityType}] Erreur WebSocket:`, error);
-      setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log(`[Realtime ${entityType}] WebSocket fermé`);
-      setWsConnected(false);
-      
-      // Clear previous timeout
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      
-      // Réessayer après 5 secondes (augmenté pour éviter trop de reconnexions)
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connectWebSocket();
-      }, 5000);
-      
-      // Activer le polling de secours (mais pas trop fréquent)
-      if (fallbackPolling && !pollingIntervalRef.current) {
-        console.log(`[Realtime ${entityType}] Activation polling de secours`);
-        pollingIntervalRef.current = setInterval(loadData, Math.max(pollingInterval, 60000));
-      }
-    };
-
-    wsRef.current = ws;
-  }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval, loadData]);
-
-  /**
-   * Initialisation - exécuté UNE SEULE FOIS
+   * Initialisation unique
    */
   useEffect(() => {
+    isMounted.current = true;
+    
     // Charger les données initiales une seule fois
-    if (!hasLoadedInitialData.current) {
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
       loadData();
     }
 
-    // Connecter au WebSocket après un court délai
-    const wsTimeout = setTimeout(() => {
-      connectWebSocket();
-    }, 1000);
+    // Fonction pour connecter WebSocket
+    const connectWs = () => {
+      if (!enableWebSocket || !userIdRef.current) return;
+      if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      let wsHost;
+
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        wsHost = 'localhost:8001';
+      } else if (backendUrlRef.current) {
+        try {
+          const url = new URL(backendUrlRef.current);
+          wsHost = url.host;
+        } catch (e) {
+          wsHost = window.location.host;
+        }
+      } else {
+        wsHost = window.location.host;
+      }
+
+      const wsUrl = `${wsProtocol}//${wsHost}/ws/realtime/${entityType}?user_id=${userIdRef.current}`;
+      console.log(`[Realtime ${entityType}] Connexion WebSocket...`);
+
+      try {
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          console.log(`[Realtime ${entityType}] WebSocket ouvert`);
+          if (isMounted.current) setWsConnected(true);
+          
+          // Arrêter le polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        };
+
+        ws.onmessage = handleMessage;
+
+        ws.onerror = () => {
+          if (isMounted.current) setWsConnected(false);
+        };
+
+        ws.onclose = () => {
+          console.log(`[Realtime ${entityType}] WebSocket fermé`);
+          if (isMounted.current) setWsConnected(false);
+          
+          // Reconnexion après 10 secondes
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
+          reconnectTimeoutRef.current = setTimeout(connectWs, 10000);
+          
+          // Polling de secours
+          if (fallbackPolling && !pollingIntervalRef.current && isMounted.current) {
+            pollingIntervalRef.current = setInterval(loadData, pollingInterval);
+          }
+        };
+
+        wsRef.current = ws;
+      } catch (err) {
+        console.error(`[Realtime ${entityType}] Erreur création WebSocket:`, err);
+      }
+    };
+
+    // Connexion WebSocket après délai
+    const wsTimeout = setTimeout(connectWs, 1500);
 
     // Cleanup
     return () => {
+      isMounted.current = false;
       clearTimeout(wsTimeout);
       
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       
       if (wsRef.current) {
+        wsRef.current.onclose = null; // Empêcher reconnexion auto
         wsRef.current.close();
         wsRef.current = null;
       }
@@ -244,10 +250,10 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         pollingIntervalRef.current = null;
       }
     };
-  }, [entityType, loadData, connectWebSocket]); // Dépendances nécessaires
+  }, [entityType, enableWebSocket, fallbackPolling, pollingInterval, loadData, handleMessage]);
 
   /**
-   * Envoyer un ping pour garder la connexion active
+   * Ping pour garder la connexion active
    */
   useEffect(() => {
     if (!wsConnected) return;
@@ -256,7 +262,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 30000); // Ping toutes les 30 secondes
+    }, 30000);
 
     return () => clearInterval(pingInterval);
   }, [wsConnected]);
@@ -274,7 +280,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
     error,
     wsConnected,
     refresh,
-    setData, // Permettre la mise à jour manuelle si nécessaire
+    setData,
   };
 };
 
