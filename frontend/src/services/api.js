@@ -96,7 +96,7 @@ export const equipmentsAPI = {
   delete: (id) => api.delete(`/equipments/${id}`),
   getChildren: (id) => api.get(`/equipments/${id}/children`),
   getHierarchy: (id) => api.get(`/equipments/${id}/hierarchy`),
-  updateStatus: (id, statut) => api.patch(`/equipments/${id}/status`, null, { params: { statut } }),
+  updateStatus: (id, statut, force = false) => api.patch(`/equipments/${id}/status`, null, { params: { statut, force } }),
   getStatusHistory: (params) => api.get('/equipments/status-history', { params })
 };
 
