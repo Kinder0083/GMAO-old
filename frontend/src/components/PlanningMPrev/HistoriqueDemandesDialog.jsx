@@ -48,6 +48,19 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
   const [cancelMotif, setCancelMotif] = useState('');
   const [cancelling, setCancelling] = useState(false);
   
+  // État pour le report
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [demandeToReport, setDemandeToReport] = useState(null);
+  const [reportData, setReportData] = useState({
+    raison: '',
+    nouvelle_date_debut: '',
+    nouvelle_date_fin: ''
+  });
+  const [reporting, setReporting] = useState(false);
+  
+  // État pour l'historique des reports
+  const [reportsHistoryDialogOpen, setReportsHistoryDialogOpen] = useState(false);
+  
   // Filtres
   const [filters, setFilters] = useState({
     statut: 'all',
