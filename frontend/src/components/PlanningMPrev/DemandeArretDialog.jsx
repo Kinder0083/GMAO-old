@@ -617,11 +617,23 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Annuler
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Envoi...' : 'Envoyer la demande'}
+            <Button type="submit" disabled={loading || uploadingFiles}>
+              {uploadingFiles ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Upload des fichiers...
+                </>
+              ) : loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Envoi...
+                </>
+              ) : (
+                'Envoyer la demande'
+              )}
             </Button>
           </DialogFooter>
         </form>
