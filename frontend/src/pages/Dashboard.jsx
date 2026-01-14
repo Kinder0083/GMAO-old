@@ -191,7 +191,7 @@ const Dashboard = () => {
     }
     
     return allStats;
-  }, [workOrders, equipments, canView, enabledWidgets]);
+  }, [workOrders, equipments, canView, enabledWidgets, demandesStats, reportsStats]);
 
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
