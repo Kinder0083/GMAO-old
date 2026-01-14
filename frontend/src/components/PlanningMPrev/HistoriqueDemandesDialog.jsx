@@ -297,42 +297,61 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Historique des Demandes d'Arrêt
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Historique des Demandes d'Arrêt
+            </DialogTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setReportsHistoryDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <History className="h-4 w-4" />
+              Historique des reports
+            </Button>
+          </div>
         </DialogHeader>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-5 gap-3 py-2 flex-shrink-0">
+        <div className="grid grid-cols-6 gap-2 py-2 flex-shrink-0">
           <Card className="bg-gray-50">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold">{stats.total}</div>
+            <CardContent className="p-2 text-center">
+              <div className="text-xl font-bold">{stats.total}</div>
               <div className="text-xs text-gray-500">Total</div>
             </CardContent>
           </Card>
           <Card className="bg-yellow-50">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-yellow-700">{stats.enAttente}</div>
+            <CardContent className="p-2 text-center">
+              <div className="text-xl font-bold text-yellow-700">{stats.enAttente}</div>
               <div className="text-xs text-yellow-600">En attente</div>
             </CardContent>
           </Card>
           <Card className="bg-green-50">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-green-700">{stats.approuvees}</div>
+            <CardContent className="p-2 text-center">
+              <div className="text-xl font-bold text-green-700">{stats.approuvees}</div>
               <div className="text-xs text-green-600">Approuvées</div>
             </CardContent>
           </Card>
           <Card className="bg-red-50">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-red-700">{stats.refusees}</div>
+            <CardContent className="p-2 text-center">
+              <div className="text-xl font-bold text-red-700">{stats.refusees}</div>
               <div className="text-xs text-red-600">Refusées</div>
             </CardContent>
           </Card>
           <Card className="bg-orange-50">
-            <CardContent className="p-3 text-center">
-              <div className="text-2xl font-bold text-orange-700">{stats.annulees}</div>
+            <CardContent className="p-2 text-center">
+              <div className="text-xl font-bold text-orange-700">{stats.annulees}</div>
               <div className="text-xs text-orange-600">Annulées</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-50">
+            <CardContent className="p-2 text-center">
+              <div className="text-xl font-bold text-purple-700">{stats.enAttenteReport}</div>
+              <div className="text-xs text-purple-600">Report</div>
+            </CardContent>
+          </Card>
             </CardContent>
           </Card>
         </div>
