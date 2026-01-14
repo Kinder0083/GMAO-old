@@ -565,6 +565,94 @@ async def send_expiration_email(demande: dict):
     # À implémenter
     pass
 
+async def send_cancellation_email(demande: dict, motif: str, cancelled_by: dict):
+    """Envoyer email d'annulation au destinataire"""
+    try:
+        equipements_str = ", ".join(demande.get("equipement_noms", []))
+        cancelled_by_name = f"{cancelled_by.get('prenom', '')} {cancelled_by.get('nom', '')}"
+        
+        subject = f"❌ Annulation - Demande d'Arrêt pour Maintenance - {equipements_str}"
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #2563eb; }}
+        .motif-box {{ background: #fef2f2; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #dc2626; }}
+        .footer {{ text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❌ Demande d'Arrêt Annulée</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{demande.get('destinataire_nom', '')}</strong>,</p>
+            <p>Une demande d'arrêt pour maintenance a été <strong>annulée</strong>.</p>
+            
+            <div class="info-box">
+                <h3>📋 Rappel de la demande</h3>
+                <p><strong>Demandeur:</strong> {demande.get('demandeur_nom', '')}</p>
+                <p><strong>Équipements:</strong> {equipements_str}</p>
+                <p><strong>Période prévue:</strong> Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}</p>
+                <p><strong>Priorité:</strong> {demande.get('priorite', 'NORMALE')}</p>
+                {f"<p><strong>Commentaire initial:</strong> {demande.get('commentaire', '')}</p>" if demande.get('commentaire') else ""}
+            </div>
+            
+            <div class="motif-box">
+                <h3>📝 Motif de l'annulation</h3>
+                <p><strong>Annulée par:</strong> {cancelled_by_name}</p>
+                <p><strong>Motif:</strong> {motif}</p>
+            </div>
+            
+            <p>Si la planification avait été créée dans le Planning M.Prev., elle a été automatiquement supprimée.</p>
+        </div>
+        <div class="footer">
+            <p>GMAO Iris - Système de Gestion de Maintenance</p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        text_content = f"""
+Demande d'Arrêt Annulée
+
+Rappel de la demande:
+- Demandeur: {demande.get('demandeur_nom', '')}
+- Équipements: {equipements_str}
+- Période: Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}
+
+Motif de l'annulation:
+- Annulée par: {cancelled_by_name}
+- Motif: {motif}
+
+---
+GMAO Iris - Système de Gestion de Maintenance
+        """
+        
+        success = email_service.send_email(
+            to_email=demande.get('destinataire_email', ''),
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        if not success:
+            logger.warning(f"Échec envoi email annulation: {demande.get('id', '')}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email annulation: {str(e)}")
+        return False
+
 # ==================== FONCTION CRON ====================
 
 async def check_expired_demandes_cron():
