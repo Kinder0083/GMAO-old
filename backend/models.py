@@ -1879,6 +1879,8 @@ class DemandeArretStatus(str, Enum):
     APPROUVEE = "APPROUVEE"
     REFUSEE = "REFUSEE"
     EXPIREE = "EXPIREE"  # Auto-refusée après 7 jours
+    ANNULEE = "ANNULEE"  # Annulée par l'utilisateur
+    TERMINEE = "TERMINEE"  # Maintenance terminée
 
 class PeriodeType(str, Enum):
     JOURNEE_COMPLETE = "JOURNEE_COMPLETE"
