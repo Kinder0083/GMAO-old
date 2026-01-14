@@ -19,6 +19,10 @@ import { demandesArretAPI } from '../services/api';
 const Dashboard = () => {
   const { canView } = usePermissions();
   const { preferences } = usePreferences();
+  
+  // États pour les données des demandes d'arrêt et reports
+  const [demandesStats, setDemandesStats] = useState({ pending: 0, total: 0 });
+  const [reportsStats, setReportsStats] = useState({ pending: 0, total: 0, avgDays: 0 });
 
   // Utiliser le hook temps réel WebSocket pour le dashboard
   const { 
@@ -26,6 +30,31 @@ const Dashboard = () => {
     equipments, 
     loading,
   } = useDashboard();
+
+  // Charger les données des demandes d'arrêt et reports
+  useEffect(() => {
+    const loadDemandesData = async () => {
+      try {
+        // Charger les demandes d'arrêt
+        const demandes = await demandesArretAPI.getAll();
+        const pendingDemandes = demandes.filter(d => d.statut === 'EN_ATTENTE').length;
+        const pendingReports = demandes.filter(d => d.statut === 'EN_ATTENTE_REPORT').length;
+        setDemandesStats({ pending: pendingDemandes, total: demandes.length });
+        
+        // Charger l'historique des reports
+        const reportsData = await demandesArretAPI.getReportsHistory();
+        setReportsStats({
+          pending: reportsData.statistiques?.reports_en_attente || 0,
+          total: reportsData.statistiques?.total_reports || 0,
+          avgDays: reportsData.statistiques?.duree_moyenne_report_jours || 0
+        });
+      } catch (error) {
+        console.error('Erreur chargement données demandes:', error);
+      }
+    };
+    
+    loadDemandesData();
+  }, []);
 
   // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
   // IMPORTANT: Si dashboard_widgets est défini (même vide), respecter le choix de l'utilisateur
