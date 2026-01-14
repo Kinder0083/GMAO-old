@@ -441,12 +441,12 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
                   </Card>
                 );
               })}
-            </div>
+            </>
           )}
           </div>
         </div>
 
-        <div className="pt-3 border-t flex justify-end">
+        <div className="pt-3 border-t flex justify-end flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fermer
           </Button>
