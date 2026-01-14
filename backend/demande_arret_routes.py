@@ -1,15 +1,19 @@
 """
 Routes API pour les Demandes d'Arrêt pour Maintenance
+Version refactorisée - Routes principales (CRUD, validation, annulation)
+
+Les routes sont maintenant divisées en modules :
+- demande_arret_routes.py (ce fichier) : CRUD principal, validation, annulation
+- demande_arret_reports_routes.py : Routes pour les reports et contre-propositions  
+- demande_arret_attachments_routes.py : Routes pour les pièces jointes
+- demande_arret_emails.py : Fonctions d'envoi d'emails
+- demande_arret_utils.py : Utilitaires partagés (serialize_doc, db, etc.)
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from fastapi.responses import FileResponse
-from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
 from datetime import datetime, timedelta, timezone
 import logging
 import uuid
-import mimetypes
-import aiofiles
-from pathlib import Path
 from bson import ObjectId
 
 from dependencies import get_current_user
@@ -18,54 +22,20 @@ from models import (
     DemandeArretStatus, PlanningEquipementEntry, EquipmentStatus, UserRole,
     ActionType, EntityType
 )
-import email_service
 import audit_service as audit_module
-import os
-from motor.motor_asyncio import AsyncIOMotorClient
 
-# Configuration upload pièces jointes
-UPLOAD_DIR = Path("/app/backend/uploads/demandes-arret")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB max
-
-# MongoDB connection - utilise les mêmes variables d'environnement que server.py
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'gmao_iris')]
+# Import des modules refactorisés
+from demande_arret_utils import db, serialize_doc, UPLOAD_DIR, MAX_FILE_SIZE
+from demande_arret_emails import (
+    send_demande_email,
+    send_cancellation_email,
+    send_reminder_email
+)
 
 logger = logging.getLogger(__name__)
 
 # Service d'audit pour journalisation
 audit_service = audit_module.AuditService(db)
-
-router = APIRouter(prefix="/demandes-arret", tags=["demandes-arret"])
-
-def serialize_doc(doc):
-    """Convert MongoDB document to JSON serializable format"""
-    if doc is None:
-        return None
-    
-    # Convertir le _id principal seulement si pas d'id existant
-    if "_id" in doc:
-        if "id" not in doc:
-            doc["id"] = str(doc["_id"])
-        del doc["_id"]
-    
-    # Convertir récursivement tous les ObjectId
-    for key, value in list(doc.items()):
-        if isinstance(value, ObjectId):
-            doc[key] = str(value)
-        elif isinstance(value, list):
-            doc[key] = [
-                str(item) if isinstance(item, ObjectId) 
-                else serialize_doc(item) if isinstance(item, dict) 
-                else item 
-                for item in value
-            ]
-        elif isinstance(value, dict):
-            doc[key] = serialize_doc(value)
-    
-    return doc
 
 # ==================== CRUD DEMANDES ====================
 
