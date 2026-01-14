@@ -362,7 +362,7 @@ const Dashboard = () => {
 
       {/* Zone de drag-and-drop - TOUJOURS RENDUE */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="dashboard-items" direction="vertical" type="DASHBOARD_ITEM" isDropDisabled={false}>
+        <Droppable droppableId="dashboard-items" direction="vertical" type="DASHBOARD_ITEM" isDropDisabled={false} isCombineEnabled={false}>
           {(droppableProvided, droppableSnapshot) => (
             <div
               ref={droppableProvided.innerRef}
