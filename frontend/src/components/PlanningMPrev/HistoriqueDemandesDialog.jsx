@@ -405,6 +405,30 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
                           <strong>Date alternative proposée:</strong> {formatDate(demande.date_proposee)}
                         </div>
                       )}
+                      
+                      {/* Informations d'annulation */}
+                      {demande.statut === 'ANNULEE' && demande.motif_annulation && (
+                        <div className="mt-3 p-2 bg-orange-50 rounded text-sm">
+                          <strong>Annulée par {demande.annule_par_nom} le {formatDateTime(demande.date_annulation)}:</strong>
+                          <p className="mt-1">{demande.motif_annulation}</p>
+                        </div>
+                      )}
+                      
+                      {/* Bouton d'annulation */}
+                      {canCancel(demande.statut) && (
+                        <div className="mt-4 pt-3 border-t flex justify-end">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            onClick={() => openCancelDialog(demande)}
+                            data-testid={`cancel-demande-${demande.id}`}
+                          >
+                            <Ban className="h-4 w-4 mr-2" />
+                            Annulation
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -418,6 +442,63 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
             Fermer
           </Button>
         </div>
+        
+        {/* Boîte de dialogue de confirmation d'annulation */}
+        <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <Ban className="h-5 w-5" />
+                Annuler la demande
+              </DialogTitle>
+              <DialogDescription>
+                Cette action est irréversible. La planification associée sera supprimée et un email sera envoyé au destinataire.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {demandeToCancel && (
+              <div className="space-y-4">
+                {/* Rappel de la demande */}
+                <div className="p-3 bg-gray-50 rounded-lg text-sm">
+                  <p><strong>Équipements:</strong> {demandeToCancel.equipement_noms?.join(', ')}</p>
+                  <p><strong>Période:</strong> {formatDate(demandeToCancel.date_debut)} - {formatDate(demandeToCancel.date_fin)}</p>
+                  <p><strong>Destinataire:</strong> {demandeToCancel.destinataire_nom}</p>
+                </div>
+                
+                {/* Motif d'annulation */}
+                <div className="space-y-2">
+                  <Label htmlFor="motif">Motif de l'annulation <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    id="motif"
+                    placeholder="Saisissez le motif de l'annulation..."
+                    value={cancelMotif}
+                    onChange={(e) => setCancelMotif(e.target.value)}
+                    rows={3}
+                    data-testid="cancel-motif-input"
+                  />
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setCancelDialogOpen(false)}
+                disabled={cancelling}
+              >
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleConfirmCancel}
+                disabled={cancelling || !cancelMotif.trim()}
+                data-testid="confirm-cancel-btn"
+              >
+                {cancelling ? 'Annulation...' : 'Confirmer l\'annulation'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
