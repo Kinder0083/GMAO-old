@@ -218,24 +218,35 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                  <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                  <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
+      {stats.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-gray-500 mb-2">Aucun widget activé sur le tableau de bord.</p>
+            <p className="text-sm text-gray-400">
+              Allez dans Personnalisations → Dashboard Personnalisé pour activer des widgets.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat, index) => (
+            <Card key={index}>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                    <p className="text-3xl font-bold mt-1">{stat.value}</p>
+                    <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
+                  </div>
+                  <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
+                    <stat.icon className="h-6 w-6" />
+                  </div>
                 </div>
-                <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
-                  <stat.icon className="h-6 w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Ordres de travail récents */}
       {canView('workOrders') && enabledWidgets.includes('work_orders_active') && (
