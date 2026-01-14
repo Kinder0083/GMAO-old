@@ -113,9 +113,62 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
       'EN_ATTENTE': { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock, label: 'En attente' },
       'APPROUVEE': { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle2, label: 'Approuvée' },
       'REFUSEE': { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle, label: 'Refusée' },
-      'EXPIREE': { bg: 'bg-gray-100', text: 'text-gray-700', icon: AlertTriangle, label: 'Expirée' }
+      'EXPIREE': { bg: 'bg-gray-100', text: 'text-gray-700', icon: AlertTriangle, label: 'Expirée' },
+      'ANNULEE': { bg: 'bg-orange-100', text: 'text-orange-700', icon: Ban, label: 'Annulée' },
+      'TERMINEE': { bg: 'bg-blue-100', text: 'text-blue-700', icon: CheckCircle, label: 'Terminée' }
     };
     return badges[statut] || badges['EN_ATTENTE'];
+  };
+
+  // Vérifier si une demande peut être annulée
+  const canCancel = (statut) => {
+    return !['REFUSEE', 'TERMINEE', 'ANNULEE'].includes(statut);
+  };
+
+  // Ouvrir la boîte de dialogue d'annulation
+  const openCancelDialog = (demande) => {
+    setDemandeToCancel(demande);
+    setCancelMotif('');
+    setCancelDialogOpen(true);
+  };
+
+  // Confirmer l'annulation
+  const handleConfirmCancel = async () => {
+    if (!demandeToCancel || !cancelMotif.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez saisir un motif d\'annulation',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      await demandesArretAPI.cancel(demandeToCancel.id, cancelMotif.trim());
+      
+      toast({
+        title: 'Succès',
+        description: 'La demande a été annulée avec succès'
+      });
+      
+      // Rafraîchir la liste
+      await loadData();
+      
+      // Fermer la boîte de dialogue
+      setCancelDialogOpen(false);
+      setDemandeToCancel(null);
+      setCancelMotif('');
+    } catch (error) {
+      console.error('Erreur annulation:', error);
+      toast({
+        title: 'Erreur',
+        description: error.response?.data?.detail || 'Impossible d\'annuler la demande',
+        variant: 'destructive'
+      });
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const getPriorityBadge = (priorite) => {
