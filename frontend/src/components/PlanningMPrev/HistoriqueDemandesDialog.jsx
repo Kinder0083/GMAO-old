@@ -211,8 +211,8 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Historique des Demandes d'Arrêt
@@ -220,7 +220,7 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-5 gap-3 py-2">
+        <div className="grid grid-cols-5 gap-3 py-2 flex-shrink-0">
           <Card className="bg-gray-50">
             <CardContent className="p-3 text-center">
               <div className="text-2xl font-bold">{stats.total}</div>
