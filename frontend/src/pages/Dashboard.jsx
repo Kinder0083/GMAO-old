@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import {
@@ -11,7 +12,9 @@ import {
   Calendar,
   History,
   AlertTriangle,
-  Pencil
+  Pencil,
+  GripVertical,
+  Trash2
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import { usePermissions } from '../hooks/usePermissions';
@@ -21,7 +24,6 @@ import { useToast } from '../hooks/use-toast';
 import DashboardEditToolbar from '../components/Dashboard/DashboardEditToolbar';
 import DashboardTitleElement from '../components/Dashboard/DashboardTitleElement';
 import DashboardSeparator from '../components/Dashboard/DashboardSeparator';
-import DashboardWidgetWrapper from '../components/Dashboard/DashboardWidgetWrapper';
 
 const Dashboard = () => {
   const { canView } = usePermissions();
