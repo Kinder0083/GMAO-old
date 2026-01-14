@@ -486,7 +486,8 @@ export const demandesArretAPI = {
   },
   getById: (id) => api.get(`/demandes-arret/${id}`).then(res => res.data),
   create: (data) => api.post('/demandes-arret/', data).then(res => res.data),
-  getPlanningEquipements: (params = {}) => api.get('/demandes-arret/planning/equipements', { params }).then(res => res.data)
+  getPlanningEquipements: (params = {}) => api.get('/demandes-arret/planning/equipements', { params }).then(res => res.data),
+  cancel: (id, motif) => api.post(`/demandes-arret/${id}/cancel`, null, { params: { motif } }).then(res => res.data)
 };
 
 // User Preferences API
