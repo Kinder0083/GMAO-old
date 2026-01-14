@@ -323,7 +323,8 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
         </Card>
 
         {/* Liste des demandes */}
-        <ScrollArea className="flex-1 h-[400px] pr-4">
+        <div className="flex-1 h-[400px] overflow-y-auto border rounded-md">
+          <div className="p-2">
           {loading ? (
             <div className="text-center py-8 text-gray-500">Chargement...</div>
           ) : sortedDemandes.length === 0 ? (
