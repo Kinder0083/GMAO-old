@@ -525,23 +525,44 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
                 </h3>
                 
                 <div className="space-y-3">
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">Cliquez ou glissez des fichiers ici</p>
+                    <p className="text-xs text-gray-400 mt-1">Maximum 10MB par fichier</p>
+                  </div>
+                  
                   <Input
+                    ref={fileInputRef}
                     type="file"
                     multiple
                     onChange={handleFileChange}
-                    className="cursor-pointer"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
                   />
                   
-                  {formData.attachments.length > 0 && (
-                    <div className="space-y-2">
-                      {formData.attachments.map((attachment, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-sm truncate">{attachment.filename}</span>
+                  {selectedFiles.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      <p className="text-sm font-medium text-gray-700">
+                        {selectedFiles.length} fichier(s) sélectionné(s)
+                      </p>
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileIcon className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                            <span className="text-sm truncate">{file.name}</span>
+                            <span className="text-xs text-gray-400 flex-shrink-0">
+                              ({formatFileSize(file.size)})
+                            </span>
+                          </div>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeAttachment(index)}
+                            onClick={() => removeFile(index)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <X className="h-4 w-4" />
                           </Button>
