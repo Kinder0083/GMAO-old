@@ -4,6 +4,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -12,6 +14,7 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea } from '../ui/scroll-area';
+import { Textarea } from '../ui/textarea';
 import { demandesArretAPI, equipmentsAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { 
@@ -24,7 +27,9 @@ import {
   Wrench,
   Filter,
   FileText,
-  Paperclip
+  Paperclip,
+  Ban,
+  CheckCircle
 } from 'lucide-react';
 
 const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
