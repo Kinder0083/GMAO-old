@@ -29,8 +29,12 @@ import {
   FileText,
   Paperclip,
   Ban,
-  CheckCircle
+  CheckCircle,
+  CalendarClock,
+  History,
+  BarChart3
 } from 'lucide-react';
+import HistoriqueReportsDialog from './HistoriqueReportsDialog';
 
 const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
   const { toast } = useToast();
