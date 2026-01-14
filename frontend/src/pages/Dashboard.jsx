@@ -410,13 +410,42 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+            </DashboardWidgetWrapper>
           ))}
         </div>
       )}
 
+      {/* Éléments personnalisés - Après les widgets */}
+      {layoutItems.filter(item => item.position === 'middle').map((item) => {
+        if (item.type === 'title') {
+          return (
+            <DashboardTitleElement
+              key={item.id}
+              element={item}
+              isEditMode={isEditMode}
+              onUpdate={handleUpdateElement}
+              onDelete={handleDeleteElement}
+              dragHandleProps={{}}
+            />
+          );
+        }
+        if (item.type === 'separator') {
+          return (
+            <DashboardSeparator
+              key={item.id}
+              element={item}
+              isEditMode={isEditMode}
+              onDelete={handleDeleteElement}
+              dragHandleProps={{}}
+            />
+          );
+        }
+        return null;
+      })}
+
       {/* Ordres de travail récents */}
       {canView('workOrders') && enabledWidgets.includes('work_orders_active') && (
-        <Card>
+        <Card className={isEditMode ? 'border-2 border-dashed border-gray-200' : ''}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
