@@ -56,17 +56,23 @@ const AVAILABLE_WIDGETS = [
 const DashboardSection = () => {
   const { preferences, updatePreferences } = usePreferences();
   const { toast } = useToast();
-  const [widgets, setWidgets] = useState(preferences?.dashboard_widgets || []);
+  const [widgets, setWidgets] = useState([]);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (preferences?.dashboard_widgets) {
-      setWidgets(preferences.dashboard_widgets);
-    } else {
-      // Widgets activés par défaut
-      const defaultWidgets = AVAILABLE_WIDGETS.filter(w => w.enabled).map(w => w.id);
-      setWidgets(defaultWidgets);
+    // Initialiser les widgets une seule fois
+    if (!initialized) {
+      if (preferences?.dashboard_widgets !== undefined && preferences?.dashboard_widgets !== null) {
+        // Si dashboard_widgets existe (même vide), l'utiliser
+        setWidgets(preferences.dashboard_widgets);
+      } else {
+        // Sinon, utiliser les widgets par défaut
+        const defaultWidgets = AVAILABLE_WIDGETS.filter(w => w.enabled).map(w => w.id);
+        setWidgets(defaultWidgets);
+      }
+      setInitialized(true);
     }
-  }, [preferences]);
+  }, [preferences, initialized]);
 
   const isWidgetEnabled = (widgetId) => {
     return widgets.includes(widgetId);
@@ -120,6 +126,42 @@ const DashboardSection = () => {
     } catch (error) {
       toast({ title: 'Erreur', description: 'Erreur de réinitialisation', variant: 'destructive' });
     }
+  };
+
+  // Grouper les widgets par catégorie
+  const categories = {
+    principal: { name: 'Widgets Principaux', widgets: AVAILABLE_WIDGETS.filter(w => w.category === 'principal') },
+    demandes: { name: 'Demandes d\'Arrêt & Reports', widgets: AVAILABLE_WIDGETS.filter(w => w.category === 'demandes') },
+    planning: { name: 'Planning & Équipements', widgets: AVAILABLE_WIDGETS.filter(w => w.category === 'planning') },
+    global: { name: 'Résumé', widgets: AVAILABLE_WIDGETS.filter(w => w.category === 'global') }
+  };
+
+  const renderWidgetCard = (widget) => {
+    const Icon = widget.icon;
+    return (
+      <div
+        key={widget.id}
+        className={`flex items-start gap-4 p-4 rounded-lg border transition-all ${
+          isWidgetEnabled(widget.id)
+            ? 'border-blue-300 bg-blue-50'
+            : 'border-gray-200 bg-white'
+        }`}
+      >
+        <div className={`p-2 rounded-lg ${
+          isWidgetEnabled(widget.id) ? 'bg-blue-100' : 'bg-gray-100'
+        }`}>
+          <Icon size={24} className={isWidgetEnabled(widget.id) ? 'text-blue-600' : 'text-gray-600'} />
+        </div>
+        <div className="flex-1">
+          <h4 className="font-medium text-sm mb-1">{widget.name}</h4>
+          <p className="text-xs text-gray-500">{widget.description}</p>
+        </div>
+        <Switch
+          checked={isWidgetEnabled(widget.id)}
+          onCheckedChange={() => toggleWidget(widget.id)}
+        />
+      </div>
+    );
   };
 
   return (
