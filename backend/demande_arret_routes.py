@@ -394,6 +394,74 @@ async def check_expired_demandes():
         logger.error(f"Erreur vérification expiration: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== ANNULATION ====================
+
+@router.post("/{demande_id}/cancel")
+async def cancel_demande(
+    demande_id: str,
+    motif: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Annuler une demande d'arrêt pour maintenance"""
+    try:
+        # Récupérer la demande
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande peut être annulée (pas déjà refusée ou terminée)
+        if demande["statut"] in [DemandeArretStatus.REFUSEE, DemandeArretStatus.TERMINEE]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Impossible d'annuler une demande avec le statut '{demande['statut']}'"
+            )
+        
+        # Mettre à jour le statut de la demande
+        now = datetime.now(timezone.utc)
+        await db.demandes_arret.update_one(
+            {"id": demande_id},
+            {"$set": {
+                "statut": DemandeArretStatus.ANNULEE,
+                "motif_annulation": motif,
+                "annule_par_id": current_user.get("id"),
+                "annule_par_nom": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+                "date_annulation": now.isoformat(),
+                "updated_at": now.isoformat()
+            }}
+        )
+        
+        # Supprimer les entrées du planning liées à cette demande
+        delete_result = await db.planning_equipement.delete_many({"demande_arret_id": demande_id})
+        logger.info(f"Suppression planning: {delete_result.deleted_count} entrée(s)")
+        
+        # Envoyer email d'annulation au destinataire
+        await send_cancellation_email(demande, motif, current_user)
+        
+        # Enregistrer dans le journal d'audit
+        await audit_service.log_action(
+            user_id=current_user.get("id"),
+            user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+            user_email=current_user.get("email"),
+            action=ActionType.UPDATE,
+            entity_type=EntityType.DEMANDE_ARRET,
+            entity_id=demande_id,
+            entity_name=f"Demande d'arrêt du {demande['date_debut']} au {demande['date_fin']}",
+            details=f"Demande d'arrêt ANNULÉE. Motif: {motif}. {delete_result.deleted_count} entrée(s) de planning supprimée(s).",
+            changes={"statut": f"{demande['statut']} → ANNULEE"}
+        )
+        
+        logger.info(f"Demande annulée: {demande_id}")
+        return {
+            "message": "Demande annulée avec succès",
+            "demande_id": demande_id,
+            "planning_entries_deleted": delete_result.deleted_count
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur annulation demande: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==================== FONCTIONS EMAIL ====================
 
 async def send_demande_email(demande: dict):
