@@ -183,43 +183,26 @@ const DashboardSection = () => {
             </div>
           </div>
           <p className="text-sm text-gray-500 mb-6">
-            Sélectionnez les widgets à afficher sur votre tableau de bord
+            Sélectionnez les widgets à afficher sur votre tableau de bord ({widgets.length} actif{widgets.length > 1 ? 's' : ''})
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {AVAILABLE_WIDGETS.map((widget) => {
-              const Icon = widget.icon;
-              return (
-                <div
-                  key={widget.id}
-                  className={`flex items-start gap-4 p-4 rounded-lg border transition-all ${
-                    isWidgetEnabled(widget.id)
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-gray-200 bg-white'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg ${
-                    isWidgetEnabled(widget.id) ? 'bg-blue-100' : 'bg-gray-100'
-                  }`}>
-                    <Icon size={24} className={isWidgetEnabled(widget.id) ? 'text-blue-600' : 'text-gray-600'} />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm mb-1">{widget.name}</h4>
-                    <p className="text-xs text-gray-500">{widget.description}</p>
-                  </div>
-                  <Switch
-                    checked={isWidgetEnabled(widget.id)}
-                    onCheckedChange={() => toggleWidget(widget.id)}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          {/* Affichage par catégorie */}
+          {Object.entries(categories).map(([categoryId, category]) => (
+            <div key={categoryId} className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                {category.name}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {category.widgets.map(renderWidgetCard)}
+              </div>
+            </div>
+          ))}
 
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
               <strong>💡 Astuce :</strong> Les widgets activés apparaîtront sur votre tableau de bord.
-              L'ordre d'affichage et la disposition seront personnalisables prochainement.
+              Désactivez les widgets que vous n'utilisez pas pour un affichage plus épuré.
             </p>
           </div>
         </CardContent>
