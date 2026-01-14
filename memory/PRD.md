@@ -20,6 +20,19 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 14 Janvier 2026 (Session actuelle)
 
+#### ✅ Fin Anticipée de Maintenance Préventive (P0 - Complété)
+- **Problème résolu**: Impossible de changer le statut d'un équipement pendant une maintenance préventive planifiée
+- **Solution implémentée**:
+  - Le backend détecte automatiquement si un équipement a une maintenance en cours
+  - Un dialogue de confirmation s'affiche demandant à l'utilisateur s'il veut terminer la maintenance de manière anticipée
+  - Si confirmé, la date de fin de la maintenance est mise à jour à aujourd'hui
+  - L'information de qui a terminé la maintenance et quand est enregistrée
+- **Fichiers créés/modifiés**:
+  - `/app/frontend/src/components/Equipment/MaintenanceEndConfirmDialog.jsx` (nouveau)
+  - `/app/frontend/src/components/Equipment/QuickStatusChanger.jsx` (modifié)
+  - `/app/backend/server.py` - endpoint `PATCH /api/equipments/{id}/status` (modifié)
+  - `/app/frontend/src/services/api.js` - ajout paramètre `force`
+
 #### ✅ Workflow "Demande de Report" (P0 - Complété)
 - **Fichiers créés**:
   - `/app/backend/demande_arret_reports_routes.py` - Routes API pour les reports
@@ -31,17 +44,6 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
   - `POST /api/demandes-arret/submit-counter-proposal` - Soumettre une contre-proposition (PUBLIC)
   - `GET /api/demandes-arret/validate-counter-proposal?token=...&action=...` - Valider contre-proposition (PUBLIC)
   - `GET /api/demandes-arret/reports/history` - Historique des reports avec statistiques
-- **Workflow complet**:
-  1. Utilisateur demande un report avec nouvelles dates et raison
-  2. Email envoyé au destinataire avec 3 boutons: Approuver, Refuser, Contre-proposer
-  3. Si contre-proposition: formulaire avec nouvelles dates envoyé au demandeur
-  4. Le demandeur peut accepter ou refuser la contre-proposition
-  5. Mise à jour automatique des dates de la demande d'arrêt
-- **Frontend**:
-  - Pages publiques de validation accessibles sans authentification
-  - Affichage des informations du report (dates actuelles, dates demandées, raison)
-  - Formulaire de contre-proposition avec date-pickers
-  - Messages de succès/erreur clairs
 
 #### ✅ Refactoring "Demande d'Arrêt" (Complété)
 - **Ancien fichier**: `demande_arret_routes.py` (1939 lignes)
@@ -51,24 +53,6 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
   - `/app/backend/demande_arret_attachments_routes.py` (189 lignes) - Routes pièces jointes
   - `/app/backend/demande_arret_emails.py` (651 lignes) - Fonctions email
   - `/app/backend/demande_arret_utils.py` (45 lignes) - Utilitaires partagés
-- **Avantages**:
-  - Code plus maintenable et lisible
-  - Séparation des responsabilités
-  - Facilité de test et de débogage
-  - Réduction des conflits de routage FastAPI
-
-#### ✅ Mode Édition Dashboard (P0 - Complété - Session précédente)
-- Migration de `react-beautiful-dnd` vers `@dnd-kit` pour stabilité
-- Drag-and-drop fonctionnel et validé par l'utilisateur
-- Sauvegarde du layout personnalisé par utilisateur
-
-#### ✅ Pièces Jointes pour Demandes d'Arrêt (P1 - Complété - Session précédente)
-- Upload/download/suppression de fichiers (max 10MB)
-- Zone de drag-and-drop dans le formulaire
-
-#### ✅ Rappel Email Automatique (P1 - Complété - Session précédente)
-- Rappel pour demandes en attente depuis 3+ jours
-- Déclenché automatiquement à chaque visite du dashboard
 
 ---
 
