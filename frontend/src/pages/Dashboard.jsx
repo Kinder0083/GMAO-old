@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -9,8 +9,6 @@ import {
   CheckCircle2,
   Bell,
   CalendarClock,
-  Calendar,
-  History,
   AlertTriangle,
   Pencil,
   GripVertical,
@@ -22,8 +20,6 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import { demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import DashboardEditToolbar from '../components/Dashboard/DashboardEditToolbar';
-import DashboardTitleElement from '../components/Dashboard/DashboardTitleElement';
-import DashboardSeparator from '../components/Dashboard/DashboardSeparator';
 
 const Dashboard = () => {
   const { canView } = usePermissions();
@@ -34,7 +30,6 @@ const Dashboard = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [layoutItems, setLayoutItems] = useState([]);
   const [originalLayout, setOriginalLayout] = useState([]);
-  const [widgetSizes, setWidgetSizes] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
   
   // États pour les données des demandes d'arrêt et reports
@@ -52,13 +47,10 @@ const Dashboard = () => {
   useEffect(() => {
     const loadDemandesData = async () => {
       try {
-        // Charger les demandes d'arrêt
         const demandes = await demandesArretAPI.getAll();
         const pendingDemandes = demandes.filter(d => d.statut === 'EN_ATTENTE').length;
-        const pendingReports = demandes.filter(d => d.statut === 'EN_ATTENTE_REPORT').length;
         setDemandesStats({ pending: pendingDemandes, total: demandes.length });
         
-        // Charger l'historique des reports
         const reportsData = await demandesArretAPI.getReportsHistory();
         setReportsStats({
           pending: reportsData.statistiques?.reports_en_attente || 0,
@@ -73,28 +65,11 @@ const Dashboard = () => {
     loadDemandesData();
   }, []);
 
-  // Charger le layout sauvegardé
-  useEffect(() => {
-    if (preferences?.dashboard_layout) {
-      const layout = preferences.dashboard_layout;
-      if (layout.items && Array.isArray(layout.items)) {
-        setLayoutItems(layout.items);
-        setOriginalLayout(layout.items);
-      }
-      if (layout.widgetSizes) {
-        setWidgetSizes(layout.widgetSizes);
-      }
-    }
-  }, [preferences]);
-
-  // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
-  // IMPORTANT: Si dashboard_widgets est défini (même vide), respecter le choix de l'utilisateur
+  // Déterminer quels widgets afficher
   const enabledWidgets = useMemo(() => {
-    // Si les préférences ont été chargées et dashboard_widgets existe, l'utiliser tel quel
     if (preferences && preferences.dashboard_widgets !== undefined && preferences.dashboard_widgets !== null) {
       return preferences.dashboard_widgets;
     }
-    // Sinon (préférences non chargées ou widget non défini), utiliser la liste par défaut
     return [
       'work_orders_active',
       'equipment_maintenance',
@@ -106,8 +81,27 @@ const Dashboard = () => {
     ];
   }, [preferences]);
 
+  // Initialiser le layout avec les éléments par défaut (widgets + éléments personnalisés)
+  useEffect(() => {
+    if (preferences?.dashboard_layout?.items) {
+      setLayoutItems(preferences.dashboard_layout.items);
+      setOriginalLayout(preferences.dashboard_layout.items);
+    } else {
+      // Layout par défaut : tous les widgets activés
+      const defaultLayout = enabledWidgets.map((widgetId, index) => ({
+        id: `widget-${widgetId}`,
+        type: 'widget',
+        widgetId: widgetId,
+        order: index
+      }));
+      setLayoutItems(defaultLayout);
+      setOriginalLayout(defaultLayout);
+    }
+  }, [preferences, enabledWidgets]);
+
   // Fonctions de gestion du mode édition
   const enterEditMode = () => {
+    console.log('Entering edit mode');
     setOriginalLayout([...layoutItems]);
     setIsEditMode(true);
     setHasChanges(false);
@@ -120,12 +114,20 @@ const Dashboard = () => {
   };
 
   const handleAddTitle = (titleElement) => {
-    setLayoutItems(prev => [...prev, titleElement]);
+    const newItem = {
+      ...titleElement,
+      order: layoutItems.length
+    };
+    setLayoutItems(prev => [...prev, newItem]);
     setHasChanges(true);
   };
 
   const handleAddSeparator = (separatorElement) => {
-    setLayoutItems(prev => [...prev, separatorElement]);
+    const newItem = {
+      ...separatorElement,
+      order: layoutItems.length
+    };
+    setLayoutItems(prev => [...prev, newItem]);
     setHasChanges(true);
   };
 
@@ -141,28 +143,11 @@ const Dashboard = () => {
     setHasChanges(true);
   };
 
-  const handleWidgetResize = (widgetId, newSize) => {
-    setWidgetSizes(prev => ({ ...prev, [widgetId]: newSize }));
-    setHasChanges(true);
-  };
-
-  const handleWidgetRemove = async (widgetId) => {
-    // Retirer le widget de la liste des widgets activés
-    const newWidgets = enabledWidgets.filter(w => w !== widgetId);
-    try {
-      await updatePreferences({ dashboard_widgets: newWidgets });
-      toast({ title: 'Widget masqué', description: 'Vous pouvez le réactiver dans Personnalisations.' });
-    } catch (error) {
-      toast({ title: 'Erreur', description: 'Impossible de masquer le widget', variant: 'destructive' });
-    }
-  };
-
   const handleSaveLayout = async () => {
     try {
       await updatePreferences({
         dashboard_layout: {
-          items: layoutItems,
-          widgetSizes: widgetSizes
+          items: layoutItems
         }
       });
       setOriginalLayout([...layoutItems]);
@@ -174,140 +159,140 @@ const Dashboard = () => {
     }
   };
 
-  const handleResetLayout = async () => {
-    setLayoutItems([]);
-    setWidgetSizes({});
+  const handleResetLayout = () => {
+    // Réinitialiser avec le layout par défaut
+    const defaultLayout = enabledWidgets.map((widgetId, index) => ({
+      id: `widget-${widgetId}`,
+      type: 'widget',
+      widgetId: widgetId,
+      order: index
+    }));
+    setLayoutItems(defaultLayout);
     setHasChanges(true);
   };
 
-  // Drag and drop - déplacer un élément
-  const moveItem = useCallback((dragIndex, hoverIndex) => {
-    setLayoutItems(prev => {
-      const items = [...prev];
-      const [draggedItem] = items.splice(dragIndex, 1);
-      items.splice(hoverIndex, 0, draggedItem);
-      return items;
-    });
+  // Gestion du drag and drop
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(layoutItems);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    // Mettre à jour l'ordre
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      order: index
+    }));
+    
+    setLayoutItems(updatedItems);
     setHasChanges(true);
-  }, []);
+  };
 
   // Calculer les stats dynamiquement selon les widgets activés
-  const stats = useMemo(() => {
+  const getStatConfig = (widgetId) => {
     const safeWorkOrders = workOrders || [];
     const safeEquipments = equipments || [];
-    
-    const allStats = [];
-    
-    // Ordres de travail actifs
-    if (enabledWidgets.includes('work_orders_active') && canView('workOrders')) {
-      const activeOrders = safeWorkOrders.filter(wo => wo.statut !== 'TERMINE' && wo.statut !== 'ANNULE');
-      allStats.push({
-        title: 'Ordres Actifs',
-        value: activeOrders.length,
-        icon: ClipboardList,
-        color: 'blue',
-        trend: `${safeWorkOrders.filter(wo => wo.statut === 'EN_COURS').length} en cours`
-      });
-    }
-    
-    // Équipements en maintenance
-    if (enabledWidgets.includes('equipment_maintenance') && canView('assets')) {
-      const inMaintenance = safeEquipments.filter(eq => eq.statut === 'EN_PANNE' || eq.statut === 'EN_MAINTENANCE');
-      allStats.push({
-        title: 'Équipements en maintenance',
-        value: inMaintenance.length,
-        icon: Wrench,
-        color: 'orange',
-        trend: `${safeEquipments.filter(eq => eq.statut === 'OPERATIONNEL').length} opérationnels`
-      });
-    }
-    
-    // Tâches en retard
-    if (enabledWidgets.includes('overdue_tasks') && canView('workOrders')) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const overdue = safeWorkOrders.filter(wo => {
-        if (wo.statut === 'TERMINE' || wo.statut === 'ANNULE') return false;
-        if (!wo.dateLimite) return false;
-        const dueDate = new Date(wo.dateLimite);
-        return dueDate < today;
-      });
-      allStats.push({
-        title: 'En retard',
-        value: overdue.length,
-        icon: AlertCircle,
-        color: 'red',
-        trend: overdue.length > 0 ? 'À traiter en priorité' : 'Tout est à jour'
-      });
-    }
-    
-    // Terminés ce mois
-    if (enabledWidgets.includes('maintenance_stats') && canView('workOrders')) {
-      const thisMonth = new Date();
-      thisMonth.setDate(1);
-      thisMonth.setHours(0, 0, 0, 0);
-      const completedThisMonth = safeWorkOrders.filter(wo => {
-        if (wo.statut !== 'TERMINE') return false;
-        const completedDate = new Date(wo.dateModification || wo.dateCreation);
-        return completedDate >= thisMonth;
-      });
-      allStats.push({
-        title: 'Terminés ce mois',
-        value: completedThisMonth.length,
-        icon: CheckCircle2,
-        color: 'green',
-        trend: 'Ce mois-ci'
-      });
-    }
-    
-    // Demandes d'arrêt en attente
-    if (enabledWidgets.includes('demandes_arret_pending')) {
-      allStats.push({
+
+    const configs = {
+      'work_orders_active': () => {
+        if (!canView('workOrders')) return null;
+        const activeOrders = safeWorkOrders.filter(wo => wo.statut !== 'TERMINE' && wo.statut !== 'ANNULE');
+        return {
+          title: 'Ordres Actifs',
+          value: activeOrders.length,
+          icon: ClipboardList,
+          color: 'blue',
+          trend: `${safeWorkOrders.filter(wo => wo.statut === 'EN_COURS').length} en cours`
+        };
+      },
+      'equipment_maintenance': () => {
+        if (!canView('assets')) return null;
+        const inMaintenance = safeEquipments.filter(eq => eq.statut === 'EN_PANNE' || eq.statut === 'EN_MAINTENANCE');
+        return {
+          title: 'Équipements en maintenance',
+          value: inMaintenance.length,
+          icon: Wrench,
+          color: 'orange',
+          trend: `${safeEquipments.filter(eq => eq.statut === 'OPERATIONNEL').length} opérationnels`
+        };
+      },
+      'overdue_tasks': () => {
+        if (!canView('workOrders')) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const overdue = safeWorkOrders.filter(wo => {
+          if (wo.statut === 'TERMINE' || wo.statut === 'ANNULE') return false;
+          if (!wo.dateLimite) return false;
+          const dueDate = new Date(wo.dateLimite);
+          return dueDate < today;
+        });
+        return {
+          title: 'En retard',
+          value: overdue.length,
+          icon: AlertCircle,
+          color: 'red',
+          trend: overdue.length > 0 ? 'À traiter en priorité' : 'Tout est à jour'
+        };
+      },
+      'maintenance_stats': () => {
+        if (!canView('workOrders')) return null;
+        const thisMonth = new Date();
+        thisMonth.setDate(1);
+        thisMonth.setHours(0, 0, 0, 0);
+        const completedThisMonth = safeWorkOrders.filter(wo => {
+          if (wo.statut !== 'TERMINE') return false;
+          const completedDate = new Date(wo.dateModification || wo.dateCreation);
+          return completedDate >= thisMonth;
+        });
+        return {
+          title: 'Terminés ce mois',
+          value: completedThisMonth.length,
+          icon: CheckCircle2,
+          color: 'green',
+          trend: 'Ce mois-ci'
+        };
+      },
+      'demandes_arret_pending': () => ({
         title: 'Demandes en attente',
         value: demandesStats.pending,
         icon: Bell,
         color: 'yellow',
         trend: `${demandesStats.total} demande(s) au total`
-      });
-    }
-    
-    // Reports en attente
-    if (enabledWidgets.includes('reports_pending')) {
-      allStats.push({
+      }),
+      'reports_pending': () => ({
         title: 'Reports en attente',
         value: reportsStats.pending,
         icon: CalendarClock,
         color: 'purple',
         trend: reportsStats.avgDays > 0 ? `Moy. ${reportsStats.avgDays} jours` : 'Aucun report'
-      });
-    }
-    
-    // Alertes équipements (sous-équipement hors service)
-    if (enabledWidgets.includes('equipment_alerts') && canView('assets')) {
-      const alertEquipments = safeEquipments.filter(eq => eq.statut === 'ALERTE_S_EQUIP');
-      allStats.push({
-        title: 'Alertes équipements',
-        value: alertEquipments.length,
-        icon: AlertTriangle,
-        color: 'red',
-        trend: alertEquipments.length > 0 ? 'Sous-équipement(s) HS' : 'Aucune alerte'
-      });
-    }
-    
-    // Équipements dégradés
-    if (enabledWidgets.includes('equipment_status_overview') && canView('assets')) {
-      const degradedEquipments = safeEquipments.filter(eq => eq.statut === 'DEGRADE');
-      allStats.push({
-        title: 'Équipements dégradés',
-        value: degradedEquipments.length,
-        icon: Wrench,
-        color: 'blue',
-        trend: `${safeEquipments.filter(eq => eq.statut === 'HORS_SERVICE').length} hors service`
-      });
-    }
-    
-    return allStats;
-  }, [workOrders, equipments, canView, enabledWidgets, demandesStats, reportsStats]);
+      }),
+      'equipment_alerts': () => {
+        if (!canView('assets')) return null;
+        const alertEquipments = safeEquipments.filter(eq => eq.statut === 'ALERTE_S_EQUIP');
+        return {
+          title: 'Alertes équipements',
+          value: alertEquipments.length,
+          icon: AlertTriangle,
+          color: 'red',
+          trend: alertEquipments.length > 0 ? 'Sous-équipement(s) HS' : 'Aucune alerte'
+        };
+      },
+      'equipment_status_overview': () => {
+        if (!canView('assets')) return null;
+        const degradedEquipments = safeEquipments.filter(eq => eq.statut === 'DEGRADE');
+        return {
+          title: 'Équipements dégradés',
+          value: degradedEquipments.length,
+          icon: Wrench,
+          color: 'blue',
+          trend: `${safeEquipments.filter(eq => eq.statut === 'HORS_SERVICE').length} hors service`
+        };
+      }
+    };
+
+    return configs[widgetId] ? configs[widgetId]() : null;
+  };
 
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
@@ -318,6 +303,138 @@ const Dashboard = () => {
     yellow: 'bg-yellow-50 text-yellow-600'
   };
 
+  // Rendu d'un élément du layout
+  const renderLayoutItem = (item, provided, snapshot) => {
+    const isDragging = snapshot?.isDragging;
+    
+    if (item.type === 'widget') {
+      const stat = getStatConfig(item.widgetId);
+      if (!stat) return null;
+      
+      return (
+        <div
+          ref={provided?.innerRef}
+          {...provided?.draggableProps}
+          className={`${isDragging ? 'opacity-75 shadow-lg' : ''}`}
+        >
+          <Card className={`relative group ${isEditMode ? 'border-2 border-dashed border-gray-300 hover:border-blue-400' : ''}`}>
+            {isEditMode && (
+              <>
+                <div
+                  {...provided?.dragHandleProps}
+                  className="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                >
+                  <div className="bg-white rounded shadow-md p-1.5 border">
+                    <GripVertical className="h-4 w-4 text-gray-500" />
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  onClick={() => handleDeleteElement(item.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                  <p className="text-3xl font-bold mt-1">{stat.value}</p>
+                  <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
+                </div>
+                <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
+                  <stat.icon className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
+    if (item.type === 'title') {
+      const getAlignmentClass = () => {
+        switch (item.alignment) {
+          case 'center': return 'text-center';
+          case 'right': return 'text-right';
+          default: return 'text-left';
+        }
+      };
+      
+      return (
+        <div
+          ref={provided?.innerRef}
+          {...provided?.draggableProps}
+          className={`col-span-full relative group ${isEditMode ? 'border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-blue-400' : ''} ${isDragging ? 'opacity-75 shadow-lg' : ''}`}
+        >
+          {isEditMode && (
+            <>
+              <div
+                {...provided?.dragHandleProps}
+                className="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              >
+                <div className="bg-white rounded shadow-md p-1.5 border">
+                  <GripVertical className="h-4 w-4 text-gray-500" />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                onClick={() => handleDeleteElement(item.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </>
+          )}
+          <h2 
+            className={`${item.fontSize || 'text-xl'} font-semibold ${getAlignmentClass()} py-2`}
+            style={{ color: item.color || '#1f2937' }}
+          >
+            {item.text}
+          </h2>
+        </div>
+      );
+    }
+    
+    if (item.type === 'separator') {
+      return (
+        <div
+          ref={provided?.innerRef}
+          {...provided?.draggableProps}
+          className={`col-span-full relative group ${isEditMode ? 'py-4' : 'py-2'} ${isDragging ? 'opacity-75' : ''}`}
+        >
+          {isEditMode && (
+            <>
+              <div
+                {...provided?.dragHandleProps}
+                className="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              >
+                <div className="bg-white rounded shadow-md p-1.5 border">
+                  <GripVertical className="h-4 w-4 text-gray-500" />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                onClick={() => handleDeleteElement(item.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </>
+          )}
+          <hr className={`border-gray-300 ${isEditMode ? 'border-dashed hover:border-blue-400 transition-colors' : ''}`} />
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -325,6 +442,17 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  // Filtrer les items pour ne garder que les widgets activés et les éléments personnalisés
+  const visibleItems = layoutItems.filter(item => {
+    if (item.type === 'widget') {
+      return enabledWidgets.includes(item.widgetId);
+    }
+    return true; // Titres et séparateurs sont toujours visibles
+  });
+
+  // Si aucun widget actif
+  const hasActiveWidgets = visibleItems.some(item => item.type === 'widget');
 
   return (
     <div className={`space-y-6 ${isEditMode ? 'pb-24' : ''}`}>
@@ -348,36 +476,8 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Éléments personnalisés (titres, séparateurs) - Avant les widgets */}
-      {layoutItems.filter(item => item.position === 'top' || !item.position).map((item, index) => {
-        if (item.type === 'title') {
-          return (
-            <DashboardTitleElement
-              key={item.id}
-              element={item}
-              isEditMode={isEditMode}
-              onUpdate={handleUpdateElement}
-              onDelete={handleDeleteElement}
-              dragHandleProps={{}}
-            />
-          );
-        }
-        if (item.type === 'separator') {
-          return (
-            <DashboardSeparator
-              key={item.id}
-              element={item}
-              isEditMode={isEditMode}
-              onDelete={handleDeleteElement}
-              dragHandleProps={{}}
-            />
-          );
-        }
-        return null;
-      })}
-
-      {/* Stats Cards */}
-      {stats.length === 0 ? (
+      {/* Message si aucun widget */}
+      {!hasActiveWidgets && !isEditMode && (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-gray-500 mb-2">Aucun widget activé sur le tableau de bord.</p>
@@ -386,66 +486,36 @@ const Dashboard = () => {
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => (
-            <DashboardWidgetWrapper
-              key={index}
-              widget={{ id: `stat-${index}` }}
-              isEditMode={isEditMode}
-              onRemove={() => {}}
-              onResize={handleWidgetResize}
-              size={widgetSizes[`stat-${index}`] || 'normal'}
-              dragHandleProps={{}}
-            >
-              <Card className={isEditMode ? 'border-2 border-dashed border-gray-200' : ''}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                    <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                    <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
-                  </div>
-                  <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
-                    <stat.icon className="h-6 w-6" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            </DashboardWidgetWrapper>
-          ))}
-        </div>
       )}
 
-      {/* Éléments personnalisés - Après les widgets */}
-      {layoutItems.filter(item => item.position === 'middle').map((item) => {
-        if (item.type === 'title') {
-          return (
-            <DashboardTitleElement
-              key={item.id}
-              element={item}
-              isEditMode={isEditMode}
-              onUpdate={handleUpdateElement}
-              onDelete={handleDeleteElement}
-              dragHandleProps={{}}
-            />
-          );
-        }
-        if (item.type === 'separator') {
-          return (
-            <DashboardSeparator
-              key={item.id}
-              element={item}
-              isEditMode={isEditMode}
-              onDelete={handleDeleteElement}
-              dragHandleProps={{}}
-            />
-          );
-        }
-        return null;
-      })}
+      {/* Zone de drag-and-drop */}
+      {(hasActiveWidgets || isEditMode) && (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="dashboard-items" direction="vertical">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+              >
+                {visibleItems.map((item, index) => (
+                  <Draggable
+                    key={item.id}
+                    draggableId={item.id}
+                    index={index}
+                    isDragDisabled={!isEditMode}
+                  >
+                    {(provided, snapshot) => renderLayoutItem(item, provided, snapshot)}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
 
-      {/* Ordres de travail récents */}
+      {/* Section Ordres de travail récents */}
       {canView('workOrders') && enabledWidgets.includes('work_orders_active') && (
         <Card className={isEditMode ? 'border-2 border-dashed border-gray-200' : ''}>
           <CardHeader>
@@ -481,7 +551,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* État des équipements */}
+      {/* Section État des équipements */}
       {canView('assets') && enabledWidgets.includes('equipment_maintenance') && (
         <Card>
           <CardHeader>
@@ -524,34 +594,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       )}
-
-      {/* Éléments personnalisés - En bas */}
-      {layoutItems.filter(item => item.position === 'bottom').map((item) => {
-        if (item.type === 'title') {
-          return (
-            <DashboardTitleElement
-              key={item.id}
-              element={item}
-              isEditMode={isEditMode}
-              onUpdate={handleUpdateElement}
-              onDelete={handleDeleteElement}
-              dragHandleProps={{}}
-            />
-          );
-        }
-        if (item.type === 'separator') {
-          return (
-            <DashboardSeparator
-              key={item.id}
-              element={item}
-              isEditMode={isEditMode}
-              onDelete={handleDeleteElement}
-              dragHandleProps={{}}
-            />
-          );
-        }
-        return null;
-      })}
 
       {/* Barre d'outils d'édition */}
       {isEditMode && (
