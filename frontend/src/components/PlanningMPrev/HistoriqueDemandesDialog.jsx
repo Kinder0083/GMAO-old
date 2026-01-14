@@ -132,7 +132,8 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
       'REFUSEE': { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle, label: 'Refusée' },
       'EXPIREE': { bg: 'bg-gray-100', text: 'text-gray-700', icon: AlertTriangle, label: 'Expirée' },
       'ANNULEE': { bg: 'bg-orange-100', text: 'text-orange-700', icon: Ban, label: 'Annulée' },
-      'TERMINEE': { bg: 'bg-blue-100', text: 'text-blue-700', icon: CheckCircle, label: 'Terminée' }
+      'TERMINEE': { bg: 'bg-blue-100', text: 'text-blue-700', icon: CheckCircle, label: 'Terminée' },
+      'EN_ATTENTE_REPORT': { bg: 'bg-purple-100', text: 'text-purple-700', icon: CalendarClock, label: 'En attente de report' }
     };
     return badges[statut] || badges['EN_ATTENTE'];
   };
@@ -140,6 +141,71 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
   // Vérifier si une demande peut être annulée
   const canCancel = (statut) => {
     return !['REFUSEE', 'TERMINEE', 'ANNULEE'].includes(statut);
+  };
+
+  // Vérifier si une demande peut être reportée
+  const canReport = (statut) => {
+    return ['EN_ATTENTE', 'APPROUVEE'].includes(statut);
+  };
+
+  // Ouvrir la boîte de dialogue de report
+  const openReportDialog = (demande) => {
+    setDemandeToReport(demande);
+    setReportData({
+      raison: '',
+      nouvelle_date_debut: '',
+      nouvelle_date_fin: ''
+    });
+    setReportDialogOpen(true);
+  };
+
+  // Confirmer le report
+  const handleConfirmReport = async () => {
+    if (!demandeToReport || !reportData.raison.trim() || !reportData.nouvelle_date_debut || !reportData.nouvelle_date_fin) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez remplir tous les champs obligatoires',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Vérifier que les nouvelles dates sont valides
+    if (reportData.nouvelle_date_debut > reportData.nouvelle_date_fin) {
+      toast({
+        title: 'Erreur',
+        description: 'La date de fin doit être après la date de début',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setReporting(true);
+    try {
+      await demandesArretAPI.requestReport(demandeToReport.id, reportData);
+      
+      toast({
+        title: 'Succès',
+        description: 'La demande de report a été envoyée au destinataire'
+      });
+      
+      // Rafraîchir la liste
+      await loadData();
+      
+      // Fermer la boîte de dialogue
+      setReportDialogOpen(false);
+      setDemandeToReport(null);
+      setReportData({ raison: '', nouvelle_date_debut: '', nouvelle_date_fin: '' });
+    } catch (error) {
+      console.error('Erreur report:', error);
+      toast({
+        title: 'Erreur',
+        description: error.response?.data?.detail || 'Impossible d\'envoyer la demande de report',
+        variant: 'destructive'
+      });
+    } finally {
+      setReporting(false);
+    }
   };
 
   // Ouvrir la boîte de dialogue d'annulation
