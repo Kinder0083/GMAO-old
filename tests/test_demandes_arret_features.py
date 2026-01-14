@@ -9,7 +9,7 @@ import requests
 import os
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://drag-drop-dash-2.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://maintenance-flow-8.preview.emergentagent.com').rstrip('/')
 
 class TestDemandesArretAPI:
     """Test Demandes d'Arrêt API endpoints"""
