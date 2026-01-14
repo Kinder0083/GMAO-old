@@ -1,14 +1,20 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import {
   ClipboardList,
   Wrench,
   AlertCircle,
   CheckCircle2,
+  Bell,
+  CalendarClock,
+  Calendar,
+  History,
+  AlertTriangle
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import { usePermissions } from '../hooks/usePermissions';
 import { usePreferences } from '../contexts/PreferencesContext';
+import { demandesArretAPI } from '../services/api';
 
 const Dashboard = () => {
   const { canView } = usePermissions();
