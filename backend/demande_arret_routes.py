@@ -642,22 +642,29 @@ async def request_report(
         now = datetime.now(timezone.utc)
         ancien_statut = demande["statut"]
         
+        # Générer un token unique pour la validation du report
+        report_token = str(uuid.uuid4())
+        
         # Créer l'entrée dans l'historique des reports
         report_entry = {
             "id": str(uuid.uuid4()),
             "demande_id": demande_id,
             "demandeur_report_id": current_user.get("id"),
             "demandeur_report_nom": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+            "demandeur_report_email": current_user.get("email"),
             "raison": raison,
             "date_debut_originale": demande.get("date_debut"),
             "date_fin_originale": demande.get("date_fin"),
             "nouvelle_date_debut": nouvelle_date_debut,
             "nouvelle_date_fin": nouvelle_date_fin,
-            "statut": "EN_ATTENTE",  # EN_ATTENTE, ACCEPTE, REFUSE
+            "statut": "EN_ATTENTE",  # EN_ATTENTE, ACCEPTE, REFUSE, CONTRE_PROPOSITION
+            "validation_token": report_token,
             "created_at": now.isoformat(),
             "equipement_noms": demande.get("equipement_noms", []),
+            "destinataire_id": demande.get("destinataire_id"),
             "destinataire_nom": demande.get("destinataire_nom", ""),
-            "destinataire_email": demande.get("destinataire_email", "")
+            "destinataire_email": demande.get("destinataire_email", ""),
+            "contre_proposition": None  # Sera rempli si contre-proposition
         }
         
         await db.reports_historique.insert_one(report_entry)
@@ -680,14 +687,15 @@ async def request_report(
                     "nouvelle_date_debut": nouvelle_date_debut,
                     "nouvelle_date_fin": nouvelle_date_fin,
                     "demande_par": report_entry["demandeur_report_nom"],
-                    "demande_le": now.isoformat()
+                    "demande_le": now.isoformat(),
+                    "validation_token": report_token
                 },
                 "updated_at": now.isoformat()
             }}
         )
         
-        # Envoyer email de notification au destinataire
-        await send_report_request_email(demande, report_entry, current_user)
+        # Envoyer email de notification au destinataire avec boutons d'action
+        await send_report_request_email(demande, report_entry)
         
         # Enregistrer dans le journal d'audit
         await audit_service.log_action(
