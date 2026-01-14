@@ -352,8 +352,6 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
               <div className="text-xs text-purple-600">Report</div>
             </CardContent>
           </Card>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Filtres */}
