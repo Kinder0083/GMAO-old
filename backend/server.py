@@ -7134,9 +7134,13 @@ api_router.include_router(surveillance_history_router)
 api_router.include_router(tailscale_router)
 api_router.include_router(autorisation_router)
 
-# Demandes d'arrêt pour maintenance
+# Demandes d'arrêt pour maintenance (refactorisé en modules)
 from demande_arret_routes import router as demande_arret_router
-api_router.include_router(demande_arret_router)
+from demande_arret_reports_routes import router as demande_arret_reports_router
+from demande_arret_attachments_routes import router as demande_arret_attachments_router
+api_router.include_router(demande_arret_reports_router)  # Routes reports EN PREMIER (avant routes avec {demande_id})
+api_router.include_router(demande_arret_attachments_router)  # Routes attachments
+api_router.include_router(demande_arret_router)  # Routes principales EN DERNIER
 
 # Chat Live
 from chat_routes import router as chat_router, init_chat_routes
