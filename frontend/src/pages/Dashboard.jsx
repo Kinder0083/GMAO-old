@@ -358,7 +358,7 @@ const Dashboard = () => {
 
       {/* Zone de drag-and-drop - TOUJOURS RENDUE */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="dashboard-items" direction="vertical" type="DASHBOARD_ITEM">
+        <Droppable droppableId="dashboard-items" direction="vertical" type="DASHBOARD_ITEM" isDropDisabled={false}>
           {(droppableProvided, droppableSnapshot) => (
             <div
               ref={droppableProvided.innerRef}
@@ -367,28 +367,84 @@ const Dashboard = () => {
                 droppableSnapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
               } ${visibleItems.length === 0 && !isEditMode ? 'hidden' : ''}`}
             >
-              {visibleItems.map((item, index) => (
-                <Draggable
-                  key={item.id}
-                  draggableId={item.id}
-                  index={index}
-                  isDragDisabled={!isEditMode}
-                >
-                  {(draggableProvided, draggableSnapshot) => {
-                    // Widget
-                    if (item.type === 'widget') {
-                      const stat = getStatConfig(item.widgetId);
-                      if (!stat) return null;
+              {visibleItems.map((item, index) => {
+                // Pre-check pour widgets
+                if (item.type === 'widget') {
+                  const stat = getStatConfig(item.widgetId);
+                  if (!stat) return null; // Skip ce widget entièrement
+                }
+                
+                return (
+                  <Draggable
+                    key={item.id}
+                    draggableId={item.id}
+                    index={index}
+                    isDragDisabled={!isEditMode}
+                  >
+                    {(draggableProvided, draggableSnapshot) => {
+                      // Widget
+                      if (item.type === 'widget') {
+                        const stat = getStatConfig(item.widgetId);
+                        
+                        return (
+                          <div
+                            ref={draggableProvided.innerRef}
+                            {...draggableProvided.draggableProps}
+                            {...draggableProvided.dragHandleProps}
+                            className={`w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)] ${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50' : ''}`}
+                            style={draggableProvided.draggableProps.style}
+                          >
+                            <Card className={`relative group h-full ${isEditMode ? 'border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-grab active:cursor-grabbing' : ''}`}>
+                              {isEditMode && (
+                                <>
+                                  <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                    <GripVertical className="h-4 w-4 text-gray-500" />
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteElement(item.id); }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                              <CardContent className="pt-6">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                                    <p className="text-3xl font-bold mt-1">{stat.value}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
+                                  </div>
+                                  <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
+                                    <stat.icon className="h-6 w-6" />
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                        );
+                      }
                       
-                      return (
-                        <div
-                          ref={draggableProvided.innerRef}
-                          {...draggableProvided.draggableProps}
-                          {...draggableProvided.dragHandleProps}
-                          className={`w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)] ${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50' : ''}`}
-                          style={draggableProvided.draggableProps.style}
-                        >
-                          <Card className={`relative group h-full ${isEditMode ? 'border-2 border-dashed border-gray-300 hover:border-blue-400 cursor-grab active:cursor-grabbing' : ''}`}>
+                      // Titre
+                      if (item.type === 'title') {
+                        const getAlignmentClass = () => {
+                          switch (item.alignment) {
+                            case 'center': return 'text-center';
+                            case 'right': return 'text-right';
+                            default: return 'text-left';
+                          }
+                        };
+                        
+                        return (
+                          <div
+                            ref={draggableProvided.innerRef}
+                            {...draggableProvided.draggableProps}
+                            {...draggableProvided.dragHandleProps}
+                            className={`w-full relative group ${isEditMode ? 'border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-blue-400 cursor-grab active:cursor-grabbing' : ''} ${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50 bg-white' : ''}`}
+                            style={draggableProvided.draggableProps.style}
+                          >
                             {isEditMode && (
                               <>
                                 <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
@@ -404,100 +460,58 @@ const Dashboard = () => {
                                 </Button>
                               </>
                             )}
-                            <CardContent className="pt-6">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                                  <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                                  <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
-                                </div>
-                                <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
-                                  <stat.icon className="h-6 w-6" />
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    }
-                    
-                    // Titre
-                    if (item.type === 'title') {
-                      const getAlignmentClass = () => {
-                        switch (item.alignment) {
-                          case 'center': return 'text-center';
-                          case 'right': return 'text-right';
-                          default: return 'text-left';
-                        }
-                      };
+                            <h2 
+                              className={`${item.fontSize || 'text-xl'} font-semibold ${getAlignmentClass()} py-2`}
+                              style={{ color: item.color || '#1f2937' }}
+                            >
+                              {item.text}
+                            </h2>
+                          </div>
+                        );
+                      }
                       
-                      return (
-                        <div
-                          ref={draggableProvided.innerRef}
-                          {...draggableProvided.draggableProps}
-                          {...draggableProvided.dragHandleProps}
-                          className={`w-full relative group ${isEditMode ? 'border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-blue-400 cursor-grab active:cursor-grabbing' : ''} ${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50 bg-white' : ''}`}
-                          style={draggableProvided.draggableProps.style}
-                        >
-                          {isEditMode && (
-                            <>
-                              <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                <GripVertical className="h-4 w-4 text-gray-500" />
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteElement(item.id); }}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </>
-                          )}
-                          <h2 
-                            className={`${item.fontSize || 'text-xl'} font-semibold ${getAlignmentClass()} py-2`}
-                            style={{ color: item.color || '#1f2937' }}
+                      // Séparateur
+                      if (item.type === 'separator') {
+                        return (
+                          <div
+                            ref={draggableProvided.innerRef}
+                            {...draggableProvided.draggableProps}
+                            {...draggableProvided.dragHandleProps}
+                            className={`w-full relative group ${isEditMode ? 'py-4 cursor-grab active:cursor-grabbing' : 'py-2'} ${draggableSnapshot.isDragging ? 'opacity-90 z-50 bg-white rounded' : ''}`}
+                            style={draggableProvided.draggableProps.style}
                           >
-                            {item.text}
-                          </h2>
-                        </div>
-                      );
-                    }
-                    
-                    // Séparateur
-                    if (item.type === 'separator') {
+                            {isEditMode && (
+                              <>
+                                <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                  <GripVertical className="h-4 w-4 text-gray-500" />
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteElement(item.id); }}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
+                            <hr className={`border-gray-300 ${isEditMode ? 'border-dashed hover:border-blue-400 transition-colors' : ''}`} />
+                          </div>
+                        );
+                      }
+                      
+                      // Fallback - ne devrait jamais arriver
                       return (
                         <div
                           ref={draggableProvided.innerRef}
                           {...draggableProvided.draggableProps}
                           {...draggableProvided.dragHandleProps}
-                          className={`w-full relative group ${isEditMode ? 'py-4 cursor-grab active:cursor-grabbing' : 'py-2'} ${draggableSnapshot.isDragging ? 'opacity-90 z-50 bg-white rounded' : ''}`}
-                          style={draggableProvided.draggableProps.style}
-                        >
-                          {isEditMode && (
-                            <>
-                              <div className="absolute -left-2 top-1/2 -translate-y-1/2 bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                <GripVertical className="h-4 w-4 text-gray-500" />
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteElement(item.id); }}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </>
-                          )}
-                          <hr className={`border-gray-300 ${isEditMode ? 'border-dashed hover:border-blue-400 transition-colors' : ''}`} />
-                        </div>
+                        />
                       );
-                    }
-                    
-                    return null;
-                  }}
-                </Draggable>
-              ))}
+                    }}
+                  </Draggable>
+                );
+              })}
               {droppableProvided.placeholder}
             </div>
           )}
