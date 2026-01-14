@@ -254,7 +254,7 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
         </div>
 
         {/* Filtres */}
-        <Card className="mb-3">
+        <Card className="mb-3 flex-shrink-0">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-2">
               <Filter className="h-4 w-4 text-gray-500" />
