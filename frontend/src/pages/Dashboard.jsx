@@ -522,6 +522,46 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Éléments personnalisés - En bas */}
+      {layoutItems.filter(item => item.position === 'bottom').map((item) => {
+        if (item.type === 'title') {
+          return (
+            <DashboardTitleElement
+              key={item.id}
+              element={item}
+              isEditMode={isEditMode}
+              onUpdate={handleUpdateElement}
+              onDelete={handleDeleteElement}
+              dragHandleProps={{}}
+            />
+          );
+        }
+        if (item.type === 'separator') {
+          return (
+            <DashboardSeparator
+              key={item.id}
+              element={item}
+              isEditMode={isEditMode}
+              onDelete={handleDeleteElement}
+              dragHandleProps={{}}
+            />
+          );
+        }
+        return null;
+      })}
+
+      {/* Barre d'outils d'édition */}
+      {isEditMode && (
+        <DashboardEditToolbar
+          onAddTitle={handleAddTitle}
+          onAddSeparator={handleAddSeparator}
+          onSave={handleSaveLayout}
+          onCancel={exitEditMode}
+          onReset={handleResetLayout}
+          hasChanges={hasChanges}
+        />
+      )}
     </div>
   );
 };
