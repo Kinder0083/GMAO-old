@@ -322,7 +322,23 @@ const PlanningMPrev = () => {
 
   const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
-  const today = new Date().toISOString().split('T')[0];
+  // Utiliser la date locale (pas UTC) pour éviter le décalage de fuseau horaire
+  const getTodayLocalString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const getDateLocalString = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const today = getTodayLocalString();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
