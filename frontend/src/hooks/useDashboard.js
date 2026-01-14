@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRealtimeData } from './useRealtimeData';
-import { workOrdersAPI, equipmentsAPI } from '../services/api';
+import { workOrdersAPI, equipmentsAPI, demandesArretAPI } from '../services/api';
 
 /**
  * Hook pour le tableau de bord avec synchronisation temps réel via WebSocket
@@ -31,6 +31,22 @@ export const useDashboard = () => {
       console.error('[useDashboard] Erreur chargement equipments:', error);
       return [];
     }
+  }, []);
+
+  // Trigger des rappels automatiques à la visite du dashboard
+  useEffect(() => {
+    const triggerReminders = async () => {
+      try {
+        await demandesArretAPI.triggerReminders();
+        console.log('[useDashboard] Rappels automatiques vérifiés');
+      } catch (error) {
+        // Silencieux - ne pas bloquer l'utilisateur
+        console.debug('[useDashboard] Trigger rappels:', error.message);
+      }
+    };
+    
+    // Déclencher les rappels une fois au chargement
+    triggerReminders();
   }, []);
 
   // Hook temps réel pour les ordres de travail
