@@ -244,8 +244,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         pollingIntervalRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityType]); // Dépendance stable uniquement sur entityType
+  }, [entityType, loadData, connectWebSocket]); // Dépendances nécessaires
 
   /**
    * Envoyer un ping pour garder la connexion active
