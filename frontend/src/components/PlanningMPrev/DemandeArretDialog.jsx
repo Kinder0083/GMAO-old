@@ -187,7 +187,8 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
 
     setLoading(true);
     try {
-      await demandesArretAPI.create({
+      // 1. Créer la demande
+      const demande = await demandesArretAPI.create({
         date_debut: formData.date_debut,
         date_fin: formData.date_fin,
         periode_debut: formData.periode_debut,
@@ -197,15 +198,40 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
         maintenance_preventive_id: formData.maintenance_preventive_id,
         commentaire: formData.commentaire,
         destinataire_id: formData.destinataire_id,
-        priorite: formData.priorite,
-        attachments: formData.attachments
+        priorite: formData.priorite
       });
+      
+      // 2. Uploader les pièces jointes si présentes
+      if (selectedFiles.length > 0 && demande.id) {
+        setUploadingFiles(true);
+        let uploadSuccess = 0;
+        let uploadFailed = 0;
+        
+        for (const file of selectedFiles) {
+          try {
+            await demandesArretAPI.uploadAttachment(demande.id, file);
+            uploadSuccess++;
+          } catch (uploadError) {
+            console.error('Erreur upload fichier:', uploadError);
+            uploadFailed++;
+          }
+        }
+        
+        if (uploadFailed > 0) {
+          toast({
+            title: 'Attention',
+            description: `${uploadSuccess} fichier(s) uploadé(s), ${uploadFailed} échec(s)`,
+            variant: 'destructive'
+          });
+        }
+      }
       
       toast({
         title: 'Succès',
         description: 'Demande d\'arrêt envoyée avec succès'
       });
       
+      // Reset le formulaire
       setFormData({
         date_debut: '',
         date_fin: '',
@@ -216,9 +242,9 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
         maintenance_preventive_id: null,
         commentaire: '',
         destinataire_id: rspProdUser?.id || '',
-        priorite: 'NORMALE',
-        attachments: []
+        priorite: 'NORMALE'
       });
+      setSelectedFiles([]);
       
       onOpenChange(false);
       if (onSuccess) onSuccess();
@@ -231,6 +257,7 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
       });
     } finally {
       setLoading(false);
+      setUploadingFiles(false);
     }
   };
 
