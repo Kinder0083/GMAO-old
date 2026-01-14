@@ -819,6 +819,106 @@ async def send_expiration_email(demande: dict):
     # À implémenter
     pass
 
+async def send_report_request_email(demande: dict, report: dict, requested_by: dict):
+    """Envoyer email de demande de report au destinataire"""
+    try:
+        equipements_str = ", ".join(demande.get("equipement_noms", []))
+        requested_by_name = f"{requested_by.get('prenom', '')} {requested_by.get('nom', '')}"
+        
+        subject = f"📅 Demande de Report - Maintenance {equipements_str}"
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #f59e0b; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #2563eb; }}
+        .dates-box {{ background: #fef3c7; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #f59e0b; }}
+        .raison-box {{ background: #f3f4f6; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #6b7280; }}
+        .footer {{ text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }}
+        .highlight {{ font-weight: bold; color: #f59e0b; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Demande de Report</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{demande.get('destinataire_nom', '')}</strong>,</p>
+            <p>Une demande de <span class="highlight">report de maintenance</span> a été soumise.</p>
+            
+            <div class="info-box">
+                <h3>📋 Rappel de la demande initiale</h3>
+                <p><strong>Demandeur:</strong> {demande.get('demandeur_nom', '')}</p>
+                <p><strong>Équipements:</strong> {equipements_str}</p>
+                <p><strong>Dates prévues:</strong> Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}</p>
+            </div>
+            
+            <div class="dates-box">
+                <h3>📆 Nouvelles dates demandées</h3>
+                <p><strong>Du:</strong> {report.get('nouvelle_date_debut', '')}</p>
+                <p><strong>Au:</strong> {report.get('nouvelle_date_fin', '')}</p>
+            </div>
+            
+            <div class="raison-box">
+                <h3>📝 Raison du report</h3>
+                <p><strong>Demandé par:</strong> {requested_by_name}</p>
+                <p>{report.get('raison', '')}</p>
+            </div>
+            
+            <p>Veuillez vous connecter à l'application GMAO pour accepter ou refuser cette demande de report.</p>
+        </div>
+        <div class="footer">
+            <p>GMAO Iris - Système de Gestion de Maintenance</p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        text_content = f"""
+Demande de Report de Maintenance
+
+Rappel de la demande initiale:
+- Demandeur: {demande.get('demandeur_nom', '')}
+- Équipements: {equipements_str}
+- Dates prévues: Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}
+
+Nouvelles dates demandées:
+- Du: {report.get('nouvelle_date_debut', '')}
+- Au: {report.get('nouvelle_date_fin', '')}
+
+Raison du report:
+- Demandé par: {requested_by_name}
+- {report.get('raison', '')}
+
+Veuillez vous connecter à l'application GMAO pour accepter ou refuser cette demande.
+
+---
+GMAO Iris - Système de Gestion de Maintenance
+        """
+        
+        success = email_service.send_email(
+            to_email=demande.get('destinataire_email', ''),
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        if not success:
+            logger.warning(f"Échec envoi email report: {demande.get('id', '')}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email report: {str(e)}")
+        return False
+
 async def send_cancellation_email(demande: dict, motif: str, cancelled_by: dict):
     """Envoyer email d'annulation au destinataire"""
     try:
