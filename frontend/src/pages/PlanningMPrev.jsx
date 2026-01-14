@@ -661,7 +661,7 @@ const PlanningMPrev = () => {
                 Équipement
               </div>
               {days.map((day, index) => {
-                const isToday = day.toISOString().split('T')[0] === today;
+                const isToday = getDateLocalString(day) === today;
                 const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                 return (
                   <div
