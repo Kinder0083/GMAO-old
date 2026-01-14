@@ -289,7 +289,8 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
     enAttente: demandes.filter(d => d.statut === 'EN_ATTENTE').length,
     approuvees: demandes.filter(d => d.statut === 'APPROUVEE').length,
     refusees: demandes.filter(d => d.statut === 'REFUSEE').length,
-    annulees: demandes.filter(d => d.statut === 'ANNULEE').length
+    annulees: demandes.filter(d => d.statut === 'ANNULEE').length,
+    enAttenteReport: demandes.filter(d => d.statut === 'EN_ATTENTE_REPORT').length
   };
 
   return (
