@@ -1679,12 +1679,70 @@ async def update_parent_alert_status(parent_id: str):
                 )
 
 @api_router.patch("/equipments/{eq_id}/status")
-async def update_equipment_status(eq_id: str, statut: EquipmentStatus, current_user: dict = Depends(require_permission("assets", "edit"))):
+async def update_equipment_status(
+    eq_id: str, 
+    statut: EquipmentStatus, 
+    force: bool = False,  # Paramètre pour forcer le changement malgré maintenance en cours
+    current_user: dict = Depends(require_permission("assets", "edit"))
+):
     """Mettre à jour rapidement le statut d'un équipement"""
     try:
         equipment = await db.equipments.find_one({"_id": ObjectId(eq_id)})
         if not equipment:
             raise HTTPException(status_code=404, detail="Équipement non trouvé")
+        
+        # Vérifier si l'équipement a une maintenance préventive en cours
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        active_maintenance = await db.planning_equipement.find_one({
+            "equipement_id": eq_id,
+            "date_debut": {"$lte": today},
+            "date_fin": {"$gte": today}
+        })
+        
+        # Si maintenance en cours et pas de force, retourner une demande de confirmation
+        if active_maintenance and not force:
+            # Récupérer les infos de la demande d'arrêt associée
+            demande_arret = await db.demandes_arret.find_one({"id": active_maintenance.get("demande_arret_id")})
+            return {
+                "requires_confirmation": True,
+                "message": "Cet équipement est actuellement en maintenance préventive planifiée",
+                "maintenance_info": {
+                    "id": active_maintenance.get("id"),
+                    "date_debut": active_maintenance.get("date_debut"),
+                    "date_fin": active_maintenance.get("date_fin"),
+                    "demande_id": active_maintenance.get("demande_arret_id"),
+                    "motif": demande_arret.get("motif") if demande_arret else None
+                },
+                "current_status": equipment.get("statut"),
+                "new_status": statut
+            }
+        
+        # Si maintenance en cours et force=true, terminer la maintenance anticipée
+        if active_maintenance and force:
+            # Mettre fin à la maintenance préventive (mettre la date de fin à aujourd'hui)
+            await db.planning_equipement.update_one(
+                {"id": active_maintenance.get("id")},
+                {"$set": {
+                    "date_fin": today,
+                    "fin_anticipee": True,
+                    "fin_anticipee_par": current_user.get("id"),
+                    "fin_anticipee_par_nom": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+                    "fin_anticipee_le": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Mettre à jour la demande d'arrêt si elle existe
+            if active_maintenance.get("demande_arret_id"):
+                await db.demandes_arret.update_one(
+                    {"id": active_maintenance.get("demande_arret_id")},
+                    {"$set": {
+                        "fin_anticipee": True,
+                        "date_fin_effective": today,
+                        "fin_anticipee_par_id": current_user.get("id"),
+                        "fin_anticipee_par_nom": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
         
         # Note: La validation des sous-équipements a été retirée pour permettre
         # aux utilisateurs de changer librement le statut des équipements parents
