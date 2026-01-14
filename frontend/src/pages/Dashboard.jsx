@@ -22,23 +22,23 @@ const Dashboard = () => {
   } = useDashboard();
 
   // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
-  // Si dashboard_widgets est vide ou non défini, utiliser la liste par défaut
+  // IMPORTANT: Si dashboard_widgets est défini (même vide), respecter le choix de l'utilisateur
   const enabledWidgets = useMemo(() => {
-    const widgets = preferences?.dashboard_widgets;
-    if (!widgets || widgets.length === 0) {
-      return [
-        'work_orders_active',
-        'equipment_maintenance',
-        'overdue_tasks',
-        'low_stock',
-        'recent_incidents',
-        'maintenance_stats',
-        'upcoming_maintenance',
-        'quick_actions'
-      ];
+    // Si les préférences ont été chargées et dashboard_widgets existe, l'utiliser tel quel
+    if (preferences && preferences.dashboard_widgets !== undefined && preferences.dashboard_widgets !== null) {
+      return preferences.dashboard_widgets;
     }
-    return widgets;
-  }, [preferences?.dashboard_widgets]);
+    // Sinon (préférences non chargées ou widget non défini), utiliser la liste par défaut
+    return [
+      'work_orders_active',
+      'equipment_maintenance',
+      'overdue_tasks',
+      'maintenance_stats',
+      'demandes_arret_pending',
+      'equipment_status_overview',
+      'global_summary'
+    ];
+  }, [preferences]);
 
   // Calculer les stats dynamiquement selon les widgets activés
   const stats = useMemo(() => {
