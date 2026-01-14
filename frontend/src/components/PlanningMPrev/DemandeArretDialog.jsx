@@ -45,8 +45,7 @@ const DemandeArretDialog = ({ open, onOpenChange, onSuccess }) => {
     maintenance_preventive_id: null,
     commentaire: '',
     destinataire_id: '',
-    priorite: 'NORMALE',
-    attachments: []
+    priorite: 'NORMALE'
   });
 
   // Organiser les équipements en hiérarchie
