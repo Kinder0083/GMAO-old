@@ -38,6 +38,12 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
   const [demandes, setDemandes] = useState([]);
   const [equipments, setEquipments] = useState([]);
   
+  // État pour l'annulation
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [demandeToCancel, setDemandeToCancel] = useState(null);
+  const [cancelMotif, setCancelMotif] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  
   // Filtres
   const [filters, setFilters] = useState({
     statut: 'all',
