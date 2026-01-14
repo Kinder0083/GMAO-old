@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -100,50 +100,42 @@ const Dashboard = () => {
   }, [preferences, enabledWidgets]);
 
   // Fonctions de gestion du mode édition
-  const enterEditMode = () => {
-    console.log('Entering edit mode');
+  const enterEditMode = useCallback(() => {
     setOriginalLayout([...layoutItems]);
     setIsEditMode(true);
     setHasChanges(false);
-  };
+  }, [layoutItems]);
 
-  const exitEditMode = () => {
+  const exitEditMode = useCallback(() => {
     setLayoutItems([...originalLayout]);
     setIsEditMode(false);
     setHasChanges(false);
-  };
+  }, [originalLayout]);
 
-  const handleAddTitle = (titleElement) => {
+  const handleAddTitle = useCallback((titleElement) => {
     const newItem = {
       ...titleElement,
       order: layoutItems.length
     };
     setLayoutItems(prev => [...prev, newItem]);
     setHasChanges(true);
-  };
+  }, [layoutItems.length]);
 
-  const handleAddSeparator = (separatorElement) => {
+  const handleAddSeparator = useCallback((separatorElement) => {
     const newItem = {
       ...separatorElement,
       order: layoutItems.length
     };
     setLayoutItems(prev => [...prev, newItem]);
     setHasChanges(true);
-  };
+  }, [layoutItems.length]);
 
-  const handleUpdateElement = (elementId, updates) => {
-    setLayoutItems(prev => prev.map(item => 
-      item.id === elementId ? { ...item, ...updates } : item
-    ));
-    setHasChanges(true);
-  };
-
-  const handleDeleteElement = (elementId) => {
+  const handleDeleteElement = useCallback((elementId) => {
     setLayoutItems(prev => prev.filter(item => item.id !== elementId));
     setHasChanges(true);
-  };
+  }, []);
 
-  const handleSaveLayout = async () => {
+  const handleSaveLayout = useCallback(async () => {
     try {
       await updatePreferences({
         dashboard_layout: {
@@ -157,9 +149,9 @@ const Dashboard = () => {
     } catch (error) {
       toast({ title: 'Erreur', description: 'Impossible de sauvegarder la disposition', variant: 'destructive' });
     }
-  };
+  }, [layoutItems, updatePreferences, toast]);
 
-  const handleResetLayout = () => {
+  const handleResetLayout = useCallback(() => {
     // Réinitialiser avec le layout par défaut
     const defaultLayout = enabledWidgets.map((widgetId, index) => ({
       id: `widget-${widgetId}`,
@@ -169,28 +161,34 @@ const Dashboard = () => {
     }));
     setLayoutItems(defaultLayout);
     setHasChanges(true);
-  };
+  }, [enabledWidgets]);
 
   // Gestion du drag and drop
-  const onDragEnd = (result) => {
+  const onDragEnd = useCallback((result) => {
     if (!result.destination) return;
     
-    const items = Array.from(layoutItems);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
     
-    // Mettre à jour l'ordre
-    const updatedItems = items.map((item, index) => ({
-      ...item,
-      order: index
-    }));
+    if (sourceIndex === destIndex) return;
     
-    setLayoutItems(updatedItems);
+    setLayoutItems(prev => {
+      const items = Array.from(prev);
+      const [reorderedItem] = items.splice(sourceIndex, 1);
+      items.splice(destIndex, 0, reorderedItem);
+      
+      // Mettre à jour l'ordre
+      return items.map((item, index) => ({
+        ...item,
+        order: index
+      }));
+    });
+    
     setHasChanges(true);
-  };
+  }, []);
 
   // Calculer les stats dynamiquement selon les widgets activés
-  const getStatConfig = (widgetId) => {
+  const getStatConfig = useCallback((widgetId) => {
     const safeWorkOrders = workOrders || [];
     const safeEquipments = equipments || [];
 
@@ -292,7 +290,7 @@ const Dashboard = () => {
     };
 
     return configs[widgetId] ? configs[widgetId]() : null;
-  };
+  }, [workOrders, equipments, canView, demandesStats, reportsStats]);
 
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
@@ -303,137 +301,18 @@ const Dashboard = () => {
     yellow: 'bg-yellow-50 text-yellow-600'
   };
 
-  // Rendu d'un élément du layout
-  const renderLayoutItem = (item, provided, snapshot) => {
-    const isDragging = snapshot?.isDragging;
-    
-    if (item.type === 'widget') {
-      const stat = getStatConfig(item.widgetId);
-      if (!stat) return null;
-      
-      return (
-        <div
-          ref={provided?.innerRef}
-          {...provided?.draggableProps}
-          className={`${isDragging ? 'opacity-75 shadow-lg' : ''}`}
-        >
-          <Card className={`relative group ${isEditMode ? 'border-2 border-dashed border-gray-300 hover:border-blue-400' : ''}`}>
-            {isEditMode && (
-              <>
-                <div
-                  {...provided?.dragHandleProps}
-                  className="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                >
-                  <div className="bg-white rounded shadow-md p-1.5 border">
-                    <GripVertical className="h-4 w-4 text-gray-500" />
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  onClick={() => handleDeleteElement(item.id)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </>
-            )}
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                  <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                  <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
-                </div>
-                <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
-                  <stat.icon className="h-6 w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-    
-    if (item.type === 'title') {
-      const getAlignmentClass = () => {
-        switch (item.alignment) {
-          case 'center': return 'text-center';
-          case 'right': return 'text-right';
-          default: return 'text-left';
-        }
-      };
-      
-      return (
-        <div
-          ref={provided?.innerRef}
-          {...provided?.draggableProps}
-          className={`col-span-full relative group ${isEditMode ? 'border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-blue-400' : ''} ${isDragging ? 'opacity-75 shadow-lg' : ''}`}
-        >
-          {isEditMode && (
-            <>
-              <div
-                {...provided?.dragHandleProps}
-                className="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              >
-                <div className="bg-white rounded shadow-md p-1.5 border">
-                  <GripVertical className="h-4 w-4 text-gray-500" />
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                onClick={() => handleDeleteElement(item.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </>
-          )}
-          <h2 
-            className={`${item.fontSize || 'text-xl'} font-semibold ${getAlignmentClass()} py-2`}
-            style={{ color: item.color || '#1f2937' }}
-          >
-            {item.text}
-          </h2>
-        </div>
-      );
-    }
-    
-    if (item.type === 'separator') {
-      return (
-        <div
-          ref={provided?.innerRef}
-          {...provided?.draggableProps}
-          className={`col-span-full relative group ${isEditMode ? 'py-4' : 'py-2'} ${isDragging ? 'opacity-75' : ''}`}
-        >
-          {isEditMode && (
-            <>
-              <div
-                {...provided?.dragHandleProps}
-                className="absolute -left-3 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              >
-                <div className="bg-white rounded shadow-md p-1.5 border">
-                  <GripVertical className="h-4 w-4 text-gray-500" />
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                onClick={() => handleDeleteElement(item.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </>
-          )}
-          <hr className={`border-gray-300 ${isEditMode ? 'border-dashed hover:border-blue-400 transition-colors' : ''}`} />
-        </div>
-      );
-    }
-    
-    return null;
-  };
+  // Filtrer les items pour ne garder que les widgets activés et les éléments personnalisés
+  const visibleItems = useMemo(() => {
+    return layoutItems.filter(item => {
+      if (item.type === 'widget') {
+        return enabledWidgets.includes(item.widgetId);
+      }
+      return true; // Titres et séparateurs sont toujours visibles
+    });
+  }, [layoutItems, enabledWidgets]);
+
+  // Si aucun widget actif
+  const hasActiveWidgets = visibleItems.some(item => item.type === 'widget');
 
   if (loading) {
     return (
@@ -442,17 +321,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
-  // Filtrer les items pour ne garder que les widgets activés et les éléments personnalisés
-  const visibleItems = layoutItems.filter(item => {
-    if (item.type === 'widget') {
-      return enabledWidgets.includes(item.widgetId);
-    }
-    return true; // Titres et séparateurs sont toujours visibles
-  });
-
-  // Si aucun widget actif
-  const hasActiveWidgets = visibleItems.some(item => item.type === 'widget');
 
   return (
     <div className={`space-y-6 ${isEditMode ? 'pb-24' : ''}`}>
@@ -488,32 +356,162 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Zone de drag-and-drop */}
-      {(hasActiveWidgets || isEditMode) && (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="dashboard-items" direction="vertical">
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-              >
-                {visibleItems.map((item, index) => (
-                  <Draggable
-                    key={item.id}
-                    draggableId={item.id}
-                    index={index}
-                    isDragDisabled={!isEditMode}
-                  >
-                    {(provided, snapshot) => renderLayoutItem(item, provided, snapshot)}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-      )}
+      {/* Zone de drag-and-drop - TOUJOURS RENDUE */}
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="dashboard-items" direction="vertical" type="DASHBOARD_ITEM">
+          {(droppableProvided, droppableSnapshot) => (
+            <div
+              ref={droppableProvided.innerRef}
+              {...droppableProvided.droppableProps}
+              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 min-h-[100px] ${
+                droppableSnapshot.isDraggingOver ? 'bg-blue-50 rounded-lg' : ''
+              } ${visibleItems.length === 0 && !isEditMode ? 'hidden' : ''}`}
+            >
+              {visibleItems.map((item, index) => (
+                <Draggable
+                  key={item.id}
+                  draggableId={item.id}
+                  index={index}
+                  isDragDisabled={!isEditMode}
+                >
+                  {(draggableProvided, draggableSnapshot) => {
+                    // Widget
+                    if (item.type === 'widget') {
+                      const stat = getStatConfig(item.widgetId);
+                      if (!stat) return null;
+                      
+                      return (
+                        <div
+                          ref={draggableProvided.innerRef}
+                          {...draggableProvided.draggableProps}
+                          className={`${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50' : ''}`}
+                          style={draggableProvided.draggableProps.style}
+                        >
+                          <Card className={`relative group h-full ${isEditMode ? 'border-2 border-dashed border-gray-300 hover:border-blue-400' : ''}`}>
+                            {isEditMode && (
+                              <>
+                                <div
+                                  {...draggableProvided.dragHandleProps}
+                                  className="absolute -left-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                >
+                                  <GripVertical className="h-4 w-4 text-gray-500" />
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                  onClick={() => handleDeleteElement(item.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
+                            {!isEditMode && <div {...draggableProvided.dragHandleProps} />}
+                            <CardContent className="pt-6">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                                  <p className="text-3xl font-bold mt-1">{stat.value}</p>
+                                  <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
+                                </div>
+                                <div className={`p-3 rounded-full ${colorClasses[stat.color]}`}>
+                                  <stat.icon className="h-6 w-6" />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      );
+                    }
+                    
+                    // Titre
+                    if (item.type === 'title') {
+                      const getAlignmentClass = () => {
+                        switch (item.alignment) {
+                          case 'center': return 'text-center';
+                          case 'right': return 'text-right';
+                          default: return 'text-left';
+                        }
+                      };
+                      
+                      return (
+                        <div
+                          ref={draggableProvided.innerRef}
+                          {...draggableProvided.draggableProps}
+                          className={`col-span-full relative group ${isEditMode ? 'border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-blue-400' : ''} ${draggableSnapshot.isDragging ? 'opacity-90 shadow-2xl z-50 bg-white' : ''}`}
+                          style={draggableProvided.draggableProps.style}
+                        >
+                          {isEditMode && (
+                            <>
+                              <div
+                                {...draggableProvided.dragHandleProps}
+                                className="absolute -left-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                              >
+                                <GripVertical className="h-4 w-4 text-gray-500" />
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                onClick={() => handleDeleteElement(item.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                          {!isEditMode && <div {...draggableProvided.dragHandleProps} />}
+                          <h2 
+                            className={`${item.fontSize || 'text-xl'} font-semibold ${getAlignmentClass()} py-2`}
+                            style={{ color: item.color || '#1f2937' }}
+                          >
+                            {item.text}
+                          </h2>
+                        </div>
+                      );
+                    }
+                    
+                    // Séparateur
+                    if (item.type === 'separator') {
+                      return (
+                        <div
+                          ref={draggableProvided.innerRef}
+                          {...draggableProvided.draggableProps}
+                          className={`col-span-full relative group ${isEditMode ? 'py-4' : 'py-2'} ${draggableSnapshot.isDragging ? 'opacity-90 z-50 bg-white rounded' : ''}`}
+                          style={draggableProvided.draggableProps.style}
+                        >
+                          {isEditMode && (
+                            <>
+                              <div
+                                {...draggableProvided.dragHandleProps}
+                                className="absolute -left-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing bg-white rounded shadow-md p-1.5 border opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                              >
+                                <GripVertical className="h-4 w-4 text-gray-500" />
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="absolute -top-2 -right-2 h-7 w-7 bg-white shadow-sm text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                                onClick={() => handleDeleteElement(item.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                          {!isEditMode && <div {...draggableProvided.dragHandleProps} />}
+                          <hr className={`border-gray-300 ${isEditMode ? 'border-dashed hover:border-blue-400 transition-colors' : ''}`} />
+                        </div>
+                      );
+                    }
+                    
+                    return null;
+                  }}
+                </Draggable>
+              ))}
+              {droppableProvided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       {/* Section Ordres de travail récents */}
       {canView('workOrders') && enabledWidgets.includes('work_orders_active') && (
