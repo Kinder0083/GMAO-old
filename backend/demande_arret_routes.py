@@ -1,11 +1,15 @@
 """
 Routes API pour les Demandes d'Arrêt pour Maintenance
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 import logging
 import uuid
+import mimetypes
+import aiofiles
+from pathlib import Path
 from bson import ObjectId
 
 from dependencies import get_current_user
@@ -18,6 +22,11 @@ import email_service
 import audit_service as audit_module
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
+
+# Configuration upload pièces jointes
+UPLOAD_DIR = Path("/app/backend/uploads/demandes-arret")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB max
 
 # MongoDB connection - utilise les mêmes variables d'environnement que server.py
 mongo_url = os.environ['MONGO_URL']
