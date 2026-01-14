@@ -325,11 +325,54 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
-        <p className="text-gray-600 mt-1">Vue d&apos;ensemble de vos opérations</p>
+    <div className={`space-y-6 ${isEditMode ? 'pb-24' : ''}`}>
+      {/* Header avec bouton édition */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord</h1>
+          <p className="text-gray-600 mt-1">Vue d&apos;ensemble de vos opérations</p>
+        </div>
+        {!isEditMode && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={enterEditMode}
+            className="flex items-center gap-2"
+            data-testid="edit-dashboard-btn"
+          >
+            <Pencil className="h-4 w-4" />
+            Modifier
+          </Button>
+        )}
       </div>
+
+      {/* Éléments personnalisés (titres, séparateurs) - Avant les widgets */}
+      {layoutItems.filter(item => item.position === 'top' || !item.position).map((item, index) => {
+        if (item.type === 'title') {
+          return (
+            <DashboardTitleElement
+              key={item.id}
+              element={item}
+              isEditMode={isEditMode}
+              onUpdate={handleUpdateElement}
+              onDelete={handleDeleteElement}
+              dragHandleProps={{}}
+            />
+          );
+        }
+        if (item.type === 'separator') {
+          return (
+            <DashboardSeparator
+              key={item.id}
+              element={item}
+              isEditMode={isEditMode}
+              onDelete={handleDeleteElement}
+              dragHandleProps={{}}
+            />
+          );
+        }
+        return null;
+      })}
 
       {/* Stats Cards */}
       {stats.length === 0 ? (
@@ -344,10 +387,19 @@ const Dashboard = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
+            <DashboardWidgetWrapper
+              key={index}
+              widget={{ id: `stat-${index}` }}
+              isEditMode={isEditMode}
+              onRemove={() => {}}
+              onResize={handleWidgetResize}
+              size={widgetSizes[`stat-${index}`] || 'normal'}
+              dragHandleProps={{}}
+            >
+              <Card className={isEditMode ? 'border-2 border-dashed border-gray-200' : ''}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
                     <p className="text-sm font-medium text-gray-500">{stat.title}</p>
                     <p className="text-3xl font-bold mt-1">{stat.value}</p>
                     <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
