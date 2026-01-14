@@ -269,6 +269,8 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
                     <SelectItem value="APPROUVEE">Approuvée</SelectItem>
                     <SelectItem value="REFUSEE">Refusée</SelectItem>
                     <SelectItem value="EXPIREE">Expirée</SelectItem>
+                    <SelectItem value="ANNULEE">Annulée</SelectItem>
+                    <SelectItem value="TERMINEE">Terminée</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
