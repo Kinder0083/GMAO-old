@@ -308,7 +308,7 @@ async def validate_demande_by_token(
                     "demande_arret_id": demande["id"],
                     "date_debut": demande["date_debut"],
                     "date_fin": demande["date_fin"],
-                    "statut": EquipmentStatus.EN_ARRET,
+                    "statut": EquipmentStatus.A_LARRET,
                     "created_at": now.isoformat()
                 }
                 await db.planning_equipement.insert_one(planning_entry)
