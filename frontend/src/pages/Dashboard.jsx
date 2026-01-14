@@ -305,11 +305,15 @@ const Dashboard = () => {
   const visibleItems = useMemo(() => {
     return layoutItems.filter(item => {
       if (item.type === 'widget') {
-        return enabledWidgets.includes(item.widgetId);
+        // Vérifier que le widget est activé ET qu'il a une config valide
+        if (!enabledWidgets.includes(item.widgetId)) return false;
+        // Vérifier que getStatConfig retourne quelque chose
+        const stat = getStatConfig(item.widgetId);
+        return stat !== null;
       }
       return true; // Titres et séparateurs sont toujours visibles
     });
-  }, [layoutItems, enabledWidgets]);
+  }, [layoutItems, enabledWidgets, getStatConfig]);
 
   // Si aucun widget actif
   const hasActiveWidgets = visibleItems.some(item => item.type === 'widget');
