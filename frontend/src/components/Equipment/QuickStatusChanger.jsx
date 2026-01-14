@@ -8,15 +8,34 @@ import {
 } from '../ui/select';
 import { equipmentsAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
+import MaintenanceEndConfirmDialog from './MaintenanceEndConfirmDialog';
 
 const QuickStatusChanger = ({ equipment, onStatusChange }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  
+  // État pour le dialogue de confirmation de fin de maintenance
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    maintenanceInfo: null,
+    newStatus: null
+  });
 
   const handleStatusChange = async (newStatus) => {
     try {
       setLoading(true);
-      await equipmentsAPI.updateStatus(equipment.id, newStatus);
+      const response = await equipmentsAPI.updateStatus(equipment.id, newStatus, false);
+      
+      // Vérifier si une confirmation est nécessaire (maintenance en cours)
+      if (response.data.requires_confirmation) {
+        setConfirmDialog({
+          open: true,
+          maintenanceInfo: response.data.maintenance_info,
+          newStatus: newStatus
+        });
+        setLoading(false);
+        return;
+      }
       
       toast({
         title: 'Succès',
@@ -30,6 +49,33 @@ const QuickStatusChanger = ({ equipment, onStatusChange }) => {
       toast({
         title: 'Erreur',
         description: 'Impossible de mettre à jour le statut',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Confirmation de fin anticipée de maintenance
+  const handleConfirmMaintenanceEnd = async () => {
+    try {
+      setLoading(true);
+      await equipmentsAPI.updateStatus(equipment.id, confirmDialog.newStatus, true);
+      
+      toast({
+        title: 'Succès',
+        description: 'Maintenance terminée et statut mis à jour'
+      });
+
+      setConfirmDialog({ open: false, maintenanceInfo: null, newStatus: null });
+
+      if (onStatusChange) {
+        onStatusChange(equipment.id, confirmDialog.newStatus);
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de terminer la maintenance',
         variant: 'destructive'
       });
     } finally {
@@ -69,63 +115,75 @@ const QuickStatusChanger = ({ equipment, onStatusChange }) => {
   const isDisabled = loading;
 
   return (
-    <Select
-      value={equipment.statut}
-      onValueChange={handleStatusChange}
-      disabled={isDisabled}
-    >
-      <SelectTrigger 
-        className={`px-3 py-1 rounded-full text-xs font-medium border-0 ${getStatusColor(equipment.statut)}`}
+    <>
+      <Select
+        value={equipment.statut}
+        onValueChange={handleStatusChange}
+        disabled={isDisabled}
       >
-        <SelectValue>
-          {getStatusLabel(equipment.statut)}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="OPERATIONNEL">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-600"></span>
-            Opérationnel
-          </span>
-        </SelectItem>
-        <SelectItem value="EN_FONCTIONNEMENT">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-            En Fonctionnement
-          </span>
-        </SelectItem>
-        <SelectItem value="A_LARRET">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-gray-600"></span>
-            A l&apos;arrêt
-          </span>
-        </SelectItem>
-        <SelectItem value="EN_MAINTENANCE">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-yellow-600"></span>
-            En maintenance
-          </span>
-        </SelectItem>
-        <SelectItem value="EN_CT">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-            En C.T
-          </span>
-        </SelectItem>
-        <SelectItem value="HORS_SERVICE">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-600"></span>
-            Hors service
-          </span>
-        </SelectItem>
-        <SelectItem value="DEGRADE">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-            Dégradé
-          </span>
-        </SelectItem>
-      </SelectContent>
-    </Select>
+        <SelectTrigger 
+          className={`px-3 py-1 rounded-full text-xs font-medium border-0 ${getStatusColor(equipment.statut)}`}
+        >
+          <SelectValue>
+            {getStatusLabel(equipment.statut)}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="OPERATIONNEL">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-600"></span>
+              Opérationnel
+            </span>
+          </SelectItem>
+          <SelectItem value="EN_FONCTIONNEMENT">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+              En Fonctionnement
+            </span>
+          </SelectItem>
+          <SelectItem value="A_LARRET">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-gray-600"></span>
+              A l&apos;arrêt
+            </span>
+          </SelectItem>
+          <SelectItem value="EN_MAINTENANCE">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-yellow-600"></span>
+              En maintenance
+            </span>
+          </SelectItem>
+          <SelectItem value="EN_CT">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+              En C.T
+            </span>
+          </SelectItem>
+          <SelectItem value="HORS_SERVICE">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-600"></span>
+              Hors service
+            </span>
+          </SelectItem>
+          <SelectItem value="DEGRADE">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+              Dégradé
+            </span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Dialog de confirmation de fin de maintenance */}
+      <MaintenanceEndConfirmDialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, maintenanceInfo: null, newStatus: null })}
+        onConfirm={handleConfirmMaintenanceEnd}
+        maintenanceInfo={confirmDialog.maintenanceInfo}
+        newStatus={confirmDialog.newStatus}
+        loading={loading}
+      />
+    </>
   );
 };
 
