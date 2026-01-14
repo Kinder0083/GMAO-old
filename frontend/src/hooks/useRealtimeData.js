@@ -213,30 +213,39 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval, loadData]);
 
   /**
-   * Initialisation
+   * Initialisation - exécuté UNE SEULE FOIS
    */
   useEffect(() => {
-    // Charger les données initiales
-    loadData();
+    // Charger les données initiales une seule fois
+    if (!hasLoadedInitialData.current) {
+      loadData();
+    }
 
     // Connecter au WebSocket après un court délai
     const wsTimeout = setTimeout(() => {
       connectWebSocket();
-    }, 500);
+    }, 1000);
 
     // Cleanup
     return () => {
       clearTimeout(wsTimeout);
       
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
       
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     };
-  }, [loadData, connectWebSocket]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityType]); // Dépendance stable uniquement sur entityType
 
   /**
    * Envoyer un ping pour garder la connexion active
