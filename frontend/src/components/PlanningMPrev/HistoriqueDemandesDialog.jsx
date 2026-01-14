@@ -381,6 +381,7 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
                     <SelectItem value="EXPIREE">Expirée</SelectItem>
                     <SelectItem value="ANNULEE">Annulée</SelectItem>
                     <SelectItem value="TERMINEE">Terminée</SelectItem>
+                    <SelectItem value="EN_ATTENTE_REPORT">En attente de report</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
