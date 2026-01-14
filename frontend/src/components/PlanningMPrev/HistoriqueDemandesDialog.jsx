@@ -323,7 +323,7 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
         </Card>
 
         {/* Liste des demandes */}
-        <div className="flex-1 h-[400px] overflow-y-auto border rounded-md">
+        <div className="flex-1 min-h-[300px] max-h-[350px] overflow-y-auto border rounded-md scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100" style={{scrollbarWidth: 'thin'}}>
           <div className="p-2">
           {loading ? (
             <div className="text-center py-8 text-gray-500">Chargement...</div>
