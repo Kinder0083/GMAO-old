@@ -527,6 +527,26 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
                         </div>
                       )}
                       
+                      {/* Informations de report en cours */}
+                      {demande.statut === 'EN_ATTENTE_REPORT' && demande.report_en_cours && (
+                        <div className="mt-3 p-2 bg-purple-50 rounded text-sm">
+                          <strong className="text-purple-700">📅 Report demandé par {demande.report_en_cours.demande_par} le {formatDateTime(demande.report_en_cours.demande_le)}:</strong>
+                          <p className="mt-1"><strong>Nouvelles dates:</strong> {formatDate(demande.report_en_cours.nouvelle_date_debut)} - {formatDate(demande.report_en_cours.nouvelle_date_fin)}</p>
+                          <p className="mt-1"><strong>Raison:</strong> {demande.report_en_cours.raison}</p>
+                        </div>
+                      )}
+                      
+                      {/* Informations de report accepté */}
+                      {demande.dates_originales && demande.dernier_report_accepte_le && (
+                        <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
+                          <strong className="text-blue-700">✓ Report accepté le {formatDateTime(demande.dernier_report_accepte_le)}</strong>
+                          <p className="mt-1"><strong>Dates originales:</strong> {formatDate(demande.dates_originales.date_debut)} - {formatDate(demande.dates_originales.date_fin)}</p>
+                          {demande.nb_reports > 0 && (
+                            <Badge className="mt-1 bg-blue-100 text-blue-700">{demande.nb_reports} report(s)</Badge>
+                          )}
+                        </div>
+                      )}
+                      
                       {/* Informations d'annulation */}
                       {demande.statut === 'ANNULEE' && demande.motif_annulation && (
                         <div className="mt-3 p-2 bg-orange-50 rounded text-sm">
@@ -535,9 +555,35 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
                         </div>
                       )}
                       
-                      {/* Bouton d'annulation */}
-                      {canCancel(demande.statut) && (
-                        <div className="mt-4 pt-3 border-t flex justify-end">
+                      {/* Boutons d'action */}
+                      {(canReport(demande.statut) || canCancel(demande.statut)) && (
+                        <div className="mt-4 pt-3 border-t flex justify-end gap-2">
+                          {canReport(demande.statut) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-200"
+                              onClick={() => openReportDialog(demande)}
+                              data-testid={`report-demande-${demande.id}`}
+                            >
+                              <CalendarClock className="h-4 w-4 mr-2" />
+                              Report
+                            </Button>
+                          )}
+                          {canCancel(demande.statut) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                              onClick={() => openCancelDialog(demande)}
+                              data-testid={`cancel-demande-${demande.id}`}
+                            >
+                              <Ban className="h-4 w-4 mr-2" />
+                              Annulation
+                            </Button>
+                          )}
+                        </div>
+                      )}
                           <Button 
                             variant="outline" 
                             size="sm"
