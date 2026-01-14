@@ -27,6 +27,12 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   const wsRef = useRef(null);
   const pollingIntervalRef = useRef(null);
   const isInitialMount = useRef(true);
+  const hasLoadedInitialData = useRef(false);
+  const reconnectTimeoutRef = useRef(null);
+
+  // Refs stables pour éviter les boucles
+  const fetchDataFnRef = useRef(fetchDataFn);
+  fetchDataFnRef.current = fetchDataFn;
 
   // Obtenir l'utilisateur et le backend URL
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -37,7 +43,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
    */
   const loadData = useCallback(async () => {
     try {
-      const result = await fetchDataFn();
+      const result = await fetchDataFnRef.current();
       setData(result);
       setError(null);
       
@@ -45,12 +51,13 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         setLoading(false);
         isInitialMount.current = false;
       }
+      hasLoadedInitialData.current = true;
     } catch (err) {
       console.error(`[Realtime ${entityType}] Erreur chargement:`, err);
       setError(err.message);
       setLoading(false);
     }
-  }, [entityType, fetchDataFn]);
+  }, [entityType]);
 
   /**
    * Gérer les messages WebSocket
