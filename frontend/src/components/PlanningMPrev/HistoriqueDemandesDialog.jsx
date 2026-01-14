@@ -655,6 +655,93 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        {/* Boîte de dialogue de demande de report */}
+        <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-purple-600">
+                <CalendarClock className="h-5 w-5" />
+                Demander un report
+              </DialogTitle>
+              <DialogDescription>
+                Une notification sera envoyée au destinataire avec les nouvelles dates proposées.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {demandeToReport && (
+              <div className="space-y-4">
+                {/* Rappel de la demande */}
+                <div className="p-3 bg-gray-50 rounded-lg text-sm">
+                  <p><strong>Équipements:</strong> {demandeToReport.equipement_noms?.join(', ')}</p>
+                  <p><strong>Dates actuelles:</strong> {formatDate(demandeToReport.date_debut)} - {formatDate(demandeToReport.date_fin)}</p>
+                  <p><strong>Destinataire:</strong> {demandeToReport.destinataire_nom}</p>
+                </div>
+                
+                {/* Nouvelles dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nouvelle_date_debut">Nouvelle date de début <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="nouvelle_date_debut"
+                      type="date"
+                      value={reportData.nouvelle_date_debut}
+                      onChange={(e) => setReportData(prev => ({ ...prev, nouvelle_date_debut: e.target.value }))}
+                      data-testid="report-date-debut"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nouvelle_date_fin">Nouvelle date de fin <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="nouvelle_date_fin"
+                      type="date"
+                      value={reportData.nouvelle_date_fin}
+                      onChange={(e) => setReportData(prev => ({ ...prev, nouvelle_date_fin: e.target.value }))}
+                      data-testid="report-date-fin"
+                    />
+                  </div>
+                </div>
+                
+                {/* Raison du report */}
+                <div className="space-y-2">
+                  <Label htmlFor="raison_report">Raison du report <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    id="raison_report"
+                    placeholder="Expliquez la raison de cette demande de report..."
+                    value={reportData.raison}
+                    onChange={(e) => setReportData(prev => ({ ...prev, raison: e.target.value }))}
+                    rows={3}
+                    data-testid="report-raison-input"
+                  />
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setReportDialogOpen(false)}
+                disabled={reporting}
+              >
+                Annuler
+              </Button>
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={handleConfirmReport}
+                disabled={reporting || !reportData.raison.trim() || !reportData.nouvelle_date_debut || !reportData.nouvelle_date_fin}
+                data-testid="confirm-report-btn"
+              >
+                {reporting ? 'Envoi...' : 'Envoyer la demande'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Historique des reports */}
+        <HistoriqueReportsDialog 
+          open={reportsHistoryDialogOpen} 
+          onOpenChange={setReportsHistoryDialogOpen} 
+        />
       </DialogContent>
     </Dialog>
   );
