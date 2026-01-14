@@ -144,6 +144,52 @@ const Dashboard = () => {
       });
     }
     
+    // Demandes d'arrêt en attente
+    if (enabledWidgets.includes('demandes_arret_pending')) {
+      allStats.push({
+        title: 'Demandes en attente',
+        value: demandesStats.pending,
+        icon: Bell,
+        color: 'yellow',
+        trend: `${demandesStats.total} demande(s) au total`
+      });
+    }
+    
+    // Reports en attente
+    if (enabledWidgets.includes('reports_pending')) {
+      allStats.push({
+        title: 'Reports en attente',
+        value: reportsStats.pending,
+        icon: CalendarClock,
+        color: 'purple',
+        trend: reportsStats.avgDays > 0 ? `Moy. ${reportsStats.avgDays} jours` : 'Aucun report'
+      });
+    }
+    
+    // Alertes équipements (sous-équipement hors service)
+    if (enabledWidgets.includes('equipment_alerts') && canView('assets')) {
+      const alertEquipments = safeEquipments.filter(eq => eq.statut === 'ALERTE_S_EQUIP');
+      allStats.push({
+        title: 'Alertes équipements',
+        value: alertEquipments.length,
+        icon: AlertTriangle,
+        color: 'red',
+        trend: alertEquipments.length > 0 ? 'Sous-équipement(s) HS' : 'Aucune alerte'
+      });
+    }
+    
+    // Équipements dégradés
+    if (enabledWidgets.includes('equipment_status_overview') && canView('assets')) {
+      const degradedEquipments = safeEquipments.filter(eq => eq.statut === 'DEGRADE');
+      allStats.push({
+        title: 'Équipements dégradés',
+        value: degradedEquipments.length,
+        icon: Wrench,
+        color: 'blue',
+        trend: `${safeEquipments.filter(eq => eq.statut === 'HORS_SERVICE').length} hors service`
+      });
+    }
+    
     return allStats;
   }, [workOrders, equipments, canView, enabledWidgets]);
 
