@@ -324,8 +324,8 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
 
         {/* Liste des demandes */}
         <div 
-          className="flex-1 min-h-0 overflow-y-scroll border rounded-md bg-gray-50/50" 
-          style={{maxHeight: '350px'}}
+          className="flex-1 min-h-0 overflow-y-scroll border rounded-md bg-gray-50/50 pr-1" 
+          style={{maxHeight: '400px', minHeight: '300px'}}
         >
           <div className="p-2 space-y-3">
           {loading ? (
