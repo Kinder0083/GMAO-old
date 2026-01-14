@@ -443,7 +443,8 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
               })}
             </div>
           )}
-        </ScrollArea>
+          </div>
+        </div>
 
         <div className="pt-3 border-t flex justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
