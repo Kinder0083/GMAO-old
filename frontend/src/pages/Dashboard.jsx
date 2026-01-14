@@ -71,6 +71,20 @@ const Dashboard = () => {
     loadDemandesData();
   }, []);
 
+  // Charger le layout sauvegardé
+  useEffect(() => {
+    if (preferences?.dashboard_layout) {
+      const layout = preferences.dashboard_layout;
+      if (layout.items && Array.isArray(layout.items)) {
+        setLayoutItems(layout.items);
+        setOriginalLayout(layout.items);
+      }
+      if (layout.widgetSizes) {
+        setWidgetSizes(layout.widgetSizes);
+      }
+    }
+  }, [preferences]);
+
   // Déterminer quels widgets afficher - mémorisé pour éviter les re-renders
   // IMPORTANT: Si dashboard_widgets est défini (même vide), respecter le choix de l'utilisateur
   const enabledWidgets = useMemo(() => {
@@ -89,6 +103,91 @@ const Dashboard = () => {
       'global_summary'
     ];
   }, [preferences]);
+
+  // Fonctions de gestion du mode édition
+  const enterEditMode = () => {
+    setOriginalLayout([...layoutItems]);
+    setIsEditMode(true);
+    setHasChanges(false);
+  };
+
+  const exitEditMode = () => {
+    setLayoutItems([...originalLayout]);
+    setIsEditMode(false);
+    setHasChanges(false);
+  };
+
+  const handleAddTitle = (titleElement) => {
+    setLayoutItems(prev => [...prev, titleElement]);
+    setHasChanges(true);
+  };
+
+  const handleAddSeparator = (separatorElement) => {
+    setLayoutItems(prev => [...prev, separatorElement]);
+    setHasChanges(true);
+  };
+
+  const handleUpdateElement = (elementId, updates) => {
+    setLayoutItems(prev => prev.map(item => 
+      item.id === elementId ? { ...item, ...updates } : item
+    ));
+    setHasChanges(true);
+  };
+
+  const handleDeleteElement = (elementId) => {
+    setLayoutItems(prev => prev.filter(item => item.id !== elementId));
+    setHasChanges(true);
+  };
+
+  const handleWidgetResize = (widgetId, newSize) => {
+    setWidgetSizes(prev => ({ ...prev, [widgetId]: newSize }));
+    setHasChanges(true);
+  };
+
+  const handleWidgetRemove = async (widgetId) => {
+    // Retirer le widget de la liste des widgets activés
+    const newWidgets = enabledWidgets.filter(w => w !== widgetId);
+    try {
+      await updatePreferences({ dashboard_widgets: newWidgets });
+      toast({ title: 'Widget masqué', description: 'Vous pouvez le réactiver dans Personnalisations.' });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Impossible de masquer le widget', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveLayout = async () => {
+    try {
+      await updatePreferences({
+        dashboard_layout: {
+          items: layoutItems,
+          widgetSizes: widgetSizes
+        }
+      });
+      setOriginalLayout([...layoutItems]);
+      setIsEditMode(false);
+      setHasChanges(false);
+      toast({ title: 'Succès', description: 'Disposition du dashboard sauvegardée' });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Impossible de sauvegarder la disposition', variant: 'destructive' });
+    }
+  };
+
+  const handleResetLayout = async () => {
+    setLayoutItems([]);
+    setWidgetSizes({});
+    setHasChanges(true);
+  };
+
+  // Drag and drop - déplacer un élément
+  const moveItem = useCallback((dragIndex, hoverIndex) => {
+    setLayoutItems(prev => {
+      const items = [...prev];
+      const [draggedItem] = items.splice(dragIndex, 1);
+      items.splice(hoverIndex, 0, draggedItem);
+      return items;
+    });
+    setHasChanges(true);
+  }, []);
 
   // Calculer les stats dynamiquement selon les widgets activés
   const stats = useMemo(() => {
