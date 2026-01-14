@@ -18,6 +18,53 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
+### Session du 14 Janvier 2026
+
+#### ✅ Mode Édition Dashboard (P0 - Complété)
+- **Fichiers modifiés**:
+  - `/app/frontend/src/pages/Dashboard.jsx` (refactorisé avec DragDropContext)
+  - `/app/frontend/src/components/Dashboard/DashboardEditToolbar.jsx`
+  - `/app/frontend/src/components/Dashboard/DashboardTitleElement.jsx`
+  - `/app/frontend/src/components/Dashboard/DashboardSeparator.jsx`
+- **Fonctionnalités**:
+  - Bouton "Modifier" pour activer le mode édition
+  - Drag-and-drop des widgets avec `react-beautiful-dnd`
+  - Ajout de titres personnalisés (taille, couleur, alignement)
+  - Ajout de séparateurs horizontaux
+  - Suppression d'éléments (widgets, titres, séparateurs)
+  - Sauvegarde du layout personnalisé par utilisateur
+  - Annulation et réinitialisation du layout
+  - Poignées de déplacement visibles au hover
+
+#### ✅ Pièces Jointes pour Demandes d'Arrêt (P1 - Complété)
+- **Fichiers modifiés**:
+  - `/app/backend/demande_arret_routes.py` (nouveaux endpoints attachments)
+  - `/app/frontend/src/components/PlanningMPrev/DemandeArretDialog.jsx` (interface upload)
+  - `/app/frontend/src/services/api.js` (méthodes API attachments)
+- **Fonctionnalités Backend**:
+  - `POST /api/demandes-arret/{id}/attachments` - Upload fichier (max 10MB)
+  - `GET /api/demandes-arret/{id}/attachments` - Liste des pièces jointes
+  - `GET /api/demandes-arret/{id}/attachments/{attachment_id}` - Téléchargement
+  - `DELETE /api/demandes-arret/{id}/attachments/{attachment_id}` - Suppression
+  - Stockage dans `/app/backend/uploads/demandes-arret/`
+- **Fonctionnalités Frontend**:
+  - Zone de drag-and-drop pour upload
+  - Affichage de la taille des fichiers
+  - Validation 10MB côté client
+  - Upload automatique après création de la demande
+
+#### ✅ Rappel Email Automatique (P1 - Complété)
+- **Fichiers modifiés**:
+  - `/app/backend/demande_arret_routes.py` (trigger-reminders, send_reminder_email)
+  - `/app/frontend/src/hooks/useDashboard.js` (appel automatique trigger)
+  - `/app/frontend/src/services/api.js` (triggerReminders)
+- **Fonctionnalités**:
+  - `GET /api/demandes-arret/trigger-reminders` - Déclenche la vérification
+  - Rappel envoyé pour demandes en attente depuis 3+ jours
+  - Email avec compte à rebours avant expiration
+  - Marquage `reminder_sent` pour éviter les doublons
+  - Appelé automatiquement à chaque visite du dashboard
+
 ### Session du 13 Janvier 2026 (soir - suite)
 
 #### ✅ Améliorations Majeures "Planning M.Prev" (Complété)
