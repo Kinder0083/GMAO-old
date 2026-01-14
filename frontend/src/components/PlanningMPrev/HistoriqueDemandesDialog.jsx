@@ -333,7 +333,7 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
               <p>Aucune demande trouvée</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <>
               {sortedDemandes.map((demande) => {
                 const statusBadge = getStatusBadge(demande.statut);
                 const priorityBadge = getPriorityBadge(demande.priorite);
