@@ -71,8 +71,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         case 'connected':
           console.log(`[Realtime ${entityType}] Connecté ✅`);
           setWsConnected(true);
-          // Recharger les données après connexion pour être sûr d'avoir les dernières
-          loadData();
+          // Ne PAS recharger les données ici - déjà chargées à l'initialisation
           break;
 
         case 'created':
