@@ -100,6 +100,8 @@ function App() {
           <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/validate-demande-arret" element={<ValidateDemandeArret />} />
+          <Route path="/validate-report" element={<ValidateReport />} />
+          <Route path="/validate-counter-proposal" element={<ValidateCounterProposal />} />
           <Route path="/inscription" element={<Inscription />} />
           {/* Route spéciale pour le Tableau d'affichage - plein écran sans menu */}
           <Route 
