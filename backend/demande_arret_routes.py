@@ -462,6 +462,260 @@ async def cancel_demande(
         logger.error(f"Erreur annulation demande: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== REPORT (DEMANDE DE REPORT) ====================
+
+@router.post("/{demande_id}/request-report")
+async def request_report(
+    demande_id: str,
+    raison: str,
+    nouvelle_date_debut: str,
+    nouvelle_date_fin: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Demander un report de la maintenance à de nouvelles dates"""
+    try:
+        # Récupérer la demande
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande peut être reportée (EN_ATTENTE ou APPROUVEE)
+        if demande["statut"] not in [DemandeArretStatus.EN_ATTENTE, DemandeArretStatus.APPROUVEE]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Impossible de reporter une demande avec le statut '{demande['statut']}'"
+            )
+        
+        now = datetime.now(timezone.utc)
+        ancien_statut = demande["statut"]
+        
+        # Créer l'entrée dans l'historique des reports
+        report_entry = {
+            "id": str(uuid.uuid4()),
+            "demande_id": demande_id,
+            "demandeur_report_id": current_user.get("id"),
+            "demandeur_report_nom": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+            "raison": raison,
+            "date_debut_originale": demande.get("date_debut"),
+            "date_fin_originale": demande.get("date_fin"),
+            "nouvelle_date_debut": nouvelle_date_debut,
+            "nouvelle_date_fin": nouvelle_date_fin,
+            "statut": "EN_ATTENTE",  # EN_ATTENTE, ACCEPTE, REFUSE
+            "created_at": now.isoformat(),
+            "equipement_noms": demande.get("equipement_noms", []),
+            "destinataire_nom": demande.get("destinataire_nom", ""),
+            "destinataire_email": demande.get("destinataire_email", "")
+        }
+        
+        await db.reports_historique.insert_one(report_entry)
+        
+        # Si la demande était approuvée, supprimer du planning
+        planning_deleted = 0
+        if ancien_statut == DemandeArretStatus.APPROUVEE:
+            delete_result = await db.planning_equipement.delete_many({"demande_arret_id": demande_id})
+            planning_deleted = delete_result.deleted_count
+            logger.info(f"Suppression planning pour report: {planning_deleted} entrée(s)")
+        
+        # Mettre à jour le statut de la demande
+        await db.demandes_arret.update_one(
+            {"id": demande_id},
+            {"$set": {
+                "statut": DemandeArretStatus.EN_ATTENTE_REPORT,
+                "report_en_cours": {
+                    "report_id": report_entry["id"],
+                    "raison": raison,
+                    "nouvelle_date_debut": nouvelle_date_debut,
+                    "nouvelle_date_fin": nouvelle_date_fin,
+                    "demande_par": report_entry["demandeur_report_nom"],
+                    "demande_le": now.isoformat()
+                },
+                "updated_at": now.isoformat()
+            }}
+        )
+        
+        # Envoyer email de notification au destinataire
+        await send_report_request_email(demande, report_entry, current_user)
+        
+        # Enregistrer dans le journal d'audit
+        await audit_service.log_action(
+            user_id=current_user.get("id"),
+            user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+            user_email=current_user.get("email"),
+            action=ActionType.UPDATE,
+            entity_type=EntityType.DEMANDE_ARRET,
+            entity_id=demande_id,
+            entity_name=f"Demande d'arrêt - Report demandé",
+            details=f"Demande de report. Raison: {raison}. Nouvelles dates: {nouvelle_date_debut} - {nouvelle_date_fin}",
+            changes={"statut": f"{ancien_statut} → EN_ATTENTE_REPORT"}
+        )
+        
+        logger.info(f"Report demandé pour demande: {demande_id}")
+        return {
+            "message": "Demande de report envoyée avec succès",
+            "demande_id": demande_id,
+            "report_id": report_entry["id"],
+            "planning_entries_deleted": planning_deleted
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur demande de report: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{demande_id}/accept-report")
+async def accept_report(
+    demande_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Accepter le report et mettre à jour les dates"""
+    try:
+        demande = await db.demandes_arret.find_one({"id": demande_id})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        if demande["statut"] != DemandeArretStatus.EN_ATTENTE_REPORT:
+            raise HTTPException(status_code=400, detail="Cette demande n'a pas de report en attente")
+        
+        report_info = demande.get("report_en_cours")
+        if not report_info:
+            raise HTTPException(status_code=400, detail="Informations de report non trouvées")
+        
+        now = datetime.now(timezone.utc)
+        
+        # Sauvegarder les dates originales si pas déjà fait
+        dates_originales = demande.get("dates_originales") or {
+            "date_debut": demande.get("date_debut"),
+            "date_fin": demande.get("date_fin")
+        }
+        
+        # Mettre à jour l'historique du report
+        await db.reports_historique.update_one(
+            {"id": report_info["report_id"]},
+            {"$set": {
+                "statut": "ACCEPTE",
+                "accepte_par_id": current_user.get("id"),
+                "accepte_par_nom": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+                "date_acceptation": now.isoformat()
+            }}
+        )
+        
+        # Calculer le nombre de reports
+        nb_reports = (demande.get("nb_reports") or 0) + 1
+        
+        # Mettre à jour la demande avec les nouvelles dates
+        await db.demandes_arret.update_one(
+            {"id": demande_id},
+            {"$set": {
+                "statut": DemandeArretStatus.APPROUVEE,
+                "date_debut": report_info["nouvelle_date_debut"],
+                "date_fin": report_info["nouvelle_date_fin"],
+                "dates_originales": dates_originales,
+                "dernier_report_accepte_le": now.isoformat(),
+                "nb_reports": nb_reports,
+                "report_en_cours": None,
+                "updated_at": now.isoformat()
+            }}
+        )
+        
+        # Recréer les entrées de planning avec les nouvelles dates
+        # (logique similaire à l'approbation initiale)
+        
+        logger.info(f"Report accepté pour demande: {demande_id}")
+        return {
+            "message": "Report accepté avec succès",
+            "demande_id": demande_id,
+            "nouvelles_dates": {
+                "debut": report_info["nouvelle_date_debut"],
+                "fin": report_info["nouvelle_date_fin"]
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur acceptation report: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reports/history")
+async def get_reports_history(
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer l'historique des reports avec statistiques"""
+    try:
+        # Récupérer tous les reports
+        reports = await db.reports_historique.find().sort("created_at", -1).to_list(1000)
+        reports = [serialize_doc(r) for r in reports]
+        
+        # Récupérer le total des demandes
+        total_demandes = await db.demandes_arret.count_documents({})
+        
+        # Calculer les statistiques
+        total_reports = len(reports)
+        reports_acceptes = len([r for r in reports if r.get("statut") == "ACCEPTE"])
+        reports_en_attente = len([r for r in reports if r.get("statut") == "EN_ATTENTE"])
+        reports_refuses = len([r for r in reports if r.get("statut") == "REFUSE"])
+        
+        # Calculer la durée moyenne de report en jours
+        durees_reports = []
+        for report in reports:
+            if report.get("statut") == "ACCEPTE":
+                try:
+                    date_orig = datetime.fromisoformat(report.get("date_debut_originale", "").replace("Z", "+00:00"))
+                    date_new = datetime.fromisoformat(report.get("nouvelle_date_debut", "").replace("Z", "+00:00"))
+                    duree = (date_new - date_orig).days
+                    if duree > 0:
+                        durees_reports.append(duree)
+                except:
+                    pass
+        
+        duree_moyenne = round(sum(durees_reports) / len(durees_reports), 1) if durees_reports else 0
+        
+        # Équipements les plus reportés
+        equipements_count = {}
+        for report in reports:
+            for eq_nom in report.get("equipement_noms", []):
+                equipements_count[eq_nom] = equipements_count.get(eq_nom, 0) + 1
+        
+        top_equipements = sorted(equipements_count.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        # Taux d'acceptation
+        taux_acceptation = round((reports_acceptes / total_reports * 100), 1) if total_reports > 0 else 0
+        
+        # Délai moyen de réponse (pour les reports acceptés)
+        delais_reponse = []
+        for report in reports:
+            if report.get("statut") == "ACCEPTE" and report.get("date_acceptation"):
+                try:
+                    date_demande = datetime.fromisoformat(report.get("created_at", "").replace("Z", "+00:00"))
+                    date_acceptation = datetime.fromisoformat(report.get("date_acceptation", "").replace("Z", "+00:00"))
+                    delai = (date_acceptation - date_demande).total_seconds() / 3600  # en heures
+                    delais_reponse.append(delai)
+                except:
+                    pass
+        
+        delai_moyen_heures = round(sum(delais_reponse) / len(delais_reponse), 1) if delais_reponse else 0
+        
+        return {
+            "reports": reports,
+            "statistiques": {
+                "total_demandes": total_demandes,
+                "total_reports": total_reports,
+                "reports_vs_total": f"{total_reports}/{total_demandes}",
+                "pourcentage_reports": round((total_reports / total_demandes * 100), 1) if total_demandes > 0 else 0,
+                "reports_acceptes": reports_acceptes,
+                "reports_en_attente": reports_en_attente,
+                "reports_refuses": reports_refuses,
+                "taux_acceptation": taux_acceptation,
+                "duree_moyenne_report_jours": duree_moyenne,
+                "delai_moyen_reponse_heures": delai_moyen_heures,
+                "top_equipements_reportes": top_equipements
+            }
+        }
+    except Exception as e:
+        logger.error(f"Erreur récupération historique reports: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==================== FONCTIONS EMAIL ====================
 
 async def send_demande_email(demande: dict):
