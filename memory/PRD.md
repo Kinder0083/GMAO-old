@@ -18,214 +18,99 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
-### Session du 14 Janvier 2026
+### Session du 14 Janvier 2026 (Session actuelle)
 
-#### ✅ Mode Édition Dashboard (P0 - Complété)
-- **Fichiers modifiés**:
-  - `/app/frontend/src/pages/Dashboard.jsx` (refactorisé avec DragDropContext)
-  - `/app/frontend/src/components/Dashboard/DashboardEditToolbar.jsx`
-  - `/app/frontend/src/components/Dashboard/DashboardTitleElement.jsx`
-  - `/app/frontend/src/components/Dashboard/DashboardSeparator.jsx`
-- **Fonctionnalités**:
-  - Bouton "Modifier" pour activer le mode édition
-  - Drag-and-drop des widgets avec `react-beautiful-dnd`
-  - Ajout de titres personnalisés (taille, couleur, alignement)
-  - Ajout de séparateurs horizontaux
-  - Suppression d'éléments (widgets, titres, séparateurs)
-  - Sauvegarde du layout personnalisé par utilisateur
-  - Annulation et réinitialisation du layout
-  - Poignées de déplacement visibles au hover
+#### ✅ Workflow "Demande de Report" (P0 - Complété)
+- **Fichiers créés**:
+  - `/app/backend/demande_arret_reports_routes.py` - Routes API pour les reports
+  - `/app/frontend/src/pages/ValidateReport.jsx` - Page de validation des reports
+  - `/app/frontend/src/pages/ValidateCounterProposal.jsx` - Page de validation des contre-propositions
+- **Endpoints API**:
+  - `POST /api/demandes-arret/{id}/request-report` - Créer une demande de report
+  - `GET /api/demandes-arret/validate-report?token=...&action=...` - Valider/refuser un report (PUBLIC)
+  - `POST /api/demandes-arret/submit-counter-proposal` - Soumettre une contre-proposition (PUBLIC)
+  - `GET /api/demandes-arret/validate-counter-proposal?token=...&action=...` - Valider contre-proposition (PUBLIC)
+  - `GET /api/demandes-arret/reports/history` - Historique des reports avec statistiques
+- **Workflow complet**:
+  1. Utilisateur demande un report avec nouvelles dates et raison
+  2. Email envoyé au destinataire avec 3 boutons: Approuver, Refuser, Contre-proposer
+  3. Si contre-proposition: formulaire avec nouvelles dates envoyé au demandeur
+  4. Le demandeur peut accepter ou refuser la contre-proposition
+  5. Mise à jour automatique des dates de la demande d'arrêt
+- **Frontend**:
+  - Pages publiques de validation accessibles sans authentification
+  - Affichage des informations du report (dates actuelles, dates demandées, raison)
+  - Formulaire de contre-proposition avec date-pickers
+  - Messages de succès/erreur clairs
 
-#### ✅ Pièces Jointes pour Demandes d'Arrêt (P1 - Complété)
-- **Fichiers modifiés**:
-  - `/app/backend/demande_arret_routes.py` (nouveaux endpoints attachments)
-  - `/app/frontend/src/components/PlanningMPrev/DemandeArretDialog.jsx` (interface upload)
-  - `/app/frontend/src/services/api.js` (méthodes API attachments)
-- **Fonctionnalités Backend**:
-  - `POST /api/demandes-arret/{id}/attachments` - Upload fichier (max 10MB)
-  - `GET /api/demandes-arret/{id}/attachments` - Liste des pièces jointes
-  - `GET /api/demandes-arret/{id}/attachments/{attachment_id}` - Téléchargement
-  - `DELETE /api/demandes-arret/{id}/attachments/{attachment_id}` - Suppression
-  - Stockage dans `/app/backend/uploads/demandes-arret/`
-- **Fonctionnalités Frontend**:
-  - Zone de drag-and-drop pour upload
-  - Affichage de la taille des fichiers
-  - Validation 10MB côté client
-  - Upload automatique après création de la demande
+#### ✅ Refactoring "Demande d'Arrêt" (Complété)
+- **Ancien fichier**: `demande_arret_routes.py` (1939 lignes)
+- **Nouveaux fichiers**:
+  - `/app/backend/demande_arret_routes.py` (469 lignes) - Routes principales
+  - `/app/backend/demande_arret_reports_routes.py` (555 lignes) - Routes reports
+  - `/app/backend/demande_arret_attachments_routes.py` (189 lignes) - Routes pièces jointes
+  - `/app/backend/demande_arret_emails.py` (651 lignes) - Fonctions email
+  - `/app/backend/demande_arret_utils.py` (45 lignes) - Utilitaires partagés
+- **Avantages**:
+  - Code plus maintenable et lisible
+  - Séparation des responsabilités
+  - Facilité de test et de débogage
+  - Réduction des conflits de routage FastAPI
 
-#### ✅ Rappel Email Automatique (P1 - Complété)
-- **Fichiers modifiés**:
-  - `/app/backend/demande_arret_routes.py` (trigger-reminders, send_reminder_email)
-  - `/app/frontend/src/hooks/useDashboard.js` (appel automatique trigger)
-  - `/app/frontend/src/services/api.js` (triggerReminders)
-- **Fonctionnalités**:
-  - `GET /api/demandes-arret/trigger-reminders` - Déclenche la vérification
-  - Rappel envoyé pour demandes en attente depuis 3+ jours
-  - Email avec compte à rebours avant expiration
-  - Marquage `reminder_sent` pour éviter les doublons
-  - Appelé automatiquement à chaque visite du dashboard
+#### ✅ Mode Édition Dashboard (P0 - Complété - Session précédente)
+- Migration de `react-beautiful-dnd` vers `@dnd-kit` pour stabilité
+- Drag-and-drop fonctionnel et validé par l'utilisateur
+- Sauvegarde du layout personnalisé par utilisateur
 
-### Session du 13 Janvier 2026 (soir - suite)
+#### ✅ Pièces Jointes pour Demandes d'Arrêt (P1 - Complété - Session précédente)
+- Upload/download/suppression de fichiers (max 10MB)
+- Zone de drag-and-drop dans le formulaire
 
-#### ✅ Améliorations Majeures "Planning M.Prev" (Complété)
-- **Renommage statut**: ALERTE_S_EQUIP → MAINT_PREV (Maintenance Préventive)
-- **Couleurs mises à jour**:
-  - EN_MAINTENANCE: Jaune clair (#fde047)
-  - MAINT_PREV: Orange (#f97316)
-- **Vue hiérarchique des équipements**:
-  - Affichage par défaut réduit (équipements principaux uniquement)
-  - Chevron pour développer/réduire les sous-équipements
-  - Indentation visuelle des sous-équipements
-- **Bouton "Historique des demandes"**:
-  - Statistiques (Total, En attente, Approuvées, Refusées)
-  - Filtres (Statut, Équipement, Période)
-  - Liste détaillée avec badges de statut et priorité
-  - Affichage des commentaires de refus
-- **Badge de demandes en attente** dans le header
-- **Journal d'audit**: Enregistrement des changements de statut des équipements
-
-#### ✅ Améliorations "Demande d'Arrêt pour Maintenance" (Complété)
-- **Priorité de la demande**: Urgente / Normale / Basse
-- **Pièces jointes** (optionnel)
-- **Sélecteur d'équipements hiérarchique**:
-  - Vue réduite par défaut
-  - Chevron pour développer les sous-équipements
-  - Checkbox pour sélection multiple
-- **Nouveau modèle backend** avec champs:
-  - `priorite`: URGENTE / NORMALE / BASSE
-  - `attachments`: Liste de fichiers joints
-
-### Session du 13 Janvier 2026 (soir)
-
-#### ✅ Refonte Complète Page "Planning M.Prev" avec Historique des Statuts (Complété)
-- **Fichiers modifiés**:
-  - `/app/frontend/src/pages/PlanningMPrev.jsx`
-  - `/app/backend/models.py` (ajout modèle `EquipmentStatusHistory`)
-  - `/app/backend/server.py` (endpoints PUT et PATCH modifiés + nouvel endpoint GET)
-  - `/app/frontend/src/services/api.js` (ajout `getStatusHistory`)
-- **Nouvelle collection MongoDB**: `equipment_status_history`
-  - `equipment_id`: ID de l'équipement
-  - `statut`: Statut enregistré
-  - `changed_at`: Date/heure du changement (arrondie à l'heure inférieure)
-  - `changed_by`: ID de l'utilisateur
-  - `changed_by_name`: Nom de l'utilisateur
-- **Logique implémentée**:
-  - Historique complet des changements de statut conservé
-  - Cellules grises (sans données) pour les périodes sans historique
-  - Statistiques basées uniquement sur les données historiques
-  - Changement de statut = nouveau point de départ (arrondi à l'heure inférieure)
-  - Si changement à la même heure, l'ancien est écrasé (upsert)
-  - Le statut précédent est conservé, seul le futur change
-- **Bug corrigé**: L'endpoint PATCH (changement rapide) n'enregistrait pas l'historique
-- **Couleurs harmonisées** avec la page Équipements (7 statuts)
-
-### Session du 13 Janvier 2026 (après-midi)
-
-#### ✅ Refonte Page "Planning M.Prev" - Orientation Verticale (Complété)
-- Orientation des cellules 24h : **0h en haut, 24h en bas** (verticale)
-- Bordure bleue du jour actuel appliquée **uniquement à l'en-tête**
-
-### Session du 13 Janvier 2026
-
-#### ✅ Appartenance des Articles aux Équipements (Complété)
-- **Fichiers modifiés**:
-  - `/app/backend/models.py` (ajout `equipment_ids` à InventoryBase/Update)
-  - `/app/frontend/src/components/Inventory/InventoryFormDialog.jsx` (sélecteur en cascade)
-  - `/app/frontend/src/pages/Inventory.jsx` (colonne Appartenance + filtre)
-- **Fonctionnalités**:
-  - Un article peut appartenir à **plusieurs** équipements/sous-équipements
-  - Sélecteur en cascade : équipement principal → sous-équipement (optionnel)
-  - Colonne "Appartenance" dans le tableau avec badges
-  - Filtre dropdown pour trier par équipement
-  - Les sous-équipements n'apparaissent que si l'équipement principal en possède
-
-### Session du 12 Janvier 2026
-
-#### ✅ Régimes de Travail avec Cellules Adaptatives (Complété)
-- **Fichiers modifiés**:
-  - `/app/backend/models.py` (UserRegime enum, champs disponibilités étendus)
-  - `/app/frontend/src/pages/Planning.jsx` (cellules adaptatives)
-  - `/app/frontend/src/components/Common/EditUserDialog.jsx`
-  - `/app/frontend/src/components/Common/CreateMemberDialog.jsx`
-- **Régimes disponibles**:
-  - **Journée**: Case pleine carrée (vert/rouge/blanc)
-  - **2×8**: Case divisée horizontalement (Matin en haut, Après-midi en bas)
-  - **3×8**: Cercle divisé en 3 secteurs à 120° (Matin haut-gauche, Après-midi haut-droite, Nuit bas)
-- **Fonctionnalités**:
-  - Clic = Basculer entre Non défini → Disponible → Indisponible
-  - Glisser vers la droite = Copier la cellule sur les jours suivants
-  - Badge du régime (2×8 ou 3×8) affiché à côté du nom
-- **Tests**: 100% réussite (13 tests backend + tests frontend)
-
-#### ✅ Migration WebSocket - Page "Planning" (Complété)
-- **Fichiers**: `/app/frontend/src/hooks/usePlanning.js`, `/app/frontend/src/pages/Planning.jsx`
-- Synchronisation temps réel des utilisateurs et disponibilités
-- Fallback au polling HTTP si WebSocket indisponible
-
-#### ✅ Refonte Page "Planning" (Complété)
-- Affichage du mois complet sans défilement horizontal
-- Regroupement du personnel par service avec sections pliables
-- Services repliés par défaut
-- Support des services personnalisés
-
-#### ✅ Assignation de Service aux Utilisateurs (Complété)
-- Dropdown avec services prédéfinis + saisie manuelle
-
-### Sessions Précédentes
-
-#### ✅ Migration WebSocket - Tableau de bord & Documentations
-#### ✅ Correction Chat Live - Téléchargements
-#### ✅ Améliorations Page "Équipements"
+#### ✅ Rappel Email Automatique (P1 - Complété - Session précédente)
+- Rappel pour demandes en attente depuis 3+ jours
+- Déclenché automatiquement à chaque visite du dashboard
 
 ---
 
-## Issues en Attente
+## Tâches à Venir
 
-### 🟡 P1 - "Rapport P.accident" temps réel (Vérification utilisateur requise)
+### P1 - Priorité Haute
+- **Migration WebSocket**: Pages "Rapports", "Equipes", "Historique Achat"
 
----
-
-## Tâches Futures
-
-### 🟢 P1 - Migration WebSocket (Pages restantes)
-- Planning M.Prev., Rapports, Equipes, Historique Achat
-
-### 🔵 P2 - Chatbot IA (dé-priorisé)
+### P2 - Priorité Moyenne
+- **Page "Rapport P.accident"**: Correction des mises à jour temps réel (WebSockets)
+- **Chatbot IA**: Implémentation (dé-priorisé par l'utilisateur)
 
 ---
 
-## Architecture des Fichiers Clés
+## Architecture des Routes Demandes d'Arrêt
 
 ```
-/app/
-├── backend/
-│   ├── server.py               # FastAPI + WebSocket events
-│   ├── models.py               # UserRegime enum, disponibilités étendues
-│   ├── realtime_manager.py     # Gestion WebSocket
-│   └── realtime_events.py      # USERS, AVAILABILITIES entities
-└── frontend/
-    └── src/
-        ├── pages/
-        │   ├── Planning.jsx        # Cellules adaptatives (Journée/2×8/3×8)
-        │   └── ...
-        ├── hooks/
-        │   └── usePlanning.js      # WebSocket hook
-        └── components/Common/
-            ├── EditUserDialog.jsx  # Champ régime
-            └── CreateMemberDialog.jsx
+/api/demandes-arret/
+├── POST /                              → Créer une demande
+├── GET /                               → Liste des demandes
+├── GET /trigger-reminders              → Déclencher rappels
+├── POST /check-pending-reminders       → Vérifier rappels
+├── GET /reports/history                → Historique des reports
+├── GET /validate-report                → Valider un report (PUBLIC)
+├── POST /submit-counter-proposal       → Contre-proposition (PUBLIC)
+├── GET /validate-counter-proposal      → Valider contre-prop (PUBLIC)
+├── GET /planning/equipements           → Planning équipements
+├── POST /check-expired                 → Vérifier expirations
+├── GET /{demande_id}                   → Détail d'une demande
+├── POST /validate/{token}              → Valider demande initiale
+├── POST /refuse/{token}                → Refuser demande initiale
+├── POST /{demande_id}/cancel           → Annuler une demande
+├── POST /{demande_id}/request-report   → Demander un report
+├── POST /{demande_id}/accept-report    → Accepter report (auth)
+├── POST /{demande_id}/attachments      → Upload pièce jointe
+├── GET /{demande_id}/attachments       → Liste pièces jointes
+├── GET /{demande_id}/attachments/{id}  → Download pièce jointe
+└── DELETE /{demande_id}/attachments/{id} → Supprimer pièce jointe
 ```
 
-## Régimes de Travail
-| Régime | Affichage | Parties |
-|--------|-----------|---------|
-| Journée | Case pleine | 1 (journée entière) |
-| 2×8 | Case divisée horizontalement | 2 (Matin, Après-midi) |
-| 3×8 | Cercle 3 secteurs | 3 (Matin, Après-midi, Nuit) |
+---
 
-## Services Prédéfinis
-Maintenance, Production, QHSE, Logistique, Laboratoire, Industrialisation, Administration, Direction, ADV
-
-## Intégrations Tierces
-- Google Gemini 2.5 Flash (Emergent LLM Key)
-- Fabric.js v6.9.1 (Whiteboard)
-- WebSockets natifs FastAPI
+## Dernière mise à jour
+**Date**: 14 Janvier 2026
+**Agent**: E1
