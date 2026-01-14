@@ -220,7 +220,7 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-4 gap-3 py-2">
+        <div className="grid grid-cols-5 gap-3 py-2">
           <Card className="bg-gray-50">
             <CardContent className="p-3 text-center">
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -243,6 +243,12 @@ const HistoriqueDemandesDialog = ({ open, onOpenChange }) => {
             <CardContent className="p-3 text-center">
               <div className="text-2xl font-bold text-red-700">{stats.refusees}</div>
               <div className="text-xs text-red-600">Refusées</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-orange-50">
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-orange-700">{stats.annulees}</div>
+              <div className="text-xs text-orange-600">Annulées</div>
             </CardContent>
           </Card>
         </div>
