@@ -1,5 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import {
   ClipboardList,
   Wrench,
@@ -9,16 +10,30 @@ import {
   CalendarClock,
   Calendar,
   History,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
 import { usePermissions } from '../hooks/usePermissions';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { demandesArretAPI } from '../services/api';
+import { useToast } from '../hooks/use-toast';
+import DashboardEditToolbar from '../components/Dashboard/DashboardEditToolbar';
+import DashboardTitleElement from '../components/Dashboard/DashboardTitleElement';
+import DashboardSeparator from '../components/Dashboard/DashboardSeparator';
+import DashboardWidgetWrapper from '../components/Dashboard/DashboardWidgetWrapper';
 
 const Dashboard = () => {
   const { canView } = usePermissions();
-  const { preferences } = usePreferences();
+  const { preferences, updatePreferences } = usePreferences();
+  const { toast } = useToast();
+  
+  // Mode édition
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [layoutItems, setLayoutItems] = useState([]);
+  const [originalLayout, setOriginalLayout] = useState([]);
+  const [widgetSizes, setWidgetSizes] = useState({});
+  const [hasChanges, setHasChanges] = useState(false);
   
   // États pour les données des demandes d'arrêt et reports
   const [demandesStats, setDemandesStats] = useState({ pending: 0, total: 0 });
