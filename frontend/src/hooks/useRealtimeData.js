@@ -141,6 +141,11 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
    */
   const connectWebSocket = useCallback(() => {
     if (!enableWebSocket || !user?.id) return;
+    
+    // Éviter les connexions multiples
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return;
+    }
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     let wsHost;
@@ -167,7 +172,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
 
     ws.onopen = () => {
       console.log(`[Realtime ${entityType}] WebSocket ouvert`);
-      setWsConnected(true); // Marquer comme connecté immédiatement
+      setWsConnected(true);
       
       // Arrêter le polling si WebSocket connecté
       if (pollingIntervalRef.current) {
@@ -187,18 +192,25 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
       console.log(`[Realtime ${entityType}] WebSocket fermé`);
       setWsConnected(false);
       
-      // Réessayer après 3 secondes
-      setTimeout(connectWebSocket, 3000);
+      // Clear previous timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       
-      // Activer le polling de secours
+      // Réessayer après 5 secondes (augmenté pour éviter trop de reconnexions)
+      reconnectTimeoutRef.current = setTimeout(() => {
+        connectWebSocket();
+      }, 5000);
+      
+      // Activer le polling de secours (mais pas trop fréquent)
       if (fallbackPolling && !pollingIntervalRef.current) {
         console.log(`[Realtime ${entityType}] Activation polling de secours`);
-        pollingIntervalRef.current = setInterval(loadData, pollingInterval);
+        pollingIntervalRef.current = setInterval(loadData, Math.max(pollingInterval, 60000));
       }
     };
 
     wsRef.current = ws;
-  }, [entityType, user, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval, loadData]);
+  }, [entityType, user?.id, enableWebSocket, BACKEND_URL, handleWebSocketMessage, fallbackPolling, pollingInterval, loadData]);
 
   /**
    * Initialisation
