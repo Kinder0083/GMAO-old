@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
 # Service d'audit pour journalisation
 audit_service = audit_module.AuditService(db)
 
+router = APIRouter(prefix="/demandes-arret", tags=["demandes-arret"])
+
 # ==================== CRUD DEMANDES ====================
 
 @router.post("/")
