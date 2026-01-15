@@ -7675,6 +7675,7 @@ async def startup_scheduler():
         scheduler.start()
         logger.info("✅ Scheduler démarré:")
         logger.info("   - Vérification maintenances préventives: tous les jours à 00h00")
+        logger.info("   - Gestion maintenances planifiées: tous les jours à 00h05 et 12h00")
         logger.info("   - Vérification mises à jour: tous les jours à 01h00")
         logger.info("   - Vérification demandes expirées: tous les jours à 02h00")
         logger.info("   - Nettoyage messages chat (60j): tous les jours à 03h00")
