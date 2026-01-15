@@ -649,3 +649,124 @@ Pour refuser: {refuse_link}
     except Exception as e:
         logger.error(f"Erreur envoi email rappel: {str(e)}")
         return False
+
+
+async def send_end_maintenance_email(demande: dict, equipement_noms: list):
+    """
+    Envoyer email au demandeur pour choisir le nouveau statut après fin de maintenance.
+    Avec boutons colorés pour chaque statut possible.
+    """
+    try:
+        FRONTEND_URL = os.environ.get('FRONTEND_URL', os.environ.get('APP_URL', 'http://localhost:3000'))
+        
+        token = demande.get("end_maintenance_token")
+        if not token:
+            logger.warning("Token de fin de maintenance non trouvé")
+            return False
+        
+        equipements_str = ", ".join(equipement_noms)
+        
+        # Définir les statuts avec leurs couleurs (correspondant à Planning M.Prev)
+        statuts = [
+            {"code": "OPERATIONNEL", "label": "Opérationnel", "color": "#10b981", "text_color": "white"},
+            {"code": "EN_FONCTIONNEMENT", "label": "En Fonctionnement", "color": "#059669", "text_color": "white"},
+            {"code": "A_LARRET", "label": "À l'arrêt", "color": "#6b7280", "text_color": "white"},
+            {"code": "EN_MAINTENANCE", "label": "En maintenance", "color": "#eab308", "text_color": "black"},
+            {"code": "HORS_SERVICE", "label": "Hors service", "color": "#ef4444", "text_color": "white"},
+            {"code": "EN_CT", "label": "En C.T", "color": "#8b5cf6", "text_color": "white"},
+            {"code": "DEGRADE", "label": "Dégradé", "color": "#3b82f6", "text_color": "white"}
+        ]
+        
+        # Générer les boutons HTML
+        buttons_html = ""
+        for s in statuts:
+            url = f"{FRONTEND_URL}/end-maintenance?token={token}&statut={s['code']}"
+            buttons_html += f'''
+                <a href="{url}" 
+                   style="display: inline-block; padding: 12px 20px; margin: 5px; 
+                          text-decoration: none; border-radius: 6px; font-weight: bold;
+                          background-color: {s['color']}; color: {s['text_color']};">
+                    {s['label']}
+                </a>
+            '''
+        
+        subject = f"✅ Fin de Maintenance - {equipements_str}"
+        
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #10b981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .info-box {{ background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #10b981; }}
+        .buttons-container {{ text-align: center; margin: 25px 0; padding: 20px; background: white; border-radius: 8px; }}
+        .footer {{ text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ Fin de Maintenance</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{demande.get('demandeur_nom', '')}</strong>,</p>
+            <p>La période de maintenance planifiée pour le(s) équipement(s) suivant(s) est terminée :</p>
+            
+            <div class="info-box">
+                <h3>📋 Équipements concernés</h3>
+                <p><strong>{equipements_str}</strong></p>
+                <p><strong>Période :</strong> Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}</p>
+                <p><strong>Motif initial :</strong> {demande.get('motif', 'Non spécifié')}</p>
+            </div>
+            
+            <div class="buttons-container">
+                <p><strong>Veuillez sélectionner le nouveau statut de l'équipement :</strong></p>
+                <div style="margin-top: 15px;">
+                    {buttons_html}
+                </div>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 12px; text-align: center;">
+                Le statut de l'équipement sera mis à jour dès que vous aurez cliqué sur un des boutons ci-dessus.
+            </p>
+        </div>
+        <div class="footer">
+            <p>Ce message a été envoyé automatiquement par le système GMAO.</p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        text_content = f"""
+Fin de Maintenance
+
+Bonjour {demande.get('demandeur_nom', '')},
+
+La période de maintenance planifiée pour {equipements_str} est terminée.
+
+Période: Du {demande.get('date_debut', '')} au {demande.get('date_fin', '')}
+
+Veuillez vous rendre sur l'application pour sélectionner le nouveau statut de l'équipement.
+        """
+        
+        success = email_service.send_email(
+            to_email=demande.get('demandeur_email', demande.get('destinataire_email', '')),
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content
+        )
+        
+        if success:
+            logger.info(f"Email de fin de maintenance envoyé pour demande {demande.get('id')}")
+        else:
+            logger.warning(f"Échec envoi email fin de maintenance pour demande {demande.get('id')}")
+        
+        return success
+    except Exception as e:
+        logger.error(f"Erreur envoi email fin de maintenance: {str(e)}")
+        return False
