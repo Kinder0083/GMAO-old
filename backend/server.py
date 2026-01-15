@@ -71,6 +71,117 @@ api_router = APIRouter(prefix="/api")
 # Initialiser le scheduler pour les tâches automatiques
 scheduler = AsyncIOScheduler()
 
+
+# ==================== CRON JOB: GESTION DES MAINTENANCES PLANIFIÉES ====================
+
+async def manage_planned_maintenance_status():
+    """
+    Cron job quotidien pour gérer les transitions de statut des maintenances planifiées.
+    - Démarre les maintenances qui commencent aujourd'hui (statut → EN_MAINTENANCE)
+    - Déclenche les emails de fin pour les maintenances qui se terminent aujourd'hui
+    """
+    try:
+        from demande_arret_emails import send_end_maintenance_email
+        
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        logger.info(f"🔄 [CRON] Gestion des maintenances planifiées pour le {today}...")
+        
+        started_count = 0
+        ending_count = 0
+        
+        # 1. Trouver les maintenances qui DÉMARRENT aujourd'hui
+        maintenances_starting = await db.planning_equipement.find({
+            "date_debut": today,
+            "maintenance_started": {"$ne": True}  # Pas encore démarrée
+        }).to_list(length=None)
+        
+        for entry in maintenances_starting:
+            eq_id = entry.get("equipement_id")
+            
+            # Mettre à jour le statut de l'équipement
+            now = datetime.now(timezone.utc)
+            rounded_hour = now.replace(minute=0, second=0, microsecond=0)
+            
+            await db.equipments.update_one(
+                {"_id": ObjectId(eq_id)},
+                {"$set": {
+                    "statut": "EN_MAINTENANCE",
+                    "statut_changed_at": rounded_hour,
+                    "updated_at": now.isoformat()
+                }}
+            )
+            
+            # Enregistrer dans l'historique
+            history_entry = {
+                "equipment_id": eq_id,
+                "statut": "EN_MAINTENANCE",
+                "changed_at": rounded_hour,
+                "changed_by": "cron_maintenance",
+                "changed_by_name": "Maintenance planifiée (automatique)",
+                "demande_arret_id": entry.get("demande_arret_id"),
+                "is_start_of_maintenance": True
+            }
+            await db.equipment_status_history.update_one(
+                {"equipment_id": eq_id, "changed_at": rounded_hour},
+                {"$set": history_entry},
+                upsert=True
+            )
+            
+            # Marquer comme démarrée
+            await db.planning_equipement.update_one(
+                {"_id": entry["_id"]},
+                {"$set": {"maintenance_started": True}}
+            )
+            
+            started_count += 1
+            logger.info(f"✅ [CRON] Maintenance démarrée pour équipement {eq_id}")
+        
+        # 2. Trouver les maintenances qui SE TERMINENT aujourd'hui
+        maintenances_ending = await db.planning_equipement.find({
+            "date_fin": today,
+            "end_maintenance_email_sent": {"$ne": True}  # Email pas encore envoyé
+        }).to_list(length=None)
+        
+        for entry in maintenances_ending:
+            demande_id = entry.get("demande_arret_id")
+            if not demande_id:
+                continue
+                
+            # Récupérer la demande associée
+            demande = await db.demandes_arret.find_one({"id": demande_id})
+            if not demande:
+                continue
+            
+            # Ne pas envoyer si déjà terminée ou email déjà envoyé
+            if demande.get("statut") == "TERMINEE" or demande.get("end_maintenance_email_sent"):
+                continue
+            
+            # Envoyer l'email de fin de maintenance
+            equipement_noms = demande.get("equipement_noms", [])
+            success = await send_end_maintenance_email(demande, equipement_noms)
+            
+            if success:
+                # Marquer l'email comme envoyé
+                await db.demandes_arret.update_one(
+                    {"id": demande_id},
+                    {"$set": {
+                        "end_maintenance_email_sent": True,
+                        "end_maintenance_email_sent_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                await db.planning_equipement.update_one(
+                    {"_id": entry["_id"]},
+                    {"$set": {"end_maintenance_email_sent": True}}
+                )
+                ending_count += 1
+                logger.info(f"✅ [CRON] Email de fin de maintenance envoyé pour demande {demande_id}")
+        
+        logger.info(f"✅ [CRON] Terminé: {started_count} maintenance(s) démarrée(s), {ending_count} email(s) de fin envoyé(s)")
+        
+    except Exception as e:
+        logger.error(f"❌ [CRON] Erreur gestion maintenances planifiées: {str(e)}")
+
+
 # Fonction pour vérifier et créer automatiquement les bons de travail pour les maintenances échues
 async def auto_check_preventive_maintenance():
     """Fonction exécutée automatiquement chaque jour pour vérifier les maintenances échues"""
