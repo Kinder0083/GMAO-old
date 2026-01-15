@@ -251,6 +251,15 @@ async def validate_report_public(
             
             await send_report_decision_email(demande, report, "ACCEPTE")
             
+            # Broadcast WebSocket pour mise à jour temps réel
+            await broadcast_demande_update("report_accepted", {
+                "id": demande_id,
+                "equipement_ids": demande.get("equipement_ids", []),
+                "date_debut": report["nouvelle_date_debut"],
+                "date_fin": report["nouvelle_date_fin"],
+                "statut": "APPROUVEE"
+            })
+            
             return {
                 "status": "approved",
                 "message": "Report accepté avec succès",
