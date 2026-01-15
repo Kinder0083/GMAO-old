@@ -216,6 +216,14 @@ async def validate_report_public(
                 }}
             )
             
+            # Mettre à jour le planning avec les nouvelles dates
+            await update_planning_for_report(
+                demande_id=demande_id,
+                nouvelle_date_debut=report["nouvelle_date_debut"],
+                nouvelle_date_fin=report["nouvelle_date_fin"],
+                demande=demande
+            )
+            
             await send_report_decision_email(demande, report, "ACCEPTE")
             
             return {
