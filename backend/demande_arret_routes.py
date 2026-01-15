@@ -32,12 +32,37 @@ from demande_arret_emails import (
     send_reminder_email
 )
 
+# Import du manager WebSocket pour les notifications temps réel
+try:
+    from realtime_manager import realtime_manager
+    HAS_REALTIME = True
+except ImportError:
+    HAS_REALTIME = False
+    realtime_manager = None
+
 logger = logging.getLogger(__name__)
 
 # Service d'audit pour journalisation
 audit_service = audit_module.AuditService(db)
 
 router = APIRouter(prefix="/demandes-arret", tags=["demandes-arret"])
+
+
+# ==================== HELPER FUNCTION POUR BROADCAST WEBSOCKET ====================
+
+async def broadcast_demande_update(event_type: str, data: dict):
+    """Broadcast une mise à jour de demande d'arrêt via WebSocket"""
+    if HAS_REALTIME and realtime_manager:
+        try:
+            await realtime_manager.broadcast("demandes_arret", {
+                "type": event_type,
+                "entity_type": "demandes_arret",
+                "data": data,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+            logger.info(f"[Realtime] Event {event_type} émis pour demandes_arret")
+        except Exception as e:
+            logger.warning(f"[Realtime] Erreur broadcast demandes_arret: {e}")
 
 
 # ==================== CRUD DEMANDES ====================
