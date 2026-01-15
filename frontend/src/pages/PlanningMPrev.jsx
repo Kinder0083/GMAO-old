@@ -509,7 +509,6 @@ const PlanningMPrev = () => {
         {/* Cellules des jours */}
         {days.map((day, dayIndex) => {
           const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-          const maintenanceEntries = getMaintenanceEntriesForDay(equipment.id, day);
           const statusBlocks = getStatusBlocksForDay(equipment.id, day);
           
           return (
