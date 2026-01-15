@@ -395,8 +395,25 @@ async def get_planning_equipements(
         if date_fin:
             filter_query["date_fin"] = {"$lte": date_fin}
         
+        # Ne pas inclure les maintenances terminées de manière anticipée
+        filter_query["fin_anticipee"] = {"$ne": True}
+        
         entries = await db.planning_equipement.find(filter_query).to_list(length=None)
-        return [serialize_doc(e) for e in entries]
+        
+        # Filtrer les entrées dont la demande associée est terminée
+        active_entries = []
+        for entry in entries:
+            demande_id = entry.get("demande_arret_id")
+            if demande_id:
+                demande = await db.demandes_arret.find_one({"id": demande_id})
+                # Ne garder que si la demande n'est pas terminée
+                if demande and demande.get("statut") != "TERMINEE":
+                    active_entries.append(entry)
+            else:
+                # Si pas de demande associée, garder l'entrée
+                active_entries.append(entry)
+        
+        return [serialize_doc(e) for e in active_entries]
     except Exception as e:
         logger.error(f"Erreur récupération planning: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
