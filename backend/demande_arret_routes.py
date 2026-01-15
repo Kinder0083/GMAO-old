@@ -300,23 +300,48 @@ async def validate_demande_by_token(
             # Approuver la demande
             new_status = DemandeArretStatus.APPROUVEE
             
-            # Créer les entrées dans le planning
+            # Générer un token pour la fin de maintenance
+            end_maintenance_token = str(uuid.uuid4())
+            
+            # Pour chaque équipement concerné
             for eq_id in demande.get("equipement_ids", []):
+                # Créer l'entrée dans le planning
                 planning_entry = {
                     "id": str(uuid.uuid4()),
                     "equipement_id": eq_id,
                     "demande_arret_id": demande["id"],
                     "date_debut": demande["date_debut"],
                     "date_fin": demande["date_fin"],
-                    "statut": EquipmentStatus.A_LARRET,
+                    "statut": EquipmentStatus.EN_MAINTENANCE,
+                    "end_maintenance_token": end_maintenance_token,
                     "created_at": now.isoformat()
                 }
                 await db.planning_equipement.insert_one(planning_entry)
+                
+                # Créer les entrées dans l'historique des statuts pour toute la période
+                # en écrasant les statuts existants
+                await apply_maintenance_status_to_history(
+                    eq_id=eq_id,
+                    date_debut=demande["date_debut"],
+                    date_fin=demande["date_fin"],
+                    demande_id=demande["id"],
+                    demandeur_nom=demande.get("demandeur_nom", "Système")
+                )
+                
+                # Si la date de début est aujourd'hui ou passée, mettre à jour le statut actuel
+                today = now.strftime("%Y-%m-%d")
+                if demande["date_debut"] <= today:
+                    await update_equipment_status_for_maintenance(
+                        eq_id=eq_id,
+                        new_status=EquipmentStatus.EN_MAINTENANCE,
+                        changed_by_name=demande.get("demandeur_nom", "Système")
+                    )
             
             message = "Demande approuvée avec succès"
         else:
             # Refuser la demande
             new_status = DemandeArretStatus.REFUSEE
+            end_maintenance_token = None
             message = "Demande refusée"
         
         # Mettre à jour la demande
@@ -325,6 +350,8 @@ async def validate_demande_by_token(
             "date_validation": now.isoformat(),
             "updated_at": now.isoformat()
         }
+        if end_maintenance_token:
+            update_data["end_maintenance_token"] = end_maintenance_token
         if commentaire:
             update_data["commentaire_validation"] = commentaire
         if date_proposee:
@@ -342,6 +369,80 @@ async def validate_demande_by_token(
     except Exception as e:
         logger.error(f"Erreur validation demande: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def apply_maintenance_status_to_history(
+    eq_id: str,
+    date_debut: str,
+    date_fin: str,
+    demande_id: str,
+    demandeur_nom: str
+):
+    """
+    Appliquer le statut EN_MAINTENANCE dans l'historique des statuts
+    pour toute la période de maintenance, en écrasant les statuts existants.
+    Crée une entrée par heure (arrondie à l'heure pleine inférieure).
+    """
+    from datetime import datetime, timedelta, timezone
+    
+    # Parser les dates
+    start_date = datetime.strptime(date_debut, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    end_date = datetime.strptime(date_fin, "%Y-%m-%d").replace(hour=23, minute=59, tzinfo=timezone.utc)
+    
+    # Arrondir à l'heure pleine inférieure
+    current_hour = start_date.replace(minute=0, second=0, microsecond=0)
+    
+    # Créer/écraser une entrée pour chaque heure de la période
+    while current_hour <= end_date:
+        history_entry = {
+            "equipment_id": eq_id,
+            "statut": EquipmentStatus.EN_MAINTENANCE,
+            "changed_at": current_hour,
+            "changed_by": "maintenance_planifiee",
+            "changed_by_name": f"Maintenance planifiée ({demandeur_nom})",
+            "demande_arret_id": demande_id,
+            "is_planned_maintenance": True
+        }
+        
+        # Upsert: écraser si une entrée existe déjà pour cette heure
+        await db.equipment_status_history.update_one(
+            {"equipment_id": eq_id, "changed_at": current_hour},
+            {"$set": history_entry},
+            upsert=True
+        )
+        
+        # Passer à l'heure suivante
+        current_hour += timedelta(hours=1)
+    
+    logger.info(f"Historique de maintenance appliqué pour équipement {eq_id} du {date_debut} au {date_fin}")
+
+
+async def update_equipment_status_for_maintenance(
+    eq_id: str,
+    new_status: EquipmentStatus,
+    changed_by_name: str
+):
+    """
+    Mettre à jour le statut actuel d'un équipement pour la maintenance.
+    Met à jour le statut + le point de couleur.
+    """
+    from bson import ObjectId
+    from datetime import datetime, timezone
+    
+    now = datetime.now(timezone.utc)
+    rounded_hour = now.replace(minute=0, second=0, microsecond=0)
+    
+    # Mettre à jour l'équipement
+    await db.equipments.update_one(
+        {"_id": ObjectId(eq_id)},
+        {"$set": {
+            "statut": new_status,
+            "statut_changed_at": rounded_hour,
+            "updated_at": now.isoformat()
+        }}
+    )
+    
+    logger.info(f"Statut équipement {eq_id} mis à jour à {new_status}")
 
 
 @router.post("/refuse/{token}")
