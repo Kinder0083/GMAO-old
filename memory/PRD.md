@@ -18,41 +18,43 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
-### Session du 14 Janvier 2026 (Session actuelle)
+### Session du 15 Janvier 2026 (Session actuelle)
 
-#### ✅ Fin Anticipée de Maintenance Préventive (P0 - Complété)
-- **Problème résolu**: Impossible de changer le statut d'un équipement pendant une maintenance préventive planifiée
-- **Solution implémentée**:
-  - Le backend détecte automatiquement si un équipement a une maintenance en cours
-  - Un dialogue de confirmation s'affiche demandant à l'utilisateur s'il veut terminer la maintenance de manière anticipée
-  - Si confirmé, la date de fin de la maintenance est mise à jour à aujourd'hui
-  - L'information de qui a terminé la maintenance et quand est enregistrée
-- **Fichiers créés/modifiés**:
-  - `/app/frontend/src/components/Equipment/MaintenanceEndConfirmDialog.jsx` (nouveau)
-  - `/app/frontend/src/components/Equipment/QuickStatusChanger.jsx` (modifié)
-  - `/app/backend/server.py` - endpoint `PATCH /api/equipments/{id}/status` (modifié)
-  - `/app/frontend/src/services/api.js` - ajout paramètre `force`
+#### ✅ Système de Maintenance Planifiée Refactorisé (P0 - Complété)
+**Problème initial** : Les maintenances planifiées s'affichaient en couche superposée sur l'historique des statuts au lieu de le remplacer.
 
-#### ✅ Workflow "Demande de Report" (P0 - Complété)
-- **Fichiers créés**:
-  - `/app/backend/demande_arret_reports_routes.py` - Routes API pour les reports
-  - `/app/frontend/src/pages/ValidateReport.jsx` - Page de validation des reports
-  - `/app/frontend/src/pages/ValidateCounterProposal.jsx` - Page de validation des contre-propositions
-- **Endpoints API**:
-  - `POST /api/demandes-arret/{id}/request-report` - Créer une demande de report
-  - `GET /api/demandes-arret/validate-report?token=...&action=...` - Valider/refuser un report (PUBLIC)
-  - `POST /api/demandes-arret/submit-counter-proposal` - Soumettre une contre-proposition (PUBLIC)
-  - `GET /api/demandes-arret/validate-counter-proposal?token=...&action=...` - Valider contre-proposition (PUBLIC)
-  - `GET /api/demandes-arret/reports/history` - Historique des reports avec statistiques
+**Solution implémentée** :
+1. **Approbation de demande d'arrêt** :
+   - Le statut "EN_MAINTENANCE" (jaune) est maintenant appliqué à l'équipement
+   - L'historique des statuts est mis à jour pour toute la période de maintenance
+   - Le point de couleur à gauche du nom est mis à jour
+   - Suit la règle "heure arrondie à l'heure pleine inférieure"
 
-#### ✅ Refactoring "Demande d'Arrêt" (Complété)
-- **Ancien fichier**: `demande_arret_routes.py` (1939 lignes)
-- **Nouveaux fichiers**:
-  - `/app/backend/demande_arret_routes.py` (469 lignes) - Routes principales
-  - `/app/backend/demande_arret_reports_routes.py` (555 lignes) - Routes reports
-  - `/app/backend/demande_arret_attachments_routes.py` (189 lignes) - Routes pièces jointes
-  - `/app/backend/demande_arret_emails.py` (651 lignes) - Fonctions email
-  - `/app/backend/demande_arret_utils.py` (45 lignes) - Utilitaires partagés
+2. **Affichage calendrier Planning M.Prev** :
+   - Les maintenances planifiées **écrasent** l'historique pour leur période (plus de superposition)
+   - Couleur jaune (EN_MAINTENANCE) uniforme pendant la période
+   - Tooltip avec détails de la maintenance
+
+3. **Fin de maintenance** :
+   - Email automatique au demandeur à la date de fin avec boutons colorés
+   - Page `/end-maintenance` avec choix de 7 statuts (Opérationnel, En Fonctionnement, À l'arrêt, En maintenance, Hors service, En C.T, Dégradé)
+   - Boutons aux couleurs correspondantes au Planning M.Prev
+   - Mise à jour automatique du statut équipement + historique
+
+**Fichiers créés/modifiés** :
+- `/app/frontend/src/pages/EndMaintenance.jsx` (nouveau)
+- `/app/frontend/src/pages/PlanningMPrev.jsx` (modifié - getStatusBlocksForDay intègre maintenances)
+- `/app/backend/demande_arret_routes.py` (modifié - endpoints end-maintenance)
+- `/app/backend/demande_arret_emails.py` (modifié - send_end_maintenance_email)
+
+**Endpoints API** :
+- `GET /api/demandes-arret/end-maintenance?token=...` - Infos fin de maintenance (PUBLIC)
+- `POST /api/demandes-arret/end-maintenance?token=...&statut=...` - Traiter fin de maintenance (PUBLIC)
+- `POST /api/demandes-arret/check-end-maintenance` - Vérifier et envoyer emails de fin
+
+#### ✅ Fin Anticipée de Maintenance (Complété - Session précédente)
+- Dialogue de confirmation lors du changement de statut pendant une maintenance en cours
+- Termination anticipée avec mise à jour de la date de fin
 
 ---
 
@@ -67,34 +69,32 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
-## Architecture des Routes Demandes d'Arrêt
+## Workflow Maintenance Planifiée
 
 ```
-/api/demandes-arret/
-├── POST /                              → Créer une demande
-├── GET /                               → Liste des demandes
-├── GET /trigger-reminders              → Déclencher rappels
-├── POST /check-pending-reminders       → Vérifier rappels
-├── GET /reports/history                → Historique des reports
-├── GET /validate-report                → Valider un report (PUBLIC)
-├── POST /submit-counter-proposal       → Contre-proposition (PUBLIC)
-├── GET /validate-counter-proposal      → Valider contre-prop (PUBLIC)
-├── GET /planning/equipements           → Planning équipements
-├── POST /check-expired                 → Vérifier expirations
-├── GET /{demande_id}                   → Détail d'une demande
-├── POST /validate/{token}              → Valider demande initiale
-├── POST /refuse/{token}                → Refuser demande initiale
-├── POST /{demande_id}/cancel           → Annuler une demande
-├── POST /{demande_id}/request-report   → Demander un report
-├── POST /{demande_id}/accept-report    → Accepter report (auth)
-├── POST /{demande_id}/attachments      → Upload pièce jointe
-├── GET /{demande_id}/attachments       → Liste pièces jointes
-├── GET /{demande_id}/attachments/{id}  → Download pièce jointe
-└── DELETE /{demande_id}/attachments/{id} → Supprimer pièce jointe
+1. Demande d'arrêt créée
+   └─> Email au destinataire (Approuver/Refuser)
+
+2. Demande approuvée
+   └─> Statut équipement → EN_MAINTENANCE (si date_debut <= aujourd'hui)
+   └─> Historique mis à jour pour toute la période
+   └─> Entrée planning_equipement créée
+   └─> Point couleur équipement → Jaune
+
+3. Pendant la maintenance
+   └─> Calendrier affiche jaune (EN_MAINTENANCE)
+   └─> Changement de statut manuel → Dialogue de confirmation
+   └─> Si confirmé → Fin anticipée + nouveau statut appliqué
+
+4. À la date de fin
+   └─> Email au demandeur avec boutons colorés
+   └─> Utilisateur choisit nouveau statut
+   └─> Statut équipement mis à jour
+   └─> Demande marquée "TERMINEE"
 ```
 
 ---
 
 ## Dernière mise à jour
-**Date**: 14 Janvier 2026
+**Date**: 15 Janvier 2026
 **Agent**: E1
