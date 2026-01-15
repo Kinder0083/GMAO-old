@@ -9,7 +9,7 @@ import logging
 import uuid
 
 from dependencies import get_current_user
-from models import DemandeArretStatus, ActionType, EntityType
+from models import DemandeArretStatus, EquipmentStatus, ActionType, EntityType
 from demande_arret_utils import db, serialize_doc
 from demande_arret_emails import (
     send_report_request_email,
@@ -25,6 +25,67 @@ logger = logging.getLogger(__name__)
 audit_service = audit_module.AuditService(db)
 
 router = APIRouter(prefix="/demandes-arret", tags=["demandes-arret-reports"])
+
+
+# ==================== FONCTION UTILITAIRE POUR MISE À JOUR DU PLANNING ====================
+
+async def update_planning_for_report(demande_id: str, nouvelle_date_debut: str, nouvelle_date_fin: str, demande: dict):
+    """
+    Met à jour les entrées du planning après l'acceptation d'un report.
+    - Supprime les anciennes entrées (non terminées de manière anticipée)
+    - Crée de nouvelles entrées avec les nouvelles dates
+    """
+    try:
+        # Récupérer les anciennes entrées du planning pour cette demande
+        old_entries = await db.planning_equipement.find({
+            "demande_arret_id": demande_id,
+            "fin_anticipee": {"$ne": True}  # Ne pas toucher aux maintenances déjà terminées
+        }).to_list(length=None)
+        
+        # Supprimer les anciennes entrées
+        if old_entries:
+            delete_result = await db.planning_equipement.delete_many({
+                "demande_arret_id": demande_id,
+                "fin_anticipee": {"$ne": True}
+            })
+            logger.info(f"Report: {delete_result.deleted_count} entrée(s) planning supprimée(s) pour demande {demande_id}")
+        
+        # Générer un nouveau token pour la fin de maintenance
+        end_maintenance_token = str(uuid.uuid4())
+        
+        # Créer de nouvelles entrées pour chaque équipement
+        equipement_ids = demande.get("equipement_ids", [])
+        for eq_id in equipement_ids:
+            planning_entry = {
+                "id": str(uuid.uuid4()),
+                "equipement_id": eq_id,
+                "demande_arret_id": demande_id,
+                "date_debut": nouvelle_date_debut,
+                "date_fin": nouvelle_date_fin,
+                "periode_debut": demande.get("periode_debut"),
+                "periode_fin": demande.get("periode_fin"),
+                "heure_debut": demande.get("heure_debut"),
+                "heure_fin": demande.get("heure_fin"),
+                "motif": demande.get("motif"),
+                "statut": EquipmentStatus.EN_MAINTENANCE,
+                "end_maintenance_token": end_maintenance_token,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "report_applied": True  # Marquer comme créé suite à un report
+            }
+            await db.planning_equipement.insert_one(planning_entry)
+        
+        logger.info(f"Report: {len(equipement_ids)} nouvelle(s) entrée(s) planning créée(s) pour demande {demande_id}")
+        
+        # Mettre à jour le token de fin de maintenance dans la demande aussi
+        await db.demandes_arret.update_one(
+            {"id": demande_id},
+            {"$set": {"end_maintenance_token": end_maintenance_token}}
+        )
+        
+        return True
+    except Exception as e:
+        logger.error(f"Erreur mise à jour planning pour report: {str(e)}")
+        return False
 
 
 # ==================== HISTORIQUE DES REPORTS ====================
