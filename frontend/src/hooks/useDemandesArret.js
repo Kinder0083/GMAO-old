@@ -122,9 +122,25 @@ export const useDemandesArret = (options = {}) => {
     }
 
     try {
-      // Utiliser un user_id générique pour le planning (pas besoin d'authentification pour écouter)
+      // Construire l'URL WebSocket comme useRealtimeData
+      const backendUrl = process.env.REACT_APP_BACKEND_URL;
+      let wsHost = 'localhost:8001';
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      
+      if (backendUrl) {
+        try {
+          const url = new URL(backendUrl);
+          wsHost = url.host;
+        } catch (e) {
+          wsHost = window.location.host;
+        }
+      } else {
+        wsHost = window.location.host;
+      }
+      
+      // Utiliser un user_id générique pour le planning
       const userId = 'planning-viewer-' + Date.now();
-      const wsUrl = `${WS_BASE_URL}/api/ws/realtime/demandes_arret?user_id=${userId}`;
+      const wsUrl = `${wsProtocol}//${wsHost}/ws/realtime/demandes_arret?user_id=${userId}`;
       
       console.log('[useDemandesArret] Connexion WebSocket:', wsUrl);
       
