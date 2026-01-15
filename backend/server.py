@@ -1803,11 +1803,13 @@ async def update_equipment_status(
             raise HTTPException(status_code=404, detail="Équipement non trouvé")
         
         # Vérifier si l'équipement a une maintenance préventive en cours
+        # IMPORTANT: Exclure les maintenances déjà terminées de manière anticipée
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         active_maintenance = await db.planning_equipement.find_one({
             "equipement_id": eq_id,
             "date_debut": {"$lte": today},
-            "date_fin": {"$gte": today}
+            "date_fin": {"$gte": today},
+            "fin_anticipee": {"$ne": True}  # Exclure les maintenances déjà terminées
         })
         
         # Si maintenance en cours et pas de force, retourner une demande de confirmation
