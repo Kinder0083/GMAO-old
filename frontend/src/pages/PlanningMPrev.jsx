@@ -485,11 +485,13 @@ const PlanningMPrev = () => {
 
   // Fonction pour obtenir le statut effectif d'un équipement (prenant en compte les maintenances actives)
   const getEffectiveStatus = (equipmentId, equipmentStatus) => {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
     // Vérifier si une maintenance planifiée active couvre aujourd'hui
     const activeMaintenance = planningEntries.find(e => {
       if (e.equipement_id !== equipmentId) return false;
+      // La maintenance doit être active AUJOURD'HUI (entre date_debut et date_fin inclus)
       return today >= e.date_debut && today <= e.date_fin;
     });
     
