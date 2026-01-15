@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { demandesArretAPI } from '../services/api';
 
-const WS_BASE_URL = process.env.REACT_APP_BACKEND_URL?.replace('https://', 'wss://').replace('http://', 'ws://') || 'ws://localhost:8001';
-
 /**
  * Hook pour les demandes d'arrêt avec synchronisation temps réel via WebSocket
  * Utilisé par la page Planning M.Prev pour recevoir les mises à jour en temps réel
