@@ -509,7 +509,9 @@ export const demandesArretAPI = {
   downloadAttachment: (demandeId, attachmentId) => api.get(`/demandes-arret/${demandeId}/attachments/${attachmentId}`, { responseType: 'blob' }),
   deleteAttachment: (demandeId, attachmentId) => api.delete(`/demandes-arret/${demandeId}/attachments/${attachmentId}`).then(res => res.data),
   // Rappels automatiques
-  triggerReminders: () => api.get('/demandes-arret/trigger-reminders').then(res => res.data)
+  triggerReminders: () => api.get('/demandes-arret/trigger-reminders').then(res => res.data),
+  // Vérification fins de maintenance
+  checkEndMaintenance: () => api.post('/demandes-arret/check-end-maintenance').then(res => res.data)
 };
 
 // User Preferences API
