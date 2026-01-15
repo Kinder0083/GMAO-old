@@ -903,7 +903,8 @@ const PlanningMPrev = () => {
         onOpenChange={setDialogOpen}
         equipments={equipments}
         onSuccess={() => {
-          loadPlanningEntries();
+          // Rafraîchir le planning via le hook
+          refreshPlanning();
           loadPendingDemandesCount();
           setDialogOpen(false);
         }}
