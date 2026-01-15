@@ -7454,7 +7454,7 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
         await websocket.accept()
         logger.info(f"[Realtime] WebSocket connecté: {entity_type}/{user_id}")
         
-        # Connecter l'utilisateur
+        # Connecter l'utilisateur au manager
         await realtime_manager.connect(entity_type, user_id, websocket)
         
         # Garder la connexion ouverte
