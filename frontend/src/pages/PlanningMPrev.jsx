@@ -177,7 +177,7 @@ const PlanningMPrev = () => {
   }, [statusHistory]);
 
   // Obtenir le statut d'un équipement pour une date/heure donnée
-  const getStatusForDateTime = (equipmentId, dateTime) => {
+  const getStatusForDateTime = (equipmentId, dateTime, ignorePlannedMaintenance = false) => {
     const history = historyByEquipment[equipmentId];
     if (!history || history.length === 0) {
       return null;
@@ -186,6 +186,10 @@ const PlanningMPrev = () => {
     let lastStatus = null;
     for (const entry of history) {
       if (entry.changed_at <= dateTime) {
+        // Si on ignore les maintenances planifiées, ne pas prendre en compte ces entrées
+        if (ignorePlannedMaintenance && entry.is_planned_maintenance) {
+          continue;
+        }
         lastStatus = entry.statut;
       } else {
         break;
@@ -206,14 +210,15 @@ const PlanningMPrev = () => {
     const dayEnd = new Date(day);
     dayEnd.setHours(23, 59, 59, 999);
     
-    // Vérifier si une maintenance planifiée couvre ce jour
+    // Vérifier si une maintenance planifiée ACTIVE couvre ce jour
     const dateStr = day.toISOString().split('T')[0];
     const maintenanceForDay = planningEntries.find(e => {
       if (e.equipement_id !== equipmentId) return false;
+      // La maintenance doit couvrir ce jour (entre date_debut et date_fin inclus)
       return dateStr >= e.date_debut && dateStr <= e.date_fin;
     });
     
-    // Si maintenance planifiée, elle écrase tout l'historique pour ce jour
+    // Si maintenance planifiée ACTIVE, elle écrase tout l'historique pour ce jour
     if (maintenanceForDay) {
       // Calculer les heures de début/fin pour ce jour
       let startHour = 0;
@@ -237,9 +242,9 @@ const PlanningMPrev = () => {
         }
       }
       
-      // Obtenir le statut avant la maintenance (pour afficher avant startHour)
+      // Obtenir le statut avant la maintenance (ignorer les entrées de maintenance planifiée)
       const statusBeforeMaintenance = history && history.length > 0 
-        ? getStatusForDateTime(equipmentId, new Date(day.getFullYear(), day.getMonth(), day.getDate(), startHour - 1))
+        ? getStatusForDateTime(equipmentId, new Date(day.getFullYear(), day.getMonth(), day.getDate(), startHour - 1), true)
         : null;
       
       // Bloc avant la maintenance (si applicable)
@@ -262,9 +267,9 @@ const PlanningMPrev = () => {
       
       // Bloc après la maintenance (si applicable et si c'est le dernier jour)
       if (endHour < 24 && dateStr === maintenanceForDay.date_fin) {
-        // Vérifier s'il y a un statut après la maintenance dans l'historique
+        // Obtenir le statut après la maintenance (ignorer les entrées de maintenance planifiée)
         const statusAfterMaintenance = history && history.length > 0 
-          ? getStatusForDateTime(equipmentId, new Date(day.getFullYear(), day.getMonth(), day.getDate(), endHour + 1))
+          ? getStatusForDateTime(equipmentId, new Date(day.getFullYear(), day.getMonth(), day.getDate(), endHour + 1), true)
           : null;
         
         blocks.push({
@@ -277,17 +282,22 @@ const PlanningMPrev = () => {
       return blocks;
     }
     
-    // Pas de maintenance planifiée - comportement normal basé sur l'historique
-    if (!history || history.length === 0) {
-      return [{ startHour: 0, endHour: 24, status: null }];
+    // Pas de maintenance planifiée active - utiliser l'historique SANS les entrées de maintenance planifiée
+    // Filtrer l'historique pour exclure les entrées de maintenance planifiée
+    const filteredHistory = history ? history.filter(entry => !entry.is_planned_maintenance) : [];
+    
+    if (filteredHistory.length === 0) {
+      // Chercher le statut actuel de l'équipement (sans maintenance planifiée)
+      const lastNonMaintenanceStatus = getStatusForDateTime(equipmentId, dayStart, true);
+      return [{ startHour: 0, endHour: 24, status: lastNonMaintenanceStatus }];
     }
     
-    const changesThisDay = history.filter(entry => {
+    const changesThisDay = filteredHistory.filter(entry => {
       const changeDate = entry.changed_at;
       return changeDate >= dayStart && changeDate <= dayEnd;
     });
     
-    const statusAtDayStart = getStatusForDateTime(equipmentId, dayStart);
+    const statusAtDayStart = getStatusForDateTime(equipmentId, dayStart, true);
     
     if (changesThisDay.length === 0) {
       return [{ startHour: 0, endHour: 24, status: statusAtDayStart }];
