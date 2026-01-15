@@ -123,17 +123,21 @@ export const useDemandesArret = (options = {}) => {
       // Construire l'URL WebSocket comme useRealtimeData
       const backendUrl = process.env.REACT_APP_BACKEND_URL;
       let wsHost = 'localhost:8001';
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      let wsProtocol = 'ws:';
       
       if (backendUrl) {
         try {
           const url = new URL(backendUrl);
           wsHost = url.host;
+          // Utiliser le même protocole que le backend
+          wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
         } catch (e) {
           wsHost = window.location.host;
+          wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         }
       } else {
         wsHost = window.location.host;
+        wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       }
       
       // Utiliser un user_id générique pour le planning
