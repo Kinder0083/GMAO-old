@@ -511,7 +511,9 @@ export const demandesArretAPI = {
   // Rappels automatiques
   triggerReminders: () => api.get('/demandes-arret/trigger-reminders').then(res => res.data),
   // Vérification fins de maintenance
-  checkEndMaintenance: () => api.post('/demandes-arret/check-end-maintenance').then(res => res.data)
+  checkEndMaintenance: () => api.post('/demandes-arret/check-end-maintenance').then(res => res.data),
+  // Maintenances en attente de nouveau statut
+  getPendingStatusUpdate: () => api.get('/demandes-arret/pending-status-update').then(res => res.data)
 };
 
 // User Preferences API
