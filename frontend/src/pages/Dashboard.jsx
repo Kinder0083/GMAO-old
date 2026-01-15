@@ -36,6 +36,7 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import { demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import DashboardEditToolbar from '../components/Dashboard/DashboardEditToolbar';
+import MaintenanceStatusPendingAlert from '../components/Dashboard/MaintenanceStatusPendingAlert';
 
 // Composant Widget Sortable
 const SortableWidget = ({ item, isEditMode, stat, colorClasses, onDelete }) => {
