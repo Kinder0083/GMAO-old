@@ -177,7 +177,7 @@ const PlanningMPrev = () => {
   }, [statusHistory]);
 
   // Obtenir le statut d'un équipement pour une date/heure donnée
-  const getStatusForDateTime = (equipmentId, dateTime, ignorePlannedMaintenance = false) => {
+  const getStatusForDateTime = (equipmentId, dateTime, ignorePlannedMaintenance = false, ignoreMaintenanceStatus = false) => {
     const history = historyByEquipment[equipmentId];
     if (!history || history.length === 0) {
       return null;
@@ -190,6 +190,10 @@ const PlanningMPrev = () => {
         if (ignorePlannedMaintenance && entry.is_planned_maintenance) {
           continue;
         }
+        // Si on ignore le statut EN_MAINTENANCE (pour les jours après fin de maintenance)
+        if (ignoreMaintenanceStatus && entry.statut === 'EN_MAINTENANCE') {
+          continue;
+        }
         lastStatus = entry.statut;
       } else {
         break;
@@ -197,6 +201,21 @@ const PlanningMPrev = () => {
     }
     
     return lastStatus;
+  };
+
+  // Trouver la date de fin de la dernière maintenance planifiée pour un équipement
+  const getLastMaintenanceEndDate = (equipmentId) => {
+    const equipmentMaintenances = planningEntries.filter(e => e.equipement_id === equipmentId);
+    if (equipmentMaintenances.length === 0) return null;
+    
+    // Trouver la date de fin la plus tardive
+    let lastEndDate = null;
+    equipmentMaintenances.forEach(m => {
+      if (!lastEndDate || m.date_fin > lastEndDate) {
+        lastEndDate = m.date_fin;
+      }
+    });
+    return lastEndDate;
   };
 
   // Calculer les blocs de statut pour un jour donné, en tenant compte des maintenances planifiées
