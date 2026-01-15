@@ -39,7 +39,6 @@ const NO_HISTORY_COLOR = '#e5e7eb'; // gray-200
 const PlanningMPrev = () => {
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [planningEntries, setPlanningEntries] = useState([]);
   const [statusHistory, setStatusHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -47,25 +46,46 @@ const PlanningMPrev = () => {
   const [expandedEquipments, setExpandedEquipments] = useState(new Set());
   const [pendingDemandesCount, setPendingDemandesCount] = useState(0);
 
-  // Utiliser le hook temps réel pour les équipements (WebSocket)
-  const { equipments, refresh: refreshEquipments } = useEquipments();
+  // Calculer les dates de l'année pour le hook
+  const year = currentDate.getFullYear();
+  const dateDebut = useMemo(() => new Date(year, 0, 1).toISOString().split('T')[0], [year]);
+  const dateFin = useMemo(() => new Date(year, 11, 31).toISOString().split('T')[0], [year]);
 
-  const loadPlanningEntries = useCallback(async () => {
-    try {
-      const year = currentDate.getFullYear();
-      const startDate = new Date(year, 0, 1).toISOString().split('T')[0];
-      const endDate = new Date(year, 11, 31).toISOString().split('T')[0];
-      
-      const entries = await demandesArretAPI.getPlanningEquipements({
-        date_debut: startDate,
-        date_fin: endDate
+  // Utiliser le hook temps réel pour les équipements (WebSocket)
+  const { equipments, refresh: refreshEquipments, wsConnected: equipmentsWsConnected } = useEquipments();
+
+  // Utiliser le hook temps réel pour les demandes d'arrêt et le planning (WebSocket)
+  const { 
+    planningEntries, 
+    loading: planningLoading, 
+    wsConnected: planningWsConnected,
+    refresh: refreshPlanning 
+  } = useDemandesArret({
+    dateDebut,
+    dateFin,
+    onDemandeCreated: (data) => {
+      console.log('[PlanningMPrev] Nouvelle demande créée:', data);
+      toast({
+        title: "Nouvelle demande",
+        description: "Une nouvelle demande d'arrêt a été créée",
       });
-      
-      setPlanningEntries(entries);
-    } catch (error) {
-      console.error('Erreur chargement planning:', error);
+    },
+    onDemandeUpdated: (data) => {
+      console.log('[PlanningMPrev] Demande mise à jour:', data);
+      loadStatusHistory();
+      loadPendingDemandesCount();
+    },
+    onReportAccepted: (data) => {
+      console.log('[PlanningMPrev] Report accepté:', data);
+      toast({
+        title: "Report accepté",
+        description: "Les dates de maintenance ont été mises à jour",
+      });
     }
-  }, [currentDate]);
+  });
+
+  // Indicateur WebSocket global (connecté si au moins un des deux est connecté)
+  const wsConnected = equipmentsWsConnected || planningWsConnected;
 
   const loadStatusHistory = useCallback(async () => {
     try {
@@ -90,31 +110,34 @@ const PlanningMPrev = () => {
   const loadAllData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
-      loadPlanningEntries(),
       loadStatusHistory(),
       loadPendingDemandesCount()
     ]);
     setLoading(false);
-  }, [loadPlanningEntries, loadStatusHistory, loadPendingDemandesCount]);
+  }, [loadStatusHistory, loadPendingDemandesCount]);
 
   useEffect(() => {
     loadAllData();
-  }, [currentDate.getFullYear()]);
+  }, [year]);
 
-  // Rafraîchir les données quand la page redevient visible (retour depuis une autre page)
+  // Rafraîchir les données quand la page redevient visible (fallback si WebSocket non connecté)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('[PlanningMPrev] Page visible, rafraîchissement des données...');
+      if (document.visibilityState === 'visible' && !wsConnected) {
+        console.log('[PlanningMPrev] Page visible (no WS), rafraîchissement...');
         loadAllData();
         refreshEquipments();
+        refreshPlanning();
       }
     };
 
     const handleFocus = () => {
-      console.log('[PlanningMPrev] Fenêtre focus, rafraîchissement des données...');
-      loadAllData();
-      refreshEquipments();
+      if (!wsConnected) {
+        console.log('[PlanningMPrev] Fenêtre focus (no WS), rafraîchissement...');
+        loadAllData();
+        refreshEquipments();
+        refreshPlanning();
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
