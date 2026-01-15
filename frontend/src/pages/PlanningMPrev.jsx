@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Wrench, Plus, CheckCircle2, AlertCircle, History, Clock } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Wrench, Plus, CheckCircle2, AlertCircle, History, Clock, Wifi, WifiOff } from 'lucide-react';
 import { equipmentsAPI, demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useEquipments } from '../hooks/useEquipments';
+import { useDemandesArret } from '../hooks/useDemandesArret';
 import DemandeArretDialog from '../components/PlanningMPrev/DemandeArretDialog';
 import HistoriqueDemandesDialog from '../components/PlanningMPrev/HistoriqueDemandesDialog';
 
