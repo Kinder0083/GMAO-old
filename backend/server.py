@@ -7638,6 +7638,22 @@ async def startup_scheduler():
             replace_existing=True
         )
         
+        # Configurer la gestion des maintenances planifiées à 0h05 et 12h00
+        scheduler.add_job(
+            manage_planned_maintenance_status,
+            CronTrigger(hour=0, minute=5),  # Tous les jours à 0h05
+            id='manage_planned_maintenance_morning',
+            name='Gestion maintenances planifiées (matin)',
+            replace_existing=True
+        )
+        scheduler.add_job(
+            manage_planned_maintenance_status,
+            CronTrigger(hour=12, minute=0),  # Tous les jours à 12h00
+            id='manage_planned_maintenance_noon',
+            name='Gestion maintenances planifiées (midi)',
+            replace_existing=True
+        )
+        
         # Configurer le nettoyage automatique des messages du chat à 3h00 du matin
         scheduler.add_job(
             chat_cleanup_service.cleanup_old_messages,
