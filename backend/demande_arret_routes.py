@@ -130,6 +130,15 @@ async def create_demande_arret(
             details=f"Demande d'arrêt pour {len(equipement_noms)} équipement(s): {', '.join(equipement_noms)}. Destinataire: {data['destinataire_nom']}"
         )
         
+        # Broadcast WebSocket pour mise à jour temps réel
+        await broadcast_demande_update("created", {
+            "id": data['id'],
+            "equipement_ids": data.get("equipement_ids", []),
+            "date_debut": data.get("date_debut"),
+            "date_fin": data.get("date_fin"),
+            "statut": data.get("statut")
+        })
+        
         logger.info(f"Demande d'arrêt créée: {data['id']}")
         return serialize_doc(data)
     except HTTPException:
