@@ -390,12 +390,18 @@ async def get_maintenances_pending_status_update(
     """
     try:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        # Ne montrer que les maintenances des 30 derniers jours
+        thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
         
-        # Trouver les demandes approuvées dont la date de fin est passée
-        # et qui ne sont pas encore terminées (pas de statut_apres_maintenance défini)
+        # Trouver les demandes approuvées dont la date de fin est passée (mais récente)
+        # et qui ne sont pas terminées de manière anticipée
         demandes = await db.demandes_arret.find({
             "statut": DemandeArretStatus.APPROUVEE,
-            "date_fin": {"$lt": today},  # Date de fin passée (hier ou avant)
+            "date_fin": {
+                "$lt": today,           # Date de fin passée (hier ou avant)
+                "$gte": thirty_days_ago  # Mais pas plus de 30 jours
+            },
+            "fin_anticipee": {"$ne": True}  # Pas terminée de manière anticipée
         }).to_list(length=None)
         
         # Filtrer celles qui n'ont pas de statut après maintenance
@@ -403,16 +409,19 @@ async def get_maintenances_pending_status_update(
         for demande in demandes:
             # Vérifier si le statut après maintenance a été défini
             if not demande.get("statut_apres_maintenance"):
-                pending_maintenances.append({
-                    "id": demande.get("id"),
-                    "equipement_ids": demande.get("equipement_ids", []),
-                    "equipement_noms": demande.get("equipement_noms", []),
-                    "date_debut": demande.get("date_debut"),
-                    "date_fin": demande.get("date_fin"),
-                    "motif": demande.get("motif"),
-                    "demandeur_nom": demande.get("demandeur_nom"),
-                    "end_maintenance_token": demande.get("end_maintenance_token")
-                })
+                # S'assurer qu'il y a un token pour permettre la sélection
+                token = demande.get("end_maintenance_token")
+                if token:
+                    pending_maintenances.append({
+                        "id": demande.get("id"),
+                        "equipement_ids": demande.get("equipement_ids", []),
+                        "equipement_noms": demande.get("equipement_noms", []),
+                        "date_debut": demande.get("date_debut"),
+                        "date_fin": demande.get("date_fin"),
+                        "motif": demande.get("motif"),
+                        "demandeur_nom": demande.get("demandeur_nom"),
+                        "end_maintenance_token": token
+                    })
         
         return {
             "count": len(pending_maintenances),
