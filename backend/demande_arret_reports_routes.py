@@ -410,6 +410,14 @@ async def validate_counter_proposal_public(
                 }}
             )
             
+            # Mettre à jour le planning avec les nouvelles dates de la contre-proposition
+            await update_planning_for_report(
+                demande_id=demande_id,
+                nouvelle_date_debut=counter["date_debut"],
+                nouvelle_date_fin=counter["date_fin"],
+                demande=demande
+            )
+            
             await send_counter_proposal_decision_email(demande, report, counter, "ACCEPTE")
             
             return {
