@@ -37,7 +37,6 @@ const NO_HISTORY_COLOR = '#e5e7eb'; // gray-200
 
 const PlanningMPrev = () => {
   const { toast } = useToast();
-  const [equipments, setEquipments] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [planningEntries, setPlanningEntries] = useState([]);
   const [statusHistory, setStatusHistory] = useState([]);
@@ -47,21 +46,10 @@ const PlanningMPrev = () => {
   const [expandedEquipments, setExpandedEquipments] = useState(new Set());
   const [pendingDemandesCount, setPendingDemandesCount] = useState(0);
 
-  const loadEquipments = async () => {
-    try {
-      const response = await equipmentsAPI.getAll();
-      setEquipments(response.data || []);
-    } catch (error) {
-      console.error('Erreur chargement équipements:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les équipements',
-        variant: 'destructive'
-      });
-    }
-  };
+  // Utiliser le hook temps réel pour les équipements (WebSocket)
+  const { equipments, refresh: refreshEquipments } = useEquipments();
 
-  const loadPlanningEntries = async () => {
+  const loadPlanningEntries = useCallback(async () => {
     try {
       const year = currentDate.getFullYear();
       const startDate = new Date(year, 0, 1).toISOString().split('T')[0];
@@ -76,18 +64,18 @@ const PlanningMPrev = () => {
     } catch (error) {
       console.error('Erreur chargement planning:', error);
     }
-  };
+  }, [currentDate]);
 
-  const loadStatusHistory = async () => {
+  const loadStatusHistory = useCallback(async () => {
     try {
       const response = await equipmentsAPI.getStatusHistory({});
       setStatusHistory(response.data || []);
     } catch (error) {
       console.error('Erreur chargement historique statuts:', error);
     }
-  };
+  }, []);
 
-  const loadPendingDemandesCount = async () => {
+  const loadPendingDemandesCount = useCallback(async () => {
     try {
       const response = await demandesArretAPI.getAll();
       const demandes = response.data || response || [];
@@ -96,18 +84,17 @@ const PlanningMPrev = () => {
     } catch (error) {
       console.error('Erreur chargement demandes:', error);
     }
-  };
+  }, []);
 
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     setLoading(true);
     await Promise.all([
-      loadEquipments(),
       loadPlanningEntries(),
       loadStatusHistory(),
       loadPendingDemandesCount()
     ]);
     setLoading(false);
-  };
+  }, [loadPlanningEntries, loadStatusHistory, loadPendingDemandesCount]);
 
   useEffect(() => {
     loadAllData();
@@ -119,12 +106,14 @@ const PlanningMPrev = () => {
       if (document.visibilityState === 'visible') {
         console.log('[PlanningMPrev] Page visible, rafraîchissement des données...');
         loadAllData();
+        refreshEquipments();
       }
     };
 
     const handleFocus = () => {
       console.log('[PlanningMPrev] Fenêtre focus, rafraîchissement des données...');
       loadAllData();
+      refreshEquipments();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -134,11 +123,16 @@ const PlanningMPrev = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [currentDate]);
+  }, [loadAllData, refreshEquipments]);
 
-  useAutoRefresh(() => {
-    loadAllData();
-  }, [currentDate]);
+  // Rafraîchir aussi quand les équipements changent via WebSocket
+  useEffect(() => {
+    if (equipments && equipments.length > 0) {
+      // Les équipements ont été mis à jour via WebSocket, recharger le planning
+      loadPlanningEntries();
+      loadStatusHistory();
+    }
+  }, [equipments]);
 
   // Organiser les équipements en hiérarchie (parents et enfants)
   const { parentEquipments, childrenByParent } = useMemo(() => {
