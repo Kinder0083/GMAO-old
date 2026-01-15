@@ -503,7 +503,6 @@ const PlanningMPrev = () => {
   };
   
   const today = getTodayLocalString();
-  const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
   // Calculer les statistiques annuelles (seulement pour les périodes avec historique)
