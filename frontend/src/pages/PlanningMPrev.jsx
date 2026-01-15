@@ -147,16 +147,14 @@ const PlanningMPrev = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [loadAllData, refreshEquipments]);
+  }, [loadAllData, refreshEquipments, refreshPlanning, wsConnected]);
 
-  // Rafraîchir aussi quand les équipements changent via WebSocket
+  // Rafraîchir l'historique quand les équipements changent via WebSocket
   useEffect(() => {
     if (equipments && equipments.length > 0) {
-      // Les équipements ont été mis à jour via WebSocket, recharger le planning
-      loadPlanningEntries();
       loadStatusHistory();
     }
-  }, [equipments]);
+  }, [equipments, loadStatusHistory]);
 
   // Organiser les équipements en hiérarchie (parents et enfants)
   const { parentEquipments, childrenByParent } = useMemo(() => {
