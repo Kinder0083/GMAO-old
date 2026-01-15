@@ -63,6 +63,7 @@ class EntityType(str, Enum):
     DASHBOARD = "dashboard"
     USERS = "users"
     AVAILABILITIES = "availabilities"
+    DEMANDES_ARRET = "demandes_arret"  # Demandes d'arrêt pour maintenance
 
 
 def create_event(event_type: EventType, entity_type: EntityType, data: Any, user_id: str = None) -> Dict:
