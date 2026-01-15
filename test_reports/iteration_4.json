@@ -1,0 +1,125 @@
+{
+  "summary": "Completed testing of Bug P0 fix: Planning M.Prev maintenance end date not respected. All backend API tests passed (15/15). Frontend UI verification confirmed the fix is working correctly - days AFTER maintenance end date now show 'Sans données' (gray) instead of EN_MAINTENANCE (yellow).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/tests/test_planning_mprev_bug_fix.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Bug fix implementation is correct: getLastMaintenanceEndDate() finds the last maintenance end date for each equipment",
+    "getStatusBlocksForDay() correctly returns null (gray) for days after the last maintenance end date",
+    "API filtering correctly uses overlap logic: date_fin >= query.date_debut AND date_debut <= query.date_fin",
+    "Cron job manage_planned_maintenance_status() properly handles automatic status transitions",
+    "Equipment status dots next to names correctly reflect current status (EN_MAINTENANCE during active maintenance)"
+  ],
+  "updated_files": [
+    "/app/tests/test_planning_mprev_bug_fix.py - Created comprehensive test suite for Planning M.Prev bug fix"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin_email": "admin@test.com",
+    "admin_password": "password"
+  },
+  "seed_data_creation": "No seed data created - used existing maintenance data for testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Bug P0 fix verified: Planning M.Prev calendar now correctly displays maintenance dates. Key verifications: 1) API /api/demandes-arret/planning/equipements returns entries with date_debut and date_fin, 2) Frontend getLastMaintenanceEndDate() finds last maintenance end date, 3) getStatusBlocksForDay() returns null for days after maintenance end, 4) Calendar shows 'Sans données' (gray) for days after maintenance end instead of EN_MAINTENANCE (yellow), 5) Equipment status dots reflect current status correctly, 6) Annual statistics are calculated correctly. Test data: Equipment 'dgdfhjhgf' has maintenance 2026-01-15 to 2026-01-18, Equipment 'fffgdfgdfg' has maintenance 2026-01-17 to 2026-01-26.",
+  "features_tested": {
+    "planning_api": {
+      "get_planning_equipements": {
+        "status": "PASS",
+        "details": "Returns entries with date_debut and date_fin, correctly filters by date range overlap"
+      },
+      "planning_entries_status": {
+        "status": "PASS",
+        "details": "All entries have EN_MAINTENANCE status"
+      },
+      "terminated_entries_filtered": {
+        "status": "PASS",
+        "details": "Terminated maintenances (fin_anticipee=True) are not returned"
+      }
+    },
+    "equipment_status": {
+      "status_history_endpoint": {
+        "status": "PASS",
+        "details": "Returns status history with equipment_id, statut, changed_at"
+      },
+      "current_status": {
+        "status": "PASS",
+        "details": "Equipment current status is valid and reflects maintenance state"
+      }
+    },
+    "demandes_arret": {
+      "list_demandes": {
+        "status": "PASS",
+        "details": "Returns list of demandes with approved ones having date_debut and date_fin"
+      },
+      "date_range_validation": {
+        "status": "PASS",
+        "details": "date_fin >= date_debut for all approved demandes"
+      }
+    },
+    "cron_jobs": {
+      "check_end_maintenance": {
+        "status": "PASS",
+        "details": "POST /api/demandes-arret/check-end-maintenance returns emails_sent count"
+      },
+      "check_expired": {
+        "status": "PASS",
+        "details": "POST /api/demandes-arret/check-expired returns expired_count"
+      },
+      "trigger_reminders": {
+        "status": "PASS",
+        "details": "GET /api/demandes-arret/trigger-reminders returns status ok"
+      }
+    },
+    "frontend_calendar": {
+      "legend_display": {
+        "status": "PASS",
+        "details": "Legend shows all status colors including 'Sans données' and 'En maintenance'"
+      },
+      "equipment_rows": {
+        "status": "PASS",
+        "details": "5 equipment rows displayed in grid"
+      },
+      "maintenance_cells": {
+        "status": "PASS",
+        "details": "Yellow cells with '🔧 Maintenance planifiée' tooltip for maintenance days"
+      },
+      "sans_donnees_cells": {
+        "status": "PASS",
+        "details": "Gray cells with 'Sans données (0h - 24h)' tooltip for days after maintenance end"
+      },
+      "status_dots": {
+        "status": "PASS",
+        "details": "Color dots next to equipment names reflect current status correctly"
+      },
+      "statistics_cards": {
+        "status": "PASS",
+        "details": "3 statistics cards showing Opérationnel (97%), En Maintenance (3%), Hors Service (0%)"
+      }
+    }
+  },
+  "bug_fix_verification": {
+    "original_bug": "When a maintenance request is approved, the calendar shows the start date correctly but the end date is not respected. The EN_MAINTENANCE status (yellow) appears infinite beyond the planned maintenance end date.",
+    "fix_applied": [
+      "New function getLastMaintenanceEndDate() to find the end date of the last maintenance for each equipment",
+      "Modified getStatusBlocksForDay() to return null (gray) for days after the last maintenance end date",
+      "Improved API filtering to correctly overlap periods",
+      "New cron job manage_planned_maintenance_status() to manage automatic status transitions"
+    ],
+    "verification_result": "PASS - Days after maintenance end date now correctly show 'Sans données' (gray) instead of EN_MAINTENANCE (yellow)"
+  }
+}
