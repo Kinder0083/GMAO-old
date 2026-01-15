@@ -519,18 +519,25 @@ const PlanningMPrev = () => {
             >
               {/* Cellule 24h verticale (0h en haut, 24h en bas) */}
               <div className="relative h-10 w-full bg-gray-100">
-                {/* Blocs de statut */}
+                {/* Blocs de statut (incluant les maintenances planifiées) */}
                 {statusBlocks.map((block, blockIdx) => {
                   const top = (block.startHour / 24) * 100;
                   const height = ((block.endHour - block.startHour) / 24) * 100;
                   const bgColor = block.status ? STATUS_COLORS[block.status] : NO_HISTORY_COLOR;
-                  const title = block.status 
-                    ? `${STATUS_LABELS[block.status]} (${block.startHour}h - ${block.endHour}h)`
-                    : `Sans données (${block.startHour}h - ${block.endHour}h)`;
+                  
+                  let title;
+                  if (block.isPlannedMaintenance) {
+                    title = `🔧 Maintenance planifiée\n${block.motif || 'Maintenance préventive'}\n${block.startHour}h - ${block.endHour}h`;
+                  } else if (block.status) {
+                    title = `${STATUS_LABELS[block.status]} (${block.startHour}h - ${block.endHour}h)`;
+                  } else {
+                    title = `Sans données (${block.startHour}h - ${block.endHour}h)`;
+                  }
+                  
                   return (
                     <div
                       key={`status-${blockIdx}`}
-                      className="absolute left-0 right-0"
+                      className={`absolute left-0 right-0 ${block.isPlannedMaintenance ? 'cursor-pointer hover:opacity-80' : ''}`}
                       style={{
                         top: `${top}%`,
                         height: `${height}%`,
@@ -546,24 +553,6 @@ const PlanningMPrev = () => {
                   className="absolute left-0 right-0 h-px opacity-30 z-10"
                   style={{ top: '50%', backgroundColor: '#000' }}
                 />
-                
-                {/* Blocs de maintenance superposés (demandes d'arrêt) */}
-                {maintenanceEntries.map((entry, idx) => {
-                  const style = getMaintenanceBlockStyle(entry, day);
-                  const entryColor = STATUS_COLORS[entry.statut] || STATUS_COLORS.EN_MAINTENANCE;
-                  return (
-                    <div
-                      key={idx}
-                      className="absolute left-0 right-0 cursor-pointer hover:opacity-80 transition-opacity z-20"
-                      style={{
-                        top: style.top,
-                        height: style.height,
-                        backgroundColor: entryColor,
-                      }}
-                      title={`${entry.motif || 'Maintenance'}\nStatut: ${STATUS_LABELS[entry.statut] || 'En maintenance'}\n${entry.heure_debut || '00:00'} - ${entry.heure_fin || '24:00'}`}
-                    />
-                  );
-                })}
               </div>
             </div>
           );
