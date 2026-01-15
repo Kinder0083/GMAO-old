@@ -472,6 +472,23 @@ const PlanningMPrev = () => {
     };
   }, [equipments, statusHistory, year]);
 
+  // Fonction pour obtenir le statut effectif d'un équipement (prenant en compte les maintenances actives)
+  const getEffectiveStatus = (equipmentId, equipmentStatus) => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Vérifier si une maintenance planifiée active couvre aujourd'hui
+    const activeMaintenance = planningEntries.find(e => {
+      if (e.equipement_id !== equipmentId) return false;
+      return today >= e.date_debut && today <= e.date_fin;
+    });
+    
+    if (activeMaintenance) {
+      return 'EN_MAINTENANCE';
+    }
+    
+    return equipmentStatus;
+  };
+
   // Jours du mois actuel
   const days = getDaysInMonth(year, month);
   const isCurrentMonth = month === new Date().getMonth() && year === new Date().getFullYear();
@@ -480,6 +497,9 @@ const PlanningMPrev = () => {
   const EquipmentRow = ({ equipment, isChild = false }) => {
     const hasChildren = childrenByParent[equipment.id]?.length > 0;
     const isExpanded = expandedEquipments.has(equipment.id);
+    
+    // Obtenir le statut effectif (prenant en compte les maintenances)
+    const effectiveStatus = getEffectiveStatus(equipment.id, equipment.statut);
     
     return (
       <div 
@@ -509,7 +529,8 @@ const PlanningMPrev = () => {
           
           <div 
             className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: STATUS_COLORS[equipment.statut] || STATUS_COLORS.OPERATIONNEL }}
+            style={{ backgroundColor: STATUS_COLORS[effectiveStatus] || STATUS_COLORS.OPERATIONNEL }}
+            title={`Statut: ${STATUS_LABELS[effectiveStatus] || effectiveStatus}`}
           />
           <span className={`truncate text-sm ${isChild ? 'text-gray-600' : ''}`} title={equipment.nom}>
             {equipment.nom}
