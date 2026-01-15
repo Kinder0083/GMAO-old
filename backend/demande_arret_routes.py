@@ -654,6 +654,16 @@ async def validate_demande_by_token(
             {"$set": update_data}
         )
         
+        # Broadcast WebSocket pour mise à jour temps réel
+        await broadcast_demande_update("status_changed", {
+            "id": demande["id"],
+            "equipement_ids": demande.get("equipement_ids", []),
+            "date_debut": demande.get("date_debut"),
+            "date_fin": demande.get("date_fin"),
+            "statut": new_status,
+            "action": "approved" if approved else "refused"
+        })
+        
         logger.info(f"Demande {demande['id']} {'approuvée' if approved else 'refusée'}")
         return {"message": message, "demande_id": demande["id"]}
     except HTTPException:
