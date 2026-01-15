@@ -312,6 +312,19 @@ const PlanningMPrev = () => {
       return blocks;
     }
     
+    // Pas de maintenance planifiée active pour ce jour
+    // Vérifier si le jour est APRÈS la date de fin de la dernière maintenance planifiée
+    const lastMaintenanceEnd = getLastMaintenanceEndDate(equipmentId);
+    const isAfterAllMaintenances = lastMaintenanceEnd && dateStr > lastMaintenanceEnd;
+    
+    // Si on est après toutes les maintenances planifiées, le statut devrait être "inconnu"
+    // (en attente de la sélection de l'utilisateur via l'email de fin de maintenance)
+    if (isAfterAllMaintenances) {
+      // Ne pas afficher de statut pour les jours futurs après la fin de maintenance
+      // L'utilisateur doit d'abord définir le nouveau statut
+      return [{ startHour: 0, endHour: 24, status: null, isAwaitingStatusUpdate: true }];
+    }
+    
     // Pas de maintenance planifiée active - utiliser l'historique SANS les entrées de maintenance planifiée
     // Filtrer l'historique pour exclure les entrées de maintenance planifiée
     const filteredHistory = history ? history.filter(entry => !entry.is_planned_maintenance) : [];
