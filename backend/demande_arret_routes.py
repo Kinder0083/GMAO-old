@@ -387,8 +387,10 @@ async def get_planning_equipements(
     date_fin: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Récupérer le planning des équipements"""
+    """Récupérer le planning des équipements (uniquement les maintenances actives ou futures)"""
     try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
         filter_query = {}
         if date_debut:
             filter_query["date_debut"] = {"$gte": date_debut}
@@ -397,6 +399,11 @@ async def get_planning_equipements(
         
         # Ne pas inclure les maintenances terminées de manière anticipée
         filter_query["fin_anticipee"] = {"$ne": True}
+        
+        # Exclure les maintenances dont la date de fin est passée
+        # (sauf si on demande explicitement une plage de dates historiques)
+        if not date_debut and not date_fin:
+            filter_query["date_fin"] = {"$gte": today}
         
         entries = await db.planning_equipement.find(filter_query).to_list(length=None)
         
