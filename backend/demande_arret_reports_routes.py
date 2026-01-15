@@ -658,6 +658,15 @@ async def accept_report(
             demande=demande
         )
         
+        # Broadcast WebSocket pour mise à jour temps réel
+        await broadcast_demande_update("report_accepted", {
+            "id": demande_id,
+            "equipement_ids": demande.get("equipement_ids", []),
+            "date_debut": report_info["nouvelle_date_debut"],
+            "date_fin": report_info["nouvelle_date_fin"],
+            "statut": "APPROUVEE"
+        })
+        
         logger.info(f"Report accepté pour demande: {demande_id}")
         return {
             "message": "Report accepté avec succès",
