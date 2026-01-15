@@ -195,20 +195,92 @@ const PlanningMPrev = () => {
     return lastStatus;
   };
 
-  // Calculer les blocs de statut pour un jour donné
+  // Calculer les blocs de statut pour un jour donné, en tenant compte des maintenances planifiées
   const getStatusBlocksForDay = (equipmentId, day) => {
     const blocks = [];
     const history = historyByEquipment[equipmentId];
-    
-    if (!history || history.length === 0) {
-      return [{ startHour: 0, endHour: 24, status: null }];
-    }
     
     const dayStart = new Date(day);
     dayStart.setHours(0, 0, 0, 0);
     
     const dayEnd = new Date(day);
     dayEnd.setHours(23, 59, 59, 999);
+    
+    // Vérifier si une maintenance planifiée couvre ce jour
+    const dateStr = day.toISOString().split('T')[0];
+    const maintenanceForDay = planningEntries.find(e => {
+      if (e.equipement_id !== equipmentId) return false;
+      return dateStr >= e.date_debut && dateStr <= e.date_fin;
+    });
+    
+    // Si maintenance planifiée, elle écrase tout l'historique pour ce jour
+    if (maintenanceForDay) {
+      // Calculer les heures de début/fin pour ce jour
+      let startHour = 0;
+      let endHour = 24;
+      
+      if (dateStr === maintenanceForDay.date_debut) {
+        if (maintenanceForDay.heure_debut) {
+          const [h] = maintenanceForDay.heure_debut.split(':').map(Number);
+          startHour = h;
+        } else if (maintenanceForDay.periode_debut === 'APRES_MIDI') {
+          startHour = 12;
+        }
+      }
+      
+      if (dateStr === maintenanceForDay.date_fin) {
+        if (maintenanceForDay.heure_fin) {
+          const [h] = maintenanceForDay.heure_fin.split(':').map(Number);
+          endHour = h;
+        } else if (maintenanceForDay.periode_fin === 'MATIN') {
+          endHour = 12;
+        }
+      }
+      
+      // Obtenir le statut avant la maintenance (pour afficher avant startHour)
+      const statusBeforeMaintenance = history && history.length > 0 
+        ? getStatusForDateTime(equipmentId, new Date(day.getFullYear(), day.getMonth(), day.getDate(), startHour - 1))
+        : null;
+      
+      // Bloc avant la maintenance (si applicable)
+      if (startHour > 0) {
+        blocks.push({
+          startHour: 0,
+          endHour: startHour,
+          status: statusBeforeMaintenance
+        });
+      }
+      
+      // Bloc de maintenance (EN_MAINTENANCE - couleur jaune)
+      blocks.push({
+        startHour: startHour,
+        endHour: endHour,
+        status: 'EN_MAINTENANCE',
+        isPlannedMaintenance: true,
+        motif: maintenanceForDay.motif
+      });
+      
+      // Bloc après la maintenance (si applicable et si c'est le dernier jour)
+      if (endHour < 24 && dateStr === maintenanceForDay.date_fin) {
+        // Vérifier s'il y a un statut après la maintenance dans l'historique
+        const statusAfterMaintenance = history && history.length > 0 
+          ? getStatusForDateTime(equipmentId, new Date(day.getFullYear(), day.getMonth(), day.getDate(), endHour + 1))
+          : null;
+        
+        blocks.push({
+          startHour: endHour,
+          endHour: 24,
+          status: statusAfterMaintenance
+        });
+      }
+      
+      return blocks;
+    }
+    
+    // Pas de maintenance planifiée - comportement normal basé sur l'historique
+    if (!history || history.length === 0) {
+      return [{ startHour: 0, endHour: 24, status: null }];
+    }
     
     const changesThisDay = history.filter(entry => {
       const changeDate = entry.changed_at;
