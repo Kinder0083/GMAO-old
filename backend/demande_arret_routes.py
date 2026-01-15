@@ -513,15 +513,9 @@ async def validate_demande_by_token(
                 }
                 await db.planning_equipement.insert_one(planning_entry)
                 
-                # Créer les entrées dans l'historique des statuts pour toute la période
-                # en écrasant les statuts existants
-                await apply_maintenance_status_to_history(
-                    eq_id=eq_id,
-                    date_debut=demande["date_debut"],
-                    date_fin=demande["date_fin"],
-                    demande_id=demande["id"],
-                    demandeur_nom=demande.get("demandeur_nom", "Système")
-                )
+                # NOTE: On ne crée plus d'entrées dans l'historique des statuts ici.
+                # L'affichage de la maintenance est géré par planningEntries côté frontend.
+                # Le statut de l'équipement sera mis à jour uniquement si date_debut <= aujourd'hui
                 
                 # Si la date de début est aujourd'hui ou passée, mettre à jour le statut actuel
                 today = now.strftime("%Y-%m-%d")
