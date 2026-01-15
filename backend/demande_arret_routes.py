@@ -201,6 +201,184 @@ async def check_pending_reminders_internal():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== FIN DE MAINTENANCE ====================
+
+@router.get("/end-maintenance")
+async def get_end_maintenance_info(token: str):
+    """
+    Récupérer les informations pour la page de fin de maintenance (PUBLIC).
+    Appelé quand l'utilisateur clique sur un lien dans l'email.
+    """
+    try:
+        # Chercher la demande par le token de fin de maintenance
+        demande = await db.demandes_arret.find_one({"end_maintenance_token": token})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Token invalide ou demande non trouvée")
+        
+        # Vérifier que la demande est bien terminée (date_fin atteinte ou fin anticipée)
+        if demande.get("statut") not in [DemandeArretStatus.APPROUVEE, "TERMINEE"]:
+            raise HTTPException(status_code=400, detail="Cette demande n'est pas en état de fin de maintenance")
+        
+        # Récupérer les noms des équipements
+        equipement_noms = demande.get("equipement_noms", [])
+        
+        return {
+            "demande_id": demande.get("id"),
+            "equipement_ids": demande.get("equipement_ids", []),
+            "equipement_noms": equipement_noms,
+            "date_debut": demande.get("date_debut"),
+            "date_fin": demande.get("date_fin"),
+            "motif": demande.get("motif"),
+            "demandeur_nom": demande.get("demandeur_nom"),
+            "statuts_disponibles": [
+                {"code": "OPERATIONNEL", "label": "Opérationnel", "color": "#10b981"},
+                {"code": "EN_FONCTIONNEMENT", "label": "En Fonctionnement", "color": "#059669"},
+                {"code": "A_LARRET", "label": "À l'arrêt", "color": "#6b7280"},
+                {"code": "EN_MAINTENANCE", "label": "En maintenance", "color": "#eab308"},
+                {"code": "HORS_SERVICE", "label": "Hors service", "color": "#ef4444"},
+                {"code": "EN_CT", "label": "En C.T", "color": "#8b5cf6"},
+                {"code": "DEGRADE", "label": "Dégradé", "color": "#3b82f6"}
+            ]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération info fin de maintenance: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/end-maintenance")
+async def process_end_maintenance(
+    token: str,
+    statut: str
+):
+    """
+    Traiter la fin de maintenance et appliquer le nouveau statut (PUBLIC).
+    Appelé quand l'utilisateur sélectionne un statut depuis l'email/page.
+    """
+    try:
+        from bson import ObjectId
+        
+        # Chercher la demande par le token de fin de maintenance
+        demande = await db.demandes_arret.find_one({"end_maintenance_token": token})
+        if not demande:
+            raise HTTPException(status_code=404, detail="Token invalide ou demande non trouvée")
+        
+        # Valider le statut
+        valid_statuts = ["OPERATIONNEL", "EN_FONCTIONNEMENT", "A_LARRET", "EN_MAINTENANCE", "HORS_SERVICE", "EN_CT", "DEGRADE"]
+        if statut not in valid_statuts:
+            raise HTTPException(status_code=400, detail=f"Statut invalide. Valeurs acceptées: {', '.join(valid_statuts)}")
+        
+        now = datetime.now(timezone.utc)
+        rounded_hour = now.replace(minute=0, second=0, microsecond=0)
+        
+        # Pour chaque équipement concerné
+        for eq_id in demande.get("equipement_ids", []):
+            # Mettre à jour le statut de l'équipement
+            await db.equipments.update_one(
+                {"_id": ObjectId(eq_id)},
+                {"$set": {
+                    "statut": statut,
+                    "statut_changed_at": rounded_hour,
+                    "updated_at": now.isoformat()
+                }}
+            )
+            
+            # Ajouter dans l'historique des statuts
+            history_entry = {
+                "equipment_id": eq_id,
+                "statut": statut,
+                "changed_at": rounded_hour,
+                "changed_by": "fin_maintenance",
+                "changed_by_name": f"Fin de maintenance ({demande.get('demandeur_nom', 'Utilisateur')})",
+                "demande_arret_id": demande.get("id"),
+                "is_end_of_maintenance": True
+            }
+            
+            await db.equipment_status_history.update_one(
+                {"equipment_id": eq_id, "changed_at": rounded_hour},
+                {"$set": history_entry},
+                upsert=True
+            )
+            
+            # Supprimer l'entrée du planning (maintenance terminée)
+            await db.planning_equipement.delete_many({
+                "demande_arret_id": demande.get("id"),
+                "equipement_id": eq_id
+            })
+        
+        # Marquer la demande comme terminée
+        await db.demandes_arret.update_one(
+            {"id": demande.get("id")},
+            {"$set": {
+                "statut": "TERMINEE",
+                "date_fin_effective": now.isoformat(),
+                "statut_apres_maintenance": statut,
+                "updated_at": now.isoformat()
+            }}
+        )
+        
+        logger.info(f"Fin de maintenance traitée pour demande {demande.get('id')}, nouveau statut: {statut}")
+        
+        return {
+            "status": "success",
+            "message": f"Maintenance terminée. Statut mis à jour vers '{statut}'",
+            "demande_id": demande.get("id"),
+            "nouveau_statut": statut
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur traitement fin de maintenance: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/check-end-maintenance")
+async def check_end_maintenance_and_send_emails():
+    """
+    Vérifier les maintenances arrivées à leur date de fin et envoyer les emails.
+    À appeler périodiquement (cron job ou au chargement du dashboard).
+    """
+    try:
+        from demande_arret_emails import send_end_maintenance_email
+        
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        # Trouver les demandes approuvées dont la date de fin est aujourd'hui ou passée
+        # et qui n'ont pas encore reçu l'email de fin
+        demandes = await db.demandes_arret.find({
+            "statut": DemandeArretStatus.APPROUVEE,
+            "date_fin": {"$lte": today},
+            "end_maintenance_email_sent": {"$ne": True}
+        }).to_list(length=None)
+        
+        count = 0
+        for demande in demandes:
+            equipement_noms = demande.get("equipement_noms", [])
+            
+            # Envoyer l'email
+            success = await send_end_maintenance_email(demande, equipement_noms)
+            
+            if success:
+                # Marquer comme email envoyé
+                await db.demandes_arret.update_one(
+                    {"id": demande.get("id")},
+                    {"$set": {
+                        "end_maintenance_email_sent": True,
+                        "end_maintenance_email_sent_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                count += 1
+        
+        return {
+            "emails_sent": count,
+            "message": f"{count} email(s) de fin de maintenance envoyé(s)"
+        }
+    except Exception as e:
+        logger.error(f"Erreur vérification fin de maintenance: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== PLANNING EQUIPEMENT ====================
 
 @router.get("/planning/equipements")
