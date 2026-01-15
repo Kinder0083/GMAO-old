@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronRight as ChevronRightIcon, Wrench, Plus, CheckCircle2, AlertCircle, History, Clock } from 'lucide-react';
 import { equipmentsAPI, demandesArretAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { useEquipments } from '../hooks/useEquipments';
 import DemandeArretDialog from '../components/PlanningMPrev/DemandeArretDialog';
 import HistoriqueDemandesDialog from '../components/PlanningMPrev/HistoriqueDemandesDialog';
 
