@@ -379,6 +379,50 @@ async def check_end_maintenance_and_send_emails():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/pending-status-update")
+async def get_maintenances_pending_status_update(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Récupérer les maintenances terminées (date de fin passée) qui attendent 
+    que l'utilisateur définisse le nouveau statut de l'équipement.
+    Utilisé pour afficher une notification sur le tableau de bord.
+    """
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        # Trouver les demandes approuvées dont la date de fin est passée
+        # et qui ne sont pas encore terminées (pas de statut_apres_maintenance défini)
+        demandes = await db.demandes_arret.find({
+            "statut": DemandeArretStatus.APPROUVEE,
+            "date_fin": {"$lt": today},  # Date de fin passée (hier ou avant)
+        }).to_list(length=None)
+        
+        # Filtrer celles qui n'ont pas de statut après maintenance
+        pending_maintenances = []
+        for demande in demandes:
+            # Vérifier si le statut après maintenance a été défini
+            if not demande.get("statut_apres_maintenance"):
+                pending_maintenances.append({
+                    "id": demande.get("id"),
+                    "equipement_ids": demande.get("equipement_ids", []),
+                    "equipement_noms": demande.get("equipement_noms", []),
+                    "date_debut": demande.get("date_debut"),
+                    "date_fin": demande.get("date_fin"),
+                    "motif": demande.get("motif"),
+                    "demandeur_nom": demande.get("demandeur_nom"),
+                    "end_maintenance_token": demande.get("end_maintenance_token")
+                })
+        
+        return {
+            "count": len(pending_maintenances),
+            "maintenances": pending_maintenances
+        }
+    except Exception as e:
+        logger.error(f"Erreur récupération maintenances en attente: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== PLANNING EQUIPEMENT ====================
 
 @router.get("/planning/equipements")
