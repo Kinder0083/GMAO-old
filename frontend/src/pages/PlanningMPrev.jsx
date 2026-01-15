@@ -113,6 +113,29 @@ const PlanningMPrev = () => {
     loadAllData();
   }, [currentDate.getFullYear()]);
 
+  // Rafraîchir les données quand la page redevient visible (retour depuis une autre page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[PlanningMPrev] Page visible, rafraîchissement des données...');
+        loadAllData();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('[PlanningMPrev] Fenêtre focus, rafraîchissement des données...');
+      loadAllData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [currentDate]);
+
   useAutoRefresh(() => {
     loadAllData();
   }, [currentDate]);
