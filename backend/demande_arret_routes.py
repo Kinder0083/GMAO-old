@@ -500,13 +500,18 @@ async def validate_demande_by_token(
             
             # Pour chaque équipement concerné
             for eq_id in demande.get("equipement_ids", []):
-                # Créer l'entrée dans le planning
+                # Créer l'entrée dans le planning avec toutes les infos
                 planning_entry = {
                     "id": str(uuid.uuid4()),
                     "equipement_id": eq_id,
                     "demande_arret_id": demande["id"],
                     "date_debut": demande["date_debut"],
                     "date_fin": demande["date_fin"],
+                    "periode_debut": demande.get("periode_debut"),
+                    "periode_fin": demande.get("periode_fin"),
+                    "heure_debut": demande.get("heure_debut"),
+                    "heure_fin": demande.get("heure_fin"),
+                    "motif": demande.get("motif"),
                     "statut": EquipmentStatus.EN_MAINTENANCE,
                     "end_maintenance_token": end_maintenance_token,
                     "created_at": now.isoformat()
