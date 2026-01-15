@@ -539,6 +539,9 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* Alerte pour les maintenances en attente de nouveau statut */}
+      {!isEditMode && <MaintenanceStatusPendingAlert />}
+
       {/* Message si aucun widget */}
       {!hasActiveWidgets && !isEditMode && (
         <Card>
