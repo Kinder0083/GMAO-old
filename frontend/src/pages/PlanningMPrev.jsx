@@ -698,6 +698,21 @@ const PlanningMPrev = () => {
                   {pendingDemandesCount} en attente
                 </Badge>
               )}
+              {/* Indicateur de connexion temps réel */}
+              <div 
+                className={`flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full text-xs ${
+                  wsConnected 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+                title={wsConnected ? 'Synchronisation temps réel active' : 'Mode hors ligne - Rafraîchissement manuel'}
+              >
+                {wsConnected ? (
+                  <><Wifi className="h-3 w-3" /> Temps réel</>
+                ) : (
+                  <><WifiOff className="h-3 w-3" /> Hors ligne</>
+                )}
+              </div>
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => setHistoriqueDialogOpen(true)}>
