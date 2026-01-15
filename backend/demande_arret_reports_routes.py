@@ -608,6 +608,14 @@ async def accept_report(
             }}
         )
         
+        # Mettre à jour le planning avec les nouvelles dates
+        await update_planning_for_report(
+            demande_id=demande_id,
+            nouvelle_date_debut=report_info["nouvelle_date_debut"],
+            nouvelle_date_fin=report_info["nouvelle_date_fin"],
+            demande=demande
+        )
+        
         logger.info(f"Report accepté pour demande: {demande_id}")
         return {
             "message": "Report accepté avec succès",
