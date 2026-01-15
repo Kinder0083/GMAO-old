@@ -210,12 +210,23 @@ const PlanningMPrev = () => {
     const dayEnd = new Date(day);
     dayEnd.setHours(23, 59, 59, 999);
     
+    // Obtenir la date d'aujourd'hui (sans l'heure)
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
     // Vérifier si une maintenance planifiée ACTIVE couvre ce jour
-    const dateStr = day.toISOString().split('T')[0];
+    const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    
     const maintenanceForDay = planningEntries.find(e => {
       if (e.equipement_id !== equipmentId) return false;
       // La maintenance doit couvrir ce jour (entre date_debut et date_fin inclus)
-      return dateStr >= e.date_debut && dateStr <= e.date_fin;
+      const isInRange = dateStr >= e.date_debut && dateStr <= e.date_fin;
+      if (!isInRange) return false;
+      
+      // Pour les jours PASSÉS au-delà de date_fin, ne PAS afficher la maintenance
+      // (la maintenance est terminée)
+      // Note: On affiche la maintenance jusqu'à date_fin inclus
+      return true;
     });
     
     // Si maintenance planifiée ACTIVE, elle écrase tout l'historique pour ce jour
