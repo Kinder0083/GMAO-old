@@ -1830,9 +1830,15 @@ async def update_equipment_status(
         
         # Si maintenance en cours et force=true, terminer la maintenance anticipée
         if active_maintenance and force:
-            # Mettre fin à la maintenance préventive (mettre la date de fin à aujourd'hui)
-            await db.planning_equipement.update_one(
-                {"id": active_maintenance.get("id")},
+            # Mettre fin à TOUTES les maintenances préventives actives pour cet équipement
+            # (il peut y avoir plusieurs entrées de planning pour la même demande ou des demandes différentes)
+            update_result = await db.planning_equipement.update_many(
+                {
+                    "equipement_id": eq_id,
+                    "date_debut": {"$lte": today},
+                    "date_fin": {"$gte": today},
+                    "fin_anticipee": {"$ne": True}  # Ne pas re-mettre à jour celles déjà terminées
+                },
                 {"$set": {
                     "date_fin": today,
                     "fin_anticipee": True,
@@ -1841,11 +1847,13 @@ async def update_equipment_status(
                     "fin_anticipee_le": datetime.now(timezone.utc).isoformat()
                 }}
             )
+            logger.info(f"Fin anticipée: {update_result.modified_count} entrée(s) de planning mises à jour pour équipement {eq_id}")
             
-            # Mettre à jour la demande d'arrêt si elle existe
-            if active_maintenance.get("demande_arret_id"):
+            # Mettre à jour TOUTES les demandes d'arrêt associées
+            demande_arret_id = active_maintenance.get("demande_arret_id")
+            if demande_arret_id:
                 await db.demandes_arret.update_one(
-                    {"id": active_maintenance.get("demande_arret_id")},
+                    {"id": demande_arret_id},
                     {"$set": {
                         "fin_anticipee": True,
                         "date_fin_effective": today,
@@ -1854,6 +1862,17 @@ async def update_equipment_status(
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }}
                 )
+            
+            # Émettre un événement WebSocket pour notifier les autres clients
+            try:
+                await broadcast_update("equipments", {
+                    "type": "equipment_status_changed",
+                    "equipment_id": eq_id,
+                    "new_status": statut.value if hasattr(statut, 'value') else statut,
+                    "maintenance_ended": True
+                })
+            except Exception as ws_error:
+                logger.warning(f"Erreur WebSocket broadcast: {ws_error}")
         
         # Note: La validation des sous-équipements a été retirée pour permettre
         # aux utilisateurs de changer librement le statut des équipements parents
