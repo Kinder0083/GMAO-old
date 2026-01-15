@@ -7444,9 +7444,15 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
     """
     try:
         # Valider le type d'entité
-        if entity_type not in [e.value for e in EntityType]:
+        valid_types = [e.value for e in RealtimeEntityType]
+        if entity_type not in valid_types:
+            logger.warning(f"[Realtime] Type d'entité invalide: {entity_type}. Types valides: {valid_types}")
             await websocket.close(code=1008, reason=f"Invalid entity type: {entity_type}")
             return
+        
+        # Accepter la connexion WebSocket
+        await websocket.accept()
+        logger.info(f"[Realtime] WebSocket connecté: {entity_type}/{user_id}")
         
         # Connecter l'utilisateur
         await realtime_manager.connect(entity_type, user_id, websocket)
