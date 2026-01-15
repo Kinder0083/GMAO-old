@@ -33,7 +33,7 @@ export const useDashboard = () => {
     }
   }, []);
 
-  // Trigger des rappels automatiques à la visite du dashboard
+  // Trigger des rappels automatiques et vérification des fins de maintenance
   useEffect(() => {
     const triggerReminders = async () => {
       try {
@@ -45,8 +45,19 @@ export const useDashboard = () => {
       }
     };
     
-    // Déclencher les rappels une fois au chargement
+    const checkEndMaintenance = async () => {
+      try {
+        await demandesArretAPI.checkEndMaintenance();
+        console.log('[useDashboard] Fins de maintenance vérifiées');
+      } catch (error) {
+        // Silencieux - ne pas bloquer l'utilisateur
+        console.debug('[useDashboard] Check end maintenance:', error.message);
+      }
+    };
+    
+    // Déclencher les vérifications une fois au chargement
     triggerReminders();
+    checkEndMaintenance();
   }, []);
 
   // Hook temps réel pour les ordres de travail
