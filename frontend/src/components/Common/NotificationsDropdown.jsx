@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, Clock, AlertTriangle, Calendar, Wrench, X } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, Clock, AlertTriangle, Wrench, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { notificationsAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
@@ -10,6 +10,7 @@ const NotificationsDropdown = () => {
   const { toast } = useToast();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [rpCount, setRpCount] = useState(0); // Compteur notifications RP (rouge)
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef(null);
@@ -29,7 +30,14 @@ const NotificationsDropdown = () => {
     try {
       setLoading(true);
       const response = await notificationsAPI.getAll(false, 20);
-      setNotifications(response.data || []);
+      const notifs = response.data || [];
+      setNotifications(notifs);
+      
+      // Compter les notifications RP non lues
+      const rpNotifs = notifs.filter(n => 
+        !n.read && (n.type === 'rp_created' || n.metadata?.is_rp_notification)
+      );
+      setRpCount(rpNotifs.length);
     } catch (error) {
       console.error('Erreur chargement notifications:', error);
     } finally {
@@ -39,8 +47,12 @@ const NotificationsDropdown = () => {
 
   useEffect(() => {
     loadUnreadCount();
-    // Auto-refresh toutes les 60 secondes
-    const interval = setInterval(loadUnreadCount, 60000);
+    loadNotifications(); // Charger aussi les notifications pour le compteur RP
+    // Auto-refresh toutes les 30 secondes
+    const interval = setInterval(() => {
+      loadUnreadCount();
+      loadNotifications();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -119,7 +131,12 @@ const NotificationsDropdown = () => {
     }
   };
 
-  const getNotificationIcon = (type, priority) => {
+  const getNotificationIcon = (type, metadata) => {
+    // Notification RP (Réparation à Planifier) - icône alerte rouge
+    if (type === 'rp_created' || metadata?.is_rp_notification) {
+      return <AlertTriangle className="text-red-500" size={18} />;
+    }
+    
     switch (type) {
       case 'pm_upcoming':
         return <Wrench className="text-blue-500" size={18} />;
@@ -179,10 +196,26 @@ const NotificationsDropdown = () => {
         onClick={() => setIsOpen(!isOpen)}
         data-testid="notifications-btn"
       >
-        <Bell size={20} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+        <Wrench size={20} />
+        
+        {/* Badge bleu pour les notifications PM (en haut à droite) */}
+        {unreadCount > 0 && rpCount === 0 && (
+          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
             {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+        
+        {/* Badge rouge pour les notifications RP (en bas à gauche) */}
+        {rpCount > 0 && (
+          <span className="absolute -bottom-1 -left-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">
+            {rpCount > 9 ? '9+' : rpCount}
+          </span>
+        )}
+        
+        {/* Badge bleu pour les notifications PM si il y a aussi des RP */}
+        {unreadCount > rpCount && rpCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+            {(unreadCount - rpCount) > 9 ? '9+' : (unreadCount - rpCount)}
           </span>
         )}
       </Button>
@@ -223,64 +256,77 @@ const NotificationsDropdown = () => {
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
-                <Bell size={48} className="mx-auto text-gray-300 mb-3" />
+                <Wrench size={48} className="mx-auto text-gray-300 mb-3" />
                 <p className="text-gray-500">Aucune notification</p>
               </div>
             ) : (
-              notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className={`px-4 py-3 border-b hover:bg-gray-50 cursor-pointer transition-colors ${
-                    !notif.read ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => handleNotificationClick(notif)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notif.type, notif.priority)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className={`text-sm font-medium truncate ${!notif.read ? 'text-gray-900' : 'text-gray-600'}`}>
-                          {notif.title}
+              notifications.map((notif) => {
+                const isRpNotification = notif.type === 'rp_created' || notif.metadata?.is_rp_notification;
+                
+                return (
+                  <div
+                    key={notif.id}
+                    className={`px-4 py-3 border-b hover:bg-gray-50 cursor-pointer transition-colors ${
+                      !notif.read 
+                        ? isRpNotification 
+                          ? 'bg-red-50 border-l-4 border-l-red-500' 
+                          : 'bg-blue-50'
+                        : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notif)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        {getNotificationIcon(notif.type, notif.metadata)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className={`text-sm font-medium truncate ${!notif.read ? 'text-gray-900' : 'text-gray-600'}`}>
+                            {notif.title}
+                          </p>
+                          {getPriorityBadge(notif.priority)}
+                          {isRpNotification && !notif.read && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-red-600 text-white font-medium">
+                              RP
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 line-clamp-2">
+                          {notif.message}
                         </p>
-                        {getPriorityBadge(notif.priority)}
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock size={12} className="text-gray-400" />
+                          <span className="text-xs text-gray-400">
+                            {formatDate(notif.created_at)}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-500 line-clamp-2">
-                        {notif.message}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Clock size={12} className="text-gray-400" />
-                        <span className="text-xs text-gray-400">
-                          {formatDate(notif.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 flex items-center gap-1">
-                      {!notif.read && (
+                      <div className="flex-shrink-0 flex items-center gap-1">
+                        {!notif.read && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-gray-400 hover:text-green-600"
+                            onClick={(e) => handleMarkAsRead(notif.id, e)}
+                            title="Marquer comme lu"
+                          >
+                            <Check size={14} />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-gray-400 hover:text-green-600"
-                          onClick={(e) => handleMarkAsRead(notif.id, e)}
-                          title="Marquer comme lu"
+                          className="h-7 w-7 text-gray-400 hover:text-red-600"
+                          onClick={(e) => handleDelete(notif.id, e)}
+                          title="Supprimer"
                         >
-                          <Check size={14} />
+                          <Trash2 size={14} />
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-gray-400 hover:text-red-600"
-                        onClick={(e) => handleDelete(notif.id, e)}
-                        title="Supprimer"
-                      >
-                        <Trash2 size={14} />
-                      </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
@@ -292,6 +338,11 @@ const NotificationsDropdown = () => {
                   ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}`
                   : 'Toutes les notifications sont lues'
                 }
+                {rpCount > 0 && (
+                  <span className="text-red-600 font-medium ml-2">
+                    ({rpCount} RP à traiter)
+                  </span>
+                )}
               </p>
             </div>
           )}
