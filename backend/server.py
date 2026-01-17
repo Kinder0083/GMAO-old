@@ -6869,7 +6869,7 @@ async def convert_to_improvement(
             user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
             user_email=current_user.get("email", ""),
             action=ActionType.CREATE,
-            entity_type=EntityType.IMPROVEMENTS,
+            entity_type=EntityType.IMPROVEMENT,
             entity_id=improvement_id,
             entity_name=f"Amélioration #{numero}",
             details=f"Converti depuis demande: {req['titre']}"
@@ -7279,7 +7279,7 @@ async def add_time_to_improvement(imp_id: str, time_data: AddTimeSpent, current_
             user_name=f"{current_user['prenom']} {current_user['nom']}",
             user_email=current_user["email"],
             action=ActionType.UPDATE,
-            entity_type=EntityType.IMPROVEMENTS,
+            entity_type=EntityType.IMPROVEMENT,
             entity_id=str(existing_imp["id"]),
             entity_name=existing_imp["titre"],
             details=f"Ajout de temps passé: {time_data.hours}h{time_data.minutes:02d}min",
