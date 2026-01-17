@@ -84,14 +84,16 @@ const WorkOrders = () => {
                     equipmentName: workOrder.equipement?.nom || workOrder.titre,
                     workOrderId: workOrder.id
                   });
+                  // Marquer comme venant de l'exécution PM pour ne pas ouvrir le formulaire après
+                  setChecklistCompletedSuccessfully(true);
                   setChecklistExecutionOpen(true);
                 }
               } catch (checklistError) {
                 console.error('Erreur chargement checklist:', checklistError);
-                // Ouvrir quand même le formulaire OT
-                setFormDialogOpen(true);
+                // Ne pas ouvrir le formulaire OT - rester sur la liste
               }
-            } else {
+            } else if (!executeChecklist) {
+              // Ouvrir le formulaire seulement si on n'est pas en mode execution checklist
               setFormDialogOpen(true);
             }
             
