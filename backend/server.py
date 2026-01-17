@@ -1384,28 +1384,40 @@ async def download_attachment(
 ):
     """Télécharger une pièce jointe"""
     try:
-        wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+        # Chercher par UUID (id) ou par ObjectId (_id)
+        wo = await db.work_orders.find_one({"id": wo_id})
+        if not wo:
+            try:
+                wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+            except:
+                pass
+        
         if not wo:
             raise HTTPException(status_code=404, detail="Ordre de travail non trouvé")
         
-        # Trouver l'attachment
+        # Trouver l'attachment (par _id ou id)
         attachment = None
         for att in wo.get("attachments", []):
-            if str(att["_id"]) == attachment_id:
+            att_id = str(att.get("_id", att.get("id", "")))
+            if att_id == attachment_id:
                 attachment = att
                 break
         
         if not attachment:
             raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
         
-        file_path = UPLOAD_DIR / attachment["filename"]
-        if not file_path.exists():
+        # Gérer les deux formats de chemin
+        file_path = attachment.get("path")
+        if not file_path:
+            file_path = str(UPLOAD_DIR / attachment.get("filename", ""))
+        
+        if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
         
         return FileResponse(
             path=file_path,
-            filename=attachment["original_filename"],
-            media_type=attachment["mime_type"]
+            filename=attachment.get("original_filename", attachment.get("filename", "file")),
+            media_type=attachment.get("mime_type", attachment.get("type", "application/octet-stream"))
         )
     except HTTPException:
         raise
@@ -1420,14 +1432,22 @@ async def delete_attachment(
 ):
     """Supprimer une pièce jointe"""
     try:
-        wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+        # Chercher par UUID (id) ou par ObjectId (_id)
+        wo = await db.work_orders.find_one({"id": wo_id})
+        if not wo:
+            try:
+                wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+            except:
+                pass
+        
         if not wo:
             raise HTTPException(status_code=404, detail="Ordre de travail non trouvé")
         
-        # Trouver l'attachment
+        # Trouver l'attachment (par _id ou id)
         attachment = None
         for att in wo.get("attachments", []):
-            if str(att["_id"]) == attachment_id:
+            att_id = str(att.get("_id", att.get("id", "")))
+            if att_id == attachment_id:
                 attachment = att
                 break
         
@@ -1435,15 +1455,24 @@ async def delete_attachment(
             raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
         
         # Supprimer le fichier physique
-        file_path = UPLOAD_DIR / attachment["filename"]
-        if file_path.exists():
-            file_path.unlink()
+        file_path = attachment.get("path")
+        if not file_path:
+            file_path = str(UPLOAD_DIR / attachment.get("filename", ""))
         
-        # Retirer de la base de données
-        await db.work_orders.update_one(
-            {"_id": ObjectId(wo_id)},
-            {"$pull": {"attachments": {"_id": ObjectId(attachment_id)}}}
-        )
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Retirer de la base de données (gérer les deux formats)
+        if "_id" in attachment:
+            await db.work_orders.update_one(
+                {"id": wo_id},
+                {"$pull": {"attachments": {"_id": attachment["_id"]}}}
+            )
+        else:
+            await db.work_orders.update_one(
+                {"id": wo_id},
+                {"$pull": {"attachments": {"id": attachment_id}}}
+            )
         
         return {"message": "Pièce jointe supprimée"}
     except HTTPException:
