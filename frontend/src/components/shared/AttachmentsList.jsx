@@ -170,9 +170,14 @@ const AttachmentsList = ({
           <div className="flex gap-1 flex-shrink-0">
             {downloadFunction && (
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => handleDownload(attachment.id, attachment.original_filename || attachment.filename)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDownload(attachment.id, attachment.original_filename || attachment.filename);
+                }}
                 disabled={downloading === attachment.id}
                 className="h-8 w-8 p-0"
                 title="Télécharger"
@@ -187,9 +192,14 @@ const AttachmentsList = ({
             )}
             {canDelete && deleteFunction && (
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => handleDelete(attachment.id, attachment.original_filename || attachment.filename)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDelete(attachment.id, attachment.original_filename || attachment.filename);
+                }}
                 className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
                 title="Supprimer"
                 data-testid={`delete-btn-${attachment.id}`}
