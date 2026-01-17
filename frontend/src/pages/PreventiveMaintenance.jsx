@@ -176,7 +176,7 @@ const PreventiveMaintenance = () => {
         tempsEstime: pm.duree,
         dateLimite: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         preventive_maintenance_id: pm.id,
-        checklist_id: pm.checklist_id || null
+        checklist_id: pm.checklist_template_id || null
       };
       
       const response = await workOrdersAPI.create(workOrderData);
@@ -186,7 +186,7 @@ const PreventiveMaintenance = () => {
       setMaintenanceToExecute(null);
       
       // 3. Vérifier si une checklist est associée
-      if (pm.checklist_id) {
+      if (pm.checklist_template_id) {
         toast({
           title: 'Ordre de travail créé',
           description: `OT "${createdWO.titre || workOrderData.titre}" créé. Redirection vers la checklist...`
@@ -222,7 +222,7 @@ const PreventiveMaintenance = () => {
 
   // Ouvre la checklist associée à une maintenance
   const handleOpenChecklist = (pm) => {
-    if (!pm.checklist_id) {
+    if (!pm.checklist_template_id) {
       toast({
         title: 'Aucune checklist',
         description: 'Cette maintenance préventive n\'a pas de checklist associée',
@@ -231,7 +231,7 @@ const PreventiveMaintenance = () => {
       return;
     }
     
-    const template = checklists.find(c => c.id === pm.checklist_id);
+    const template = checklists.find(c => c.id === pm.checklist_template_id);
     if (template) {
       setChecklistToExecute(template);
       setExecutionContext({
@@ -490,10 +490,10 @@ const PreventiveMaintenance = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className={item.checklist_id ? "hover:bg-purple-50 hover:text-purple-600" : "opacity-50 cursor-not-allowed"}
+                      className={item.checklist_template_id ? "hover:bg-purple-50 hover:text-purple-600" : "opacity-50 cursor-not-allowed"}
                       onClick={() => handleOpenChecklist(item)}
-                      disabled={!item.checklist_id}
-                      title={item.checklist_id ? "Voir la checklist" : "Aucune checklist associée"}
+                      disabled={!item.checklist_template_id}
+                      title={item.checklist_template_id ? "Voir la checklist" : "Aucune checklist associée"}
                       data-testid={`checklist-btn-${item.id}`}
                     >
                       <BookOpen size={16} />
@@ -590,9 +590,9 @@ const PreventiveMaintenance = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleOpenChecklist(item)}
-                                  disabled={!item.checklist_id}
-                                  className={item.checklist_id ? "hover:bg-purple-50 hover:text-purple-600" : "opacity-50 cursor-not-allowed"}
-                                  title={item.checklist_id ? "Voir la checklist" : "Aucune checklist associée"}
+                                  disabled={!item.checklist_template_id}
+                                  className={item.checklist_template_id ? "hover:bg-purple-50 hover:text-purple-600" : "opacity-50 cursor-not-allowed"}
+                                  title={item.checklist_template_id ? "Voir la checklist" : "Aucune checklist associée"}
                                 >
                                   <BookOpen size={16} />
                                 </Button>
