@@ -585,6 +585,29 @@ const WorkOrders = () => {
         title="Supprimer l'ordre de travail"
         description="Êtes-vous sûr de vouloir supprimer cet ordre de travail ? Cette action est irréversible."
       />
+
+      {/* Dialog d'exécution de checklist pour les OT issus de maintenances préventives */}
+      <ChecklistExecutionDialog
+        open={checklistExecutionOpen}
+        onOpenChange={(open) => {
+          setChecklistExecutionOpen(open);
+          if (!open) {
+            // Ouvrir le formulaire OT après fermeture de la checklist
+            setFormDialogOpen(true);
+          }
+        }}
+        template={checklistToExecute}
+        equipmentId={checklistContext.equipmentId}
+        equipmentName={checklistContext.equipmentName}
+        workOrderId={checklistContext.workOrderId}
+        onSuccess={() => {
+          toast({
+            title: 'Succès',
+            description: 'Checklist exécutée avec succès'
+          });
+          refreshWorkOrders();
+        }}
+      />
     </div>
   );
 };
