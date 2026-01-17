@@ -420,7 +420,7 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
             </div>
 
             <AttachmentsList 
-              workOrderId={workOrder.id}
+              improvementId={workOrder.id}
               refreshTrigger={refreshAttachments}
             />
           </div>
