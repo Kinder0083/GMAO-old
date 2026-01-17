@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
-import { Plus, Download, Upload, AlertTriangle, Search, Filter, Edit, Trash2 } from 'lucide-react';
+import { Plus, Download, Upload, AlertTriangle, Search, Filter, Edit, Trash2, Paperclip } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { presquAccidentAPI } from '../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -12,6 +12,8 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { usePresquAccident } from '../hooks/usePresquAccident';
+import AttachmentUploader from '../components/shared/AttachmentUploader';
+import AttachmentsList from '../components/shared/AttachmentsList';
 
 function PresquAccidentList() {
   const { toast } = useToast();
