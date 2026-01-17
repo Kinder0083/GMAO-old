@@ -20,6 +20,30 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 17 Janvier 2026 (Session actuelle)
 
+#### ✅ Bug Fix: Bouton livre (Book) grisé malgré checklist associée
+**Problème** : L'icône livre restait grisée même après avoir associé une checklist à une maintenance préventive.
+**Cause** : Incohérence de noms de champs - le frontend vérifiait `checklist_id` mais le backend utilisait `checklist_template_id`.
+**Solution** : Alignement du frontend pour utiliser `checklist_template_id` dans tous les composants concernés.
+
+#### ✅ Feature: Système de notifications push pour maintenances préventives
+**Implémentation complète** d'un système de notifications utilisateur :
+
+**Backend** :
+- Nouveau modèle `Notification` dans models.py (type, titre, message, priorité, lien, métadonnées)
+- Endpoints CRUD : GET /api/notifications, GET /api/notifications/count, PUT /api/notifications/{id}/read, PUT /api/notifications/read-all, DELETE /api/notifications/{id}
+- Cron job quotidien à 7h00 pour vérifier les maintenances préventives et créer des notifications :
+  - J-3 : Notification priorité moyenne
+  - J-1 : Notification priorité haute
+  - J-0 : Notification priorité urgente
+  - Retard : Notification priorité urgente
+
+**Frontend** :
+- Nouveau composant `NotificationsDropdown.jsx` intégré dans la barre de navigation
+- Badge de compteur de notifications non lues
+- Liste des notifications avec icônes, priorité, horodatage
+- Actions : marquer comme lu, tout marquer lu, supprimer
+- Clic sur notification → navigation vers la page concernée
+
 #### ✅ P0 Complété: Refonte page "Maintenance préventive"
 **Implémentation complète** de la refonte demandée par l'utilisateur :
 
@@ -141,4 +165,4 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 ## Dernière mise à jour
 **Date**: 17 Janvier 2026
 **Agent**: E1
-**Tâche complétée**: Refonte page "Maintenance préventive" (P0) - Vue par défaut Arborescence, boutons icônes, nouvelle page Checklists, flux d'exécution automatique OT
+**Tâche complétée**: Bug fix bouton livre + Notifications push pour maintenances préventives
