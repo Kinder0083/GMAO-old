@@ -6,25 +6,26 @@ import { improvementsAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { useConfirmDialog } from '../ui/confirm-dialog';
 
-const AttachmentsList = ({ workOrderId, refreshTrigger }) => {
+const AttachmentsList = ({ improvementId, refreshTrigger }) => {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (workOrderId) {
+    if (improvementId) {
       loadAttachments();
     }
-  }, [workOrderId, refreshTrigger]);
+  }, [improvementId, refreshTrigger]);
 
   const loadAttachments = async () => {
     try {
       setLoading(true);
-      const response = await improvementsAPI.getAttachments(workOrderId);
-      setAttachments(response.data);
+      const response = await improvementsAPI.getAttachments(improvementId);
+      setAttachments(response.data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des pièces jointes:', error);
+      setAttachments([]);
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,7 @@ const AttachmentsList = ({ workOrderId, refreshTrigger }) => {
       variant: 'destructive',
       onConfirm: async () => {
         try {
-          await improvementsAPI.deleteAttachment(workOrderId, attachmentId);
+          await improvementsAPI.deleteAttachment(improvementId, attachmentId);
           toast({
             title: 'Succès',
             description: 'Pièce jointe supprimée'
@@ -58,7 +59,7 @@ const AttachmentsList = ({ workOrderId, refreshTrigger }) => {
 
   const handleDownload = async (attachmentId, filename) => {
     try {
-      const response = await improvementsAPI.downloadAttachment(workOrderId, attachmentId);
+      const response = await improvementsAPI.downloadAttachment(improvementId, attachmentId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
