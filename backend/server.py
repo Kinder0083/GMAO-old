@@ -1344,21 +1344,30 @@ async def upload_attachment(
 async def get_attachments(wo_id: str, current_user: dict = Depends(require_permission("workOrders", "view"))):
     """Lister les pièces jointes d'un ordre de travail"""
     try:
-        wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+        # Chercher par UUID (id) ou par ObjectId (_id)
+        wo = await db.work_orders.find_one({"id": wo_id})
+        if not wo:
+            try:
+                wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+            except:
+                pass
+        
         if not wo:
             raise HTTPException(status_code=404, detail="Ordre de travail non trouvé")
         
         attachments = wo.get("attachments", [])
         result = []
         for att in attachments:
+            # Gérer les deux formats d'attachment (ancien avec _id et nouveau avec id)
+            att_id = str(att.get("_id", att.get("id", "")))
             result.append({
-                "id": str(att["_id"]),
-                "filename": att["filename"],
-                "original_filename": att["original_filename"],
-                "size": att["size"],
-                "mime_type": att["mime_type"],
-                "uploaded_at": att["uploaded_at"],
-                "url": f"/api/work-orders/{wo_id}/attachments/{str(att['_id'])}"
+                "id": att_id,
+                "filename": att.get("filename", ""),
+                "original_filename": att.get("original_filename", att.get("filename", "")),
+                "size": att.get("size", 0),
+                "mime_type": att.get("mime_type", att.get("type", "application/octet-stream")),
+                "uploaded_at": att.get("uploaded_at", att.get("uploadedAt", "")),
+                "url": f"/api/work-orders/{wo_id}/attachments/{att_id}"
             })
         
         return result
