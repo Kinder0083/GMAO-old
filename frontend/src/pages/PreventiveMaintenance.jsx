@@ -584,10 +584,10 @@ const PreventiveMaintenance = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleOpenChecklist(item)}
+                                  onClick={() => handleEditChecklist(item)}
                                   disabled={!item.checklist_template_id}
                                   className={item.checklist_template_id ? "hover:bg-purple-50 hover:text-purple-600" : "opacity-50 cursor-not-allowed"}
-                                  title={item.checklist_template_id ? "Voir la checklist" : "Aucune checklist associée"}
+                                  title={item.checklist_template_id ? "Modifier la checklist" : "Aucune checklist associée"}
                                 >
                                   <BookOpen size={16} />
                                 </Button>
