@@ -50,6 +50,15 @@ export const authAPI = {
   changePasswordFirstLogin: (data) => api.post('/auth/change-password-first-login', data)
 };
 
+// ==================== NOTIFICATIONS ====================
+export const notificationsAPI = {
+  getAll: (unreadOnly = false, limit = 50) => api.get('/notifications', { params: { unread_only: unreadOnly, limit } }),
+  getCount: () => api.get('/notifications/count'),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.put('/notifications/read-all'),
+  delete: (id) => api.delete(`/notifications/${id}`)
+};
+
 // ==================== WORK ORDERS ====================
 export const workOrdersAPI = {
   getAll: (params) => api.get('/work-orders', { params }),
