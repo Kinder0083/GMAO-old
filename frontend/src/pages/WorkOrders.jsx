@@ -637,9 +637,13 @@ const WorkOrders = () => {
         open={checklistExecutionOpen}
         onOpenChange={(open) => {
           setChecklistExecutionOpen(open);
-          if (!open) {
-            // Ouvrir le formulaire OT après fermeture de la checklist
+          // N'ouvrir le formulaire OT que si l'utilisateur a annulé (pas si succès)
+          if (!open && !checklistCompletedSuccessfully) {
             setFormDialogOpen(true);
+          }
+          // Reset le flag de succès
+          if (!open) {
+            setChecklistCompletedSuccessfully(false);
           }
         }}
         template={checklistToExecute}
@@ -647,6 +651,7 @@ const WorkOrders = () => {
         equipmentName={checklistContext.equipmentName}
         workOrderId={checklistContext.workOrderId}
         onSuccess={() => {
+          setChecklistCompletedSuccessfully(true);
           toast({
             title: 'Succès',
             description: 'Checklist exécutée avec succès'
