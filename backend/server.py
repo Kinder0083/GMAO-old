@@ -1077,8 +1077,16 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
     from dependencies import can_edit_work_order_status
     
     try:
-        # Récupérer l'ordre de travail existant
-        existing_wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+        # Récupérer l'ordre de travail existant - essayer par string ID d'abord
+        existing_wo = await db.work_orders.find_one({"id": wo_id})
+        
+        # Si pas trouvé, essayer par ObjectId
+        if not existing_wo:
+            try:
+                existing_wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+            except:
+                pass
+        
         if not existing_wo:
             raise HTTPException(status_code=404, detail="Ordre de travail non trouvé")
         
