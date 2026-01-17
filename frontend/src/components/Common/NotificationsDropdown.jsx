@@ -122,9 +122,9 @@ const NotificationsDropdown = () => {
   const getNotificationIcon = (type, priority) => {
     switch (type) {
       case 'pm_upcoming':
-        return <Calendar className="text-blue-500" size={18} />;
+        return <Wrench className="text-blue-500" size={18} />;
       case 'pm_overdue':
-        return <AlertTriangle className="text-red-500" size={18} />;
+        return <Wrench className="text-red-500" size={18} />;
       case 'wo_assigned':
       case 'wo_status':
         return <Wrench className="text-orange-500" size={18} />;
