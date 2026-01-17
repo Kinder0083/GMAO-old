@@ -117,17 +117,27 @@ const AttachmentsList = ({ improvementId, refreshTrigger }) => {
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDownload(attachment.id, attachment.original_filename)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDownload(attachment.id, attachment.original_filename);
+                  }}
                   className="h-8 w-8 p-0"
                 >
                   <Download size={16} />
                 </Button>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(attachment.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete(attachment.id);
+                  }}
                   className="h-8 w-8 p-0 hover:bg-red-50"
                 >
                   <X size={16} />
