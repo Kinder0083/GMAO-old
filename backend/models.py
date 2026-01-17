@@ -1468,8 +1468,9 @@ class PresquAccidentItem(BaseModel):
     
     # Documents et commentaires
     commentaire: Optional[str] = None
-    piece_jointe_url: Optional[str] = None  # URL du fichier uploadé
-    piece_jointe_nom: Optional[str] = None  # Nom original du fichier
+    piece_jointe_url: Optional[str] = None  # URL du fichier uploadé (legacy - single file)
+    piece_jointe_nom: Optional[str] = None  # Nom original du fichier (legacy - single file)
+    attachments: List[Dict[str, Any]] = Field(default_factory=list)  # Liste des pièces jointes (multiple files)
     
     # Métadonnées
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
