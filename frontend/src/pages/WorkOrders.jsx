@@ -534,6 +534,51 @@ const WorkOrders = () => {
                               </Tooltip>
                             </TooltipProvider>
                           )}
+                          
+                          {/* Bouton Livre - Afficher la checklist associée */}
+                          <TooltipProvider delayDuration={300}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={!wo.checklist_id}
+                                  onClick={async () => {
+                                    if (wo.checklist_id) {
+                                      try {
+                                        const checklistResponse = await checklistsAPI.getTemplate(wo.checklist_id);
+                                        if (checklistResponse && checklistResponse.data) {
+                                          setChecklistToExecute(checklistResponse.data);
+                                          setChecklistContext({
+                                            equipmentId: wo.equipement?.id,
+                                            equipmentName: wo.equipement?.nom || wo.titre,
+                                            workOrderId: wo.id
+                                          });
+                                          setChecklistExecutionOpen(true);
+                                        }
+                                      } catch (error) {
+                                        toast({
+                                          title: 'Erreur',
+                                          description: 'Impossible de charger la checklist',
+                                          variant: 'destructive'
+                                        });
+                                      }
+                                    }
+                                  }}
+                                  className={wo.checklist_id 
+                                    ? "hover:bg-purple-50 hover:text-purple-600" 
+                                    : "opacity-50 cursor-not-allowed"
+                                  }
+                                >
+                                  <BookOpen size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p>{wo.checklist_id ? 'Exécuter la checklist' : 'Aucune checklist associée'}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
                           {canDelete('workOrders') && (
                             <TooltipProvider delayDuration={300}>
                               <Tooltip>
