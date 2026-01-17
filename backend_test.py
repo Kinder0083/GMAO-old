@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://filebug-fixer.preview.emergentagent.com/api"
+BACKEND_URL = "https://maintenance-suite-1.preview.emergentagent.com/api"
 DOCUMENTATIONS_WS_URL = "wss://realtimesync.preview.emergentagent.com/ws/realtime/documentations"
 
 # Test credentials
