@@ -12,7 +12,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
-import { checklistsAPI } from '../../services/api';
+import { checklistsAPI, workOrdersAPI } from '../../services/api';
 import { formatErrorMessage } from '../../utils/errorFormatter';
 import { 
   ClipboardCheck, 
@@ -22,7 +22,8 @@ import {
   Camera,
   MessageSquare,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Clock
 } from 'lucide-react';
 
 const ChecklistExecutionDialog = ({ 
@@ -40,6 +41,12 @@ const ChecklistExecutionDialog = ({
   const [responses, setResponses] = useState([]);
   const [generalComment, setGeneralComment] = useState('');
   const [expandedItems, setExpandedItems] = useState(new Set());
+  
+  // État pour le dialog de temps passé
+  const [showTimeDialog, setShowTimeDialog] = useState(false);
+  const [timeHours, setTimeHours] = useState(0);
+  const [timeMinutes, setTimeMinutes] = useState(0);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   useEffect(() => {
     if (open && template) {
@@ -59,6 +66,10 @@ const ChecklistExecutionDialog = ({
       setResponses(initialResponses);
       setGeneralComment('');
       setExpandedItems(new Set());
+      setShowTimeDialog(false);
+      setTimeHours(0);
+      setTimeMinutes(0);
+      setPendingSubmit(false);
     }
   }, [open, template]);
 
@@ -100,34 +111,66 @@ const ChecklistExecutionDialog = ({
     setExpandedItems(newExpanded);
   };
 
-  const handleSubmit = async (e) => {
+  // Première étape : validation des items et ouverture du dialog temps
+  const handleValidateChecklist = async (e) => {
     e.preventDefault();
+    
+    // Vérifier que tous les items obligatoires sont remplis
+    const missingRequired = responses.some((resp, idx) => {
+      const item = template.items[idx];
+      if (!item.required) return false;
+      
+      if (item.type === 'YES_NO' && resp.value_yes_no === null) return true;
+      if (item.type === 'NUMERIC' && (resp.value_numeric === null || resp.value_numeric === '')) return true;
+      if (item.type === 'TEXT' && !resp.value_text) return true;
+      
+      return false;
+    });
+
+    if (missingRequired) {
+      toast({
+        title: 'Attention',
+        description: 'Veuillez remplir tous les items obligatoires',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Ouvrir le dialog de temps passé
+    setShowTimeDialog(true);
+  };
+
+  // Deuxième étape : soumission finale avec le temps
+  const handleFinalSubmit = async () => {
     setLoading(true);
+    setPendingSubmit(true);
 
     try {
-      // Vérifier que tous les items obligatoires sont remplis
-      const missingRequired = responses.some((resp, idx) => {
-        const item = template.items[idx];
-        if (!item.required) return false;
+      // Calculer le temps total en heures décimales
+      const totalTimeHours = parseFloat(timeHours) + parseFloat(timeMinutes) / 60;
+
+      // Identifier les non-conformités
+      const nonConformities = responses.filter((resp, idx) => {
+        return !resp.is_compliant || resp.has_issue;
+      }).map((resp, idx) => {
+        const item = template.items.find(i => i.id === resp.item_id) || template.items[idx];
+        let details = `- ${resp.item_label}`;
         
-        if (item.type === 'YES_NO' && resp.value_yes_no === null) return true;
-        if (item.type === 'NUMERIC' && (resp.value_numeric === null || resp.value_numeric === '')) return true;
-        if (item.type === 'TEXT' && !resp.value_text) return true;
+        if (resp.item_type === 'YES_NO' && resp.value_yes_no === false) {
+          details += ' : Non conforme';
+        } else if (resp.item_type === 'NUMERIC' && !resp.is_compliant) {
+          const originalItem = template.items.find(i => i.id === resp.item_id);
+          details += ` : Valeur mesurée ${resp.value_numeric} ${originalItem?.unit || ''} (attendu: ${originalItem?.min_value || '?'} - ${originalItem?.max_value || '?'} ${originalItem?.unit || ''})`;
+        }
         
-        return false;
+        if (resp.issue_description) {
+          details += `\n  → ${resp.issue_description}`;
+        }
+        
+        return details;
       });
 
-      if (missingRequired) {
-        toast({
-          title: 'Attention',
-          description: 'Veuillez remplir tous les items obligatoires',
-          variant: 'destructive'
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Étape 1: Créer l'exécution
+      // Étape 1: Créer l'exécution de checklist
       const createData = {
         checklist_template_id: template.id,
         work_order_id: workOrderId,
@@ -149,11 +192,76 @@ const ChecklistExecutionDialog = ({
 
       await checklistsAPI.updateExecution(createdExecution.data.id, updateData);
 
-      toast({
-        title: 'Succès',
-        description: 'Checklist exécutée avec succès'
-      });
+      // Étape 3: Mettre à jour l'OT original si workOrderId fourni
+      if (workOrderId) {
+        await workOrdersAPI.update(workOrderId, {
+          statut: 'TERMINE',
+          categorie: 'TRAVAUX_PREVENTIFS',
+          priorite: 'NORMALE',
+          tempsReel: totalTimeHours
+        });
+      }
 
+      // Étape 4: Créer un OT "RP-" si des non-conformités
+      if (nonConformities.length > 0 && workOrderId) {
+        // Récupérer les détails de l'OT original pour le nom
+        let originalOTName = equipmentName || 'Maintenance';
+        try {
+          const originalOT = await workOrdersAPI.getById(workOrderId);
+          if (originalOT.data) {
+            originalOTName = originalOT.data.titre;
+          }
+        } catch (e) {
+          console.error('Erreur récupération OT original:', e);
+        }
+
+        const rpOTData = {
+          titre: `RP-${originalOTName}`,
+          description: `Réparation à Planifier suite aux non-conformités détectées lors de la checklist "${template.name}".\n\nNon-conformités détectées :\n${nonConformities.join('\n')}\n\nCommentaire général : ${generalComment || 'Aucun'}`,
+          statut: 'OUVERT',
+          priorite: 'HAUTE',
+          categorie: 'TRAVAUX_CURATIF',
+          equipement_id: equipmentId,
+          assigne_a_id: null, // À définir ultérieurement
+          dateLimite: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        };
+
+        const rpOTResponse = await workOrdersAPI.create(rpOTData);
+        
+        // Créer une notification pour le nouvel OT
+        try {
+          const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+          const token = localStorage.getItem('token');
+          await fetch(`${API_BASE}/api/notifications/create-rp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              rp_ot_id: rpOTResponse.data.id,
+              rp_ot_titre: rpOTData.titre,
+              non_conformities_count: nonConformities.length,
+              original_ot_titre: originalOTName
+            })
+          });
+        } catch (notifError) {
+          console.error('Erreur création notification RP:', notifError);
+        }
+
+        toast({
+          title: 'Checklist validée',
+          description: `OT terminé. Un nouvel OT "${rpOTData.titre}" a été créé pour ${nonConformities.length} non-conformité(s).`,
+          variant: 'default'
+        });
+      } else {
+        toast({
+          title: 'Succès',
+          description: `Checklist validée et OT terminé. Temps passé : ${timeHours}h ${timeMinutes}min`
+        });
+      }
+
+      setShowTimeDialog(false);
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -164,10 +272,90 @@ const ChecklistExecutionDialog = ({
       });
     } finally {
       setLoading(false);
+      setPendingSubmit(false);
     }
   };
 
   if (!template) return null;
+
+  // Dialog de saisie du temps passé
+  if (showTimeDialog) {
+    return (
+      <Dialog open={true} onOpenChange={() => setShowTimeDialog(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="text-blue-600" size={24} />
+              Temps passé sur cet OT
+            </DialogTitle>
+            <DialogDescription>
+              Indiquez le temps total passé sur cette intervention
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="hours">Heures</Label>
+                <Input
+                  id="hours"
+                  type="number"
+                  min="0"
+                  max="99"
+                  value={timeHours}
+                  onChange={(e) => setTimeHours(parseInt(e.target.value) || 0)}
+                  className="text-center text-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="minutes">Minutes</Label>
+                <Input
+                  id="minutes"
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={timeMinutes}
+                  onChange={(e) => setTimeMinutes(Math.min(59, parseInt(e.target.value) || 0))}
+                  className="text-center text-lg"
+                />
+              </div>
+            </div>
+
+            {/* Résumé des non-conformités */}
+            {responses.some(r => !r.is_compliant || r.has_issue) && (
+              <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <div className="flex items-center gap-2 text-orange-700 font-medium">
+                  <AlertTriangle size={18} />
+                  {responses.filter(r => !r.is_compliant || r.has_issue).length} non-conformité(s) détectée(s)
+                </div>
+                <p className="text-sm text-orange-600 mt-1">
+                  Un nouvel OT "RP-..." sera créé automatiquement pour planifier les réparations.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowTimeDialog(false)}
+              disabled={loading}
+            >
+              Retour
+            </Button>
+            <Button 
+              onClick={handleFinalSubmit} 
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {loading ? 'Enregistrement...' : 'Confirmer et terminer l\'OT'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -183,7 +371,7 @@ const ChecklistExecutionDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleValidateChecklist} className="space-y-4">
           {/* Liste des items de contrôle */}
           <div className="space-y-3">
             {template.items.map((item, index) => {
