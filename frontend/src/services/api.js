@@ -349,9 +349,11 @@ export const improvementsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  downloadAttachment: (id, filename) => api.get(`/improvements/${id}/attachments/${filename}`, {
+  getAttachments: (id) => api.get(`/improvements/${id}/attachments`),
+  downloadAttachment: (id, attachmentId) => api.get(`/improvements/${id}/attachments/${attachmentId}`, {
     responseType: 'blob'
   }),
+  deleteAttachment: (id, attachmentId) => api.delete(`/improvements/${id}/attachments/${attachmentId}`),
   
   // Comments
   addComment: (id, text) => api.post(`/improvements/${id}/comments`, { text }),
