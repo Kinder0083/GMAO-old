@@ -7230,6 +7230,60 @@ async def delete_notification(
         logger.error(f"Erreur suppression notification: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/notifications/create-rp")
+async def create_rp_notification(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Crée une notification pour un OT 'Réparation à Planifier' (RP)"""
+    try:
+        # Récupérer tous les utilisateurs avec permission sur les OT (pour notifier les responsables)
+        # Pour l'instant, notifier tous les admins et superviseurs
+        users = await db.users.find({
+            "$or": [
+                {"role": "admin"},
+                {"role": "supervisor"},
+                {"permissions.workOrders.edit": True}
+            ]
+        }).to_list(100)
+        
+        notifications_created = 0
+        for user in users:
+            user_id = str(user.get("_id", user.get("id", "")))
+            notification = {
+                "id": str(uuid.uuid4()),
+                "type": "rp_created",
+                "title": f"Nouvel OT: {data.get('rp_ot_titre', 'RP-...')}",
+                "message": f"Réparation à Planifier créé suite à {data.get('non_conformities_count', 0)} non-conformité(s) détectée(s) sur \"{data.get('original_ot_titre', 'OT')}\".",
+                "priority": "high",
+                "user_id": user_id,
+                "link": "/work-orders",
+                "metadata": {
+                    "rp_ot_id": data.get("rp_ot_id"),
+                    "rp_ot_titre": data.get("rp_ot_titre"),
+                    "non_conformities_count": data.get("non_conformities_count"),
+                    "is_rp_notification": True
+                },
+                "read": False,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "read_at": None
+            }
+            await db.notifications.insert_one(notification)
+            
+            # Émettre via WebSocket
+            await realtime_manager.emit_event(
+                "notification",
+                "created",
+                notification,
+                user_id=user_id
+            )
+            notifications_created += 1
+        
+        return {"success": True, "notifications_created": notifications_created}
+    except Exception as e:
+        logger.error(f"Erreur création notification RP: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def create_notification(
     user_id: str,
     notif_type: str,
