@@ -23,6 +23,7 @@ function PresquAccidentList() {
   const [stats, setStats] = useState(null);
   const [openForm, setOpenForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   
   // Utiliser le hook temps réel
   const { items, loading, refresh: loadItems } = usePresquAccident();
