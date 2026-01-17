@@ -1137,8 +1137,11 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         if wo_update.statut == WorkOrderStatus.TERMINE and "dateTermine" not in update_data:
             update_data["dateTermine"] = datetime.utcnow()
         
+        # Utiliser le bon filtre selon le format de l'ID
+        wo_filter = {"id": existing_wo.get("id")} if existing_wo.get("id") else {"_id": existing_wo.get("_id")}
+        
         await db.work_orders.update_one(
-            {"_id": ObjectId(wo_id)},
+            wo_filter,
             {"$set": update_data}
         )
         
@@ -1156,7 +1159,7 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
             changes=update_data
         )
         
-        wo = await db.work_orders.find_one({"_id": ObjectId(wo_id)})
+        wo = await db.work_orders.find_one(wo_filter)
         wo = serialize_doc(wo)
         
         if wo.get("assigne_a_id"):
