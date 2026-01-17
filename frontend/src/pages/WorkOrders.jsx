@@ -43,6 +43,7 @@ const WorkOrders = () => {
   const [checklistExecutionOpen, setChecklistExecutionOpen] = useState(false);
   const [checklistToExecute, setChecklistToExecute] = useState(null);
   const [checklistContext, setChecklistContext] = useState({});
+  const [checklistCompletedSuccessfully, setChecklistCompletedSuccessfully] = useState(false);
   
   // Filtres de date
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month, custom
