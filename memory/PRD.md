@@ -165,4 +165,4 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 ## Dernière mise à jour
 **Date**: 17 Janvier 2026
 **Agent**: E1
-**Tâche complétée**: Bug fix bouton livre + Notifications push pour maintenances préventives
+**Tâche complétée**: Icône clé pour notifications PM, bouton livre = modifier checklist, ouverture auto checklist lors exécution PM
