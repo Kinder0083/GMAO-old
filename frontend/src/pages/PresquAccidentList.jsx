@@ -554,13 +554,48 @@ function PresquAccidentList() {
                   rows={2}
                 />
               </div>
+
+              {/* Section Pièces jointes */}
+              <div className="col-span-2 pt-4 border-t">
+                <Label className="flex items-center gap-2 mb-3">
+                  <Paperclip size={16} />
+                  Pièces jointes
+                </Label>
+                
+                {selectedItem ? (
+                  <div className="space-y-4">
+                    <AttachmentUploader
+                      itemId={selectedItem?.id}
+                      uploadFunction={presquAccidentAPI.uploadAttachment}
+                      onUploadComplete={() => {
+                        setAttachmentRefresh(prev => prev + 1);
+                        loadData();
+                      }}
+                      entityLabel="le presqu'accident"
+                    />
+                    
+                    <AttachmentsList
+                      itemId={selectedItem?.id}
+                      getAttachmentsFunction={presquAccidentAPI.getAttachments}
+                      downloadFunction={presquAccidentAPI.downloadAttachment}
+                      deleteFunction={presquAccidentAPI.deleteAttachment}
+                      refreshTrigger={attachmentRefresh}
+                      canDelete={true}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Créez d'abord le presqu'accident pour ajouter des pièces jointes
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setOpenForm(false)}>
                 Annuler
               </Button>
-              <Button type="submit">
+              <Button type="submit" data-testid="submit-presqu-accident-btn">
                 {selectedItem ? 'Mettre à jour' : 'Créer'}
               </Button>
             </div>
