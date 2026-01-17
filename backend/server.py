@@ -8240,6 +8240,15 @@ async def startup_scheduler():
             replace_existing=True
         )
         
+        # Configurer la vérification des notifications PM tous les jours à 7h00 GMT
+        scheduler.add_job(
+            check_pm_notifications,
+            CronTrigger(hour=7, minute=0),  # Tous les jours à 7h00
+            id='pm_notifications_check',
+            name='Vérification notifications PM',
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("✅ Scheduler démarré:")
         logger.info("   - Vérification maintenances préventives: tous les jours à 00h00")
