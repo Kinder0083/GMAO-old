@@ -1463,14 +1463,17 @@ async def delete_attachment(
             os.remove(file_path)
         
         # Retirer de la base de données (gérer les deux formats)
+        # Utiliser le même filtre que celui utilisé pour trouver l'OT
+        wo_filter = {"id": wo.get("id")} if wo.get("id") else {"_id": wo["_id"]}
+        
         if "_id" in attachment:
             await db.work_orders.update_one(
-                {"id": wo_id},
+                wo_filter,
                 {"$pull": {"attachments": {"_id": attachment["_id"]}}}
             )
         else:
             await db.work_orders.update_one(
-                {"id": wo_id},
+                wo_filter,
                 {"$pull": {"attachments": {"id": attachment_id}}}
             )
         
