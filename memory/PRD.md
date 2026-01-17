@@ -39,8 +39,10 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 **Frontend** :
 - Nouveau composant `NotificationsDropdown.jsx` intégré dans la barre de navigation
-- Badge de compteur de notifications non lues
-- Liste des notifications avec icônes, priorité, horodatage
+- Icône **clé (Wrench)** pour les notifications de maintenance préventive
+- Badge **bleu** en haut à droite pour notifications PM
+- Badge **rouge** en bas à gauche (animé) pour notifications RP (Réparation à Planifier)
+- Liste des notifications avec icônes, priorité, horodatage, badge "RP" pour les non-conformités
 - Actions : marquer comme lu, tout marquer lu, supprimer
 - Clic sur notification → navigation vers la page concernée
 
