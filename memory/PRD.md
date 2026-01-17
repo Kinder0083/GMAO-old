@@ -20,7 +20,29 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 17 Janvier 2026 (Session actuelle)
 
-#### ✅ P0 Complété: Pièces jointes pour Presqu'accident et Maintenance préventive
+#### ✅ P0 Complété: Refonte page "Maintenance préventive"
+**Implémentation complète** de la refonte demandée par l'utilisateur :
+
+**Changements UI** :
+- Vue par défaut changée de "Liste" à "Arborescence" (tree)
+- Vue "Liste" renommée en "Carte" (card)
+- Boutons texte remplacés par icônes : Play (Exécuter), Pencil (Modifier), BookOpen (Checklist), Trash (Supprimer)
+- Bouton "Gérer les Checklists" navigue vers nouvelle page dédiée
+
+**Nouvelle page `/preventive-maintenance/checklists`** :
+- Page dédiée `ChecklistsManagement.jsx` pour créer, modifier, supprimer les checklists
+- Statistiques : Total checklists, Items de contrôle, Modèles actifs
+- Bouton "Retour" pour revenir à la maintenance préventive
+
+**Nouveau flux d'exécution** :
+- Clic sur Play → Dialogue de confirmation (sans demander de créer OT)
+- Création automatique d'un OT avec titre "PM-[Nom PM]" et statut "En Cours"
+- Option de mettre l'équipement en statut "En maintenance" (si équipement associé)
+- Redirection automatique vers la page /work-orders avec l'OT créé
+
+**Tests** : 10/10 tests frontend passés (100%)
+
+#### ✅ P0 Complété précédemment: Pièces jointes pour Presqu'accident et Maintenance préventive
 **Implémentation complète** de la gestion des pièces jointes multi-fichiers :
 
 **Backend** :
@@ -67,7 +89,7 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 - **Migration WebSocket**: Pages "Rapports", "Equipes", "Historique Achat"
 
 ### P2 - Priorité Moyenne
-- **Page "Rapport P.accident"**: Correction des mises à jour temps réel (récurrence: 8 fois)
+- **Page "Rapport P.accident"**: Correction des mises à jour temps réel (récurrence: 9 fois - NON RÉSOLU)
 - **Chatbot IA**: Implémentation (dé-priorisé par l'utilisateur)
 
 ---
@@ -119,4 +141,4 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 ## Dernière mise à jour
 **Date**: 17 Janvier 2026
 **Agent**: E1
-**Tâche complétée**: Pièces jointes Presqu'accident et Maintenance préventive (P0)
+**Tâche complétée**: Refonte page "Maintenance préventive" (P0) - Vue par défaut Arborescence, boutons icônes, nouvelle page Checklists, flux d'exécution automatique OT
