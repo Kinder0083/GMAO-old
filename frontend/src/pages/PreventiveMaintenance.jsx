@@ -137,34 +137,117 @@ const PreventiveMaintenance = () => {
     setHistoryDialogOpen(true);
   };
 
-  const handleExecuteNow = async (pm) => {
-    confirm({
-      title: 'Créer un ordre de travail',
-      description: `Voulez-vous créer un ordre de travail pour la maintenance "${pm.titre}" ?`,
-      confirmText: 'Créer',
-      cancelText: 'Annuler',
-      variant: 'default',
-      onConfirm: async () => {
+  // Ouvre le dialog de confirmation pour l'exécution
+  const handleExecuteNow = (pm) => {
+    setMaintenanceToExecute(pm);
+    setExecuteDialogOpen(true);
+  };
+
+  // Exécute la maintenance préventive (crée l'OT automatiquement)
+  const executeMaintenanceWithStatus = async (changeEquipmentStatus) => {
+    if (!maintenanceToExecute) return;
+    
+    const pm = maintenanceToExecute;
+    setExecutingMaintenance(true);
+    
+    try {
+      // 1. Changer le statut de l'équipement si demandé
+      if (changeEquipmentStatus && pm.equipement?.id) {
         try {
-          // Créer un ordre de travail basé sur la maintenance préventive
-          await workOrdersAPI.create({
-            titre: pm.titre,
-            description: `Maintenance préventive: ${pm.titre}`,
-            statut: 'OUVERT',
-            priorite: 'MOYENNE',
-            equipement_id: pm.equipement?.id,
-            assigne_a_id: pm.assigneA?.id,
-            tempsEstime: pm.duree,
-            dateLimite: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // +7 jours
-          });
-          
+          await equipmentsAPI.updateStatus(pm.equipement.id, 'EN_MAINTENANCE');
           toast({
-            title: 'Succès',
-            description: 'Ordre de travail créé avec succès'
+            title: 'Équipement mis en maintenance',
+            description: `${pm.equipement.nom} est maintenant en maintenance`
           });
         } catch (error) {
-          toast({
-            title: 'Erreur',
+          console.error('Erreur changement statut équipement:', error);
+          // On continue quand même
+        }
+      }
+      
+      // 2. Créer l'ordre de travail automatiquement
+      const workOrderData = {
+        titre: `PM-${pm.titre}`,
+        description: `Maintenance préventive: ${pm.titre}\nFréquence: ${pm.frequence}\nDurée estimée: ${pm.duree}h`,
+        statut: 'EN_COURS',
+        priorite: 'MOYENNE',
+        equipement_id: pm.equipement?.id,
+        assigne_a_id: pm.assigneA?.id,
+        tempsEstime: pm.duree,
+        dateLimite: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        preventive_maintenance_id: pm.id,
+        checklist_id: pm.checklist_id || null
+      };
+      
+      const response = await workOrdersAPI.create(workOrderData);
+      const createdWO = response.data;
+      
+      setExecuteDialogOpen(false);
+      setMaintenanceToExecute(null);
+      
+      // 3. Vérifier si une checklist est associée
+      if (pm.checklist_id) {
+        toast({
+          title: 'Ordre de travail créé',
+          description: `OT "${createdWO.titre || workOrderData.titre}" créé. Redirection vers la checklist...`
+        });
+        
+        // Rediriger vers l'OT avec la checklist
+        setTimeout(() => {
+          navigate(`/work-orders?id=${createdWO.id || createdWO._id}&execute_checklist=true`);
+        }, 1000);
+      } else {
+        toast({
+          title: 'Ordre de travail créé',
+          description: `OT "${createdWO.titre || workOrderData.titre}" créé avec succès. Aucune checklist associée.`
+        });
+        
+        // Rediriger vers l'OT
+        setTimeout(() => {
+          navigate(`/work-orders?id=${createdWO.id || createdWO._id}`);
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('Erreur création OT:', error);
+      toast({
+        title: 'Erreur',
+        description: error.response?.data?.detail || 'Impossible de créer l\'ordre de travail',
+        variant: 'destructive'
+      });
+    } finally {
+      setExecutingMaintenance(false);
+    }
+  };
+
+  // Ouvre la checklist associée à une maintenance
+  const handleOpenChecklist = (pm) => {
+    if (!pm.checklist_id) {
+      toast({
+        title: 'Aucune checklist',
+        description: 'Cette maintenance préventive n\'a pas de checklist associée',
+        variant: 'default'
+      });
+      return;
+    }
+    
+    const template = checklists.find(c => c.id === pm.checklist_id);
+    if (template) {
+      setChecklistToExecute(template);
+      setExecutionContext({
+        equipmentId: pm.equipement?.id,
+        equipmentName: pm.equipement?.nom || pm.titre,
+        maintenanceId: pm.id
+      });
+      setExecutionDialogOpen(true);
+    } else {
+      toast({
+        title: 'Erreur',
+        description: 'Template de checklist introuvable',
+        variant: 'destructive'
+      });
+    }
+  };
             description: 'Impossible de créer l\'ordre de travail',
             variant: 'destructive'
           });
