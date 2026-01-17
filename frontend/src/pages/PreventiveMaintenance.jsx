@@ -295,51 +295,42 @@ const PreventiveMaintenance = () => {
         <div className="flex gap-2">
           <div className="flex gap-1 border rounded-lg p-1">
             <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className={viewMode === 'list' ? 'bg-blue-600 hover:bg-blue-700' : ''}
-            >
-              <List size={16} className="mr-1" />
-              Liste
-            </Button>
-            <Button
               variant={viewMode === 'tree' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('tree')}
               className={viewMode === 'tree' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              data-testid="view-tree-btn"
             >
               <Grid size={16} className="mr-1" />
               Arborescence
             </Button>
             <Button
-              variant={viewMode === 'checklists' ? 'default' : 'outline'}
+              variant={viewMode === 'card' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('checklists')}
-              className={viewMode === 'checklists' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              onClick={() => setViewMode('card')}
+              className={viewMode === 'card' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              data-testid="view-card-btn"
             >
-              <ClipboardCheck size={16} className="mr-1" />
-              Checklists
+              <LayoutGrid size={16} className="mr-1" />
+              Carte
             </Button>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              className="border-purple-500 text-purple-600 hover:bg-purple-50"
+              onClick={() => navigate('/preventive-maintenance/checklists')}
+              data-testid="manage-checklists-btn"
+            >
+              <ClipboardCheck size={20} className="mr-2" />
+              Gérer les Checklists
+            </Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
               setSelectedMaintenance(null);
               setFormDialogOpen(true);
-            }}>
+            }} data-testid="new-maintenance-btn">
               <Plus size={20} className="mr-2" />
               Nouvelle planification
-            </Button>
-            <Button 
-              variant="outline" 
-              className="border-green-500 text-green-600 hover:bg-green-50"
-              onClick={() => {
-                setSelectedChecklist(null);
-                setChecklistDialogOpen(true);
-              }}
-            >
-              <Plus size={20} className="mr-2" />
-              Nouvelle Checklist
             </Button>
           </div>
         </div>
