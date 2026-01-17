@@ -314,7 +314,7 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
               </div>
             ) : (
               <p className="text-sm text-gray-500">
-                Créez d'abord la maintenance préventive pour ajouter des pièces jointes
+                Créez d&apos;abord la maintenance préventive pour ajouter des pièces jointes
               </p>
             )}
           </div>

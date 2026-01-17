@@ -134,7 +134,7 @@ const AttachmentUploader = ({
 
       {!itemId && (
         <p className="text-xs text-gray-500">
-          Enregistrez d'abord {entityLabel} pour ajouter des pièces jointes
+          Enregistrez d&apos;abord {entityLabel} pour ajouter des pièces jointes
         </p>
       )}
 

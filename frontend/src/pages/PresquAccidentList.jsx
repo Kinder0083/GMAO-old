@@ -585,7 +585,7 @@ function PresquAccidentList() {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500">
-                    Créez d'abord le presqu'accident pour ajouter des pièces jointes
+                    Créez d&apos;abord le presqu&apos;accident pour ajouter des pièces jointes
                   </p>
                 )}
               </div>
