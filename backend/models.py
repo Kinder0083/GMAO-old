@@ -2804,3 +2804,39 @@ class SystemUpdateHistory(BaseModel):
     
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+
+# === Notification Models ===
+class NotificationType(str, Enum):
+    PM_UPCOMING = "pm_upcoming"  # Maintenance préventive à venir
+    PM_OVERDUE = "pm_overdue"    # Maintenance préventive en retard
+    WO_ASSIGNED = "wo_assigned"  # Ordre de travail assigné
+    WO_STATUS = "wo_status"      # Changement de statut OT
+    EQUIPMENT_STATUS = "equipment_status"  # Changement statut équipement
+    SYSTEM = "system"            # Notification système
+
+class NotificationPriority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    URGENT = "urgent"
+
+class NotificationBase(BaseModel):
+    type: NotificationType
+    title: str
+    message: str
+    priority: NotificationPriority = NotificationPriority.MEDIUM
+    user_id: str  # Destinataire
+    link: Optional[str] = None  # Lien vers la ressource concernée
+    metadata: Optional[Dict[str, Any]] = None  # Données supplémentaires
+
+class NotificationCreate(NotificationBase):
+    pass
+
+class Notification(NotificationBase):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    read: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    read_at: Optional[str] = None
+
+    class Config:
+        from_attributes = True
