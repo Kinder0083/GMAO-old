@@ -39,6 +39,11 @@ const WorkOrders = () => {
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
   
+  // États pour l'exécution de checklist
+  const [checklistExecutionOpen, setChecklistExecutionOpen] = useState(false);
+  const [checklistToExecute, setChecklistToExecute] = useState(null);
+  const [checklistContext, setChecklistContext] = useState({});
+  
   // Filtres de date
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month, custom
   const [dateType, setDateType] = useState('creation'); // creation ou echeance
@@ -50,11 +55,13 @@ const WorkOrders = () => {
     refreshWorkOrders();
   }, [dateFilter, dateType, customStartDate, customEndDate]);
 
-  // Gérer l'ouverture automatique d'un ordre via l'URL ?open=id
+  // Gérer l'ouverture automatique d'un ordre via l'URL ?id=xxx ou ?open=xxx
   useEffect(() => {
-    const openWorkOrderId = searchParams.get('open');
+    const openWorkOrderId = searchParams.get('id') || searchParams.get('open');
+    const executeChecklist = searchParams.get('execute_checklist') === 'true';
+    
     if (openWorkOrderId) {
-      console.log('Tentative d\'ouverture de l\'ordre:', openWorkOrderId);
+      console.log('Tentative d\'ouverture de l\'ordre:', openWorkOrderId, 'execute_checklist:', executeChecklist);
       // Charger l'ordre directement par son ID
       const loadAndOpenWorkOrder = async () => {
         try {
@@ -62,10 +69,35 @@ const WorkOrders = () => {
           const response = await workOrdersAPI.getById(openWorkOrderId);
           console.log('Réponse API:', response);
           if (response && response.data) {
-            setSelectedWorkOrder(response.data);
-            setFormDialogOpen(true);
-            // Retirer le paramètre de l'URL après ouverture
+            const workOrder = response.data;
+            setSelectedWorkOrder(workOrder);
+            
+            // Si execute_checklist=true et qu'il y a une checklist associée
+            if (executeChecklist && workOrder.checklist_id) {
+              try {
+                const checklistResponse = await checklistsAPI.getTemplate(workOrder.checklist_id);
+                if (checklistResponse && checklistResponse.data) {
+                  setChecklistToExecute(checklistResponse.data);
+                  setChecklistContext({
+                    equipmentId: workOrder.equipement?.id,
+                    equipmentName: workOrder.equipement?.nom || workOrder.titre,
+                    workOrderId: workOrder.id
+                  });
+                  setChecklistExecutionOpen(true);
+                }
+              } catch (checklistError) {
+                console.error('Erreur chargement checklist:', checklistError);
+                // Ouvrir quand même le formulaire OT
+                setFormDialogOpen(true);
+              }
+            } else {
+              setFormDialogOpen(true);
+            }
+            
+            // Retirer les paramètres de l'URL après ouverture
+            searchParams.delete('id');
             searchParams.delete('open');
+            searchParams.delete('execute_checklist');
             setSearchParams(searchParams);
           } else {
             throw new Error('Pas de données dans la réponse');
@@ -78,8 +110,10 @@ const WorkOrders = () => {
             description: formatErrorMessage(error, 'Impossible d\'ouvrir l\'ordre de travail'),
             variant: 'destructive'
           });
-          // Retirer le paramètre même en cas d'erreur
+          // Retirer les paramètres même en cas d'erreur
+          searchParams.delete('id');
           searchParams.delete('open');
+          searchParams.delete('execute_checklist');
           setSearchParams(searchParams);
         }
       };
