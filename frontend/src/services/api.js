@@ -125,7 +125,21 @@ export const preventiveMaintenanceAPI = {
   getById: (id) => api.get(`/preventive-maintenance/${id}`),
   create: (data) => api.post('/preventive-maintenance', data),
   update: (id, data) => api.put(`/preventive-maintenance/${id}`, data),
-  delete: (id) => api.delete(`/preventive-maintenance/${id}`)
+  delete: (id) => api.delete(`/preventive-maintenance/${id}`),
+  
+  // Attachments (nouveau)
+  uploadAttachment: (pmId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/preventive-maintenance/${pmId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getAttachments: (pmId) => api.get(`/preventive-maintenance/${pmId}/attachments`),
+  downloadAttachment: (pmId, attachmentId) => api.get(`/preventive-maintenance/${pmId}/attachments/${attachmentId}`, {
+    responseType: 'blob'
+  }),
+  deleteAttachment: (pmId, attachmentId) => api.delete(`/preventive-maintenance/${pmId}/attachments/${attachmentId}`)
 };
 
 // ==================== CHECKLISTS ====================
@@ -396,11 +410,25 @@ export const presquAccidentAPI = {
   updateItem: (id, data) => api.put(`/presqu-accident/items/${id}`, data).then(res => res.data),
   deleteItem: (id) => api.delete(`/presqu-accident/items/${id}`).then(res => res.data),
   
-  // Upload
+  // Attachments (nouveau format multi-fichiers)
+  uploadAttachment: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/presqu-accident/items/${id}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getAttachments: (id) => api.get(`/presqu-accident/items/${id}/attachments`),
+  downloadAttachment: (itemId, attachmentId) => api.get(`/presqu-accident/items/${itemId}/attachments/${attachmentId}`, {
+    responseType: 'blob'
+  }),
+  deleteAttachment: (itemId, attachmentId) => api.delete(`/presqu-accident/items/${itemId}/attachments/${attachmentId}`),
+  
+  // Upload legacy (pour compatibilité)
   uploadFile: (id, file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post(`/presqu-accident/items/${id}/upload`, formData, {
+    return api.post(`/presqu-accident/items/${id}/attachments`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }).then(res => res.data);
   },
