@@ -2645,6 +2645,177 @@ async def delete_preventive_maintenance(pm_id: str, current_user: dict = Depends
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+# ==================== PREVENTIVE MAINTENANCE - ATTACHMENTS ====================
+
+@api_router.post("/preventive-maintenance/{pm_id}/attachments")
+async def upload_pm_attachment(
+    pm_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))
+):
+    """Upload une pièce jointe pour une maintenance préventive"""
+    import os
+    import uuid as uuid_mod
+    
+    try:
+        # Vérifier que la maintenance existe
+        pm = await db.preventive_maintenances.find_one({"_id": ObjectId(pm_id)})
+        if not pm:
+            raise HTTPException(status_code=404, detail="Maintenance préventive non trouvée")
+        
+        # Créer le répertoire uploads/preventive-maintenance si nécessaire
+        upload_dir = "/app/backend/uploads/preventive-maintenance"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Générer un nom de fichier unique
+        file_ext = os.path.splitext(file.filename)[1] if file.filename else ""
+        attachment_id = str(uuid_mod.uuid4())
+        unique_filename = f"{attachment_id}{file_ext}"
+        file_path = os.path.join(upload_dir, unique_filename)
+        
+        # Lire et sauvegarder le fichier
+        content = await file.read()
+        file_size = len(content)
+        
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        # Créer l'objet attachment
+        new_attachment = {
+            "id": attachment_id,
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "path": file_path,
+            "mime_type": file.content_type or "application/octet-stream",
+            "size": file_size,
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "uploaded_by": current_user.get("id")
+        }
+        
+        # Ajouter au tableau attachments
+        await db.preventive_maintenances.update_one(
+            {"_id": ObjectId(pm_id)},
+            {"$push": {"attachments": new_attachment}}
+        )
+        
+        logger.info(f"Pièce jointe ajoutée à la maintenance préventive {pm_id}: {file.filename}")
+        
+        return {
+            "success": True,
+            "attachment": new_attachment
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur upload pièce jointe maintenance préventive: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/preventive-maintenance/{pm_id}/attachments")
+async def get_pm_attachments(
+    pm_id: str,
+    current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))
+):
+    """Récupérer les pièces jointes d'une maintenance préventive"""
+    try:
+        pm = await db.preventive_maintenances.find_one({"_id": ObjectId(pm_id)})
+        if not pm:
+            raise HTTPException(status_code=404, detail="Maintenance préventive non trouvée")
+        
+        return pm.get("attachments", [])
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération pièces jointes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/preventive-maintenance/{pm_id}/attachments/{attachment_id}")
+async def download_pm_attachment(
+    pm_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))
+):
+    """Télécharger une pièce jointe d'une maintenance préventive"""
+    import os
+    
+    try:
+        pm = await db.preventive_maintenances.find_one({"_id": ObjectId(pm_id)})
+        if not pm:
+            raise HTTPException(status_code=404, detail="Maintenance préventive non trouvée")
+        
+        # Trouver la pièce jointe
+        attachment = None
+        for att in pm.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        file_path = attachment.get("path")
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
+        
+        return FileResponse(
+            path=file_path,
+            filename=attachment.get("original_filename", attachment.get("filename")),
+            media_type=attachment.get("mime_type", "application/octet-stream")
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur téléchargement pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/preventive-maintenance/{pm_id}/attachments/{attachment_id}")
+async def delete_pm_attachment(
+    pm_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))
+):
+    """Supprimer une pièce jointe d'une maintenance préventive"""
+    import os
+    
+    try:
+        pm = await db.preventive_maintenances.find_one({"_id": ObjectId(pm_id)})
+        if not pm:
+            raise HTTPException(status_code=404, detail="Maintenance préventive non trouvée")
+        
+        # Trouver la pièce jointe
+        attachment = None
+        for att in pm.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        # Supprimer le fichier physique
+        file_path = attachment.get("path")
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Retirer du tableau attachments
+        await db.preventive_maintenances.update_one(
+            {"_id": ObjectId(pm_id)},
+            {"$pull": {"attachments": {"id": attachment_id}}}
+        )
+        
+        logger.info(f"Pièce jointe supprimée de la maintenance préventive {pm_id}: {attachment_id}")
+        
+        return {"success": True, "message": "Pièce jointe supprimée"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur suppression pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 def calculate_next_maintenance_date(current_date: datetime, frequency: str) -> datetime:
     """Calcule la prochaine date de maintenance selon la fréquence"""
     if frequency == "QUOTIDIENNE":
