@@ -960,46 +960,68 @@ async def transfer_to_preventive(
             detail="Permission 'preventiveMaintenance.edit' requise pour transférer des fichiers"
         )
     
-    # Trouver le fichier
-    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
-    if not message:
-        raise HTTPException(status_code=404, detail="Fichier non trouvé")
-    
-    attachment = None
-    for att in message.get("attachments", []):
-        if att.get("id") == attachment_id:
-            attachment = att
-            break
-    
-    if not attachment:
-        raise HTTPException(status_code=404, detail="Fichier non trouvé")
-    
-    # Copier le fichier
-    import shutil
-    preventive_dir = "/app/backend/uploads/preventive-maintenance/"
-    os.makedirs(preventive_dir, exist_ok=True)
-    
-    new_file_path = os.path.join(preventive_dir, attachment.get("filename"))
-    shutil.copy2(attachment.get("file_path"), new_file_path)
-    
-    # Ajouter à la maintenance préventive
-    from bson import ObjectId
-    await db.preventive_maintenances.update_one(
-        {"_id": ObjectId(preventive_id)},
-        {
-            "$push": {
-                "attachments": {
-                    "filename": attachment.get("original_filename"),
-                    "path": new_file_path,
-                    "type": attachment.get("mime_type"),
-                    "size": attachment.get("file_size"),
-                    "uploadedAt": datetime.now(timezone.utc).isoformat()
-                }
-            }
+    try:
+        # Trouver le fichier
+        message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+        if not message:
+            raise HTTPException(status_code=404, detail="Fichier non trouvé dans les messages")
+        
+        attachment = None
+        for att in message.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        # Vérifier que la maintenance préventive existe
+        from bson import ObjectId
+        preventive = await db.preventive_maintenances.find_one({"_id": ObjectId(preventive_id)})
+        if not preventive:
+            raise HTTPException(status_code=404, detail="Maintenance préventive non trouvée")
+        
+        # Vérifier si le fichier source existe
+        source_path = attachment.get("file_path") or attachment.get("path")
+        if not source_path or not os.path.exists(source_path):
+            logger.error(f"Fichier source introuvable: {source_path}")
+            raise HTTPException(status_code=404, detail="Fichier source introuvable sur le serveur")
+        
+        # Copier le fichier
+        import shutil
+        import uuid as uuid_mod
+        preventive_dir = "/app/backend/uploads/preventive-maintenance/"
+        os.makedirs(preventive_dir, exist_ok=True)
+        
+        # Générer un nom unique pour éviter les conflits
+        unique_filename = f"{uuid_mod.uuid4().hex[:8]}_{attachment.get('filename', attachment.get('original_filename', 'file'))}"
+        new_file_path = os.path.join(preventive_dir, unique_filename)
+        shutil.copy2(source_path, new_file_path)
+        
+        # Ajouter à la maintenance préventive
+        new_attachment = {
+            "id": str(uuid_mod.uuid4()),
+            "filename": attachment.get("original_filename") or attachment.get("filename"),
+            "path": new_file_path,
+            "type": attachment.get("mime_type") or attachment.get("type"),
+            "size": attachment.get("file_size") or attachment.get("size"),
+            "uploadedAt": datetime.now(timezone.utc).isoformat(),
+            "transferredFrom": "chat"
         }
-    )
+        
+        await db.preventive_maintenances.update_one(
+            {"_id": ObjectId(preventive_id)},
+            {"$push": {"attachments": new_attachment}}
+        )
+        
+        logger.info(f"Fichier transféré vers maintenance préventive {preventive_id}: {unique_filename}")
+        return {"success": True, "message": "Fichier transféré vers la maintenance préventive"}
     
-    return {"success": True, "message": "Fichier transféré vers la maintenance préventive"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur transfert vers maintenance préventive: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors du transfert: {str(e)}")
 
 
 @router.post("/transfer-to-nearmiss")
