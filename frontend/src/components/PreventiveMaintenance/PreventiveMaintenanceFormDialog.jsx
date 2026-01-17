@@ -284,11 +284,46 @@ const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSu
             )}
           </div>
 
+          {/* Section Pièces jointes */}
+          <div className="space-y-2 p-4 bg-gray-50 rounded-lg border">
+            <Label className="flex items-center gap-2">
+              <Paperclip size={16} />
+              Pièces jointes
+            </Label>
+            
+            {maintenance ? (
+              <div className="space-y-3">
+                <AttachmentUploader
+                  itemId={maintenance?.id}
+                  uploadFunction={preventiveMaintenanceAPI.uploadAttachment}
+                  onUploadComplete={() => {
+                    setAttachmentRefresh(prev => prev + 1);
+                    onSuccess();
+                  }}
+                  entityLabel="la maintenance préventive"
+                />
+                
+                <AttachmentsList
+                  itemId={maintenance?.id}
+                  getAttachmentsFunction={preventiveMaintenanceAPI.getAttachments}
+                  downloadFunction={preventiveMaintenanceAPI.downloadAttachment}
+                  deleteFunction={preventiveMaintenanceAPI.deleteAttachment}
+                  refreshTrigger={attachmentRefresh}
+                  canDelete={true}
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                Créez d'abord la maintenance préventive pour ajouter des pièces jointes
+              </p>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700" data-testid="submit-preventive-maintenance-btn">
               {loading ? 'Enregistrement...' : maintenance ? 'Modifier' : 'Créer'}
             </Button>
           </DialogFooter>
