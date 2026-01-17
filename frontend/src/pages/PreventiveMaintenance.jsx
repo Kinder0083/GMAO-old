@@ -248,13 +248,6 @@ const PreventiveMaintenance = () => {
       });
     }
   };
-            description: 'Impossible de créer l\'ordre de travail',
-            variant: 'destructive'
-          });
-        }
-      }
-    });
-  };
 
   const getFrequencyBadge = (frequency) => {
     const badges = {
