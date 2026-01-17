@@ -220,8 +220,8 @@ const PreventiveMaintenance = () => {
     }
   };
 
-  // Ouvre la checklist associée à une maintenance
-  const handleOpenChecklist = (pm) => {
+  // Ouvre le formulaire de modification de la checklist associée
+  const handleEditChecklist = (pm) => {
     if (!pm.checklist_template_id) {
       toast({
         title: 'Aucune checklist',
@@ -233,13 +233,8 @@ const PreventiveMaintenance = () => {
     
     const template = checklists.find(c => c.id === pm.checklist_template_id);
     if (template) {
-      setChecklistToExecute(template);
-      setExecutionContext({
-        equipmentId: pm.equipement?.id,
-        equipmentName: pm.equipement?.nom || pm.titre,
-        maintenanceId: pm.id
-      });
-      setExecutionDialogOpen(true);
+      setSelectedChecklist(template);
+      setChecklistDialogOpen(true);
     } else {
       toast({
         title: 'Erreur',
