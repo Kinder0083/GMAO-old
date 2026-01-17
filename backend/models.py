@@ -708,6 +708,8 @@ class WorkOrderBase(BaseModel):
     dateLimite: Optional[datetime] = None
     tempsEstime: Optional[float] = None
     createdBy: Optional[str] = None  # ID de l'utilisateur créateur
+    preventive_maintenance_id: Optional[str] = None  # ID de la PM source si créé depuis PM
+    checklist_id: Optional[str] = None  # ID du template de checklist associé
 
 class WorkOrderCreate(WorkOrderBase):
     pass
