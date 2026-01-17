@@ -855,9 +855,16 @@ async def transfer_to_workorder(
         if not attachment:
             raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
         
-        # Vérifier que l'OT existe
+        # Vérifier que l'OT existe (chercher par id UUID d'abord, puis par _id ObjectId)
         from bson import ObjectId
-        work_order = await db.work_orders.find_one({"_id": ObjectId(workorder_id)})
+        work_order = await db.work_orders.find_one({"id": workorder_id})
+        if not work_order:
+            # Fallback: essayer avec ObjectId
+            try:
+                work_order = await db.work_orders.find_one({"_id": ObjectId(workorder_id)})
+            except:
+                pass
+        
         if not work_order:
             raise HTTPException(status_code=404, detail="Ordre de travail non trouvé")
         
@@ -889,10 +896,18 @@ async def transfer_to_workorder(
             "transferredFrom": "chat"
         }
         
-        await db.work_orders.update_one(
-            {"_id": ObjectId(workorder_id)},
-            {"$push": {"attachments": new_attachment}}
-        )
+        # Mettre à jour par id UUID ou _id ObjectId
+        wo_id = work_order.get("id")
+        if wo_id:
+            await db.work_orders.update_one(
+                {"id": wo_id},
+                {"$push": {"attachments": new_attachment}}
+            )
+        else:
+            await db.work_orders.update_one(
+                {"_id": work_order["_id"]},
+                {"$push": {"attachments": new_attachment}}
+            )
         
         logger.info(f"Fichier transféré vers OT {workorder_id}: {unique_filename}")
         return {"success": True, "message": "Fichier transféré vers l'ordre de travail"}
