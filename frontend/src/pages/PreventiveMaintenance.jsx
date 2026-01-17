@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import {
@@ -9,25 +10,31 @@ import {
   DialogHeader,
   DialogTitle
 } from '../components/ui/dialog';
-import { Plus, Calendar, Clock, CheckCircle, List, Grid, Trash2, ClipboardCheck, Edit, Eye, Play, History } from 'lucide-react';
+import { Plus, Calendar, Clock, CheckCircle, LayoutGrid, Grid, Trash2, ClipboardCheck, Pencil, Play, History, BookOpen } from 'lucide-react';
 import PreventiveMaintenanceFormDialog from '../components/PreventiveMaintenance/PreventiveMaintenanceFormDialog';
 import ChecklistFormDialog from '../components/PreventiveMaintenance/ChecklistFormDialog';
 import ChecklistExecutionDialog from '../components/PreventiveMaintenance/ChecklistExecutionDialog';
 import ChecklistHistoryView from '../components/PreventiveMaintenance/ChecklistHistoryView';
-import { preventiveMaintenanceAPI, workOrdersAPI, checklistsAPI } from '../services/api';
+import { preventiveMaintenanceAPI, workOrdersAPI, checklistsAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { usePreventiveMaintenance } from '../hooks/usePreventiveMaintenance';
 
 const PreventiveMaintenance = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'tree', ou 'checklists'
+  const [viewMode, setViewMode] = useState('tree'); // 'tree' par défaut (Arborescence), 'card'
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [maintenanceToDelete, setMaintenanceToDelete] = useState(null);
+  
+  // Dialog pour le changement de statut équipement lors de l'exécution
+  const [executeDialogOpen, setExecuteDialogOpen] = useState(false);
+  const [maintenanceToExecute, setMaintenanceToExecute] = useState(null);
+  const [executingMaintenance, setExecutingMaintenance] = useState(false);
   
   // États pour les checklists
   const [checklistDialogOpen, setChecklistDialogOpen] = useState(false);
