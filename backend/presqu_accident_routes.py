@@ -527,57 +527,193 @@ async def get_presqu_accident_alerts(current_user: dict = Depends(get_current_us
 
 # ==================== Upload de pièces jointes ====================
 
-@router.post("/items/{item_id}/upload")
-async def upload_piece_jointe(
+@router.post("/items/{item_id}/attachments")
+async def upload_attachment(
     item_id: str,
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload une pièce jointe pour un presqu'accident"""
+    """Upload une pièce jointe pour un presqu'accident (nouveau format multi-fichiers)"""
     try:
         # Vérifier que l'item existe
         item = await db.presqu_accident_items.find_one({"id": item_id})
         if not item:
             raise HTTPException(status_code=404, detail="Presqu'accident non trouvé")
         
-        # Créer le répertoire uploads/presqu_accident si nécessaire
-        upload_dir = Path("uploads/presqu_accident")
+        # Créer le répertoire uploads/presqu-accident si nécessaire
+        upload_dir = Path("/app/backend/uploads/presqu-accident")
         upload_dir.mkdir(parents=True, exist_ok=True)
         
         # Générer un nom de fichier unique
         file_ext = Path(file.filename).suffix
-        unique_filename = f"{item_id}_{uuid.uuid4()}{file_ext}"
+        attachment_id = str(uuid.uuid4())
+        unique_filename = f"{attachment_id}{file_ext}"
         file_path = upload_dir / unique_filename
         
-        # Sauvegarder le fichier
+        # Lire et sauvegarder le fichier
+        content = await file.read()
+        file_size = len(content)
+        
         with open(file_path, "wb") as f:
-            content = await file.read()
             f.write(content)
         
-        # Mettre à jour l'item avec l'URL du fichier
-        file_url = f"/uploads/presqu_accident/{unique_filename}"
+        # Créer l'objet attachment
+        new_attachment = {
+            "id": attachment_id,
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "path": str(file_path),
+            "mime_type": file.content_type or "application/octet-stream",
+            "size": file_size,
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "uploaded_by": current_user.get("id")
+        }
+        
+        # Ajouter au tableau attachments
         await db.presqu_accident_items.update_one(
             {"id": item_id},
             {
+                "$push": {"attachments": new_attachment},
                 "$set": {
-                    "piece_jointe_url": file_url,
-                    "piece_jointe_nom": file.filename,
                     "updated_at": datetime.now(timezone.utc).isoformat(),
                     "updated_by": current_user.get("id")
                 }
             }
         )
         
+        logger.info(f"Pièce jointe ajoutée au presqu'accident {item_id}: {file.filename}")
+        
         return {
             "success": True,
-            "file_url": file_url,
-            "file_name": file.filename
+            "attachment": new_attachment
         }
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Erreur upload pièce jointe: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/items/{item_id}/attachments")
+async def get_attachments(
+    item_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer les pièces jointes d'un presqu'accident"""
+    try:
+        item = await db.presqu_accident_items.find_one({"id": item_id})
+        if not item:
+            raise HTTPException(status_code=404, detail="Presqu'accident non trouvé")
+        
+        return item.get("attachments", [])
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération pièces jointes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/items/{item_id}/attachments/{attachment_id}")
+async def download_attachment(
+    item_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Télécharger une pièce jointe"""
+    from fastapi.responses import FileResponse
+    import os
+    
+    try:
+        item = await db.presqu_accident_items.find_one({"id": item_id})
+        if not item:
+            raise HTTPException(status_code=404, detail="Presqu'accident non trouvé")
+        
+        # Trouver la pièce jointe
+        attachment = None
+        for att in item.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        file_path = attachment.get("path")
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
+        
+        return FileResponse(
+            path=file_path,
+            filename=attachment.get("original_filename", attachment.get("filename")),
+            media_type=attachment.get("mime_type", "application/octet-stream")
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur téléchargement pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/items/{item_id}/attachments/{attachment_id}")
+async def delete_attachment(
+    item_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer une pièce jointe"""
+    import os
+    
+    try:
+        item = await db.presqu_accident_items.find_one({"id": item_id})
+        if not item:
+            raise HTTPException(status_code=404, detail="Presqu'accident non trouvé")
+        
+        # Trouver et supprimer la pièce jointe
+        attachment = None
+        for att in item.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        # Supprimer le fichier physique
+        file_path = attachment.get("path")
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Retirer du tableau attachments
+        await db.presqu_accident_items.update_one(
+            {"id": item_id},
+            {
+                "$pull": {"attachments": {"id": attachment_id}},
+                "$set": {
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": current_user.get("id")
+                }
+            }
+        )
+        
+        logger.info(f"Pièce jointe supprimée du presqu'accident {item_id}: {attachment_id}")
+        
+        return {"success": True, "message": "Pièce jointe supprimée"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur suppression pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/items/{item_id}/upload")
+async def upload_piece_jointe_legacy(
+    item_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload une pièce jointe pour un presqu'accident (endpoint legacy - redirige vers nouveau)"""
+    # Rediriger vers le nouveau endpoint
+    return await upload_attachment(item_id, file, current_user)
 
 
 # ==================== Import/Export ====================
