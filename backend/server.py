@@ -8257,6 +8257,7 @@ async def startup_scheduler():
         logger.info("   - Vérification demandes expirées: tous les jours à 02h00")
         logger.info("   - Nettoyage messages chat (60j): tous les jours à 03h00")
         logger.info("   - Vérification versions LLM: chaque lundi à 03h00")
+        logger.info("   - Notifications PM: tous les jours à 07h00")
         
         # Initialiser et démarrer les collecteurs MQTT
         await mqtt_meter_collector.initialize(db)
