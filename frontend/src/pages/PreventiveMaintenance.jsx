@@ -568,21 +568,33 @@ const PreventiveMaintenance = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    setSelectedMaintenance(item);
-                                    setFormDialogOpen(true);
-                                  }}
-                                  className="hover:bg-blue-50"
+                                  onClick={() => handleExecuteNow(item)}
+                                  className="hover:bg-green-50 hover:text-green-600"
+                                  title="Exécuter"
                                 >
-                                  Modifier
+                                  <Play size={16} />
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleExecuteNow(item)}
-                                  className="hover:bg-green-50"
+                                  onClick={() => {
+                                    setSelectedMaintenance(item);
+                                    setFormDialogOpen(true);
+                                  }}
+                                  className="hover:bg-blue-50 hover:text-blue-600"
+                                  title="Modifier"
                                 >
-                                  Exécuter
+                                  <Pencil size={16} />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleOpenChecklist(item)}
+                                  disabled={!item.checklist_id}
+                                  className={item.checklist_id ? "hover:bg-purple-50 hover:text-purple-600" : "opacity-50 cursor-not-allowed"}
+                                  title={item.checklist_id ? "Voir la checklist" : "Aucune checklist associée"}
+                                >
+                                  <BookOpen size={16} />
                                 </Button>
                                 {canDelete && (
                                   <Button
@@ -593,6 +605,7 @@ const PreventiveMaintenance = () => {
                                       setDeleteDialogOpen(true);
                                     }}
                                     className="hover:bg-red-50 hover:text-red-600"
+                                    title="Supprimer"
                                   >
                                     <Trash2 size={16} />
                                   </Button>
@@ -609,15 +622,79 @@ const PreventiveMaintenance = () => {
             )}
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
-      {/* Vue Checklists */}
-      {viewMode === 'checklists' && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck size={24} className="text-green-600" />
+      {/* Dialog d'exécution avec choix du statut équipement */}
+      <Dialog open={executeDialogOpen} onOpenChange={setExecuteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Play className="text-green-600" size={20} />
+              Exécuter la maintenance
+            </DialogTitle>
+            <DialogDescription>
+              {maintenanceToExecute && (
+                <>
+                  <p className="font-medium text-gray-900 mt-2">{maintenanceToExecute.titre}</p>
+                  {maintenanceToExecute.equipement && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Équipement: {maintenanceToExecute.equipement.nom}
+                    </p>
+                  )}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-sm text-gray-700 mb-4">
+              Un ordre de travail va être créé automatiquement avec le statut "En cours".
+            </p>
+            {maintenanceToExecute?.equipement && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-yellow-800">
+                  Voulez-vous mettre l'équipement "{maintenanceToExecute.equipement.nom}" en statut "En maintenance" ?
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Cela mettra à jour le planning des équipements.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setExecuteDialogOpen(false)} disabled={executingMaintenance}>
+              Annuler
+            </Button>
+            {maintenanceToExecute?.equipement ? (
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => executeMaintenanceWithStatus(false)}
+                  disabled={executingMaintenance}
+                >
+                  {executingMaintenance ? 'Création...' : 'Non, garder le statut'}
+                </Button>
+                <Button 
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => executeMaintenanceWithStatus(true)}
+                  disabled={executingMaintenance}
+                >
+                  {executingMaintenance ? 'Création...' : 'Oui, mettre en maintenance'}
+                </Button>
+              </>
+            ) : (
+              <Button 
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => executeMaintenanceWithStatus(false)}
+                disabled={executingMaintenance}
+              >
+                {executingMaintenance ? 'Création...' : 'Créer l\'OT'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
                 Modèles de Checklists
               </CardTitle>
               <Button
