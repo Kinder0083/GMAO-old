@@ -20,6 +20,7 @@ import EquipmentDetail from "./pages/EquipmentDetail";
 import Inventory from "./pages/Inventory";
 import Locations from "./pages/Locations";
 import PreventiveMaintenance from "./pages/PreventiveMaintenance";
+import ChecklistsManagement from "./pages/ChecklistsManagement";
 import Reports from "./pages/Reports";
 import People from "./pages/People";
 import Planning from "./pages/Planning";
@@ -134,6 +135,7 @@ function App() {
             <Route path="inventory" element={<Inventory />} />
             <Route path="locations" element={<Locations />} />
             <Route path="preventive-maintenance" element={<PreventiveMaintenance />} />
+            <Route path="preventive-maintenance/checklists" element={<ChecklistsManagement />} />
             <Route path="reports" element={<Reports />} />
             <Route path="people" element={<People />} />
             <Route path="planning" element={<Planning />} />
