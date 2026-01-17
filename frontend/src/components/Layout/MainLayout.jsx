@@ -45,6 +45,7 @@ import AIButton from '../Common/AIButton';
 import ManualButton from '../Common/ManualButton';
 import RecentUpdatePopup from '../Common/RecentUpdatePopup';
 import AlertNotifications from '../Common/AlertNotifications';
+import NotificationsDropdown from '../Common/NotificationsDropdown';
 import InactivityHandler from '../Common/InactivityHandler';
 import TokenValidator from '../Common/TokenValidator';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -831,6 +832,9 @@ const MainLayout = () => {
           
           {/* Alertes MQTT */}
           <AlertNotifications />
+          
+          {/* Notifications utilisateur (maintenances préventives, etc.) */}
+          <NotificationsDropdown />
           
           {/* Cloche OT en attente */}
           <button 
