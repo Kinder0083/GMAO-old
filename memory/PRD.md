@@ -46,6 +46,32 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 - Actions : marquer comme lu, tout marquer lu, supprimer
 - Clic sur notification → navigation vers la page concernée
 
+#### ✅ Feature: Flux complet de validation checklist avec création automatique OT RP
+**Nouveau flux d'exécution complet** :
+1. Clic sur Play (Exécuter) dans PM → Création OT "PM-[Nom]" avec checklist
+2. Ouverture automatique du dialogue d'exécution de la checklist
+3. Remplissage des items (Conforme/Non conforme, valeurs numériques)
+4. Clic sur "Valider la checklist" → Dialogue de saisie du temps passé
+5. Confirmation → Mise à jour OT :
+   - Statut : "Terminé"
+   - Catégorie : "Travaux Préventifs"
+   - Priorité : "Normale"
+   - Temps passé enregistré
+6. Si non-conformité(s) détectée(s) → Création automatique OT "RP-[Nom OT]" :
+   - Statut : "Ouvert"
+   - Priorité : "Haute"
+   - Catégorie : "Travaux Curatif"
+   - Description : Liste détaillée des non-conformités
+   - Notification envoyée aux admins/superviseurs
+
+#### ✅ Feature: Bouton "Livre" dans les Ordres de Travail
+- Nouvelle icône **BookOpen** entre le crayon et la corbeille dans la liste des OT
+- Permet d'exécuter la checklist associée à un OT
+- Désactivé/grisé si aucune checklist associée
+
+#### ✅ Amélioration: Fonctionnalité bouton "Livre" dans Maintenance préventive
+**Changement** : Le bouton livre dans la page PM ouvre maintenant le **formulaire de modification** de la checklist associée (pas l'exécution).
+
 #### ✅ P0 Complété: Refonte page "Maintenance préventive"
 **Implémentation complète** de la refonte demandée par l'utilisateur :
 
