@@ -1027,6 +1027,7 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
     wo_dict["parts_used"] = []  # Initialiser les pièces utilisées
     wo_dict["createdBy"] = current_user.get("id")  # Ajouter le créateur
     wo_dict["_id"] = ObjectId()
+    wo_dict["id"] = str(wo_dict["_id"])  # Stocker aussi le champ id pour les recherches
     
     await db.work_orders.insert_one(wo_dict)
     
