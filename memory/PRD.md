@@ -18,7 +18,34 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
-### Session du 15 Janvier 2026 (Session actuelle)
+### Session du 17 Janvier 2026 (Session actuelle)
+
+#### ✅ P0 Complété: Pièces jointes pour Presqu'accident et Maintenance préventive
+**Implémentation complète** de la gestion des pièces jointes multi-fichiers :
+
+**Backend** :
+- Nouveau endpoint `POST /api/presqu-accident/items/{id}/attachments` - Upload fichier
+- Nouveau endpoint `GET /api/presqu-accident/items/{id}/attachments` - Liste pièces jointes
+- Nouveau endpoint `GET /api/presqu-accident/items/{id}/attachments/{att_id}` - Téléchargement
+- Nouveau endpoint `DELETE /api/presqu-accident/items/{id}/attachments/{att_id}` - Suppression
+- Idem pour `/api/preventive-maintenance/{id}/attachments`
+
+**Frontend** :
+- Composant générique `AttachmentUploader.jsx` (boutons Photo + Fichier)
+- Composant générique `AttachmentsList.jsx` (liste, téléchargement, suppression)
+- Intégration dans `PresquAccidentList.jsx` (formulaire d'édition)
+- Intégration dans `PreventiveMaintenanceFormDialog.jsx`
+
+**Tests** : 17/17 tests backend passés (100%)
+
+#### ✅ Bug Fix: Transfert fichier Chat Live
+**Problème** : Erreur "Impossible de transférer le fichier" lors du transfert de pièces jointes du chat vers Presqu'accident ou Maintenance préventive.
+**Cause** : Les modèles n'avaient pas de champ `attachments[]` - seulement les anciens champs `piece_jointe_url` et `piece_jointe_nom`.
+**Solution** : 
+- Ajout du champ `attachments: List[dict] = []` aux modèles `PresquAccidentItem` et `PreventiveMaintenance`
+- Mise à jour de l'API frontend avec les nouvelles méthodes
+
+### Session du 15 Janvier 2026
 
 #### ✅ Bug P0 Corrigé: Calendrier de Maintenance "Infini" 
 **Solution** : Nouvelles fonctions `getLastMaintenanceEndDate()` et modification de `getStatusBlocksForDay()` + cron job
@@ -32,20 +59,6 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 #### ✅ Bug Fix: Synchronisation Planning M.Prev après fin anticipée
 **Problème signalé** : Après changement de statut d'un équipement (fin anticipée), la page Planning M.Prev ne se mettait pas à jour.
 
-**Causes identifiées** :
-1. Le code `update_one` ne mettait à jour qu'UNE entrée de planning même s'il y avait des doublons
-2. La page ne se rafraîchissait pas automatiquement après changement sur une autre page
-
-**Solutions implémentées** :
-1. **Backend** (`server.py` lignes 1832-1870):
-   - Changé `update_one` → `update_many` pour mettre à jour TOUTES les entrées de planning actives
-   - Ajout d'un broadcast WebSocket après fin anticipée
-   
-2. **Frontend** (`PlanningMPrev.jsx`):
-   - Utilisation du hook `useEquipments` pour recevoir les mises à jour WebSocket
-   - Ajout d'event listeners `visibilitychange` et `focus` pour rafraîchir au retour sur la page
-   - Rechargement automatique du planning quand les équipements changent
-
 ---
 
 ## Tâches à Venir
@@ -54,7 +67,7 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 - **Migration WebSocket**: Pages "Rapports", "Equipes", "Historique Achat"
 
 ### P2 - Priorité Moyenne
-- **Page "Rapport P.accident"**: Correction des mises à jour temps réel (récurrence: 7 fois)
+- **Page "Rapport P.accident"**: Correction des mises à jour temps réel (récurrence: 8 fois)
 - **Chatbot IA**: Implémentation (dé-priorisé par l'utilisateur)
 
 ---
@@ -64,10 +77,11 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 ### Backend
 ```
 /app/backend/
-├── server.py                           # Serveur principal, endpoint status avec update_many
-├── demande_arret_routes.py             # Routes demandes d'arrêt + pending-status-update
-├── demande_arret_emails.py             # Envoi d'emails fin maintenance
-└── ...
+├── server.py                           # Serveur principal + endpoints PM attachments
+├── presqu_accident_routes.py           # Routes presqu'accident + attachments
+├── demande_arret_routes.py             # Routes demandes d'arrêt
+├── chat_routes.py                      # Chat + transfert fichiers
+└── models.py                           # Modèles avec attachments[]
 ```
 
 ### Frontend
@@ -76,13 +90,18 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 ├── pages/
 │   ├── Dashboard.jsx                   # + MaintenanceStatusPendingAlert
 │   ├── PlanningMPrev.jsx               # + useEquipments + visibility/focus refresh
+│   ├── PresquAccidentList.jsx          # + Section pièces jointes
 │   └── EndMaintenance.jsx
-└── components/
-    ├── Dashboard/
-    │   └── MaintenanceStatusPendingAlert.jsx
-    └── Equipment/
-        ├── QuickStatusChanger.jsx
-        └── MaintenanceEndConfirmDialog.jsx
+├── components/
+│   ├── shared/
+│   │   ├── AttachmentUploader.jsx      # Composant upload réutilisable
+│   │   └── AttachmentsList.jsx         # Liste pièces jointes réutilisable
+│   ├── PreventiveMaintenance/
+│   │   └── PreventiveMaintenanceFormDialog.jsx  # + Section pièces jointes
+│   └── Dashboard/
+│       └── MaintenanceStatusPendingAlert.jsx
+└── services/
+    └── api.js                          # + méthodes attachments
 ```
 
 ---
@@ -91,12 +110,13 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 | Fichier | Tests | Couverture |
 |---------|-------|------------|
+| `/app/tests/test_attachments_feature.py` | 17 | Pièces jointes PA + PM |
 | `/app/tests/test_planning_mprev_bug_fix.py` | 15 | Bug P0 calendrier |
 | `/app/tests/test_maintenance_end_features.py` | 14 | Fin anticipée + alerte |
 
 ---
 
 ## Dernière mise à jour
-**Date**: 15 Janvier 2026
+**Date**: 17 Janvier 2026
 **Agent**: E1
-**Bug corrigé**: Synchronisation Planning M.Prev après fin anticipée de maintenance
+**Tâche complétée**: Pièces jointes Presqu'accident et Maintenance préventive (P0)
