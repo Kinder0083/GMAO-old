@@ -1020,45 +1020,67 @@ async def transfer_to_nearmiss(
             detail="Permission 'presquaccident.edit' requise pour transférer des fichiers"
         )
     
-    # Trouver le fichier
-    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
-    if not message:
-        raise HTTPException(status_code=404, detail="Fichier non trouvé")
-    
-    attachment = None
-    for att in message.get("attachments", []):
-        if att.get("id") == attachment_id:
-            attachment = att
-            break
-    
-    if not attachment:
-        raise HTTPException(status_code=404, detail="Fichier non trouvé")
-    
-    # Copier le fichier
-    import shutil
-    nearmiss_dir = "/app/backend/uploads/presqu-accident/"
-    os.makedirs(nearmiss_dir, exist_ok=True)
-    
-    new_file_path = os.path.join(nearmiss_dir, attachment.get("filename"))
-    shutil.copy2(attachment.get("file_path"), new_file_path)
-    
-    # Ajouter au presqu'accident
-    await db.presqu_accident_items.update_one(
-        {"id": nearmiss_id},
-        {
-            "$push": {
-                "attachments": {
-                    "filename": attachment.get("original_filename"),
-                    "path": new_file_path,
-                    "type": attachment.get("mime_type"),
-                    "size": attachment.get("file_size"),
-                    "uploadedAt": datetime.now(timezone.utc).isoformat()
-                }
-            }
+    try:
+        # Trouver le fichier
+        message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+        if not message:
+            raise HTTPException(status_code=404, detail="Fichier non trouvé dans les messages")
+        
+        attachment = None
+        for att in message.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        # Vérifier que le presqu'accident existe
+        nearmiss = await db.presqu_accident_items.find_one({"id": nearmiss_id})
+        if not nearmiss:
+            raise HTTPException(status_code=404, detail="Presqu'accident non trouvé")
+        
+        # Vérifier si le fichier source existe
+        source_path = attachment.get("file_path") or attachment.get("path")
+        if not source_path or not os.path.exists(source_path):
+            logger.error(f"Fichier source introuvable: {source_path}")
+            raise HTTPException(status_code=404, detail="Fichier source introuvable sur le serveur")
+        
+        # Copier le fichier
+        import shutil
+        nearmiss_dir = "/app/backend/uploads/presqu-accident/"
+        os.makedirs(nearmiss_dir, exist_ok=True)
+        
+        # Générer un nom unique pour éviter les conflits
+        import uuid as uuid_mod
+        unique_filename = f"{uuid_mod.uuid4().hex[:8]}_{attachment.get('filename', attachment.get('original_filename', 'file'))}"
+        new_file_path = os.path.join(nearmiss_dir, unique_filename)
+        shutil.copy2(source_path, new_file_path)
+        
+        # Ajouter au presqu'accident
+        new_attachment = {
+            "id": str(uuid_mod.uuid4()),
+            "filename": attachment.get("original_filename") or attachment.get("filename"),
+            "path": new_file_path,
+            "type": attachment.get("mime_type") or attachment.get("type"),
+            "size": attachment.get("file_size") or attachment.get("size"),
+            "uploadedAt": datetime.now(timezone.utc).isoformat(),
+            "transferredFrom": "chat"
         }
-    )
+        
+        await db.presqu_accident_items.update_one(
+            {"id": nearmiss_id},
+            {"$push": {"attachments": new_attachment}}
+        )
+        
+        logger.info(f"Fichier transféré vers presqu'accident {nearmiss_id}: {unique_filename}")
+        return {"success": True, "message": "Fichier transféré vers le presqu'accident"}
     
-    return {"success": True, "message": "Fichier transféré vers le presqu'accident"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur transfert vers presqu'accident: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors du transfert: {str(e)}")
 
 
 @router.post("/transfer-by-email")
