@@ -7126,6 +7126,246 @@ async def get_improvement_comments(imp_id: str, current_user: dict = Depends(req
     
     return imp.get("comments", [])
 
+# ==================== NOTIFICATIONS ENDPOINTS ====================
+
+@api_router.get("/notifications")
+async def get_notifications(
+    current_user: dict = Depends(get_current_user),
+    unread_only: bool = False,
+    limit: int = 50
+):
+    """Récupère les notifications de l'utilisateur connecté"""
+    try:
+        query = {"user_id": current_user.get("id")}
+        if unread_only:
+            query["read"] = False
+        
+        notifications = await db.notifications.find(query).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        for notif in notifications:
+            notif["id"] = str(notif.get("_id", notif.get("id", "")))
+            if "_id" in notif:
+                del notif["_id"]
+        
+        return notifications
+    except Exception as e:
+        logger.error(f"Erreur récupération notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/notifications/count")
+async def get_notifications_count(current_user: dict = Depends(get_current_user)):
+    """Compte les notifications non lues"""
+    try:
+        count = await db.notifications.count_documents({
+            "user_id": current_user.get("id"),
+            "read": False
+        })
+        return {"unread_count": count}
+    except Exception as e:
+        logger.error(f"Erreur comptage notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Marque une notification comme lue"""
+    try:
+        result = await db.notifications.update_one(
+            {"id": notification_id, "user_id": current_user.get("id")},
+            {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        if result.matched_count == 0:
+            # Essayer avec _id
+            result = await db.notifications.update_one(
+                {"_id": ObjectId(notification_id), "user_id": current_user.get("id")},
+                {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+            )
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Erreur marquage notification lue: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/notifications/read-all")
+async def mark_all_notifications_read(current_user: dict = Depends(get_current_user)):
+    """Marque toutes les notifications comme lues"""
+    try:
+        await db.notifications.update_many(
+            {"user_id": current_user.get("id"), "read": False},
+            {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Erreur marquage toutes notifications lues: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprime une notification"""
+    try:
+        result = await db.notifications.delete_one({
+            "id": notification_id,
+            "user_id": current_user.get("id")
+        })
+        if result.deleted_count == 0:
+            result = await db.notifications.delete_one({
+                "_id": ObjectId(notification_id),
+                "user_id": current_user.get("id")
+            })
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Erreur suppression notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def create_notification(
+    user_id: str,
+    notif_type: str,
+    title: str,
+    message: str,
+    priority: str = "medium",
+    link: str = None,
+    metadata: dict = None
+):
+    """Crée une notification pour un utilisateur"""
+    try:
+        notification = {
+            "id": str(uuid.uuid4()),
+            "type": notif_type,
+            "title": title,
+            "message": message,
+            "priority": priority,
+            "user_id": user_id,
+            "link": link,
+            "metadata": metadata or {},
+            "read": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "read_at": None
+        }
+        await db.notifications.insert_one(notification)
+        
+        # Émettre via WebSocket pour notification temps réel
+        await realtime_manager.emit_event(
+            "notification",
+            "created",
+            notification,
+            user_id=user_id
+        )
+        
+        return notification
+    except Exception as e:
+        logger.error(f"Erreur création notification: {e}")
+        return None
+
+async def check_pm_notifications():
+    """
+    Vérifie les maintenances préventives à venir et crée des notifications.
+    Appelé par le scheduler quotidiennement.
+    """
+    try:
+        logger.info("🔔 Vérification des notifications PM...")
+        now = datetime.now(timezone.utc)
+        
+        # Récupérer toutes les PM actives
+        pm_list = await db.preventive_maintenances.find({"statut": "ACTIF"}).to_list(1000)
+        
+        notifications_created = 0
+        
+        for pm in pm_list:
+            pm_id = str(pm.get("_id", pm.get("id", "")))
+            prochaine = pm.get("prochaineMaintenance")
+            
+            if not prochaine:
+                continue
+            
+            # Convertir en datetime si nécessaire
+            if isinstance(prochaine, str):
+                prochaine = datetime.fromisoformat(prochaine.replace('Z', '+00:00'))
+            
+            # Rendre timezone-aware si nécessaire
+            if prochaine.tzinfo is None:
+                prochaine = prochaine.replace(tzinfo=timezone.utc)
+            
+            days_until = (prochaine - now).days
+            
+            # Récupérer l'utilisateur assigné
+            assigne_a_id = pm.get("assigne_a_id")
+            if not assigne_a_id:
+                continue
+            
+            # Vérifier si une notification existe déjà pour aujourd'hui
+            existing = await db.notifications.find_one({
+                "metadata.pm_id": pm_id,
+                "created_at": {"$gte": now.replace(hour=0, minute=0, second=0).isoformat()}
+            })
+            
+            if existing:
+                continue
+            
+            titre = pm.get("titre", "Maintenance préventive")
+            
+            # Notification si maintenance dans 3 jours
+            if days_until == 3:
+                await create_notification(
+                    user_id=assigne_a_id,
+                    notif_type="pm_upcoming",
+                    title="Maintenance préventive dans 3 jours",
+                    message=f"La maintenance \"{titre}\" est prévue dans 3 jours.",
+                    priority="medium",
+                    link="/preventive-maintenance",
+                    metadata={"pm_id": pm_id, "days_until": 3}
+                )
+                notifications_created += 1
+            
+            # Notification si maintenance demain
+            elif days_until == 1:
+                await create_notification(
+                    user_id=assigne_a_id,
+                    notif_type="pm_upcoming",
+                    title="Maintenance préventive demain",
+                    message=f"La maintenance \"{titre}\" est prévue pour demain.",
+                    priority="high",
+                    link="/preventive-maintenance",
+                    metadata={"pm_id": pm_id, "days_until": 1}
+                )
+                notifications_created += 1
+            
+            # Notification si maintenance aujourd'hui
+            elif days_until == 0:
+                await create_notification(
+                    user_id=assigne_a_id,
+                    notif_type="pm_upcoming",
+                    title="Maintenance préventive aujourd'hui",
+                    message=f"La maintenance \"{titre}\" est prévue pour aujourd'hui !",
+                    priority="urgent",
+                    link="/preventive-maintenance",
+                    metadata={"pm_id": pm_id, "days_until": 0}
+                )
+                notifications_created += 1
+            
+            # Notification si maintenance en retard
+            elif days_until < 0:
+                await create_notification(
+                    user_id=assigne_a_id,
+                    notif_type="pm_overdue",
+                    title="Maintenance préventive en retard",
+                    message=f"La maintenance \"{titre}\" est en retard de {abs(days_until)} jour(s) !",
+                    priority="urgent",
+                    link="/preventive-maintenance",
+                    metadata={"pm_id": pm_id, "days_overdue": abs(days_until)}
+                )
+                notifications_created += 1
+        
+        logger.info(f"🔔 {notifications_created} notifications PM créées")
+        return notifications_created
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur vérification notifications PM: {e}")
+        return 0
+
 # ==================== IMPROVEMENTS (AMÉLIORATIONS) ENDPOINTS ====================
 
 @api_router.get("/improvements", response_model=List[Improvement])
