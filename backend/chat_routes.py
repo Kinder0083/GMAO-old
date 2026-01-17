@@ -840,46 +840,68 @@ async def transfer_to_workorder(
             detail="Permission 'workOrders.edit' requise pour transférer des fichiers"
         )
     
-    # Trouver le fichier
-    message = await db.chat_messages.find_one({"attachments.id": attachment_id})
-    if not message:
-        raise HTTPException(status_code=404, detail="Fichier non trouvé")
-    
-    attachment = None
-    for att in message.get("attachments", []):
-        if att.get("id") == attachment_id:
-            attachment = att
-            break
-    
-    if not attachment:
-        raise HTTPException(status_code=404, detail="Fichier non trouvé")
-    
-    # Copier le fichier vers le dossier des pièces jointes OT
-    import shutil
-    work_order_attachments_dir = "/app/backend/uploads/work-orders/"
-    os.makedirs(work_order_attachments_dir, exist_ok=True)
-    
-    new_file_path = os.path.join(work_order_attachments_dir, attachment.get("filename"))
-    shutil.copy2(attachment.get("file_path"), new_file_path)
-    
-    # Ajouter à l'OT
-    from bson import ObjectId
-    await db.work_orders.update_one(
-        {"_id": ObjectId(workorder_id)},
-        {
-            "$push": {
-                "attachments": {
-                    "filename": attachment.get("original_filename"),
-                    "path": new_file_path,
-                    "type": attachment.get("mime_type"),
-                    "size": attachment.get("file_size"),
-                    "uploadedAt": datetime.now(timezone.utc).isoformat()
-                }
-            }
+    try:
+        # Trouver le fichier
+        message = await db.chat_messages.find_one({"attachments.id": attachment_id})
+        if not message:
+            raise HTTPException(status_code=404, detail="Fichier non trouvé dans les messages")
+        
+        attachment = None
+        for att in message.get("attachments", []):
+            if att.get("id") == attachment_id:
+                attachment = att
+                break
+        
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        # Vérifier que l'OT existe
+        from bson import ObjectId
+        work_order = await db.work_orders.find_one({"_id": ObjectId(workorder_id)})
+        if not work_order:
+            raise HTTPException(status_code=404, detail="Ordre de travail non trouvé")
+        
+        # Vérifier si le fichier source existe
+        source_path = attachment.get("file_path") or attachment.get("path")
+        if not source_path or not os.path.exists(source_path):
+            logger.error(f"Fichier source introuvable: {source_path}")
+            raise HTTPException(status_code=404, detail="Fichier source introuvable sur le serveur")
+        
+        # Copier le fichier vers le dossier des pièces jointes OT
+        import shutil
+        import uuid as uuid_mod
+        work_order_attachments_dir = "/app/backend/uploads/work-orders/"
+        os.makedirs(work_order_attachments_dir, exist_ok=True)
+        
+        # Générer un nom unique pour éviter les conflits
+        unique_filename = f"{uuid_mod.uuid4().hex[:8]}_{attachment.get('filename', attachment.get('original_filename', 'file'))}"
+        new_file_path = os.path.join(work_order_attachments_dir, unique_filename)
+        shutil.copy2(source_path, new_file_path)
+        
+        # Ajouter à l'OT avec un id unique
+        new_attachment = {
+            "id": str(uuid_mod.uuid4()),
+            "filename": attachment.get("original_filename") or attachment.get("filename"),
+            "path": new_file_path,
+            "type": attachment.get("mime_type") or attachment.get("type"),
+            "size": attachment.get("file_size") or attachment.get("size"),
+            "uploadedAt": datetime.now(timezone.utc).isoformat(),
+            "transferredFrom": "chat"
         }
-    )
+        
+        await db.work_orders.update_one(
+            {"_id": ObjectId(workorder_id)},
+            {"$push": {"attachments": new_attachment}}
+        )
+        
+        logger.info(f"Fichier transféré vers OT {workorder_id}: {unique_filename}")
+        return {"success": True, "message": "Fichier transféré vers l'ordre de travail"}
     
-    return {"success": True, "message": "Fichier transféré vers l'ordre de travail"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur transfert vers OT: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors du transfert: {str(e)}")
 
 
 @router.post("/transfer-to-improvement")
