@@ -6993,10 +6993,99 @@ async def upload_improvement_attachment(
     
     return await upload_attachment_generic(imp_id, file, "improvements", current_user)
 
-@api_router.get("/improvements/{imp_id}/attachments/{filename}")
-async def download_improvement_attachment(imp_id: str, filename: str, current_user: dict = Depends(require_permission("improvements", "view"))):
+
+@api_router.get("/improvements/{imp_id}/attachments")
+async def get_improvement_attachments(
+    imp_id: str,
+    current_user: dict = Depends(require_permission("improvements", "view"))
+):
+    """Récupérer la liste des pièces jointes d'une amélioration"""
+    imp = await db.improvements.find_one({"id": imp_id})
+    if not imp:
+        raise HTTPException(status_code=404, detail="Amélioration non trouvée")
+    
+    attachments = imp.get("attachments", [])
+    result = []
+    for att in attachments:
+        result.append({
+            "id": att.get("id", ""),
+            "filename": att.get("filename", ""),
+            "original_filename": att.get("filename", att.get("original_filename", "")),
+            "size": att.get("size", 0),
+            "mime_type": att.get("type", att.get("mime_type", "application/octet-stream")),
+            "uploaded_at": att.get("uploadedAt", att.get("uploaded_at", ""))
+        })
+    
+    return result
+
+
+@api_router.get("/improvements/{imp_id}/attachments/{attachment_id}")
+async def download_improvement_attachment(
+    imp_id: str, 
+    attachment_id: str, 
+    current_user: dict = Depends(require_permission("improvements", "view"))
+):
     """Télécharger un fichier d'une amélioration"""
-    return await download_attachment_generic(imp_id, filename, "improvements")
+    imp = await db.improvements.find_one({"id": imp_id})
+    if not imp:
+        raise HTTPException(status_code=404, detail="Amélioration non trouvée")
+    
+    # Trouver l'attachment par son id
+    attachment = None
+    for att in imp.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        # Fallback: chercher par filename (ancien format)
+        return await download_attachment_generic(imp_id, attachment_id, "improvements")
+    
+    file_path = attachment.get("path")
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
+    
+    return FileResponse(
+        path=file_path,
+        filename=attachment.get("filename", attachment.get("original_filename", "file")),
+        media_type=attachment.get("type", attachment.get("mime_type", "application/octet-stream"))
+    )
+
+
+@api_router.delete("/improvements/{imp_id}/attachments/{attachment_id}")
+async def delete_improvement_attachment(
+    imp_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(require_permission("improvements", "edit"))
+):
+    """Supprimer une pièce jointe d'une amélioration"""
+    imp = await db.improvements.find_one({"id": imp_id})
+    if not imp:
+        raise HTTPException(status_code=404, detail="Amélioration non trouvée")
+    
+    # Trouver l'attachment
+    attachment = None
+    for att in imp.get("attachments", []):
+        if att.get("id") == attachment_id:
+            attachment = att
+            break
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+    
+    # Supprimer le fichier physique
+    file_path = attachment.get("path")
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)
+    
+    # Retirer de la base de données
+    await db.improvements.update_one(
+        {"id": imp_id},
+        {"$pull": {"attachments": {"id": attachment_id}}}
+    )
+    
+    return {"success": True, "message": "Pièce jointe supprimée"}
+
 
 # Comments pour Improvements
 @api_router.post("/improvements/{imp_id}/comments")
