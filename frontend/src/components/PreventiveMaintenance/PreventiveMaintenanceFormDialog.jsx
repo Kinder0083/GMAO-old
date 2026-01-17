@@ -14,13 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../../hooks/use-toast';
 import { preventiveMaintenanceAPI, equipmentsAPI, usersAPI } from '../../services/api';
 import { formatErrorMessage } from '../../utils/errorFormatter';
-import { ClipboardCheck, CheckCircle } from 'lucide-react';
+import { ClipboardCheck, CheckCircle, Paperclip } from 'lucide-react';
+import AttachmentUploader from '../shared/AttachmentUploader';
+import AttachmentsList from '../shared/AttachmentsList';
 
 const PreventiveMaintenanceFormDialog = ({ open, onOpenChange, maintenance, onSuccess, checklists = [] }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [equipments, setEquipments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [formData, setFormData] = useState({
     titre: '',
     equipement_id: '',
