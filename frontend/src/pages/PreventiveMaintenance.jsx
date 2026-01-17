@@ -383,7 +383,7 @@ const PreventiveMaintenance = () => {
       </div>
 
       {/* Maintenance Cards ou Arborescence */}
-      {viewMode === 'list' ? (
+      {viewMode === 'card' ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {loading ? (
             <div className="col-span-full text-center py-8">
@@ -462,31 +462,52 @@ const PreventiveMaintenance = () => {
                     <span className="text-sm text-gray-700">Durée estimée: <span className="font-medium">{item.duree}h</span></span>
                   </div>
 
+                  {/* Action Buttons */}
                   <div className="flex gap-2 pt-2">
                     <Button 
                       variant="outline" 
-                      className="flex-1 hover:bg-blue-50 hover:text-blue-600"
+                      size="sm"
+                      className="hover:bg-green-50 hover:text-green-600"
+                      onClick={() => handleExecuteNow(item)}
+                      title="Exécuter"
+                      data-testid={`execute-btn-${item.id}`}
+                    >
+                      <Play size={16} />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="hover:bg-blue-50 hover:text-blue-600"
                       onClick={() => {
                         setSelectedMaintenance(item);
                         setFormDialogOpen(true);
                       }}
+                      title="Modifier"
+                      data-testid={`edit-btn-${item.id}`}
                     >
-                      Modifier
+                      <Pencil size={16} />
                     </Button>
                     <Button 
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => handleExecuteNow(item)}
+                      variant="outline" 
+                      size="sm"
+                      className={item.checklist_id ? "hover:bg-purple-50 hover:text-purple-600" : "opacity-50 cursor-not-allowed"}
+                      onClick={() => handleOpenChecklist(item)}
+                      disabled={!item.checklist_id}
+                      title={item.checklist_id ? "Voir la checklist" : "Aucune checklist associée"}
+                      data-testid={`checklist-btn-${item.id}`}
                     >
-                      Exécuter maintenant
+                      <BookOpen size={16} />
                     </Button>
                     {canDelete && (
                       <Button 
                         variant="outline" 
-                        className="hover:bg-red-50 hover:text-red-600"
+                        size="sm"
+                        className="hover:bg-red-50 hover:text-red-600 ml-auto"
                         onClick={() => {
                           setMaintenanceToDelete(item);
                           setDeleteDialogOpen(true);
                         }}
+                        title="Supprimer"
                       >
                         <Trash2 size={16} />
                       </Button>
@@ -498,7 +519,7 @@ const PreventiveMaintenance = () => {
           ))
         )}
       </div>
-      ) : (
+      ) : viewMode === 'tree' ? (
         /* Vue Arborescence - Groupée par fréquence */
         <Card>
           <CardContent className="pt-6">
