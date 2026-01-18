@@ -8385,6 +8385,10 @@ async def startup_scheduler():
         await alert_service.initialize(db)
         logger.info("✅ Service d'alertes initialisé")
         
+        # Initialiser les rôles système
+        await init_system_roles()
+        logger.info("✅ Rôles système initialisés")
+        
     except Exception as e:
         logger.error(f"❌ Erreur lors du démarrage du scheduler: {str(e)}")
 
