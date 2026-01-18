@@ -55,7 +55,10 @@ function PresquAccidentList() {
   const [filters, setFilters] = useState({
     service: 'all',
     status: 'all',
-    severite: 'all',
+    priorite: 'all',
+    periode: '24h',
+    dateDebut: '',
+    dateFin: '',
     search: ''
   });
 
