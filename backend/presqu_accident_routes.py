@@ -466,7 +466,7 @@ async def get_badge_stats(current_user: dict = Depends(get_current_user)):
         today = datetime.now(timezone.utc).date()
         
         for item in items:
-            if item.get("status") not in [PresquAccidentStatus.TERMINE.value, PresquAccidentStatus.ARCHIVE.value]:
+            if item.get("status") not in [PresquAccidentStatus.TERMINE.value, PresquAccidentStatus.RISQUE_RESIDUEL.value]:
                 if item.get("date_echeance_action"):
                     try:
                         echeance = datetime.fromisoformat(item["date_echeance_action"]).date()
@@ -503,7 +503,7 @@ async def get_presqu_accident_alerts(current_user: dict = Depends(get_current_us
                 urgence = "important"
             
             # Items en retard
-            if item.get("status") not in [PresquAccidentStatus.TERMINE.value, PresquAccidentStatus.ARCHIVE.value]:
+            if item.get("status") not in [PresquAccidentStatus.TERMINE.value, PresquAccidentStatus.RISQUE_RESIDUEL.value]:
                 if item.get("date_echeance_action"):
                     try:
                         echeance = datetime.fromisoformat(item["date_echeance_action"]).date()
