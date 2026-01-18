@@ -305,6 +305,28 @@ function SurveillanceItemForm({ open, item, onClose }) {
           </div>
 
           <div>
+            <Label>Responsable de notification</Label>
+            <Select 
+              value={formData.responsable_notification_id} 
+              onValueChange={(val) => setFormData({...formData, responsable_notification_id: val})}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un responsable" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Aucun</SelectItem>
+                {users.filter(user => user.id && user.id !== '').map(user => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.prenom || user.first_name} {user.nom || user.last_name}
+                    {user.email && ` - ${user.email}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">Cette personne recevra un email de rappel avant l'échéance du contrôle</p>
+          </div>
+
+          <div>
             <Label>Commentaire</Label>
             <Textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows={2} />
           </div>
