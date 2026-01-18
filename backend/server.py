@@ -8004,6 +8004,10 @@ from ai_chat_routes import router as ai_router, init_ai_routes
 init_ai_routes(db)
 api_router.include_router(ai_router)
 
+# Roles Management routes
+from roles_routes import router as roles_router, init_system_roles
+api_router.include_router(roles_router)
+
 # Whiteboard (Tableau d'affichage) routes
 from whiteboard_routes import router as whiteboard_router, init_whiteboards, init_whiteboard_audit
 from whiteboard_object_routes import router as whiteboard_object_router
