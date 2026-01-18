@@ -1008,6 +1008,16 @@ function PoleDetails() {
         </DialogContent>
       </Dialog>
 
+      {/* Custom Form Filler */}
+      <CustomFormFiller
+        open={showCustomFormFiller}
+        onOpenChange={setShowCustomFormFiller}
+        template={selectedCustomTemplate}
+        poleId={poleId}
+        existingForm={editingCustomForm}
+        onSaved={() => loadData()}
+      />
+
       <ConfirmDialog />
     </div>
   );
