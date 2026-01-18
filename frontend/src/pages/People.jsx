@@ -165,6 +165,14 @@ const People = () => {
           <div className="flex gap-3">
             <Button 
               variant="outline"
+              className="border-purple-600 text-purple-600 hover:bg-purple-50" 
+              onClick={() => navigate('/people/roles')}
+            >
+              <Shield size={20} className="mr-2" />
+              Gestion des rôles
+            </Button>
+            <Button 
+              variant="outline"
               className="border-blue-600 text-blue-600 hover:bg-blue-50" 
               onClick={() => setInviteDialogOpen(true)}
             >
