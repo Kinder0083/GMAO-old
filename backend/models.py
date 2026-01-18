@@ -1417,6 +1417,7 @@ class SurveillanceItemUpdate(BaseModel):
     piece_jointe_url: Optional[str] = None
     piece_jointe_nom: Optional[str] = None
     duree_rappel_echeance: Optional[int] = None  # Durée en jours avant échéance pour l'alerte
+    responsable_notification_id: Optional[str] = None  # ID de l'utilisateur qui recevra l'email de rappel
 
 
 # ==================== PRESQU'ACCIDENT (NEAR MISS) MODELS ====================
