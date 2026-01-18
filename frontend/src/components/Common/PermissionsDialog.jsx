@@ -120,7 +120,7 @@ const PermissionsDialog = ({ open, onOpenChange, user, onSave }) => {
     { key: 'presquaccidentRapport', label: 'Rapport P.accident', actions: ['view', 'export'] },
     { key: 'documentations', label: 'Documentations', actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'reports', label: 'Rapports', actions: ['view', 'export'] },
-    { key: 'people', label: 'Équipes', actions: ['view', 'create', 'edit', 'delete'] },
+    { key: 'people', label: 'Utilisateurs', actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'planning', label: 'Planning', actions: ['view', 'edit'] },
     { key: 'vendors', label: 'Fournisseurs', actions: ['view', 'create', 'edit', 'delete'] },
     { key: 'purchaseHistory', label: 'Historique Achat', actions: ['view'] },

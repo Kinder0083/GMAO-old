@@ -30,7 +30,7 @@ const ImportExport = () => {
     { value: 'meter-readings', label: 'Relevés de compteurs' },
     { value: 'surveillance-items', label: 'Plan de Surveillance' },
     { value: 'presqu-accident-items', label: 'Presqu\'accident' },
-    { value: 'users', label: 'Utilisateurs (Équipes)' },
+    { value: 'users', label: 'Utilisateurs' },
     { value: 'inventory', label: 'Inventaire' },
     { value: 'locations', label: 'Zones' },
     { value: 'vendors', label: 'Fournisseurs' },

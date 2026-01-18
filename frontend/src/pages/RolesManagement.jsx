@@ -53,7 +53,7 @@ const MODULES = [
   { key: 'documentations', label: 'Documentations' },
   { key: 'vendors', label: 'Fournisseurs' },
   { key: 'reports', label: 'Rapports' },
-  { key: 'people', label: 'Équipes' },
+  { key: 'people', label: 'Utilisateurs' },
   { key: 'planning', label: 'Planning' },
   { key: 'purchaseHistory', label: 'Historique achats' },
   { key: 'purchaseRequests', label: 'Demandes d\'achat' },

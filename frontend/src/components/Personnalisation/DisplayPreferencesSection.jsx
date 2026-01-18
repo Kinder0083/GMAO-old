@@ -47,7 +47,7 @@ const DisplayPreferencesSection = () => {
     { value: '/presqu-accident-rapport', label: 'Rapport P.accident', module: 'presquaccident' },
     { value: '/documentations', label: 'Documentations', module: 'documentations' },
     { value: '/reports', label: 'Rapports', module: 'reports' },
-    { value: '/people', label: 'Équipes', module: 'people' },
+    { value: '/people', label: 'Utilisateurs', module: 'people' },
     { value: '/planning', label: 'Planning', module: 'planning' },
     { value: '/vendors', label: 'Fournisseurs', module: 'vendors' },
     { value: '/purchase-history', label: 'Historique Achat', module: 'purchaseHistory' },
