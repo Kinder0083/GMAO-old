@@ -335,11 +335,20 @@ async def process_end_maintenance(
                 upsert=True
             )
             
-            # Supprimer l'entrée du planning (maintenance terminée)
-            await db.planning_equipement.delete_many({
-                "demande_arret_id": demande.get("id"),
-                "equipement_id": eq_id
-            })
+            # IMPORTANT: Ne PAS supprimer l'entrée du planning !
+            # On la marque comme terminée pour conserver l'historique
+            # Cela permet au planning de continuer à afficher "En maintenance" pour les jours passés
+            await db.planning_equipement.update_many(
+                {
+                    "demande_arret_id": demande.get("id"),
+                    "equipement_id": eq_id
+                },
+                {"$set": {
+                    "maintenance_terminee": True,
+                    "maintenance_terminee_le": now.isoformat(),
+                    "statut_apres_maintenance": statut
+                }}
+            )
         
         # Marquer la demande comme terminée
         await db.demandes_arret.update_one(
