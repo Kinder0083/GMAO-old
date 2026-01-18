@@ -23,6 +23,7 @@ import PreventiveMaintenance from "./pages/PreventiveMaintenance";
 import ChecklistsManagement from "./pages/ChecklistsManagement";
 import Reports from "./pages/Reports";
 import People from "./pages/People";
+import RolesManagement from "./pages/RolesManagement";
 import Planning from "./pages/Planning";
 import PlanningMPrev from "./pages/PlanningMPrev";
 import ValidateDemandeArret from "./pages/ValidateDemandeArret";
