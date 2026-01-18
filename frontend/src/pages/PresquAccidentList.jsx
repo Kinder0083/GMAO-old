@@ -618,7 +618,7 @@ function PresquAccidentList() {
               </div>
 
               <div>
-621|                <Label>Service d'appartenance *</Label>
+                <Label>Service d'appartenance *</Label>
                 <Select value={formData.service} onValueChange={(value) => setFormData({...formData, service: value})}>
                   <SelectTrigger>
                     <SelectValue />
