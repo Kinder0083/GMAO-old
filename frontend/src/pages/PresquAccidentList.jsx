@@ -823,12 +823,73 @@ function PresquAccidentList() {
 
               {/* Formulaire de traitement */}
               <div className="space-y-4">
+                {/* Évaluation des risques */}
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                  <h4 className="font-medium text-gray-900 mb-4">Évaluation des risques</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label>Sévérité *</Label>
+                      <Select 
+                        value={traitementData.severite_traitement} 
+                        onValueChange={(value) => setTraitementData({...traitementData, severite_traitement: value})}
+                        disabled={!canEditTraitement()}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1: Mineur</SelectItem>
+                          <SelectItem value="2">2: Modéré</SelectItem>
+                          <SelectItem value="3">3: Grave</SelectItem>
+                          <SelectItem value="4">4: Très grave</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Récurrence *</Label>
+                      <Select 
+                        value={traitementData.recurrence} 
+                        onValueChange={(value) => setTraitementData({...traitementData, recurrence: value})}
+                        disabled={!canEditTraitement()}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1: Très rare</SelectItem>
+                          <SelectItem value="2">2: Rare</SelectItem>
+                          <SelectItem value="3">3: Fréquent</SelectItem>
+                          <SelectItem value="4">4: Très fréquent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Priorité (calculée)</Label>
+                      {(() => {
+                        const priority = calculatePriority(traitementData.severite_traitement, traitementData.recurrence);
+                        if (priority) {
+                          return (
+                            <div className={`mt-2 px-4 py-2 rounded-lg border-2 text-center font-semibold ${priority.color}`}>
+                              {priority.label} ({priority.score})
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="mt-2 px-4 py-2 rounded-lg border-2 border-gray-200 bg-gray-100 text-gray-500 text-center">
+                            --
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <Label>Statut *</Label>
                   <Select 
                     value={traitementData.status} 
                     onValueChange={(value) => setTraitementData({...traitementData, status: value})}
-                    disabled={!isResponsable(traitementItem)}
+                    disabled={!canEditTraitement()}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -848,7 +909,7 @@ function PresquAccidentList() {
                     value={traitementData.actions_preventions} 
                     onChange={(e) => setTraitementData({...traitementData, actions_preventions: e.target.value})}
                     rows={3}
-                    disabled={!isResponsable(traitementItem)}
+                    disabled={!canEditTraitement()}
                     placeholder="Décrivez les actions de prévention mises en place..."
                   />
                 </div>
@@ -859,7 +920,7 @@ function PresquAccidentList() {
                     <Input 
                       value={traitementData.responsable_action} 
                       onChange={(e) => setTraitementData({...traitementData, responsable_action: e.target.value})}
-                      disabled={!isResponsable(traitementItem)}
+                      disabled={!canEditTraitement()}
                     />
                   </div>
                   <div>
@@ -868,7 +929,7 @@ function PresquAccidentList() {
                       type="date"
                       value={traitementData.date_echeance_action} 
                       onChange={(e) => setTraitementData({...traitementData, date_echeance_action: e.target.value})}
-                      disabled={!isResponsable(traitementItem)}
+                      disabled={!canEditTraitement()}
                     />
                   </div>
                 </div>
@@ -879,7 +940,7 @@ function PresquAccidentList() {
                     value={traitementData.commentaire_traitement} 
                     onChange={(e) => setTraitementData({...traitementData, commentaire_traitement: e.target.value})}
                     rows={2}
-                    disabled={!isResponsable(traitementItem)}
+                    disabled={!canEditTraitement()}
                   />
                 </div>
 
@@ -890,7 +951,7 @@ function PresquAccidentList() {
                     Pièces jointes du traitement
                   </Label>
                   
-                  {isResponsable(traitementItem) ? (
+                  {canEditTraitement() ? (
                     <div className="space-y-4">
                       <AttachmentUploader
                         itemId={traitementItem?.id}
@@ -904,7 +965,7 @@ function PresquAccidentList() {
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500">
-                      Seul le responsable peut ajouter des pièces jointes
+                      Seuls les responsables de service peuvent ajouter des pièces jointes
                     </p>
                   )}
                   
@@ -914,7 +975,7 @@ function PresquAccidentList() {
                     downloadFunction={presquAccidentAPI.downloadAttachment}
                     deleteFunction={presquAccidentAPI.deleteAttachment}
                     refreshTrigger={attachmentRefresh}
-                    canDelete={isResponsable(traitementItem)}
+                    canDelete={canEditTraitement()}
                   />
                 </div>
               </div>
