@@ -308,23 +308,64 @@ function SurveillanceItemForm({ open, item, onClose }) {
 
           <div>
             <Label>Responsable de notification</Label>
-            <Select 
-              value={formData.responsable_notification_id || "none"} 
-              onValueChange={(val) => setFormData({...formData, responsable_notification_id: val === "none" ? "" : val})}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un responsable" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Aucun</SelectItem>
-                {users.filter(user => user.id && user.id !== '').map(user => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.prenom || user.first_name} {user.nom || user.last_name}
-                    {user.email && ` - ${user.email}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2 items-start">
+              <div className="flex-1">
+                <Select 
+                  value={formData.responsable_notification_id || "none"} 
+                  onValueChange={(val) => setFormData({...formData, responsable_notification_id: val === "none" ? "" : val})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un responsable" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun</SelectItem>
+                    {users.filter(user => user.id && user.id !== '').map(user => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.prenom || user.first_name} {user.nom || user.last_name}
+                        {user.email && ` - ${user.email}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!formData.responsable_notification_id || formData.responsable_notification_id === "none" || sendingEmail || !item}
+                onClick={async () => {
+                  if (!item?.id) {
+                    toast({
+                      title: 'Attention',
+                      description: 'Veuillez d\'abord enregistrer le contrôle avant d\'envoyer un rappel',
+                      variant: 'destructive'
+                    });
+                    return;
+                  }
+                  setSendingEmail(true);
+                  try {
+                    const response = await surveillanceAPI.sendManualReminder(item.id);
+                    toast({
+                      title: 'Succès',
+                      description: 'Email de rappel envoyé avec succès'
+                    });
+                  } catch (error) {
+                    toast({
+                      title: 'Erreur',
+                      description: error.response?.data?.detail || 'Impossible d\'envoyer l\'email',
+                      variant: 'destructive'
+                    });
+                  } finally {
+                    setSendingEmail(false);
+                  }
+                }}
+                className="whitespace-nowrap"
+                title={!item ? "Enregistrez d'abord le contrôle" : "Envoyer un email de rappel maintenant"}
+              >
+                <Send size={16} className="mr-1" />
+                {sendingEmail ? 'Envoi...' : 'Envoi Manuel'}
+              </Button>
+            </div>
             <p className="text-xs text-gray-500 mt-1">Cette personne recevra un email de rappel avant l'échéance du contrôle</p>
           </div>
 
