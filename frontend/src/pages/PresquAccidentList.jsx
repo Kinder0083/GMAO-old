@@ -251,13 +251,25 @@ function PresquAccidentList() {
       responsable_action: item.responsable_action || '',
       date_echeance_action: item.date_echeance_action?.split('T')[0] || '',
       commentaire_traitement: item.commentaire_traitement || item.commentaire || '',
-      status: item.status || 'A_TRAITER'
+      status: item.status || 'A_TRAITER',
+      severite_traitement: item.severite_traitement || '',
+      recurrence: item.recurrence || ''
     });
     setOpenTraitement(true);
   };
 
   // Soumettre le traitement
   const handleSubmitTraitement = async () => {
+    // Validation des champs obligatoires
+    if (!traitementData.severite_traitement || !traitementData.recurrence) {
+      toast({ 
+        title: 'Erreur', 
+        description: 'Veuillez sélectionner la sévérité et la récurrence', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
     try {
       await presquAccidentAPI.update(traitementItem.id, {
         ...traitementData,
@@ -289,9 +301,35 @@ function PresquAccidentList() {
     }
   };
 
-  // Vérifier si l'utilisateur est responsable
+  // Vérifier si l'utilisateur peut modifier le traitement (responsable de service)
   const currentUserId = localStorage.getItem('userId');
-  const isResponsable = (item) => item.responsable_id === currentUserId;
+  const currentUserRole = localStorage.getItem('userRole');
+  
+  const canEditTraitement = () => {
+    // Admin peut toujours modifier
+    if (currentUserRole === 'ADMIN') return true;
+    
+    // Vérifier si l'utilisateur est un responsable de service (n'importe quel service)
+    const isServiceResponsable = serviceResponsables.some(r => r.user_id === currentUserId);
+    return isServiceResponsable;
+  };
+
+  // Calculer la priorité à partir de la sévérité et récurrence
+  const calculatePriority = (severite, recurrence) => {
+    if (!severite || !recurrence) return null;
+    const score = parseInt(severite) * parseInt(recurrence);
+    
+    if (score >= 1 && score <= 4) {
+      return { label: 'Faible', score, color: 'bg-green-100 text-green-800 border-green-300' };
+    } else if (score >= 5 && score <= 8) {
+      return { label: 'Moyenne', score, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' };
+    } else if (score >= 9 && score <= 12) {
+      return { label: 'Élevée', score, color: 'bg-orange-100 text-orange-800 border-orange-300' };
+    } else if (score >= 13 && score <= 16) {
+      return { label: 'Critique', score, color: 'bg-red-100 text-red-800 border-red-300' };
+    }
+    return null;
+  };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
