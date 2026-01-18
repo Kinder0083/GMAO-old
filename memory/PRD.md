@@ -18,7 +18,37 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
-### Session du 17 Janvier 2026 (Session actuelle)
+### Session du 18 Janvier 2026 (Session actuelle)
+
+#### ✅ Bug Fix: Statut planning M.Prev après fin de maintenance
+**Problème** : Quand l'utilisateur terminait une maintenance et changeait le statut de l'équipement, les jours de maintenance passés affichaient "À l'arrêt" au lieu de "En maintenance".
+**Cause** : Les entrées de planning étaient supprimées (`delete_many`) au lieu d'être marquées comme terminées, et l'API filtrait les entrées des demandes terminées.
+**Solution** : 
+- Remplacé `delete_many` par `update_many` pour conserver l'historique avec `maintenance_terminee: True`
+- Modifié l'API pour retourner toutes les entrées (y compris terminées) avec un flag `demande_terminee`
+
+#### ✅ Feature: Responsable de notification dans Plan de Surveillance
+**Implémentation** d'un système de rappel par email pour les contrôles de surveillance :
+
+**Frontend** (`SurveillanceItemForm.jsx`) :
+- Nouveau champ "Responsable de notification" avec liste déroulante des utilisateurs
+- Positionné entre "Durée de rappel d'échéance (jours)" et "Commentaire"
+- Texte d'aide : "Cette personne recevra un email de rappel avant l'échéance du contrôle"
+
+**Backend** :
+- Nouveaux champs dans `SurveillanceItem` : `responsable_notification_id`, `email_rappel_envoye`
+- Fonction `send_surveillance_reminder_email()` pour envoyer des emails HTML formatés
+- Fonction `check_surveillance_reminders()` pour vérifier quotidiennement les échéances
+- Cron job à 7h30 pour déclencher les rappels
+
+**Contenu de l'email** :
+- Nom du contrôle
+- Équipement/Bâtiment concerné
+- Date d'échéance
+
+**Logique** : L'email est envoyé une seule fois, X jours avant l'échéance (basé sur "Durée de rappel d'échéance")
+
+### Session du 17 Janvier 2026
 
 #### ✅ Bug Fix: Bouton livre (Book) grisé malgré checklist associée
 **Problème** : L'icône livre restait grisée même après avoir associé une checklist à une maintenance préventive.
