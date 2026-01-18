@@ -5,13 +5,14 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { surveillanceAPI } from '../../services/api';
+import { surveillanceAPI, usersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 
 function SurveillanceItemForm({ open, item, onClose }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [existingCategories, setExistingCategories] = useState([]);
+  const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     classe_type: '',
     category: '',
@@ -23,7 +24,8 @@ function SurveillanceItemForm({ open, item, onClose }) {
     derniere_visite: '',
     prochain_controle: '',
     commentaire: '',
-    duree_rappel_echeance: 30
+    duree_rappel_echeance: 30,
+    responsable_notification_id: ''
   });
 
   useEffect(() => {
