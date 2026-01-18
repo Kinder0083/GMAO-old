@@ -50,7 +50,7 @@ app.add_middleware(
 
 ```bash
 # Test depuis n'importe quelle IP
-curl https://neartrack.preview.emergentagent.com/api/version
+curl https://proxmox-debugger.preview.emergentagent.com/api/version
 
 # Résultat attendu :
 {"version":"1.5.0","versionName":"...","releaseDate":"..."}

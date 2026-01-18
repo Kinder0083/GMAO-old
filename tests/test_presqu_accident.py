@@ -7,7 +7,7 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://neartrack.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://proxmox-debugger.preview.emergentagent.com').rstrip('/')
 
 class TestPresquAccidentModule:
     """Test suite for Presqu'accident module refactoring"""
