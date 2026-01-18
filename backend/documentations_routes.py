@@ -1018,7 +1018,7 @@ async def create_custom_form(
             "attachments": form_data.get("attachments", []),
             "signature_data": form_data.get("signature_data"),
             "logo_url": form_data.get("logo_url"),
-            "status": "BROUILLON",
+            "status": form_data.get("status", "BROUILLON"),
             "created_at": datetime.now(timezone.utc).isoformat(),
             "created_by": current_user.get("id"),
             "created_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
