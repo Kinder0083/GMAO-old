@@ -8323,6 +8323,16 @@ async def startup_scheduler():
             replace_existing=True
         )
         
+        # Configurer la vérification des rappels de surveillance tous les jours à 7h30 GMT
+        from surveillance_routes import check_surveillance_reminders
+        scheduler.add_job(
+            check_surveillance_reminders,
+            CronTrigger(hour=7, minute=30),  # Tous les jours à 7h30
+            id='surveillance_reminders_check',
+            name='Rappels surveillance',
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("✅ Scheduler démarré:")
         logger.info("   - Vérification maintenances préventives: tous les jours à 00h00")
@@ -8332,6 +8342,7 @@ async def startup_scheduler():
         logger.info("   - Nettoyage messages chat (60j): tous les jours à 03h00")
         logger.info("   - Vérification versions LLM: chaque lundi à 03h00")
         logger.info("   - Notifications PM: tous les jours à 07h00")
+        logger.info("   - Rappels surveillance: tous les jours à 07h30")
         
         # Initialiser et démarrer les collecteurs MQTT
         await mqtt_meter_collector.initialize(db)
