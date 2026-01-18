@@ -20,6 +20,33 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 18 Janvier 2026 (Session actuelle)
 
+#### ✅ Feature: Gestion des rôles
+**Nouvelle page** `/people/roles` accessible via le bouton "Gestion des rôles" dans la page Équipe :
+
+**Onglet "Rôles" :**
+- Liste de tous les rôles (système et personnalisés)
+- Création de nouveaux rôles personnalisés
+- Modification des rôles existants (label, description, couleur, permissions)
+- Suppression des rôles personnalisés (rôles système protégés)
+- Éditeur de permissions avec tableau complet (Voir/Éditer/Supprimer par module)
+- Boutons "Tout autoriser" / "Tout refuser" pour configuration rapide
+
+**Onglet "Responsables de service" :**
+- Attribution d'un responsable par service (ADV, LOGISTIQUE, PRODUCTION, etc.)
+- Ces responsables auront accès à des fonctions de supervision spécifiques
+
+**13 rôles système initialisés :**
+ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS, VISUALISEUR, AFFICHAGE, RSP_SERVICE
+
+**Fichiers créés/modifiés :**
+- `/app/backend/roles_routes.py` (NEW)
+- `/app/frontend/src/pages/RolesManagement.jsx` (NEW)
+- `/app/backend/models.py` (modèles Role, ServiceResponsable)
+- `/app/frontend/src/services/api.js` (rolesAPI)
+- `/app/frontend/src/pages/People.jsx` (bouton "Gestion des rôles")
+- `/app/frontend/src/App.js` (route /people/roles)
+- `/app/backend/server.py` (import et initialisation des routes)
+
 #### ✅ P0 Complété: Refonte module Presqu'accident
 **Implémentation complète** de la refonte majeure du module Presqu'accident :
 
