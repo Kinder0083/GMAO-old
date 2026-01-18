@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../components/ui/badge';
 import { Plus, Download, Upload, AlertTriangle, Search, Filter, Edit, Trash2, Paperclip, ClipboardCheck, X, Eye } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
-import { presquAccidentAPI, usersAPI } from '../services/api';
+import { presquAccidentAPI, usersAPI, rolesAPI } from '../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
@@ -25,6 +25,7 @@ function PresquAccidentList() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [users, setUsers] = useState([]);
+  const [serviceResponsables, setServiceResponsables] = useState([]);
   
   // Dialog de traitement/réponse
   const [openTraitement, setOpenTraitement] = useState(false);
@@ -34,7 +35,9 @@ function PresquAccidentList() {
     responsable_action: '',
     date_echeance_action: '',
     commentaire_traitement: '',
-    status: 'A_TRAITER'
+    status: 'A_TRAITER',
+    severite_traitement: '',
+    recurrence: ''
   });
   
   // Dialog de prévisualisation des pièces jointes
@@ -73,6 +76,7 @@ function PresquAccidentList() {
   useEffect(() => {
     loadData();
     loadUsers();
+    loadServiceResponsables();
   }, []);
 
   useEffect(() => {
