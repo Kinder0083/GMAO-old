@@ -116,15 +116,80 @@ function PresquAccidentList() {
   const applyFilters = () => {
     let filtered = [...items];
     
+    // Filtre par service
     if (filters.service && filters.service !== 'all') {
       filtered = filtered.filter(i => i.service === filters.service);
     }
+    
+    // Filtre par statut
     if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(i => i.status === filters.status);
     }
-    if (filters.severite && filters.severite !== 'all') {
-      filtered = filtered.filter(i => i.severite === filters.severite);
+    
+    // Filtre par priorité calculée
+    if (filters.priorite && filters.priorite !== 'all') {
+      filtered = filtered.filter(i => i.priorite === filters.priorite);
     }
+    
+    // Filtre par période/date
+    if (filters.periode && filters.periode !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      let dateDebut, dateFin;
+      
+      switch (filters.periode) {
+        case '24h':
+          // J-1 et J (hier et aujourd'hui)
+          dateDebut = new Date(today);
+          dateDebut.setDate(dateDebut.getDate() - 1);
+          dateFin = new Date(today);
+          dateFin.setDate(dateFin.getDate() + 1);
+          break;
+        case 'semaine':
+          // Cette semaine (lundi à dimanche)
+          const dayOfWeek = today.getDay();
+          const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          dateDebut = new Date(today);
+          dateDebut.setDate(today.getDate() - diffToMonday);
+          dateFin = new Date(dateDebut);
+          dateFin.setDate(dateDebut.getDate() + 7);
+          break;
+        case 'mois':
+          // Ce mois
+          dateDebut = new Date(today.getFullYear(), today.getMonth(), 1);
+          dateFin = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+          break;
+        case 'annee':
+          // Cette année
+          dateDebut = new Date(today.getFullYear(), 0, 1);
+          dateFin = new Date(today.getFullYear() + 1, 0, 1);
+          break;
+        case 'personnalise':
+          // Dates personnalisées
+          if (filters.dateDebut) {
+            dateDebut = new Date(filters.dateDebut);
+          }
+          if (filters.dateFin) {
+            dateFin = new Date(filters.dateFin);
+            dateFin.setDate(dateFin.getDate() + 1); // Inclure la date de fin
+          }
+          break;
+        default:
+          break;
+      }
+      
+      if (dateDebut || dateFin) {
+        filtered = filtered.filter(i => {
+          const itemDate = new Date(i.date_incident);
+          if (dateDebut && itemDate < dateDebut) return false;
+          if (dateFin && itemDate >= dateFin) return false;
+          return true;
+        });
+      }
+    }
+    
+    // Filtre par recherche
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(i => 
