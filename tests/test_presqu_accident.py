@@ -166,34 +166,48 @@ class TestPresquAccidentModule:
         # Cleanup
         self.session.delete(f"{BASE_URL}/api/presqu-accident/items/{item_id}")
     
-    def test_status_values_are_new_statuses(self):
-        """Test: Status field accepts new status values (A_TRAITER, EN_COURS, TERMINE, RISQUE_RESIDUEL)"""
-        new_statuses = ["A_TRAITER", "EN_COURS", "TERMINE", "RISQUE_RESIDUEL"]
+    def test_status_values_can_be_updated_to_new_statuses(self):
+        """Test: Status field can be updated to new status values (A_TRAITER, EN_COURS, TERMINE, RISQUE_RESIDUEL)"""
+        # Note: New presqu'accidents always start as A_TRAITER by design
+        # Status changes happen via the treatment dialog (update endpoint)
+        
+        # Create a presqu'accident (will start as A_TRAITER)
+        create_payload = {
+            "titre": "TEST_Status_update_test",
+            "description": "Test for status update",
+            "date_incident": datetime.now().strftime("%Y-%m-%d"),
+            "lieu": "Test Location",
+            "service": "QHSE",
+            "severite": "MOYEN"
+        }
+        
+        create_response = self.session.post(f"{BASE_URL}/api/presqu-accident/items", json=create_payload)
+        assert create_response.status_code in [200, 201], f"Create failed: {create_response.text}"
+        
+        item_id = create_response.json().get("id")
+        assert item_id, "No ID returned"
+        
+        # Verify initial status is A_TRAITER
+        assert create_response.json().get("status") == "A_TRAITER", "Initial status should be A_TRAITER"
+        
+        # Test updating to each status
+        new_statuses = ["EN_COURS", "TERMINE", "RISQUE_RESIDUEL", "A_TRAITER"]
         
         for status in new_statuses:
-            # Create with specific status
-            create_payload = {
-                "titre": f"TEST_Status_{status}",
-                "description": f"Test for status {status}",
-                "date_incident": datetime.now().strftime("%Y-%m-%d"),
-                "lieu": "Test Location",
-                "service": "QHSE",
-                "severite": "MOYEN",
-                "status": status
-            }
+            update_response = self.session.put(f"{BASE_URL}/api/presqu-accident/items/{item_id}", json={"status": status})
+            assert update_response.status_code == 200, f"Update to status {status} failed: {update_response.text}"
             
-            response = self.session.post(f"{BASE_URL}/api/presqu-accident/items", json=create_payload)
-            assert response.status_code in [200, 201], f"Create with status {status} failed: {response.text}"
-            
-            data = response.json()
-            assert data.get("status") == status, f"Status mismatch: expected {status}, got {data.get('status')}"
-            
-            # Cleanup
-            item_id = data.get("id")
-            if item_id:
-                self.session.delete(f"{BASE_URL}/api/presqu-accident/items/{item_id}")
+            # Verify the status was updated
+            list_response = self.session.get(f"{BASE_URL}/api/presqu-accident/items")
+            items = list_response.json()
+            item = next((i for i in items if i.get("id") == item_id), None)
+            assert item, "Item not found"
+            assert item.get("status") == status, f"Status mismatch: expected {status}, got {item.get('status')}"
         
-        print(f"✅ All 4 new statuses accepted: {new_statuses}")
+        print(f"✅ All 4 new statuses can be set via update: {new_statuses}")
+        
+        # Cleanup
+        self.session.delete(f"{BASE_URL}/api/presqu-accident/items/{item_id}")
     
     def test_filter_by_new_statuses(self):
         """Test: Items can be filtered by new status values"""
@@ -209,19 +223,47 @@ class TestPresquAccidentModule:
         
         print(f"✅ Status filtering works for all 4 new statuses")
     
-    def test_list_items_returns_numero_field(self):
-        """Test: List endpoint returns items with numero field"""
+    def test_list_items_returns_numero_field_for_new_items(self):
+        """Test: List endpoint returns items with numero field (old items may not have it)"""
+        # Note: Old presqu'accidents don't have numero field - only new ones do
+        
+        # Create a new item to ensure we have at least one with numero
+        create_payload = {
+            "titre": "TEST_Numero_field_test",
+            "description": "Test for numero field",
+            "date_incident": datetime.now().strftime("%Y-%m-%d"),
+            "lieu": "Test Location",
+            "service": "QHSE",
+            "severite": "MOYEN"
+        }
+        
+        create_response = self.session.post(f"{BASE_URL}/api/presqu-accident/items", json=create_payload)
+        assert create_response.status_code in [200, 201], f"Create failed: {create_response.text}"
+        
+        new_item_id = create_response.json().get("id")
+        new_item_numero = create_response.json().get("numero")
+        
+        # Verify the new item has numero
+        assert new_item_numero, "New item should have numero field"
+        
         response = self.session.get(f"{BASE_URL}/api/presqu-accident/items")
         assert response.status_code == 200, f"List failed: {response.text}"
         
         items = response.json()
-        if items:
-            # Check that items have numero field
-            for item in items[:5]:  # Check first 5 items
-                assert "numero" in item, f"Item missing 'numero' field: {item.get('id')}"
-                print(f"  Item: {item.get('titre', 'N/A')[:30]} - Numero: {item.get('numero', 'N/A')}")
         
-        print(f"✅ List returns {len(items)} items with numero field")
+        # Find our new item and verify it has numero
+        new_item = next((i for i in items if i.get("id") == new_item_id), None)
+        assert new_item, "New item not found in list"
+        assert new_item.get("numero") == new_item_numero, "Numero mismatch"
+        
+        # Count items with and without numero
+        with_numero = len([i for i in items if i.get("numero")])
+        without_numero = len([i for i in items if not i.get("numero")])
+        
+        print(f"✅ List returns {len(items)} items: {with_numero} with numero, {without_numero} without (old items)")
+        
+        # Cleanup
+        self.session.delete(f"{BASE_URL}/api/presqu-accident/items/{new_item_id}")
     
     def test_get_single_item_returns_all_fields(self):
         """Test: Single item GET returns all required fields including treatment fields"""
