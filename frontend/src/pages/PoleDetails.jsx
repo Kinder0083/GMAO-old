@@ -18,6 +18,7 @@ import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { formatErrorMessage } from '../utils/errorFormatter';
 import api from '../services/api';
+import CustomFormFiller from '../components/CustomFormFiller';
 
 const FILE_ICONS = {
   'application/pdf': FileText,
@@ -40,6 +41,7 @@ function PoleDetails() {
   const [documents, setDocuments] = useState([]);
   const [bonsTravail, setBonsTravail] = useState([]);
   const [autorisations, setAutorisations] = useState([]);
+  const [customForms, setCustomForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [serviceResponsables, setServiceResponsables] = useState([]);
@@ -48,7 +50,8 @@ function PoleDetails() {
   const [expandedSections, setExpandedSections] = useState({
     documents: false,
     bons_travail: false,
-    autorisations: false
+    autorisations: false,
+    custom_forms: false
   });
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -56,6 +59,11 @@ function PoleDetails() {
   const [openFormDialog, setOpenFormDialog] = useState(false);
   const [formTemplates, setFormTemplates] = useState([]);
   const [selectedFormType, setSelectedFormType] = useState('');
+  
+  // Dialog pour formulaire personnalisé
+  const [showCustomFormFiller, setShowCustomFormFiller] = useState(false);
+  const [selectedCustomTemplate, setSelectedCustomTemplate] = useState(null);
+  const [editingCustomForm, setEditingCustomForm] = useState(null);
   
   // Dialog pour ajouter un document
   const [openDocDialog, setOpenDocDialog] = useState(false);
