@@ -1502,13 +1502,10 @@ class PresquAccidentItemCreate(BaseModel):
     service: PresquAccidentService
     personnes_impliquees: Optional[str] = None
     declarant: Optional[str] = None
+    responsable_id: Optional[str] = None  # ID utilisateur responsable
     contexte_cause: Optional[str] = None
     severite: PresquAccidentSeverity = PresquAccidentSeverity.MOYEN
     actions_proposees: Optional[str] = None
-    actions_preventions: Optional[str] = None
-    responsable_action: Optional[str] = None
-    date_echeance_action: Optional[str] = None
-    commentaire: Optional[str] = None
 
 class PresquAccidentItemUpdate(BaseModel):
     titre: Optional[str] = None
