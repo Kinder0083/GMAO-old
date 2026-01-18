@@ -162,6 +162,7 @@ function App() {
             <Route path="presqu-accident" element={<PresquAccidentList />} />
             <Route path="presqu-accident-rapport" element={<PresquAccidentRapport />} />
             <Route path="documentations" element={<Documentations />} />
+            <Route path="documentations/modeles" element={<FormTemplatesPage />} />
             <Route path="documentations/:poleId" element={<PoleDetails />} />
             <Route path="documentations/:poleId/bon-de-travail" element={<BonDeTravailForm />} />
             <Route path="documentations/:poleId/bon-de-travail/:bonId/view" element={<BonDeTravailView />} />
