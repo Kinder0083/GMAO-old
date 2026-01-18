@@ -746,6 +746,87 @@ function PoleDetails() {
               </div>
             )}
           </div>
+
+          {/* Section Formulaires personnalisés */}
+          {groupedCustomForms.length > 0 && groupedCustomForms.map((group) => (
+            <div key={group.templateId} className="border-t">
+              <button
+                onClick={() => toggleSection(`custom_${group.templateId}`)}
+                className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+              >
+                {expandedSections[`custom_${group.templateId}`] ? (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-gray-500" />
+                )}
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <ClipboardList className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-semibold">{group.templateName}</span>
+                  <Badge variant="secondary" className="ml-2">
+                    {group.forms.length}
+                  </Badge>
+                </div>
+              </button>
+              
+              {expandedSections[`custom_${group.templateId}`] && (
+                <div className="bg-purple-50 border-t">
+                  <div className="divide-y divide-purple-200">
+                    {group.forms.map((form) => (
+                      <div
+                        key={form.id}
+                        className="flex items-center gap-3 p-3 pl-16 hover:bg-purple-100 transition-colors"
+                      >
+                        <ClipboardList className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {form.titre || 'Formulaire sans titre'}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {form.status === 'VALIDE' ? '✓ Validé' : '⏳ Brouillon'} • 
+                            {form.created_at ? new Date(form.created_at).toLocaleDateString('fr-FR') : ''}
+                            {form.created_by_name && ` • ${form.created_by_name}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          {canEdit(form) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCustomForm(form)}
+                              title="Modifier"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePrintCustomForm(form.id)}
+                            title="Imprimer"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          {canEdit(form) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCustomForm(form.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </CardContent>
       </Card>
 
