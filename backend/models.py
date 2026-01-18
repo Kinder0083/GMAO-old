@@ -2349,6 +2349,55 @@ class MQTTConfig(BaseModel):
     client_id: str = "gmao_iris"
 
 
+
+# === Role Management Models ===
+class RoleBase(BaseModel):
+    """Base model pour les rôles configurables"""
+    code: str  # Code unique du rôle (ex: "ADMIN", "RSP_SERVICE")
+    label: str  # Libellé affiché (ex: "Administrateur", "Responsable de service")
+    description: Optional[str] = None
+    color_bg: str = "bg-gray-100"  # Couleur de fond du badge
+    color_text: str = "text-gray-700"  # Couleur du texte du badge
+    is_system: bool = False  # True pour les rôles système non supprimables
+    permissions: UserPermissions = Field(default_factory=UserPermissions)
+
+class RoleCreate(RoleBase):
+    pass
+
+class RoleUpdate(BaseModel):
+    label: Optional[str] = None
+    description: Optional[str] = None
+    color_bg: Optional[str] = None
+    color_text: Optional[str] = None
+    permissions: Optional[UserPermissions] = None
+
+class Role(RoleBase):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: Optional[str] = None
+    created_by: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+# === Service Responsable Models ===
+class ServiceResponsable(BaseModel):
+    """Association entre un service et son responsable"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    service: str  # Nom du service (PRODUCTION, LOGISTIQUE, etc.)
+    user_id: str  # ID de l'utilisateur responsable
+    user_name: Optional[str] = None  # Nom complet pour affichage
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_by: Optional[str] = None
+
+class ServiceResponsableCreate(BaseModel):
+    service: str
+    user_id: str
+
+class ServiceResponsableUpdate(BaseModel):
+    user_id: str
+
+
 # =======================
 # Sensor (Capteur) Models
 # =======================
