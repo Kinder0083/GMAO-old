@@ -424,6 +424,11 @@ export const presquAccidentAPI = {
   updateItem: (id, data) => api.put(`/presqu-accident/items/${id}`, data).then(res => res.data),
   deleteItem: (id) => api.delete(`/presqu-accident/items/${id}`).then(res => res.data),
   
+  // Alias pour compatibilité
+  create: (data) => api.post('/presqu-accident/items', data).then(res => res.data),
+  update: (id, data) => api.put(`/presqu-accident/items/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/presqu-accident/items/${id}`).then(res => res.data),
+  
   // Attachments (nouveau format multi-fichiers)
   uploadAttachment: (id, file) => {
     const formData = new FormData();
