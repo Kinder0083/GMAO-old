@@ -736,3 +736,192 @@ async def check_due_dates(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Erreur vérification échéances: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Envoi d'emails de rappel d'échéance ====================
+
+async def send_surveillance_reminder_email(user_email: str, user_name: str, item: dict):
+    """
+    Envoie un email de rappel d'échéance pour un contrôle de surveillance.
+    """
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    import os
+    
+    try:
+        # Configuration SMTP
+        smtp_server = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.environ.get("SMTP_PORT", 587))
+        smtp_user = os.environ.get("SMTP_USER", "")
+        smtp_password = os.environ.get("SMTP_PASSWORD", "")
+        
+        if not smtp_user or not smtp_password:
+            logger.warning("Configuration SMTP manquante pour l'envoi d'email de rappel surveillance")
+            return False
+        
+        # Extraire les informations du contrôle
+        classe_type = item.get("classe_type", "Contrôle")
+        batiment = item.get("batiment", "Non spécifié")
+        prochain_controle = item.get("prochain_controle", "Non spécifié")
+        
+        # Formater la date
+        if prochain_controle and prochain_controle != "Non spécifié":
+            try:
+                date_obj = datetime.fromisoformat(prochain_controle)
+                prochain_controle_formatted = date_obj.strftime("%d/%m/%Y")
+            except:
+                prochain_controle_formatted = prochain_controle
+        else:
+            prochain_controle_formatted = "Non spécifié"
+        
+        # Créer le message
+        msg = MIMEMultipart()
+        msg['From'] = smtp_user
+        msg['To'] = user_email
+        msg['Subject'] = f"[GMAO] Rappel - Contrôle à venir : {classe_type}"
+        
+        # Corps du message HTML
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background-color: #3b82f6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h1 style="margin: 0; font-size: 24px;">📋 Rappel de Contrôle</h1>
+                </div>
+                
+                <div style="background-color: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px;">
+                    <p>Bonjour {user_name},</p>
+                    
+                    <p>Ce message vous est envoyé pour vous informer qu'un contrôle du plan de surveillance arrive à échéance prochainement.</p>
+                    
+                    <div style="background-color: white; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                        <h3 style="margin: 0 0 10px 0; color: #1e40af;">📌 Détails du contrôle</h3>
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="padding: 5px 0; font-weight: bold; width: 150px;">Nom du contrôle :</td>
+                                <td style="padding: 5px 0;">{classe_type}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; font-weight: bold;">Équipement/Bâtiment :</td>
+                                <td style="padding: 5px 0;">{batiment}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; font-weight: bold;">Date d'échéance :</td>
+                                <td style="padding: 5px 0; color: #dc2626; font-weight: bold;">{prochain_controle_formatted}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <p>Merci de prendre les dispositions nécessaires pour planifier ce contrôle dans les délais.</p>
+                    
+                    <p style="color: #64748b; font-size: 12px; margin-top: 30px;">
+                        Ce message est généré automatiquement par le système GMAO.<br>
+                        Merci de ne pas répondre à cet email.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Envoyer l'email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
+        server.quit()
+        
+        logger.info(f"✅ Email de rappel surveillance envoyé à {user_email} pour le contrôle {classe_type}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi email rappel surveillance: {str(e)}")
+        return False
+
+
+async def check_surveillance_reminders():
+    """
+    Vérifie les contrôles de surveillance et envoie des emails de rappel.
+    Cette fonction est appelée quotidiennement par le scheduler.
+    
+    Logique:
+    - Pour chaque item avec un responsable_notification_id et un prochain_controle
+    - Si la date actuelle = prochain_controle - duree_rappel_echeance
+    - Et que l'email n'a pas déjà été envoyé (email_rappel_envoye = False)
+    - Alors envoyer l'email et marquer email_rappel_envoye = True
+    """
+    try:
+        logger.info("🔔 Vérification des rappels de surveillance...")
+        today = datetime.now(timezone.utc).date()
+        emails_sent = 0
+        
+        # Récupérer tous les items avec un responsable de notification
+        items = await db.surveillance_items.find({
+            "responsable_notification_id": {"$ne": None, "$exists": True},
+            "email_rappel_envoye": {"$ne": True},
+            "prochain_controle": {"$ne": None, "$exists": True}
+        }).to_list(length=None)
+        
+        for item in items:
+            try:
+                # Vérifier si l'item a une date de prochain contrôle
+                prochain_controle_str = item.get("prochain_controle")
+                if not prochain_controle_str:
+                    continue
+                
+                prochain_controle = datetime.fromisoformat(prochain_controle_str).date()
+                duree_rappel = item.get("duree_rappel_echeance", 30)
+                
+                # Calculer la date de rappel
+                date_rappel = prochain_controle - timedelta(days=duree_rappel)
+                
+                # Si aujourd'hui est le jour du rappel
+                if today == date_rappel:
+                    # Récupérer les informations de l'utilisateur
+                    user_id = item.get("responsable_notification_id")
+                    user = await db.users.find_one({"id": user_id})
+                    
+                    if not user:
+                        # Essayer avec _id
+                        from bson import ObjectId
+                        try:
+                            user = await db.users.find_one({"_id": ObjectId(user_id)})
+                        except:
+                            pass
+                    
+                    if user and user.get("email"):
+                        user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or user.get("email")
+                        
+                        # Envoyer l'email
+                        success = await send_surveillance_reminder_email(
+                            user_email=user.get("email"),
+                            user_name=user_name,
+                            item=item
+                        )
+                        
+                        if success:
+                            # Marquer l'email comme envoyé
+                            await db.surveillance_items.update_one(
+                                {"id": item["id"]},
+                                {"$set": {
+                                    "email_rappel_envoye": True,
+                                    "alerte_date": datetime.now(timezone.utc).isoformat()
+                                }}
+                            )
+                            emails_sent += 1
+                    else:
+                        logger.warning(f"Utilisateur {user_id} non trouvé ou sans email pour le contrôle {item.get('id')}")
+                
+            except Exception as e:
+                logger.warning(f"Erreur traitement rappel item {item.get('id')}: {str(e)}")
+                continue
+        
+        logger.info(f"🔔 {emails_sent} email(s) de rappel de surveillance envoyé(s)")
+        return emails_sent
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur vérification rappels surveillance: {str(e)}")
+        return 0
