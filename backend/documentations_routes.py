@@ -812,3 +812,145 @@ async def send_bon_email(
     except Exception as e:
         logger.error(f"Erreur envoi email: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== FORM TEMPLATES ====================
+
+@router.get("/form-templates")
+async def get_form_templates(current_user: dict = Depends(get_current_user)):
+    """Récupérer tous les modèles de formulaires"""
+    try:
+        templates = await db.form_templates.find({}, {"_id": 0}).to_list(length=None)
+        
+        # Si aucun template, retourner les templates système par défaut
+        if not templates:
+            default_templates = [
+                {
+                    "id": "default-bon-travail",
+                    "nom": "Bon de travail",
+                    "type": "BON_TRAVAIL",
+                    "description": "Formulaire standard pour les bons de travail de maintenance",
+                    "actif": True,
+                    "is_system": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                },
+                {
+                    "id": "default-autorisation",
+                    "nom": "Autorisation particulière",
+                    "type": "AUTORISATION",
+                    "description": "Formulaire standard pour les autorisations de travail spéciales",
+                    "actif": True,
+                    "is_system": True,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+            ]
+            # Insérer les templates par défaut
+            for tpl in default_templates:
+                await db.form_templates.insert_one(tpl)
+            return default_templates
+        
+        return templates
+    except Exception as e:
+        logger.error(f"Erreur récupération templates: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/form-templates/{template_id}")
+async def get_form_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Récupérer un modèle de formulaire par ID"""
+    try:
+        template = await db.form_templates.find_one({"id": template_id}, {"_id": 0})
+        if not template:
+            raise HTTPException(status_code=404, detail="Modèle non trouvé")
+        return template
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération template: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/form-templates")
+async def create_form_template(
+    template_data: dict,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Créer un nouveau modèle de formulaire (admin uniquement)"""
+    try:
+        template = {
+            "id": str(uuid.uuid4()),
+            "nom": template_data.get("nom"),
+            "type": template_data.get("type", "BON_TRAVAIL"),
+            "description": template_data.get("description", ""),
+            "actif": template_data.get("actif", True),
+            "is_system": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user.get("id")
+        }
+        
+        await db.form_templates.insert_one(template)
+        template.pop("_id", None)
+        
+        return template
+    except Exception as e:
+        logger.error(f"Erreur création template: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/form-templates/{template_id}")
+async def update_form_template(
+    template_id: str,
+    template_data: dict,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Mettre à jour un modèle de formulaire (admin uniquement)"""
+    try:
+        existing = await db.form_templates.find_one({"id": template_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Modèle non trouvé")
+        
+        if existing.get("is_system"):
+            raise HTTPException(status_code=400, detail="Les modèles système ne peuvent pas être modifiés")
+        
+        update_data = {
+            "nom": template_data.get("nom", existing.get("nom")),
+            "type": template_data.get("type", existing.get("type")),
+            "description": template_data.get("description", existing.get("description")),
+            "actif": template_data.get("actif", existing.get("actif")),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user.get("id")
+        }
+        
+        await db.form_templates.update_one({"id": template_id}, {"$set": update_data})
+        
+        updated = await db.form_templates.find_one({"id": template_id}, {"_id": 0})
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur mise à jour template: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/form-templates/{template_id}")
+async def delete_form_template(
+    template_id: str,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Supprimer un modèle de formulaire (admin uniquement, non-système)"""
+    try:
+        existing = await db.form_templates.find_one({"id": template_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Modèle non trouvé")
+        
+        if existing.get("is_system"):
+            raise HTTPException(status_code=400, detail="Les modèles système ne peuvent pas être supprimés")
+        
+        await db.form_templates.delete_one({"id": template_id})
+        
+        return {"success": True, "message": "Modèle supprimé"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur suppression template: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
