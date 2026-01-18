@@ -81,8 +81,8 @@ function PresquAccidentList() {
 
   const loadData = async () => {
     try {
-      const statsRes = await presquAccidentAPI.getStats();
-      setStats(statsRes.data);
+      const statsData = await presquAccidentAPI.getStats();
+      setStats(statsData);
     } catch (error) {
       console.error('Erreur chargement données:', error);
     }
