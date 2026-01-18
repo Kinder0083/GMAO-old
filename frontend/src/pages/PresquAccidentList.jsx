@@ -374,30 +374,36 @@ function PresquAccidentList() {
       </div>
 
       {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-4 gap-4">
+      {stats && stats.global && (
+        <div className="grid grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{stats.total || 0}</div>
+              <div className="text-2xl font-bold">{stats.global.total || 0}</div>
               <div className="text-sm text-gray-500">Total</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-red-600">{stats.a_traiter || 0}</div>
+              <div className="text-2xl font-bold text-red-600">{stats.global.a_traiter || 0}</div>
               <div className="text-sm text-gray-500">À traiter</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-yellow-600">{stats.en_cours || 0}</div>
+              <div className="text-2xl font-bold text-yellow-600">{stats.global.en_cours || 0}</div>
               <div className="text-sm text-gray-500">En cours</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">{stats.termines || 0}</div>
+              <div className="text-2xl font-bold text-green-600">{stats.global.termine || 0}</div>
               <div className="text-sm text-gray-500">Terminés</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-purple-600">{stats.global.risque_residuel || 0}</div>
+              <div className="text-sm text-gray-500">Risque résiduel</div>
             </CardContent>
           </Card>
         </div>
