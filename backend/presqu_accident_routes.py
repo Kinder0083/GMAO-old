@@ -104,8 +104,21 @@ async def create_presqu_accident_item(
 ):
     """Créer un nouveau presqu'accident"""
     try:
+        # Générer le numéro au format [année]-[numéro incrémenté]
+        current_year = datetime.now().year
+        
+        # Compter les presqu'accidents de l'année en cours
+        count = await db.presqu_accident_items.count_documents({
+            "numero": {"$regex": f"^{current_year}-"}
+        })
+        
+        # Générer le numéro (commence à 001)
+        numero = f"{current_year}-{str(count + 1).zfill(3)}"
+        
         item = PresquAccidentItem(
             **item_data.model_dump(),
+            numero=numero,
+            status=PresquAccidentStatus.A_TRAITER,  # Statut initial obligatoire
             created_by=current_user.get("id"),
             updated_by=current_user.get("id")
         )
