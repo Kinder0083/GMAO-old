@@ -57,6 +57,17 @@ function Documentations() {
   const [expandedDocsPoles, setExpandedDocsPoles] = useState(new Set()); // Pour les documents
   const [previewDocument, setPreviewDocument] = useState(null);
   const [openPreview, setOpenPreview] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Charger l'utilisateur actuel
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
+  }, []);
+
+  const isAdmin = () => currentUser?.role === 'ADMIN';
 
   const [formData, setFormData] = useState({
     nom: '',
