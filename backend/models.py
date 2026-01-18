@@ -1515,14 +1515,18 @@ class PresquAccidentItemUpdate(BaseModel):
     service: Optional[PresquAccidentService] = None
     personnes_impliquees: Optional[str] = None
     declarant: Optional[str] = None
+    responsable_id: Optional[str] = None
     contexte_cause: Optional[str] = None
     severite: Optional[PresquAccidentSeverity] = None
     actions_proposees: Optional[str] = None
+    # Champs de traitement
     actions_preventions: Optional[str] = None
     responsable_action: Optional[str] = None
     date_echeance_action: Optional[str] = None
+    commentaire_traitement: Optional[str] = None
     status: Optional[PresquAccidentStatus] = None
     date_cloture: Optional[str] = None
+    # Legacy
     commentaire: Optional[str] = None
     piece_jointe_url: Optional[str] = None
     piece_jointe_nom: Optional[str] = None
