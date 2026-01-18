@@ -307,14 +307,14 @@ function SurveillanceItemForm({ open, item, onClose }) {
           <div>
             <Label>Responsable de notification</Label>
             <Select 
-              value={formData.responsable_notification_id} 
-              onValueChange={(val) => setFormData({...formData, responsable_notification_id: val})}
+              value={formData.responsable_notification_id || "none"} 
+              onValueChange={(val) => setFormData({...formData, responsable_notification_id: val === "none" ? "" : val})}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un responsable" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucun</SelectItem>
+                <SelectItem value="none">Aucun</SelectItem>
                 {users.filter(user => user.id && user.id !== '').map(user => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.prenom || user.first_name} {user.nom || user.last_name}
