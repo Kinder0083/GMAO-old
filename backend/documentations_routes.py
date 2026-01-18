@@ -917,6 +917,7 @@ async def update_form_template(
             "nom": template_data.get("nom", existing.get("nom")),
             "type": template_data.get("type", existing.get("type")),
             "description": template_data.get("description", existing.get("description")),
+            "fields": template_data.get("fields", existing.get("fields", [])),
             "actif": template_data.get("actif", existing.get("actif")),
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "updated_by": current_user.get("id")
