@@ -1526,6 +1526,11 @@ class PresquAccidentItemUpdate(BaseModel):
     commentaire_traitement: Optional[str] = None
     status: Optional[PresquAccidentStatus] = None
     date_cloture: Optional[str] = None
+    # Évaluation des risques (traitement)
+    severite_traitement: Optional[str] = None  # "1", "2", "3", "4"
+    recurrence: Optional[str] = None  # "1", "2", "3", "4"
+    priorite: Optional[str] = None  # Calculé: "Faible", "Moyenne", "Élevée", "Critique"
+    priorite_score: Optional[int] = None  # Score calculé (1-16)
     # Legacy
     commentaire: Optional[str] = None
     piece_jointe_url: Optional[str] = None
