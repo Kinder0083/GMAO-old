@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Search, Users as UsersIcon, Mail, Phone, Trash2, Settings, UserPlus, Edit } from 'lucide-react';
+import { Plus, Search, Users as UsersIcon, Mail, Phone, Trash2, Settings, UserPlus, Edit, Shield } from 'lucide-react';
 import UserProfileDialog from '../components/Common/UserProfileDialog';
 import InviteMemberDialog from '../components/Common/InviteMemberDialog';
 import CreateMemberDialog from '../components/Common/CreateMemberDialog';
@@ -14,6 +15,7 @@ import { useToast } from '../hooks/use-toast';
 import { formatErrorMessage } from '../utils/errorFormatter';
 
 const People = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
