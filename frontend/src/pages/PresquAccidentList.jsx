@@ -334,13 +334,33 @@ function PresquAccidentList() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      A_TRAITER: { label: 'À traiter', variant: 'destructive' },
-      EN_COURS: { label: 'En cours', variant: 'warning' },
-      TERMINE: { label: 'Terminé', variant: 'success' },
-      RISQUE_RESIDUEL: { label: 'Risque résiduel', variant: 'secondary' }
+      A_TRAITER: { label: 'À traiter', className: 'bg-red-100 text-red-800 border border-red-300' },
+      EN_COURS: { label: 'En cours', className: 'bg-orange-100 text-orange-800 border border-orange-300' },
+      TERMINE: { label: 'Terminé', className: 'bg-green-100 text-green-800 border border-green-300' },
+      RISQUE_RESIDUEL: { label: 'Risque résiduel', className: 'bg-sky-100 text-sky-800 border border-sky-300' }
     };
     const config = statusConfig[status] || statusConfig.A_TRAITER;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>{config.label}</span>;
+  };
+
+  // Badge de priorité calculée (affiché seulement après validation du traitement)
+  const getPriorityBadge = (item) => {
+    // Afficher seulement si la priorité a été calculée (traitement validé)
+    if (!item.priorite || !item.priorite_score) return null;
+    
+    const priorityConfig = {
+      'Faible': { className: 'bg-green-100 text-green-800 border border-green-300' },
+      'Moyenne': { className: 'bg-yellow-100 text-yellow-800 border border-yellow-300' },
+      'Élevée': { className: 'bg-orange-100 text-orange-800 border border-orange-300' },
+      'Critique': { className: 'bg-red-100 text-red-800 border border-red-300' }
+    };
+    
+    const config = priorityConfig[item.priorite] || priorityConfig['Moyenne'];
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+        {item.priorite} ({item.priorite_score})
+      </span>
+    );
   };
 
   const getSeveriteBadge = (severite) => {
