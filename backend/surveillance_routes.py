@@ -519,6 +519,74 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Envoi manuel d'email de rappel ====================
+
+@router.post("/items/{item_id}/send-reminder")
+async def send_manual_reminder(
+    item_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Envoyer manuellement un email de rappel pour un contrôle"""
+    try:
+        # Récupérer l'item
+        item = await db.surveillance_items.find_one({"id": item_id})
+        if not item:
+            raise HTTPException(status_code=404, detail="Contrôle non trouvé")
+        
+        # Vérifier qu'un responsable est défini
+        responsable_id = item.get("responsable_notification_id")
+        if not responsable_id:
+            raise HTTPException(status_code=400, detail="Aucun responsable de notification défini pour ce contrôle")
+        
+        # Récupérer l'utilisateur
+        from bson import ObjectId
+        user = await db.users.find_one({"id": responsable_id})
+        if not user:
+            try:
+                user = await db.users.find_one({"_id": ObjectId(responsable_id)})
+            except:
+                pass
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="Responsable non trouvé")
+        
+        if not user.get("email"):
+            raise HTTPException(status_code=400, detail="Le responsable n'a pas d'adresse email")
+        
+        # Envoyer l'email
+        user_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or user.get("email")
+        success = await send_surveillance_reminder_email(
+            user_email=user.get("email"),
+            user_name=user_name,
+            item=item
+        )
+        
+        if success:
+            # Optionnel: marquer l'email comme envoyé
+            await db.surveillance_items.update_one(
+                {"id": item_id},
+                {"$set": {
+                    "email_rappel_envoye": True,
+                    "alerte_date": datetime.now(timezone.utc).isoformat(),
+                    "rappel_manuel_par": current_user.get("id"),
+                    "rappel_manuel_date": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            return {
+                "success": True,
+                "message": f"Email de rappel envoyé à {user.get('email')}"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Échec de l'envoi de l'email. Vérifiez la configuration SMTP.")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur envoi manuel rappel: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Upload de pièces jointes ====================
 
 @router.post("/items/{item_id}/upload")
