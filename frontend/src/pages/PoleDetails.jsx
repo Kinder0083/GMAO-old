@@ -1,21 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import {
   ArrowLeft, Plus, Upload, FileText, Download, Trash2, Edit, File,
-  FileSpreadsheet, FileImage, FileVideo, Mail, Printer, Eye, Shield, AlertTriangle
+  FileSpreadsheet, FileImage, FileVideo, Printer, Eye, Shield, 
+  ChevronDown, ChevronRight, Search, FolderOpen, ClipboardList
 } from 'lucide-react';
-import { documentationsAPI, autorisationsAPI } from '../services/api';
+import { documentationsAPI, autorisationsAPI, rolesAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { formatErrorMessage } from '../utils/errorFormatter';
+import api from '../services/api';
 
 const FILE_ICONS = {
   'application/pdf': FileText,
@@ -37,10 +39,33 @@ function PoleDetails() {
   const [pole, setPole] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [bonsTravail, setBonsTravail] = useState([]);
+  const [autorisations, setAutorisations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
-  const [bonAutorisationsMap, setBonAutorisationsMap] = useState({}); // Map bon_id -> [autorisations]
+  const [serviceResponsables, setServiceResponsables] = useState([]);
   
+  // États pour l'arborescence
+  const [expandedSections, setExpandedSections] = useState({
+    documents: false,
+    bons_travail: false,
+    autorisations: false
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Dialog pour ajouter un formulaire
+  const [openFormDialog, setOpenFormDialog] = useState(false);
+  const [formTemplates, setFormTemplates] = useState([]);
+  const [selectedFormType, setSelectedFormType] = useState('');
+  
+  // Dialog pour ajouter un document
+  const [openDocDialog, setOpenDocDialog] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [docFormData, setDocFormData] = useState({
+    titre: '',
+    description: ''
+  });
+  const [selectedFile, setSelectedFile] = useState(null);
+
   // Charger l'utilisateur actuel
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -48,16 +73,6 @@ function PoleDetails() {
       setCurrentUser(JSON.parse(userData));
     }
   }, []);
-  const [openDocForm, setOpenDocForm] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState(null);
-  const [uploading, setUploading] = useState(false);
-
-  const [docFormData, setDocFormData] = useState({
-    titre: '',
-    description: '',
-    type_document: 'PIECE_JOINTE',
-    tags: []
-  });
 
   useEffect(() => {
     loadData();
@@ -66,28 +81,30 @@ function PoleDetails() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [poleData, documentsData, bonsTravailData] = await Promise.all([
+      const [poleData, documentsData, bonsTravailData, autorisationsData, responsablesData] = await Promise.all([
         documentationsAPI.getPole(poleId),
         documentationsAPI.getDocuments({ pole_id: poleId }),
-        documentationsAPI.getBonsTravail({ pole_id: poleId })
+        documentationsAPI.getBonsTravail({ pole_id: poleId }),
+        autorisationsAPI.getAll(poleId).catch(() => []),
+        rolesAPI.getServiceResponsables().catch(() => [])
       ]);
       setPole(poleData);
       setDocuments(documentsData);
       setBonsTravail(bonsTravailData);
+      setAutorisations(autorisationsData);
+      setServiceResponsables(responsablesData);
       
-      // Charger les autorisations pour chaque bon de travail
-      const autorisationsMap = {};
-      for (const bon of bonsTravailData) {
-        try {
-          const autorisations = await autorisationsAPI.getByBonTravail(bon.id);
-          if (autorisations.length > 0) {
-            autorisationsMap[bon.id] = autorisations;
-          }
-        } catch (error) {
-          console.error(`Erreur chargement autorisations pour bon ${bon.id}:`, error);
-        }
+      // Charger les templates de formulaires
+      try {
+        const templatesRes = await api.get('/documentations/form-templates');
+        setFormTemplates(templatesRes.data || []);
+      } catch {
+        // Templates par défaut si l'API n'existe pas
+        setFormTemplates([
+          { id: 'default-bon-travail', nom: 'Bon de travail', type: 'BON_TRAVAIL' },
+          { id: 'default-autorisation', nom: 'Autorisation particulière', type: 'AUTORISATION' }
+        ]);
       }
-      setBonAutorisationsMap(autorisationsMap);
     } catch (error) {
       console.error('Erreur chargement:', error);
       toast({
@@ -100,92 +117,131 @@ function PoleDetails() {
     }
   };
 
-  const handleCreateDocument = () => {
-    setSelectedDocument(null);
-    setDocFormData({
-      titre: '',
-      description: '',
-      type_document: 'PIECE_JOINTE',
-      tags: []
-    });
-    setOpenDocForm(true);
-  };
-
-  const handleCreateBonTravail = () => {
-    navigate(`/documentations/${poleId}/bon-de-travail`);
-  };
-  
-  const canEditBonTravail = (bon) => {
+  // Vérifier si l'utilisateur peut modifier un formulaire
+  const canEdit = (item) => {
     if (!currentUser) return false;
     // Admin peut tout modifier
     if (currentUser.role === 'ADMIN') return true;
-    // Créateur peut modifier son propre bon
-    return bon.created_by === currentUser.id;
+    // Créateur peut modifier
+    if (item.created_by === currentUser.id) return true;
+    // Responsable de service peut modifier
+    const poleService = pole?.pole;
+    const responsable = serviceResponsables.find(r => r.service === poleService);
+    if (responsable && responsable.user_id === currentUser.id) return true;
+    return false;
   };
-  
-  const isAdmin = () => {
-    return currentUser && currentUser.role === 'ADMIN';
+
+  const isAdmin = () => currentUser?.role === 'ADMIN';
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
-  
-  const handleDeleteBonTravail = (bonId) => {
-    confirm({
-      title: 'Supprimer le bon de travail',
-      description: 'Êtes-vous sûr de vouloir supprimer ce bon de travail ? Cette action est irréversible.',
-      confirmText: 'Supprimer',
-      cancelText: 'Annuler',
-      variant: 'destructive',
-      onConfirm: async () => {
-        try {
-          await documentationsAPI.deleteBonTravail(bonId);
-          toast({ title: 'Succès', description: 'Bon de travail supprimé' });
-          loadData(); // Recharger la liste
-        } catch (error) {
-          toast({
-            title: 'Erreur',
-            description: formatErrorMessage(error, 'Erreur lors de la suppression'),
-            variant: 'destructive'
-          });
-        }
+
+  // Filtrer les éléments selon la recherche
+  const filteredDocuments = useMemo(() => {
+    if (!searchTerm) return documents;
+    return documents.filter(d => 
+      d.titre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.fichier_nom?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [documents, searchTerm]);
+
+  const filteredBons = useMemo(() => {
+    if (!searchTerm) return bonsTravail;
+    return bonsTravail.filter(b => 
+      b.titre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.entreprise?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [bonsTravail, searchTerm]);
+
+  const filteredAutorisations = useMemo(() => {
+    if (!searchTerm) return autorisations;
+    return autorisations.filter(a => 
+      a.titre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.numero?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [autorisations, searchTerm]);
+
+  // Handlers pour les formulaires
+  const handleAddForm = () => {
+    setSelectedFormType('');
+    setOpenFormDialog(true);
+  };
+
+  const handleSelectFormType = () => {
+    if (!selectedFormType) {
+      toast({
+        title: 'Attention',
+        description: 'Veuillez sélectionner un type de formulaire',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setOpenFormDialog(false);
+    
+    // Rediriger vers le formulaire approprié
+    if (selectedFormType === 'BON_TRAVAIL' || selectedFormType.includes('bon-travail')) {
+      navigate(`/documentations/${poleId}/bon-de-travail`);
+    } else if (selectedFormType === 'AUTORISATION' || selectedFormType.includes('autorisation')) {
+      navigate('/autorisations-particulieres/new', { state: { fromPoleId: poleId } });
+    }
+  };
+
+  // Handlers pour les documents
+  const handleAddDocument = () => {
+    setDocFormData({ titre: '', description: '' });
+    setSelectedFile(null);
+    setOpenDocDialog(true);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      if (!docFormData.titre) {
+        setDocFormData(prev => ({ ...prev, titre: file.name.replace(/\.[^/.]+$/, '') }));
       }
-    });
+    }
   };
 
   const handleSubmitDocument = async (e) => {
     e.preventDefault();
-    try {
-      const data = {
-        ...docFormData,
-        pole_id: poleId
-      };
-
-      if (selectedDocument) {
-        await documentationsAPI.updateDocument(selectedDocument.id, data);
-        toast({ title: 'Succès', description: 'Document mis à jour' });
-      } else {
-        await documentationsAPI.createDocument(data);
-        toast({ title: 'Succès', description: 'Document créé' });
-      }
-      setOpenDocForm(false);
-      loadData();
-    } catch (error) {
+    if (!selectedFile) {
       toast({
-        title: 'Erreur',
-        description: formatErrorMessage(error, 'Erreur lors de l\'enregistrement'),
+        title: 'Attention',
+        description: 'Veuillez sélectionner un fichier',
         variant: 'destructive'
       });
+      return;
     }
-  };
 
-  const handleUploadFile = async (docId, file) => {
     try {
       setUploading(true);
-      await documentationsAPI.uploadFile(docId, file);
-      toast({ title: 'Succès', description: 'Fichier uploadé' });
+      
+      // Créer d'abord le document
+      const docData = {
+        titre: docFormData.titre || selectedFile.name,
+        description: docFormData.description,
+        type_document: 'PIECE_JOINTE',
+        pole_id: poleId
+      };
+      
+      const newDoc = await documentationsAPI.createDocument(docData);
+      
+      // Uploader le fichier
+      await documentationsAPI.uploadFile(newDoc.id, selectedFile);
+      
+      toast({ title: 'Succès', description: 'Document ajouté' });
+      setOpenDocDialog(false);
       loadData();
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: formatErrorMessage(error, 'Erreur lors de l\'upload'),
+        description: formatErrorMessage(error, 'Erreur lors de l\'ajout'),
         variant: 'destructive'
       });
     } finally {
@@ -193,35 +249,10 @@ function PoleDetails() {
     }
   };
 
-  const handleFileSelect = async (e, docId) => {
-    const file = e.target.files[0];
-    if (file) {
-      await handleUploadFile(docId, file);
-    }
-  };
-
-  const handleDownload = async (docId, fileName) => {
-    try {
-      const blob = await documentationsAPI.downloadFile(docId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: formatErrorMessage(error, 'Erreur lors du téléchargement'),
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleDelete = (docId) => {
+  const handleDeleteDocument = (docId) => {
     confirm({
       title: 'Supprimer le document',
-      description: 'Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.',
+      description: 'Êtes-vous sûr de vouloir supprimer ce document ?',
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
       variant: 'destructive',
@@ -239,6 +270,71 @@ function PoleDetails() {
         }
       }
     });
+  };
+
+  const handleDeleteBon = (bonId) => {
+    confirm({
+      title: 'Supprimer le bon de travail',
+      description: 'Êtes-vous sûr de vouloir supprimer ce bon de travail ?',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await documentationsAPI.deleteBonTravail(bonId);
+          toast({ title: 'Succès', description: 'Bon de travail supprimé' });
+          loadData();
+        } catch (error) {
+          toast({
+            title: 'Erreur',
+            description: formatErrorMessage(error, 'Erreur lors de la suppression'),
+            variant: 'destructive'
+          });
+        }
+      }
+    });
+  };
+
+  const handleDeleteAutorisation = (autoId) => {
+    confirm({
+      title: 'Supprimer l\'autorisation',
+      description: 'Êtes-vous sûr de vouloir supprimer cette autorisation ?',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await autorisationsAPI.delete(autoId);
+          toast({ title: 'Succès', description: 'Autorisation supprimée' });
+          loadData();
+        } catch (error) {
+          toast({
+            title: 'Erreur',
+            description: formatErrorMessage(error, 'Erreur lors de la suppression'),
+            variant: 'destructive'
+          });
+        }
+      }
+    });
+  };
+
+  const handlePrint = (type, id) => {
+    const token = localStorage.getItem('token');
+    const baseUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    let printUrl = '';
+    
+    if (type === 'bon') {
+      printUrl = `${baseUrl}/api/documentations/bons-travail/${id}/pdf?token=${token}`;
+    } else if (type === 'autorisation') {
+      printUrl = `${baseUrl}/api/autorisations/${id}/pdf?token=${token}`;
+    } else if (type === 'document') {
+      printUrl = `${baseUrl}/api/documentations/documents/${id}/view?token=${token}`;
+    }
+    
+    const printWindow = window.open(printUrl, '_blank');
+    if (printWindow && type !== 'document') {
+      printWindow.onload = () => printWindow.print();
+    }
   };
 
   const getFileIcon = (fileType) => {
@@ -291,333 +387,433 @@ function PoleDetails() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleCreateBonTravail} variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
-              Nouveau Bon de Travail
-            </Button>
-            <Button onClick={() => navigate('/autorisations-particulieres', { state: { fromPoleId: poleId } })} variant="outline">
-              <Shield className="mr-2 h-4 w-4" />
-              Voir Autorisations
-            </Button>
-            <Button onClick={() => navigate('/autorisations-particulieres/new', { state: { fromPoleId: poleId } })} variant="outline">
-              <Shield className="mr-2 h-4 w-4" />
-              Nouvelle Autorisation
-            </Button>
-            <Button onClick={handleCreateDocument}>
+            <Button onClick={handleAddDocument} variant="outline">
               <Plus className="mr-2 h-4 w-4" />
-              Ajouter Document
+              Ajouter document
+            </Button>
+            <Button onClick={handleAddForm} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              Ajouter formulaire
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Bons de Travail List */}
-      {bonsTravail.length > 0 && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold">Bons de Travail ({bonsTravail.length})</h2>
-          
-          {/* Grouper par entreprise */}
-          {Object.entries(
-            bonsTravail.reduce((acc, bon) => {
-              const entreprise = bon.entreprise || 'Non assignée';
-              if (!acc[entreprise]) acc[entreprise] = [];
-              acc[entreprise].push(bon);
-              return acc;
-            }, {})
-          ).map(([entreprise, bons]) => (
-            <div key={entreprise} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-300"></div>
-                <h3 className="text-lg font-semibold text-gray-700 px-4 bg-gray-50 rounded-full">
-                  📁 {entreprise} ({bons.length})
-                </h3>
-                <div className="flex-1 h-px bg-gray-300"></div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bons.map((bon) => (
-              <Card key={bon.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-base">{bon.titre || "Sans titre"}</CardTitle>
-                      <p className="text-sm text-gray-500">
-                        {bon.created_at ? new Date(bon.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}
-                      </p>
-                      {bon.entreprise && (
-                        <p className="text-xs text-gray-400">Entreprise: {bon.entreprise}</p>
-                      )}
-                    </div>
-                    {bonAutorisationsMap[bon.id] && bonAutorisationsMap[bon.id].length > 0 && (
-                      <div 
-                        className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full cursor-pointer hover:bg-yellow-200 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/autorisations-particulieres/edit/${bonAutorisationsMap[bon.id][0].id}`);
-                        }}
-                        title={`${bonAutorisationsMap[bon.id].length} autorisation(s) particulière(s) liée(s)`}
-                      >
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="text-xs font-semibold">{bonAutorisationsMap[bon.id].length}</span>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {bon.description && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{bon.description}</p>
-                  )}
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/documentations/${poleId}/bon-de-travail/${bon.id}/view`);
-                      }}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Voir
-                    </Button>
-                    {canEditBonTravail(bon) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/documentations/${poleId}/bon-de-travail/${bon.id}/edit`);
-                        }}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Modifier
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const token = localStorage.getItem('token');
-                        const printUrl = `${process.env.REACT_APP_BACKEND_URL || window.location.origin}/api/documentations/bons-travail/${bon.id}/pdf?token=${token}`;
-                        const printWindow = window.open(printUrl, '_blank');
-                        if (printWindow) {
-                          printWindow.onload = () => printWindow.print();
-                        }
-                      }}
-                    >
-                      <Printer className="h-4 w-4 mr-1" />
-                      Imprimer
-                    </Button>
-                    {isAdmin() && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteBonTravail(bon.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Séparateur Documents Utilisateur */}
-      {documents.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-300"></div>
-            <h3 className="text-lg font-semibold text-gray-700 px-4 bg-gray-50 rounded-full">
-              📄 Documents Utilisateur ({documents.length})
-            </h3>
-            <div className="flex-1 h-px bg-gray-300"></div>
+      {/* Barre de recherche */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher un document ou formulaire..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      {/* Documents List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {documents.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">Aucun document dans ce pôle</p>
-            <Button onClick={handleCreateDocument}>Ajouter le premier document</Button>
+      {/* Arborescence */}
+      <Card>
+        <CardContent className="p-0">
+          {/* Section Documents */}
+          <div className="border-b">
+            <button
+              onClick={() => toggleSection('documents')}
+              className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+            >
+              {expandedSections.documents ? (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-500" />
+              )}
+              <div className="p-2 bg-green-100 rounded-lg">
+                <FolderOpen className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold">Documents</span>
+                <Badge variant="secondary" className="ml-2">
+                  {filteredDocuments.length}
+                </Badge>
+              </div>
+            </button>
+            
+            {expandedSections.documents && (
+              <div className="bg-gray-50 border-t">
+                {filteredDocuments.length === 0 ? (
+                  <div className="p-4 pl-16 text-sm text-gray-500">
+                    Aucun document dans ce pôle
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {filteredDocuments.map((doc) => {
+                      const FileIcon = getFileIcon(doc.fichier_type);
+                      return (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-3 p-3 pl-16 hover:bg-gray-100 transition-colors"
+                        >
+                          <FileIcon className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">
+                              {doc.fichier_nom || doc.titre || 'Document sans nom'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(doc.fichier_taille)}
+                              {doc.created_at && ` • ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePrint('document', doc.id)}
+                              title="Imprimer / Ouvrir"
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            {canEdit(doc) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteDocument(doc.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        ) : (
-          documents.map((doc) => {
-            const FileIcon = getFileIcon(doc.fichier_type);
-            return (
-              <Card key={doc.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <FileIcon className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base truncate">{doc.titre}</CardTitle>
-                        <p className="text-xs text-gray-500">{doc.type_document}</p>
-                      </div>
-                    </div>
+
+          {/* Section Bons de travail */}
+          <div className="border-b">
+            <button
+              onClick={() => toggleSection('bons_travail')}
+              className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+            >
+              {expandedSections.bons_travail ? (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-500" />
+              )}
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileText className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold">Bons de travail</span>
+                <Badge variant="secondary" className="ml-2">
+                  {filteredBons.length}
+                </Badge>
+              </div>
+            </button>
+            
+            {expandedSections.bons_travail && (
+              <div className="bg-blue-50 border-t">
+                {filteredBons.length === 0 ? (
+                  <div className="p-4 pl-16 text-sm text-gray-500">
+                    Aucun bon de travail dans ce pôle
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {doc.description && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{doc.description}</p>
-                  )}
-
-                  {doc.fichier_nom && (
-                    <div className="bg-gray-50 rounded p-2 mb-3">
-                      <p className="text-xs font-medium truncate">{doc.fichier_nom}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(doc.fichier_taille)}</p>
-                    </div>
-                  )}
-
-                  {doc.tags && doc.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {doc.tags.map((tag, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    {!doc.fichier_url ? (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploading}
-                        >
-                          <Upload className="h-4 w-4 mr-1" />
-                          Upload
-                        </Button>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          style={{ display: 'none' }}
-                          onChange={(e) => handleFileSelect(e, doc.id)}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const token = localStorage.getItem('token');
-                            window.open(`${process.env.REACT_APP_BACKEND_URL || window.location.origin}/api/documentations/documents/${doc.id}/view?token=${token}`, '_blank');
-                          }}
-                          title="Ouvrir dans un nouvel onglet"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownload(doc.id, doc.fichier_nom)}
-                          title="Télécharger"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                    <Button size="sm" variant="outline" onClick={() => handleDelete(doc.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                ) : (
+                  <div className="divide-y divide-blue-200">
+                    {filteredBons.map((bon) => (
+                      <div
+                        key={bon.id}
+                        className="flex items-center gap-3 p-3 pl-16 hover:bg-blue-100 transition-colors"
+                      >
+                        <FileText className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {bon.titre || 'Bon de travail'}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {bon.entreprise && `${bon.entreprise} • `}
+                            {bon.created_at ? new Date(bon.created_at).toLocaleDateString('fr-FR') : ''}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          {canEdit(bon) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/documentations/${poleId}/bon-de-travail/${bon.id}/edit`)}
+                              title="Modifier"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePrint('bon', bon.id)}
+                            title="Imprimer"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          {canEdit(bon) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteBon(bon.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
+                )}
+              </div>
+            )}
+          </div>
 
-      {/* Document Form Dialog */}
-      <Dialog open={openDocForm} onOpenChange={setOpenDocForm}>
-        <DialogContent className="max-w-2xl">
+          {/* Section Autorisations particulières */}
+          <div>
+            <button
+              onClick={() => toggleSection('autorisations')}
+              className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+            >
+              {expandedSections.autorisations ? (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-500" />
+              )}
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Shield className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-semibold">Autorisations particulières</span>
+                <Badge variant="secondary" className="ml-2">
+                  {filteredAutorisations.length}
+                </Badge>
+              </div>
+            </button>
+            
+            {expandedSections.autorisations && (
+              <div className="bg-yellow-50 border-t">
+                {filteredAutorisations.length === 0 ? (
+                  <div className="p-4 pl-16 text-sm text-gray-500">
+                    Aucune autorisation dans ce pôle
+                  </div>
+                ) : (
+                  <div className="divide-y divide-yellow-200">
+                    {filteredAutorisations.map((auto) => (
+                      <div
+                        key={auto.id}
+                        className="flex items-center gap-3 p-3 pl-16 hover:bg-yellow-100 transition-colors"
+                      >
+                        <Shield className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {auto.numero ? `${auto.numero} - ` : ''}{auto.titre || 'Autorisation particulière'}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {auto.type_autorisation && `${auto.type_autorisation} • `}
+                            {auto.created_at ? new Date(auto.created_at).toLocaleDateString('fr-FR') : ''}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          {canEdit(auto) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/autorisations-particulieres/edit/${auto.id}`)}
+                              title="Modifier"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePrint('autorisation', auto.id)}
+                            title="Imprimer"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          {canEdit(auto) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAutorisation(auto.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialog: Ajouter un formulaire */}
+      <Dialog open={openFormDialog} onOpenChange={setOpenFormDialog}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{selectedDocument ? 'Modifier' : 'Nouveau'} Document</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-blue-600" />
+              Ajouter un formulaire
+            </DialogTitle>
+            <DialogDescription>
+              Sélectionnez le type de formulaire à remplir
+            </DialogDescription>
           </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Label>Type de formulaire</Label>
+            <Select value={selectedFormType} onValueChange={setSelectedFormType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un type de formulaire" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BON_TRAVAIL">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    Bon de travail
+                  </div>
+                </SelectItem>
+                <SelectItem value="AUTORISATION">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-yellow-600" />
+                    Autorisation particulière
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Afficher description selon le type sélectionné */}
+            {selectedFormType && (
+              <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+                {selectedFormType === 'BON_TRAVAIL' && (
+                  <>
+                    <p className="font-medium text-gray-900 mb-1">Bon de travail</p>
+                    <p>Formulaire pour documenter les travaux de maintenance réalisés par une entreprise externe.</p>
+                  </>
+                )}
+                {selectedFormType === 'AUTORISATION' && (
+                  <>
+                    <p className="font-medium text-gray-900 mb-1">Autorisation particulière</p>
+                    <p>Formulaire pour les autorisations de travaux spéciaux (travaux en hauteur, espace confiné, etc.)</p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpenFormDialog(false)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleSelectFormType}
+              disabled={!selectedFormType}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Créer le formulaire
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Ajouter un document */}
+      <Dialog open={openDocDialog} onOpenChange={setOpenDocDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-green-600" />
+              Ajouter un document
+            </DialogTitle>
+            <DialogDescription>
+              Uploadez un fichier dans ce pôle
+            </DialogDescription>
+          </DialogHeader>
+          
           <form onSubmit={handleSubmitDocument} className="space-y-4">
-            <div className="space-y-4">
-              <div>
-                <Label>Titre *</Label>
-                <Input
-                  value={docFormData.titre}
-                  onChange={(e) => setDocFormData({ ...docFormData, titre: e.target.value })}
-                  required
-                />
+            <div>
+              <Label>Fichier *</Label>
+              <div 
+                className={`mt-2 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  selectedFile ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {selectedFile ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <File className="h-6 w-6 text-green-600" />
+                    <span className="font-medium">{selectedFile.name}</span>
+                    <span className="text-sm text-gray-500">
+                      ({formatFileSize(selectedFile.size)})
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">Cliquez pour sélectionner un fichier</p>
+                    <p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, Images...</p>
+                  </>
+                )}
               </div>
-
-              <div>
-                <Label>Type de document *</Label>
-                <Select
-                  value={docFormData.type_document}
-                  onValueChange={(value) =>
-                    setDocFormData({ ...docFormData, type_document: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PIECE_JOINTE">Pièce jointe</SelectItem>
-                    <SelectItem value="FORMULAIRE">Formulaire en ligne</SelectItem>
-                    <SelectItem value="TEMPLATE">Template</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Description</Label>
-                <Textarea
-                  value={docFormData.description}
-                  onChange={(e) => setDocFormData({ ...docFormData, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label>Tags (séparés par virgule)</Label>
-                <Input
-                  value={docFormData.tags.join(', ')}
-                  onChange={(e) =>
-                    setDocFormData({
-                      ...docFormData,
-                      tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean)
-                    })
-                  }
-                  placeholder="maintenance, urgent, formation"
-                />
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </div>
+            
+            <div>
+              <Label>Titre</Label>
+              <Input
+                value={docFormData.titre}
+                onChange={(e) => setDocFormData({ ...docFormData, titre: e.target.value })}
+                placeholder="Titre du document (optionnel)"
+              />
+            </div>
+            
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={docFormData.description}
+                onChange={(e) => setDocFormData({ ...docFormData, description: e.target.value })}
+                placeholder="Description (optionnel)"
+                rows={2}
+              />
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpenDocForm(false)}>
+              <Button type="button" variant="outline" onClick={() => setOpenDocDialog(false)}>
                 Annuler
               </Button>
-              <Button type="submit">
-                {selectedDocument ? 'Mettre à jour' : 'Créer'}
+              <Button 
+                type="submit"
+                disabled={!selectedFile || uploading}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {uploading ? 'Upload en cours...' : 'Ajouter'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Confirm Dialog */}
       <ConfirmDialog />
     </div>
   );
