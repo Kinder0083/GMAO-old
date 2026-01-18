@@ -3218,8 +3218,18 @@ async def get_checklist_history(
 
 # ==================== USERS ROUTES ====================
 @api_router.get("/users", response_model=List[User])
-async def get_users(current_user: dict = Depends(require_permission("people", "view"))):
+async def get_users(current_user: dict = Depends(get_current_user)):
     """Liste tous les utilisateurs"""
+    # Vérifier les permissions - Admin a toujours accès, sinon vérifier permission people.view
+    if current_user.get("role") != "ADMIN":
+        permissions = current_user.get("permissions", {})
+        people_perms = permissions.get("people", {})
+        if not people_perms.get("view", False):
+            raise HTTPException(
+                status_code=403,
+                detail="Vous n'avez pas la permission de voir les utilisateurs"
+            )
+    
     users = await db.users.find().to_list(1000)
     return [User(**serialize_doc(user)) for user in users]
 
