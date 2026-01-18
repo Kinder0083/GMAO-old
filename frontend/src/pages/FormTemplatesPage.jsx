@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
-import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { 
   ArrowLeft, 
@@ -16,14 +13,26 @@ import {
   Trash2, 
   Search,
   ClipboardList,
-  Eye
+  Eye,
+  Settings,
+  Type,
+  AlignLeft,
+  Hash,
+  Calendar,
+  List,
+  CheckSquare,
+  ToggleLeft,
+  PenTool,
+  Upload,
+  Image
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import api from '../services/api';
+import FormBuilderDialog from '../components/FormBuilderDialog';
 
-// Types de formulaires disponibles
-const FORM_TYPES = [
+// Types de formulaires disponibles (système)
+const SYSTEM_FORM_TYPES = [
   { 
     code: 'BON_TRAVAIL', 
     label: 'Bon de travail', 
@@ -40,6 +49,20 @@ const FORM_TYPES = [
   }
 ];
 
+// Icônes des types de champs
+const FIELD_TYPE_ICONS = {
+  text: Type,
+  textarea: AlignLeft,
+  number: Hash,
+  date: Calendar,
+  select: List,
+  checkbox: CheckSquare,
+  switch: ToggleLeft,
+  signature: PenTool,
+  file: Upload,
+  logo: Image
+};
+
 function FormTemplatesPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -48,15 +71,10 @@ function FormTemplatesPage() {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
   
-  const [formData, setFormData] = useState({
-    nom: '',
-    type: 'BON_TRAVAIL',
-    description: '',
-    actif: true
-  });
+  // Dialog states
+  const [showFormBuilder, setShowFormBuilder] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   useEffect(() => {
     loadTemplates();
@@ -69,11 +87,11 @@ function FormTemplatesPage() {
       setTemplates(response.data || []);
     } catch (error) {
       console.error('Erreur chargement templates:', error);
-      // Initialiser avec les templates par défaut si l'API n'existe pas encore
-      setTemplates([
-        { id: 'default-bon-travail', nom: 'Bon de travail', type: 'BON_TRAVAIL', description: 'Formulaire standard pour les bons de travail', actif: true, is_system: true },
-        { id: 'default-autorisation', nom: 'Autorisation particulière', type: 'AUTORISATION', description: 'Formulaire standard pour les autorisations de travail', actif: true, is_system: true }
-      ]);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les modèles',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }
@@ -81,24 +99,20 @@ function FormTemplatesPage() {
 
   const handleCreate = () => {
     setSelectedTemplate(null);
-    setFormData({
-      nom: '',
-      type: 'BON_TRAVAIL',
-      description: '',
-      actif: true
-    });
-    setOpenDialog(true);
+    setShowFormBuilder(true);
   };
 
   const handleEdit = (template) => {
+    if (template.is_system) {
+      toast({
+        title: 'Action non autorisée',
+        description: 'Les modèles système ne peuvent pas être modifiés',
+        variant: 'destructive'
+      });
+      return;
+    }
     setSelectedTemplate(template);
-    setFormData({
-      nom: template.nom,
-      type: template.type,
-      description: template.description || '',
-      actif: template.actif
-    });
-    setOpenDialog(true);
+    setShowFormBuilder(true);
   };
 
   const handleDelete = (template) => {
@@ -113,7 +127,7 @@ function FormTemplatesPage() {
     
     confirm({
       title: 'Supprimer le modèle',
-      description: `Êtes-vous sûr de vouloir supprimer le modèle "${template.nom}" ? Cette action est irréversible.`,
+      description: `Êtes-vous sûr de vouloir supprimer "${template.nom}" ? Les formulaires déjà remplis ne seront pas affectés.`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
       variant: 'destructive',
@@ -133,17 +147,25 @@ function FormTemplatesPage() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSaveTemplate = async (formData) => {
     try {
+      const payload = {
+        nom: formData.nom,
+        description: formData.description,
+        type: 'CUSTOM',
+        fields: formData.fields,
+        actif: true
+      };
+
       if (selectedTemplate) {
-        await api.put(`/documentations/form-templates/${selectedTemplate.id}`, formData);
+        await api.put(`/documentations/form-templates/${selectedTemplate.id}`, payload);
         toast({ title: 'Succès', description: 'Modèle mis à jour' });
       } else {
-        await api.post('/documentations/form-templates', formData);
+        await api.post('/documentations/form-templates', payload);
         toast({ title: 'Succès', description: 'Modèle créé' });
       }
-      setOpenDialog(false);
+      
+      setShowFormBuilder(false);
       loadTemplates();
     } catch (error) {
       toast({
@@ -154,22 +176,28 @@ function FormTemplatesPage() {
     }
   };
 
-  const getFormTypeInfo = (typeCode) => {
-    return FORM_TYPES.find(t => t.code === typeCode) || FORM_TYPES[0];
+  const getFormTypeInfo = (template) => {
+    if (template.type === 'BON_TRAVAIL' || template.type === 'AUTORISATION') {
+      return SYSTEM_FORM_TYPES.find(t => t.code === template.type) || SYSTEM_FORM_TYPES[0];
+    }
+    return {
+      code: 'CUSTOM',
+      label: 'Personnalisé',
+      icon: ClipboardList,
+      color: 'bg-purple-100 text-purple-700',
+      description: 'Formulaire personnalisé'
+    };
   };
 
+  // Filtrer et grouper les templates
   const filteredTemplates = templates.filter(t =>
     t.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Grouper par type
-  const groupedTemplates = filteredTemplates.reduce((acc, template) => {
-    const type = template.type || 'BON_TRAVAIL';
-    if (!acc[type]) acc[type] = [];
-    acc[type].push(template);
-    return acc;
-  }, {});
+  // Séparer système et personnalisés
+  const systemTemplates = filteredTemplates.filter(t => t.is_system);
+  const customTemplates = filteredTemplates.filter(t => !t.is_system);
 
   if (loading) {
     return (
@@ -199,7 +227,7 @@ function FormTemplatesPage() {
           </div>
           <Button onClick={handleCreate} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="mr-2 h-4 w-4" />
-            Nouveau modèle
+            Nouveau modèle personnalisé
           </Button>
         </div>
       </div>
@@ -219,163 +247,172 @@ function FormTemplatesPage() {
         </CardContent>
       </Card>
 
-      {/* Templates par type */}
-      {FORM_TYPES.map((formType) => {
-        const Icon = formType.icon;
-        const typeTemplates = groupedTemplates[formType.code] || [];
+      {/* Section: Modèles système */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gray-100">
+            <Settings className="h-5 w-5 text-gray-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Modèles système</h2>
+            <p className="text-sm text-gray-500">Ces modèles sont intégrés et ne peuvent pas être modifiés</p>
+          </div>
+          <Badge variant="outline" className="ml-auto">
+            {systemTemplates.length} modèle(s)
+          </Badge>
+        </div>
         
-        return (
-          <div key={formType.code} className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${formType.color.split(' ')[0]}`}>
-                <Icon className={`h-5 w-5 ${formType.color.split(' ')[1]}`} />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">{formType.label}</h2>
-                <p className="text-sm text-gray-500">{formType.description}</p>
-              </div>
-              <Badge variant="outline" className="ml-auto">
-                {typeTemplates.length} modèle(s)
-              </Badge>
-            </div>
-            
-            {typeTemplates.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="py-8 text-center text-gray-500">
-                  Aucun modèle de type "{formType.label}"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {systemTemplates.map((template) => {
+            const typeInfo = getFormTypeInfo(template);
+            const Icon = typeInfo.icon;
+            return (
+              <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${typeInfo.color.split(' ')[0]}`}>
+                        <Icon className={`h-5 w-5 ${typeInfo.color.split(' ')[1]}`} />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{template.nom}</CardTitle>
+                        <Badge variant="secondary" className="text-xs mt-1">
+                          Système
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {template.description && (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                      {template.description}
+                    </p>
+                  )}
+                  <div className="text-xs text-gray-400">
+                    Ce modèle est utilisé par le système
+                  </div>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {typeTemplates.map((template) => (
-                  <Card key={template.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${formType.color.split(' ')[0]}`}>
-                            <Icon className={`h-5 w-5 ${formType.color.split(' ')[1]}`} />
-                          </div>
-                          <div>
-                            <CardTitle className="text-base">{template.nom}</CardTitle>
-                            {template.is_system && (
-                              <Badge variant="secondary" className="text-xs mt-1">
-                                Système
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        {!template.actif && (
-                          <Badge variant="outline" className="text-gray-500">
-                            Inactif
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {template.description && (
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                          {template.description}
-                        </p>
-                      )}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(template)}
-                          disabled={template.is_system}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Modifier
-                        </Button>
-                        {!template.is_system && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 hover:bg-red-50"
-                            onClick={() => handleDelete(template)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Section: Modèles personnalisés */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-100">
+            <ClipboardList className="h-5 w-5 text-purple-600" />
           </div>
-        );
-      })}
-
-      {/* Dialog création/modification */}
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedTemplate ? 'Modifier le modèle' : 'Nouveau modèle de formulaire'}
-            </DialogTitle>
-            <DialogDescription>
-              Les modèles de formulaires seront disponibles dans tous les pôles.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Nom du modèle *</Label>
-              <Input
-                value={formData.nom}
-                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                placeholder="Ex: Bon de travail électrique"
-                required
-              />
-            </div>
-            
-            <div>
-              <Label>Type de formulaire *</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {FORM_TYPES.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <button
-                      key={type.code}
-                      type="button"
-                      className={`p-3 border rounded-lg text-left transition-all ${
-                        formData.type === type.code
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setFormData({ ...formData, type: type.code })}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className={`h-5 w-5 ${type.color.split(' ')[1]}`} />
-                        <span className="font-medium text-sm">{type.label}</span>
+          <div>
+            <h2 className="text-xl font-semibold">Modèles personnalisés</h2>
+            <p className="text-sm text-gray-500">Créez vos propres formulaires avec des champs personnalisés</p>
+          </div>
+          <Badge variant="outline" className="ml-auto">
+            {customTemplates.length} modèle(s)
+          </Badge>
+        </div>
+        
+        {customTemplates.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-12 text-center">
+              <ClipboardList className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500 mb-4">Aucun modèle personnalisé créé</p>
+              <Button onClick={handleCreate} variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Créer mon premier modèle
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {customTemplates.map((template) => (
+              <Card key={template.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-purple-100">
+                        <ClipboardList className="h-5 w-5 text-purple-600" />
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Description du modèle..."
-                rows={3}
-              />
-            </div>
+                      <div>
+                        <CardTitle className="text-base">{template.nom}</CardTitle>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {(template.fields || []).length} champ(s)
+                          </Badge>
+                          {!template.actif && (
+                            <Badge variant="secondary" className="text-xs text-gray-500">
+                              Inactif
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {template.description && (
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      {template.description}
+                    </p>
+                  )}
+                  
+                  {/* Aperçu des types de champs */}
+                  {template.fields && template.fields.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {template.fields.slice(0, 5).map((field, idx) => {
+                        const FieldIcon = FIELD_TYPE_ICONS[field.type] || Type;
+                        return (
+                          <div 
+                            key={idx}
+                            className="p-1 bg-gray-100 rounded"
+                            title={field.label}
+                          >
+                            <FieldIcon className="h-3 w-3 text-gray-500" />
+                          </div>
+                        );
+                      })}
+                      {template.fields.length > 5 && (
+                        <span className="text-xs text-gray-400 self-center">
+                          +{template.fields.length - 5}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(template)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Modifier
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 hover:bg-red-50"
+                      onClick={() => handleDelete(template)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
-                Annuler
-              </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                {selectedTemplate ? 'Mettre à jour' : 'Créer'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Form Builder Dialog */}
+      <FormBuilderDialog
+        open={showFormBuilder}
+        onOpenChange={setShowFormBuilder}
+        template={selectedTemplate}
+        onSave={handleSaveTemplate}
+      />
 
       <ConfirmDialog />
     </div>
