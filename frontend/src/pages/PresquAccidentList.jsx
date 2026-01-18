@@ -302,8 +302,9 @@ function PresquAccidentList() {
   };
 
   // Vérifier si l'utilisateur peut modifier le traitement (responsable de service)
-  const currentUserId = localStorage.getItem('userId');
-  const currentUserRole = localStorage.getItem('userRole');
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUserId = currentUser.id;
+  const currentUserRole = currentUser.role;
   
   const canEditTraitement = () => {
     // Admin peut toujours modifier
