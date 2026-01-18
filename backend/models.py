@@ -1366,6 +1366,8 @@ class SurveillanceItem(BaseModel):
     alerte_envoyee: bool = False  # True si alerte d'échéance déjà envoyée
     alerte_date: Optional[str] = None  # Date de la dernière alerte
     duree_rappel_echeance: int = 30  # Durée en jours avant échéance pour déclencher l'alerte (défaut: 30)
+    responsable_notification_id: Optional[str] = None  # ID de l'utilisateur qui recevra l'email de rappel
+    email_rappel_envoye: bool = False  # True si l'email de rappel a été envoyé
     
     # Métadonnées
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
