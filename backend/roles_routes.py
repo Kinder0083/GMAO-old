@@ -302,8 +302,16 @@ async def set_service_responsable(data: ServiceResponsableCreate, current_user: 
     if current_user.get("role") != "ADMIN":
         raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent définir les responsables de service")
     
-    # Récupérer l'utilisateur assigné
-    user = await db.users.find_one({"id": data.user_id})
+    # Récupérer l'utilisateur assigné - essayer par ObjectId d'abord, puis par id string
+    user = None
+    try:
+        user = await db.users.find_one({"_id": ObjectId(data.user_id)})
+    except:
+        pass
+    
+    if not user:
+        user = await db.users.find_one({"id": data.user_id})
+    
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
