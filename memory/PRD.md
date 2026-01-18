@@ -20,6 +20,47 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### Session du 18 Janvier 2026 (Session actuelle)
 
+#### ✅ P0 Complété: Refonte module Presqu'accident
+**Implémentation complète** de la refonte majeure du module Presqu'accident :
+
+**Nouveau format d'ID automatique** :
+- Format : `[année]-[numéro incrémenté]` (ex: 2026-001, 2026-002)
+- Numérotation remise à 001 chaque nouvelle année
+- Champ `numero` ajouté au modèle `PresquAccidentItem`
+- Génération automatique à la création via `presqu_accident_routes.py` ligne 107-116
+
+**Formulaire de création simplifié** :
+- Champs **retirés** : Actions de prévention, Responsable action, Date échéance action, Commentaire
+- Ces champs sont maintenant dans le **dialogue de traitement**
+- Upload de fichiers possible dès la création
+
+**Vue liste mise à jour** :
+- Numéro formaté affiché dans une boîte grise à gauche (ex: "N° 2026-001")
+- Anciens presqu'accidents affichent "N° -"
+- **Icône Trombone (Paperclip)** : prévisualisation des pièces jointes
+- **Icône ClipboardCheck** : ouvre le dialogue de traitement
+
+**Nouveau dialogue de traitement** :
+- Résumé de l'incident (numéro, titre, description)
+- Champs : Statut*, Actions de prévention, Responsable de l'action, Date d'échéance, Commentaire
+- Section pièces jointes du traitement
+- **Permissions** : Responsable assigné peut éditer, autres utilisateurs en lecture seule
+
+**Nouveaux statuts** :
+- `A_TRAITER` (À traiter) - défaut
+- `EN_COURS` (En cours)
+- `TERMINE` (Terminé)
+- `RISQUE_RESIDUEL` (Risque résiduel)
+- Ancien statut `ARCHIVE` supprimé
+
+**Bug Fix: Statistiques non chargées** :
+- Correction backend : `ARCHIVE` → `RISQUE_RESIDUEL` dans 6 endpoints statistiques
+- Correction frontend : accès correct aux données `stats.global` au lieu de `stats`
+- Correction API : suppression du `.data` en double
+- Ajout de la 5ème carte "Risque résiduel" (violet)
+
+**Tests** : 8/8 tests backend + 100% frontend (rapport `/app/test_reports/iteration_8.json`)
+
 #### ✅ Bug Fix: Statut planning M.Prev après fin de maintenance
 **Problème** : Quand l'utilisateur terminait une maintenance et changeait le statut de l'équipement, les jours de maintenance passés affichaient "À l'arrêt" au lieu de "En maintenance".
 **Cause** : Les entrées de planning étaient supprimées (`delete_many`) au lieu d'être marquées comme terminées, et l'API filtrait les entrées des demandes terminées.
