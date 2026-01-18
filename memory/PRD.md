@@ -210,10 +210,12 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ### P1 - Priorité Haute
 - **Migration WebSocket**: Pages "Rapports", "Equipes", "Historique Achat"
+- **Bug Page "Rapport P.accident"**: Correction des mises à jour temps réel (récurrence: 10 fois - NON RÉSOLU)
 
 ### P2 - Priorité Moyenne
-- **Page "Rapport P.accident"**: Correction des mises à jour temps réel (récurrence: 9 fois - NON RÉSOLU)
 - **Chatbot IA**: Implémentation (dé-priorisé par l'utilisateur)
+- **Dashboard Plan de Surveillance**: Graphiques tendances des non-conformités
+- **Analytics Checklists**: Dashboard analysant les résultats des checklists
 
 ---
 
