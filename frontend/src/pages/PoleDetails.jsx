@@ -89,18 +89,20 @@ function PoleDetails() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [poleData, documentsData, bonsTravailData, autorisationsData, responsablesData] = await Promise.all([
+      const [poleData, documentsData, bonsTravailData, autorisationsData, responsablesData, customFormsData] = await Promise.all([
         documentationsAPI.getPole(poleId),
         documentationsAPI.getDocuments({ pole_id: poleId }),
         documentationsAPI.getBonsTravail({ pole_id: poleId }),
         autorisationsAPI.getAll(poleId).catch(() => []),
-        rolesAPI.getServiceResponsables().catch(() => [])
+        rolesAPI.getServiceResponsables().catch(() => []),
+        api.get(`/documentations/custom-forms?pole_id=${poleId}`).then(r => r.data).catch(() => [])
       ]);
       setPole(poleData);
       setDocuments(documentsData);
       setBonsTravail(bonsTravailData);
       setAutorisations(autorisationsData);
       setServiceResponsables(responsablesData);
+      setCustomForms(customFormsData);
       
       // Charger les templates de formulaires
       try {
