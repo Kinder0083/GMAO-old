@@ -181,6 +181,24 @@ async def update_presqu_accident_item(
         if update_data.get("status") == PresquAccidentStatus.TERMINE.value and not existing.get("date_cloture"):
             update_data["date_cloture"] = datetime.now(timezone.utc).isoformat()
         
+        # Calculer et stocker la priorité si sévérité et récurrence sont présentes
+        severite_val = update_data.get("severite_traitement") or existing.get("severite_traitement")
+        recurrence_val = update_data.get("recurrence") or existing.get("recurrence")
+        if severite_val and recurrence_val:
+            try:
+                score = int(severite_val) * int(recurrence_val)
+                if score <= 4:
+                    update_data["priorite"] = "Faible"
+                elif score <= 8:
+                    update_data["priorite"] = "Moyenne"
+                elif score <= 12:
+                    update_data["priorite"] = "Élevée"
+                else:
+                    update_data["priorite"] = "Critique"
+                update_data["priorite_score"] = score
+            except:
+                pass
+        
         # Mettre à jour
         await db.presqu_accident_items.update_one(
             {"id": item_id},
@@ -190,7 +208,31 @@ async def update_presqu_accident_item(
         # Récupérer l'item mis à jour
         updated_item = await db.presqu_accident_items.find_one({"id": item_id})
         
-        # Audit
+        # Préparer les détails d'audit pour les changements de traitement
+        audit_details = []
+        if "severite_traitement" in update_data and update_data["severite_traitement"] != existing.get("severite_traitement"):
+            severite_labels = {"1": "Mineur", "2": "Modéré", "3": "Grave", "4": "Très grave"}
+            old_val = severite_labels.get(str(existing.get("severite_traitement", "")), "-")
+            new_val = severite_labels.get(str(update_data["severite_traitement"]), "-")
+            audit_details.append(f"Sévérité: {old_val} → {new_val}")
+        
+        if "recurrence" in update_data and update_data["recurrence"] != existing.get("recurrence"):
+            recurrence_labels = {"1": "Très rare", "2": "Rare", "3": "Fréquent", "4": "Très fréquent"}
+            old_val = recurrence_labels.get(str(existing.get("recurrence", "")), "-")
+            new_val = recurrence_labels.get(str(update_data["recurrence"]), "-")
+            audit_details.append(f"Récurrence: {old_val} → {new_val}")
+        
+        if "status" in update_data and update_data["status"] != existing.get("status"):
+            status_labels = {"A_TRAITER": "À traiter", "EN_COURS": "En cours", "TERMINE": "Terminé", "RISQUE_RESIDUEL": "Risque résiduel"}
+            old_val = status_labels.get(existing.get("status", ""), "-")
+            new_val = status_labels.get(update_data["status"], "-")
+            audit_details.append(f"Statut: {old_val} → {new_val}")
+        
+        # Audit avec détails
+        audit_description = f"Presqu'accident: {existing.get('titre')}"
+        if audit_details:
+            audit_description += f" ({', '.join(audit_details)})"
+        
         await audit_service.log_action(
             user_id=current_user["id"],
             user_name=f"{current_user['prenom']} {current_user['nom']}",
@@ -198,7 +240,7 @@ async def update_presqu_accident_item(
             action=ActionType.UPDATE,
             entity_type=EntityType.PRESQU_ACCIDENT,
             entity_id=item_id,
-            entity_name=f"Presqu'accident: {existing.get('titre')}"
+            entity_name=audit_description
         )
         
         if "_id" in updated_item:
