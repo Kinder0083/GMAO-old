@@ -31,6 +31,7 @@ function SurveillanceItemForm({ open, item, onClose }) {
   useEffect(() => {
     if (open) {
       loadExistingCategories();
+      loadUsers();
     }
     if (item) {
       setFormData({
@@ -45,6 +46,7 @@ function SurveillanceItemForm({ open, item, onClose }) {
         prochain_controle: item.prochain_controle ? item.prochain_controle.split('T')[0] : '',
         commentaire: item.commentaire || '',
         duree_rappel_echeance: item.duree_rappel_echeance || 30,
+        responsable_notification_id: item.responsable_notification_id || '',
         // Champs booléens pour les mois
         janvier: item.janvier || false,
         fevrier: item.fevrier || false,
@@ -72,10 +74,20 @@ function SurveillanceItemForm({ open, item, onClose }) {
         derniere_visite: '',
         prochain_controle: '',
         commentaire: '',
-        duree_rappel_echeance: 30
+        duree_rappel_echeance: 30,
+        responsable_notification_id: ''
       });
     }
   }, [item, open]);
+
+  const loadUsers = async () => {
+    try {
+      const response = await usersAPI.getAll();
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error('Erreur chargement utilisateurs:', error);
+    }
+  };
 
   const loadExistingCategories = async () => {
     try {
