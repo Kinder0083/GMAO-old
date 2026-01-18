@@ -215,9 +215,21 @@ function Documentations() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Documentations</h1>
-          <p className="text-gray-500">Gestion des pôles de service et documents</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Documentations</h1>
+            <p className="text-gray-500">Gestion des pôles de service et documents</p>
+          </div>
+          {isAdmin() && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/documentations/modeles')}
+              className="ml-4"
+            >
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Modèles de formulaires
+            </Button>
+          )}
         </div>
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
