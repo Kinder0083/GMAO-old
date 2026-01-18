@@ -1426,7 +1426,7 @@ class PresquAccidentStatus(str, Enum):
     A_TRAITER = "A_TRAITER"  # À traiter
     EN_COURS = "EN_COURS"  # En cours de traitement
     TERMINE = "TERMINE"  # Terminé / Traité
-    ARCHIVE = "ARCHIVE"  # Archivé
+    RISQUE_RESIDUEL = "RISQUE_RESIDUEL"  # Risque résiduel
 
 class PresquAccidentService(str, Enum):
     ADV = "ADV"
