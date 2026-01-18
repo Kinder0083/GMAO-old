@@ -299,7 +299,7 @@ async def get_presqu_accident_stats(current_user: dict = Depends(get_current_use
                 "a_traiter": a_traiter,
                 "en_cours": en_cours,
                 "termine": termine,
-                "archive": archive,
+                "risque_residuel": risque_residuel,
                 "pourcentage_traitement": round((termine / total * 100) if total > 0 else 0, 1)
             },
             "by_service": by_service,
@@ -327,7 +327,7 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
                     "a_traiter": 0,
                     "en_cours": 0,
                     "termine": 0,
-                    "archive": 0,
+                    "risque_residuel": 0,
                     "pourcentage_traitement": 0,
                     "delai_moyen_traitement": 0,
                     "en_retard": 0
@@ -344,7 +344,7 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
         a_traiter = [i for i in items if i.get("status") == PresquAccidentStatus.A_TRAITER.value]
         en_cours = [i for i in items if i.get("status") == PresquAccidentStatus.EN_COURS.value]
         termine = [i for i in items if i.get("status") == PresquAccidentStatus.TERMINE.value]
-        archive = [i for i in items if i.get("status") == PresquAccidentStatus.ARCHIVE.value]
+        risque_residuel = [i for i in items if i.get("status") == PresquAccidentStatus.RISQUE_RESIDUEL.value]
         
         # Calculer le délai moyen de traitement (en jours)
         delais = []
@@ -361,7 +361,7 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
         # Compter les items en retard (actions avec échéance dépassée et non terminés)
         en_retard = 0
         for item in items:
-            if item.get("status") not in [PresquAccidentStatus.TERMINE.value, PresquAccidentStatus.ARCHIVE.value]:
+            if item.get("status") not in [PresquAccidentStatus.TERMINE.value, PresquAccidentStatus.RISQUE_RESIDUEL.value]:
                 if item.get("date_echeance_action"):
                     try:
                         echeance = datetime.fromisoformat(item["date_echeance_action"]).date()
@@ -426,7 +426,7 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
                 "a_traiter": len(a_traiter),
                 "en_cours": len(en_cours),
                 "termine": len(termine),
-                "archive": len(archive),
+                "risque_residuel": len(risque_residuel),
                 "pourcentage_traitement": round((len(termine) / total * 100), 1),
                 "delai_moyen_traitement": delai_moyen,
                 "en_retard": en_retard
