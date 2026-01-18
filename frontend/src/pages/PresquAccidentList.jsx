@@ -618,7 +618,7 @@ function PresquAccidentList() {
               </div>
 
               <div>
-                <Label>Service *</Label>
+621|                <Label>Service d'appartenance *</Label>
                 <Select value={formData.service} onValueChange={(value) => setFormData({...formData, service: value})}>
                   <SelectTrigger>
                     <SelectValue />
@@ -632,21 +632,6 @@ function PresquAccidentList() {
                     <SelectItem value="LABO">Labo</SelectItem>
                     <SelectItem value="INDUS">Indus</SelectItem>
                     <SelectItem value="AUTRE">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Sévérité</Label>
-                <Select value={formData.severite} onValueChange={(value) => setFormData({...formData, severite: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FAIBLE">Faible</SelectItem>
-                    <SelectItem value="MOYEN">Moyen</SelectItem>
-                    <SelectItem value="ELEVE">Élevé</SelectItem>
-                    <SelectItem value="CRITIQUE">Critique</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -666,26 +651,6 @@ function PresquAccidentList() {
                   value={formData.declarant} 
                   onChange={(e) => setFormData({...formData, declarant: e.target.value})}
                 />
-              </div>
-
-              <div className="col-span-2">
-                <Label>Responsable du traitement</Label>
-                <Select 
-                  value={formData.responsable_id || "none"} 
-                  onValueChange={(value) => setFormData({...formData, responsable_id: value === "none" ? "" : value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un responsable" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Non assigné</SelectItem>
-                    {users.map(user => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.prenom} {user.nom} {user.email && `- ${user.email}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="col-span-2">
