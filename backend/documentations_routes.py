@@ -880,8 +880,9 @@ async def create_form_template(
         template = {
             "id": str(uuid.uuid4()),
             "nom": template_data.get("nom"),
-            "type": template_data.get("type", "BON_TRAVAIL"),
+            "type": template_data.get("type", "CUSTOM"),
             "description": template_data.get("description", ""),
+            "fields": template_data.get("fields", []),
             "actif": template_data.get("actif", True),
             "is_system": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
