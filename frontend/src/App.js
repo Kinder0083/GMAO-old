@@ -139,6 +139,7 @@ function App() {
             <Route path="preventive-maintenance/checklists" element={<ChecklistsManagement />} />
             <Route path="reports" element={<Reports />} />
             <Route path="people" element={<People />} />
+            <Route path="people/roles" element={<RolesManagement />} />
             <Route path="planning" element={<Planning />} />
             <Route path="planning-mprev" element={<PlanningMPrev />} />
             <Route path="vendors" element={<Vendors />} />
