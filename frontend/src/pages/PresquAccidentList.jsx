@@ -100,13 +100,13 @@ function PresquAccidentList() {
   const applyFilters = () => {
     let filtered = [...items];
     
-    if (filters.service) {
+    if (filters.service && filters.service !== 'all') {
       filtered = filtered.filter(i => i.service === filters.service);
     }
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(i => i.status === filters.status);
     }
-    if (filters.severite) {
+    if (filters.severite && filters.severite !== 'all') {
       filtered = filtered.filter(i => i.severite === filters.severite);
     }
     if (filters.search) {
