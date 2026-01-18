@@ -47,6 +47,39 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - `/app/frontend/src/App.js` (route /people/roles)
 - `/app/backend/server.py` (import et initialisation des routes)
 
+#### ✅ Feature: Refonte page Documentations (18 Jan 2026)
+**Implémentation complète** de la refonte de la page Documentations avec arborescence :
+
+**Nouvelle page "Modèles de formulaires"** (`/documentations/modeles`) :
+- Accessible uniquement aux administrateurs (bouton à côté du titre "Documentations")
+- Liste des modèles de formulaires groupés par type (Bon de travail, Autorisation particulière)
+- 2 templates système créés automatiquement (non modifiables/supprimables)
+- Possibilité de créer de nouveaux modèles personnalisés
+
+**Page détail pôle refaite avec arborescence** :
+- En-tête simplifié avec 2 boutons : "+ Ajouter document" et "+ Ajouter formulaire"
+- Barre de recherche pour filtrer documents et formulaires
+- Affichage en **arborescence** avec 3 sections :
+  - 📁 **Documents** (avec compteur) - chevron pour développer/replier
+  - 📋 **Bons de travail** (avec compteur) - chevron pour développer/replier
+  - 🛡️ **Autorisations particulières** (avec compteur) - chevron pour développer/replier
+- Chaque élément affiche : nom, date, et icônes d'action (Modifier*, Imprimer, Supprimer*)
+- *Permissions : Créateur + Responsable de service + Admin peuvent modifier/supprimer
+
+**Dialog "Ajouter un formulaire"** :
+- Liste déroulante des types de formulaires disponibles
+- Description du type sélectionné
+- Redirige vers le formulaire vide correspondant
+
+**Fichiers créés/modifiés :**
+- `/app/frontend/src/pages/FormTemplatesPage.jsx` (NEW)
+- `/app/frontend/src/pages/PoleDetails.jsx` (refonte complète)
+- `/app/frontend/src/pages/Documentations.jsx` (bouton admin ajouté)
+- `/app/frontend/src/App.js` (route /documentations/modeles)
+- `/app/backend/documentations_routes.py` (endpoints form-templates)
+
+**Tests** : 11/11 tests backend + 100% frontend (rapport `/app/test_reports/iteration_9.json`)
+
 #### ✅ P0 Complété: Refonte module Presqu'accident
 **Implémentation complète** de la refonte majeure du module Presqu'accident :
 
