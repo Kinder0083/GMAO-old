@@ -954,3 +954,281 @@ async def delete_form_template(
     except Exception as e:
         logger.error(f"Erreur suppression template: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== CUSTOM FORM INSTANCES (Filled Forms) ====================
+
+@router.get("/custom-forms")
+async def get_custom_forms(
+    pole_id: Optional[str] = None,
+    template_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer les formulaires personnalisés remplis"""
+    try:
+        query = {}
+        if pole_id:
+            query["pole_id"] = pole_id
+        if template_id:
+            query["template_id"] = template_id
+        
+        forms = await db.custom_forms.find(query, {"_id": 0}).to_list(length=None)
+        return forms
+    except Exception as e:
+        logger.error(f"Erreur récupération custom forms: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/custom-forms/{form_id}")
+async def get_custom_form(form_id: str, current_user: dict = Depends(get_current_user)):
+    """Récupérer un formulaire personnalisé par ID"""
+    try:
+        form = await db.custom_forms.find_one({"id": form_id}, {"_id": 0})
+        if not form:
+            raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+        return form
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération custom form: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/custom-forms")
+async def create_custom_form(
+    form_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Créer un nouveau formulaire personnalisé rempli"""
+    try:
+        # Vérifier que le template existe
+        template = await db.form_templates.find_one({"id": form_data.get("template_id")})
+        if not template:
+            raise HTTPException(status_code=404, detail="Modèle de formulaire non trouvé")
+        
+        custom_form = {
+            "id": str(uuid.uuid4()),
+            "template_id": form_data.get("template_id"),
+            "template_name": template.get("nom"),
+            "pole_id": form_data.get("pole_id"),
+            "titre": form_data.get("titre", template.get("nom")),
+            "field_values": form_data.get("field_values", {}),
+            "attachments": form_data.get("attachments", []),
+            "signature_data": form_data.get("signature_data"),
+            "logo_url": form_data.get("logo_url"),
+            "status": "BROUILLON",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user.get("id"),
+            "created_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        }
+        
+        await db.custom_forms.insert_one(custom_form)
+        custom_form.pop("_id", None)
+        
+        return custom_form
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur création custom form: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/custom-forms/{form_id}")
+async def update_custom_form(
+    form_id: str,
+    form_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mettre à jour un formulaire personnalisé"""
+    try:
+        existing = await db.custom_forms.find_one({"id": form_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+        
+        # Vérifier les permissions
+        is_admin = current_user.get("role") == "ADMIN"
+        is_creator = existing.get("created_by") == current_user.get("id")
+        
+        if not is_admin and not is_creator:
+            raise HTTPException(status_code=403, detail="Non autorisé à modifier ce formulaire")
+        
+        update_data = {
+            "titre": form_data.get("titre", existing.get("titre")),
+            "field_values": form_data.get("field_values", existing.get("field_values")),
+            "attachments": form_data.get("attachments", existing.get("attachments")),
+            "signature_data": form_data.get("signature_data", existing.get("signature_data")),
+            "logo_url": form_data.get("logo_url", existing.get("logo_url")),
+            "status": form_data.get("status", existing.get("status")),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user.get("id")
+        }
+        
+        await db.custom_forms.update_one({"id": form_id}, {"$set": update_data})
+        
+        updated = await db.custom_forms.find_one({"id": form_id}, {"_id": 0})
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur mise à jour custom form: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/custom-forms/{form_id}")
+async def delete_custom_form(
+    form_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer un formulaire personnalisé"""
+    try:
+        existing = await db.custom_forms.find_one({"id": form_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+        
+        # Vérifier les permissions
+        is_admin = current_user.get("role") == "ADMIN"
+        is_creator = existing.get("created_by") == current_user.get("id")
+        
+        if not is_admin and not is_creator:
+            raise HTTPException(status_code=403, detail="Non autorisé à supprimer ce formulaire")
+        
+        await db.custom_forms.delete_one({"id": form_id})
+        
+        return {"success": True, "message": "Formulaire supprimé"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur suppression custom form: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/custom-forms/{form_id}/pdf")
+async def generate_custom_form_pdf(
+    form_id: str,
+    token: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_optional)
+):
+    """Générer un PDF pour un formulaire personnalisé"""
+    try:
+        # Vérifier l'authentification
+        if not current_user and token:
+            payload = decode_access_token(token)
+            if payload is None:
+                raise HTTPException(status_code=401, detail="Token invalide")
+        elif not current_user and not token:
+            raise HTTPException(status_code=401, detail="Non authentifié")
+        
+        # Récupérer le formulaire
+        form = await db.custom_forms.find_one({"id": form_id}, {"_id": 0})
+        if not form:
+            raise HTTPException(status_code=404, detail="Formulaire non trouvé")
+        
+        # Récupérer le template
+        template = await db.form_templates.find_one({"id": form.get("template_id")}, {"_id": 0})
+        
+        # Générer le HTML
+        html_content = generate_custom_form_html(form, template)
+        
+        return HTMLResponse(content=html_content)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur génération PDF custom form: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def generate_custom_form_html(form: dict, template: dict) -> str:
+    """Génère le HTML pour un formulaire personnalisé"""
+    fields = template.get("fields", []) if template else []
+    field_values = form.get("field_values", {})
+    
+    # Générer les lignes de champs
+    fields_html = ""
+    for field in fields:
+        field_id = field.get("id")
+        field_label = field.get("label", "")
+        field_type = field.get("type", "text")
+        value = field_values.get(field_id, "")
+        
+        # Formatage selon le type
+        if field_type == "checkbox":
+            value = "✓ Oui" if value else "✗ Non"
+        elif field_type == "switch":
+            value = "✓ Oui" if value else "✗ Non"
+        elif field_type == "select":
+            # La valeur est déjà le label sélectionné
+            pass
+        elif field_type == "date" and value:
+            try:
+                from datetime import datetime as dt
+                value = dt.fromisoformat(value.replace('Z', '+00:00')).strftime("%d/%m/%Y")
+            except:
+                pass
+        elif field_type == "textarea":
+            value = value.replace('\n', '<br>') if value else ""
+        
+        fields_html += f"""
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9; font-weight: 500; width: 30%;">{field_label}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{value or '-'}</td>
+        </tr>
+        """
+    
+    # Signature
+    signature_html = ""
+    if form.get("signature_data"):
+        signature_html = f"""
+        <div style="margin-top: 30px; page-break-inside: avoid;">
+            <h3 style="color: #333; border-bottom: 2px solid #2563eb; padding-bottom: 5px;">Signature</h3>
+            <img src="{form.get('signature_data')}" style="max-width: 300px; border: 1px solid #ddd; padding: 10px;" />
+        </div>
+        """
+    
+    # Logo
+    logo_html = ""
+    if form.get("logo_url"):
+        logo_html = f'<img src="{form.get("logo_url")}" style="max-height: 60px;" />'
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{form.get('titre', 'Formulaire')}</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
+            .header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 15px; }}
+            .title {{ font-size: 24px; font-weight: bold; color: #2563eb; }}
+            .meta {{ color: #666; font-size: 12px; margin-top: 5px; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+            @media print {{
+                body {{ margin: 10mm; }}
+                .no-print {{ display: none; }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div>
+                <div class="title">{form.get('titre', 'Formulaire personnalisé')}</div>
+                <div class="meta">
+                    Créé le {form.get('created_at', '')[:10]} par {form.get('created_by_name', 'Inconnu')}
+                </div>
+            </div>
+            {logo_html}
+        </div>
+        
+        <table>
+            {fields_html}
+        </table>
+        
+        {signature_html}
+        
+        <div style="margin-top: 50px; text-align: center; color: #999; font-size: 10px;">
+            Document généré le {datetime.now(timezone.utc).strftime('%d/%m/%Y à %H:%M')}
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html
