@@ -175,6 +175,31 @@ function PoleDetails() {
     );
   }, [autorisations, searchTerm]);
 
+  const filteredCustomForms = useMemo(() => {
+    if (!searchTerm) return customForms;
+    return customForms.filter(f => 
+      f.titre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.template_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [customForms, searchTerm]);
+
+  // Grouper les formulaires personnalisés par template
+  const groupedCustomForms = useMemo(() => {
+    const grouped = {};
+    filteredCustomForms.forEach(form => {
+      const templateId = form.template_id;
+      if (!grouped[templateId]) {
+        grouped[templateId] = {
+          templateId,
+          templateName: form.template_name || 'Formulaire personnalisé',
+          forms: []
+        };
+      }
+      grouped[templateId].forms.push(form);
+    });
+    return Object.values(grouped);
+  }, [filteredCustomForms]);
+
   // Handlers pour les formulaires
   const handleAddForm = () => {
     setSelectedFormType('');
@@ -193,11 +218,61 @@ function PoleDetails() {
     
     setOpenFormDialog(false);
     
-    // Rediriger vers le formulaire approprié
-    if (selectedFormType === 'BON_TRAVAIL' || selectedFormType.includes('bon-travail')) {
+    // Vérifier si c'est un template personnalisé
+    const template = formTemplates.find(t => t.id === selectedFormType);
+    
+    if (template && template.type === 'CUSTOM') {
+      // Ouvrir le CustomFormFiller
+      setSelectedCustomTemplate(template);
+      setEditingCustomForm(null);
+      setShowCustomFormFiller(true);
+    } else if (selectedFormType === 'BON_TRAVAIL' || template?.type === 'BON_TRAVAIL') {
       navigate(`/documentations/${poleId}/bon-de-travail`);
-    } else if (selectedFormType === 'AUTORISATION' || selectedFormType.includes('autorisation')) {
+    } else if (selectedFormType === 'AUTORISATION' || template?.type === 'AUTORISATION') {
       navigate('/autorisations-particulieres/new', { state: { fromPoleId: poleId } });
+    }
+  };
+
+  const handleEditCustomForm = async (form) => {
+    // Trouver le template
+    const template = formTemplates.find(t => t.id === form.template_id);
+    if (template) {
+      setSelectedCustomTemplate(template);
+      setEditingCustomForm(form);
+      setShowCustomFormFiller(true);
+    }
+  };
+
+  const handleDeleteCustomForm = (formId) => {
+    confirm({
+      title: 'Supprimer le formulaire',
+      description: 'Êtes-vous sûr de vouloir supprimer ce formulaire ?',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/documentations/custom-forms/${formId}`);
+          toast({ title: 'Succès', description: 'Formulaire supprimé' });
+          loadData();
+        } catch (error) {
+          toast({
+            title: 'Erreur',
+            description: formatErrorMessage(error, 'Erreur lors de la suppression'),
+            variant: 'destructive'
+          });
+        }
+      }
+    });
+  };
+
+  const handlePrintCustomForm = (formId) => {
+    const token = localStorage.getItem('token');
+    const baseUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    const printUrl = `${baseUrl}/api/documentations/custom-forms/${formId}/pdf?token=${token}`;
+    const printWindow = window.open(printUrl, '_blank');
+    if (printWindow) {
+      printWindow.onload = () => printWindow.print();
     }
   };
 
