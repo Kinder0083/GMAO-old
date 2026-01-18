@@ -274,7 +274,7 @@ async def get_presqu_accident_stats(current_user: dict = Depends(get_current_use
         a_traiter = len([i for i in items if i.get("status") == PresquAccidentStatus.A_TRAITER.value])
         en_cours = len([i for i in items if i.get("status") == PresquAccidentStatus.EN_COURS.value])
         termine = len([i for i in items if i.get("status") == PresquAccidentStatus.TERMINE.value])
-        archive = len([i for i in items if i.get("status") == PresquAccidentStatus.ARCHIVE.value])
+        risque_residuel = len([i for i in items if i.get("status") == PresquAccidentStatus.RISQUE_RESIDUEL.value])
         
         # Par service
         by_service = {}
