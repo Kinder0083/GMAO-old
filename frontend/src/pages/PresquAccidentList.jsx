@@ -101,6 +101,15 @@ function PresquAccidentList() {
     }
   };
 
+  const loadServiceResponsables = async () => {
+    try {
+      const responsables = await rolesAPI.getServiceResponsables();
+      setServiceResponsables(responsables || []);
+    } catch (error) {
+      console.error('Erreur chargement responsables de service:', error);
+    }
+  };
+
   const applyFilters = () => {
     let filtered = [...items];
     
