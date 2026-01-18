@@ -587,7 +587,7 @@ function PresquAccidentList() {
                         size="sm"
                         className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                         onClick={() => handleOpenTraitement(item)}
-                        title={isResponsable(item) ? "Traiter le presqu'accident" : "Voir le traitement"}
+                        title={canEditTraitement() ? "Traiter le presqu'accident" : "Voir le traitement"}
                       >
                         <ClipboardCheck size={18} />
                       </Button>
