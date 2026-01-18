@@ -553,8 +553,8 @@ function PresquAccidentList() {
       {/* Filtres */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex gap-4 items-center">
-            <div className="flex-1">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <Input
@@ -565,24 +565,63 @@ function PresquAccidentList() {
                 />
               </div>
             </div>
+            
+            {/* Filtre Période */}
+            <Select value={filters.periode} onValueChange={(value) => setFilters({...filters, periode: value})}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Période" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les dates</SelectItem>
+                <SelectItem value="24h">24H (J-1 et J)</SelectItem>
+                <SelectItem value="semaine">Cette semaine</SelectItem>
+                <SelectItem value="mois">Ce mois</SelectItem>
+                <SelectItem value="annee">Cette année</SelectItem>
+                <SelectItem value="personnalise">Date personnalisée</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Dates personnalisées */}
+            {filters.periode === 'personnalise' && (
+              <>
+                <Input
+                  type="date"
+                  className="w-40"
+                  value={filters.dateDebut}
+                  onChange={(e) => setFilters({...filters, dateDebut: e.target.value})}
+                  placeholder="Date début"
+                />
+                <Input
+                  type="date"
+                  className="w-40"
+                  value={filters.dateFin}
+                  onChange={(e) => setFilters({...filters, dateFin: e.target.value})}
+                  placeholder="Date fin"
+                />
+              </>
+            )}
+            
+            {/* Filtre Statut */}
             <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
+                <SelectItem value="all">Tous statuts</SelectItem>
                 <SelectItem value="A_TRAITER">À traiter</SelectItem>
                 <SelectItem value="EN_COURS">En cours</SelectItem>
                 <SelectItem value="TERMINE">Terminé</SelectItem>
                 <SelectItem value="RISQUE_RESIDUEL">Risque résiduel</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Filtre Service */}
             <Select value={filters.service} onValueChange={(value) => setFilters({...filters, service: value})}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Service" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
+                <SelectItem value="all">Tous services</SelectItem>
                 <SelectItem value="ADV">ADV</SelectItem>
                 <SelectItem value="LOGISTIQUE">Logistique</SelectItem>
                 <SelectItem value="PRODUCTION">Production</SelectItem>
@@ -593,20 +632,32 @@ function PresquAccidentList() {
                 <SelectItem value="AUTRE">Autre</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filters.severite} onValueChange={(value) => setFilters({...filters, severite: value})}>
+            
+            {/* Filtre Priorité */}
+            <Select value={filters.priorite} onValueChange={(value) => setFilters({...filters, priorite: value})}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sévérité" />
+                <SelectValue placeholder="Priorité" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes</SelectItem>
-                <SelectItem value="FAIBLE">Faible</SelectItem>
-                <SelectItem value="MOYEN">Moyen</SelectItem>
-                <SelectItem value="ELEVE">Élevé</SelectItem>
-                <SelectItem value="CRITIQUE">Critique</SelectItem>
+                <SelectItem value="all">Toutes priorités</SelectItem>
+                <SelectItem value="Faible">Faible</SelectItem>
+                <SelectItem value="Moyenne">Moyenne</SelectItem>
+                <SelectItem value="Élevée">Élevée</SelectItem>
+                <SelectItem value="Critique">Critique</SelectItem>
               </SelectContent>
             </Select>
-            {(filters.search || filters.status !== 'all' || filters.service !== 'all' || filters.severite !== 'all') && (
-              <Button variant="ghost" size="sm" onClick={() => setFilters({ service: 'all', status: 'all', severite: 'all', search: '' })}>
+            
+            {/* Bouton Réinitialiser */}
+            {(filters.search || filters.status !== 'all' || filters.service !== 'all' || filters.priorite !== 'all' || filters.periode !== '24h') && (
+              <Button variant="ghost" size="sm" onClick={() => setFilters({ 
+                service: 'all', 
+                status: 'all', 
+                priorite: 'all', 
+                periode: '24h',
+                dateDebut: '',
+                dateFin: '',
+                search: '' 
+              })}>
                 <X size={16} className="mr-1" />
                 Réinitialiser
               </Button>
