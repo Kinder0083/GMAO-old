@@ -47,6 +47,44 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - `/app/frontend/src/App.js` (route /people/roles)
 - `/app/backend/server.py` (import et initialisation des routes)
 
+#### ✅ Feature: Formulaires personnalisés avec champs configurables (18 Jan 2026)
+**Implémentation complète** des modèles de formulaires personnalisés :
+
+**Form Builder (création de modèles)** :
+- 10 types de champs supportés :
+  - ✅ Texte court (input)
+  - ✅ Texte long (textarea)
+  - ✅ Nombre (avec min/max)
+  - ✅ Date
+  - ✅ Liste déroulante (avec options personnalisables)
+  - ✅ Case à cocher (checkbox)
+  - ✅ Oui/Non (switch)
+  - ✅ Signature (canvas dessin)
+  - ✅ Upload fichier
+  - ✅ Upload logo
+- Drag & drop pour réorganiser les champs (@dnd-kit)
+- Champs configurables : requis, placeholder, options
+
+**Remplissage de formulaires (CustomFormFiller)** :
+- Rendu dynamique selon le template
+- Validation des champs requis
+- Signature via canvas natif
+- Sauvegarde en brouillon ou validé
+
+**Export PDF** :
+- Génération HTML côté serveur
+- Inclut tous les champs et valeurs
+- Affiche la signature en base64
+
+**Fichiers créés/modifiés :**
+- `/app/frontend/src/components/FormBuilderDialog.jsx` (NEW)
+- `/app/frontend/src/components/CustomFormFiller.jsx` (NEW)
+- `/app/frontend/src/pages/FormTemplatesPage.jsx` (refonte)
+- `/app/frontend/src/pages/PoleDetails.jsx` (ajout custom forms)
+- `/app/backend/documentations_routes.py` (endpoints custom-forms + PDF)
+
+**Tests** : 16/16 tests backend ✅ + 100% frontend ✅ (rapport `/app/test_reports/iteration_10.json`)
+
 #### ✅ Feature: Refonte page Documentations (18 Jan 2026)
 **Implémentation complète** de la refonte de la page Documentations avec arborescence :
 
