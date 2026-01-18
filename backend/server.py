@@ -7900,6 +7900,28 @@ async def get_recent_update_info(current_user: dict = Depends(get_current_user))
         logger.error(f"❌ Erreur récupération info MAJ récente: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/updates/history-list")
+async def get_update_history_list(
+    limit: int = 50,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """
+    Récupère l'historique des mises à jour depuis la BDD (admin uniquement)
+    Compatible avec le frontend Updates.jsx
+    """
+    try:
+        # Récupérer depuis la collection system_update_history
+        history = await db.system_update_history.find(
+            {},
+            {"_id": 0}
+        ).sort("started_at", -1).limit(limit).to_list(limit)
+        
+        return {"data": history, "total": len(history)}
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération historique mises à jour: {str(e)}")
+        # Retourner une liste vide en cas d'erreur plutôt qu'une exception
+        return {"data": [], "total": 0}
+
 
 # Import surveillance routes
 from surveillance_routes import router as surveillance_router, init_surveillance_routes
