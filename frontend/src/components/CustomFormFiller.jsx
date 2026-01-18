@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
-import SignaturePad from 'signature_pad';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -20,7 +19,6 @@ import {
   PenTool,
   Upload,
   Image,
-  Trash2,
   RotateCcw,
   Save,
   Loader2,
@@ -44,6 +42,120 @@ const FIELD_ICONS = {
   logo: Image
 };
 
+// Composant Signature Pad simple
+function SignaturePadComponent({ value, onChange }) {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      
+      // Si on a une valeur existante, la charger
+      if (value) {
+        const img = new window.Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          setHasSignature(true);
+        };
+        img.src = value;
+      }
+    }
+  }, []);
+
+  const getCoordinates = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    if (e.touches) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    }
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e) => {
+    e.preventDefault();
+    setIsDrawing(true);
+    const coords = getCoordinates(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const coords = getCoordinates(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+    setHasSignature(true);
+  };
+
+  const stopDrawing = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      // Sauvegarder l'image
+      const dataUrl = canvasRef.current.toDataURL();
+      onChange(dataUrl);
+    }
+  };
+
+  const clear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
+    onChange(null);
+  };
+
+  return (
+    <div className="space-y-2">
+      <canvas
+        ref={canvasRef}
+        width={400}
+        height={150}
+        className="w-full border rounded-lg bg-white cursor-crosshair touch-none"
+        style={{ maxWidth: '100%', height: '150px' }}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+      />
+      <div className="flex gap-2 items-center">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={clear}
+        >
+          <RotateCcw className="h-4 w-4 mr-1" />
+          Effacer
+        </Button>
+        {hasSignature && (
+          <Badge variant="outline" className="text-green-600">
+            ✓ Signature enregistrée
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CustomFormFiller({
   open,
   onOpenChange,
@@ -53,7 +165,6 @@ export default function CustomFormFiller({
   onSaved
 }) {
   const { toast } = useToast();
-  const signatureRef = useRef(null);
   const fileInputRef = useRef(null);
   const logoInputRef = useRef(null);
 
@@ -96,26 +207,11 @@ export default function CustomFormFiller({
     setFieldValues(prev => ({ ...prev, [fieldId]: value }));
   };
 
-  const clearSignature = () => {
-    if (signatureRef.current) {
-      signatureRef.current.clear();
-    }
-    setSignatureData(null);
-  };
-
-  const handleSignatureEnd = () => {
-    if (signatureRef.current && !signatureRef.current.isEmpty()) {
-      setSignatureData(signatureRef.current.toDataURL());
-    }
-  };
-
   const handleFileUpload = async (e, fieldId) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
-      // Pour l'instant, on stocke le nom du fichier
-      // Dans une vraie implémentation, on uploaderait vers le serveur
       const fileData = {
         id: `file_${Date.now()}`,
         name: file.name,
@@ -136,7 +232,6 @@ export default function CustomFormFiller({
     if (!file) return;
 
     try {
-      // Convertir en base64 pour le logo
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoUrl(reader.result);
@@ -160,7 +255,7 @@ export default function CustomFormFiller({
         if (!field.required) return false;
         const value = fieldValues[field.id];
         if (field.type === 'checkbox' || field.type === 'switch') {
-          return false; // Les booléens ne peuvent pas être "vides"
+          return false;
         }
         return !value || value === '';
       });
@@ -212,7 +307,6 @@ export default function CustomFormFiller({
   };
 
   const renderField = (field) => {
-    const Icon = FIELD_ICONS[field.type] || Type;
     const value = fieldValues[field.id];
 
     switch (field.type) {
@@ -302,34 +396,10 @@ export default function CustomFormFiller({
 
       case 'signature':
         return (
-          <div className="space-y-2">
-            <div className="border rounded-lg bg-white">
-              <SignatureCanvas
-                ref={signatureRef}
-                canvasProps={{
-                  className: 'w-full h-32 rounded-lg',
-                  style: { width: '100%', height: '128px' }
-                }}
-                onEnd={handleSignatureEnd}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={clearSignature}
-              >
-                <RotateCcw className="h-4 w-4 mr-1" />
-                Effacer
-              </Button>
-              {signatureData && (
-                <Badge variant="outline" className="text-green-600">
-                  ✓ Signature enregistrée
-                </Badge>
-              )}
-            </div>
-          </div>
+          <SignaturePadComponent
+            value={signatureData}
+            onChange={setSignatureData}
+          />
         );
 
       case 'file':
