@@ -771,4 +771,23 @@ export const systemUpdateHistoryAPI = {
   getStats: () => api.get('/api/updates/history-stats')
 };
 
+// ==================== ROLES API ====================
+export const rolesAPI = {
+  getAll: () => api.get('/roles').then(res => res.data),
+  getById: (id) => api.get(`/roles/${id}`).then(res => res.data),
+  getByCode: (code) => api.get(`/roles/by-code/${code}`).then(res => res.data),
+  create: (data) => api.post('/roles', data).then(res => res.data),
+  update: (id, data) => api.put(`/roles/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/roles/${id}`).then(res => res.data),
+  
+  // Service Responsables
+  getServiceResponsables: () => api.get('/roles/service-responsables/all').then(res => res.data),
+  getServiceResponsable: (service) => api.get(`/roles/service-responsables/${service}`).then(res => res.data),
+  setServiceResponsable: (data) => api.post('/roles/service-responsables', data).then(res => res.data),
+  removeServiceResponsable: (service) => api.delete(`/roles/service-responsables/${service}`).then(res => res.data),
+  
+  // Services list
+  getServices: () => api.get('/roles/services/list').then(res => res.data)
+};
+
 export default api;
