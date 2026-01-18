@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import SignatureCanvas from 'react-signature-canvas';
+import SignaturePad from 'signature_pad';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
