@@ -62,6 +62,7 @@ import IoTDashboard from "./pages/IoTDashboard";
 import MQTTLogs from "./pages/MQTTLogs";
 import WhiteboardPage from "./pages/WhiteboardPage";
 import PurchaseRequestsArchives from "./pages/PurchaseRequestsArchives";
+import FormTemplatesPage from "./pages/FormTemplatesPage";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
