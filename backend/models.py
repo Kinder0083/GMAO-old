@@ -1446,6 +1446,7 @@ class PresquAccidentSeverity(str, Enum):
 
 class PresquAccidentItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    numero: Optional[str] = None  # Format: [année]-[numéro] ex: 2026-001
     
     # Informations principales
     titre: str  # Titre court du presqu'accident
@@ -1457,32 +1458,41 @@ class PresquAccidentItem(BaseModel):
     # Personnes impliquées
     personnes_impliquees: Optional[str] = None  # Noms des personnes (séparés par virgule)
     declarant: Optional[str] = None  # Nom du déclarant
+    responsable_id: Optional[str] = None  # ID de l'utilisateur responsable du traitement
     
     # Analyse
     contexte_cause: Optional[str] = None  # Contexte et cause probable
     severite: PresquAccidentSeverity = PresquAccidentSeverity.MOYEN
     
-    # Actions correctives
+    # Actions proposées par le déclarant
     actions_proposees: Optional[str] = None  # Actions proposées par l'encadrement
+    
+    # Réponse/Traitement (rempli par le responsable)
     actions_preventions: Optional[str] = None  # Actions de prévention
-    responsable_action: Optional[str] = None  # Responsable de l'action
+    responsable_action: Optional[str] = None  # Responsable de l'action corrective
     date_echeance_action: Optional[str] = None  # Date ISO d'échéance de l'action
+    commentaire_traitement: Optional[str] = None  # Commentaire du traitement
     
     # Statut et suivi
     status: PresquAccidentStatus = PresquAccidentStatus.A_TRAITER
     date_cloture: Optional[str] = None  # Date ISO de clôture
     
-    # Documents et commentaires
+    # Documents (pièces jointes initiales et de traitement)
+    attachments: List[Dict[str, Any]] = Field(default_factory=list)  # Liste des pièces jointes initiales
+    attachments_traitement: List[Dict[str, Any]] = Field(default_factory=list)  # Pièces jointes du traitement
+    
+    # Legacy fields (pour compatibilité)
     commentaire: Optional[str] = None
-    piece_jointe_url: Optional[str] = None  # URL du fichier uploadé (legacy - single file)
-    piece_jointe_nom: Optional[str] = None  # Nom original du fichier (legacy - single file)
-    attachments: List[Dict[str, Any]] = Field(default_factory=list)  # Liste des pièces jointes (multiple files)
+    piece_jointe_url: Optional[str] = None
+    piece_jointe_nom: Optional[str] = None
     
     # Métadonnées
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+    traite_par: Optional[str] = None  # ID de l'utilisateur qui a traité
+    traite_le: Optional[str] = None  # Date du traitement
 
 class PresquAccidentItemCreate(BaseModel):
     titre: str
