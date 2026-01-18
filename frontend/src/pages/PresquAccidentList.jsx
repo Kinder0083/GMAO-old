@@ -982,9 +982,9 @@ function PresquAccidentList() {
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setOpenTraitement(false)}>
-                  {isResponsable(traitementItem) ? 'Annuler' : 'Fermer'}
+                  {canEditTraitement() ? 'Annuler' : 'Fermer'}
                 </Button>
-                {isResponsable(traitementItem) && (
+                {canEditTraitement() && (
                   <Button onClick={handleSubmitTraitement}>
                     Valider le traitement
                   </Button>
