@@ -850,6 +850,7 @@ function PoleDetails() {
                 <SelectValue placeholder="Sélectionner un type de formulaire" />
               </SelectTrigger>
               <SelectContent>
+                {/* Formulaires système */}
                 <SelectItem value="BON_TRAVAIL">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-blue-600" />
@@ -862,6 +863,16 @@ function PoleDetails() {
                     Autorisation particulière
                   </div>
                 </SelectItem>
+                
+                {/* Formulaires personnalisés */}
+                {formTemplates.filter(t => t.type === 'CUSTOM' && t.actif !== false).map(template => (
+                  <SelectItem key={template.id} value={template.id}>
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4 text-purple-600" />
+                      {template.nom}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             
@@ -880,6 +891,23 @@ function PoleDetails() {
                     <p>Formulaire pour les autorisations de travaux spéciaux (travaux en hauteur, espace confiné, etc.)</p>
                   </>
                 )}
+                {selectedFormType !== 'BON_TRAVAIL' && selectedFormType !== 'AUTORISATION' && (() => {
+                  const template = formTemplates.find(t => t.id === selectedFormType);
+                  if (template) {
+                    return (
+                      <>
+                        <p className="font-medium text-gray-900 mb-1">{template.nom}</p>
+                        <p>{template.description || 'Formulaire personnalisé'}</p>
+                        {template.fields && template.fields.length > 0 && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            {template.fields.length} champ(s) à remplir
+                          </p>
+                        )}
+                      </>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
           </div>
