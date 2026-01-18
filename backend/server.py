@@ -7786,6 +7786,18 @@ async def check_updates(current_user: dict = Depends(get_current_admin_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/updates/status")
+async def get_update_status(current_user: dict = Depends(get_current_admin_user)):
+    """
+    Récupère le statut actuel du système de mise à jour
+    """
+    try:
+        return {
+            "current_version": update_service.current_version,
+            "status": "ready"
+        }
+    except Exception as e:
+        logger.error(f"❌ Erreur statut mise à jour: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.get("/updates/check-conflicts")
