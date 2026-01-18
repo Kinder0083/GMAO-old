@@ -402,6 +402,9 @@ export const surveillanceAPI = {
   // Vérification automatique des échéances
   checkDueDates: () => api.post('/surveillance/check-due-dates').then(res => res.data),
   
+  // Envoi manuel d'un email de rappel
+  sendManualReminder: (itemId) => api.post(`/surveillance/items/${itemId}/send-reminder`).then(res => res.data),
+  
   // Import/Export
   importData: (formData) => api.post('/surveillance/import', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
