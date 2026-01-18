@@ -10,6 +10,7 @@ from models import (
     get_default_permissions_by_role
 )
 from dependencies import get_current_user
+from bson import ObjectId
 import uuid
 
 router = APIRouter(prefix="/roles", tags=["Rôles"])
