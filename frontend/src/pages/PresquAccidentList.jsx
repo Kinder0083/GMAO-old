@@ -50,9 +50,9 @@ function PresquAccidentList() {
   const { items, loading, refresh: loadItems } = usePresquAccident();
   
   const [filters, setFilters] = useState({
-    service: '',
-    status: '',
-    severite: '',
+    service: 'all',
+    status: 'all',
+    severite: 'all',
     search: ''
   });
 
@@ -465,8 +465,8 @@ function PresquAccidentList() {
                 <SelectItem value="CRITIQUE">Critique</SelectItem>
               </SelectContent>
             </Select>
-            {(filters.search || filters.status || filters.service || filters.severite) && (
-              <Button variant="ghost" size="sm" onClick={() => setFilters({ service: '', status: '', severite: '', search: '' })}>
+            {(filters.search || filters.status !== 'all' || filters.service !== 'all' || filters.severite !== 'all') && (
+              <Button variant="ghost" size="sm" onClick={() => setFilters({ service: 'all', status: 'all', severite: 'all', search: '' })}>
                 <X size={16} className="mr-1" />
                 Réinitialiser
               </Button>
