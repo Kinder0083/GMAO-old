@@ -210,23 +210,24 @@ function PresquAccidentList() {
   };
 
   const handleDelete = async (item) => {
-    const confirmed = await confirm({
+    confirm({
       title: 'Supprimer le presqu\'accident',
       message: `Êtes-vous sûr de vouloir supprimer "${item.titre}" ?`,
+      description: `Êtes-vous sûr de vouloir supprimer "${item.titre}" ?`,
       confirmText: 'Supprimer',
-      cancelText: 'Annuler'
-    });
-    
-    if (confirmed) {
-      try {
-        await presquAccidentAPI.delete(item.id);
-        toast({ title: 'Succès', description: 'Presqu\'accident supprimé' });
-        loadItems();
-        loadData();
-      } catch (error) {
-        toast({ title: 'Erreur', description: 'Impossible de supprimer', variant: 'destructive' });
+      cancelText: 'Annuler',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await presquAccidentAPI.delete(item.id);
+          toast({ title: 'Succès', description: 'Presqu\'accident supprimé' });
+          loadItems();
+          loadData();
+        } catch (error) {
+          toast({ title: 'Erreur', description: 'Impossible de supprimer', variant: 'destructive' });
+        }
       }
-    }
+    });
   };
 
   // Ouvrir le dialogue de traitement
