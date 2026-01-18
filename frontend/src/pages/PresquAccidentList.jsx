@@ -576,7 +576,7 @@ function PresquAccidentList() {
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold">{item.titre}</h3>
                           {getStatusBadge(item.status)}
-                          {getSeveriteBadge(item.severite)}
+                          {getPriorityBadge(item)}
                         </div>
                         <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
