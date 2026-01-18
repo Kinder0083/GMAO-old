@@ -9,11 +9,18 @@ from models import (
     ServiceResponsable, ServiceResponsableCreate, ServiceResponsableUpdate,
     get_default_permissions_by_role
 )
-from database import db
-from auth import get_current_user
+from dependencies import get_current_user
 import uuid
 
 router = APIRouter(prefix="/roles", tags=["Rôles"])
+
+# Variable pour la base de données (initialisée depuis server.py)
+db = None
+
+def init_roles_routes(database):
+    """Initialise les routes avec la référence à la base de données"""
+    global db
+    db = database
 
 # Rôles système par défaut (non supprimables)
 SYSTEM_ROLES = [
