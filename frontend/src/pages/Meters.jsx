@@ -256,6 +256,7 @@ const Meters = () => {
                         setDialogOpen(true);
                       }}
                       className="flex-1 hover:bg-blue-50 hover:text-blue-600"
+                      title="Voir les détails du compteur"
                     >
                       <Eye size={16} className="mr-1" />
                       Voir
@@ -268,6 +269,7 @@ const Meters = () => {
                         setFormDialogOpen(true);
                       }}
                       className="flex-1 hover:bg-green-50 hover:text-green-600"
+                      title="Modifier le compteur"
                     >
                       <Pencil size={16} className="mr-1" />
                       Modifier
@@ -277,6 +279,7 @@ const Meters = () => {
                       size="sm"
                       onClick={() => handleDelete(meter.id)}
                       className="hover:bg-red-50 hover:text-red-600"
+                      title="Supprimer le compteur"
                     >
                       <Trash2 size={16} />
                     </Button>
