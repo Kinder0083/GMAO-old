@@ -1913,6 +1913,95 @@ Placez en haut les modules que vous utilisez le plus""",
         "keywords": ["personnalisation", "menu", "interface"]
     },
     
+    "sec-011-09": {
+        "title": "Gestion des Rôles et Permissions",
+        "content": """👥 **Gestion des Rôles**
+
+⚠️ **Accès** : ADMIN uniquement
+
+**Accéder à la Gestion des Rôles** :
+1. Module **Utilisateurs**
+2. Bouton **"Gestion des rôles"** (violet, en haut)
+
+**Rôles Système (Non modifiables)** :
+• **ADMIN** : Accès complet, toutes les permissions
+• **TECHNICIEN** : Accès aux OT, équipements, stock
+• **VISUALISEUR** : Lecture seule sur tous les modules
+
+**Créer un Rôle Personnalisé** :
+1. Cliquer **"+ Nouveau rôle"**
+2. **Nom** : Ex: "Chef d'équipe Mécanique"
+3. **Code** : Ex: "CHEF_MECA" (unique)
+4. **Description** : Usage du rôle
+5. Configurer les **permissions par module** :
+   • ✅ Visualiser
+   • ✏️ Éditer
+   • 🗑️ Supprimer
+6. **Créer**
+
+**Modules Configurables** :
+• Dashboard, Ordres de travail, Équipements
+• Maintenance préventive, Stock, Demandes
+• Améliorations, Projets, Rapports
+• Zones, Compteurs, Surveillance
+• Fournisseurs, Import/Export, etc.
+
+**Assigner les Responsables de Service** :
+1. Onglet **"Responsables de service"**
+2. Sélectionner un **service** (Production, Maintenance, etc.)
+3. Choisir l'**utilisateur** responsable
+4. **Sauvegarder**
+
+**Avantages des Rôles Personnalisés** :
+• Principe du **moindre privilège**
+• Contrôle fin des accès
+• Audit et conformité facilités
+
+💡 **Astuce** : Créez des rôles pour chaque profil métier de votre organisation.""",
+        "level": "advanced",
+        "target_roles": ["ADMIN"],
+        "target_modules": ["people"],
+        "keywords": ["rôle", "permission", "accès", "responsable", "service"]
+    },
+    
+    "sec-011-10": {
+        "title": "Interface et Aide Contextuelle",
+        "content": """💡 **Aide Contextuelle et Tooltips**
+
+GMAO Iris dispose d'un système d'**aide contextuelle enrichie** pour faciliter l'utilisation.
+
+**Tooltips Enrichis** :
+Survolez les icônes et boutons pour voir :
+• **Titre** de l'action
+• **Description** détaillée
+• Informations contextuelles (compteurs, statuts)
+
+**Exemples de Tooltips** :
+• 🔔 **Cloche notifications** : "4 notifications en attente"
+• ⚙️ **Roue dentée alertes** : "Alertes système - 0 alerte en attente"
+• 📦 **Package inventaire** : Détail des articles en alerte
+• 👁️ **Œil surveillance** : Taux de réalisation, échéances proches
+
+**Bouton d'Aide** :
+En haut de chaque page :
+1. Cliquer sur le bouton **"?"** ou **"Aide"**
+2. Décrivez votre problème
+3. Une capture d'écran automatique est jointe
+4. Envoi aux administrateurs
+
+**Manuel Utilisateur** :
+1. Bouton **"Manuel"** (en haut à droite)
+2. Navigation par chapitres
+3. Recherche par mots-clés
+4. Filtrage par niveau (débutant, intermédiaire, avancé)
+
+💡 **Astuce** : Utilisez la barre de recherche du manuel pour trouver rapidement une information.""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": [],
+        "keywords": ["aide", "tooltip", "infobulle", "manuel", "support"]
+    },
+    
     # Chapitre 12 : FAQ et Dépannage
     "sec-012-01": {
         "title": "Problèmes de Connexion",
