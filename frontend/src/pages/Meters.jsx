@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Plus, Search, Eye, Pencil, Trash2, TrendingUp, Activity, Grid, List, ChevronDown, ChevronRight } from 'lucide-react';
 import MeterDialog from '../components/Meters/MeterDialog';
 import MeterFormDialog from '../components/Meters/MeterFormDialog';
