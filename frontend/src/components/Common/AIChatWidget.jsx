@@ -168,6 +168,49 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
 
   // Parser et exécuter les commandes de navigation dans la réponse de l'IA
   const parseAndExecuteCommands = (responseText) => {
+    // Vérifier d'abord les guides pas à pas avec JSON
+    const guideStartRegex = /\[\[GUIDE_START:([^\]]+)\]\]\s*(\{[\s\S]*?\})\s*\[\[GUIDE_END\]\]/g;
+    let guideMatch = guideStartRegex.exec(responseText);
+    
+    if (guideMatch) {
+      try {
+        const guideName = guideMatch[1];
+        const guideData = JSON.parse(guideMatch[2]);
+        console.log('Guide détecté:', guideName, guideData);
+        
+        // Activer le guide visuel
+        setActiveGuide({
+          name: guideName,
+          title: guideData.title || 'Guide interactif',
+          steps: guideData.steps || []
+        });
+        
+        toast({
+          title: '🎯 Guide démarré',
+          description: `${guideData.title || 'Suivez les étapes en surbrillance'}`
+        });
+      } catch (e) {
+        console.error('Erreur parsing guide JSON:', e);
+      }
+    }
+    
+    // Parser les commandes d'action automatique (CREATE_OT, SEARCH, etc.)
+    const actionCommandRegex = /\[\[(CREATE_OT|ADD_TIME_OT|COMMENT_OT|SEARCH):(\{[\s\S]*?\})\]\]/g;
+    let actionMatch;
+    
+    while ((actionMatch = actionCommandRegex.exec(responseText)) !== null) {
+      try {
+        const actionType = actionMatch[1];
+        const actionData = JSON.parse(actionMatch[2]);
+        console.log('Action automatique détectée:', actionType, actionData);
+        
+        // Exécuter l'action automatique
+        executeAutoAction(actionType, actionData);
+      } catch (e) {
+        console.error('Erreur parsing action JSON:', e);
+      }
+    }
+    
     // Regex pour détecter les commandes [[TYPE:action]] ou [[TYPE:selector:message]]
     const commandRegex = /\[\[(NAVIGATE|ACTION|GUIDE|SPOTLIGHT|PULSE|TRAIL|TOOLTIP|CELEBRATE):([^\]]+)\]\]/g;
     let match;
@@ -177,8 +220,12 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       commands.push({ type: match[1], action: match[2] });
     }
     
-    // Retirer les commandes du texte affiché
-    const cleanText = responseText.replace(commandRegex, '').trim();
+    // Retirer toutes les commandes du texte affiché
+    let cleanText = responseText
+      .replace(guideStartRegex, '')
+      .replace(actionCommandRegex, '')
+      .replace(commandRegex, '')
+      .trim();
     
     // Exécuter les commandes (avec un délai pour laisser le message s'afficher)
     if (commands.length > 0) {
