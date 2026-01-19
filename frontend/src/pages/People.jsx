@@ -67,6 +67,10 @@ const People = () => {
     setCurrentUser(user);
   };
 
+  const isAdmin = () => {
+    return currentUser?.role === 'ADMIN';
+  };
+
   const filteredUsers = users.filter(user => {
     // Masquer le compte de secours pour tous sauf l'admin
     if (user.email === 'buenogy@gmail.com' && currentUser?.role !== 'ADMIN') {
