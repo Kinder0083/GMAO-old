@@ -363,6 +363,7 @@ const NotificationsDropdown = () => {
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 };
 
