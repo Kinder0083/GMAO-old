@@ -238,6 +238,15 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
         const response = await workOrdersAPI.create(submitData);
         const newWorkOrderId = response.data.id;
         
+        // Incrémenter le compteur d'utilisation du template si utilisé
+        if (templateId) {
+          try {
+            await workOrderTemplatesAPI.incrementUsage(templateId);
+          } catch (err) {
+            console.error('Erreur incrémentation compteur template:', err);
+          }
+        }
+        
         // Upload des fichiers si présents
         if (attachments.length > 0) {
           for (const attachment of attachments) {
