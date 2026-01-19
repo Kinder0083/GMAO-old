@@ -8064,6 +8064,10 @@ from roles_routes import router as roles_router, init_system_roles, init_roles_r
 init_roles_routes(db)
 api_router.include_router(roles_router)
 
+# Work Order Templates routes (Ordres Type)
+from work_order_templates_routes import router as wo_templates_router
+api_router.include_router(wo_templates_router)
+
 # Whiteboard (Tableau d'affichage) routes
 from whiteboard_routes import router as whiteboard_router, init_whiteboards, init_whiteboard_audit
 from whiteboard_object_routes import router as whiteboard_object_router
