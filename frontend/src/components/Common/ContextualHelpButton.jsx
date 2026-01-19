@@ -196,10 +196,11 @@ const DEFAULT_CONFIG = {
   ]
 };
 
-const ContextualHelpButton = ({ onOpenAdria, onAskQuestion }) => {
+const ContextualHelpButton = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [currentConfig, setCurrentConfig] = useState(DEFAULT_CONFIG);
+  const { openChat, openChatWithContext } = useAIContextMenu();
 
   // Mettre à jour la config selon la page
   useEffect(() => {
