@@ -331,7 +331,7 @@ Tu réponds :
     }},
     {{
       "instruction": "Clique sur le bouton '+ Nouvel Ordre (Vierge)' en haut à droite pour créer un nouvel OT",
-      "target": "#btn-nouvel-ordre, [data-action='creer-ot'], button:has-text('Vierge')",
+      "target": "[data-testid='btn-nouvel-ordre-vierge'], #btn-nouvel-ordre, [data-action='creer-ot']",
       "highlight_type": "glow",
       "wait_for_click": true
     }},
