@@ -683,8 +683,14 @@ const WorkOrders = () => {
 
       <WorkOrderFormDialog
         open={formDialogOpen}
-        onOpenChange={setFormDialogOpen}
+        onOpenChange={(open) => {
+          setFormDialogOpen(open);
+          if (!open) {
+            setTemplateFormData(null); // Reset les données pré-remplies à la fermeture
+          }
+        }}
         workOrder={selectedWorkOrder}
+        prefillData={templateFormData}
         onSuccess={refreshWorkOrders}
       />
 
