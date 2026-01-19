@@ -472,6 +472,175 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     await sendMessageToAI(messageToSend);
   };
 
+  // ========== Fonctions vocales (STT & TTS) ==========
+  
+  // Démarrer l'enregistrement vocal
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        // Arrêter les tracks audio
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Créer le blob audio
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        // Envoyer pour transcription
+        await transcribeAudio(audioBlob);
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      toast({
+        title: '🎤 Enregistrement',
+        description: 'Parlez maintenant...',
+      });
+      
+    } catch (error) {
+      console.error('Erreur accès microphone:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'accéder au microphone. Vérifiez les permissions.',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Arrêter l'enregistrement
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+  
+  // Transcrire l'audio en texte
+  const transcribeAudio = async (audioBlob) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/voice/transcribe`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.transcription) {
+        // Ajouter le message transcrit
+        const userMessage = {
+          role: 'user',
+          content: `🎤 ${data.transcription}`,
+          timestamp: new Date().toISOString(),
+          isVoice: true
+        };
+        setMessages(prev => [...prev, userMessage]);
+        setShowQuickActions(false);
+        
+        // Envoyer à l'IA
+        await sendMessageToAI(data.transcription);
+      } else {
+        toast({
+          title: 'Erreur transcription',
+          description: data.detail || 'Impossible de transcrire l\'audio',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur transcription:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la transcription audio',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Synthèse vocale - Lire la réponse de l'IA
+  const speakText = async (text) => {
+    if (!isTTSEnabled || !text) return;
+    
+    try {
+      setIsPlayingAudio(true);
+      
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/voice/tts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: text.replace(/\[\[.*?\]\]/g, '').trim(), // Retirer les commandes
+          voice: 'nova' // Voix féminine naturelle
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.audio_base64) {
+        // Convertir base64 en audio et jouer
+        const audioData = atob(data.audio_base64);
+        const arrayBuffer = new ArrayBuffer(audioData.length);
+        const view = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < audioData.length; i++) {
+          view[i] = audioData.charCodeAt(i);
+        }
+        
+        const audioBlob = new Blob([arrayBuffer], { type: 'audio/mp3' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        if (audioPlayerRef.current) {
+          audioPlayerRef.current.pause();
+        }
+        
+        const audio = new Audio(audioUrl);
+        audioPlayerRef.current = audio;
+        
+        audio.onended = () => {
+          setIsPlayingAudio(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.onerror = () => {
+          setIsPlayingAudio(false);
+          console.error('Erreur lecture audio');
+        };
+        
+        await audio.play();
+      }
+    } catch (error) {
+      console.error('Erreur TTS:', error);
+      setIsPlayingAudio(false);
+    }
+  };
+  
+  // Arrêter la lecture audio
+  const stopAudio = () => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      setIsPlayingAudio(false);
+    }
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
