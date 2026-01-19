@@ -223,17 +223,15 @@ const ContextualHelpButton = () => {
 
   const handleQuickAction = (question) => {
     setIsOpen(false);
-    if (onAskQuestion) {
-      onAskQuestion(question);
-    } else if (onOpenAdria) {
-      onOpenAdria(question);
+    if (openChatWithContext) {
+      openChatWithContext(question);
     }
   };
 
   const handleOpenAdria = () => {
     setIsOpen(false);
-    if (onOpenAdria) {
-      onOpenAdria();
+    if (openChat) {
+      openChat();
     }
   };
 
