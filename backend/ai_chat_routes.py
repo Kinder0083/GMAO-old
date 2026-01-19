@@ -1018,6 +1018,334 @@ async def notify_llm_update(
         raise HTTPException(status_code=500, detail="Erreur notification mise à jour LLM")
 
 
+# ==================== Actions Automatiques de l'IA ====================
+
+class CreateOTRequest(BaseModel):
+    titre: str
+    description: Optional[str] = ""
+    type_maintenance: Optional[str] = "CORRECTIVE"
+    priorite: Optional[str] = "NORMALE"
+    equipement_nom: Optional[str] = None
+    temps_estime: Optional[str] = None
+
+class AddTimeOTRequest(BaseModel):
+    ot_reference: str  # ID ou numéro de l'OT
+    temps: str  # Format: "2h30" ou "150" (minutes)
+    commentaire: Optional[str] = None
+
+class CommentOTRequest(BaseModel):
+    ot_reference: str
+    commentaire: str
+
+class SearchRequest(BaseModel):
+    type: str  # work_orders, equipments, inventory, maintenance
+    query: Optional[str] = None
+    filters: Optional[dict] = None
+
+@router.post("/action/create-ot")
+async def ai_create_work_order(
+    request: CreateOTRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Créer un ordre de travail via l'IA"""
+    try:
+        import uuid
+        
+        # Chercher l'équipement si un nom est fourni
+        equipement_id = None
+        equipement_data = None
+        if request.equipement_nom:
+            equipement = await db.equipments.find_one({
+                "$or": [
+                    {"nom": {"$regex": request.equipement_nom, "$options": "i"}},
+                    {"reference": {"$regex": request.equipement_nom, "$options": "i"}}
+                ]
+            })
+            if equipement:
+                equipement_id = equipement.get("id")
+                equipement_data = {
+                    "id": equipement.get("id"),
+                    "nom": equipement.get("nom"),
+                    "reference": equipement.get("reference")
+                }
+        
+        # Parser le temps estimé
+        temps_estime_minutes = None
+        if request.temps_estime:
+            temps_str = request.temps_estime.lower().strip()
+            if 'h' in temps_str:
+                parts = temps_str.replace('h', ':').replace('min', '').split(':')
+                hours = int(parts[0]) if parts[0] else 0
+                minutes = int(parts[1]) if len(parts) > 1 and parts[1] else 0
+                temps_estime_minutes = hours * 60 + minutes
+            else:
+                temps_estime_minutes = int(temps_str)
+        
+        # Créer l'OT
+        ot_id = str(uuid.uuid4())
+        work_order = {
+            "id": ot_id,
+            "titre": request.titre,
+            "description": request.description or f"Créé automatiquement par l'assistant IA",
+            "type_maintenance": request.type_maintenance.upper(),
+            "priorite": request.priorite.upper(),
+            "statut": "en_attente",
+            "equipement_id": equipement_id,
+            "equipement": equipement_data,
+            "temps_estime": temps_estime_minutes,
+            "temps_passe": 0,
+            "created_at": datetime.now(timezone.utc),
+            "created_by": current_user.get("id"),
+            "created_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+            "created_via": "ai_assistant",
+            "assigned_to": None,
+            "comments": [],
+            "historique": [{
+                "action": "creation",
+                "date": datetime.now(timezone.utc).isoformat(),
+                "user": current_user.get("email"),
+                "details": "Créé via l'assistant IA Adria"
+            }]
+        }
+        
+        await db.work_orders.insert_one(work_order)
+        
+        logger.info(f"OT créé via IA: {ot_id} - {request.titre}")
+        
+        return {
+            "success": True,
+            "message": f"Ordre de travail créé avec succès",
+            "work_order": {
+                "id": ot_id,
+                "titre": request.titre,
+                "numero": f"#{ot_id[-4:].upper()}",
+                "type": request.type_maintenance,
+                "priorite": request.priorite,
+                "equipement": equipement_data
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur création OT via IA: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur création OT: {str(e)}")
+
+
+@router.post("/action/add-time")
+async def ai_add_time_to_ot(
+    request: AddTimeOTRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Ajouter du temps à un ordre de travail via l'IA"""
+    try:
+        # Trouver l'OT par référence (ID, numéro ou titre)
+        ref = request.ot_reference.replace('#', '').strip()
+        
+        work_order = await db.work_orders.find_one({
+            "$or": [
+                {"id": {"$regex": ref, "$options": "i"}},
+                {"titre": {"$regex": ref, "$options": "i"}}
+            ]
+        })
+        
+        if not work_order:
+            raise HTTPException(status_code=404, detail=f"Ordre de travail '{request.ot_reference}' non trouvé")
+        
+        # Parser le temps
+        temps_str = request.temps.lower().strip()
+        minutes_to_add = 0
+        if 'h' in temps_str:
+            parts = temps_str.replace('h', ':').replace('min', '').split(':')
+            hours = int(parts[0]) if parts[0] else 0
+            mins = int(parts[1]) if len(parts) > 1 and parts[1] else 0
+            minutes_to_add = hours * 60 + mins
+        else:
+            minutes_to_add = int(temps_str)
+        
+        # Mettre à jour le temps passé
+        current_time = work_order.get("temps_passe", 0) or 0
+        new_time = current_time + minutes_to_add
+        
+        # Ajouter à l'historique
+        history_entry = {
+            "action": "ajout_temps",
+            "date": datetime.now(timezone.utc).isoformat(),
+            "user": current_user.get("email"),
+            "details": f"Ajout de {request.temps} via l'assistant IA"
+        }
+        if request.commentaire:
+            history_entry["commentaire"] = request.commentaire
+        
+        await db.work_orders.update_one(
+            {"id": work_order["id"]},
+            {
+                "$set": {"temps_passe": new_time},
+                "$push": {"historique": history_entry}
+            }
+        )
+        
+        logger.info(f"Temps ajouté via IA: {minutes_to_add}min sur OT {work_order['id']}")
+        
+        return {
+            "success": True,
+            "message": f"{request.temps} ajouté à l'OT",
+            "work_order": {
+                "id": work_order["id"],
+                "titre": work_order.get("titre"),
+                "temps_passe_total": new_time,
+                "temps_ajoute": minutes_to_add
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur ajout temps via IA: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur ajout temps: {str(e)}")
+
+
+@router.post("/action/comment")
+async def ai_add_comment_to_ot(
+    request: CommentOTRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Ajouter un commentaire à un ordre de travail via l'IA"""
+    try:
+        # Trouver l'OT
+        ref = request.ot_reference.replace('#', '').strip()
+        
+        work_order = await db.work_orders.find_one({
+            "$or": [
+                {"id": {"$regex": ref, "$options": "i"}},
+                {"titre": {"$regex": ref, "$options": "i"}}
+            ]
+        })
+        
+        if not work_order:
+            raise HTTPException(status_code=404, detail=f"Ordre de travail '{request.ot_reference}' non trouvé")
+        
+        # Créer le commentaire
+        comment = {
+            "id": str(uuid.uuid4()),
+            "text": request.commentaire,
+            "author_id": current_user.get("id"),
+            "author_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "via": "ai_assistant"
+        }
+        
+        await db.work_orders.update_one(
+            {"id": work_order["id"]},
+            {"$push": {"comments": comment}}
+        )
+        
+        logger.info(f"Commentaire ajouté via IA sur OT {work_order['id']}")
+        
+        return {
+            "success": True,
+            "message": "Commentaire ajouté",
+            "work_order": {
+                "id": work_order["id"],
+                "titre": work_order.get("titre")
+            },
+            "comment": comment
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur ajout commentaire via IA: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur ajout commentaire: {str(e)}")
+
+
+@router.post("/action/search")
+async def ai_search(
+    request: SearchRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Recherche intelligente dans les données GMAO via l'IA"""
+    try:
+        results = []
+        filters = request.filters or {}
+        
+        if request.type == "work_orders":
+            # Construire la requête MongoDB
+            query = {}
+            
+            if filters.get("statut"):
+                statut = filters["statut"].lower()
+                query["statut"] = {"$regex": statut, "$options": "i"}
+            
+            if filters.get("priorite"):
+                priorite = filters["priorite"].lower()
+                query["priorite"] = {"$regex": priorite, "$options": "i"}
+            
+            if filters.get("type"):
+                query["type_maintenance"] = {"$regex": filters["type"], "$options": "i"}
+            
+            if request.query:
+                query["$or"] = [
+                    {"titre": {"$regex": request.query, "$options": "i"}},
+                    {"description": {"$regex": request.query, "$options": "i"}}
+                ]
+            
+            cursor = db.work_orders.find(query, {"_id": 0}).sort("created_at", -1).limit(20)
+            results = await cursor.to_list(length=20)
+            
+        elif request.type == "equipments":
+            query = {}
+            if request.query:
+                query["$or"] = [
+                    {"nom": {"$regex": request.query, "$options": "i"}},
+                    {"reference": {"$regex": request.query, "$options": "i"}},
+                    {"type": {"$regex": request.query, "$options": "i"}}
+                ]
+            
+            if filters.get("statut"):
+                query["statut"] = {"$regex": filters["statut"], "$options": "i"}
+            
+            cursor = db.equipments.find(query, {"_id": 0}).limit(20)
+            results = await cursor.to_list(length=20)
+            
+        elif request.type == "inventory":
+            query = {}
+            if request.query:
+                query["$or"] = [
+                    {"nom": {"$regex": request.query, "$options": "i"}},
+                    {"reference": {"$regex": request.query, "$options": "i"}}
+                ]
+            
+            if filters.get("alerte"):
+                query["$expr"] = {"$lte": ["$quantite", "$seuil_alerte"]}
+            
+            cursor = db.inventory.find(query, {"_id": 0}).limit(20)
+            results = await cursor.to_list(length=20)
+            
+        elif request.type == "maintenance":
+            query = {}
+            if filters.get("en_retard"):
+                query["prochaine_date"] = {"$lt": datetime.now(timezone.utc)}
+            
+            cursor = db.preventive_maintenance.find(query, {"_id": 0}).limit(20)
+            results = await cursor.to_list(length=20)
+        
+        # Convertir les dates pour la sérialisation JSON
+        for item in results:
+            for key, value in item.items():
+                if isinstance(value, datetime):
+                    item[key] = value.isoformat()
+        
+        return {
+            "success": True,
+            "type": request.type,
+            "count": len(results),
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur recherche IA: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur recherche: {str(e)}")
+
+
 # ==================== Fonction LLM ====================
 
 async def get_llm_response(
