@@ -418,6 +418,52 @@ L'OT fermé alimente :
         "keywords": ["clôturer", "fermer", "terminer"]
     },
     
+    "sec-003-06": {
+        "title": "Ordres Type (Modèles d'OT)",
+        "content": """📋 **Créer et Utiliser des Ordres Type**
+
+Les **Ordres Type** sont des modèles d'ordres de travail pré-configurés pour accélérer la création d'OT récurrents.
+
+**Accéder aux Ordres Type** (Admin/Responsables de service) :
+1. Module **Ordres de travail**
+2. Bouton **"Ordres Type"** (violet, en haut à droite)
+
+**Créer un Modèle** :
+1. Cliquer **"+ Nouveau modèle"**
+2. Remplir les champs :
+   • **Nom** : Ex: "Remplacement courroie machine X"
+   • **Description** : Instructions détaillées
+   • **Catégorie** : Travaux Curatif, Préventif, etc.
+   • **Priorité** par défaut
+   • **Temps estimé**
+   • **Équipement** par défaut (optionnel)
+3. **Créer**
+
+**Utiliser un Modèle** :
+1. Module **Ordres de travail**
+2. Cliquer **"+ Nouvel Ordre (Modèle)"**
+3. Sélectionner un modèle dans la liste déroulante
+4. Prévisualiser les informations
+5. **"Utiliser ce modèle"**
+6. Le formulaire s'ouvre pré-rempli avec :
+   • Titre, Description, Catégorie, Priorité
+   • Date du jour automatique
+   • Temps estimé du modèle
+   • Emplacement auto-rempli si équipement lié
+7. Compléter et sauvegarder
+
+**Fonctionnalités Avancées** :
+• 📊 **Compteur d'utilisation** sur chaque modèle
+• 📋 **Dupliquer** un modèle existant
+• 📁 Modèles rangés par **catégorie**
+
+💡 **Astuce** : Créez des modèles pour les interventions répétitives comme les rondes, changements de pièces d'usure, etc.""",
+        "level": "intermediate",
+        "target_roles": ["ADMIN", "RSP_SERVICE", "RSP_PROD"],
+        "target_modules": ["workOrders"],
+        "keywords": ["modèle", "template", "ordre type", "pré-rempli"]
+    },
+    
     # Chapitre 4 : Équipements
     "sec-004-01": {
         "title": "Ajouter un Équipement",
