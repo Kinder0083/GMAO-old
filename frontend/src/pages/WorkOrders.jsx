@@ -723,6 +723,13 @@ const WorkOrders = () => {
           refreshWorkOrders();
         }}
       />
+
+      {/* Dialog de sélection de template */}
+      <TemplateSelectionDialog
+        open={templateDialogOpen}
+        onOpenChange={setTemplateDialogOpen}
+        onSelectTemplate={handleTemplateSelected}
+      />
     </div>
   );
 };
