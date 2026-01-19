@@ -323,6 +323,7 @@ const WorkOrders = () => {
             <div className="flex flex-col gap-2">
               <Button 
                 id="btn-nouvel-ordre"
+                data-testid="btn-nouvel-ordre-vierge"
                 data-action="creer-ot"
                 className="bg-blue-600 hover:bg-blue-700 text-white" 
                 onClick={() => {
@@ -336,6 +337,7 @@ const WorkOrders = () => {
               </Button>
               <Button 
                 variant="outline"
+                data-testid="btn-nouvel-ordre-modele"
                 className="border-blue-600 text-blue-600 hover:bg-blue-50"
                 onClick={() => setTemplateDialogOpen(true)}
               >
