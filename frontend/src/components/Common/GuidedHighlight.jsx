@@ -26,6 +26,12 @@ const GuidedHighlight = ({
   const [isWaitingForNavigation, setIsWaitingForNavigation] = useState(false);
   const [isWaitingForModal, setIsWaitingForModal] = useState(false);
   
+  // États pour le panneau déplaçable
+  const [panelPosition, setPanelPosition] = useState({ x: null, y: null });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const panelRef = useRef(null);
+  
   const navigate = useNavigate();
   const location = useLocation();
 
