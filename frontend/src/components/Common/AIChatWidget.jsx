@@ -432,6 +432,11 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       setMessages(prev => [...prev, assistantMessage]);
       setSessionId(response.data.session_id);
       
+      // Synthèse vocale de la réponse (si TTS activé)
+      if (isTTSEnabled && cleanResponse) {
+        speakText(cleanResponse);
+      }
+      
     } catch (error) {
       console.error('Erreur chat IA:', error);
       
