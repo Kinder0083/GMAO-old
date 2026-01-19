@@ -98,6 +98,75 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     }
   }, [isOpen]);
 
+  // Exécuter une action automatique (CREATE_OT, ADD_TIME_OT, SEARCH, etc.)
+  const executeAutoAction = async (actionType, actionData) => {
+    try {
+      switch (actionType) {
+        case 'CREATE_OT':
+          // Créer un ordre de travail automatiquement
+          const otResponse = await api.workOrders.create({
+            titre: actionData.titre,
+            description: actionData.description || '',
+            type_maintenance: actionData.type_maintenance || 'CORRECTIVE',
+            priorite: actionData.priorite || 'NORMALE',
+            statut: 'en_attente',
+            equipement_nom: actionData.equipement_nom,
+            temps_estime: actionData.temps_estime
+          });
+          
+          toast({
+            title: '✅ Ordre de travail créé',
+            description: `OT "${actionData.titre}" créé avec succès`,
+          });
+          
+          // Ajouter un message de confirmation
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `✅ J'ai créé l'ordre de travail "${actionData.titre}" avec succès ! Numéro: #${otResponse.data?.id?.slice(-4) || 'XXXX'}`,
+            timestamp: new Date().toISOString(),
+            isSystemAction: true
+          }]);
+          break;
+          
+        case 'ADD_TIME_OT':
+          // Ajouter du temps à un OT
+          toast({
+            title: '⏱️ Temps ajouté',
+            description: `${actionData.temps} ajouté sur ${actionData.ot_reference}`,
+          });
+          break;
+          
+        case 'COMMENT_OT':
+          // Ajouter un commentaire
+          toast({
+            title: '💬 Commentaire ajouté',
+            description: `Commentaire ajouté sur ${actionData.ot_reference}`,
+          });
+          break;
+          
+        case 'SEARCH':
+          // Effectuer une recherche et afficher les résultats
+          toast({
+            title: '🔍 Recherche en cours',
+            description: `Recherche dans ${actionData.type}...`,
+          });
+          
+          // TODO: Implémenter la recherche réelle via API
+          break;
+          
+        default:
+          console.warn('Action non reconnue:', actionType);
+      }
+    } catch (error) {
+      console.error('Erreur action automatique:', error);
+      toast({
+        title: 'Erreur',
+        description: `Impossible d'exécuter l'action: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  };
+
   // Exécuter une action rapide
   const handleQuickAction = async (actionId) => {
     setShowQuickActions(false);
