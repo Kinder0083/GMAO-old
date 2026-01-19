@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { X, ChevronRight, ChevronLeft, SkipForward } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { X, ChevronRight, ChevronLeft, SkipForward, GripHorizontal } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
 
