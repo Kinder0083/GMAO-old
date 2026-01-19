@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Search, Users as UsersIcon, Mail, Phone, Trash2, Settings, UserPlus, Edit, Shield } from 'lucide-react';
+import { Plus, Search, Users as UsersIcon, Mail, Phone, Trash2, Settings, UserPlus, Edit, Shield, Wifi, WifiOff } from 'lucide-react';
 import UserProfileDialog from '../components/Common/UserProfileDialog';
 import InviteMemberDialog from '../components/Common/InviteMemberDialog';
 import CreateMemberDialog from '../components/Common/CreateMemberDialog';
@@ -13,6 +13,8 @@ import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { usersAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { formatErrorMessage } from '../utils/errorFormatter';
+import { useRealtimeData } from '../hooks/useRealtimeData';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 
 const People = () => {
   const navigate = useNavigate();
