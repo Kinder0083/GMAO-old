@@ -103,27 +103,47 @@ LLM_PROVIDERS = {
     }
 }
 
-# Message système pour l'assistant
+# Message système pour l'assistant - VERSION 2.0 REFONTE COMPLÈTE
 def get_system_message(assistant_name: str, assistant_gender: str, language: str = "fr", app_context: dict = None):
-    gender_pronoun = "une assistante" if assistant_gender == "female" else "un assistant"
+    gender_pronoun = "une assistante experte" if assistant_gender == "female" else "un assistant expert"
+    gender_adj = "spécialisée" if assistant_gender == "female" else "spécialisé"
+    gender_adj2 = "prête" if assistant_gender == "female" else "prêt"
     
     # Construire le contexte enrichi de l'application
     app_context_text = ""
     if app_context:
         app_context_text = f"""
 
-CONTEXTE ACTUEL DE L'APPLICATION (données en temps réel) :
-- Ordres de travail en cours : {app_context.get('active_work_orders', 0)}
-- Ordres de travail urgents : {app_context.get('urgent_work_orders', 0)}
-- Équipements en maintenance : {app_context.get('equipment_in_maintenance', 0)}
-- Alertes actives : {app_context.get('active_alerts', 0)}
-- Capteurs en alerte : {app_context.get('sensors_in_alert', 0)}
-- Utilisateur connecté : {app_context.get('current_user_name', 'Inconnu')} ({app_context.get('current_user_role', 'N/A')})
-- Page actuelle : {app_context.get('current_page', 'N/A')}
-- Dernière action : {app_context.get('last_action', 'N/A')}
+═══════════════════════════════════════════════════════════════
+📊 CONTEXTE TEMPS RÉEL DE L'APPLICATION
+═══════════════════════════════════════════════════════════════
 
-Utilise ces informations pour personnaliser tes réponses et anticiper les besoins de l'utilisateur.
-Par exemple, si il y a des OT urgents, tu peux le mentionner proactivement."""
+👤 UTILISATEUR CONNECTÉ :
+   - Nom : {app_context.get('current_user_name', 'Inconnu')}
+   - Rôle : {app_context.get('current_user_role', 'N/A')}
+   - Page actuelle : {app_context.get('current_page', 'Non détectée')}
+   - Dernière action : {app_context.get('last_action', 'Aucune')}
+
+📋 ORDRES DE TRAVAIL :
+   - En cours/attente : {app_context.get('active_work_orders', 0)}
+   - Urgents (priorité haute) : {app_context.get('urgent_work_orders', 0)}
+
+🔧 ÉQUIPEMENTS :
+   - En maintenance/hors service : {app_context.get('equipment_in_maintenance', 0)}
+
+🚨 ALERTES :
+   - Alertes actives : {app_context.get('active_alerts', 0)}
+   - Capteurs en alerte : {app_context.get('sensors_in_alert', 0)}
+
+📦 INVENTAIRE :
+   - Articles en rupture : {app_context.get('inventory_rupture', 0)}
+   - Articles niveau bas : {app_context.get('inventory_low', 0)}
+
+⚡ UTILISE CES DONNÉES pour personnaliser tes réponses :
+   - Si OT urgents > 0 : Mentionne-le et propose de les afficher
+   - Si alertes actives : Propose de les consulter
+   - Adapte ton aide à la page actuelle de l'utilisateur
+═══════════════════════════════════════════════════════════════"""
     
     return f"""Tu es {assistant_name}, {gender_pronoun} IA intelligente et serviable pour l'application GMAO Iris (Gestion de Maintenance Assistée par Ordinateur).
 
