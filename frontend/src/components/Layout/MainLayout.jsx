@@ -641,14 +641,22 @@ const MainLayout = () => {
       {/* Top Navigation */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center justify-between px-4">
         <div className="flex items-center gap-4">
-          <button
-            id="sidebar-toggle"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title={sidebarOpen ? "Minimiser le menu" : "Agrandir le menu"}
-          >
-            {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                id="sidebar-toggle"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                data-testid="sidebar-toggle-btn"
+              >
+                {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+              <p className="font-medium">{sidebarOpen ? "Minimiser le menu" : "Agrandir le menu"}</p>
+              <p className="text-xs text-gray-300 mt-1">Raccourci pour ajuster l'espace de travail</p>
+            </TooltipContent>
+          </Tooltip>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">G</span>
