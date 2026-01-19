@@ -34,6 +34,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
   const [minimized, setMinimized] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [hasProcessedInitialQuestion, setHasProcessedInitialQuestion] = useState(false);
+  const [activeGuide, setActiveGuide] = useState(null); // Guide visuel pas à pas
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
