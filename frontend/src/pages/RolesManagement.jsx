@@ -30,6 +30,7 @@ import {
   UserCheck,
   Building
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { useToast } from '../hooks/use-toast';
 import { rolesAPI } from '../services/api';
 
