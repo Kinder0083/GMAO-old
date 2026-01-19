@@ -324,40 +324,47 @@ Tu réponds :
   "title": "Créer un Ordre de Travail",
   "steps": [
     {{
-      "instruction": "Clique sur 'Ordres de travail' dans le menu à gauche",
-      "target": "[data-testid='sidebar-work-orders'], a[href='/work-orders'], button[data-testid='sidebar-work-orders']",
+      "instruction": "Clique sur 'Ordres de travail' dans le menu à gauche pour accéder à la liste des OT",
+      "target": "[data-testid='sidebar-work-orders'], a[href='/work-orders']",
       "highlight_type": "pulse",
-      "wait_for_click": true
+      "wait_for_click": true,
+      "context": "page"
     }},
     {{
-      "instruction": "Clique sur le bouton '+ Nouvel Ordre (Vierge)' en haut à droite pour créer un nouvel OT",
-      "target": "[data-testid='btn-nouvel-ordre-vierge'], #btn-nouvel-ordre, [data-action='creer-ot']",
+      "instruction": "Clique sur le bouton '+ Nouvel Ordre (Vierge)' en haut à droite. Cela va ouvrir le formulaire de création.",
+      "target": "[data-testid='btn-nouvel-ordre-vierge'], #btn-nouvel-ordre",
       "highlight_type": "glow",
-      "wait_for_click": true
+      "wait_for_click": true,
+      "context": "page",
+      "opens_modal": true
     }},
     {{
-      "instruction": "Remplis le titre de l'ordre de travail",
-      "target": "input[name='titre'], input[placeholder*='titre']",
+      "instruction": "Dans le formulaire qui vient de s'ouvrir, remplis le titre de l'ordre de travail (champ obligatoire)",
+      "target": "[data-testid='input-titre-ot'], #titre",
       "highlight_type": "spotlight",
-      "wait_for_click": false
+      "wait_for_click": false,
+      "context": "modal"
     }},
     {{
-      "instruction": "Sélectionne le type de maintenance (Corrective, Préventive ou Améliorative)",
-      "target": "[data-testid='type-maintenance-select'], select[name='type']",
+      "instruction": "Remplis la description de l'intervention à réaliser (champ obligatoire)",
+      "target": "[data-testid='input-description-ot'], #description",
+      "highlight_type": "spotlight",
+      "wait_for_click": false,
+      "context": "modal"
+    }},
+    {{
+      "instruction": "Choisis la priorité de l'intervention (Haute, Moyenne, Basse ou Normale)",
+      "target": "[data-testid='select-priorite-ot']",
       "highlight_type": "pulse",
-      "wait_for_click": true
+      "wait_for_click": true,
+      "context": "modal"
     }},
     {{
-      "instruction": "Choisis la priorité de l'intervention",
-      "target": "[data-testid='priority-select'], select[name='priorite']",
-      "highlight_type": "pulse",
-      "wait_for_click": true
-    }},
-    {{
-      "instruction": "Clique sur 'Créer' pour valider l'ordre de travail",
-      "target": "button[type='submit']:has-text('Créer'), [data-testid='submit-ot-btn']",
+      "instruction": "Clique sur 'Créer' pour valider et enregistrer l'ordre de travail",
+      "target": "[data-testid='btn-submit-ot'], button[type='submit']",
       "highlight_type": "glow",
-      "wait_for_click": true
+      "wait_for_click": true,
+      "context": "modal"
     }}
   ]
 }}
@@ -370,6 +377,11 @@ GUIDES PRÉDÉFINIS À UTILISER :
 - consulter_dashboard : Explorer le tableau de bord
 - configurer_capteur : Configurer un capteur IoT
 - gerer_inventaire : Gérer le stock de pièces
+
+IMPORTANT POUR LES GUIDES :
+- context: "page" = l'élément est sur la page principale
+- context: "modal" = l'élément est dans un formulaire/dialogue qui s'ouvre par-dessus la page
+- opens_modal: true = ce clic va ouvrir un formulaire, les étapes suivantes seront dans ce formulaire
 
 ═══════════════════════════════════════════════════════════════════════════════
 ✨ EFFETS VISUELS SUPPLÉMENTAIRES
