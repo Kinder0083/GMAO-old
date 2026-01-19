@@ -4154,19 +4154,18 @@ async def request_help(
         try:
             subject = f"🆘 Demande d'Aide - {user_name} - {help_request.page_url}"
             
-            # Préparer la pièce jointe screenshot
-            attachments = [{
-                'data': screenshot_data,  # Base64 string
-                'filename': f'screenshot_{request_id[:8]}.png',
-                'mimetype': 'image/png'
-            }]
+            # Décoder le screenshot base64 en bytes
+            import base64
+            screenshot_bytes = base64.b64decode(screenshot_data)
+            screenshot_filename = f'screenshot_{request_id[:8]}.png'
             
             for admin_email in admin_emails:
                 email_service.send_email_with_attachment(
                     to_email=admin_email,
                     subject=subject,
                     html_content=email_html,
-                    attachments=attachments
+                    attachment_data=screenshot_bytes,
+                    attachment_filename=screenshot_filename
                 )
             
             # Journaliser l'action
