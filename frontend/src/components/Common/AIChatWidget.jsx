@@ -36,6 +36,14 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
   const [hasProcessedInitialQuestion, setHasProcessedInitialQuestion] = useState(false);
   const [activeGuide, setActiveGuide] = useState(null); // Guide visuel pas à pas
   
+  // États pour la gestion vocale
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTTSEnabled, setIsTTSEnabled] = useState(true); // TTS activé par défaut
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioPlayerRef = useRef(null);
+  
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   
