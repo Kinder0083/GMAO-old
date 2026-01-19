@@ -47,6 +47,27 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - `/app/frontend/src/App.js` (route /people/roles)
 - `/app/backend/server.py` (import et initialisation des routes)
 
+#### ✅ Feature: WebSocket temps réel sur la page "Utilisateurs" (19 Jan 2026)
+**Implémentation de la synchronisation temps réel** via WebSocket sur la page des utilisateurs :
+
+**Frontend** (`/app/frontend/src/pages/People.jsx`) :
+- Utilisation du hook `useRealtimeData` pour les utilisateurs
+- Connexion WebSocket automatique au type `users`
+- Polling de secours toutes les 60 secondes si WebSocket indisponible
+- Indicateur visuel de connexion (badge "Temps réel" en vert ou "Hors ligne" en gris)
+- Tooltip enrichi expliquant l'état de la synchronisation
+
+**Backend** (`/app/backend/server.py`) :
+- Ajout de l'émission d'événement WebSocket lors de la création d'un utilisateur
+- Les événements `created`, `updated`, et `deleted` sont maintenant tous synchronisés
+
+**Comportement** :
+- Création d'un utilisateur → Tous les clients connectés voient le nouvel utilisateur apparaître
+- Modification d'un utilisateur → Mise à jour automatique chez tous les clients
+- Suppression d'un utilisateur → Disparition automatique de la liste chez tous
+
+---
+
 #### ✅ Bug Fix: Fonction "Demander de l'aide" - Envoi email (19 Jan 2026)
 **Problème** : Message d'erreur "Erreur lors de l'envoi de l'email" lors de la soumission d'une demande d'aide.
 
