@@ -20,7 +20,7 @@ import requests
 import os
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://proxmox-debugger.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://tooltip-master.preview.emergentagent.com').rstrip('/')
 
 
 class TestPlanningMPrevBugFix:
