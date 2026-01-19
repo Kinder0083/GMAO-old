@@ -748,37 +748,60 @@ function PoleDetails() {
                             {auto.created_at ? new Date(auto.created_at).toLocaleDateString('fr-FR') : ''}
                           </p>
                         </div>
-                        <div className="flex gap-1">
-                          {canEdit(auto) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/autorisations-particulieres/edit/${auto.id}`)}
-                              title="Modifier"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePrint('autorisation', auto.id)}
-                            title="Imprimer"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          {canEdit(auto) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteAutorisation(auto.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                        <TooltipProvider delayDuration={300}>
+                          <div className="flex gap-1">
+                            {canEdit(auto) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigate(`/autorisations-particulieres/edit/${auto.id}`)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Modifier l'autorisation</p>
+                                  <p className="text-xs text-gray-300">Éditer les détails de l'autorisation</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePrint('autorisation', auto.id)}
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">Imprimer</p>
+                                <p className="text-xs text-gray-300">Générer un PDF de l'autorisation</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            {canEdit(auto) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteAutorisation(auto.id)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Supprimer</p>
+                                  <p className="text-xs text-gray-300">Cette action est irréversible</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TooltipProvider>
                       </div>
                     ))}
                   </div>
