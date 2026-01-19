@@ -427,6 +427,7 @@ export default function CustomFormFiller({
                   variant="ghost"
                   size="sm"
                   onClick={() => removeAttachment(file.id)}
+                  title="Supprimer ce fichier"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -457,6 +458,7 @@ export default function CustomFormFiller({
                   size="sm"
                   className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
                   onClick={() => setLogoUrl(null)}
+                  title="Supprimer le logo"
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -466,6 +468,7 @@ export default function CustomFormFiller({
                 type="button"
                 variant="outline"
                 onClick={() => logoInputRef.current?.click()}
+                title="Cliquer pour ajouter un logo"
               >
                 <Image className="h-4 w-4 mr-2" />
                 Ajouter un logo
