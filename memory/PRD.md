@@ -47,6 +47,32 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - `/app/frontend/src/App.js` (route /people/roles)
 - `/app/backend/server.py` (import et initialisation des routes)
 
+#### ✅ Feature: Tooltips enrichis sur l'ensemble de l'application (19 Jan 2026)
+**Revue complète** de l'interface pour ajouter des infobulles enrichies (titre + description) :
+
+**Pages modifiées avec tooltips enrichis** :
+- `/app/frontend/src/pages/PoleDetails.jsx` - Boutons documents, bons, autorisations, formulaires
+- `/app/frontend/src/pages/Inventory.jsx` - Actions surveillance, modifier, supprimer
+- `/app/frontend/src/pages/Meters.jsx` - Boutons voir, modifier, supprimer (vues liste et arborescence)
+- `/app/frontend/src/pages/RolesManagement.jsx` - Actions sur les rôles
+- `/app/frontend/src/pages/FormTemplatesPage.jsx` - Actions sur les modèles
+- `/app/frontend/src/pages/Documentations.jsx` - Actions sur les pôles
+- `/app/frontend/src/components/FormBuilderDialog.jsx` - Actions sur les champs
+
+**Format des tooltips enrichis** :
+```jsx
+<TooltipContent>
+  <p className="font-medium">Titre de l'action</p>
+  <p className="text-xs text-gray-300">Description détaillée</p>
+</TooltipContent>
+```
+
+**Exemples ajoutés** :
+- "Ouvrir le document" → "Télécharger ou imprimer ce fichier"
+- "Modifier l'article" → "Éditer les informations et le stock"
+- "Supprimer" → "Cette action est irréversible"
+- "Activer la surveillance" → "Recevoir des alertes de stock bas"
+
 #### ✅ Feature: Formulaires personnalisés avec champs configurables (18 Jan 2026)
 **Implémentation complète** des modèles de formulaires personnalisés :
 
