@@ -198,6 +198,29 @@ docker-compose ps
 docker-compose logs -f
 ```
 
+### 7. Initialiser le Manuel Utilisateur
+
+⚠️ **IMPORTANT** : Après le premier démarrage, initialisez le manuel utilisateur :
+
+```bash
+# Entrer dans le container backend
+docker exec -it gmao-iris-backend bash
+
+# Exécuter le script d'initialisation du manuel
+python3 init_manual_on_install.py
+
+# Ou directement sans entrer dans le container
+docker exec gmao-iris-backend python3 /app/backend/init_manual_on_install.py
+```
+
+Le manuel sera créé avec :
+- 📚 **24 chapitres** couvrant toutes les fonctionnalités
+- 📄 **70+ sections** détaillées
+- 📋 **Ordres Type** (Modèles d'OT)
+- 📝 **Modèles de Formulaires** et Créateur personnalisé
+- 👥 **Gestion des Rôles** et Permissions
+- 💡 **Aide Contextuelle** et Tooltips enrichis
+
 ---
 
 ## 🔥 Configuration du Firewall Proxmox
