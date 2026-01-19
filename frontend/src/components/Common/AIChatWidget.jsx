@@ -807,20 +807,57 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
 
             {/* Input */}
             <div className="p-3 border-t border-gray-200 bg-white">
+              {/* Contrôles TTS */}
+              <div className="flex items-center justify-between mb-2 px-1">
+                <button
+                  onClick={() => setIsTTSEnabled(!isTTSEnabled)}
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-colors ${
+                    isTTSEnabled 
+                      ? 'bg-purple-100 text-purple-700' 
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                  title={isTTSEnabled ? 'Désactiver la voix' : 'Activer la voix'}
+                >
+                  {isTTSEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                  <span>{isTTSEnabled ? 'Voix ON' : 'Voix OFF'}</span>
+                </button>
+                
+                {isPlayingAudio && (
+                  <button
+                    onClick={stopAudio}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-700"
+                  >
+                    <VolumeX size={14} />
+                    <span>Arrêter</span>
+                  </button>
+                )}
+              </div>
+              
               <div className="flex gap-2">
+                {/* Bouton Microphone */}
+                <Button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={loading}
+                  variant={isRecording ? "destructive" : "outline"}
+                  className={`px-3 ${isRecording ? 'animate-pulse bg-red-500 hover:bg-red-600' : ''}`}
+                  title={isRecording ? 'Arrêter l\'enregistrement' : 'Parler à Adria'}
+                >
+                  {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                </Button>
+                
                 <textarea
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={`Posez votre question à ${aiName}...`}
+                  placeholder={isRecording ? '🎤 Enregistrement en cours...' : `Posez votre question à ${aiName}...`}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                   rows={1}
-                  disabled={loading}
+                  disabled={loading || isRecording}
                 />
                 <Button
                   onClick={handleSend}
-                  disabled={!input.trim() || loading}
+                  disabled={!input.trim() || loading || isRecording}
                   className="bg-purple-600 hover:bg-purple-700 px-3"
                 >
                   {loading ? (
@@ -830,6 +867,14 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
                   )}
                 </Button>
               </div>
+              
+              {/* Indicateur d'enregistrement */}
+              {isRecording && (
+                <div className="mt-2 flex items-center justify-center gap-2 text-red-600 text-sm">
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                  <span>Parlez maintenant... Cliquez sur le micro pour terminer</span>
+                </div>
+              )}
             </div>
           </>
         )}
