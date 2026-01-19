@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
 import api from '../../services/api';
+import GuidedHighlight from './GuidedHighlight';
 
 // Import du contexte (pas du hook)
 import { AINavigationContext } from '../../contexts/AINavigationContext';
