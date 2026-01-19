@@ -3,6 +3,7 @@ import { HelpCircle, X, Sparkles, MessageCircle, BookOpen, Lightbulb } from 'luc
 import { useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { useAIContextMenu } from '../../contexts/AIContextMenuContext';
 
 /**
  * ContextualHelpButton - Bouton d'aide contextuelle par page
