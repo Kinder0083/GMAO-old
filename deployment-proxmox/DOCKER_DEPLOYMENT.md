@@ -4,7 +4,48 @@ Guide complet pour déployer **GMAO Iris** avec Docker sur Proxmox.
 
 ---
 
-## 📋 Prérequis
+## 🚀 Installation Automatique (Recommandé)
+
+Le script `install.sh` automatise l'intégralité de l'installation :
+
+```bash
+# Cloner le repository
+cd /opt
+git clone https://github.com/VOTRE-USERNAME/gmao-iris.git
+cd gmao-iris
+
+# Lancer l'installation automatique
+chmod +x deployment-proxmox/install.sh
+./deployment-proxmox/install.sh -i VOTRE_IP_PUBLIQUE
+```
+
+**Options disponibles :**
+```bash
+./deployment-proxmox/install.sh --help
+
+Options:
+  -i, --ip IP         IP publique du serveur (OBLIGATOIRE)
+  -p, --password PWD  Mot de passe MongoDB (défaut: généré)
+  -s, --secret KEY    Clé secrète JWT (défaut: générée)
+  --skip-docker       Ne pas installer Docker (si déjà installé)
+  --skip-manual       Ne pas initialiser le manuel utilisateur
+```
+
+**Ce que fait le script :**
+1. ✅ Installe Docker et Docker Compose
+2. ✅ Configure les fichiers docker-compose.yml
+3. ✅ Crée les Dockerfiles pour backend et frontend
+4. ✅ Build et démarre les containers
+5. ✅ **Initialise automatiquement le manuel utilisateur** (24 chapitres, 70+ sections)
+6. ✅ Sauvegarde les credentials dans `credentials.txt`
+
+---
+
+## 📋 Installation Manuelle
+
+Si vous préférez une installation manuelle, suivez les étapes ci-dessous.
+
+### Prérequis
 
 - Proxmox VE installé et configuré
 - Container LXC Ubuntu 22.04 créé (ou VM)
