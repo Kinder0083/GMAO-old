@@ -699,34 +699,42 @@ const MainLayout = () => {
 
           {/* Icône rappel échéances avec 3 badges */}
           <div className="relative">
-            <button 
-              onClick={() => setOverdueMenuOpen(!overdueMenuOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
-              title="Échéances dépassées"
-            >
-              <img src="/rappel-calendrier.jpg" alt="Rappel" className="w-6 h-6 object-contain" />
-              
-              {/* Badge ORANGE - Coin supérieur droit - Work Orders + Improvements */}
-              {overdueExecutionCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
-                  {overdueExecutionCount > 9 ? '9+' : overdueExecutionCount}
-                </span>
-              )}
-              
-              {/* Badge JAUNE - Coin supérieur gauche - Demandes d'inter. + Demandes d'amél. */}
-              {overdueRequestsCount > 0 && (
-                <span className="absolute -top-1 -left-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
-                  {overdueRequestsCount > 9 ? '9+' : overdueRequestsCount}
-                </span>
-              )}
-              
-              {/* Badge BLEU - Coin inférieur gauche - Maintenances préventives */}
-              {overdueMaintenanceCount > 0 && (
-                <span className="absolute -bottom-1 -left-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
-                  {overdueMaintenanceCount > 9 ? '9+' : overdueMaintenanceCount}
-                </span>
-              )}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setOverdueMenuOpen(!overdueMenuOpen)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                  data-testid="overdue-calendar-btn"
+                >
+                  <img src="/rappel-calendrier.jpg" alt="Rappel" className="w-6 h-6 object-contain" />
+                  
+                  {/* Badge ORANGE - Coin supérieur droit - Work Orders + Improvements */}
+                  {overdueExecutionCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                      {overdueExecutionCount > 9 ? '9+' : overdueExecutionCount}
+                    </span>
+                  )}
+                  
+                  {/* Badge JAUNE - Coin supérieur gauche - Demandes d'inter. + Demandes d'amél. */}
+                  {overdueRequestsCount > 0 && (
+                    <span className="absolute -top-1 -left-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                      {overdueRequestsCount > 9 ? '9+' : overdueRequestsCount}
+                    </span>
+                  )}
+                  
+                  {/* Badge BLEU - Coin inférieur gauche - Maintenances préventives */}
+                  {overdueMaintenanceCount > 0 && (
+                    <span className="absolute -bottom-1 -left-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                      {overdueMaintenanceCount > 9 ? '9+' : overdueMaintenanceCount}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+                <p className="font-medium">Échéances dépassées</p>
+                <p className="text-xs text-gray-300 mt-1">Voir les tâches en retard par catégorie</p>
+              </TooltipContent>
+            </Tooltip>
 
             {/* Menu déroulant des échéances */}
             {overdueMenuOpen && overdueCount > 0 && (
