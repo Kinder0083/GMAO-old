@@ -99,7 +99,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
         setSavedWorkOrderStatus(null);
         setTemplateId(prefillData.template_id || null);
       } else {
-        // Mode création vide - avec date du jour et temps estimé par défaut
+        // Mode création vide - avec date du jour et temps estimé par défaut (0.5h = 30 min)
         const today = new Date().toISOString().split('T')[0];
         setFormData({
           titre: '',
@@ -111,7 +111,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
           assigne_a_id: '',
           emplacement_id: '',
           dateLimite: today,
-          tempsEstime: '0h30'
+          tempsEstime: '0.5'
         });
         setAttachments([]);
         setSavedWorkOrderId(null);
