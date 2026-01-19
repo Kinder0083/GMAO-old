@@ -475,38 +475,61 @@ const Inventory = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleMonitoring(item)}
-                              className={item.stock_monitoring_enabled === false ? "hover:bg-blue-50 hover:text-blue-600" : "hover:bg-gray-50 hover:text-gray-600"}
-                              title={item.stock_monitoring_enabled === false ? "Activer la surveillance du stock" : "Désactiver la surveillance du stock"}
-                            >
-                              {item.stock_monitoring_enabled === false ? <Eye size={16} /> : <EyeOff size={16} />}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedItem(item);
-                                setFormDialogOpen(true);
-                              }}
-                              className="hover:bg-green-50 hover:text-green-600"
-                              title="Modifier cet article"
-                            >
-                              <Pencil size={16} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(item.id)}
-                              className="hover:bg-red-50 hover:text-red-600"
-                              title="Supprimer cet article"
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
+                          <TooltipProvider delayDuration={300}>
+                            <div className="flex gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleToggleMonitoring(item)}
+                                    className={item.stock_monitoring_enabled === false ? "hover:bg-blue-50 hover:text-blue-600" : "hover:bg-gray-50 hover:text-gray-600"}
+                                  >
+                                    {item.stock_monitoring_enabled === false ? <Eye size={16} /> : <EyeOff size={16} />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">{item.stock_monitoring_enabled === false ? "Activer la surveillance" : "Désactiver la surveillance"}</p>
+                                  <p className="text-xs text-gray-300">{item.stock_monitoring_enabled === false ? "Recevoir des alertes de stock bas" : "Ne plus recevoir d'alertes"}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedItem(item);
+                                      setFormDialogOpen(true);
+                                    }}
+                                    className="hover:bg-green-50 hover:text-green-600"
+                                  >
+                                    <Pencil size={16} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Modifier l'article</p>
+                                  <p className="text-xs text-gray-300">Éditer les informations et le stock</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(item.id)}
+                                    className="hover:bg-red-50 hover:text-red-600"
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Supprimer l'article</p>
+                                  <p className="text-xs text-gray-300">Cette action est irréversible</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
                         </td>
                       </tr>
                     );
