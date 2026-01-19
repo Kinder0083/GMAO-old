@@ -43,6 +43,7 @@ import FirstLoginPasswordDialog from '../Common/FirstLoginPasswordDialog';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
 import HelpButton from '../Common/HelpButton';
 import AIButton from '../Common/AIButton';
+import ContextualHelpButton from '../Common/ContextualHelpButton';
 import ManualButton from '../Common/ManualButton';
 import RecentUpdatePopup from '../Common/RecentUpdatePopup';
 import AlertNotifications from '../Common/AlertNotifications';
