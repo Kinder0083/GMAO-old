@@ -792,37 +792,38 @@ const MainLayout = () => {
           {isAdmin() && <UpdateNotificationBadge />}
           
           {/* Badge Plan de Surveillance */}
-          <button 
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative group"
-            onClick={() => navigate('/surveillance-plan', { state: { showOverdueOnly: true } })}
-            title="Plan de Surveillance - Voir les contrôles en retard"
-          >
-            <Eye size={20} className="text-gray-600" />
-            {surveillanceBadge.echeances_proches > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {surveillanceBadge.echeances_proches > 9 ? '9+' : surveillanceBadge.echeances_proches}
-              </span>
-            )}
-            {/* Tooltip avec détails */}
-            <div className="absolute hidden group-hover:block right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 p-3">
-              <div className="text-sm font-semibold text-gray-800 mb-2">Plan de Surveillance</div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                onClick={() => navigate('/surveillance-plan', { state: { showOverdueOnly: true } })}
+                data-testid="surveillance-plan-btn"
+              >
+                <Eye size={20} className="text-gray-600" />
+                {surveillanceBadge.echeances_proches > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {surveillanceBadge.echeances_proches > 9 ? '9+' : surveillanceBadge.echeances_proches}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg w-64">
+              <p className="font-semibold mb-2">Plan de Surveillance</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Échéances proches:</span>
-                  <span className="font-bold text-orange-600">{surveillanceBadge.echeances_proches}</span>
+                  <span className="text-gray-300">Échéances proches:</span>
+                  <span className="font-bold text-orange-400">{surveillanceBadge.echeances_proches}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Taux de réalisation:</span>
-                  <span className={`font-bold ${surveillanceBadge.pourcentage_realisation >= 75 ? 'text-green-600' : surveillanceBadge.pourcentage_realisation >= 50 ? 'text-orange-600' : 'text-red-600'}`}>
+                  <span className="text-gray-300">Taux de réalisation:</span>
+                  <span className={`font-bold ${surveillanceBadge.pourcentage_realisation >= 75 ? 'text-green-400' : surveillanceBadge.pourcentage_realisation >= 50 ? 'text-orange-400' : 'text-red-400'}`}>
                     {surveillanceBadge.pourcentage_realisation}%
                   </span>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
-                💡 Cliquez pour voir uniquement les contrôles en retard
-              </div>
-            </div>
-          </button>
+              <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">Cliquez pour voir les contrôles en retard</p>
+            </TooltipContent>
+          </Tooltip>
           
           {/* Badge Inventaire (Niveau bas + Rupture) */}
           <button 
