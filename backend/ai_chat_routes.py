@@ -1346,6 +1346,185 @@ async def ai_search(
         raise HTTPException(status_code=500, detail=f"Erreur recherche: {str(e)}")
 
 
+# ==================== Speech-to-Text (STT) et Text-to-Speech (TTS) ====================
+
+from fastapi import UploadFile, File
+import base64
+import tempfile
+
+@router.post("/voice/transcribe")
+async def transcribe_audio(
+    audio: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Transcrit un fichier audio en texte via OpenAI Whisper
+    Utilise la clé Emergent LLM
+    """
+    try:
+        # Récupérer la clé API
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé API non configurée pour la transcription")
+        
+        # Lire le contenu audio
+        audio_content = await audio.read()
+        
+        # Utiliser emergentintegrations pour Whisper
+        try:
+            from emergentintegrations.llm.openai import transcribe_audio as ei_transcribe
+            
+            # Sauvegarder temporairement le fichier
+            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_file:
+                tmp_file.write(audio_content)
+                tmp_path = tmp_file.name
+            
+            # Transcrire
+            transcription = await ei_transcribe(
+                api_key=api_key,
+                audio_file_path=tmp_path,
+                language="fr"
+            )
+            
+            # Nettoyer le fichier temporaire
+            import os as os_module
+            os_module.unlink(tmp_path)
+            
+            logger.info(f"Audio transcrit: {transcription[:50]}...")
+            
+            return {
+                "success": True,
+                "transcription": transcription
+            }
+            
+        except ImportError:
+            # Fallback: utiliser l'API OpenAI directement
+            import httpx
+            
+            # Sauvegarder temporairement
+            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_file:
+                tmp_file.write(audio_content)
+                tmp_path = tmp_file.name
+            
+            async with httpx.AsyncClient() as client:
+                with open(tmp_path, "rb") as f:
+                    response = await client.post(
+                        "https://api.openai.com/v1/audio/transcriptions",
+                        headers={"Authorization": f"Bearer {api_key}"},
+                        files={"file": ("audio.webm", f, "audio/webm")},
+                        data={"model": "whisper-1", "language": "fr"}
+                    )
+                    
+            import os as os_module
+            os_module.unlink(tmp_path)
+            
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "transcription": result.get("text", "")
+                }
+            else:
+                raise HTTPException(status_code=500, detail=f"Erreur transcription: {response.text}")
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur transcription audio: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur transcription: {str(e)}")
+
+
+@router.post("/voice/synthesize")
+async def synthesize_speech(
+    text: str,
+    voice: str = "nova",  # Options: alloy, echo, fable, onyx, nova, shimmer
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Synthèse vocale (Text-to-Speech) via OpenAI TTS
+    Retourne l'audio en base64
+    """
+    try:
+        # Récupérer la clé API
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé API non configurée pour la synthèse vocale")
+        
+        # Limiter la longueur du texte
+        if len(text) > 4096:
+            text = text[:4096]
+        
+        try:
+            from emergentintegrations.llm.openai import text_to_speech as ei_tts
+            
+            # Générer l'audio
+            audio_content = await ei_tts(
+                api_key=api_key,
+                text=text,
+                voice=voice,
+                model="tts-1"
+            )
+            
+            # Encoder en base64
+            audio_base64 = base64.b64encode(audio_content).decode('utf-8')
+            
+            return {
+                "success": True,
+                "audio_base64": audio_base64,
+                "format": "mp3"
+            }
+            
+        except ImportError:
+            # Fallback: utiliser l'API OpenAI directement
+            import httpx
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.openai.com/v1/audio/speech",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "tts-1",
+                        "input": text,
+                        "voice": voice,
+                        "response_format": "mp3"
+                    }
+                )
+                
+            if response.status_code == 200:
+                audio_base64 = base64.b64encode(response.content).decode('utf-8')
+                return {
+                    "success": True,
+                    "audio_base64": audio_base64,
+                    "format": "mp3"
+                }
+            else:
+                raise HTTPException(status_code=500, detail=f"Erreur synthèse vocale: {response.text}")
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur synthèse vocale: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur synthèse vocale: {str(e)}")
+
+
+class TTSRequest(BaseModel):
+    text: str
+    voice: Optional[str] = "nova"  # nova = voix féminine naturelle
+
+@router.post("/voice/tts")
+async def text_to_speech_endpoint(
+    request: TTSRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Endpoint alternatif pour TTS avec body JSON
+    """
+    return await synthesize_speech(request.text, request.voice, current_user)
+
+
 # ==================== Fonction LLM ====================
 
 async def get_llm_response(
