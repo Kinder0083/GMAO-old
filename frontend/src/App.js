@@ -133,6 +133,7 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="work-orders" element={<WorkOrders />} />
+            <Route path="work-orders/templates" element={<WorkOrderTemplatesPage />} />
             <Route path="assets" element={<Assets />} />
             <Route path="assets/:id" element={<EquipmentDetail />} />
             <Route path="inventory" element={<Inventory />} />
