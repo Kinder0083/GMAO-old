@@ -47,6 +47,19 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - `/app/frontend/src/App.js` (route /people/roles)
 - `/app/backend/server.py` (import et initialisation des routes)
 
+#### ✅ Bug Fix: Fonction "Demander de l'aide" - Envoi email (19 Jan 2026)
+**Problème** : Message d'erreur "Erreur lors de l'envoi de l'email" lors de la soumission d'une demande d'aide.
+
+**Cause** : Dans `/app/backend/server.py`, l'appel à `email_service.send_email_with_attachment()` passait un paramètre `attachments` (liste de dictionnaires) au lieu des paramètres attendus `attachment_data` (bytes) et `attachment_filename` (string).
+
+**Correction** :
+- Décodage du screenshot base64 en bytes avec `base64.b64decode()`
+- Passage des paramètres corrects `attachment_data` et `attachment_filename`
+
+**Fichier modifié** : `/app/backend/server.py` (ligne ~4157)
+
+---
+
 #### ✅ Feature: Tooltips enrichis sur l'ensemble de l'application (19 Jan 2026)
 **Revue complète** de l'interface pour ajouter des infobulles enrichies (titre + description) :
 
