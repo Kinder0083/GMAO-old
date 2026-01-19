@@ -47,6 +47,11 @@ const WorkOrders = () => {
   const [checklistContext, setChecklistContext] = useState({});
   const [checklistCompletedSuccessfully, setChecklistCompletedSuccessfully] = useState(false);
   
+  // États pour les ordres type (templates)
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [hasTemplateAccess, setHasTemplateAccess] = useState(false);
+  const [templateFormData, setTemplateFormData] = useState(null);
+  
   // Filtres de date
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month, custom
   const [dateType, setDateType] = useState('creation'); // creation ou echeance
