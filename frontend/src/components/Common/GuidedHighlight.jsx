@@ -8,6 +8,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
  * 
  * Affiche une surbrillance sur les éléments que l'utilisateur doit cliquer,
  * avec un overlay sombre sur le reste de l'écran.
+ * 
+ * Gère deux types de contextes:
+ * - Pages: Navigation standard entre pages
+ * - Modals/Dialogs: Formulaires qui s'ouvrent par-dessus la page
  */
 
 const GuidedHighlight = ({ 
@@ -20,6 +24,7 @@ const GuidedHighlight = ({
   const [targetRect, setTargetRect] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isWaitingForNavigation, setIsWaitingForNavigation] = useState(false);
+  const [isWaitingForModal, setIsWaitingForModal] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,22 +32,69 @@ const GuidedHighlight = ({
   const steps = guide?.steps || [];
   const currentStepData = steps[currentStep];
 
+  // Détecter si un modal/dialog est actuellement ouvert
+  const getActiveModal = useCallback(() => {
+    // Chercher les dialogs ouverts (Radix UI / Shadcn)
+    const dialogs = document.querySelectorAll('[role="dialog"], [data-state="open"], .DialogContent, [class*="DialogContent"]');
+    for (const dialog of dialogs) {
+      // Vérifier que le dialog est visible
+      const style = window.getComputedStyle(dialog);
+      if (style.display !== 'none' && style.visibility !== 'hidden') {
+        return dialog;
+      }
+    }
+    return null;
+  }, []);
+
+  // Trouver un élément, en priorisant le contexte modal si présent
+  const findElement = useCallback((selectors) => {
+    const activeModal = getActiveModal();
+    
+    for (const selector of selectors) {
+      try {
+        let element = null;
+        
+        // Si un modal est ouvert, chercher D'ABORD dans le modal
+        if (activeModal) {
+          element = activeModal.querySelector(selector);
+          if (element) {
+            console.log(`Élément trouvé dans le modal: ${selector}`);
+            return element;
+          }
+        }
+        
+        // Sinon, chercher dans tout le document
+        element = document.querySelector(selector);
+        if (element) {
+          // Vérifier que l'élément n'est pas caché derrière un modal
+          if (activeModal && !activeModal.contains(element)) {
+            // L'élément est sur la page mais un modal est ouvert
+            // Vérifier si c'est un élément du sidebar (toujours accessible)
+            const isSidebarElement = element.closest('[id="main-sidebar"]') || 
+                                     element.closest('nav') ||
+                                     element.hasAttribute('data-testid') && 
+                                     element.getAttribute('data-testid').includes('sidebar');
+            if (!isSidebarElement) {
+              console.log(`Élément trouvé mais caché par un modal: ${selector}`);
+              continue; // Chercher un autre sélecteur
+            }
+          }
+          return element;
+        }
+      } catch (e) {
+        console.warn(`Sélecteur invalide: ${selector}`);
+      }
+    }
+    return null;
+  }, [getActiveModal]);
+
   // Trouver et positionner la surbrillance sur l'élément cible
   const updateTargetPosition = useCallback(() => {
     if (!currentStepData?.target) return;
 
     // Essayer plusieurs sélecteurs séparés par des virgules
     const selectors = currentStepData.target.split(',').map(s => s.trim());
-    let element = null;
-
-    for (const selector of selectors) {
-      try {
-        element = document.querySelector(selector);
-        if (element) break;
-      } catch (e) {
-        console.warn(`Sélecteur invalide: ${selector}`);
-      }
-    }
+    const element = findElement(selectors);
 
     if (element) {
       const rect = element.getBoundingClientRect();
@@ -55,18 +107,32 @@ const GuidedHighlight = ({
       });
       setIsVisible(true);
       setIsWaitingForNavigation(false);
+      setIsWaitingForModal(false);
 
-      // Scroller vers l'élément si nécessaire
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Scroller vers l'élément si nécessaire (seulement si pas dans un modal)
+      const activeModal = getActiveModal();
+      if (!activeModal || activeModal.contains(element)) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     } else {
       console.warn(`Élément non trouvé pour: ${currentStepData.target}`);
       setTargetRect(null);
       setIsVisible(true);
       
-      // Si l'élément n'est pas trouvé, peut-être faut-il naviguer vers une autre page
-      // Essayer de détecter la page nécessaire basée sur le sélecteur
-      if (currentStepData.target.includes('btn-nouvel-ordre') || 
-          currentStepData.target.includes('creer-ot')) {
+      // Vérifier si on attend l'ouverture d'un modal
+      const needsModal = currentStepData.target.includes('input[') || 
+                        currentStepData.target.includes('select[') ||
+                        currentStepData.target.includes('textarea') ||
+                        currentStepData.target.includes('form') ||
+                        currentStepData.target.includes('[name=') ||
+                        currentStepData.target.includes('submit');
+      
+      if (needsModal) {
+        // Attendre que le modal s'ouvre
+        console.log('En attente de l\'ouverture du formulaire...');
+        setIsWaitingForModal(true);
+      } else if (currentStepData.target.includes('btn-nouvel-ordre') || 
+                 currentStepData.target.includes('creer-ot')) {
         // Naviguer vers la page des ordres de travail
         if (!location.pathname.includes('work-orders')) {
           console.log('Navigation automatique vers /work-orders');
@@ -75,7 +141,30 @@ const GuidedHighlight = ({
         }
       }
     }
-  }, [currentStepData, location.pathname, navigate]);
+  }, [currentStepData, location.pathname, navigate, findElement, getActiveModal]);
+
+  // Observer les changements du DOM pour détecter l'ouverture de modals
+  useEffect(() => {
+    if (!isWaitingForModal) return;
+    
+    const observer = new MutationObserver((mutations) => {
+      // Vérifier si un nouveau modal est apparu
+      const activeModal = getActiveModal();
+      if (activeModal) {
+        console.log('Modal détecté, mise à jour de la position');
+        setTimeout(updateTargetPosition, 300);
+      }
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-state', 'class', 'style']
+    });
+    
+    return () => observer.disconnect();
+  }, [isWaitingForModal, getActiveModal, updateTargetPosition]);
 
   // Réessayer de trouver l'élément après navigation
   useEffect(() => {
