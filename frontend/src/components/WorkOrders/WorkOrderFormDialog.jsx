@@ -328,14 +328,16 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" data-testid="work-order-form">
           <div className="space-y-2">
             <Label htmlFor="titre">Titre *</Label>
             <Input
               id="titre"
+              data-testid="input-titre-ot"
               value={formData.titre}
               onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
               required
+              placeholder="Entrez le titre de l'ordre de travail"
             />
           </div>
 
@@ -343,10 +345,12 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
             <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
+              data-testid="input-description-ot"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               required
+              placeholder="Décrivez l'intervention à réaliser"
             />
           </div>
 
@@ -354,7 +358,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
             <div className="space-y-2">
               <Label htmlFor="statut">Statut</Label>
               <Select value={formData.statut} onValueChange={(value) => setFormData({ ...formData, statut: value })}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="select-statut-ot">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -369,7 +373,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
             <div className="space-y-2">
               <Label htmlFor="priorite">Priorité</Label>
               <Select value={formData.priorite} onValueChange={(value) => setFormData({ ...formData, priorite: value })}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="select-priorite-ot">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -385,7 +389,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
           <div className="space-y-2">
             <Label htmlFor="categorie">Catégorie</Label>
             <Select value={formData.categorie} onValueChange={(value) => setFormData({ ...formData, categorie: value })}>
-              <SelectTrigger>
+              <SelectTrigger data-testid="select-categorie-ot">
                 <SelectValue placeholder="Sélectionner une catégorie" />
               </SelectTrigger>
               <SelectContent>
