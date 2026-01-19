@@ -325,13 +325,13 @@ Tu réponds :
   "steps": [
     {{
       "instruction": "Clique sur 'Ordres de travail' dans le menu à gauche",
-      "target": "[data-testid='sidebar-work-orders'], a[href='/work-orders']",
+      "target": "[data-testid='sidebar-work-orders'], a[href='/work-orders'], button[data-testid='sidebar-work-orders']",
       "highlight_type": "pulse",
       "wait_for_click": true
     }},
     {{
-      "instruction": "Clique sur le bouton '+ Nouvel ordre' en haut à droite",
-      "target": "[data-testid='create-work-order-btn'], button:has-text('Nouvel ordre')",
+      "instruction": "Clique sur le bouton '+ Nouvel Ordre (Vierge)' en haut à droite pour créer un nouvel OT",
+      "target": "#btn-nouvel-ordre, [data-action='creer-ot'], button:has-text('Vierge')",
       "highlight_type": "glow",
       "wait_for_click": true
     }},
