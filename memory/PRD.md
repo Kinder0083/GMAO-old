@@ -453,7 +453,43 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 
 ---
 
+## Session du 19 Janvier 2026 (Suite)
+
+#### ✅ Bug Fix: "Bell is not defined" dans AlertNotifications
+- **Problème**: Erreur JavaScript "Bell is not defined" lors du clic sur l'icône roue dentée (alertes système)
+- **Cause**: Import manquant de l'icône `Bell` depuis lucide-react
+- **Solution**: Ajout de `Bell` dans les imports du fichier `AlertNotifications.jsx`
+- **Fichier modifié**: `/app/frontend/src/components/Common/AlertNotifications.jsx`
+
+#### ✅ P0 Validé: Script d'installation Proxmox v1.1.5
+- **Fichier**: `/app/gmao-iris-v1.1.5-install-auto.sh`
+- **Modifications validées par l'utilisateur**:
+  - Version mise à jour 1.1.4 → 1.1.5
+  - Appel au script `init_manual_on_install.py` pour générer le manuel complet
+  - Messages de statut détaillés (24 chapitres, 70+ sections)
+  - Documentation des nouvelles fonctionnalités (Ordres Type, Formulaires, Rôles, Tooltips)
+
+---
+
+## Tâches à venir
+
+### P1 - Migration WebSocket
+- Page "Rapports" - Mise à jour temps réel
+- Page "Historique Achat" - Mise à jour temps réel
+
+### P2 - Issues connues
+- Page "Rapport P.accident" ne se met pas à jour en temps réel (récurrent)
+
+### P2 - Backlog
+- Fonctions spécifiques "Responsables de service"
+- Chatbot IA
+- Dashboard Plan de Surveillance
+- Analytique Checklists
+- Visite guidée
+
+---
+
 ## Dernière mise à jour
-**Date**: 17 Janvier 2026
+**Date**: 19 Janvier 2026
 **Agent**: E1
-**Tâche complétée**: Icône clé pour notifications PM, bouton livre = modifier checklist, ouverture auto checklist lors exécution PM
+**Tâche complétée**: Bug fix "Bell is not defined" + Validation script installation v1.1.5
