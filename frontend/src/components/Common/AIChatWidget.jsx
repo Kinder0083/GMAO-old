@@ -652,6 +652,36 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
           </>
         )}
       </div>
+      
+      {/* Composant de guidage visuel pas à pas */}
+      {activeGuide && (
+        <GuidedHighlight
+          guide={activeGuide}
+          onComplete={() => {
+            setActiveGuide(null);
+            toast({
+              title: '🎉 Guide terminé !',
+              description: 'Vous avez complété toutes les étapes.',
+            });
+            // Ajouter un message de félicitations
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: '🎉 Bravo ! Vous avez terminé le guide. N\'hésitez pas si vous avez d\'autres questions !',
+              timestamp: new Date().toISOString()
+            }]);
+          }}
+          onCancel={() => {
+            setActiveGuide(null);
+            toast({
+              title: 'Guide annulé',
+              description: 'Vous pouvez le reprendre à tout moment.',
+            });
+          }}
+          onStepChange={(step) => {
+            console.log('Étape du guide:', step);
+          }}
+        />
+      )}
     </div>
   );
 };
