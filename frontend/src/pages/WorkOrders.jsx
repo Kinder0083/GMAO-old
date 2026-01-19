@@ -306,20 +306,45 @@ const WorkOrders = () => {
           <h1 className="text-3xl font-bold text-gray-900">Ordres de travail</h1>
           <p className="text-gray-600 mt-1">Gérez vos interventions et maintenances</p>
         </div>
-        {canEdit('workOrders') && (
-          <Button 
-            id="btn-nouvel-ordre"
-            data-action="creer-ot"
-            className="bg-blue-600 hover:bg-blue-700 text-white" 
-            onClick={() => {
-              setSelectedWorkOrder(null);
-              setFormDialogOpen(true);
-            }}
-          >
-            <Plus size={20} className="mr-2" />
-            Nouvel ordre
-          </Button>
-        )}
+        <div className="flex gap-3">
+          {/* Bouton Ordres Type (visible pour admins et responsables de service) */}
+          {hasTemplateAccess && (
+            <Button 
+              variant="outline"
+              className="border-purple-600 text-purple-600 hover:bg-purple-50"
+              onClick={() => navigate('/work-orders/templates')}
+            >
+              <FileText size={20} className="mr-2" />
+              Ordres Type
+            </Button>
+          )}
+          
+          {canEdit('workOrders') && (
+            <div className="flex flex-col gap-2">
+              <Button 
+                id="btn-nouvel-ordre"
+                data-action="creer-ot"
+                className="bg-blue-600 hover:bg-blue-700 text-white" 
+                onClick={() => {
+                  setSelectedWorkOrder(null);
+                  setTemplateFormData(null);
+                  setFormDialogOpen(true);
+                }}
+              >
+                <Plus size={20} className="mr-2" />
+                Nouvel ordre
+              </Button>
+              <Button 
+                variant="outline"
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                onClick={() => setTemplateDialogOpen(true)}
+              >
+                <BookOpen size={18} className="mr-2" />
+                + Nouvel Ordre (Modèle)
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filtres de date */}
