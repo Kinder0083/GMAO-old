@@ -86,7 +86,8 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
         setSavedWorkOrderStatus(null);
         setTemplateId(prefillData.template_id || null);
       } else {
-        // Mode création vide
+        // Mode création vide - avec date du jour et temps estimé par défaut
+        const today = new Date().toISOString().split('T')[0];
         setFormData({
           titre: '',
           description: '',
@@ -96,15 +97,32 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
           equipement_id: '',
           assigne_a_id: '',
           emplacement_id: '',
-          dateLimite: '',
-          tempsEstime: ''
+          dateLimite: today,
+          tempsEstime: '0h30'
         });
         setAttachments([]);
         setSavedWorkOrderId(null);
         setSavedWorkOrderStatus(null);
+        setTemplateId(null);
       }
     }
-  }, [open, workOrder]);
+  }, [open, workOrder, prefillData]);
+
+  // Auto-remplir l'emplacement quand un équipement est sélectionné
+  useEffect(() => {
+    if (formData.equipement_id && equipments.length > 0) {
+      const selectedEquipment = equipments.find(eq => eq.id === formData.equipement_id);
+      if (selectedEquipment && selectedEquipment.emplacement_id) {
+        // Ne mettre à jour que si l'emplacement est différent (évite les boucles)
+        if (formData.emplacement_id !== selectedEquipment.emplacement_id) {
+          setFormData(prev => ({
+            ...prev,
+            emplacement_id: selectedEquipment.emplacement_id
+          }));
+        }
+      }
+    }
+  }, [formData.equipement_id, equipments]);
 
   const loadData = async () => {
     try {
