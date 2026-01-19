@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Plus, FolderOpen, Edit, Trash2, FileText, Search, Grid3x3, List, ChevronDown, ChevronRight, Eye, Download, FileSpreadsheet, FileImage, FileVideo, Printer, ClipboardList, Settings } from 'lucide-react';
 import { documentationsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
