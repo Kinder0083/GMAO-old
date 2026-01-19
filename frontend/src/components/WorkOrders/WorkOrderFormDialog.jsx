@@ -71,6 +71,18 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
       } else if (prefillData) {
         // Mode création avec données pré-remplies (depuis un template)
         const today = new Date().toISOString().split('T')[0];
+        // Convertir le temps estimé du template en format numérique
+        let tempsEstime = '0.5'; // Défaut 30 min
+        if (prefillData.temps_estime) {
+          // Tenter de parser le format "2h", "2h30", "30min", etc.
+          const tempsStr = prefillData.temps_estime.toLowerCase().trim();
+          const hoursMatch = tempsStr.match(/(\d+(?:\.\d+)?)\s*h/);
+          const minsMatch = tempsStr.match(/(\d+)\s*(?:min|m)/);
+          let hours = 0;
+          if (hoursMatch) hours += parseFloat(hoursMatch[1]);
+          if (minsMatch) hours += parseInt(minsMatch[1]) / 60;
+          if (hours > 0) tempsEstime = hours.toString();
+        }
         setFormData({
           titre: prefillData.titre || '',
           description: prefillData.description || '',
@@ -81,7 +93,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
           assigne_a_id: '',
           emplacement_id: '', // Sera auto-rempli par le useEffect si équipement présent
           dateLimite: today,
-          tempsEstime: prefillData.temps_estime || '0h30'
+          tempsEstime: tempsEstime
         });
         setSavedWorkOrderId(null);
         setSavedWorkOrderStatus(null);
