@@ -360,41 +360,64 @@ const Meters = () => {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedMeter(meter);
-                                  setDialogOpen(true);
-                                }}
-                                className="hover:bg-blue-50 hover:text-blue-600"
-                                title="Voir les détails"
-                              >
-                                <Eye size={16} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedMeter(meter);
-                                  setFormDialogOpen(true);
-                                }}
-                                className="hover:bg-green-50 hover:text-green-600"
-                                title="Modifier"
-                              >
-                                <Pencil size={16} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(meter.id)}
-                                className="hover:bg-red-50 hover:text-red-600"
-                                title="Supprimer"
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
+                            <TooltipProvider delayDuration={300}>
+                              <div className="flex gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedMeter(meter);
+                                        setDialogOpen(true);
+                                      }}
+                                      className="hover:bg-blue-50 hover:text-blue-600"
+                                    >
+                                      <Eye size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-medium">Voir les détails</p>
+                                    <p className="text-xs text-gray-300">Consulter l'historique et les relevés</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedMeter(meter);
+                                        setFormDialogOpen(true);
+                                      }}
+                                      className="hover:bg-green-50 hover:text-green-600"
+                                    >
+                                      <Pencil size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-medium">Modifier</p>
+                                    <p className="text-xs text-gray-300">Éditer les paramètres du compteur</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDelete(meter.id)}
+                                      className="hover:bg-red-50 hover:text-red-600"
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-medium">Supprimer</p>
+                                    <p className="text-xs text-gray-300">Cette action est irréversible</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
                           </div>
                         ))}
                       </div>
