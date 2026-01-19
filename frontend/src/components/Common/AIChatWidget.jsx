@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, Sparkles } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, Sparkles, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
