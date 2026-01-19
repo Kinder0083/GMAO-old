@@ -126,19 +126,33 @@ const AlertNotifications = () => {
   };
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="relative">
       {/* Bouton notification */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-      >
-        <Bell size={20} />
-        {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            data-testid="alert-notifications-btn"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+          <p className="font-medium">Alertes système</p>
+          <p className="text-xs text-gray-300 mt-1">
+            {unreadCount > 0 
+              ? `${unreadCount} alerte${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}`
+              : 'Aucune alerte en attente'}
+          </p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Dropdown des alertes */}
       {isOpen && (
