@@ -492,6 +492,7 @@ const Inventory = () => {
                                 setFormDialogOpen(true);
                               }}
                               className="hover:bg-green-50 hover:text-green-600"
+                              title="Modifier cet article"
                             >
                               <Pencil size={16} />
                             </Button>
@@ -500,6 +501,7 @@ const Inventory = () => {
                               size="sm"
                               onClick={() => handleDelete(item.id)}
                               className="hover:bg-red-50 hover:text-red-600"
+                              title="Supprimer cet article"
                             >
                               <Trash2 size={16} />
                             </Button>
