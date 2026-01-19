@@ -676,6 +676,18 @@ async def create_member(request: CreateMemberRequest, current_user: dict = Depen
     
     await db.users.insert_one(user_dict)
     
+    # Émettre l'événement WebSocket pour la création
+    try:
+        from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
+        await realtime_manager.emit_event(
+            RealtimeEntityType.USERS.value,
+            RealtimeEventType.CREATED.value,
+            serialize_doc(user_dict),
+            current_user.get("id")
+        )
+    except Exception as e:
+        logger.error(f"Erreur émission événement WebSocket users create: {e}")
+    
     # Envoyer l'email avec les identifiants
     email_sent = email_service.send_account_created_email(
         to_email=request.email,
