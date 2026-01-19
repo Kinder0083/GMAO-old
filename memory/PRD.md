@@ -73,6 +73,10 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - "Modifier l'article" → "Éditer les informations et le stock"
 - "Supprimer" → "Cette action est irréversible"
 - "Activer la surveillance" → "Recevoir des alertes de stock bas"
+- **En-tête** : "Minimiser le menu" → "Raccourci pour ajuster l'espace de travail"
+- **En-tête** : "Chat Live" → "Messagerie instantanée avec l'équipe"
+- **En-tête** : "Ordres de travail" → "X ordre(s) en attente"
+- **En-tête** : "Mon Profil" → "Accéder aux paramètres du compte"
 
 #### ✅ Feature: Formulaires personnalisés avec champs configurables (18 Jan 2026)
 **Implémentation complète** des modèles de formulaires personnalisés :
