@@ -1181,6 +1181,7 @@ const MainLayout = () => {
       {/* Gestion de l'inactivité */}
       <InactivityHandler />
     </div>
+    </TooltipProvider>
   );
 };
 
