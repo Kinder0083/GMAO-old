@@ -63,6 +63,7 @@ import MQTTLogs from "./pages/MQTTLogs";
 import WhiteboardPage from "./pages/WhiteboardPage";
 import PurchaseRequestsArchives from "./pages/PurchaseRequestsArchives";
 import FormTemplatesPage from "./pages/FormTemplatesPage";
+import WorkOrderTemplatesPage from "./pages/WorkOrderTemplatesPage";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
