@@ -61,7 +61,37 @@ const WorkOrders = () => {
 
   useEffect(() => {
     refreshWorkOrders();
+    checkTemplateAccess();
   }, [dateFilter, dateType, customStartDate, customEndDate]);
+
+  // Vérifier si l'utilisateur a accès aux ordres type
+  const checkTemplateAccess = async () => {
+    try {
+      const result = await workOrderTemplatesAPI.checkAccess();
+      setHasTemplateAccess(result.has_access);
+    } catch (error) {
+      console.error('Erreur vérification accès templates:', error);
+      setHasTemplateAccess(false);
+    }
+  };
+
+  // Ouvrir le formulaire pré-rempli avec un template
+  const handleTemplateSelected = (template) => {
+    const today = new Date().toISOString().split('T')[0];
+    setTemplateFormData({
+      titre: template.nom,
+      description: template.description || '',
+      categorie: template.categorie || '',
+      priorite: template.priorite || 'AUCUNE',
+      statut: template.statut_defaut || 'OUVERT',
+      equipement_id: template.equipement_id || '',
+      temps_estime: template.temps_estime || '',
+      date_creation: today,
+      template_id: template.id // Pour incrémenter le compteur
+    });
+    setTemplateDialogOpen(false);
+    setFormDialogOpen(true);
+  };
 
   // Gérer l'ouverture automatique d'un ordre via l'URL ?id=xxx ou ?open=xxx
   useEffect(() => {
