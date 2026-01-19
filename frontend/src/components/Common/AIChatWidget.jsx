@@ -580,18 +580,38 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
   const transcribeAudio = async (audioBlob) => {
     setLoading(true);
     try {
+      console.log('Envoi audio pour transcription:', audioBlob.size, 'bytes');
+      
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
+      // Utiliser le bon type de fichier selon le format
+      const extension = audioBlob.type.includes('webm') ? 'webm' : 
+                       audioBlob.type.includes('mp4') ? 'mp4' : 
+                       audioBlob.type.includes('ogg') ? 'ogg' : 'wav';
+      formData.append('audio', audioBlob, `recording.${extension}`);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Non authentifié');
+      }
       
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/voice/transcribe`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });
       
+      console.log('Réponse serveur:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erreur serveur:', errorText);
+        throw new Error(`Erreur serveur: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Données transcription:', data);
       
       if (data.success && data.transcription) {
         // Ajouter le message transcrit
@@ -604,12 +624,17 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
         setMessages(prev => [...prev, userMessage]);
         setShowQuickActions(false);
         
+        toast({
+          title: '✅ Transcription réussie',
+          description: data.transcription.substring(0, 50) + '...',
+        });
+        
         // Envoyer à l'IA
         await sendMessageToAI(data.transcription);
       } else {
         toast({
           title: 'Erreur transcription',
-          description: data.detail || 'Impossible de transcrire l\'audio',
+          description: data.detail || 'Impossible de transcrire l\'audio. Réessayez.',
           variant: 'destructive'
         });
       }
@@ -617,7 +642,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       console.error('Erreur transcription:', error);
       toast({
         title: 'Erreur',
-        description: 'Erreur lors de la transcription audio',
+        description: `Erreur lors de la transcription: ${error.message}`,
         variant: 'destructive'
       });
     } finally {
