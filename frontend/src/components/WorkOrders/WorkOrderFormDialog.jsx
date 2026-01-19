@@ -14,7 +14,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Paperclip, Camera } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
-import { workOrdersAPI, equipmentsAPI, locationsAPI, usersAPI } from '../../services/api';
+import { workOrdersAPI, equipmentsAPI, locationsAPI, usersAPI, workOrderTemplatesAPI } from '../../services/api';
 import StatusChangeDialog from './StatusChangeDialog';
 import { validateDateNotPast } from '../../utils/dateValidation';
 import { formatErrorMessage } from '../../utils/errorFormatter';
