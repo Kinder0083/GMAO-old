@@ -19,7 +19,7 @@ import StatusChangeDialog from './StatusChangeDialog';
 import { validateDateNotPast } from '../../utils/dateValidation';
 import { formatErrorMessage } from '../../utils/errorFormatter';
 
-const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
+const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuccess }) => {
   const { toast } = useToast();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
     dateLimite: '',
     tempsEstime: ''
   });
+  const [templateId, setTemplateId] = useState(null); // Pour incrémenter le compteur
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -51,6 +52,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
       loadData();
       setIsClosing(false);
       if (workOrder) {
+        // Mode édition d'un OT existant
         setFormData({
           titre: workOrder.titre || '',
           description: workOrder.description || '',
@@ -65,7 +67,26 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
         });
         setSavedWorkOrderId(workOrder.id);
         setSavedWorkOrderStatus(workOrder.statut);
+        setTemplateId(null);
+      } else if (prefillData) {
+        // Mode création avec données pré-remplies (depuis un template)
+        setFormData({
+          titre: prefillData.titre || '',
+          description: prefillData.description || '',
+          statut: prefillData.statut || 'OUVERT',
+          priorite: prefillData.priorite || 'AUCUNE',
+          categorie: prefillData.categorie || '',
+          equipement_id: prefillData.equipement_id || '',
+          assigne_a_id: '',
+          emplacement_id: '',
+          dateLimite: '',
+          tempsEstime: prefillData.temps_estime || ''
+        });
+        setSavedWorkOrderId(null);
+        setSavedWorkOrderStatus(null);
+        setTemplateId(prefillData.template_id || null);
       } else {
+        // Mode création vide
         setFormData({
           titre: '',
           description: '',
