@@ -144,13 +144,29 @@ const AlertNotifications = () => {
             )}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
-          <p className="font-medium">Alertes système</p>
-          <p className="text-xs text-gray-300 mt-1">
+        <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
+          <p className="font-medium mb-2">Alertes système</p>
+          <p className="text-xs text-gray-300 mb-3">
             {unreadCount > 0 
               ? `${unreadCount} alerte${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}`
               : 'Aucune alerte en attente'}
           </p>
+          <div className="border-t border-gray-700 pt-2 mt-2">
+            <p className="text-xs text-gray-400 font-medium mb-1">1. Alertes des capteurs MQTT 🌡️</p>
+            <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+              <p>🚨 CRITICAL - Valeur critique</p>
+              <p>⚠️ WARNING - Avertissement</p>
+              <p>ℹ️ INFO - Information</p>
+            </div>
+          </div>
+          <div className="border-t border-gray-700 pt-2 mt-2">
+            <p className="text-xs text-gray-400 font-medium mb-1">2. Actions automatiques associées</p>
+            <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+              <p>📋 Créer une OT corrective</p>
+              <p>📧 Envoyer email aux destinataires</p>
+              <p>💬 Post dans le Chat Live</p>
+            </div>
+          </div>
         </TooltipContent>
       </Tooltip>
 
