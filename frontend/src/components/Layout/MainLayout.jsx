@@ -1250,6 +1250,9 @@ const MainLayout = () => {
       
       {/* Gestion de l'inactivité */}
       <InactivityHandler />
+      
+      {/* Bouton d'aide contextuelle par page */}
+      <ContextualHelpButton />
     </div>
     </TooltipProvider>
   );
