@@ -386,6 +386,7 @@ function FormTemplatesPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(template)}
+                      title="Modifier le modèle"
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Modifier
@@ -395,6 +396,7 @@ function FormTemplatesPage() {
                       variant="outline"
                       className="text-red-600 hover:bg-red-50"
                       onClick={() => handleDelete(template)}
+                      title="Supprimer le modèle"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
