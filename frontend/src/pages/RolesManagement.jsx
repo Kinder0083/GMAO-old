@@ -388,6 +388,7 @@ const RolesManagement = () => {
                       size="sm" 
                       className="flex-1"
                       onClick={() => handleEditRole(role)}
+                      title="Modifier ce rôle"
                     >
                       <Edit size={16} className="mr-1" />
                       Modifier
@@ -398,6 +399,7 @@ const RolesManagement = () => {
                         size="sm"
                         className="text-red-600 hover:bg-red-50"
                         onClick={() => handleDeleteClick(role)}
+                        title="Supprimer ce rôle"
                       >
                         <Trash2 size={16} />
                       </Button>
