@@ -257,6 +257,123 @@ const GuidedHighlight = ({
     onCancel?.();
   };
 
+  // Calculer la position optimale du panneau pour éviter l'élément cible
+  const calculatePanelPosition = useCallback(() => {
+    if (!targetRect || !panelRef.current) return;
+    
+    // Si l'utilisateur a manuellement déplacé le panneau, ne pas recalculer
+    if (panelPosition.x !== null && panelPosition.y !== null) return;
+    
+    const panelRect = panelRef.current.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const margin = 20;
+    
+    // Zone de l'élément cible (avec marge)
+    const targetZone = {
+      top: targetRect.top - 60,
+      bottom: targetRect.top + targetRect.height + 60,
+      left: targetRect.left - 20,
+      right: targetRect.left + targetRect.width + 20
+    };
+    
+    // Positions possibles (en ordre de préférence)
+    const positions = [
+      // En bas au centre
+      { x: windowWidth / 2 - panelRect.width / 2, y: windowHeight - panelRect.height - margin },
+      // En bas à droite
+      { x: windowWidth - panelRect.width - margin, y: windowHeight - panelRect.height - margin },
+      // En bas à gauche
+      { x: margin, y: windowHeight - panelRect.height - margin },
+      // En haut au centre
+      { x: windowWidth / 2 - panelRect.width / 2, y: margin },
+      // En haut à droite
+      { x: windowWidth - panelRect.width - margin, y: margin },
+      // En haut à gauche
+      { x: margin, y: margin },
+      // À droite au milieu
+      { x: windowWidth - panelRect.width - margin, y: windowHeight / 2 - panelRect.height / 2 },
+      // À gauche au milieu
+      { x: margin, y: windowHeight / 2 - panelRect.height / 2 },
+    ];
+    
+    // Trouver la première position qui ne chevauche pas l'élément cible
+    for (const pos of positions) {
+      const panelZone = {
+        top: pos.y,
+        bottom: pos.y + panelRect.height,
+        left: pos.x,
+        right: pos.x + panelRect.width
+      };
+      
+      // Vérifier s'il y a chevauchement
+      const overlaps = !(panelZone.right < targetZone.left || 
+                        panelZone.left > targetZone.right || 
+                        panelZone.bottom < targetZone.top || 
+                        panelZone.top > targetZone.bottom);
+      
+      if (!overlaps) {
+        setPanelPosition(pos);
+        return;
+      }
+    }
+    
+    // Si toutes les positions chevauchent, utiliser la position par défaut (en bas)
+    setPanelPosition({ 
+      x: windowWidth / 2 - panelRect.width / 2, 
+      y: windowHeight - panelRect.height - margin 
+    });
+  }, [targetRect, panelPosition.x, panelPosition.y]);
+
+  // Recalculer la position quand l'élément cible change
+  useEffect(() => {
+    if (targetRect) {
+      // Reset la position pour forcer le recalcul
+      setPanelPosition({ x: null, y: null });
+      // Attendre que le panneau soit rendu
+      setTimeout(calculatePanelPosition, 100);
+    }
+  }, [targetRect, currentStep]);
+
+  // Gestion du drag
+  const handleMouseDown = (e) => {
+    if (e.target.closest('button')) return; // Ne pas drag si on clique sur un bouton
+    
+    setIsDragging(true);
+    const panelRect = panelRef.current?.getBoundingClientRect();
+    if (panelRect) {
+      setDragOffset({
+        x: e.clientX - panelRect.left,
+        y: e.clientY - panelRect.top
+      });
+    }
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    const newX = Math.max(0, Math.min(window.innerWidth - 400, e.clientX - dragOffset.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - 200, e.clientY - dragOffset.y));
+    
+    setPanelPosition({ x: newX, y: newY });
+  }, [isDragging, dragOffset]);
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Event listeners pour le drag
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove]);
+
   if (!guide || !isVisible) return null;
 
   const highlightType = currentStepData?.highlight_type || 'glow';
