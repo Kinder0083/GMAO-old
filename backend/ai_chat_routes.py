@@ -1353,7 +1353,7 @@ import base64
 import tempfile
 
 @router.post("/voice/transcribe")
-async def transcribe_audio(
+async def transcribe_audio_endpoint(
     audio: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
@@ -1370,67 +1370,81 @@ async def transcribe_audio(
         # Lire le contenu audio
         audio_content = await audio.read()
         
-        # Utiliser emergentintegrations pour Whisper
+        if len(audio_content) == 0:
+            raise HTTPException(status_code=400, detail="Fichier audio vide")
+        
+        logger.info(f"Transcription audio: {len(audio_content)} bytes, type: {audio.content_type}")
+        
+        # Sauvegarder temporairement le fichier
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_file:
+            tmp_file.write(audio_content)
+            tmp_path = tmp_file.name
+        
         try:
-            from emergentintegrations.llm.openai import transcribe_audio as ei_transcribe
+            # Utiliser emergentintegrations pour Whisper
+            from emergentintegrations.llm.openai import OpenAISpeechToText
             
-            # Sauvegarder temporairement le fichier
-            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_file:
-                tmp_file.write(audio_content)
-                tmp_path = tmp_file.name
+            stt = OpenAISpeechToText(api_key=api_key)
             
-            # Transcrire
-            transcription = await ei_transcribe(
-                api_key=api_key,
-                audio_file_path=tmp_path,
-                language="fr"
-            )
+            with open(tmp_path, "rb") as audio_file:
+                response = await stt.transcribe(
+                    file=audio_file,
+                    model="whisper-1",
+                    response_format="json",
+                    language="fr"
+                )
             
-            # Nettoyer le fichier temporaire
-            import os as os_module
-            os_module.unlink(tmp_path)
+            transcription = response.text if hasattr(response, 'text') else str(response)
             
-            logger.info(f"Audio transcrit: {transcription[:50]}...")
+            logger.info(f"Audio transcrit avec succès: {transcription[:50]}...")
             
             return {
                 "success": True,
                 "transcription": transcription
             }
             
-        except ImportError:
-            # Fallback: utiliser l'API OpenAI directement
+        except ImportError as ie:
+            logger.warning(f"emergentintegrations non disponible: {ie}, utilisation du fallback httpx")
+            
+            # Fallback: utiliser l'API OpenAI directement via httpx
             import httpx
             
-            # Sauvegarder temporairement
-            with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp_file:
-                tmp_file.write(audio_content)
-                tmp_path = tmp_file.name
-            
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 with open(tmp_path, "rb") as f:
+                    files = {"file": ("audio.webm", f, "audio/webm")}
+                    data = {"model": "whisper-1", "language": "fr"}
+                    
                     response = await client.post(
                         "https://api.openai.com/v1/audio/transcriptions",
                         headers={"Authorization": f"Bearer {api_key}"},
-                        files={"file": ("audio.webm", f, "audio/webm")},
-                        data={"model": "whisper-1", "language": "fr"}
+                        files=files,
+                        data=data
                     )
                     
-            import os as os_module
-            os_module.unlink(tmp_path)
-            
             if response.status_code == 200:
                 result = response.json()
+                transcription = result.get("text", "")
+                logger.info(f"Audio transcrit (fallback): {transcription[:50]}...")
                 return {
                     "success": True,
-                    "transcription": result.get("text", "")
+                    "transcription": transcription
                 }
             else:
+                logger.error(f"Erreur API Whisper: {response.status_code} - {response.text}")
                 raise HTTPException(status_code=500, detail=f"Erreur transcription: {response.text}")
+                
+        finally:
+            # Nettoyer le fichier temporaire
+            try:
+                import os as os_module
+                os_module.unlink(tmp_path)
+            except:
+                pass
                 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Erreur transcription audio: {e}")
+        logger.error(f"Erreur transcription audio: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur transcription: {str(e)}")
 
 
