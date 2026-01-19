@@ -482,12 +482,35 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
   // Démarrer l'enregistrement vocal
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true
+        } 
+      });
+      
+      // Déterminer le meilleur format supporté
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+        mimeType = 'audio/ogg';
+      }
+      
+      console.log('Format audio utilisé:', mimeType);
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
       
       mediaRecorder.ondataavailable = (event) => {
+        console.log('Données audio reçues:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
@@ -497,14 +520,35 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
         // Arrêter les tracks audio
         stream.getTracks().forEach(track => track.stop());
         
+        // Vérifier qu'on a des données
+        if (audioChunksRef.current.length === 0) {
+          toast({
+            title: 'Erreur',
+            description: 'Aucune donnée audio enregistrée',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
         // Créer le blob audio
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log('Blob audio créé:', audioBlob.size, 'bytes, type:', audioBlob.type);
+        
+        if (audioBlob.size < 1000) {
+          toast({
+            title: 'Enregistrement trop court',
+            description: 'Veuillez parler plus longtemps',
+            variant: 'destructive'
+          });
+          return;
+        }
         
         // Envoyer pour transcription
         await transcribeAudio(audioBlob);
       };
       
-      mediaRecorder.start();
+      // Enregistrer des chunks toutes les 250ms pour avoir des données
+      mediaRecorder.start(250);
       setIsRecording(true);
       
       toast({
@@ -516,7 +560,9 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       console.error('Erreur accès microphone:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'accéder au microphone. Vérifiez les permissions.',
+        description: error.name === 'NotAllowedError' 
+          ? 'Accès au microphone refusé. Autorisez l\'accès dans les paramètres du navigateur.'
+          : 'Impossible d\'accéder au microphone. Vérifiez les permissions.',
         variant: 'destructive'
       });
     }
