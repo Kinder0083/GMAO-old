@@ -152,6 +152,12 @@ const GuidedHighlight = ({
       const activeModal = getActiveModal();
       if (activeModal) {
         console.log('Modal détecté, mise à jour de la position');
+        // Si l'étape actuelle a "opens_modal: true", passer automatiquement à l'étape suivante
+        if (currentStepData?.opens_modal && currentStep < steps.length - 1) {
+          console.log('Passage automatique à l\'étape suivante (modal ouvert)');
+          setCurrentStep(prev => prev + 1);
+          onStepChange?.(currentStep + 1);
+        }
         setTimeout(updateTargetPosition, 300);
       }
     });
@@ -164,7 +170,7 @@ const GuidedHighlight = ({
     });
     
     return () => observer.disconnect();
-  }, [isWaitingForModal, getActiveModal, updateTargetPosition]);
+  }, [isWaitingForModal, getActiveModal, updateTargetPosition, currentStepData, currentStep, steps.length, onStepChange]);
 
   // Réessayer de trouver l'élément après navigation
   useEffect(() => {
@@ -190,7 +196,16 @@ const GuidedHighlight = ({
     if (!targetRect?.element || !currentStepData?.wait_for_click) return;
 
     const handleClick = () => {
-      // Passer à l'étape suivante après un court délai
+      console.log('Clic détecté sur élément cible');
+      
+      // Si ce clic ouvre un modal, on laisse l'observer gérer le passage à l'étape suivante
+      if (currentStepData?.opens_modal) {
+        console.log('Cette étape ouvre un modal, attente...');
+        setIsWaitingForModal(true);
+        return;
+      }
+      
+      // Sinon, passer à l'étape suivante après un court délai
       setTimeout(() => {
         if (currentStep < steps.length - 1) {
           setCurrentStep(prev => prev + 1);
