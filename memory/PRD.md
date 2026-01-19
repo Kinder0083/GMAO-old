@@ -47,6 +47,33 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - `/app/frontend/src/App.js` (route /people/roles)
 - `/app/backend/server.py` (import et initialisation des routes)
 
+#### ✅ Feature: Ordres de Travail Type (Modèles d'OT) (19 Jan 2026)
+**Nouvelle fonctionnalité** permettant de créer des ordres de travail pré-configurés pour accélérer la création d'OT récurrents.
+
+**Backend** (`/app/backend/work_order_templates_routes.py` - NOUVEAU) :
+- Routes CRUD complètes pour les modèles d'OT
+- Endpoint de duplication de modèle
+- Compteur d'utilisation incrémenté automatiquement
+- Vérification d'accès : Admin + Responsables de service
+
+**Frontend** :
+- **Page "Ordres Type"** (`/app/frontend/src/pages/WorkOrderTemplatesPage.jsx` - NOUVEAU) :
+  - Interface de gestion des modèles groupés par catégorie
+  - Statistiques (total, catégories, utilisations)
+  - Actions : Créer, Modifier, Dupliquer, Supprimer
+  - Accessible via bouton "Ordres Type" sur la page des OT
+
+- **Bouton "+ Nouvel Ordre (Modèle)"** sur la page Ordres de travail :
+  - Ouvre un dialogue de sélection de modèle (`TemplateSelectionDialog.jsx` - NOUVEAU)
+  - Prévisualisation du modèle sélectionné
+  - Pré-remplit le formulaire d'OT avec les données du modèle
+
+**Champs pré-remplis** : Titre, Description, Catégorie, Priorité, Statut, Équipement, Temps estimé
+
+**Permissions** : Page "Ordres Type" accessible aux Admins et aux utilisateurs définis comme Responsables de service
+
+---
+
 #### ✅ Feature: WebSocket temps réel sur la page "Utilisateurs" (19 Jan 2026)
 **Implémentation de la synchronisation temps réel** via WebSocket sur la page des utilisateurs :
 
