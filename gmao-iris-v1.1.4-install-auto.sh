@@ -630,21 +630,25 @@ else
     echo "⚠️  Avertissement: Problème création admins (vous pourrez utiliser buenogy@gmail.com / Admin2024!)"
 fi
 
-# Initialisation du manuel utilisateur complet (23 chapitres) - Script unifié
+# Initialisation du manuel utilisateur complet via script unifié
 echo ""
-echo "📚 Génération du manuel utilisateur complet (23 chapitres + 61 sections)..."
-python3 generate_unified_manual.py
+echo "📚 Initialisation du manuel utilisateur complet..."
+python3 init_manual_on_install.py
 if [ $? -eq 0 ]; then
     echo "✅ Manuel complet généré avec succès"
-    echo "   ✓ 23 chapitres créés"
-    echo "   ✓ 61 sections détaillées"
-    echo "   ✓ Recherche intuitive incluse par défaut 🔍"
-    echo ""
-    echo "💡 La recherche intuitive du manuel est désormais active."
-    echo "   Accédez au manuel et utilisez la barre de recherche en haut"
-    echo "   pour trouver instantanément n'importe quelle information."
+    echo "   ✓ 24 chapitres créés"
+    echo "   ✓ 70+ sections détaillées"
+    echo "   ✓ Nouvelles fonctionnalités documentées :"
+    echo "     - Ordres Type (Modèles d'OT)"
+    echo "     - Modèles de Formulaires"
+    echo "     - Créateur de Formulaires Personnalisés"
+    echo "     - Gestion des Rôles et Permissions"
+    echo "     - Aide Contextuelle et Tooltips"
+    echo "   ✓ Recherche intuitive incluse 🔍"
 else
     echo "⚠️  Avertissement: Échec génération du manuel"
+    echo "    Vous pouvez relancer manuellement avec:"
+    echo "    cd /opt/gmao-iris/backend && python3 init_manual_on_install.py"
 fi
 
 # Création du fichier category_mapping.py (v1.1.4)
