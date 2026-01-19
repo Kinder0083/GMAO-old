@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, ChevronLeft, SkipForward } from 'lucide-react';
 import { Button } from '../ui/button';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 /**
  * GuidedHighlight - Composant de guidage visuel pas à pas
@@ -18,6 +19,10 @@ const GuidedHighlight = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isWaitingForNavigation, setIsWaitingForNavigation] = useState(false);
+  
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const steps = guide?.steps || [];
   const currentStepData = steps[currentStep];
@@ -49,6 +54,7 @@ const GuidedHighlight = ({
         element
       });
       setIsVisible(true);
+      setIsWaitingForNavigation(false);
 
       // Scroller vers l'élément si nécessaire
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -56,8 +62,30 @@ const GuidedHighlight = ({
       console.warn(`Élément non trouvé pour: ${currentStepData.target}`);
       setTargetRect(null);
       setIsVisible(true);
+      
+      // Si l'élément n'est pas trouvé, peut-être faut-il naviguer vers une autre page
+      // Essayer de détecter la page nécessaire basée sur le sélecteur
+      if (currentStepData.target.includes('btn-nouvel-ordre') || 
+          currentStepData.target.includes('creer-ot')) {
+        // Naviguer vers la page des ordres de travail
+        if (!location.pathname.includes('work-orders')) {
+          console.log('Navigation automatique vers /work-orders');
+          setIsWaitingForNavigation(true);
+          navigate('/work-orders');
+        }
+      }
     }
-  }, [currentStepData]);
+  }, [currentStepData, location.pathname, navigate]);
+
+  // Réessayer de trouver l'élément après navigation
+  useEffect(() => {
+    if (isWaitingForNavigation) {
+      const timer = setTimeout(() => {
+        updateTargetPosition();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, isWaitingForNavigation, updateTargetPosition]);
 
   // Mettre à jour la position quand l'étape change
   useEffect(() => {
