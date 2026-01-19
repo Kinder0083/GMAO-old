@@ -166,11 +166,39 @@ const People = () => {
   ];
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Utilisateurs</h1>
-          <p className="text-gray-600 mt-1">Gérez les membres de votre équipe</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Utilisateurs</h1>
+            <p className="text-gray-600 mt-1">Gérez les membres de votre équipe</p>
+          </div>
+          {/* Indicateur de connexion temps réel */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                wsConnected 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {wsConnected ? (
+                  <Wifi size={14} className="text-green-600" />
+                ) : (
+                  <WifiOff size={14} className="text-gray-500" />
+                )}
+                <span>{wsConnected ? 'Temps réel' : 'Hors ligne'}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+              <p className="font-medium">{wsConnected ? 'Synchronisation active' : 'Mode hors ligne'}</p>
+              <p className="text-xs text-gray-300 mt-1">
+                {wsConnected 
+                  ? 'Les modifications sont synchronisées en temps réel' 
+                  : 'Actualisation automatique toutes les 60 secondes'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
         {isAdmin() && (
           <div className="flex gap-3">
