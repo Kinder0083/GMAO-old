@@ -2463,25 +2463,121 @@ Les presqu'accidents sont des événements qui auraient pu causer un accident.
         "title": "Gérer la Documentation",
         "content": """### Ajouter et Organiser les Documents
 
-Le module Documentations centralise tous vos fichiers techniques.
+Le module Documentations centralise tous vos fichiers techniques et formulaires par pôle.
+
+**Structure des Pôles** :
+Chaque pôle (zone, atelier) possède sa propre arborescence :
+• 📁 Documents (PDF, images, manuels)
+• 📋 Bons de travail
+• 📜 Autorisations particulières
+• 📝 Formulaires personnalisés
+
+**Naviguer dans les Documents** :
+1. Module **Documentations**
+2. Cliquer sur un **Pôle**
+3. Navigation en **arborescence dépliable** par catégorie
+4. Cliquer sur un document pour le télécharger
 
 **Ajouter un Document** :
-1. Module **Documentations**
-2. **+ Nouveau Document**
-3. Titre, Catégorie, Description
+1. Accéder au détail d'un pôle
+2. Section Documents → **"+ Document"**
+3. Titre, Type de document
 4. Upload du fichier (PDF, Excel, Word, images...)
-5. Lier à un équipement (optionnel)
-6. **Enregistrer**
+5. **Enregistrer**
 
 **Recherche et Consultation** :
-- Recherche par mot-clé
-- Filtres par catégorie, équipement
-- Téléchargement des fichiers
-- Historique des versions""",
+• Recherche par mot-clé
+• Filtres par catégorie
+• Téléchargement direct
+• Historique des modifications""",
         "level": "beginner",
         "target_roles": [],
         "target_modules": ["documentations"],
-        "keywords": ["documentation", "fichiers", "manuels"]
+        "keywords": ["documentation", "fichiers", "manuels", "pôles"]
+    },
+    
+    "sec-020-02": {
+        "title": "Modèles de Formulaires",
+        "content": """### Gérer les Modèles de Formulaires
+
+Les **Modèles de Formulaires** permettent de créer des formulaires réutilisables pour standardiser vos processus.
+
+**Accéder à la Page Modèles** (Admin uniquement) :
+1. Module **Documentations**
+2. Bouton **"Modèles de formulaires"** (en haut)
+
+**Types de Modèles** :
+• 📋 **Modèles Système** : Pré-définis (Bon de travail, Autorisation particulière) - Non modifiables
+• ✏️ **Modèles Personnalisés** : Créés par les administrateurs
+
+**Créer un Formulaire à partir d'un Modèle** :
+1. Accéder au détail d'un **Pôle**
+2. Section Formulaires → **"+ Formulaire"**
+3. Sélectionner le modèle souhaité
+4. Remplir les champs du formulaire
+5. **Sauvegarder**
+
+**Utilisation des Bons de Travail** :
+1. Pôle → Section "Bons de travail" → **"+ Bon"**
+2. Remplir : Équipement, Description, Personnel
+3. Zone de signature tactile
+4. Enregistrer
+
+**Utilisation des Autorisations Particulières** :
+1. Pôle → Section "Autorisations" → **"+ Autorisation"**
+2. Remplir le formulaire complet
+3. Signatures multiples si nécessaire
+4. Enregistrer et imprimer""",
+        "level": "intermediate",
+        "target_roles": ["ADMIN"],
+        "target_modules": ["documentations"],
+        "keywords": ["modèle", "formulaire", "bon de travail", "autorisation"]
+    },
+    
+    "sec-020-03": {
+        "title": "Créateur de Formulaires Personnalisés",
+        "content": """### Créer vos Propres Formulaires
+
+Le **Créateur de Formulaires** permet aux administrateurs de concevoir des formulaires sur mesure.
+
+**Accéder au Créateur** :
+1. Module **Documentations**
+2. Bouton **"Modèles de formulaires"**
+3. **"+ Nouveau modèle personnalisé"**
+
+**Types de Champs Disponibles** :
+• 📝 **Texte** : Champ texte simple
+• 📄 **Zone de texte** : Texte multiligne
+• 🔢 **Nombre** : Valeurs numériques
+• 📅 **Date** : Sélecteur de date
+• ☑️ **Case à cocher** : Oui/Non
+• 🔘 **Interrupteur** : Activation/Désactivation
+• 📋 **Liste déroulante** : Choix parmi options
+• ✍️ **Signature** : Zone de signature tactile
+• 📎 **Téléchargement fichier** : Upload de documents
+
+**Créer un Formulaire Personnalisé** :
+1. **Nom du modèle** : Ex: "Checklist sécurité"
+2. **Description** : Usage du formulaire
+3. **Ajouter des champs** : Glisser-déposer
+4. Pour chaque champ :
+   • Libellé (question)
+   • Type de champ
+   • Obligatoire ou non
+   • Options (pour les listes)
+5. **Réorganiser** les champs par glisser-déposer
+6. **Enregistrer**
+
+**Utiliser le Formulaire** :
+1. Pôle → Formulaires → **"+ Formulaire"**
+2. Choisir votre modèle personnalisé
+3. Remplir et sauvegarder
+
+💡 **Astuce** : Créez des checklists de contrôle, des rapports d'inspection, des fiches de non-conformité personnalisées.""",
+        "level": "advanced",
+        "target_roles": ["ADMIN"],
+        "target_modules": ["documentations"],
+        "keywords": ["créateur", "formulaire", "personnalisé", "drag-drop", "signature"]
     },
     
     "sec-021-01": {
