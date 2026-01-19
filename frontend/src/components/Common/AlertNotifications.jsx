@@ -280,6 +280,7 @@ const AlertNotifications = () => {
         </>
       )}
     </div>
+    </TooltipProvider>
   );
 };
 
