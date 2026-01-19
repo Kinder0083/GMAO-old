@@ -70,6 +70,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
         setTemplateId(null);
       } else if (prefillData) {
         // Mode création avec données pré-remplies (depuis un template)
+        const today = new Date().toISOString().split('T')[0];
         setFormData({
           titre: prefillData.titre || '',
           description: prefillData.description || '',
@@ -78,9 +79,9 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
           categorie: prefillData.categorie || '',
           equipement_id: prefillData.equipement_id || '',
           assigne_a_id: '',
-          emplacement_id: '',
-          dateLimite: '',
-          tempsEstime: prefillData.temps_estime || ''
+          emplacement_id: '', // Sera auto-rempli par le useEffect si équipement présent
+          dateLimite: today,
+          tempsEstime: prefillData.temps_estime || '0h30'
         });
         setSavedWorkOrderId(null);
         setSavedWorkOrderStatus(null);
