@@ -559,7 +559,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
             }}>
               Annuler
             </Button>
-            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700" data-testid="btn-submit-ot">
               {loading ? 'Enregistrement...' : workOrder ? 'Modifier' : 'Créer'}
             </Button>
           </DialogFooter>
