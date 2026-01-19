@@ -759,8 +759,20 @@ const aiAPI = {
   getHistory: (sessionId) => api.get(`/ai/history/${sessionId}`),
   clearHistory: (sessionId) => api.delete(`/ai/history/${sessionId}`),
   getSessions: () => api.get('/ai/sessions'),
-  // Nouveau: récupérer le contexte enrichi de l'application (P2)
-  getContext: () => api.get('/ai/context')
+  // Contexte enrichi de l'application
+  getContext: () => api.get('/ai/context'),
+  
+  // Actions automatiques
+  createWorkOrder: (data) => api.post('/ai/action/create-ot', data),
+  addTimeToOT: (data) => api.post('/ai/action/add-time', data),
+  addCommentToOT: (data) => api.post('/ai/action/comment', data),
+  search: (data) => api.post('/ai/action/search', data),
+  
+  // Fonctions vocales (STT & TTS)
+  transcribeAudio: (formData) => api.post('/ai/voice/transcribe', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  synthesizeSpeech: (data) => api.post('/ai/voice/tts', data)
 };
 
 api.ai = aiAPI;
