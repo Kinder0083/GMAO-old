@@ -790,4 +790,17 @@ export const rolesAPI = {
   getServices: () => api.get('/roles/services/list').then(res => res.data)
 };
 
+// API pour les ordres de travail type (modèles)
+export const workOrderTemplatesAPI = {
+  getAll: () => api.get('/work-order-templates').then(res => res.data),
+  getByCategory: (category) => api.get(`/work-order-templates/by-category/${category}`).then(res => res.data),
+  getById: (id) => api.get(`/work-order-templates/${id}`).then(res => res.data),
+  create: (data) => api.post('/work-order-templates', data).then(res => res.data),
+  update: (id, data) => api.put(`/work-order-templates/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/work-order-templates/${id}`).then(res => res.data),
+  duplicate: (id) => api.post(`/work-order-templates/${id}/duplicate`).then(res => res.data),
+  incrementUsage: (id) => api.post(`/work-order-templates/${id}/increment-usage`).then(res => res.data),
+  checkAccess: () => api.get('/work-order-templates/check-access/me').then(res => res.data)
+};
+
 export default api;
