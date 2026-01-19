@@ -642,14 +642,14 @@ const WorkOrderTemplatesPage = () => {
               <div className="space-y-2">
                 <Label htmlFor="equipement_id">Équipement par défaut</Label>
                 <Select 
-                  value={formData.equipement_id} 
-                  onValueChange={(value) => setFormData({ ...formData, equipement_id: value })}
+                  value={formData.equipement_id || "none"} 
+                  onValueChange={(value) => setFormData({ ...formData, equipement_id: value === "none" ? "" : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Aucun équipement" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun</SelectItem>
+                    <SelectItem value="none">Aucun</SelectItem>
                     {equipments.map(eq => (
                       <SelectItem key={eq.id} value={eq.id}>
                         {eq.nom}
