@@ -368,6 +368,7 @@ const Meters = () => {
                                   setDialogOpen(true);
                                 }}
                                 className="hover:bg-blue-50 hover:text-blue-600"
+                                title="Voir les détails"
                               >
                                 <Eye size={16} />
                               </Button>
@@ -379,6 +380,7 @@ const Meters = () => {
                                   setFormDialogOpen(true);
                                 }}
                                 className="hover:bg-green-50 hover:text-green-600"
+                                title="Modifier"
                               >
                                 <Pencil size={16} />
                               </Button>
@@ -387,6 +389,7 @@ const Meters = () => {
                                 size="sm"
                                 onClick={() => handleDelete(meter.id)}
                                 className="hover:bg-red-50 hover:text-red-600"
+                                title="Supprimer"
                               >
                                 <Trash2 size={16} />
                               </Button>
