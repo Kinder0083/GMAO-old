@@ -482,14 +482,83 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 
 ### P2 - Backlog
 - Fonctions spécifiques "Responsables de service"
-- Chatbot IA
 - Dashboard Plan de Surveillance
 - Analytique Checklists
-- Visite guidée
+
+---
+
+## Session du 19 Janvier 2026 - Refonte Chatbot IA "Adria"
+
+### ✅ Phase 1 : Refonte du Prompt Système (COMPLÉTÉ)
+- Nouveau prompt expert GMAO (500+ lignes)
+- Personnalité professionnelle et bienveillante
+- Contexte enrichi avec données temps réel (OT, équipements, inventaire, alertes, maintenances)
+- Support des commandes d'action automatique : `[[CREATE_OT:...]]`, `[[SEARCH:...]]`, etc.
+- Commandes de navigation et guidage : `[[NAVIGATE:...]]`, `[[ACTION:...]]`
+
+### ✅ Phase 2 : Actions Automatiques via Texte (COMPLÉTÉ)
+- **Création d'OT** : L'IA peut créer des ordres de travail via commande
+  - Endpoint : `/api/ai/action/create-ot`
+  - Extraction automatique : titre, description, type, priorité, équipement
+- **Ajout de temps** : Ajouter du temps passé sur un OT
+  - Endpoint : `/api/ai/action/add-time`
+- **Commentaires** : Ajouter des commentaires sur les OT
+  - Endpoint : `/api/ai/action/comment`
+
+### ✅ Phase 3 : Recherche Intelligente (COMPLÉTÉ)
+- Recherche en langage naturel dans les données GMAO
+- Endpoint : `/api/ai/action/search`
+- Types supportés : work_orders, equipments, inventory, maintenance
+- Filtres dynamiques (statut, priorité, type, etc.)
+
+### ✅ Phase 4 : Guidage Visuel Pas à Pas (COMPLÉTÉ)
+- Nouveau composant `GuidedHighlight.jsx`
+- Surbrillance lumineuse sur les éléments cibles (pulse, glow, spotlight)
+- Overlay sombre pour focaliser l'attention
+- Flèche indicatrice pointant vers l'élément
+- Panneau d'instruction avec progression (X/Y étapes)
+- Commande : `[[GUIDE_START:nom]]...[[GUIDE_END]]`
+- Ajout de `data-testid` sur les éléments du menu sidebar
+
+### ✅ Phase 5 : Commandes Vocales Bidirectionnelles (COMPLÉTÉ)
+- **Speech-to-Text (STT)** : 
+  - Bouton microphone dans le chat
+  - Enregistrement audio WebM
+  - Transcription via OpenAI Whisper
+  - Endpoint : `/api/ai/voice/transcribe`
+- **Text-to-Speech (TTS)** :
+  - Synthèse vocale des réponses d'Adria
+  - Voix "nova" (féminine naturelle)
+  - Bouton ON/OFF pour activer/désactiver
+  - Endpoint : `/api/ai/voice/tts`
+
+### Fichiers créés/modifiés
+- `/app/backend/ai_chat_routes.py` - Refonte majeure (+300 lignes)
+- `/app/frontend/src/components/Common/GuidedHighlight.jsx` - NOUVEAU
+- `/app/frontend/src/components/Common/AIChatWidget.jsx` - +150 lignes (vocal)
+- `/app/frontend/src/components/Layout/MainLayout.jsx` - data-testid ajoutés
+- `/app/frontend/src/services/api.js` - Nouvelles fonctions API IA
+
+---
+
+## Tâches à venir
+
+### P1 - Chatbot IA (suite)
+- Phase 6 : Assistant contextuel par page (bouton "?" sur chaque page)
+- Amélioration continue du prompt selon retours utilisateur
+
+### P1 - Migration WebSocket
+- Page "Rapports" - Mise à jour temps réel
+- Page "Historique Achat" - Mise à jour temps réel
+
+### P2 - Backlog
+- Fonctions spécifiques "Responsables de service"
+- Dashboard Plan de Surveillance
+- Analytique Checklists
 
 ---
 
 ## Dernière mise à jour
 **Date**: 19 Janvier 2026
 **Agent**: E1
-**Tâche complétée**: Bug fix "Bell is not defined" + Validation script installation v1.1.5
+**Tâche complétée**: Refonte complète du Chatbot IA "Adria" - Phases 1 à 5
