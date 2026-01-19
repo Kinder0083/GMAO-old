@@ -641,37 +641,60 @@ function PoleDetails() {
                             {bon.created_at ? new Date(bon.created_at).toLocaleDateString('fr-FR') : ''}
                           </p>
                         </div>
-                        <div className="flex gap-1">
-                          {canEdit(bon) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/documentations/${poleId}/bon-de-travail/${bon.id}/edit`)}
-                              title="Modifier"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePrint('bon', bon.id)}
-                            title="Imprimer"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          {canEdit(bon) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteBon(bon.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                        <TooltipProvider delayDuration={300}>
+                          <div className="flex gap-1">
+                            {canEdit(bon) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigate(`/documentations/${poleId}/bon-de-travail/${bon.id}/edit`)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Modifier le bon</p>
+                                  <p className="text-xs text-gray-300">Éditer les informations du bon de travail</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePrint('bon', bon.id)}
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">Imprimer</p>
+                                <p className="text-xs text-gray-300">Générer un PDF du bon de travail</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            {canEdit(bon) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteBon(bon.id)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Supprimer</p>
+                                  <p className="text-xs text-gray-300">Cette action est irréversible</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TooltipProvider>
                       </div>
                     ))}
                   </div>
