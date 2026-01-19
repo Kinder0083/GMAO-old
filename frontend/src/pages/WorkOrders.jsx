@@ -20,6 +20,7 @@ import { formatTimeToHoursMinutes } from '../utils/timeFormat';
 import { formatErrorMessage } from '../utils/errorFormatter';
 
 const WorkOrders = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { canEdit, canDelete } = usePermissions();
