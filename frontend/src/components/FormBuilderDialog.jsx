@@ -108,25 +108,41 @@ function SortableField({ field, onUpdate, onDelete }) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowOptions(!showOptions)}
-          title="Paramètres du champ"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(field.id)}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          title="Supprimer le champ"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+      <TooltipProvider delayDuration={300}>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowOptions(!showOptions)}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="font-medium">Paramètres du champ</p>
+              <p className="text-xs text-gray-300">Configurer les options avancées</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(field.id)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="font-medium">Supprimer le champ</p>
+              <p className="text-xs text-gray-300">Retirer ce champ du formulaire</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
 
       {/* Options panel (slide down) */}
       {showOptions && (
