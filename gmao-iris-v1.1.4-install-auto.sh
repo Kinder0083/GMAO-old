@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# GMAO Iris v1.1.4 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
+# GMAO Iris v1.1.5 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
 # 
+# NOUVEAUTÉS v1.1.5:
+# - Manuel utilisateur enrichi : 24 chapitres, 70+ sections
+# - Documentation des Ordres Type (Modèles d'OT)
+# - Documentation des Modèles de Formulaires personnalisés
+# - Documentation de la Gestion des Rôles et Permissions
+# - Documentation de l'Aide Contextuelle et Tooltips enrichis
+# - Appel au script init_manual_on_install.py unifié
+#
 # NOUVEAUTÉS v1.1.4:
 # - Fonctionnalité "Détail par Catégorie (Article + DM6)"
 # - Création automatique de category_mapping.py
