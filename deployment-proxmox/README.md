@@ -6,78 +6,113 @@ Ce dossier contient tous les fichiers nécessaires pour déployer et configurer 
 
 ## 📦 Contenu du dossier
 
-### 1. 🤖 `configure-proxmox-ip-publique.sh`
-**Script automatique de configuration**
+| Fichier | Description |
+|---------|-------------|
+| `install.sh` | **🆕 Script d'installation automatique complet** |
+| `docker-compose.proxmox.yml` | Configuration Docker Compose |
+| `DOCKER_DEPLOYMENT.md` | Guide de déploiement Docker |
+| `INSTRUCTIONS_PROXMOX.md` | Instructions manuelles détaillées |
+| `PREMIERE_CONNEXION.md` | Guide de première connexion |
 
-Script interactif qui :
-- Demande votre IP publique
-- Configure automatiquement le frontend
-- Redémarre les services
-- Vérifie la configuration Docker/Supervisor
+---
 
-**Utilisation :**
+## 🚀 Installation Automatique (Recommandé)
+
+Le script `install.sh` automatise **toute l'installation** en une seule commande :
+
 ```bash
-chmod +x configure-proxmox-ip-publique.sh
-./configure-proxmox-ip-publique.sh
+# 1. Cloner le repository
+cd /opt
+git clone https://github.com/VOTRE-USERNAME/gmao-iris.git
+cd gmao-iris
+
+# 2. Lancer l'installation
+chmod +x deployment-proxmox/install.sh
+./deployment-proxmox/install.sh -i VOTRE_IP_PUBLIQUE
+```
+
+### Ce que fait le script automatiquement :
+
+| Étape | Description |
+|-------|-------------|
+| 1 | ✅ Installe Docker et Docker Compose |
+| 2 | ✅ Configure docker-compose.yml avec votre IP |
+| 3 | ✅ Crée les Dockerfiles backend/frontend |
+| 4 | ✅ Build et démarre les containers |
+| 5 | ✅ **Initialise le manuel utilisateur** (24 chapitres, 70+ sections) |
+| 6 | ✅ Sauvegarde les credentials dans `credentials.txt` |
+
+### Options disponibles :
+
+```bash
+./deployment-proxmox/install.sh --help
+
+Options:
+  -i, --ip IP         IP publique (OBLIGATOIRE)
+  -p, --password PWD  Mot de passe MongoDB
+  -s, --secret KEY    Clé secrète JWT
+  --skip-docker       Ignorer l'installation Docker
+  --skip-manual       Ignorer l'initialisation du manuel
+```
+
+### Exemple complet :
+
+```bash
+# Installation avec mot de passe personnalisé
+./deployment-proxmox/install.sh -i 192.168.1.100 -p MonMotDePasse123
+
+# Installation si Docker est déjà installé
+./deployment-proxmox/install.sh -i 192.168.1.100 --skip-docker
 ```
 
 ---
 
-### 2. 📖 `INSTRUCTIONS_PROXMOX.md`
-**Guide complet de déploiement manuel**
+## 🎯 Après l'installation
 
-Instructions détaillées avec :
-- Toutes les étapes pas à pas
-- Commandes à copier-coller
-- Configuration du firewall
-- Section dépannage complète
-- Solutions aux problèmes courants
+### Accès à l'application
 
-**Recommandé si :**
-- Le script automatique ne fonctionne pas
-- Vous préférez comprendre chaque étape
-- Vous avez une configuration personnalisée
+```
+Frontend : http://VOTRE_IP:3000
+Backend  : http://VOTRE_IP:8001
+```
 
----
+### Compte administrateur par défaut
 
-## 🎯 Démarrage rapide
+```
+Email    : admin@gmao-iris.local
+Password : Admin123!
+```
 
-### Prérequis
-- Un serveur Proxmox avec un container LXC ou Docker
-- L'application GMAO Iris installée sur ce container
-- Accès SSH au serveur Proxmox
-- Votre IP publique
-
-### Étapes de base
-
-1. **Clonez ce repository sur votre Proxmox :**
-   ```bash
-   git clone https://github.com/VOTRE-USERNAME/gmao-iris.git
-   cd gmao-iris/deployment-proxmox
-   ```
-
-2. **Exécutez le script automatique :**
-   ```bash
-   chmod +x configure-proxmox-ip-publique.sh
-   ./configure-proxmox-ip-publique.sh
-   ```
-
-3. **Suivez les instructions à l'écran**
-
-4. **Accédez à votre application :**
-   ```
-   http://VOTRE-IP-PUBLIQUE:3000
-   ```
+⚠️ **Changez le mot de passe immédiatement après la première connexion !**
 
 ---
 
-## 🔧 Configuration manuelle
+## 📖 Documentation supplémentaire
 
-Si vous préférez configurer manuellement, consultez **INSTRUCTIONS_PROXMOX.md** pour :
-- Modification du fichier `.env` du frontend
-- Configuration du backend
-- Paramétrage du firewall
-- Redémarrage des services
+- **`DOCKER_DEPLOYMENT.md`** : Guide détaillé du déploiement Docker
+- **`INSTRUCTIONS_PROXMOX.md`** : Instructions manuelles pas à pas
+- **`PREMIERE_CONNEXION.md`** : Guide de configuration initiale
+
+---
+
+## 🔧 Commandes utiles
+
+```bash
+# Voir l'état des services
+docker-compose ps
+
+# Voir les logs en temps réel
+docker-compose logs -f
+
+# Redémarrer les services
+docker-compose restart
+
+# Arrêter l'application
+docker-compose down
+
+# Réinitialiser le manuel utilisateur
+docker exec gmao-backend python3 /app/backend/init_manual_on_install.py
+```
 
 ---
 
@@ -95,7 +130,7 @@ Si vous préférez configurer manuellement, consultez **INSTRUCTIONS_PROXMOX.md*
 ┌──────────────▼──────────────────────────┐
 │     Serveur Proxmox                     │
 │  ┌─────────────────────────────────┐   │
-│  │   Container LXC/Docker          │   │
+│  │   Container Docker              │   │
 │  │                                 │   │
 │  │   ┌──────────┐   ┌──────────┐  │   │
 │  │   │ Frontend │   │ Backend  │  │   │
@@ -117,87 +152,35 @@ Si vous préférez configurer manuellement, consultez **INSTRUCTIONS_PROXMOX.md*
 ## ⚠️ Points importants
 
 ### Sécurité
-- ✅ CORS est configuré pour accepter toutes les origines (nécessaire pour IP publique)
-- ⚠️ Pour la production, limitez les origines autorisées dans le backend
-- 🔒 Configurez HTTPS avec Let's Encrypt (recommandé)
-- 🛡️ Utilisez un reverse proxy (Nginx) pour plus de sécurité
+- 🔒 Changez le mot de passe admin après la première connexion
+- 🔒 Configurez HTTPS avec Let's Encrypt (recommandé en production)
+- 🛡️ Ne jamais exposer MongoDB (port 27017) à l'extérieur
 
 ### Ports à ouvrir
 - **3000** : Frontend React
 - **8001** : Backend API FastAPI
-- **27017** : MongoDB (UNIQUEMENT en interne, ne pas exposer)
-
-### Performance
-- Configurez un reverse proxy Nginx pour de meilleures performances
-- Activez la compression gzip
-- Configurez le cache des ressources statiques
 
 ---
 
-## 🆘 Besoin d'aide ?
-
-Si vous rencontrez des problèmes :
-
-1. **Consultez d'abord INSTRUCTIONS_PROXMOX.md** (section Dépannage)
-
-2. **Vérifiez les logs :**
-   ```bash
-   # Logs backend
-   tail -f /var/log/supervisor/backend.err.log
-   
-   # Logs frontend
-   tail -f /var/log/supervisor/frontend.err.log
-   
-   # Ou avec Docker
-   docker logs CONTAINER_NAME
-   ```
-
-3. **Vérifiez que les services tournent :**
-   ```bash
-   netstat -tlnp | grep -E "3000|8001"
-   ```
-
-4. **Testez l'API backend :**
-   ```bash
-   curl http://localhost:8001/api/version
-   ```
-
----
-
-## 📚 Documentation complète
-
-- **Frontend:** React + Vite
-- **Backend:** FastAPI (Python)
-- **Base de données:** MongoDB
-- **Authentification:** JWT
-
-Pour plus de détails sur l'architecture, consultez la documentation principale du projet.
-
----
-
-## 🔄 Mises à jour
-
-Pour mettre à jour votre déploiement Proxmox :
+## 🆘 Dépannage
 
 ```bash
-# Sur votre Proxmox
-cd /chemin/vers/votre/app
-git pull origin main
+# Vérifier que les services tournent
+docker-compose ps
 
-# Redémarrez les services
-docker-compose restart
-# ou
-sudo supervisorctl restart all
+# Voir les logs d'erreur
+docker-compose logs backend
+docker-compose logs frontend
+
+# Tester l'API backend
+curl http://localhost:8001/api/version
+
+# Réinitialiser le manuel si nécessaire
+docker exec gmao-backend python3 /app/backend/init_manual_on_install.py
 ```
 
 ---
 
-## 📄 License
-
-Ce projet est sous licence propriétaire. Tous droits réservés.
-
----
-
-**Version:** 1.5.0  
-**Dernière mise à jour:** 19 Novembre 2025  
+**Version:** 2.0  
+**Dernière mise à jour:** 19 Janvier 2026  
 **Testé sur:** Proxmox VE 8.x, Ubuntu 22.04 LTS
