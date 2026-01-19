@@ -383,29 +383,45 @@ const RolesManagement = () => {
                     </span>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleEditRole(role)}
-                      title="Modifier ce rôle"
-                    >
-                      <Edit size={16} className="mr-1" />
-                      Modifier
-                    </Button>
-                    {!role.is_system && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                        onClick={() => handleDeleteClick(role)}
-                        title="Supprimer ce rôle"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    )}
-                  </div>
+                  <TooltipProvider delayDuration={300}>
+                    <div className="flex gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => handleEditRole(role)}
+                          >
+                            <Edit size={16} className="mr-1" />
+                            Modifier
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">Modifier ce rôle</p>
+                          <p className="text-xs text-gray-300">Éditer les permissions et paramètres</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      {!role.is_system && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteClick(role)}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-medium">Supprimer ce rôle</p>
+                            <p className="text-xs text-gray-300">Les utilisateurs avec ce rôle seront affectés</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </TooltipProvider>
                 </CardContent>
               </Card>
             ))}
