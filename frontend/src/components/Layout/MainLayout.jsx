@@ -1049,6 +1049,7 @@ const MainLayout = () => {
                             <button
                               key={index}
                               onClick={() => navigate(item.path)}
+                              data-testid={`sidebar-${item.id}`}
                               className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
                                 !sidebarOpen ? 'justify-center px-2' : ''
                               }`}
