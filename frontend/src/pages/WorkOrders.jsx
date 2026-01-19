@@ -332,7 +332,7 @@ const WorkOrders = () => {
                 }}
               >
                 <Plus size={20} className="mr-2" />
-                Nouvel ordre
+                + Nouvel ordre (Vierge)
               </Button>
               <Button 
                 variant="outline"
