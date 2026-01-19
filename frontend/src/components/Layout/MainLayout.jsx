@@ -836,9 +836,9 @@ const MainLayout = () => {
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg w-64">
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
               <p className="font-semibold mb-2">Plan de Surveillance</p>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm mb-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Échéances proches:</span>
                   <span className="font-bold text-orange-400">{surveillanceBadge.echeances_proches}</span>
@@ -848,6 +848,14 @@ const MainLayout = () => {
                   <span className={`font-bold ${surveillanceBadge.pourcentage_realisation >= 75 ? 'text-green-400' : surveillanceBadge.pourcentage_realisation >= 50 ? 'text-orange-400' : 'text-red-400'}`}>
                     {surveillanceBadge.pourcentage_realisation}%
                   </span>
+                </div>
+              </div>
+              <div className="border-t border-gray-700 pt-2">
+                <p className="text-xs text-gray-400 font-medium mb-1">Contrôles qualité</p>
+                <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                  <p>📊 Suivi des paramètres critiques</p>
+                  <p>📈 Historique des mesures</p>
+                  <p>⚠️ Alertes seuils dépassés</p>
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">Cliquez pour voir les contrôles en retard</p>
@@ -870,9 +878,9 @@ const MainLayout = () => {
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg w-64">
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
               <p className="font-semibold mb-2">Alertes Inventaire</p>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm mb-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">En rupture:</span>
                   <span className="font-bold text-red-400">{inventoryStats.rupture}</span>
@@ -880,6 +888,14 @@ const MainLayout = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300">Niveau bas:</span>
                   <span className="font-bold text-orange-400">{inventoryStats.niveau_bas}</span>
+                </div>
+              </div>
+              <div className="border-t border-gray-700 pt-2">
+                <p className="text-xs text-gray-400 font-medium mb-1">Gestion des stocks</p>
+                <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                  <p>📦 Suivi des quantités en stock</p>
+                  <p>🔔 Alertes seuil minimum</p>
+                  <p>📋 Historique des mouvements</p>
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">Cliquez pour voir les articles en alerte</p>
