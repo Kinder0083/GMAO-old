@@ -19,8 +19,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../com
 const People = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('ALL');
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -32,34 +30,41 @@ const People = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
-  useEffect(() => {
-    loadCurrentUser();
-    loadUsers();
-  }, []);
-
-  const loadCurrentUser = () => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setCurrentUser(user);
-  };
-
-  const isAdmin = () => {
-    return currentUser?.role === 'ADMIN';
-  };
-
-  const loadUsers = async () => {
+  // Fonction pour charger les utilisateurs depuis l'API
+  const fetchUsers = useCallback(async () => {
     try {
-      setLoading(true);
       const response = await usersAPI.getAll();
-      setUsers(response.data);
+      return response?.data || [];
     } catch (error) {
+      console.error('[People] Erreur chargement utilisateurs:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de charger les utilisateurs',
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
+      return [];
     }
+  }, [toast]);
+
+  // Hook temps réel WebSocket pour les utilisateurs
+  const {
+    data: users,
+    loading,
+    wsConnected,
+    refresh: loadUsers
+  } = useRealtimeData('users', fetchUsers, {
+    enableWebSocket: true,
+    fallbackPolling: true,
+    pollingInterval: 60000, // 60s polling de secours
+  });
+
+  useEffect(() => {
+    loadCurrentUser();
+  }, []);
+
+  const loadCurrentUser = () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setCurrentUser(user);
   };
 
   const filteredUsers = users.filter(user => {
