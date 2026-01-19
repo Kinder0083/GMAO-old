@@ -189,37 +189,50 @@ const NotificationsDropdown = () => {
   };
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="relative" ref={dropdownRef}>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="relative"
-        onClick={() => setIsOpen(!isOpen)}
-        data-testid="notifications-btn"
-      >
-        <Wrench size={20} />
-        
-        {/* Badge bleu pour les notifications PM (en haut à droite) */}
-        {unreadCount > 0 && rpCount === 0 && (
-          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-        
-        {/* Badge rouge pour les notifications RP (en bas à gauche) */}
-        {rpCount > 0 && (
-          <span className="absolute -bottom-1 -left-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">
-            {rpCount > 9 ? '9+' : rpCount}
-          </span>
-        )}
-        
-        {/* Badge bleu pour les notifications PM si il y a aussi des RP */}
-        {unreadCount > rpCount && rpCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-            {(unreadCount - rpCount) > 9 ? '9+' : (unreadCount - rpCount)}
-          </span>
-        )}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={() => setIsOpen(!isOpen)}
+            data-testid="notifications-btn"
+          >
+            <Wrench size={20} />
+            
+            {/* Badge bleu pour les notifications PM (en haut à droite) */}
+            {unreadCount > 0 && rpCount === 0 && (
+              <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+            
+            {/* Badge rouge pour les notifications RP (en bas à gauche) */}
+            {rpCount > 0 && (
+              <span className="absolute -bottom-1 -left-1 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">
+                {rpCount > 9 ? '9+' : rpCount}
+              </span>
+            )}
+            
+            {/* Badge bleu pour les notifications PM si il y a aussi des RP */}
+            {unreadCount > rpCount && rpCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {(unreadCount - rpCount) > 9 ? '9+' : (unreadCount - rpCount)}
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+          <p className="font-medium">Notifications maintenance</p>
+          <p className="text-xs text-gray-300 mt-1">
+            {unreadCount > 0 
+              ? `${unreadCount} notification${unreadCount > 1 ? 's' : ''} en attente`
+              : 'Aucune notification en attente'}
+          </p>
+        </TooltipContent>
+      </Tooltip>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border z-50 max-h-[500px] overflow-hidden flex flex-col">
