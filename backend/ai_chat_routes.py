@@ -517,6 +517,39 @@ async def get_enriched_app_context(current_user: dict) -> dict:
         except Exception:
             context["sensors_in_alert"] = 0
         
+        # Inventaire - Articles en rupture
+        try:
+            inventory_rupture = await db.inventory.count_documents({
+                "$expr": {"$lte": ["$quantite", 0]}
+            })
+            context["inventory_rupture"] = inventory_rupture
+        except Exception:
+            context["inventory_rupture"] = 0
+        
+        # Inventaire - Articles niveau bas
+        try:
+            inventory_low = await db.inventory.count_documents({
+                "$and": [
+                    {"$expr": {"$gt": ["$quantite", 0]}},
+                    {"$expr": {"$lte": ["$quantite", "$seuil_alerte"]}}
+                ]
+            })
+            context["inventory_low"] = inventory_low
+        except Exception:
+            context["inventory_low"] = 0
+        
+        # Maintenances préventives en retard
+        try:
+            from datetime import datetime, timezone
+            today = datetime.now(timezone.utc)
+            pm_overdue = await db.preventive_maintenance.count_documents({
+                "prochaine_date": {"$lt": today},
+                "statut": {"$ne": "terminé"}
+            })
+            context["preventive_maintenance_overdue"] = pm_overdue
+        except Exception:
+            context["preventive_maintenance_overdue"] = 0
+        
         # Dernière action utilisateur (depuis l'audit)
         try:
             last_audit = await db.audit_logs.find_one(
