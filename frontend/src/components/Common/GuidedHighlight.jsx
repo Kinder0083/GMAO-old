@@ -448,18 +448,25 @@ const GuidedHighlight = ({
         </div>
       )}
 
-      {/* Panneau d'instruction */}
+      {/* Panneau d'instruction - Déplaçable */}
       <div 
-        className="fixed z-[10001] bg-white rounded-xl shadow-2xl border-2 border-blue-500 max-w-md"
+        ref={panelRef}
+        className={`fixed z-[10001] bg-white rounded-xl shadow-2xl border-2 border-blue-500 max-w-md select-none ${isDragging ? 'cursor-grabbing' : ''}`}
         style={{
-          bottom: 100,
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: panelPosition.x !== null ? panelPosition.x : '50%',
+          top: panelPosition.y !== null ? panelPosition.y : 'auto',
+          bottom: panelPosition.y !== null ? 'auto' : 100,
+          transform: panelPosition.x !== null ? 'none' : 'translateX(-50%)',
+          transition: isDragging ? 'none' : 'left 0.3s, top 0.3s',
         }}
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-t-lg flex items-center justify-between">
+        {/* Header - Zone de drag */}
+        <div 
+          className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-t-lg flex items-center justify-between cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+        >
           <div className="flex items-center gap-2">
+            <GripHorizontal size={18} className="opacity-60" />
             <span className="text-xl">🎯</span>
             <span className="font-semibold">{guide.title || 'Guide interactif'}</span>
           </div>
@@ -498,6 +505,12 @@ const GuidedHighlight = ({
               Cliquez sur l'élément en surbrillance pour continuer
             </p>
           )}
+          
+          {/* Indication de déplacement */}
+          <p className="text-xs text-gray-400 mb-3 flex items-center gap-1">
+            <GripHorizontal size={12} />
+            Glissez l'en-tête pour déplacer cette fenêtre
+          </p>
 
           {/* Boutons de navigation */}
           <div className="flex items-center justify-between gap-2">
