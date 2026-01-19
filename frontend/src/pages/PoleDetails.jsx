@@ -852,37 +852,60 @@ function PoleDetails() {
                             {form.created_by_name && ` • ${form.created_by_name}`}
                           </p>
                         </div>
-                        <div className="flex gap-1">
-                          {canEdit(form) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditCustomForm(form)}
-                              title="Modifier"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePrintCustomForm(form.id)}
-                            title="Imprimer"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          {canEdit(form) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteCustomForm(form.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                        <TooltipProvider delayDuration={300}>
+                          <div className="flex gap-1">
+                            {canEdit(form) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditCustomForm(form)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Modifier le formulaire</p>
+                                  <p className="text-xs text-gray-300">Éditer les champs du formulaire</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePrintCustomForm(form.id)}
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">Imprimer</p>
+                                <p className="text-xs text-gray-300">Générer un PDF du formulaire</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            {canEdit(form) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteCustomForm(form.id)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">Supprimer</p>
+                                  <p className="text-xs text-gray-300">Cette action est irréversible</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TooltipProvider>
                       </div>
                     ))}
                   </div>
