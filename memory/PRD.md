@@ -51,6 +51,7 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 **Revue complète** de l'interface pour ajouter des infobulles enrichies (titre + description) :
 
 **Pages modifiées avec tooltips enrichis** :
+- `/app/frontend/src/components/Layout/MainLayout.jsx` - **EN-TÊTE PRINCIPAL** : Sidebar toggle, Chat Live, Échéances, Plan de Surveillance, Inventaire, Ordres de travail, Profil utilisateur
 - `/app/frontend/src/pages/PoleDetails.jsx` - Boutons documents, bons, autorisations, formulaires
 - `/app/frontend/src/pages/Inventory.jsx` - Actions surveillance, modifier, supprimer
 - `/app/frontend/src/pages/Meters.jsx` - Boutons voir, modifier, supprimer (vues liste et arborescence)
