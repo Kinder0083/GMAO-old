@@ -339,7 +339,7 @@ export const AIContextMenuProvider = ({ children }) => {
   const contextTypeInfo = richContext ? (CONTEXT_TYPES[richContext.type] || CONTEXT_TYPES.GENERIC) : CONTEXT_TYPES.GENERIC;
 
   return (
-    <AIContextMenuContext.Provider value={{ openChat, closeChat, chatOpen }}>
+    <AIContextMenuContext.Provider value={{ openChat, openChatWithContext, closeChat, chatOpen }}>
       {children}
       
       {/* Menu contextuel enrichi */}
