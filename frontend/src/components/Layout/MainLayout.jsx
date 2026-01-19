@@ -691,9 +691,22 @@ const MainLayout = () => {
                   )}
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
-                <p className="font-medium">Chat Live</p>
-                <p className="text-xs text-gray-300 mt-1">Messagerie instantanée avec l'équipe</p>
+              <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
+                <p className="font-medium mb-2">Chat Live</p>
+                <p className="text-xs text-gray-300 mb-3">
+                  {chatUnreadCount > 0 
+                    ? `${chatUnreadCount} message${chatUnreadCount > 1 ? 's' : ''} non lu${chatUnreadCount > 1 ? 's' : ''}`
+                    : 'Aucun nouveau message'}
+                </p>
+                <div className="border-t border-gray-700 pt-2">
+                  <p className="text-xs text-gray-400 font-medium mb-1">Fonctionnalités</p>
+                  <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                    <p>💬 Messagerie instantanée équipe</p>
+                    <p>📎 Partage de fichiers et images</p>
+                    <p>🔔 Notifications en temps réel</p>
+                    <p>👥 Conversations privées ou groupe</p>
+                  </div>
+                </div>
               </TooltipContent>
             </Tooltip>
           )}
@@ -731,9 +744,24 @@ const MainLayout = () => {
                   )}
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
-                <p className="font-medium">Échéances dépassées</p>
-                <p className="text-xs text-gray-300 mt-1">Voir les tâches en retard par catégorie</p>
+              <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
+                <p className="font-medium mb-2">Échéances dépassées</p>
+                <p className="text-xs text-gray-300 mb-3">Tâches en retard par catégorie</p>
+                <div className="border-t border-gray-700 pt-2">
+                  <p className="text-xs text-gray-400 font-medium mb-1">Badges couleur</p>
+                  <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                    <p>🟠 Orange - OT + Améliorations en retard</p>
+                    <p>🟡 Jaune - Demandes d'intervention/amélioration</p>
+                    <p>🔵 Bleu - Maintenances préventives</p>
+                  </div>
+                </div>
+                <div className="border-t border-gray-700 pt-2 mt-2">
+                  <p className="text-xs text-gray-400 font-medium mb-1">Actions rapides</p>
+                  <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                    <p>📋 Accès direct aux tâches en retard</p>
+                    <p>⏰ Filtrage par type d'échéance</p>
+                  </div>
+                </div>
               </TooltipContent>
             </Tooltip>
 
@@ -880,13 +908,27 @@ const MainLayout = () => {
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
-              <p className="font-medium">Ordres de travail</p>
-              <p className="text-xs text-gray-300 mt-1">
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
+              <p className="font-medium mb-2">Ordres de travail</p>
+              <p className="text-xs text-gray-300 mb-3">
                 {workOrdersCount > 0 
                   ? `${workOrdersCount} ordre${workOrdersCount > 1 ? 's' : ''} en attente`
                   : 'Aucun ordre en attente'}
               </p>
+              <div className="border-t border-gray-700 pt-2">
+                <p className="text-xs text-gray-400 font-medium mb-1">Types d'OT</p>
+                <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                  <p>🔧 Corrective - Réparation suite panne</p>
+                  <p>🛡️ Préventive - Maintenance planifiée</p>
+                  <p>📈 Améliorative - Optimisation</p>
+                </div>
+              </div>
+              <div className="border-t border-gray-700 pt-2 mt-2">
+                <p className="text-xs text-gray-400 font-medium mb-1">Statuts</p>
+                <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                  <p>⏳ En attente • 🔄 En cours • ✅ Terminé</p>
+                </div>
+              </div>
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -907,9 +949,18 @@ const MainLayout = () => {
                 </div>
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
-              <p className="font-medium">Mon Profil</p>
-              <p className="text-xs text-gray-300 mt-1">Accéder aux paramètres du compte</p>
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
+              <p className="font-medium mb-2">Mon Profil</p>
+              <p className="text-xs text-gray-300 mb-3">Paramètres du compte</p>
+              <div className="border-t border-gray-700 pt-2">
+                <p className="text-xs text-gray-400 font-medium mb-1">Options disponibles</p>
+                <div className="text-xs text-gray-400 ml-2 space-y-0.5">
+                  <p>👤 Modifier mes informations</p>
+                  <p>🔐 Changer mon mot de passe</p>
+                  <p>🎨 Préférences d'affichage</p>
+                  <p>🚪 Déconnexion</p>
+                </div>
+              </div>
             </TooltipContent>
           </Tooltip>
         </div>
