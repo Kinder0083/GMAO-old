@@ -433,6 +433,7 @@ const People = () => {
         description={`Êtes-vous sûr de vouloir supprimer ${selectedUser?.prenom} ${selectedUser?.nom} ? Cette action est irréversible.`}
       />
     </div>
+    </TooltipProvider>
   );
 };
 
