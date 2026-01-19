@@ -864,32 +864,53 @@ const MainLayout = () => {
           <NotificationsDropdown />
           
           {/* Cloche OT en attente */}
-          <button 
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
-            onClick={() => navigate('/work-orders')}
-            title="Ordres de travail en attente"
-          >
-            <Bell size={20} className="text-gray-600" />
-            {workOrdersCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {workOrdersCount > 9 ? '9+' : workOrdersCount}
-              </span>
-            )}
-          </button>
-          <button 
-            onClick={() => navigate('/settings')}
-            className="flex items-center gap-3 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors cursor-pointer"
-          >
-            <div className="text-right">
-              <div className="text-sm font-medium text-gray-800">{user.nom}</div>
-              <div className="text-xs text-gray-500">{user.role}</div>
-            </div>
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium text-sm">
-                {user.nom.split(' ').map(n => n[0]).join('')}
-              </span>
-            </div>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                onClick={() => navigate('/work-orders')}
+                data-testid="work-orders-btn"
+              >
+                <Bell size={20} className="text-gray-600" />
+                {workOrdersCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {workOrdersCount > 9 ? '9+' : workOrdersCount}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+              <p className="font-medium">Ordres de travail</p>
+              <p className="text-xs text-gray-300 mt-1">
+                {workOrdersCount > 0 
+                  ? `${workOrdersCount} ordre${workOrdersCount > 1 ? 's' : ''} en attente`
+                  : 'Aucun ordre en attente'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={() => navigate('/settings')}
+                className="flex items-center gap-3 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors cursor-pointer"
+                data-testid="user-profile-btn"
+              >
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-800">{user.nom}</div>
+                  <div className="text-xs text-gray-500">{user.role}</div>
+                </div>
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-sm">
+                    {user.nom.split(' ').map(n => n[0]).join('')}
+                  </span>
+                </div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+              <p className="font-medium">Mon Profil</p>
+              <p className="text-xs text-gray-300 mt-1">Accéder aux paramètres du compte</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
