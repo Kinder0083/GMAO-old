@@ -305,8 +305,8 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
         // Émettre un événement pour rafraîchir les notifications instantanément
         window.dispatchEvent(new Event('workOrderCreated'));
         
-        // Marquer comme création réussie pour éviter le dialogue de statut
-        setSubmitSuccessful(true);
+        // Marquer comme création réussie AVANT d'appeler onOpenChange (ref = synchrone)
+        submitSuccessfulRef.current = true;
       }
 
       onSuccess();
@@ -315,8 +315,8 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
       if (workOrder) {
         setShowStatusDialog(true);
       } else {
-        // Pour une création, on marque submitSuccessful et on ferme
-        // Le callback handleDialogClose ignorera la fermeture grâce au flag
+        // Pour une création, le flag submitSuccessfulRef est déjà true
+        // handleDialogClose ignorera la logique du dialogue de statut
         onOpenChange(false);
       }
     } catch (error) {
