@@ -50,7 +50,7 @@ app.add_middleware(
 
 ```bash
 # Test depuis n'importe quelle IP
-curl https://workorder-pro-7.preview.emergentagent.com/api/version
+curl https://maintenance-ai-3.preview.emergentagent.com/api/version
 
 # Résultat attendu :
 {"version":"1.5.0","versionName":"...","releaseDate":"..."}

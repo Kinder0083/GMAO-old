@@ -1,199 +1,209 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to migrate the entire application from an inefficient polling system to a centralized WebSocket architecture. Throughout this session, the user requested a series of significant new features and enhancements:
-- **Planning Page Overhaul**: A complete redesign of the Planning page to show the full month without scrolling, group personnel by collapsible service sections, and migrate the page to WebSockets.
-- **Advanced Planning Features**:
-    - Introduction of a Régime de travail (work shift) concept for users (Journée, 2*8, 3*8).
-    - Complex, interactive cell rendering in the Planning grid based on the user's assigned shift (full squares, horizontally-split cells, 3-sector pie charts).
-    - A drag-to-copy feature to quickly apply an availability status across multiple days.
-- **User and Inventory Management Enhancements**:
-    - Ability to assign a Service to users via a dropdown with custom entry.
-    - Linking inventory items to one or more equipments/sub-equipments (Appartenance).
-    - A filter on the Inventaire page to view items by their linked equipment.
-    - A shortcut icon on the Equipement page to navigate directly to the filtered inventory list for that equipment.
-- **Automation**: Automatic creation of a purchase request when an inventory item's quantity is updated to zero.
+The user's initial request in this session was to verify a deployment script and fix a frontend bug. This quickly evolved into a series of major feature enhancements driven by the user's feedback:
+1.  **Bug Fix Bell is not defined**: A recurring frontend error was reported and fixed.
+2.  **Enrich Tooltips**: Following the bug fix, the user requested to enrich the tooltips for all 7 icons in the main header with detailed, multi-line descriptions of their functions.
+3.  **Major Feature: AI Chatbot Adria Overhaul**: The user prioritized the improvement of the existing AI chatbot. This became a multi-phase project including:
+    *   **Phase 1 & 3**: Rewriting the system prompt to make the AI an expert in industrial maintenance and implementing intelligent search in the application's data.
+    *   **Phase 2 & 4**: Enabling the AI to perform actions (like creating Work Orders) and implementing a sophisticated step-by-step visual guidance system with element highlighting, overlays, and a draggable instruction panel that correctly scopes itself within modals.
+    *   **Phase 5**: Integrating bidirectional voice commands: Speech-to-Text (STT) via OpenAI Whisper and Text-to-Speech (TTS) for the AI's responses.
+    *   **Phase 6**: Creating a contextual help system, with a floating ? button on every page that provides page-specific tips and actions.
+4.  **Feature: Import/Export for Ordres Type**: The user requested the ability to export all Work Order Templates to Excel/CSV and import them from a file.
+5.  **Improvement: Duplicate Handling for Import**: After the import/export feature was built, the user reported that importing created duplicates. The current task is to add a mechanism to handle these duplicates.
 
 **User's preferred language**: French
 
 **what currently exists?**
-The application has undergone significant feature development. The Planning page has been completely redesigned with a new monthly view, WebSocket-based real-time updates, and advanced UI features for managing personnel availability based on their work shift (régime). This includes interactive cells that can be full, split in two, or split into three sectors, and a drag-to-copy function. User management now includes assigning services and work shifts. The Inventory and Equipment modules are now linked, allowing inventory items to be associated with specific equipment and filtered accordingly. A new shortcut exists on the equipment page to view its associated inventory. A backend process is in place to automatically generate purchase requests when an inventory item's stock reaches zero, though this last feature's successful implementation is unverified.
+- The application is stable.
+- The Bell is not defined bug is resolved.
+- All main header icons have enriched, multi-line tooltips.
+- The AI Chatbot Adria has been massively upgraded. It now features an expert persona, performs actions (creating work orders), executes intelligent searches, and offers a highly interactive visual guidance system. It also supports full voice communication (STT/TTS). A contextual help button is present on all pages, linking to the AI.
+- The Ordres de Travail Type page has functional buttons to export all templates to Excel/CSV and a dialog to import from a file. The  library has been added to the project.
 
 **Last working item**:
-- **Last item agent was working:** Implementing the automatic creation of a purchase request when an inventory item's quantity is updated to zero. The agent modified the  endpoint in  to trigger this logic.
-- **Status:** USER VERIFICATION PENDING
-- **Agent Testing Done:** N (The agent's screenshot test was inconclusive as it did not set an item's quantity to 0 to trigger the new logic. The agent noted it would check logs but did not.)
-- **Which testing method agent to use?** backend testing agent. The agent should use  to update an inventory item's quantity to 0, and then use another  command to list the purchase requests () to confirm that a new request was automatically generated for that item.
+- **Last item agent was working:** Implementing duplicate handling for the Work Order Templates import feature. The agent added a new dialog () that will appear when a user tries to import a file containing templates with names that already exist in the database. This dialog will ask the user whether to overwrite the existing templates or ignore the duplicates.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Frontend testing agent or manual testing via screenshot. The test should involve exporting templates and then re-importing the same file to trigger the new duplicate management dialog. Both the overwrite and ignore options must be verified.
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Automatic Purchase Request generation is unverified (P0)**
-- **Issue 2: Rapport P.accident page does not update in real-time (P1)**
+- **Issue 1: Finalize and Test Duplicate Handling for Template Import (P0)**
+- **Issue 2: Rapport P.accident page does not update in real-time (P2)**
 
 **Issues Detail:**
-- **Issue 1: Automatic Purchase Request generation is unverified (P0)**
-  - **Attempted fixes:** The agent implemented the logic in  within the  function.
-  - **Next debug checklist:**
-    1.  Use  to get the ID and current quantity of an inventory item.
-    2.  Use  to  an update to that item's endpoint (), setting the  to 0.
-    3.  Use  to  the list of purchase requests ().
-    4.  Verify that a new purchase request has been created with a description matching the name of the inventory item.
-  - **Why fix this issue and what will be achieved with the fix?** This is a key automation feature requested by the user. Verification is required to confirm it works as intended.
-  - **Status:** USER VERIFICATION PENDING
-  - **Is recurring issue?** N
-  - **Should Test frontend/backend/both after fix?** Backend
-  - **Blocked on other issue:** none
+- **Issue 1: Finalize and Test Duplicate Handling for Template Import (P0)**
+    - **Attempted fixes:** The agent modified . A new state  was added to hold detected duplicates. The  function was updated to populate this state and trigger a new dialog () instead of importing directly. The JSX for this new dialog was added, along with the logic for the Écraser (Overwrite) and Ignorer (Ignore) buttons.
+    - **Next debug checklist:**
+        1.  Start the application.
+        2.  Navigate to the Ordres Type page ().
+        3.  Export the current templates to an Excel or CSV file.
+        4.  Click Importer and upload the file you just exported.
+        5.  **Verify:** The Gestion des Doublons dialog should appear, listing the duplicate templates found.
+        6.  **Test Ignorer:** Click the Ignorer button. Verify that no new templates are added and a success toast is shown.
+        7.  **Test Écraser:** Re-import the file. Click the Écraser button. Verify that the existing templates are updated (if there were changes) and a success toast is shown. No new rows should be created.
+    - **Why fix this issue and what will be achieved with the fix?** To prevent data corruption by creating duplicate work order templates and provide a robust, user-friendly import process.
+    - **Status:** IN PROGRESS
+    - **Is recurring issue?** N
+    - **Should Test frontend/backend/both after fix?** Frontend
 
-- **Issue 2: Rapport P.accident page does not update in real-time (P1)**
-  - **Attempted fixes:** A fix was attempted in a previous session. The user redirected the agent to other tasks before this could be verified.
-  - **Next debug checklist:**
-    1.  Ask the user to verify if the real-time update on the Rapport P.accident page is working.
-    2.  If not, investigate  to align its WebSocket implementation with the successful patterns used for the Dashboard and Planning pages.
-  - **Why fix this issue and what will be achieved with the fix?** This is a core functionality regression on a migrated page, breaking the real-time experience.
-  - **Status:** USER VERIFICATION PENDING
-  - **Is recurring issue?** Y
-  - **Should Test frontend/backend/both after fix?** Frontend
-  - **Blocked on other issue:** none
+- **Issue 2: Rapport P.accident page does not update in real-time (P2)**
+    - **Attempted fixes:** None in this session. This is a known issue from a previous fork.
+    - **Next debug checklist:**
+        1.  Examine  to ensure  is called on all CRUD operations.
+        2.  Verify the frontend page () correctly uses the  hook or establishes a WebSocket connection to listen for updates.
+    - **Why fix this issue and what will be achieved with the fix?** To provide a consistent, real-time user experience across all modules.
+    - **Status:** NOT STARTED
+    - **Is recurring issue?** Y
+    - **Should Test frontend/backend/both after fix?** Frontend
+    - **Blocked on other issue:** None.
 
 **In progress Task List**:
-- None.
+- None besides the pending issue above.
 
 **Upcoming and Future Tasks**
+
 **Upcoming Tasks:**
-- (P1) **Continue WebSocket Migration**:
-  - Migrate the remaining pages from the user's original list: Planning M.Prev., Rapports, Equipes, Historique Achat.
+-   **(P1)** **Continue WebSocket Migration**: Migrate the Rapports and Historique Achat pages to use WebSockets for real-time updates (this includes resolving Issue #2).
 
 **Future Tasks:**
-- (P2) AI Chatbot implementation (user has de-prioritized this).
+-   **(P2)** **Implement specific functions for Responsables de service**: De-prioritized by the user.
+-   **(P2)** **Surveillance Plan Dashboard**: An agent-suggested enhancement.
+-   **(P2)** **Checklist Analytics**: An agent-suggested enhancement.
+-   **(P2)** **Guided Tour**: An agent-suggested enhancement.
 
 **Completed work in this session**
-- **Planning Page Complete Overhaul:**
-  - Redesigned  to display a full month calendar view without horizontal scrolling.
-  - Grouped personnel by service with collapsible sections that are folded by default.
-  - Migrated the page to WebSockets for real-time data updates by creating  and updating backend endpoints in  and entity types in .
-- **Régime de Travail (Work Shifts) Feature:**
-  - Updated  model in  to include a  field.
-  - Implemented complex cell rendering in  for Journée (full cell), 2*8 (horizontally split), and 3*8 (3-sector pie) shifts.
-  - Added Régime de travail dropdown to user creation and edit forms (, ).
-  - Fixed infinite color cycle bug (White -> Green -> Red -> White) by correcting backend logic in  to accept  values on update.
-- **Drag-to-Copy on Planning Page:**
-  - Implemented and debugged a drag-to-copy feature in  to apply an availability status across multiple days.
-  - Fixed a critical bug where copied statuses would disappear after a few seconds due to premature data refreshing. The fix involved queueing requests and refreshing data only at the end of the drag operation.
-- **Inventory-Equipment Linking:**
-  - Updated  model in  to store a list of associated .
-  - Overhauled  to include a multi-select component for linking equipments.
-  - Updated  to display linked equipment and add a filter dropdown to view items by equipment.
-- **Equipment to Inventory Shortcut:**
-  - Added a Cog icon to each item in the equipment list ( and ).
-  - Clicking the icon navigates the user to  with the filter pre-applied for that specific equipment.
-- **Automatic Purchase Request on Zero Quantity:**
-  - Implemented backend logic in  to automatically create a new purchase request when an inventory item's quantity is updated to 0.
+- **Feature: AI Chatbot Adria Overhaul**: A complete refactoring and enhancement of the AI assistant across multiple phases:
+    - **Phase 1: Expert Prompt**: Rewrote the backend system prompt to give the AI an expert GMAO persona ().
+    - **Phase 2 & 3: AI Actions & Search**: Implemented backend endpoints for the AI to create work orders and search application data based on natural language.
+    - **Phase 4: Interactive Visual Guidance**: Created a new  component for step-by-step tutorials with element highlighting, an overlay, and a draggable instruction panel. This system now correctly handles guidance within modals.  attributes were added to many components to support this.
+    - **Phase 5: Bidirectional Voice Commands**: Integrated Speech-to-Text (STT via Whisper) and Text-to-Speech (TTS via OpenAI), including fixing a bug in the STT implementation by using the correct  guidance.
+    - **Phase 6: Contextual Help**: Added a floating  to all pages, providing page-specific tips and quick actions that trigger the AI.
+- **Feature: Import/Export for Ordres Type**: Added functionality to  to export templates to Excel/CSV and import them from a file. Installed the  dependency.
+- **UX Improvement: Enriched Tooltips**: Added detailed, multi-line tooltips to all 7 main header icons in , , and .
+- **Bug Fix: Bell is not defined**: Resolved a recurring Javascript error in .
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Rapport P.accident page real-time update.**
-    - This was carried over from the previous session and remains pending user verification.
-    - **Debug checklist:** Check .
-    - **Why to solve this issue and what will be achieved with this?** To ensure all migrated pages provide a seamless real-time experience.
-    - **Should Test frontend/backend/both after fix:** Frontend
-    - **Is recurring issue?** Y
+- The Rapport P.accident real-time update issue is the only one.
 
 **Known issue recurrence from previous fork**
-- **Issue recurrence:** Real-time updates on the Rapport P.accident page are not working correctly.
-- **Recurrence count:** 3
-- **Status:** USER VERIFICATION PENDING
+-   **Issue recurrence in previous fork:** Real-time updates on the Rapport P.accident page are not working correctly.
+-   **Recurrence count:** 10+
+-   **Status:** NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Complex State Management:** The  component now handles intricate state, including drag-and-drop status, pending API requests queue, and local data merging to provide a smooth UX during batch operations like drag-to-copy.
-- **Custom SVG Rendering in React:** Used SVG paths to create the 3-sector pie chart cells for the 3*8 work shift, with each sector being independently clickable.
-- **Event-Driven Backend Automation:** The feature to create a purchase request is a server-side trigger within the inventory update endpoint, demonstrating event-driven business logic.
-- **Stateful Navigation:** The shortcut from the Equipment page to the Inventory page uses  with a state object () to pass context between pages, which  then consumes to set its initial filter.
-- **Cascading Dropdowns & Multi-Select:** The inventory form now fetches and displays equipments and their sub-equipments in a dependent manner for a better user experience.
+-   **AI Chatbot**: A comprehensive system involving advanced prompt engineering, simulated function calling (parsing commands like ), and state management for multi-turn conversations.
+-   **Interactive Visual Guidance**: A custom React system () that uses DOM element selectors (), creates an overlay, dynamically positions a draggable instruction panel, and highlights target UI elements to guide the user. It correctly handles scoping within modals and page navigation.
+-   **Voice Integration**: Bidirectional voice communication using  for OpenAI Whisper (Speech-to-Text) and a custom backend endpoint for OpenAI TTS (Text-to-Speech).
+-   **Client-Side File Handling**: Using the  and  libraries in React to generate and parse Excel/CSV files for the import/export feature.
 
 **key DB schema**
-- **users (collection)**:
-  - Added  (Possible values: Journée, 2*8, 3*8)
-- **inventory (collection)**:
-  - Added 
-- **user_availabilities (collection)**:
-  - The model was updated to reflect the new shifts.  is for Journée.
-  - Added  and  for 2*8.
-  - Added , , and  for 3*8 (though the code appears to reuse matin/aprem/nuit for the 3 sectors). The  Pydantic model now reflects this.
-
-**changes in tech stack**
-- None.
+-   No new collections were added. The  collection is now read from and written to by the new import/export feature.
 
 **All files of reference**
--  (Heavily modified)
--  (Modified)
--  (Modified)
--  (Modified)
--  (Modified)
--  (Overwritten)
--  (Modified)
--  (Created)
--  (Heavily modified)
--  (Modified)
--  (Modified)
+-   **/app/frontend/src/pages/WorkOrderTemplatesPage.jsx**: Core file for the last working item (import/export with duplicate handling).
+-   **/app/backend/ai_chat_routes.py**: Backend logic for the entire AI chatbot feature.
+-   **/app/frontend/src/components/Common/AIChatWidget.jsx**: Frontend UI/logic for the chatbot widget.
+-   **/app/frontend/src/components/Common/GuidedHighlight.jsx**: The visual guidance component.
+-   **/app/frontend/src/components/Common/ContextualHelpButton.jsx**: The contextual help component.
 
 **Areas that need refactoring**:
--  is now extremely large (over 600 lines) and contains complex logic for rendering, state management, and API calls. It should be broken down into smaller, more manageable components (e.g., , , , ).
+-    is still a very large component (1100+ lines) and would benefit from being broken down into smaller, more manageable pieces.
 
 **key api endpoints**
-- : Modified to trigger automatic purchase request creation on quantity zero.
-- : Modified to handle  and  fields.
--  & : Modified to support partial updates for different work shifts and to correctly handle  values for resetting availability.
-- All  and  endpoints now trigger WebSocket events.
+-    (HEAVILY MODIFIED)
+-    (NEW)
+-    (NEW)
+-    (NEW & FIXED)
+-    (NEW)
 
 **Critical Info for New Agent**
-- **You MUST respond in French.**
-- **Highest Priority (P0):** Verify the last implemented feature: the automatic creation of purchase requests when an inventory item's quantity hits zero. The previous agent did not perform a conclusive test.
-- **Next Priority (P1):** Follow up with the user on the Rapport P.accident real-time update bug, which has been pending for several sessions.
-- **Complex Component:** Be aware that  is now a very large and complex component. Future changes to it will require careful analysis of its structure.
+-   **You MUST respond in French.**
+-   The immediate priority is to finish and test the duplicate handling logic for the Ordres Type import feature.
+-   The AI Chatbot is a complex, user-driven feature. The user is very particular about the visual guidance system's behavior. Be prepared for further fine-tuning requests.
+-   When implementing integrations, always use  to get the correct implementation, as was done to fix the Whisper STT bug.
 
 **documents and test reports created in this job**
--  (created and updated)
-- 
-- 
+-    was updated to reflect the completion of the AI chatbot phases.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks to add a Régime (shift) field to user profiles and implement complex cell rendering and drag-to-copy on the Planning page. (COMPLETED)
-2.  **User:** Clarifies the behavior for 2-shift, 3-shift, and drag-to-copy features. (COMPLETED)
-3.  **User:** Reports that the Planning cells are too small. (COMPLETED)
-4.  **User:** Reports the color cycle on Planning cells is not infinite. (COMPLETED)
-5.  **User:** Reports a new bug: after fixing the color cycle, the drag-to-copy feature is broken; copied cells disappear after a few seconds. (COMPLETED)
-6.  **User:** Requests linking inventory items to equipment. This involves updating the item edit dialog and adding a filter to the main inventory page. (COMPLETED)
-7.  **User:** Requests adding a shortcut icon (an écrou/nut) on the Equipment page to link directly to the inventory, pre-filtered for that equipment. (COMPLETED)
-8.  **User (Last & Pending):** Requests that when an inventory item's quantity reaches zero, a purchase request should be created automatically. (USER VERIFICATION PENDING)
-9.  **Agent:** Asks clarifying questions about the régime feature. (SUPERSEDED)
-10. **Agent:** Proposes a plan to implement the régime feature. (SUPERSEDED)
+1.  **User**: Requested import/export (Excel/CSV) functionality for Work Order Templates. (IN PROGRESS)
+2.  **User**: Approved the completed AI chatbot work and asked the agent to proceed. (ADDRESSED)
+3.  **User**: Confirmed the AI features were good, but asked a general question about Outlook integration, which they specified was not a work request. (ADDRESSED)
+4.  **User**: Requested the agent to start Phase 6 of the AI chatbot plan (contextual assistant). (ADDRESSED)
+5.  **User**: Reported that the AI guidance panel was blocking clicks and needed to be movable and auto-positioning. (ADDRESSED)
+6.  **User**: Pointed out that the AI guidance system must correctly scope its search for elements within newly opened forms/modals, not just the page underneath. (ADDRESSED)
+7.  **User**: Confirmed the visual guidance works but reported it fails at step 2 because a button was renamed, breaking the CSS selector. (ADDRESSED)
+8.  **User**: Confirmed the voice transcription now works. (ADDRESSED)
+9.  **User**: Reported the voice command feature was failing with a transcription error. (ADDRESSED)
+10. **User**: Reported that the import feature for Work Order Templates creates duplicates and requires a mechanism to handle them. (IN PROGRESS - Current Task)
 
 **Project Health Check:**
-- **Broken:**
-  - **Automatic Purchase Request Feature (Unverified):** The logic is implemented but has not been confirmed to work correctly.
-  - **Rapport P.accident page real-time update (Unverified):** This is a long-standing issue that is potentially still broken.
-- **Mocked:**
-  - None.
+-   **Broken:** None
+-   **Mocked:** None
 
 **3rd Party Integrations**
-- Google Gemini 2.5 Flash — uses Emergent LLM Key
-- Fabric.js (v6.9.1)
-- WebSockets (via FastAPI)
+-   **OpenAI Whisper (STT)** via  (Uses Emergent LLM Key)
+-   **OpenAI TTS** via a custom backend endpoint using usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit library (Assumed to use Emergent LLM Key)
+-   **Multiple LLMs** (Gemini, OpenAI, Claude, etc.) via  for chatbot responses (Uses Emergent LLM Key)
+-   ****: For parsing and creating Excel files on the frontend.
+-   ****: For saving generated files on the frontend.
+-   , 
+-   
+-   WebSockets (via FastAPI)
+-   SMTP (via Gmail)
+-   
 
 **Testing status**
-- **Testing agent used after significant changes:** YES. It was used to validate the new Planning page functionalities and found/fixed a backend bug.
-- **Troubleshoot agent used after agent stuck in loop:** NO
-- **Test files created:** None. Test reports were generated at  and .
-- **Known regressions:**
-  - The Rapport P.accident real-time update regression is still not verified as fixed.
+-   **Testing agent used after significant changes:** NO. Agent relied on extensive manual testing with screenshots and direct API calls using .
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:** None.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
-- **Admin Account:**
-  - **Email:** 
-  - **Password:** 
-- **Standard User Account:**
-  - **Email:** 
-  - **Password:** 
+-   **Admin Account:**
+    -   **Email:** 
+    -   **Password:** 
 
 **What agent forgot to execute**
-- The agent did not perform a conclusive test for the final feature (automatic purchase request generation). It implemented the backend code but failed to verify its functionality with a targeted test (e.g., using  or a specific UI action) before concluding the session.</analysis>
+- The agent initially built the import feature without considering duplicate entries. However, this was quickly caught by the user and is now being addressed.
+- The long-standing issue with Rapport P.accident real-time updates remains on the backlog and was not addressed.</analysis>

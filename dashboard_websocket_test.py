@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://workorder-pro-7.preview.emergentagent.com/api"
+BACKEND_URL = "https://maintenance-ai-3.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"
