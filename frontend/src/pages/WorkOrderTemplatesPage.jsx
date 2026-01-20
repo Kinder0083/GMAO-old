@@ -533,13 +533,67 @@ const WorkOrderTemplatesPage = () => {
               </p>
             </div>
           </div>
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-            onClick={() => handleOpenDialog()}
-          >
-            <Plus size={20} />
-            Nouveau modèle
-          </Button>
+          
+          {/* Boutons d'action */}
+          <div className="flex items-center gap-2">
+            {/* Export/Import */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleExportExcel}
+                >
+                  <Download size={18} />
+                  <span className="hidden sm:inline">Excel</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Exporter en Excel (.xlsx)</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleExportCSV}
+                >
+                  <FileSpreadsheet size={18} />
+                  <span className="hidden sm:inline">CSV</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Exporter en CSV</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setImportDialogOpen(true)}
+                >
+                  <Upload size={18} />
+                  <span className="hidden sm:inline">Importer</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Importer depuis Excel ou CSV</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            {/* Nouveau modèle */}
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+              onClick={() => handleOpenDialog()}
+            >
+              <Plus size={20} />
+              Nouveau modèle
+            </Button>
+          </div>
         </div>
 
         {/* Statistiques */}
