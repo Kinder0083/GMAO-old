@@ -393,6 +393,7 @@ class WorkOrderStatus(str, Enum):
     TERMINE = "TERMINE"
 
 class Priority(str, Enum):
+    URGENTE = "URGENTE"
     HAUTE = "HAUTE"
     MOYENNE = "MOYENNE"
     NORMALE = "NORMALE"
