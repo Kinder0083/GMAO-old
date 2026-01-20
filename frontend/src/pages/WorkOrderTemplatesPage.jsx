@@ -247,6 +247,235 @@ const WorkOrderTemplatesPage = () => {
     }));
   };
 
+  // ========== Export/Import Functions ==========
+  
+  // Export vers Excel
+  const handleExportExcel = () => {
+    try {
+      // Préparer les données pour l'export
+      const exportData = templates.map(t => ({
+        'Nom': t.nom,
+        'Description': t.description || '',
+        'Catégorie': CATEGORIES.find(c => c.value === t.categorie)?.label || t.categorie,
+        'Priorité': PRIORITES.find(p => p.value === t.priorite)?.label || t.priorite,
+        'Statut par défaut': STATUTS.find(s => s.value === t.statut_defaut)?.label || t.statut_defaut,
+        'Équipement': equipments.find(e => e.id === t.equipement_id)?.nom || '',
+        'Temps estimé (min)': t.temps_estime || '',
+        'Utilisations': t.usage_count || 0,
+        'Date création': t.created_at ? new Date(t.created_at).toLocaleDateString('fr-FR') : ''
+      }));
+
+      // Créer le workbook
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Ordres Type');
+
+      // Ajuster la largeur des colonnes
+      const colWidths = [
+        { wch: 30 }, // Nom
+        { wch: 50 }, // Description
+        { wch: 20 }, // Catégorie
+        { wch: 12 }, // Priorité
+        { wch: 15 }, // Statut
+        { wch: 25 }, // Équipement
+        { wch: 15 }, // Temps
+        { wch: 12 }, // Utilisations
+        { wch: 15 }, // Date
+      ];
+      ws['!cols'] = colWidths;
+
+      // Télécharger
+      const fileName = `ordres_type_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      toast({
+        title: '✅ Export réussi',
+        description: `${templates.length} modèle(s) exporté(s) vers ${fileName}`,
+      });
+    } catch (error) {
+      console.error('Erreur export Excel:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'exporter les données',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Export vers CSV
+  const handleExportCSV = () => {
+    try {
+      // Préparer les données
+      const headers = ['Nom', 'Description', 'Catégorie', 'Priorité', 'Statut par défaut', 'Équipement', 'Temps estimé (min)', 'Utilisations'];
+      const rows = templates.map(t => [
+        t.nom,
+        t.description || '',
+        t.categorie,
+        t.priorite,
+        t.statut_defaut,
+        equipments.find(e => e.id === t.equipement_id)?.nom || '',
+        t.temps_estime || '',
+        t.usage_count || 0
+      ]);
+
+      // Créer le contenu CSV avec BOM pour Excel
+      const BOM = '\uFEFF';
+      const csvContent = BOM + [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
+        .join('\n');
+
+      // Télécharger
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ordres_type_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: '✅ Export réussi',
+        description: `${templates.length} modèle(s) exporté(s) en CSV`,
+      });
+    } catch (error) {
+      console.error('Erreur export CSV:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'exporter les données',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Import depuis fichier Excel/CSV
+  const handleImportFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          let importedData = [];
+          
+          if (file.name.endsWith('.csv')) {
+            // Parser CSV
+            const text = e.target.result;
+            const lines = text.split('\n').filter(line => line.trim());
+            const headers = lines[0].split(';').map(h => h.replace(/"/g, '').trim());
+            
+            for (let i = 1; i < lines.length; i++) {
+              const values = lines[i].split(';').map(v => v.replace(/"/g, '').trim());
+              if (values[0]) { // Si nom non vide
+                importedData.push({
+                  nom: values[0],
+                  description: values[1] || '',
+                  categorie: values[2] || 'TRAVAUX_DIVERS',
+                  priorite: values[3] || 'AUCUNE',
+                  statut_defaut: values[4] || 'OUVERT',
+                  temps_estime: values[6] ? parseInt(values[6]) : null
+                });
+              }
+            }
+          } else {
+            // Parser Excel
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            
+            importedData = jsonData.map(row => {
+              // Trouver la valeur de catégorie
+              let categorie = row['Catégorie'] || row['categorie'] || 'TRAVAUX_DIVERS';
+              const catMatch = CATEGORIES.find(c => c.label === categorie || c.value === categorie);
+              if (catMatch) categorie = catMatch.value;
+              
+              // Trouver la valeur de priorité
+              let priorite = row['Priorité'] || row['priorite'] || 'AUCUNE';
+              const prioMatch = PRIORITES.find(p => p.label === priorite || p.value === priorite);
+              if (prioMatch) priorite = prioMatch.value;
+              
+              // Trouver la valeur de statut
+              let statut = row['Statut par défaut'] || row['statut_defaut'] || 'OUVERT';
+              const statutMatch = STATUTS.find(s => s.label === statut || s.value === statut);
+              if (statutMatch) statut = statutMatch.value;
+              
+              return {
+                nom: row['Nom'] || row['nom'],
+                description: row['Description'] || row['description'] || '',
+                categorie: categorie,
+                priorite: priorite,
+                statut_defaut: statut,
+                temps_estime: row['Temps estimé (min)'] || row['temps_estime'] || null
+              };
+            }).filter(item => item.nom);
+          }
+
+          if (importedData.length === 0) {
+            toast({
+              title: 'Fichier vide',
+              description: 'Aucune donnée à importer',
+              variant: 'destructive'
+            });
+            return;
+          }
+
+          // Créer les modèles
+          let created = 0;
+          let errors = 0;
+          
+          for (const item of importedData) {
+            try {
+              await workOrderTemplatesAPI.create(item);
+              created++;
+            } catch (err) {
+              console.error('Erreur création modèle:', err);
+              errors++;
+            }
+          }
+
+          // Recharger les données
+          await loadData();
+
+          toast({
+            title: '✅ Import terminé',
+            description: `${created} modèle(s) importé(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`,
+          });
+          
+          setImportDialogOpen(false);
+        } catch (parseError) {
+          console.error('Erreur parsing fichier:', parseError);
+          toast({
+            title: 'Erreur de lecture',
+            description: 'Le format du fichier n\'est pas reconnu',
+            variant: 'destructive'
+          });
+        }
+        setImporting(false);
+      };
+
+      if (file.name.endsWith('.csv')) {
+        reader.readAsText(file, 'UTF-8');
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
+    } catch (error) {
+      console.error('Erreur import:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'importer le fichier',
+        variant: 'destructive'
+      });
+      setImporting(false);
+    }
+    
+    // Reset input
+    event.target.value = '';
+  };
+
   // Filtrer par recherche
   const filteredTemplates = templates.filter(t => 
     t.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
