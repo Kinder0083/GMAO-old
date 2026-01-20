@@ -223,9 +223,9 @@ const TimeByCategoryChart = () => {
         </p>
 
         {/* Graphique avec échelle Y intégrée */}
-        <div className="relative bg-gray-50 rounded-lg p-4 pt-12">
+        <div className="relative bg-gray-50 rounded-lg p-4 pt-12 overflow-visible">
           {/* Espace réservé pour les tooltips en haut */}
-          <div className="flex">
+          <div className="flex overflow-visible">
             {/* Échelle Y - alignée exactement avec la zone des barres */}
             <div className="flex flex-col justify-between pr-3 text-xs text-gray-500" style={{ height: '256px' }}>
               {yAxisLabels.map((val, idx) => (
@@ -246,7 +246,7 @@ const TimeByCategoryChart = () => {
               
               {/* Barres du graphique */}
               {chartData && chartData.months && (
-                <div className="flex items-end justify-start gap-4 overflow-x-auto overflow-y-visible" style={{ height: '256px' }}>
+                <div className="flex items-end justify-start gap-4 overflow-x-auto" style={{ height: '256px' }}>
                   {chartData.months.map((monthData, index) => {
                     // Calculer le total uniquement pour les catégories visibles
                     const totalTime = Object.entries(monthData.categories)
@@ -254,9 +254,9 @@ const TimeByCategoryChart = () => {
                       .reduce((sum, [_, val]) => sum + val, 0);
                     
                     return (
-                      <div key={index} className="flex flex-col items-center min-w-[120px]">
+                      <div key={index} className="flex flex-col items-center min-w-[120px] overflow-visible">
                         {/* Groupe de barres côte à côte */}
-                        <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: '256px' }}>
+                        <div className="flex items-end justify-center gap-1 w-full relative overflow-visible" style={{ height: '256px' }}>
                           {/* Ordre fixe des catégories pour cohérence visuelle */}
                           {['CHANGEMENT_FORMAT', 'TRAVAUX_PREVENTIFS', 'TRAVAUX_CURATIF', 'TRAVAUX_DIVERS', 'FORMATION', 'REGLAGE']
                             .filter(category => visibleCategories[category]) // Filtrer les catégories masquées
