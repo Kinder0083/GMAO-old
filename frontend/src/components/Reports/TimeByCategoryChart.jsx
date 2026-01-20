@@ -256,7 +256,7 @@ const TimeByCategoryChart = () => {
                     return (
                       <div key={index} className="flex flex-col items-center min-w-[120px]">
                         {/* Groupe de barres côte à côte */}
-                        <div className="flex items-end justify-center gap-1 w-full" style={{ height: '256px' }}>
+                        <div className="flex items-end justify-center gap-1 w-full relative" style={{ height: '256px' }}>
                           {/* Ordre fixe des catégories pour cohérence visuelle */}
                           {['CHANGEMENT_FORMAT', 'TRAVAUX_PREVENTIFS', 'TRAVAUX_CURATIF', 'TRAVAUX_DIVERS', 'FORMATION', 'REGLAGE']
                             .filter(category => visibleCategories[category]) // Filtrer les catégories masquées
@@ -268,6 +268,9 @@ const TimeByCategoryChart = () => {
                               // Calculer le pourcentage par rapport au total des catégories visibles
                               const percentOfMonth = totalTime > 0 ? ((time / totalTime) * 100).toFixed(1) : 0;
                               
+                              // Déterminer si le tooltip doit être en bas de la barre (pour les grandes valeurs)
+                              const tooltipOnBottom = heightPercent > 85;
+                              
                               return (
                                 <div
                                   key={category}
@@ -278,10 +281,16 @@ const TimeByCategoryChart = () => {
                                     minHeight: time > 0 ? '4px' : '0px'
                                   }}
                                 >
-                                  {/* Tooltip */}
+                                  {/* Tooltip - positionné en haut ou en bas selon la hauteur de la barre */}
                                   {time > 0 && (
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
-                                      <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                    <div 
+                                      className={`absolute left-1/2 transform -translate-x-1/2 hidden group-hover:block z-50 ${
+                                        tooltipOnBottom 
+                                          ? 'top-full mt-2' 
+                                          : 'bottom-full mb-2'
+                                      }`}
+                                    >
+                                      <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg">
                                         <div className="font-semibold">{categoryLabels[category]}</div>
                                         <div>{formatTime(time)} ({percentOfMonth}%)</div>
                                       </div>
