@@ -558,7 +558,49 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 
 ---
 
+## Session du 20 Janvier 2026
+
+### ✅ P0 Complété : Gestion des Doublons pour Import "Ordres Type"
+
+**Problème** : L'import de modèles depuis Excel/CSV créait des doublons si des modèles avec les mêmes noms existaient déjà.
+
+**Solution implémentée** :
+- **Détection automatique** : Lors de l'import, le système compare les noms des modèles importés avec ceux existants (comparaison insensible à la casse)
+- **Nouveau dialogue** : "Doublons détectés" affichant :
+  - Résumé : Nombre de doublons vs nouveaux modèles
+  - Liste détaillée des modèles en double avec leur catégorie
+- **3 options utilisateur** :
+  - **Écraser les existants** : Met à jour les modèles existants + crée les nouveaux
+  - **Ignorer les doublons** : Crée uniquement les nouveaux modèles, ignore les existants
+  - **Annuler l'import** : Aucune modification effectuée
+
+**Fichier modifié** :
+- `/app/frontend/src/pages/WorkOrderTemplatesPage.jsx` - Ajout du dialogue `DuplicateManagementDialog` et logique de détection
+
+**Tests effectués** :
+- ✅ Import avec doublons → Dialogue affiché correctement
+- ✅ "Ignorer" → Seuls les nouveaux créés (7 → 8 modèles)
+- ✅ "Écraser" → Existants mis à jour (descriptions, priorités changées)
+- ✅ "Annuler" → Aucune modification, toast de confirmation
+
+---
+
+## Tâches à venir
+
+### P1 - Migration WebSocket
+- Page "Rapports" - Mise à jour temps réel
+- Page "Historique Achat" - Mise à jour temps réel
+- Bug "Rapport P.accident" temps réel (récurrent)
+
+### P2 - Backlog
+- Fonctions spécifiques "Responsables de service"
+- Dashboard Plan de Surveillance
+- Analytique Checklists
+- Visite guidée
+
+---
+
 ## Dernière mise à jour
-**Date**: 19 Janvier 2026
+**Date**: 20 Janvier 2026
 **Agent**: E1
-**Tâche complétée**: Refonte complète du Chatbot IA "Adria" - Phases 1 à 5
+**Tâche complétée**: Gestion des doublons pour l'import des "Ordres Type" (Excel/CSV)
