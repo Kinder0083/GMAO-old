@@ -560,6 +560,17 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 
 ## Session du 20 Janvier 2026
 
+### ✅ Bug Fix : Dialogue de statut après création d'OT
+**Problème** : Lors de la création d'un nouvel ordre de travail, le dialogue "Changer le statut de l'ordre de travail" apparaissait automatiquement et attendait une action de l'utilisateur.
+
+**Cause** : Dans `WorkOrderFormDialog.jsx`, le code `setShowStatusDialog(true)` était appelé après la soumission du formulaire, que ce soit pour une création ou une modification.
+
+**Solution** : Ajout d'une condition pour n'afficher le dialogue de statut que lors de la **modification** d'un OT existant, pas lors de la **création**.
+
+**Fichier modifié** : `/app/frontend/src/components/WorkOrders/WorkOrderFormDialog.jsx` (ligne ~305)
+
+---
+
 ### ✅ P0 Complété : Gestion des Doublons pour Import "Ordres Type"
 
 **Problème** : L'import de modèles depuis Excel/CSV créait des doublons si des modèles avec les mêmes noms existaient déjà.
