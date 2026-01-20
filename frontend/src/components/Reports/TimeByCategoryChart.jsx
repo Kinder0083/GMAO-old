@@ -343,6 +343,23 @@ const TimeByCategoryChart = () => {
             </div>
           )}
         </div>
+        
+        {/* Tooltip global en position fixe - visible au-dessus de tout */}
+        {tooltip.visible && tooltip.content && (
+          <div 
+            className="fixed z-[9999] pointer-events-none"
+            style={{
+              left: tooltip.x,
+              top: tooltip.y,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <div className="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-xl">
+              <div className="font-semibold">{tooltip.content.label}</div>
+              <div>{tooltip.content.time} ({tooltip.content.percent}%)</div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
