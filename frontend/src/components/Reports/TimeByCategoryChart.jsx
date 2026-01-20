@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { BarChart3 } from 'lucide-react';
@@ -18,6 +18,7 @@ const TimeByCategoryChart = () => {
     FORMATION: true,
     REGLAGE: true
   });
+  const [tooltip, setTooltip] = useState({ visible: false, content: null, x: 0, y: 0 });
 
   // Générer les options de mois (24 mois en arrière et 12 mois en avant)
   const generateMonthOptions = () => {
