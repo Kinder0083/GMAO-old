@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -20,11 +20,15 @@ import {
   Settings2,
   ChevronDown,
   ChevronRight,
-  BarChart3
+  BarChart3,
+  Download,
+  Upload,
+  FileSpreadsheet
 } from 'lucide-react';
 import { workOrderTemplatesAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
+import * as XLSX from 'xlsx';
 
 // Catégories d'ordres de travail
 const CATEGORIES = [
