@@ -271,7 +271,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
    * Fonction pour rafraîchir manuellement
    */
   const refresh = useCallback(() => {
-    loadData();
+    return loadData(); // Retourner la Promise pour permettre l'await
   }, [loadData]);
 
   return {
