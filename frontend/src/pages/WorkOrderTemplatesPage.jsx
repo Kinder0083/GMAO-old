@@ -68,6 +68,8 @@ const WorkOrderTemplatesPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicatesData, setDuplicatesData] = useState({ duplicates: [], newItems: [], allItems: [] });
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
