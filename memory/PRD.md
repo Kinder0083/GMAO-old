@@ -631,6 +631,22 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - Analytique Checklists
 - Visite guidée
 
+### ✅ Bug Fix : Graphique "Evolution horaire des maintenances"
+**Problème** : Les barres du graphique ne s'arrêtaient pas exactement au niveau des graduations de l'échelle Y. Par exemple, une barre de 3h s'affichait visuellement entre 3h et 4h au lieu d'être exactement à 3h.
+
+**Cause** : 
+1. L'échelle Y et les barres utilisaient des conteneurs de hauteurs différentes (h-full vs h-64)
+2. L'échelle utilisait des pourcentages fixes (0%, 25%, 50%, 75%, 100%) au lieu de valeurs entières
+3. Une marge de 10% était ajoutée au maxValue, créant un décalage
+
+**Solution** :
+1. Échelle Y avec des graduations entières dynamiques (0h, 1h, 2h, 3h...)
+2. Alignement parfait entre l'échelle et les barres (même hauteur 256px)
+3. Ajout de lignes de grille horizontales alignées sur les graduations
+4. Suppression de la marge artificielle
+
+**Fichier modifié** : `/app/frontend/src/components/Reports/TimeByCategoryChart.jsx`
+
 ---
 
 ## Dernière mise à jour
