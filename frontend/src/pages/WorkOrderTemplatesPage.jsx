@@ -23,7 +23,10 @@ import {
   BarChart3,
   Download,
   Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertTriangle,
+  RefreshCw,
+  SkipForward
 } from 'lucide-react';
 import { workOrderTemplatesAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
