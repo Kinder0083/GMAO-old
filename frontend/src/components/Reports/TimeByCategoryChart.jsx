@@ -223,7 +223,8 @@ const TimeByCategoryChart = () => {
         </p>
 
         {/* Graphique avec échelle Y intégrée */}
-        <div className="relative bg-gray-50 rounded-lg p-4">
+        <div className="relative bg-gray-50 rounded-lg p-4 pt-12">
+          {/* Espace réservé pour les tooltips en haut */}
           <div className="flex">
             {/* Échelle Y - alignée exactement avec la zone des barres */}
             <div className="flex flex-col justify-between pr-3 text-xs text-gray-500" style={{ height: '256px' }}>
@@ -235,7 +236,7 @@ const TimeByCategoryChart = () => {
             </div>
             
             {/* Zone des barres avec lignes de grille */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative overflow-visible">
               {/* Lignes de grille horizontales */}
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none" style={{ height: '256px' }}>
                 {yAxisLabels.map((_, idx) => (
@@ -245,7 +246,7 @@ const TimeByCategoryChart = () => {
               
               {/* Barres du graphique */}
               {chartData && chartData.months && (
-                <div className="flex items-end justify-start gap-4 overflow-x-auto" style={{ height: '256px' }}>
+                <div className="flex items-end justify-start gap-4 overflow-x-auto overflow-y-visible" style={{ height: '256px' }}>
                   {chartData.months.map((monthData, index) => {
                     // Calculer le total uniquement pour les catégories visibles
                     const totalTime = Object.entries(monthData.categories)
