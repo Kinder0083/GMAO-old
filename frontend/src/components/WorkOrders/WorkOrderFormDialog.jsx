@@ -46,6 +46,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
   const [isClosing, setIsClosing] = useState(false);
   const [savedWorkOrderId, setSavedWorkOrderId] = useState(null);
   const [savedWorkOrderStatus, setSavedWorkOrderStatus] = useState(null);
+  const [submitSuccessful, setSubmitSuccessful] = useState(false); // Flag pour éviter le dialogue après création
 
   useEffect(() => {
     if (open) {
