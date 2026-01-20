@@ -563,18 +563,33 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 ### ✅ Bug Fix : Dialogue de statut après création d'OT
 **Problème** : Lors de la création d'un nouvel ordre de travail (vierge ou depuis un modèle), le dialogue "Changer le statut de l'ordre de travail" apparaissait automatiquement et attendait une action de l'utilisateur.
 
-**Cause racine** : Dans `WorkOrderFormDialog.jsx`, l'appel à `onOpenChange(false)` déclenchait le callback `handleDialogClose` qui contenait une logique pour afficher le dialogue de statut. Cette logique s'exécutait même après une création réussie.
+**Cause racine** : Dans `WorkOrderFormDialog.jsx`, l'appel à `onOpenChange(false)` déclenchait le callback `handleDialogClose` qui contenait une logique pour afficher le dialogue de statut. Le `useState` n'était pas mis à jour de façon synchrone.
 
-**Solution** : Ajout d'un flag `submitSuccessful` qui :
-1. Est défini à `true` après une création réussie
-2. Est vérifié dans `handleDialogClose` pour ignorer la logique d'affichage du dialogue de statut
-3. Est réinitialisé à l'ouverture du formulaire
+**Solution** : Utilisation de `useRef` pour le flag `submitSuccessfulRef` au lieu de `useState` - les refs sont synchrones.
 
 **Fichier modifié** : `/app/frontend/src/components/WorkOrders/WorkOrderFormDialog.jsx`
 
+---
+
+### ✅ Bug Fix : Liste des OT ne se mettait pas à jour après création
+**Problème** : Le toast "Succès" s'affichait mais le nouvel OT n'apparaissait pas dans la liste.
+
+**Causes** :
+1. La fonction `refresh` dans `useRealtimeData.js` ne retournait pas la Promise de `loadData()`
+2. Une donnée corrompue dans MongoDB (statut `'en_attente'` en minuscule) faisait crasher l'API GET /work-orders
+
+**Solutions** :
+1. Correction de `useRealtimeData.js` : `return loadData()` au lieu de `loadData()`
+2. Ajout de `await onSuccess()` dans `WorkOrderFormDialog.jsx`
+3. Nettoyage des données corrompues dans MongoDB
+
+**Fichiers modifiés** :
+- `/app/frontend/src/hooks/useRealtimeData.js`
+- `/app/frontend/src/components/WorkOrders/WorkOrderFormDialog.jsx`
+
 **Tests effectués** :
-- ✅ Création OT vierge → Fermeture directe, pas de dialogue de statut
-- ✅ Création OT depuis modèle → Fermeture directe, pas de dialogue de statut
+- ✅ Création OT vierge → Toast + Liste mise à jour (15 → 16)
+- ✅ Pas de dialogue de statut après création
 
 ---
 
