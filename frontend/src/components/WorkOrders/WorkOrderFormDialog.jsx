@@ -53,7 +53,7 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
     if (open) {
       loadData();
       setIsClosing(false);
-      setSubmitSuccessful(false); // Reset le flag à l'ouverture
+      submitSuccessfulRef.current = false; // Reset le flag à l'ouverture
       if (workOrder) {
         // Mode édition d'un OT existant
         setFormData({
