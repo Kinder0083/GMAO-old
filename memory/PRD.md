@@ -561,13 +561,20 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 ## Session du 20 Janvier 2026
 
 ### ✅ Bug Fix : Dialogue de statut après création d'OT
-**Problème** : Lors de la création d'un nouvel ordre de travail, le dialogue "Changer le statut de l'ordre de travail" apparaissait automatiquement et attendait une action de l'utilisateur.
+**Problème** : Lors de la création d'un nouvel ordre de travail (vierge ou depuis un modèle), le dialogue "Changer le statut de l'ordre de travail" apparaissait automatiquement et attendait une action de l'utilisateur.
 
-**Cause** : Dans `WorkOrderFormDialog.jsx`, le code `setShowStatusDialog(true)` était appelé après la soumission du formulaire, que ce soit pour une création ou une modification.
+**Cause racine** : Dans `WorkOrderFormDialog.jsx`, l'appel à `onOpenChange(false)` déclenchait le callback `handleDialogClose` qui contenait une logique pour afficher le dialogue de statut. Cette logique s'exécutait même après une création réussie.
 
-**Solution** : Ajout d'une condition pour n'afficher le dialogue de statut que lors de la **modification** d'un OT existant, pas lors de la **création**.
+**Solution** : Ajout d'un flag `submitSuccessful` qui :
+1. Est défini à `true` après une création réussie
+2. Est vérifié dans `handleDialogClose` pour ignorer la logique d'affichage du dialogue de statut
+3. Est réinitialisé à l'ouverture du formulaire
 
-**Fichier modifié** : `/app/frontend/src/components/WorkOrders/WorkOrderFormDialog.jsx` (ligne ~305)
+**Fichier modifié** : `/app/frontend/src/components/WorkOrders/WorkOrderFormDialog.jsx`
+
+**Tests effectués** :
+- ✅ Création OT vierge → Fermeture directe, pas de dialogue de statut
+- ✅ Création OT depuis modèle → Fermeture directe, pas de dialogue de statut
 
 ---
 
