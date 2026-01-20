@@ -631,7 +631,33 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - Analytique Checklists
 - Visite guidée
 
-### ✅ Bug Fix : Graphique "Evolution horaire des maintenances"
+### ✅ Amélioration UX : Formulaire de visualisation d'un Ordre de Travail
+**Demande utilisateur** : Simplifier la validation des interventions sur les OT.
+
+**Modifications apportées** :
+
+1. **Champ "Temps Passé" simplifié** (`WorkOrderDialog.jsx`) :
+   - Un seul champ de saisie au lieu de deux (heures/minutes)
+   - Parsing intelligent acceptant plusieurs formats : `01:30`, `1:30`, `1h30`, `1.5` (décimal)
+   - Placeholder explicite : "Ex: 1:30, 1h30, 1.5"
+   
+2. **Boutons "Valider" et "Annuler"** :
+   - Déplacés en bas à droite de la fenêtre
+   - "Valider" (vert) : Enregistre commentaire + temps + ouvre dialogue statut
+   - "Annuler" : Ferme la fenêtre sans sauvegarder
+   
+3. **Validation obligatoire** :
+   - Commentaire obligatoire (*)
+   - Temps passé obligatoire (*)
+   
+4. **Dialogue "Changer le statut"** (`StatusChangeDialog.jsx`) :
+   - Suppression du champ "Temps passé sur cet ordre de travail" (car saisi avant)
+
+**Fichiers modifiés** :
+- `/app/frontend/src/components/WorkOrders/WorkOrderDialog.jsx`
+- `/app/frontend/src/components/WorkOrders/StatusChangeDialog.jsx`
+
+---
 **Problème** : Les barres du graphique ne s'arrêtaient pas exactement au niveau des graduations de l'échelle Y. Par exemple, une barre de 3h s'affichait visuellement entre 3h et 4h au lieu d'être exactement à 3h.
 
 **Cause** : 
