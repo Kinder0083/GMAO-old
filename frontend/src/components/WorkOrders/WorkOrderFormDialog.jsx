@@ -309,7 +309,9 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
         submitSuccessfulRef.current = true;
       }
 
-      onSuccess();
+      // Attendre que le rafraîchissement soit terminé avant de fermer
+      // onSuccess peut être async (refreshWorkOrders)
+      await onSuccess();
       
       // Afficher le dialog de changement de statut uniquement pour la modification d'un OT existant
       if (workOrder) {
