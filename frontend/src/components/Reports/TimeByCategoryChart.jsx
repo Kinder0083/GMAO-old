@@ -269,35 +269,45 @@ const TimeByCategoryChart = () => {
                               // Calculer le pourcentage par rapport au total des catégories visibles
                               const percentOfMonth = totalTime > 0 ? ((time / totalTime) * 100).toFixed(1) : 0;
                               
-                              // Déterminer si le tooltip doit être en bas de la barre (pour les grandes valeurs)
-                              const tooltipOnBottom = heightPercent > 85;
+                              // Fonction pour afficher le tooltip
+                              const handleMouseEnter = (e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const tooltipHeight = 50; // hauteur approximative du tooltip
+                                
+                                // Si la barre est trop haute, afficher le tooltip en dessous
+                                let y = rect.top - tooltipHeight - 8;
+                                if (y < 0) {
+                                  y = rect.bottom + 8;
+                                }
+                                
+                                setTooltip({
+                                  visible: true,
+                                  content: {
+                                    label: categoryLabels[category],
+                                    time: formatTime(time),
+                                    percent: percentOfMonth
+                                  },
+                                  x: rect.left + rect.width / 2,
+                                  y: y
+                                });
+                              };
+                              
+                              const handleMouseLeave = () => {
+                                setTooltip({ visible: false, content: null, x: 0, y: 0 });
+                              };
                               
                               return (
                                 <div
                                   key={category}
-                                  className="relative group cursor-pointer hover:opacity-80 transition-opacity w-3"
+                                  className="relative cursor-pointer hover:opacity-80 transition-opacity w-3"
                                   style={{
                                     height: `${heightPercent}%`,
                                     backgroundColor: categoryColors[category],
                                     minHeight: time > 0 ? '4px' : '0px'
                                   }}
-                                >
-                                  {/* Tooltip - positionné en haut ou en bas selon la hauteur de la barre */}
-                                  {time > 0 && (
-                                    <div 
-                                      className={`absolute left-1/2 transform -translate-x-1/2 hidden group-hover:block z-50 ${
-                                        tooltipOnBottom 
-                                          ? 'top-full mt-2' 
-                                          : 'bottom-full mb-2'
-                                      }`}
-                                    >
-                                      <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg">
-                                        <div className="font-semibold">{categoryLabels[category]}</div>
-                                        <div>{formatTime(time)} ({percentOfMonth}%)</div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
+                                  onMouseEnter={time > 0 ? handleMouseEnter : undefined}
+                                  onMouseLeave={handleMouseLeave}
+                                />
                               );
                             })}
                         </div>
