@@ -422,32 +422,45 @@ const WorkOrderTemplatesPage = () => {
               description: 'Aucune donnée à importer',
               variant: 'destructive'
             });
+            setImporting(false);
             return;
           }
 
-          // Créer les modèles
-          let created = 0;
-          let errors = 0;
+          // Vérifier les doublons
+          const existingNames = templates.map(t => t.nom.toLowerCase().trim());
+          const duplicates = [];
+          const newItems = [];
           
           for (const item of importedData) {
-            try {
-              await workOrderTemplatesAPI.create(item);
-              created++;
-            } catch (err) {
-              console.error('Erreur création modèle:', err);
-              errors++;
+            const normalizedName = item.nom.toLowerCase().trim();
+            const existingTemplate = templates.find(t => t.nom.toLowerCase().trim() === normalizedName);
+            
+            if (existingTemplate) {
+              duplicates.push({
+                ...item,
+                existingId: existingTemplate.id,
+                existingTemplate: existingTemplate
+              });
+            } else {
+              newItems.push(item);
             }
           }
 
-          // Recharger les données
-          await loadData();
-
-          toast({
-            title: '✅ Import terminé',
-            description: `${created} modèle(s) importé(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`,
-          });
+          // S'il y a des doublons, demander à l'utilisateur
+          if (duplicates.length > 0) {
+            setDuplicatesData({
+              duplicates,
+              newItems,
+              allItems: importedData
+            });
+            setDuplicateDialogOpen(true);
+            setImporting(false);
+            setImportDialogOpen(false);
+          } else {
+            // Pas de doublons, importer directement
+            await executeImport(newItems, []);
+          }
           
-          setImportDialogOpen(false);
         } catch (parseError) {
           console.error('Erreur parsing fichier:', parseError);
           toast({
@@ -455,8 +468,8 @@ const WorkOrderTemplatesPage = () => {
             description: 'Le format du fichier n\'est pas reconnu',
             variant: 'destructive'
           });
+          setImporting(false);
         }
-        setImporting(false);
       };
 
       if (file.name.endsWith('.csv')) {
@@ -476,6 +489,108 @@ const WorkOrderTemplatesPage = () => {
     
     // Reset input
     event.target.value = '';
+  };
+
+  // Exécuter l'import avec les choix de l'utilisateur
+  const executeImport = async (itemsToCreate, itemsToUpdate) => {
+    setImporting(true);
+    let created = 0;
+    let updated = 0;
+    let errors = 0;
+
+    try {
+      // Créer les nouveaux modèles
+      for (const item of itemsToCreate) {
+        try {
+          await workOrderTemplatesAPI.create(item);
+          created++;
+        } catch (err) {
+          console.error('Erreur création modèle:', err);
+          errors++;
+        }
+      }
+
+      // Mettre à jour les modèles existants (écraser)
+      for (const item of itemsToUpdate) {
+        try {
+          await workOrderTemplatesAPI.update(item.existingId, {
+            nom: item.nom,
+            description: item.description,
+            categorie: item.categorie,
+            priorite: item.priorite,
+            statut_defaut: item.statut_defaut,
+            temps_estime: item.temps_estime
+          });
+          updated++;
+        } catch (err) {
+          console.error('Erreur mise à jour modèle:', err);
+          errors++;
+        }
+      }
+
+      // Recharger les données
+      await loadData();
+
+      // Message de résultat
+      let message = [];
+      if (created > 0) message.push(`${created} créé(s)`);
+      if (updated > 0) message.push(`${updated} mis à jour`);
+      if (errors > 0) message.push(`${errors} erreur(s)`);
+
+      toast({
+        title: '✅ Import terminé',
+        description: message.join(', '),
+      });
+
+    } catch (error) {
+      console.error('Erreur import:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de l\'import',
+        variant: 'destructive'
+      });
+    }
+
+    setImporting(false);
+    setDuplicateDialogOpen(false);
+    setImportDialogOpen(false);
+    setDuplicatesData({ duplicates: [], newItems: [], allItems: [] });
+  };
+
+  // Gérer le choix pour les doublons
+  const handleDuplicateChoice = async (choice) => {
+    const { duplicates, newItems } = duplicatesData;
+
+    switch (choice) {
+      case 'overwrite':
+        // Écraser les existants + créer les nouveaux
+        await executeImport(newItems, duplicates);
+        break;
+      case 'skip':
+        // Ignorer les doublons, créer seulement les nouveaux
+        if (newItems.length === 0) {
+          toast({
+            title: 'Import annulé',
+            description: 'Tous les modèles existent déjà',
+          });
+          setDuplicateDialogOpen(false);
+          setDuplicatesData({ duplicates: [], newItems: [], allItems: [] });
+        } else {
+          await executeImport(newItems, []);
+        }
+        break;
+      case 'cancel':
+        // Annuler l'import
+        setDuplicateDialogOpen(false);
+        setDuplicatesData({ duplicates: [], newItems: [], allItems: [] });
+        toast({
+          title: 'Import annulé',
+          description: 'Aucune modification effectuée',
+        });
+        break;
+      default:
+        break;
+    }
   };
 
   // Filtrer par recherche
