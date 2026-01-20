@@ -1090,6 +1090,103 @@ const WorkOrderTemplatesPage = () => {
           description={`Êtes-vous sûr de vouloir supprimer le modèle "${selectedTemplate?.nom}" ? Cette action est irréversible.`}
         />
 
+        {/* Dialog de gestion des doublons */}
+        <Dialog open={duplicateDialogOpen} onOpenChange={(open) => {
+          if (!open && !importing) {
+            setDuplicateDialogOpen(false);
+            setDuplicatesData({ duplicates: [], newItems: [], allItems: [] });
+          }
+        }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle size={24} />
+                Doublons détectés
+              </DialogTitle>
+              <DialogDescription>
+                Des modèles avec les mêmes noms existent déjà dans la base de données.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Résumé */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="space-y-2 text-sm">
+                  <p className="flex justify-between">
+                    <span className="text-amber-800">Modèles en double :</span>
+                    <span className="font-bold text-amber-900">{duplicatesData.duplicates.length}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="text-green-700">Nouveaux modèles :</span>
+                    <span className="font-bold text-green-800">{duplicatesData.newItems.length}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Liste des doublons */}
+              {duplicatesData.duplicates.length > 0 && (
+                <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
+                  {duplicatesData.duplicates.map((dup, idx) => (
+                    <div key={idx} className="p-3 bg-amber-50/50 hover:bg-amber-50">
+                      <p className="font-medium text-gray-900">{dup.nom}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Catégorie: {CATEGORIES.find(c => c.value === dup.categorie)?.label || dup.categorie}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Options */}
+              <div className="space-y-3 pt-2">
+                <p className="text-sm text-gray-600 font-medium">Que souhaitez-vous faire ?</p>
+                
+                <Button 
+                  className="w-full justify-start gap-3 bg-blue-600 hover:bg-blue-700"
+                  onClick={() => handleDuplicateChoice('overwrite')}
+                  disabled={importing}
+                >
+                  <RefreshCw size={18} />
+                  <div className="text-left">
+                    <p className="font-medium">Écraser les existants</p>
+                    <p className="text-xs opacity-80">Met à jour les {duplicatesData.duplicates.length} modèle(s) existant(s) + crée {duplicatesData.newItems.length} nouveau(x)</p>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  className="w-full justify-start gap-3"
+                  onClick={() => handleDuplicateChoice('skip')}
+                  disabled={importing}
+                >
+                  <SkipForward size={18} />
+                  <div className="text-left">
+                    <p className="font-medium">Ignorer les doublons</p>
+                    <p className="text-xs text-gray-500">Crée uniquement les {duplicatesData.newItems.length} nouveau(x) modèle(s)</p>
+                  </div>
+                </Button>
+              </div>
+
+              {importing && (
+                <div className="flex items-center justify-center gap-2 text-blue-600 pt-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                  <span>Import en cours...</span>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button 
+                variant="ghost" 
+                onClick={() => handleDuplicateChoice('cancel')}
+                disabled={importing}
+              >
+                Annuler l'import
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Dialog d'import */}
         <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
           <DialogContent className="max-w-md">
