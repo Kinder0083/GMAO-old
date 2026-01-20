@@ -222,60 +222,95 @@ const TimeByCategoryChart = () => {
           💡 Cliquez sur une catégorie pour l'afficher ou la masquer
         </p>
 
-        {/* Graphique */}
-        <div className="relative h-80 bg-gray-50 rounded-lg p-4">
+        {/* Graphique avec échelle Y intégrée */}
+        <div className="relative bg-gray-50 rounded-lg p-4">
+          <div className="flex">
+            {/* Échelle Y - alignée exactement avec la zone des barres */}
+            <div className="flex flex-col justify-between pr-3 text-xs text-gray-500" style={{ height: '256px' }}>
+              {yAxisLabels.map((val, idx) => (
+                <span key={idx} className="text-right min-w-[40px]">
+                  {formatTime(val)}
+                </span>
+              ))}
+            </div>
+            
+            {/* Zone des barres avec lignes de grille */}
+            <div className="flex-1 relative">
+              {/* Lignes de grille horizontales */}
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none" style={{ height: '256px' }}>
+                {yAxisLabels.map((_, idx) => (
+                  <div key={idx} className="border-t border-gray-200 w-full" />
+                ))}
+              </div>
+              
+              {/* Barres du graphique */}
+              {chartData && chartData.months && (
+                <div className="flex items-end justify-start gap-4 overflow-x-auto" style={{ height: '256px' }}>
+                  {chartData.months.map((monthData, index) => {
+                    // Calculer le total uniquement pour les catégories visibles
+                    const totalTime = Object.entries(monthData.categories)
+                      .filter(([cat]) => visibleCategories[cat])
+                      .reduce((sum, [_, val]) => sum + val, 0);
+                    
+                    return (
+                      <div key={index} className="flex flex-col items-center min-w-[120px]">
+                        {/* Groupe de barres côte à côte */}
+                        <div className="flex items-end justify-center gap-1 w-full" style={{ height: '256px' }}>
+                          {/* Ordre fixe des catégories pour cohérence visuelle */}
+                          {['CHANGEMENT_FORMAT', 'TRAVAUX_PREVENTIFS', 'TRAVAUX_CURATIF', 'TRAVAUX_DIVERS', 'FORMATION', 'REGLAGE']
+                            .filter(category => visibleCategories[category]) // Filtrer les catégories masquées
+                            .map((category) => {
+                              const time = monthData.categories[category] || 0;
+                              // Calcul précis : hauteur proportionnelle à la valeur
+                              const heightPercent = maxValue > 0 ? (time / maxValue) * 100 : 0;
+                              
+                              // Calculer le pourcentage par rapport au total des catégories visibles
+                              const percentOfMonth = totalTime > 0 ? ((time / totalTime) * 100).toFixed(1) : 0;
+                              
+                              return (
+                                <div
+                                  key={category}
+                                  className="relative group cursor-pointer hover:opacity-80 transition-opacity w-3"
+                                  style={{
+                                    height: `${heightPercent}%`,
+                                    backgroundColor: categoryColors[category],
+                                    minHeight: time > 0 ? '4px' : '0px'
+                                  }}
+                                >
+                                  {/* Tooltip */}
+                                  {time > 0 && (
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                                      <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                        <div className="font-semibold">{categoryLabels[category]}</div>
+                                        <div>{formatTime(time)} ({percentOfMonth}%)</div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Labels des mois et totaux - en dessous du graphique */}
           {chartData && chartData.months && (
-            <div className="flex items-end justify-start h-full gap-4 overflow-x-auto">
+            <div className="flex justify-start gap-4 mt-2 ml-[52px] overflow-x-auto">
               {chartData.months.map((monthData, index) => {
-                // Calculer le total uniquement pour les catégories visibles
                 const totalTime = Object.entries(monthData.categories)
                   .filter(([cat]) => visibleCategories[cat])
                   .reduce((sum, [_, val]) => sum + val, 0);
                 
                 return (
                   <div key={index} className="flex flex-col items-center min-w-[120px]">
-                    {/* Groupe de barres côte à côte */}
-                    <div className="flex items-end justify-center gap-1 h-64 w-full mb-2">
-                      {/* Ordre fixe des catégories pour cohérence visuelle */}
-                      {['CHANGEMENT_FORMAT', 'TRAVAUX_PREVENTIFS', 'TRAVAUX_CURATIF', 'TRAVAUX_DIVERS', 'FORMATION', 'REGLAGE']
-                        .filter(category => visibleCategories[category]) // Filtrer les catégories masquées
-                        .map((category) => {
-                          const time = monthData.categories[category] || 0;
-                          const heightPercent = maxValue > 0 ? (time / maxValue) * 100 : 0;
-                          
-                          // Calculer le pourcentage par rapport au total des catégories visibles
-                          const percentOfMonth = totalTime > 0 ? ((time / totalTime) * 100).toFixed(1) : 0;
-                          
-                          return (
-                            <div
-                              key={category}
-                              className="relative group cursor-pointer hover:opacity-80 transition-opacity w-3"
-                              style={{
-                                height: `${heightPercent}%`,
-                                backgroundColor: categoryColors[category],
-                                minHeight: time > 0 ? '4px' : '0px'
-                              }}
-                            >
-                              {/* Tooltip */}
-                              {time > 0 && (
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
-                                  <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                                    <div className="font-semibold">{categoryLabels[category]}</div>
-                                    <div>{formatTime(time)} ({percentOfMonth}%)</div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                    
-                    {/* Label du mois */}
-                    <div className="text-xs text-gray-600 text-center mt-1">
+                    <div className="text-xs text-gray-600 text-center">
                       {formatMonthLabel(monthData.month)}
                     </div>
-                    
-                    {/* Total des catégories visibles */}
                     {totalTime > 0 && (
                       <div className="text-xs font-semibold text-gray-700 mt-1">
                         {formatTime(totalTime)}
@@ -286,15 +321,6 @@ const TimeByCategoryChart = () => {
               })}
             </div>
           )}
-
-          {/* Échelle Y */}
-          <div className="absolute left-0 top-0 h-full flex flex-col justify-between py-4 pr-2 text-xs text-gray-500">
-            <span>{formatTime(maxValue)}</span>
-            <span>{formatTime(maxValue * 0.75)}</span>
-            <span>{formatTime(maxValue * 0.5)}</span>
-            <span>{formatTime(maxValue * 0.25)}</span>
-            <span>0h</span>
-          </div>
         </div>
       </CardContent>
     </Card>
