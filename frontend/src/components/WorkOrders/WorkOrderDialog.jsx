@@ -700,7 +700,7 @@ const WorkOrderDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
 
             {partsUsed.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg">
-                Aucune pièce ajoutée. Cliquez sur "Ajouter une pièce" pour commencer.
+                Aucune pièce ajoutée. Cliquez sur &quot;Ajouter une pièce&quot; pour commencer.
               </p>
             ) : (
               <div className="space-y-3">
