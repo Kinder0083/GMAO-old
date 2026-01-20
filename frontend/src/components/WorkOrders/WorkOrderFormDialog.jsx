@@ -180,8 +180,8 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
   const handleDialogClose = (isOpen) => {
     if (!isOpen && !isClosing && !loading) {
       // Si on vient d'une soumission réussie (création), fermer directement sans dialogue
-      if (submitSuccessful) {
-        setSubmitSuccessful(false);
+      if (submitSuccessfulRef.current) {
+        submitSuccessfulRef.current = false;
         return; // Ne rien faire, le parent a déjà été notifié
       }
       // L'utilisateur veut fermer sans sauvegarder
