@@ -303,8 +303,14 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
       }
 
       onSuccess();
-      // Ne pas fermer directement, afficher le dialog de changement de statut
-      setShowStatusDialog(true);
+      
+      // Afficher le dialog de changement de statut uniquement pour la modification d'un OT existant
+      if (workOrder) {
+        setShowStatusDialog(true);
+      } else {
+        // Pour une création, fermer directement le formulaire
+        onOpenChange(false);
+      }
     } catch (error) {
       console.error('Erreur création/modification ordre de travail:', error);
       toast({
