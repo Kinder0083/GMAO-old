@@ -5498,11 +5498,38 @@ async def import_data(
                         if current_module in ["work-orders", "improvements"]:
                             # Champs obligatoires pour work-orders et improvements
                             if "numero" not in cleaned_item:
-                                cleaned_item["numero"] = "N/A"
+                                # Générer un numéro séquentiel
+                                last_item = await db[collection_name].find_one(
+                                    sort=[("numero", -1)]
+                                )
+                                last_num = last_item.get("numero", 0) if last_item else 0
+                                if isinstance(last_num, str):
+                                    try:
+                                        last_num = int(last_num.replace("N/A", "0"))
+                                    except:
+                                        last_num = 0
+                                cleaned_item["numero"] = last_num + 1
                             if "statut" not in cleaned_item:
                                 cleaned_item["statut"] = "OUVERT"
                             if "priorite" not in cleaned_item:
-                                cleaned_item["priorite"] = "MOYENNE"
+                                cleaned_item["priorite"] = "AUCUNE"
+                            if "categorie" not in cleaned_item:
+                                cleaned_item["categorie"] = "TRAVAUX_DIVERS"
+                            # Initialiser les listes vides si pas présentes
+                            if "attachments" not in cleaned_item:
+                                cleaned_item["attachments"] = []
+                            if "comments" not in cleaned_item:
+                                cleaned_item["comments"] = []
+                            if "historique" not in cleaned_item:
+                                cleaned_item["historique"] = []
+                            if "permissions" not in cleaned_item:
+                                cleaned_item["permissions"] = []
+                            if "tempsReel" not in cleaned_item:
+                                cleaned_item["tempsReel"] = 0
+                            if "tempsEstime" not in cleaned_item:
+                                cleaned_item["tempsEstime"] = 0
+                            if "createdBy" not in cleaned_item:
+                                cleaned_item["createdBy"] = current_user.get("email", "import")
                         
                         elif current_module in ["intervention-requests", "improvement-requests"]:
                             # Champs obligatoires pour les demandes
