@@ -969,6 +969,89 @@ const WorkOrderTemplatesPage = () => {
           title="Supprimer l'ordre type"
           description={`Êtes-vous sûr de vouloir supprimer le modèle "${selectedTemplate?.nom}" ? Cette action est irréversible.`}
         />
+
+        {/* Dialog d'import */}
+        <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Upload size={20} />
+                Importer des modèles
+              </DialogTitle>
+              <DialogDescription>
+                Importez des modèles d'ordres de travail depuis un fichier Excel (.xlsx) ou CSV.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Zone de téléchargement */}
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileSpreadsheet size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600 font-medium">
+                  Cliquez pour sélectionner un fichier
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Formats acceptés : .xlsx, .csv
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleImportFile}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Instructions */}
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">Format attendu :</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• <strong>Nom</strong> (obligatoire) : Nom du modèle</li>
+                  <li>• <strong>Description</strong> : Description détaillée</li>
+                  <li>• <strong>Catégorie</strong> : CHANGEMENT_FORMAT, TRAVAUX_PREVENTIFS, etc.</li>
+                  <li>• <strong>Priorité</strong> : AUCUNE, BASSE, NORMALE, HAUTE, URGENTE</li>
+                  <li>• <strong>Statut par défaut</strong> : OUVERT, EN_COURS, etc.</li>
+                  <li>• <strong>Temps estimé (min)</strong> : Durée en minutes</li>
+                </ul>
+              </div>
+
+              {/* Télécharger un modèle vide */}
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  const template = [
+                    ['Nom', 'Description', 'Catégorie', 'Priorité', 'Statut par défaut', 'Temps estimé (min)'],
+                    ['Exemple de modèle', 'Description de l\'intervention', 'TRAVAUX_CURATIF', 'HAUTE', 'OUVERT', '60']
+                  ];
+                  const ws = XLSX.utils.aoa_to_sheet(template);
+                  const wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, 'Modèle');
+                  XLSX.writeFile(wb, 'modele_import_ordres_type.xlsx');
+                }}
+              >
+                <Download size={16} className="mr-2" />
+                Télécharger un modèle vide
+              </Button>
+
+              {importing && (
+                <div className="flex items-center justify-center gap-2 text-blue-600">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                  <span>Import en cours...</span>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
+                Fermer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
