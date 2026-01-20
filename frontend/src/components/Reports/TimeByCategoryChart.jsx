@@ -116,9 +116,9 @@ const TimeByCategoryChart = () => {
     }));
   };
 
-  // Calculer la hauteur maximale pour l'échelle en fonction des catégories visibles
+  // Calculer la hauteur maximale pour l'échelle - arrondi à un nombre entier propre
   const getMaxValue = () => {
-    if (!chartData || !chartData.months) return 100;
+    if (!chartData || !chartData.months) return 10;
     let max = 0;
     chartData.months.forEach(month => {
       // Ne compter que les catégories visibles
@@ -127,10 +127,30 @@ const TimeByCategoryChart = () => {
         .reduce((sum, [_, val]) => sum + val, 0);
       if (total > max) max = total;
     });
-    return Math.ceil(max * 1.1); // 10% de marge
+    
+    // Arrondir au prochain entier pour une échelle propre
+    // Ex: 3.0 -> 4, 3.5 -> 4, 4.2 -> 5
+    if (max === 0) return 10;
+    return Math.ceil(max);
   };
 
   const maxValue = getMaxValue();
+  
+  // Générer les graduations de l'échelle Y (ex: 0, 1, 2, 3, 4 pour maxValue=4)
+  const getYAxisLabels = () => {
+    const labels = [];
+    const step = maxValue <= 5 ? 1 : Math.ceil(maxValue / 5);
+    for (let i = maxValue; i >= 0; i -= step) {
+      labels.push(i);
+    }
+    // S'assurer que 0 est inclus
+    if (labels[labels.length - 1] !== 0) {
+      labels.push(0);
+    }
+    return labels;
+  };
+  
+  const yAxisLabels = getYAxisLabels();
 
   if (loading) {
     return (
