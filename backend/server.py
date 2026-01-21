@@ -4837,6 +4837,232 @@ async def get_time_by_category(start_month: str, current_user: dict = Depends(re
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/reports/user-time-tracking")
+async def get_user_time_tracking(
+    user_ids: str = None,  # Comma-separated list of user IDs
+    period: str = "weekly",  # daily, weekly, monthly, yearly, custom
+    start_date: str = None,  # Format: YYYY-MM-DD
+    end_date: str = None,  # Format: YYYY-MM-DD
+    categories: str = None,  # Comma-separated list of categories, None = all
+    current_user: dict = Depends(require_permission("reports", "view"))
+):
+    """
+    Obtenir le temps passé par utilisateur par catégorie
+    - user_ids: Liste des IDs utilisateurs séparés par des virgules (si vide, utilisateur courant)
+    - period: daily, weekly, monthly, yearly, custom
+    - start_date, end_date: Pour la période personnalisée
+    - categories: Liste des catégories à inclure (si vide, toutes)
+    """
+    try:
+        from datetime import datetime, timedelta
+        from dateutil.relativedelta import relativedelta
+        
+        # Vérifier les permissions pour voir d'autres utilisateurs
+        can_view_others = False
+        user_role = current_user.get("role", "")
+        user_permissions = current_user.get("permissions", {})
+        
+        # Admin ou responsable peuvent voir tous les utilisateurs
+        if user_role == "ADMIN":
+            can_view_others = True
+        elif isinstance(user_permissions, dict):
+            time_tracking_perm = user_permissions.get("timeTracking", {})
+            if isinstance(time_tracking_perm, dict) and time_tracking_perm.get("view", False):
+                can_view_others = True
+        
+        # Parser les user_ids
+        if user_ids:
+            requested_user_ids = [uid.strip() for uid in user_ids.split(",") if uid.strip()]
+        else:
+            requested_user_ids = [current_user["id"]]
+        
+        # Si l'utilisateur ne peut pas voir les autres, forcer son propre ID
+        if not can_view_others:
+            requested_user_ids = [current_user["id"]]
+        
+        # Déterminer les dates selon la période
+        now = datetime.now()
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        if period == "daily":
+            date_start = today
+            date_end = today + timedelta(days=1) - timedelta(seconds=1)
+            time_labels = [f"{h}h" for h in range(24)]
+            group_by = "hour"
+        elif period == "weekly":
+            # Début de la semaine (lundi)
+            days_since_monday = today.weekday()
+            date_start = today - timedelta(days=days_since_monday)
+            date_end = date_start + timedelta(days=7) - timedelta(seconds=1)
+            time_labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+            group_by = "dayOfWeek"
+        elif period == "monthly":
+            date_start = today.replace(day=1)
+            date_end = (date_start + relativedelta(months=1)) - timedelta(seconds=1)
+            # Générer les labels pour chaque jour du mois
+            days_in_month = (date_end.replace(day=1) + relativedelta(months=1) - date_end.replace(day=1)).days
+            if hasattr(date_end, 'day'):
+                days_in_month = date_end.day
+            time_labels = [str(d) for d in range(1, days_in_month + 1)]
+            group_by = "dayOfMonth"
+        elif period == "yearly":
+            date_start = today.replace(month=1, day=1)
+            date_end = today.replace(month=12, day=31, hour=23, minute=59, second=59)
+            time_labels = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"]
+            group_by = "month"
+        elif period == "custom" and start_date and end_date:
+            date_start = datetime.strptime(start_date, "%Y-%m-%d")
+            date_end = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            # Calculer le nombre de jours
+            delta = (date_end - date_start).days + 1
+            if delta <= 7:
+                time_labels = [(date_start + timedelta(days=i)).strftime("%d/%m") for i in range(delta)]
+                group_by = "dayOfMonth"
+            elif delta <= 31:
+                time_labels = [(date_start + timedelta(days=i)).strftime("%d") for i in range(delta)]
+                group_by = "dayOfMonth"
+            else:
+                # Grouper par mois
+                time_labels = []
+                current = date_start
+                while current <= date_end:
+                    time_labels.append(current.strftime("%b %Y"))
+                    current = current + relativedelta(months=1)
+                group_by = "month"
+        else:
+            # Par défaut: hebdomadaire
+            days_since_monday = today.weekday()
+            date_start = today - timedelta(days=days_since_monday)
+            date_end = date_start + timedelta(days=7) - timedelta(seconds=1)
+            time_labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+            group_by = "dayOfWeek"
+        
+        # Parser les catégories
+        all_categories = ["CHANGEMENT_FORMAT", "TRAVAUX_PREVENTIFS", "TRAVAUX_CURATIF", "TRAVAUX_DIVERS", "FORMATION", "REGLAGE", "AMELIORATIONS"]
+        if categories:
+            selected_categories = [cat.strip() for cat in categories.split(",") if cat.strip() in all_categories]
+        else:
+            selected_categories = all_categories
+        
+        # Récupérer les informations des utilisateurs demandés
+        users_info = {}
+        for uid in requested_user_ids:
+            try:
+                user_doc = await db.users.find_one({"_id": ObjectId(uid)}, {"_id": 1, "nom": 1, "prenom": 1, "email": 1})
+                if user_doc:
+                    users_info[uid] = {
+                        "id": uid,
+                        "name": f"{user_doc.get('prenom', '')} {user_doc.get('nom', '')}".strip() or user_doc.get('email', 'Inconnu')
+                    }
+            except:
+                pass
+        
+        # Si aucun utilisateur trouvé, utiliser l'utilisateur courant
+        if not users_info:
+            users_info[current_user["id"]] = {
+                "id": current_user["id"],
+                "name": current_user.get("name", current_user.get("email", "Moi"))
+            }
+        
+        # Construire les données pour chaque utilisateur
+        results = {}
+        
+        for user_id in users_info.keys():
+            user_data = {cat: [0] * len(time_labels) for cat in selected_categories}
+            
+            # Requête pour les ordres de travail
+            wo_categories = [cat for cat in selected_categories if cat != "AMELIORATIONS"]
+            if wo_categories:
+                wo_match = {
+                    "dateCreation": {"$gte": date_start, "$lte": date_end},
+                    "categorie": {"$in": wo_categories},
+                    "$or": [
+                        {"assigne_a_id": user_id},
+                        {"createdBy": user_id}
+                    ]
+                }
+                
+                wo_cursor = db.work_orders.find(wo_match, {"dateCreation": 1, "categorie": 1, "tempsReel": 1})
+                async for wo in wo_cursor:
+                    if wo.get("tempsReel"):
+                        category = wo.get("categorie")
+                        date_creation = wo.get("dateCreation")
+                        if category and date_creation:
+                            idx = get_time_index(date_creation, date_start, group_by, len(time_labels))
+                            if 0 <= idx < len(time_labels) and category in user_data:
+                                user_data[category][idx] += wo["tempsReel"]
+            
+            # Requête pour les améliorations
+            if "AMELIORATIONS" in selected_categories:
+                imp_match = {
+                    "dateCreation": {"$gte": date_start, "$lte": date_end},
+                    "$or": [
+                        {"assigne_a_id": user_id},
+                        {"createdBy": user_id}
+                    ]
+                }
+                
+                imp_cursor = db.improvements.find(imp_match, {"dateCreation": 1, "tempsReel": 1})
+                async for imp in imp_cursor:
+                    if imp.get("tempsReel"):
+                        date_creation = imp.get("dateCreation")
+                        if date_creation:
+                            idx = get_time_index(date_creation, date_start, group_by, len(time_labels))
+                            if 0 <= idx < len(time_labels):
+                                user_data["AMELIORATIONS"][idx] += imp["tempsReel"]
+            
+            # Arrondir les valeurs
+            for cat in user_data:
+                user_data[cat] = [round(v, 2) for v in user_data[cat]]
+            
+            results[user_id] = {
+                "user": users_info[user_id],
+                "data": user_data
+            }
+        
+        # Récupérer la liste de tous les utilisateurs (pour le filtre)
+        all_users = []
+        if can_view_others:
+            users_cursor = db.users.find({}, {"_id": 1, "nom": 1, "prenom": 1, "email": 1})
+            async for user in users_cursor:
+                all_users.append({
+                    "id": str(user["_id"]),
+                    "name": f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or user.get('email', 'Inconnu')
+                })
+        
+        return {
+            "period": period,
+            "startDate": date_start.strftime("%Y-%m-%d"),
+            "endDate": date_end.strftime("%Y-%m-%d"),
+            "timeLabels": time_labels,
+            "categories": selected_categories,
+            "users": results,
+            "allUsers": all_users if can_view_others else [],
+            "canViewOthers": can_view_others
+        }
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du pointage horaire : {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_time_index(date, start_date, group_by, max_len):
+    """Helper pour calculer l'index dans le tableau de temps"""
+    from datetime import timedelta
+    
+    if group_by == "hour":
+        return date.hour
+    elif group_by == "dayOfWeek":
+        return date.weekday()
+    elif group_by == "dayOfMonth":
+        return (date - start_date).days
+    elif group_by == "month":
+        months_diff = (date.year - start_date.year) * 12 + (date.month - start_date.month)
+        return min(months_diff, max_len - 1)
+    return 0
+
+
 # ==================== IMPORT/EXPORT ROUTES ====================
 EXPORT_MODULES = {
     "intervention-requests": "intervention_requests",
