@@ -9,11 +9,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Clock, Users, Filter, BarChart3, Table, Layers } from 'lucide-react';
 import { reportsAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
-import { useAuth } from '../../contexts/AuthContext';
 
 const UserTimeTrackingChart = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  
+  // Récupérer l'utilisateur depuis localStorage
+  const getCurrentUser = () => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      return null;
+    }
+  };
+  
+  const currentUser = getCurrentUser();
   
   // États pour les filtres
   const [period, setPeriod] = useState('weekly');
