@@ -12,7 +12,7 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Calendar, Clock, User, MapPin, Wrench, FileText, MessageSquare, Send, Plus } from 'lucide-react';
+import { Calendar, Clock, User, MapPin, Wrench, FileText, MessageSquare } from 'lucide-react';
 import AttachmentsList from './AttachmentsList';
 import AttachmentUploader from './AttachmentUploader';
 import StatusChangeDialog from './StatusChangeDialog';
@@ -26,11 +26,9 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
-  const [sendingComment, setSendingComment] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [timeInput, setTimeInput] = useState(''); // Champ unique pour le temps
-  const [addingTime, setAddingTime] = useState(false);
   const [validating, setValidating] = useState(false);
 
   // Fonction pour parser le temps saisi dans différents formats
