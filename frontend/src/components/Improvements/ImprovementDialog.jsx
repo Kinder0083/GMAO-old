@@ -29,9 +29,52 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
   const [sendingComment, setSendingComment] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const [timeHours, setTimeHours] = useState('');
-  const [timeMinutes, setTimeMinutes] = useState('');
+  const [timeInput, setTimeInput] = useState(''); // Champ unique pour le temps
   const [addingTime, setAddingTime] = useState(false);
+  const [validating, setValidating] = useState(false);
+
+  // Fonction pour parser le temps saisi dans différents formats
+  const parseTimeInput = (input) => {
+    if (!input || input.trim() === '') return null;
+    
+    const trimmed = input.trim();
+    
+    // Format décimal: 1.5 ou 1,5 -> 1h30
+    if (/^[\d]+[.,][\d]+$/.test(trimmed)) {
+      const decimal = parseFloat(trimmed.replace(',', '.'));
+      const hours = Math.floor(decimal);
+      const minutes = Math.round((decimal - hours) * 60);
+      return { hours, minutes };
+    }
+    
+    // Format HH:MM ou H:MM: 01:30 ou 1:30
+    if (/^[\d]{1,2}:[\d]{1,2}$/.test(trimmed)) {
+      const [hours, minutes] = trimmed.split(':').map(Number);
+      if (minutes >= 0 && minutes < 60) {
+        return { hours, minutes };
+      }
+    }
+    
+    // Format XhYY ou XhY: 1h30 ou 1h5
+    if (/^[\d]{1,3}h[\d]{0,2}$/i.test(trimmed)) {
+      const match = trimmed.match(/^([\d]{1,3})h([\d]{0,2})$/i);
+      if (match) {
+        const hours = parseInt(match[1]) || 0;
+        const minutes = match[2] ? parseInt(match[2]) : 0;
+        if (minutes >= 0 && minutes < 60) {
+          return { hours, minutes };
+        }
+      }
+    }
+    
+    // Format heures seules: 2 -> 2h00
+    if (/^[\d]+$/.test(trimmed)) {
+      const hours = parseInt(trimmed);
+      return { hours, minutes: 0 };
+    }
+    
+    return null;
+  };
 
   const loadComments = async () => {
     if (!workOrder) return;
