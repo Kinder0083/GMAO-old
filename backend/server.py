@@ -1158,6 +1158,18 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
                 # Ces champs peuvent être explicitement mis à null pour les "vider"
                 update_data[k] = None
         
+        # Si on vide assigne_a_id, il faut aussi vider assigneA
+        if 'assigne_a_id' in update_data and update_data['assigne_a_id'] is None:
+            update_data['assigneA'] = None
+        
+        # Si on vide equipement_id, il faut aussi vider equipement
+        if 'equipement_id' in update_data and update_data['equipement_id'] is None:
+            update_data['equipement'] = None
+        
+        # Si on vide emplacement_id, il faut aussi vider emplacement
+        if 'emplacement_id' in update_data and update_data['emplacement_id'] is None:
+            update_data['emplacement'] = None
+        
         if wo_update.statut == WorkOrderStatus.TERMINE and "dateTermine" not in update_data:
             update_data["dateTermine"] = datetime.utcnow()
         
