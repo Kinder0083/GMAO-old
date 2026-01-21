@@ -433,29 +433,17 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
               )}
             </div>
 
-            {/* Zone de saisie */}
-            <div className="flex gap-2">
+            {/* Zone de saisie du commentaire */}
+            <div className="space-y-2">
+              <Label>Commentaire *</Label>
               <Textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Ajouter un commentaire..."
-                className="flex-1 resize-none"
-                rows={2}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
-                    handleSendComment();
-                  }
-                }}
+                placeholder="Décrivez l'intervention réalisée..."
+                className="resize-none"
+                rows={3}
               />
-              <Button 
-                onClick={handleSendComment}
-                disabled={!newComment.trim() || sendingComment}
-                className="self-end"
-              >
-                <Send size={16} />
-              </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Ctrl+Entrée pour envoyer</p>
           </div>
 
           {/* Temps Passé */}
