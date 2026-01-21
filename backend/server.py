@@ -5006,46 +5006,55 @@ async def get_user_time_tracking(
         for user_id in users_info.keys():
             user_data = {cat: [0] * len(time_labels) for cat in selected_categories}
             
-            # Requête pour les ordres de travail
+            # Requête pour les ordres de travail - basée sur time_entries (qui a saisi le temps)
             wo_categories = [cat for cat in selected_categories if cat != "AMELIORATIONS"]
             if wo_categories:
+                # Chercher les OT qui ont des time_entries pour cet utilisateur dans la période
                 wo_match = {
-                    "dateCreation": {"$gte": date_start, "$lte": date_end},
                     "categorie": {"$in": wo_categories},
-                    "$or": [
-                        {"assigne_a_id": user_id},
-                        {"createdBy": user_id}
-                    ]
+                    "time_entries": {
+                        "$elemMatch": {
+                            "user_id": user_id,
+                            "timestamp": {"$gte": date_start, "$lte": date_end}
+                        }
+                    }
                 }
                 
-                wo_cursor = db.work_orders.find(wo_match, {"dateCreation": 1, "categorie": 1, "tempsReel": 1})
+                wo_cursor = db.work_orders.find(wo_match, {"categorie": 1, "time_entries": 1})
                 async for wo in wo_cursor:
-                    if wo.get("tempsReel"):
-                        category = wo.get("categorie")
-                        date_creation = wo.get("dateCreation")
-                        if category and date_creation:
-                            idx = get_time_index(date_creation, date_start, group_by, len(time_labels))
-                            if 0 <= idx < len(time_labels) and category in user_data:
-                                user_data[category][idx] += wo["tempsReel"]
+                    category = wo.get("categorie")
+                    time_entries = wo.get("time_entries", [])
+                    if category and time_entries:
+                        for entry in time_entries:
+                            # Ne compter que les entrées de cet utilisateur dans la période
+                            if entry.get("user_id") == user_id:
+                                entry_timestamp = entry.get("timestamp")
+                                if entry_timestamp and date_start <= entry_timestamp <= date_end:
+                                    idx = get_time_index(entry_timestamp, date_start, group_by, len(time_labels))
+                                    if 0 <= idx < len(time_labels) and category in user_data:
+                                        user_data[category][idx] += entry.get("hours", 0)
             
-            # Requête pour les améliorations
+            # Requête pour les améliorations - basée sur time_entries
             if "AMELIORATIONS" in selected_categories:
                 imp_match = {
-                    "dateCreation": {"$gte": date_start, "$lte": date_end},
-                    "$or": [
-                        {"assigne_a_id": user_id},
-                        {"createdBy": user_id}
-                    ]
+                    "time_entries": {
+                        "$elemMatch": {
+                            "user_id": user_id,
+                            "timestamp": {"$gte": date_start, "$lte": date_end}
+                        }
+                    }
                 }
                 
-                imp_cursor = db.improvements.find(imp_match, {"dateCreation": 1, "tempsReel": 1})
+                imp_cursor = db.improvements.find(imp_match, {"time_entries": 1})
                 async for imp in imp_cursor:
-                    if imp.get("tempsReel"):
-                        date_creation = imp.get("dateCreation")
-                        if date_creation:
-                            idx = get_time_index(date_creation, date_start, group_by, len(time_labels))
-                            if 0 <= idx < len(time_labels):
-                                user_data["AMELIORATIONS"][idx] += imp["tempsReel"]
+                    time_entries = imp.get("time_entries", [])
+                    for entry in time_entries:
+                        if entry.get("user_id") == user_id:
+                            entry_timestamp = entry.get("timestamp")
+                            if entry_timestamp and date_start <= entry_timestamp <= date_end:
+                                idx = get_time_index(entry_timestamp, date_start, group_by, len(time_labels))
+                                if 0 <= idx < len(time_labels):
+                                    user_data["AMELIORATIONS"][idx] += entry.get("hours", 0)
             
             # Arrondir les valeurs
             for cat in user_data:
