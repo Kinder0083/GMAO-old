@@ -1256,10 +1256,22 @@ async def add_time_to_work_order(wo_id: str, time_data: AddTimeSpent, current_us
         # Calculer le nouveau temps réel
         new_time = current_time + time_to_add
         
-        # Mettre à jour l'ordre de travail
+        # Créer une entrée d'historique de temps avec l'utilisateur qui l'a saisi
+        time_entry = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user["id"],
+            "user_name": f"{current_user['prenom']} {current_user['nom']}",
+            "hours": time_to_add,
+            "timestamp": datetime.now(timezone.utc)
+        }
+        
+        # Mettre à jour l'ordre de travail avec le temps total ET l'entrée d'historique
         await db.work_orders.update_one(
             {"_id": ObjectId(wo_id)},
-            {"$set": {"tempsReel": new_time}}
+            {
+                "$set": {"tempsReel": new_time},
+                "$push": {"time_entries": time_entry}
+            }
         )
         
         # Log dans l'audit
