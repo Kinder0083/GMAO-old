@@ -8,6 +8,7 @@ import { useToast } from '../hooks/use-toast';
 import CustomPeriodDialog from '../components/Common/CustomPeriodDialog';
 import TimeByCategoryChart from '../components/Reports/TimeByCategoryChart';
 import EquipmentPerformanceTree from '../components/Reports/EquipmentPerformanceTree';
+import UserTimeTrackingChart from '../components/Reports/UserTimeTrackingChart';
 
 const Reports = () => {
   const { toast } = useToast();
