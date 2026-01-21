@@ -90,57 +90,6 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
     }
   };
 
-  const handleSendComment = async () => {
-    if (!newComment.trim() || !workOrder) return;
-    
-    try {
-      setSendingComment(true);
-      await improvementsAPI.addComment(workOrder.id, newComment);
-      setNewComment('');
-      await loadComments();
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout du commentaire:', error);
-    } finally {
-      setSendingComment(false);
-    }
-  };
-
-
-  const handleAddTime = async () => {
-    const parsed = parseTimeInput(timeInput);
-
-    if (!parsed || (parsed.hours === 0 && parsed.minutes === 0)) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez saisir un temps valide (ex: 1:30, 1h30, 1.5)',
-        variant: 'destructive'
-      });
-      return false;
-    }
-
-    try {
-      setAddingTime(true);
-      await improvementsAPI.addTimeSpent(workOrder.id, parsed.hours, parsed.minutes);
-      
-      toast({
-        title: 'Temps ajouté',
-        description: `${parsed.hours}h${parsed.minutes.toString().padStart(2, '0')}min ajouté avec succès`
-      });
-
-      setTimeInput('');
-      return true;
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'ajouter le temps',
-        variant: 'destructive'
-      });
-      return false;
-    } finally {
-      setAddingTime(false);
-    }
-  };
-
   // Fonction pour valider commentaire + temps + ouvrir dialogue statut
   const handleValidate = async () => {
     // Vérifier que le commentaire est rempli
