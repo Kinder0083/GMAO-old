@@ -251,13 +251,8 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
     }
   };
 
-  const handleStatusChange = async (newStatus, hours = 0, minutes = 0) => {
+  const handleStatusChange = async (newStatus) => {
     try {
-      // Ajouter le temps si renseigné
-      if (hours > 0 || minutes > 0) {
-        await improvementsAPI.addTimeSpent(workOrder.id, hours, minutes);
-      }
-
       // Mettre à jour le statut
       await improvementsAPI.update(workOrder.id, { statut: newStatus });
       

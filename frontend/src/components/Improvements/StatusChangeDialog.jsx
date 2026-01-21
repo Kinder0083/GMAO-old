@@ -9,7 +9,6 @@ import {
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
-import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const StatusChangeDialog = ({ open, onOpenChange, currentStatus, onStatusChange, onSkip, workOrderId }) => {
