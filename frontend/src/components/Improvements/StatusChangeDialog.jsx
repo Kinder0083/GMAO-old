@@ -14,8 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 const StatusChangeDialog = ({ open, onOpenChange, currentStatus, onStatusChange, onSkip, workOrderId }) => {
   const [selectedStatus, setSelectedStatus] = useState(currentStatus || 'OUVERT');
-  const [timeHours, setTimeHours] = useState('');
-  const [timeMinutes, setTimeMinutes] = useState('');
 
   const statuses = [
     { value: 'OUVERT', label: 'Ouvert' },
@@ -25,11 +23,8 @@ const StatusChangeDialog = ({ open, onOpenChange, currentStatus, onStatusChange,
   ];
 
   const handleConfirm = () => {
-    const hours = parseInt(timeHours) || 0;
-    const minutes = parseInt(timeMinutes) || 0;
-    
     if (selectedStatus !== currentStatus) {
-      onStatusChange(selectedStatus, hours, minutes);
+      onStatusChange(selectedStatus);
     } else {
       onSkip();
     }
@@ -65,41 +60,6 @@ const StatusChangeDialog = ({ open, onOpenChange, currentStatus, onStatusChange,
               </SelectContent>
             </Select>
           </div>
-          
-          {/* Champ Temps Passé */}
-          {selectedStatus === 'TERMINE' && (
-            <div className="space-y-2 border-t pt-4">
-              <Label>Temps passé sur cette amélioration</Label>
-              <p className="text-xs text-gray-500 mb-2">
-                Enregistrez le temps total passé avant de clôturer (optionnel)
-              </p>
-              <div className="flex gap-2 items-center">
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="999"
-                    placeholder="Heures"
-                    value={timeHours}
-                    onChange={(e) => setTimeHours(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Heures</p>
-                </div>
-                <span className="text-2xl text-gray-400 pb-5">:</span>
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="59"
-                    placeholder="Minutes"
-                    value={timeMinutes}
-                    onChange={(e) => setTimeMinutes(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Minutes</p>
-                </div>
-              </div>
-            </div>
-          )}
           
           {selectedStatus === currentStatus && (
             <p className="text-sm text-gray-500">

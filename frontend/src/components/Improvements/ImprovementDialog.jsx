@@ -468,49 +468,42 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Clock size={20} className="text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Ajouter du Temps Passé</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Temps Passé</h3>
             </div>
 
-            {/* Zone de saisie du temps */}
+            {/* Zone de saisie du temps - champ unique */}
             <div className="space-y-2">
-              <Label>Enregistrer le temps passé sur cette amélioration</Label>
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="999"
-                    placeholder="0"
-                    value={timeHours}
-                    onChange={(e) => setTimeHours(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Heures</p>
-                </div>
-                <span className="text-2xl text-gray-400 pb-5">:</span>
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="59"
-                    placeholder="00"
-                    value={timeMinutes}
-                    onChange={(e) => setTimeMinutes(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Minutes</p>
-                </div>
-                <Button
-                  onClick={handleAddTime}
-                  disabled={addingTime || (!timeHours && !timeMinutes)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Ajouter
-                </Button>
-              </div>
+              <Label>Temps passé sur cette amélioration *</Label>
+              <Input
+                type="text"
+                placeholder="Ex: 1:30, 1h30, 1.5"
+                value={timeInput}
+                onChange={(e) => setTimeInput(e.target.value)}
+                className="max-w-[200px]"
+              />
               <p className="text-xs text-gray-500">
-                Le temps sera ajouté au temps réel total de l'amélioration
+                Formats acceptés : 01:30, 1:30, 1h30, 1.5 (décimal)
               </p>
             </div>
+          </div>
+
+          {/* Boutons Valider / Annuler */}
+          <Separator className="my-6" />
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              disabled={validating}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleValidate}
+              disabled={validating || !newComment.trim() || !timeInput.trim()}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {validating ? 'Validation...' : 'Valider'}
+            </Button>
           </div>
 
           {/* Pièces jointes */}
