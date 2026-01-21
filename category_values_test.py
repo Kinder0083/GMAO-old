@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://maintenance-ai-3.preview.emergentagent.com/api"
+BACKEND_URL = "https://workorder-ux-1.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@gmao-iris.local"
