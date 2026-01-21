@@ -4892,14 +4892,20 @@ async def export_data(
                 cleaned_item = {k: v for k, v in item.items() if k != "_id"}
                 cleaned_item["id"] = str(item["_id"])
                 
-                # Convertir les dates en strings
+                # Convertir les dates et ObjectId en strings
+                # NE PAS convertir les listes en strings - les garder comme JSON
                 for key, value in cleaned_item.items():
                     if isinstance(value, datetime):
                         cleaned_item[key] = value.isoformat()
                     elif isinstance(value, ObjectId):
                         cleaned_item[key] = str(value)
-                    elif isinstance(value, dict) or isinstance(value, list):
-                        cleaned_item[key] = str(value)
+                    elif isinstance(value, list):
+                        # Convertir la liste en JSON string pour l'export CSV/Excel
+                        import json
+                        cleaned_item[key] = json.dumps(value, default=str)
+                    elif isinstance(value, dict):
+                        import json
+                        cleaned_item[key] = json.dumps(value, default=str)
                 
                 cleaned_items.append(cleaned_item)
             
