@@ -214,7 +214,8 @@ export const purchaseHistoryAPI = {
 // ==================== REPORTS ====================
 export const reportsAPI = {
   getAnalytics: () => api.get('/reports/analytics'),
-  getTimeByCategory: (startMonth) => api.get('/reports/time-by-category', { params: { start_month: startMonth } })
+  getTimeByCategory: (startMonth) => api.get('/reports/time-by-category', { params: { start_month: startMonth } }),
+  getUserTimeTracking: (params) => api.get('/reports/user-time-tracking', { params })
 };
 
 // ==================== IMPORT/EXPORT ====================
