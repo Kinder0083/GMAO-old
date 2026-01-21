@@ -8064,10 +8064,22 @@ async def add_time_to_improvement(imp_id: str, time_data: AddTimeSpent, current_
         # Calculer le nouveau temps réel
         new_time = current_time + time_to_add
         
-        # Mettre à jour l'amélioration
+        # Créer une entrée d'historique de temps avec l'utilisateur qui l'a saisi
+        time_entry = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user["id"],
+            "user_name": f"{current_user['prenom']} {current_user['nom']}",
+            "hours": time_to_add,
+            "timestamp": datetime.now(timezone.utc)
+        }
+        
+        # Mettre à jour l'amélioration avec le temps total ET l'entrée d'historique
         await db.improvements.update_one(
             {"id": imp_id},
-            {"$set": {"tempsReel": new_time}}
+            {
+                "$set": {"tempsReel": new_time},
+                "$push": {"time_entries": time_entry}
+            }
         )
         
         # Log dans l'audit
