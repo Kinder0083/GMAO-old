@@ -384,6 +384,9 @@ const Reports = () => {
       {/* Histogramme Evolution horaire des maintenances */}
       <TimeByCategoryChart />
 
+      {/* Pointage horaire du personnel */}
+      <UserTimeTrackingChart />
+
       <CustomPeriodDialog
         open={customPeriodOpen}
         onOpenChange={setCustomPeriodOpen}
