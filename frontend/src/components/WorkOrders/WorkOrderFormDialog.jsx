@@ -435,13 +435,13 @@ const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuc
 
           <div className="space-y-2">
             <Label htmlFor="assigne_a_id">Assigné à</Label>
-            <Select value={formData.assigne_a_id} onValueChange={(value) => setFormData({ ...formData, assigne_a_id: value === '_none_' ? '' : value })}>
+            <Select value={formData.assigne_a_id || '_none_'} onValueChange={(value) => setFormData({ ...formData, assigne_a_id: value === '_none_' ? '' : value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un technicien" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_none_">
-                  <span className="text-gray-400 italic">Aucun</span>
+                <SelectItem value="_none_" className="text-gray-400 italic">
+                  Aucun
                 </SelectItem>
                 {users.map(user => (
                   <SelectItem key={user.id} value={user.id}>
