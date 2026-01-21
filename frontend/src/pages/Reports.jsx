@@ -7,6 +7,7 @@ import { reportsAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import CustomPeriodDialog from '../components/Common/CustomPeriodDialog';
 import TimeByCategoryChart from '../components/Reports/TimeByCategoryChart';
+import EquipmentPerformanceTree from '../components/Reports/EquipmentPerformanceTree';
 
 const Reports = () => {
   const { toast } = useToast();
