@@ -39,7 +39,7 @@ const StatusChangeDialog = ({ open, onOpenChange, currentStatus, onStatusChange,
         <DialogHeader>
           <DialogTitle>Changer le statut de l'amélioration</DialogTitle>
           <DialogDescription>
-            Souhaitez-vous mettre à jour le statut de cet amélioration avant de fermer ?
+            Souhaitez-vous mettre à jour le statut de cette amélioration avant de fermer ?
           </DialogDescription>
         </DialogHeader>
         
@@ -62,7 +62,7 @@ const StatusChangeDialog = ({ open, onOpenChange, currentStatus, onStatusChange,
           
           {selectedStatus === currentStatus && (
             <p className="text-sm text-gray-500">
-              Le statut actuel est déjà "{statuses.find(s => s.value === currentStatus)?.label}".
+              Le statut actuel est déjà &quot;{statuses.find(s => s.value === currentStatus)?.label}&quot;.
             </p>
           )}
         </div>
