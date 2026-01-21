@@ -109,41 +109,104 @@ const ImprovementDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
 
 
   const handleAddTime = async () => {
-    const hours = parseInt(timeHours) || 0;
-    const minutes = parseInt(timeMinutes) || 0;
+    const parsed = parseTimeInput(timeInput);
 
-    if (hours === 0 && minutes === 0) {
+    if (!parsed || (parsed.hours === 0 && parsed.minutes === 0)) {
       toast({
         title: 'Erreur',
-        description: 'Veuillez saisir un temps valide',
+        description: 'Veuillez saisir un temps valide (ex: 1:30, 1h30, 1.5)',
         variant: 'destructive'
       });
-      return;
+      return false;
     }
 
     try {
       setAddingTime(true);
-      await improvementsAPI.addTimeSpent(workOrder.id, hours, minutes);
+      await improvementsAPI.addTimeSpent(workOrder.id, parsed.hours, parsed.minutes);
       
       toast({
         title: 'Temps ajouté',
-        description: `${hours}h${minutes.toString().padStart(2, '0')}min ajouté avec succès`
+        description: `${parsed.hours}h${parsed.minutes.toString().padStart(2, '0')}min ajouté avec succès`
       });
 
-      setTimeHours('');
-      setTimeMinutes('');
-      
-      // Rafraîchir les données
-      if (onSuccess) onSuccess();
+      setTimeInput('');
+      return true;
     } catch (error) {
       toast({
         title: 'Erreur',
         description: 'Impossible d\'ajouter le temps',
         variant: 'destructive'
       });
+      return false;
     } finally {
       setAddingTime(false);
     }
+  };
+
+  // Fonction pour valider commentaire + temps + ouvrir dialogue statut
+  const handleValidate = async () => {
+    // Vérifier que le commentaire est rempli
+    if (!newComment.trim()) {
+      toast({
+        title: 'Commentaire requis',
+        description: 'Veuillez saisir un commentaire avant de valider',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Vérifier que le temps est rempli et valide
+    const parsed = parseTimeInput(timeInput);
+    if (!parsed || (parsed.hours === 0 && parsed.minutes === 0)) {
+      toast({
+        title: 'Temps requis',
+        description: 'Veuillez saisir un temps valide (ex: 1:30, 1h30, 1.5)',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setValidating(true);
+
+      // 1. Enregistrer le commentaire
+      await improvementsAPI.addComment(workOrder.id, newComment);
+
+      // 2. Enregistrer le temps passé
+      await improvementsAPI.addTimeSpent(workOrder.id, parsed.hours, parsed.minutes);
+
+      // 3. Rafraîchir les données
+      if (onSuccess) onSuccess();
+
+      // 4. Réinitialiser les champs
+      setNewComment('');
+      setTimeInput('');
+
+      toast({
+        title: 'Validation réussie',
+        description: `Commentaire et temps (${parsed.hours}h${parsed.minutes.toString().padStart(2, '0')}) enregistrés`
+      });
+
+      // 5. Ouvrir le dialogue de changement de statut
+      setShowStatusDialog(true);
+
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la validation',
+        variant: 'destructive'
+      });
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  // Fonction pour annuler et fermer la fenêtre
+  const handleCancel = () => {
+    setNewComment('');
+    setTimeInput('');
+    onOpenChange(false);
   };
 
 
