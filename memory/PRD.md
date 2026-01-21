@@ -676,6 +676,63 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 ---
 
 ## Dernière mise à jour
-**Date**: 20 Janvier 2026
+**Date**: 21 Janvier 2026
 **Agent**: E1
-**Tâche complétée**: Gestion des doublons pour l'import des "Ordres Type" (Excel/CSV)
+**Tâche complétée**: Refonte UX du dialogue "Voir Amélioration" (alignement avec "Voir Ordre de Travail")
+
+---
+
+## Session du 21 Janvier 2026
+
+### ✅ Feature : Refonte UX du dialogue "Voir Amélioration"
+**Demande utilisateur** : Appliquer les mêmes modifications UX du dialogue "Voir Ordre de Travail" au dialogue "Voir Amélioration" pour assurer la cohérence de l'interface.
+
+**Modifications apportées** :
+
+1. **Champ "Temps Passé" simplifié** (`ImprovementDialog.jsx`) :
+   - Un seul champ de saisie au lieu de deux (heures/minutes)
+   - Parsing intelligent acceptant plusieurs formats : `01:30`, `1:30`, `1h30`, `1.5` (décimal)
+   - Placeholder explicite : "Ex: 1:30, 1h30, 1.5"
+   
+2. **Boutons "Valider" et "Annuler"** :
+   - Déplacés en bas de la section temps
+   - "Valider" (vert) : Enregistre commentaire + temps + ouvre dialogue statut
+   - "Annuler" : Ferme la fenêtre sans sauvegarder
+   
+3. **Validation obligatoire** :
+   - Commentaire obligatoire (*)
+   - Temps passé obligatoire (*)
+   
+4. **Dialogue "Changer le statut"** (`StatusChangeDialog.jsx` pour Improvements) :
+   - Suppression du champ "Temps passé sur cette amélioration" (car saisi avant dans ImprovementDialog)
+
+5. **Correction Backend** :
+   - Modèles `Improvement`, `ImprovementCreate`, `ImprovementUpdate` : changé `tempsEstime` et `tempsReel` de `int` à `float` pour cohérence avec WorkOrder
+
+**Fichiers modifiés** :
+- `/app/frontend/src/components/Improvements/ImprovementDialog.jsx`
+- `/app/frontend/src/components/Improvements/StatusChangeDialog.jsx`
+- `/app/backend/models.py`
+
+**Tests effectués** :
+- ✅ Nouveau champ temps flexible fonctionne (formats 1h30, 1:30, 1.5)
+- ✅ Boutons Valider/Annuler présents et fonctionnels
+- ✅ Validation : commentaire et temps obligatoires
+- ✅ Workflow complet : Valider → Toast succès → Dialogue statut s'ouvre
+- ✅ Dialogue statut sans champ de temps redondant
+- ✅ Temps réel mis à jour dans la liste
+
+---
+
+## Tâches à venir
+
+### P1 - Migration WebSocket
+- Page "Rapports" - Mise à jour temps réel
+- Page "Historique Achat" - Mise à jour temps réel
+- Bug "Rapport P.accident" temps réel (récurrent - Issue #2)
+
+### P2 - Backlog
+- Fonctions spécifiques "Responsables de service"
+- Dashboard Plan de Surveillance
+- Analytique Checklists
+- Visite guidée
