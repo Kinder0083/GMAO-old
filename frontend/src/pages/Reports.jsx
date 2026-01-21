@@ -376,57 +376,7 @@ const Reports = () => {
           <CardTitle>Performance des équipements</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Équipement</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Catégorie</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Statut</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Dernière maintenance</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Coût d'achat</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Disponibilité</th>
-                </tr>
-              </thead>
-              <tbody>
-                {equipments.map((equipment) => {
-                  const availability = equipment.statut === 'OPERATIONNEL' ? 95 : equipment.statut === 'EN_MAINTENANCE' ? 70 : 0;
-                  return (
-                    <tr key={equipment.id} className="border-b hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 text-sm text-gray-900 font-medium">{equipment.nom}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{equipment.categorie}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          equipment.statut === 'OPERATIONNEL' ? 'bg-green-100 text-green-700' :
-                          equipment.statut === 'EN_MAINTENANCE' ? 'bg-orange-100 text-orange-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {equipment.statut === 'OPERATIONNEL' ? 'Opérationnel' :
-                           equipment.statut === 'EN_MAINTENANCE' ? 'En maintenance' : 'Hors service'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{equipment.derniereMaintenance || '-'}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{(equipment.coutAchat || 0).toLocaleString('fr-FR')} €</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                            <div
-                              className={`h-2 rounded-full ${
-                                availability >= 90 ? 'bg-green-500' :
-                                availability >= 70 ? 'bg-orange-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${availability}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-medium text-gray-900">{availability}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <EquipmentPerformanceTree equipments={equipments} />
         </CardContent>
       </Card>
 
