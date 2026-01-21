@@ -5424,7 +5424,7 @@ async def import_data(
                     cleaned_item = {k: v for k, v in item.items() if pd.notna(v)}
                     
                     # Convertir et initialiser les champs qui doivent être des listes
-                    list_fields = ["comments", "attachments", "historique", "permissions"]
+                    list_fields = ["comments", "attachments", "historique", "permissions", "parts_used"]
                     for list_field in list_fields:
                         if list_field in cleaned_item:
                             if isinstance(cleaned_item[list_field], str):
