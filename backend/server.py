@@ -5524,12 +5524,17 @@ async def import_data(
                                 cleaned_item["historique"] = []
                             if "permissions" not in cleaned_item:
                                 cleaned_item["permissions"] = []
+                            if "parts_used" not in cleaned_item:
+                                cleaned_item["parts_used"] = []
                             if "tempsReel" not in cleaned_item:
                                 cleaned_item["tempsReel"] = 0
                             if "tempsEstime" not in cleaned_item:
                                 cleaned_item["tempsEstime"] = 0
                             if "createdBy" not in cleaned_item:
                                 cleaned_item["createdBy"] = current_user.get("email", "import")
+                            # Convertir numero en string si c'est un int
+                            if "numero" in cleaned_item and isinstance(cleaned_item["numero"], int):
+                                cleaned_item["numero"] = str(cleaned_item["numero"])
                         
                         elif current_module in ["intervention-requests", "improvement-requests"]:
                             # Champs obligatoires pour les demandes
