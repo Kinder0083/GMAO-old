@@ -1144,7 +1144,19 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
                 )
         
         # Appliquer les modifications
-        update_data = {k: v for k, v in wo_update.model_dump().items() if v is not None}
+        # Note: On utilise exclude_unset=True pour ne modifier que les champs explicitement envoyés
+        # Mais on doit gérer le cas où assigne_a_id est explicitement mis à null (pour retirer l'assignation)
+        update_data = {}
+        sent_data = wo_update.model_dump(exclude_unset=True)
+        for k, v in wo_update.model_dump().items():
+            # Inclure le champ si:
+            # 1. Il a une valeur non-None, OU
+            # 2. Il a été explicitement envoyé (même si None) pour les champs qui peuvent être "vidés"
+            if v is not None:
+                update_data[k] = v
+            elif k in sent_data and k in ['assigne_a_id', 'equipement_id', 'emplacement_id', 'dateLimite']:
+                # Ces champs peuvent être explicitement mis à null pour les "vider"
+                update_data[k] = None
         
         if wo_update.statut == WorkOrderStatus.TERMINE and "dateTermine" not in update_data:
             update_data["dateTermine"] = datetime.utcnow()
