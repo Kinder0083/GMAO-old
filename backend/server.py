@@ -7918,7 +7918,14 @@ async def update_improvement(
     if not imp:
         raise HTTPException(status_code=404, detail="Amélioration non trouvée")
     
-    update_data = {k: v for k, v in imp_update.model_dump().items() if v is not None}
+    # Gérer les champs qui peuvent être explicitement vidés (mis à null)
+    update_data = {}
+    sent_data = imp_update.model_dump(exclude_unset=True)
+    for k, v in imp_update.model_dump().items():
+        if v is not None:
+            update_data[k] = v
+        elif k in sent_data and k in ['assigne_a_id', 'equipement_id', 'emplacement_id', 'dateLimite']:
+            update_data[k] = None
     
     if update_data.get("statut") == "TERMINE" and "dateTermine" not in update_data:
         update_data["dateTermine"] = datetime.utcnow()
