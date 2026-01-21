@@ -1269,8 +1269,8 @@ class ImprovementUpdate(BaseModel):
     emplacement_id: Optional[str] = None
     assigne_a_id: Optional[str] = None
     dateLimite: Optional[datetime] = None
-    tempsEstime: Optional[int] = None
-    tempsReel: Optional[int] = None
+    tempsEstime: Optional[float] = None
+    tempsReel: Optional[float] = None
 
 
 # ==================== SETTINGS MODELS ====================
