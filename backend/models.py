@@ -99,7 +99,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             mqttLogs=ModulePermission(view=True, edit=True, delete=True),
             purchaseRequests=ModulePermission(view=True, edit=True, delete=True),
             whiteboard=ModulePermission(view=True, edit=True, delete=True),
-            achat=ModulePermission(view=True, edit=True, delete=True)  # Permission Achat complète pour Admin
+            achat=ModulePermission(view=True, edit=True, delete=True),  # Permission Achat complète pour Admin
+            timeTracking=ModulePermission(view=True, edit=True, delete=True)  # Admin peut voir tous les utilisateurs
         )
     
     # Rôle spécial AFFICHAGE : Uniquement accès au tableau d'affichage
