@@ -1241,8 +1241,8 @@ class Improvement(BaseModel):
     assigne_a_id: Optional[str] = None
     assigneA: Optional[Dict] = None
     dateLimite: Optional[datetime] = None
-    tempsEstime: Optional[int] = None
-    tempsReel: Optional[int] = None
+    tempsEstime: Optional[float] = None
+    tempsReel: Optional[float] = None
     dateCreation: datetime
     dateTermine: Optional[datetime] = None
     createdBy: str
