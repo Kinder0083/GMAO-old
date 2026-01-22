@@ -18,6 +18,50 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ## Fonctionnalités Implémentées
 
+### Session du 22 Janvier 2026
+
+#### ✅ Feature: Refonte complète du Dashboard IoT - Graphiques et Export (22 Jan 2026)
+**Implémentation complète** de la refonte des graphiques de capteurs et fonctionnalité d'export global :
+
+**Nouveau composant SensorChart** (`/app/frontend/src/components/Sensors/SensorChart.jsx`) :
+- Courbe spline lisse avec `type="monotone"` (Recharts)
+- Axe Y adaptatif avec marge de 15% autour des valeurs
+- Axe X dynamique supportant jusqu'à 8 heures de données
+- Grille avec lignes de référence verticales
+- Seuils min/max affichés en pointillés rouges (`strokeDasharray="5 5"`)
+- Valeur actuelle affichée en ligne grise horizontale
+- Tooltip personnalisé avec valeur et unité
+
+**Fonctionnalité d'export global** :
+- Bouton "Exporter" en haut à droite du Dashboard IoT
+- Dialogue de sélection avec :
+  - Période : 24 heures, 7 jours, 30 jours, 3 mois, 6 mois (max)
+  - Format : CSV ou XLSX (Excel)
+- Téléchargement automatique du fichier
+
+**Nouvel endpoint backend** (`/api/sensors/export/readings`) :
+- Paramètres : `period_days` (1-180), `format` (csv/xlsx)
+- Export de toutes les lectures de tous les capteurs actifs
+- Colonnes : Date/Heure, Capteur, Type, Valeur, Unité, Emplacement
+- Support Excel avec en-têtes colorés (violet)
+
+**Refonte page IoTDashboard** (`/app/frontend/src/pages/IoTDashboard.jsx`) :
+- Sélecteur de période : 1h, 2h, 4h, 8h, 24h, 7 jours
+- 3 onglets : Vue d'ensemble, Groupes par Type, Groupes par Localisation
+- 4 KPIs : Capteurs Actifs, Alertes Actives, Température Moyenne, Puissance Totale
+- Jauges circulaires pour les valeurs actuelles
+- Graphiques utilisant le nouveau composant SensorChart
+
+**Fichiers créés/modifiés :**
+- `/app/frontend/src/components/Sensors/SensorChart.jsx` (NEW)
+- `/app/frontend/src/pages/IoTDashboard.jsx` (REFONTE COMPLÈTE)
+- `/app/backend/sensor_routes.py` (nouvel endpoint export/readings)
+- `/app/frontend/src/services/api.js` (méthode exportReadings)
+
+**Tests** : 11/11 tests backend ✅ + 100% frontend ✅ (rapport `/app/test_reports/iteration_11.json`)
+
+---
+
 ### Session du 18 Janvier 2026 (Session actuelle)
 
 #### ✅ Feature: Gestion des rôles
