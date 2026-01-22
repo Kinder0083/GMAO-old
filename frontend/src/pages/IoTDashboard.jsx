@@ -173,7 +173,9 @@ const IoTDashboard = () => {
   };
 
   const GaugeWidget = ({ sensor }) => {
-    const value = sensor.current_value || 0;
+    if (!sensor) return null;
+    const rawValue = sensor.current_value;
+    const value = (rawValue !== null && rawValue !== undefined && !isNaN(rawValue)) ? Number(rawValue) : 0;
     const max = sensor.max_threshold || 100;
     const percentage = Math.min((value / max) * 100, 100);
     const color = getGaugeColor(sensor);
@@ -204,7 +206,7 @@ const IoTDashboard = () => {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-3xl font-bold" style={{ color }}>
-              {value.toFixed(1)}
+              {typeof value === 'number' ? value.toFixed(1) : '--'}
             </span>
             <span className="text-sm text-gray-600">{sensor.unite}</span>
           </div>
