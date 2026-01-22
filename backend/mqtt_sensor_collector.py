@@ -267,13 +267,17 @@ class MQTTSensorCollector:
                     success=True
                 )
             
+            # Récupérer le fuseau horaire configuré pour la mise à jour
+            offset = await get_configured_timezone_offset(self.db)
+            local_now = get_local_datetime(offset)
+            
             # Mettre à jour la valeur actuelle du capteur
             await self.db.sensors.update_one(
                 {"id": sensor_id},
                 {
                     "$set": {
                         "current_value": value_float,
-                        "last_update": datetime.now(timezone.utc).isoformat()
+                        "last_update": local_now.isoformat()
                     }
                 }
             )
@@ -285,7 +289,7 @@ class MQTTSensorCollector:
                     "action": "sensor_value_update",
                     "sensor_id": sensor_id,
                     "value": value_float,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": local_now.isoformat()
                 })
             except Exception as ws_error:
                 logger.debug(f"WebSocket notification error (non-critical): {ws_error}")
