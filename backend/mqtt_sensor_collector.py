@@ -215,49 +215,25 @@ class MQTTSensorCollector:
             logger.error(f"Erreur extraction valeur: {e}")
             return None
             
-    async def create_reading_if_needed(self, sensor: dict, value: float):
-        """Créer un relevé selon l'intervalle configuré"""
+    async def create_reading(self, sensor: dict, value: float):
+        """Créer un relevé pour chaque message reçu"""
         try:
-            # Récupérer le dernier relevé
-            last_reading = await self.db.sensor_readings.find_one(
-                {"sensor_id": sensor["id"]},
-                {"_id": 0},
-                sort=[("timestamp", -1)]
-            )
-            
-            # Vérifier si on doit créer un nouveau relevé
             now = datetime.now(timezone.utc)
-            interval_minutes = sensor.get("refresh_interval", 1)
             
-            should_create = False
+            # Créer le relevé
+            reading = {
+                "id": f"sensor_{sensor['id']}_{int(now.timestamp())}",
+                "sensor_id": sensor["id"],
+                "sensor_nom": sensor.get("nom"),
+                "timestamp": now,
+                "value": value,
+                "unit": sensor.get("unite", ""),
+                "date_creation": now
+            }
             
-            if not last_reading:
-                should_create = True
-            else:
-                last_date = last_reading["timestamp"]
-                if isinstance(last_date, str):
-                    last_date = datetime.fromisoformat(last_date.replace("Z", "+00:00"))
-                    
-                minutes_since_last = (now - last_date).total_seconds() / 60
-                
-                if minutes_since_last >= interval_minutes:
-                    should_create = True
-                    
-            if should_create:
-                # Créer le relevé
-                reading = {
-                    "id": f"sensor_{sensor['id']}_{int(now.timestamp())}",
-                    "sensor_id": sensor["id"],
-                    "sensor_nom": sensor.get("nom"),
-                    "timestamp": now,
-                    "value": value,
-                    "unit": sensor.get("unite", ""),
-                    "date_creation": now
-                }
-                
-                await self.db.sensor_readings.insert_one(reading)
-                
-                logger.info(f"✅ Relevé capteur créé pour '{sensor['nom']}': {value} {sensor.get('unite', '')}")
+            await self.db.sensor_readings.insert_one(reading)
+            
+            logger.debug(f"✅ Relevé capteur créé pour '{sensor['nom']}': {value} {sensor.get('unite', '')}")
                 
         except Exception as e:
             logger.error(f"Erreur création relevé capteur: {e}")
