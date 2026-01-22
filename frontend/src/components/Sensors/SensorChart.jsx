@@ -5,7 +5,6 @@
  * - Courbe spline lisse (monotone)
  * - Axe Y adaptatif avec marge de 15%
  * - Axe X dynamique (jusqu'à 8 heures)
- * - Lignes de référence verticales toutes les 30 minutes
  * - Seuils min/max en pointillés rouges
  * - Valeur actuelle en ligne grise continue
  */
@@ -27,62 +26,69 @@ const SensorChart = ({
   stats,
   height = 220 
 }) => {
-  // Formater les données pour le graphique
+  // Formater et valider les données pour le graphique
   const formattedData = useMemo(() => {
-    if (!chartData || chartData.length === 0) return [];
-    
-    // S'assurer que les valeurs sont des nombres valides
-    return chartData.map(d => ({
-      ...d,
-      value: d.value !== null && d.value !== undefined ? Number(d.value) : null
-    })).filter(d => d.value !== null && !isNaN(d.value));
-  }, [chartData]);
-
-  // Calculer les domaines des axes Y
-  const yDomain = useMemo(() => {
-    // Utiliser les stats si disponibles
-    if (stats?.min != null && stats?.max != null) {
-      const minVal = Number(stats.min);
-      const maxVal = Number(stats.max);
-      const range = maxVal - minVal || 1;
-      const margin = range * 0.15;
-      
-      return [
-        Math.floor((minVal - margin) * 10) / 10,
-        Math.ceil((maxVal + margin) * 10) / 10
-      ];
+    if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
+      return [];
     }
     
-    // Sinon calculer depuis les données
-    if (!formattedData || formattedData.length === 0) {
+    // S'assurer que chaque point a une valeur numérique valide
+    return chartData
+      .filter(d => d && d.value !== null && d.value !== undefined)
+      .map(d => ({
+        time: d.time || '',
+        value: typeof d.value === 'number' ? d.value : parseFloat(d.value),
+        timestamp: d.timestamp
+      }))
+      .filter(d => !isNaN(d.value));
+  }, [chartData]);
+
+  // Calculer le domaine Y basé sur les données OU les stats
+  const yDomain = useMemo(() => {
+    let minVal = null;
+    let maxVal = null;
+    
+    // D'abord essayer d'utiliser les stats si disponibles
+    if (stats?.min != null && stats?.max != null) {
+      minVal = Number(stats.min);
+      maxVal = Number(stats.max);
+    }
+    
+    // Sinon utiliser les données du graphique
+    if ((minVal === null || maxVal === null) && formattedData.length > 0) {
+      const values = formattedData.map(d => d.value);
+      minVal = Math.min(...values);
+      maxVal = Math.max(...values);
+    }
+    
+    // Si toujours pas de valeurs, utiliser auto
+    if (minVal === null || maxVal === null || isNaN(minVal) || isNaN(maxVal)) {
       return ['auto', 'auto'];
     }
     
-    const values = formattedData.map(d => d.value).filter(v => v !== null && !isNaN(v));
-    if (values.length === 0) return ['auto', 'auto'];
-    
-    let minVal = Math.min(...values);
-    let maxVal = Math.max(...values);
-    
     // Inclure les seuils dans le calcul si définis
-    if (sensor?.min_threshold != null) {
+    if (sensor?.min_threshold != null && !isNaN(Number(sensor.min_threshold))) {
       minVal = Math.min(minVal, Number(sensor.min_threshold));
     }
-    if (sensor?.max_threshold != null) {
+    if (sensor?.max_threshold != null && !isNaN(Number(sensor.max_threshold))) {
       maxVal = Math.max(maxVal, Number(sensor.max_threshold));
     }
     
     // Ajouter 15% de marge
-    const range = maxVal - minVal || 1;
-    const margin = range * 0.15;
+    const range = maxVal - minVal;
+    if (range === 0) {
+      // Si min = max, créer une marge autour de la valeur
+      return [minVal - 1, maxVal + 1];
+    }
     
+    const margin = range * 0.15;
     return [
-      Math.floor((minVal - margin) * 10) / 10,
-      Math.ceil((maxVal + margin) * 10) / 10
+      Math.floor((minVal - margin) * 100) / 100,
+      Math.ceil((maxVal + margin) * 100) / 100
     ];
   }, [formattedData, stats, sensor?.min_threshold, sensor?.max_threshold]);
 
-  // Valeur actuelle pour la ligne de référence horizontale
+  // Valeur actuelle
   const currentValue = sensor?.current_value;
   const hasCurrentValue = currentValue !== null && currentValue !== undefined && !isNaN(Number(currentValue));
 
@@ -92,9 +98,9 @@ const SensorChart = ({
   // Tooltip personnalisé
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      const value = payload[0].value;
+      const value = payload[0]?.value;
       return (
-        <div className="bg-white/95 px-3 py-2 rounded-lg shadow-lg border border-gray-200">
+        <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200">
           <p className="text-xs text-gray-500 mb-1">{label}</p>
           <p className="text-sm font-semibold text-gray-800">
             {value != null ? `${Number(value).toFixed(2)} ${sensor?.unite || ''}` : '--'}
@@ -105,16 +111,7 @@ const SensorChart = ({
     return null;
   };
 
-  // Debug: Afficher les données dans la console
-  console.log('SensorChart data:', {
-    sensor: sensor?.nom,
-    dataLength: formattedData.length,
-    yDomain,
-    currentValue,
-    stats,
-    sampleData: formattedData.slice(0, 3)
-  });
-
+  // Pas de données à afficher
   if (!formattedData || formattedData.length === 0) {
     return (
       <div 
@@ -131,7 +128,7 @@ const SensorChart = ({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart 
           data={formattedData} 
-          margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
         >
           {/* Grille de fond */}
           <CartesianGrid 
@@ -151,23 +148,24 @@ const SensorChart = ({
             minTickGap={40}
           />
           
-          {/* Axe Y - Valeur avec largeur suffisante pour les grandes valeurs */}
+          {/* Axe Y - Valeur */}
           <YAxis 
             domain={yDomain}
             tick={{ fontSize: 10, fill: '#6b7280' }}
             tickLine={{ stroke: '#d1d5db' }}
             axisLine={{ stroke: '#d1d5db' }}
-            width={60}
+            width={65}
             tickFormatter={(val) => {
-              if (val >= 1000) return val.toFixed(0);
-              if (val >= 100) return val.toFixed(1);
+              if (typeof val !== 'number' || isNaN(val)) return '';
+              if (Math.abs(val) >= 1000) return val.toFixed(0);
+              if (Math.abs(val) >= 100) return val.toFixed(1);
               return val.toFixed(2);
             }}
             allowDataOverflow={false}
           />
           
           {/* Seuil minimum - Pointillés rouges */}
-          {sensor?.min_threshold != null && (
+          {sensor?.min_threshold != null && !isNaN(Number(sensor.min_threshold)) && (
             <ReferenceLine 
               y={Number(sensor.min_threshold)} 
               stroke="#ef4444" 
@@ -175,7 +173,7 @@ const SensorChart = ({
               strokeWidth={1.5}
               label={{ 
                 value: `Min: ${sensor.min_threshold}`, 
-                position: 'left',
+                position: 'insideTopLeft',
                 fill: '#ef4444',
                 fontSize: 10,
                 fontWeight: 500
@@ -184,7 +182,7 @@ const SensorChart = ({
           )}
           
           {/* Seuil maximum - Pointillés rouges */}
-          {sensor?.max_threshold != null && (
+          {sensor?.max_threshold != null && !isNaN(Number(sensor.max_threshold)) && (
             <ReferenceLine 
               y={Number(sensor.max_threshold)} 
               stroke="#ef4444" 
@@ -192,7 +190,7 @@ const SensorChart = ({
               strokeWidth={1.5}
               label={{ 
                 value: `Max: ${sensor.max_threshold}`, 
-                position: 'left',
+                position: 'insideBottomLeft',
                 fill: '#ef4444',
                 fontSize: 10,
                 fontWeight: 500
@@ -207,7 +205,7 @@ const SensorChart = ({
               stroke="#9ca3af" 
               strokeWidth={1}
               label={{ 
-                value: `Actuel: ${Number(currentValue).toFixed(1)}`, 
+                value: `${Number(currentValue).toFixed(1)}`, 
                 position: 'right',
                 fill: '#6b7280',
                 fontSize: 9
@@ -217,14 +215,14 @@ const SensorChart = ({
           
           <Tooltip content={<CustomTooltip />} />
           
-          {/* Courbe spline lisse - IMPORTANT: isAnimationActive pour éviter les problèmes de rendu */}
+          {/* Courbe spline lisse */}
           <Line 
             type="monotone" 
             dataKey="value" 
             stroke={lineColor}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: lineColor, stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: lineColor, stroke: '#fff', strokeWidth: 2 }}
             connectNulls={true}
             isAnimationActive={false}
           />
