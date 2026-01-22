@@ -358,7 +358,7 @@ const IoTDashboard = () => {
                       <span className="text-lg font-semibold text-gray-700">{sensor.nom}</span>
                       <span className="text-3xl font-bold text-purple-600">
                         {sensor.current_value !== null && sensor.current_value !== undefined 
-                          ? `${sensor.current_value.toFixed(1)} ${sensor.unite}`
+                          ? `${Number(sensor.current_value).toFixed(1)} ${sensor.unite}`
                           : '--'}
                       </span>
                     </div>
