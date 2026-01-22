@@ -113,7 +113,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
       ...prev,
       type: template.type,
       unite: template.unit,
-      refresh_interval: template.mqtt_refresh_interval,
+      format_json: template.format_json || false,
       min_threshold: template.default_min_threshold?.toString() || '',
       max_threshold: template.default_max_threshold?.toString() || '',
       alert_enabled: !!template.default_min_threshold || !!template.default_max_threshold,
