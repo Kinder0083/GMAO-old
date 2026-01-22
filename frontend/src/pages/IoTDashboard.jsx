@@ -457,13 +457,13 @@ const IoTDashboard = () => {
                   {/* Footer avec min/max actuels */}
                   <div className="flex justify-between items-center mt-2 px-2 text-xs text-gray-500">
                     <span>
-                      {stats?.min !== undefined ? `Min: ${stats.min.toFixed(1)}` : ''}
+                      {stats?.min != null ? `Min: ${Number(stats.min).toFixed(1)}` : ''}
                     </span>
                     <span>
                       {sensor.last_update && new Date(sensor.last_update).toLocaleTimeString('fr-FR')}
                     </span>
                     <span>
-                      {stats?.max !== undefined ? `Max: ${stats.max.toFixed(1)}` : ''}
+                      {stats?.max != null ? `Max: ${Number(stats.max).toFixed(1)}` : ''}
                     </span>
                   </div>
                 </Card>
