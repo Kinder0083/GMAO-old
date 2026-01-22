@@ -488,15 +488,15 @@ const IoTDashboard = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Moyenne:</span>
-                      <span className="font-semibold">{group.avg_value?.toFixed(1) || 'N/A'}</span>
+                      <span className="font-semibold">{group.avg_value != null ? Number(group.avg_value).toFixed(1) : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Min:</span>
-                      <span className="font-semibold text-blue-600">{group.min_value?.toFixed(1) || 'N/A'}</span>
+                      <span className="font-semibold text-blue-600">{group.min_value != null ? Number(group.min_value).toFixed(1) : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Max:</span>
-                      <span className="font-semibold text-red-600">{group.max_value?.toFixed(1) || 'N/A'}</span>
+                      <span className="font-semibold text-red-600">{group.max_value != null ? Number(group.max_value).toFixed(1) : 'N/A'}</span>
                     </div>
                   </div>
                 </Card>
