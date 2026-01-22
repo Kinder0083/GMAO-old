@@ -4,11 +4,31 @@ Service de collecte automatique des valeurs MQTT pour les capteurs
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from mqtt_manager import mqtt_manager
 
 logger = logging.getLogger(__name__)
+
+
+async def get_configured_timezone_offset(db):
+    """Récupérer l'offset du fuseau horaire configuré depuis la base de données"""
+    try:
+        settings = await db.system_settings.find_one({"_id": "default"})
+        if settings and "timezone_offset" in settings:
+            return settings.get("timezone_offset", 0)
+        return 0  # UTC par défaut
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du fuseau horaire: {e}")
+        return 0
+
+
+def get_local_datetime(offset_hours: int = 0) -> datetime:
+    """Obtenir l'heure actuelle avec le décalage horaire configuré"""
+    utc_now = datetime.now(timezone.utc)
+    local_tz = timezone(timedelta(hours=offset_hours))
+    return utc_now.astimezone(local_tz)
+
 
 class MQTTSensorCollector:
     """Collecteur de données MQTT pour les capteurs"""
