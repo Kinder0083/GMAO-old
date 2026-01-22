@@ -721,6 +721,38 @@ class UpdateService:
                     logger.warning("⚠️ Impossible de redémarrer automatiquement les services")
                     logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all")
                     # Ne pas bloquer - la mise à jour est quand même installée
+                
+                # 🔥 IMPORTANT: Redémarrer nginx pour appliquer les changements frontend
+                logger.info("🔄 Redémarrage de nginx...")
+                nginx_commands = [
+                    ["sudo", "systemctl", "restart", "nginx"],
+                    ["sudo", "service", "nginx", "restart"],
+                    ["systemctl", "restart", "nginx"],
+                    ["service", "nginx", "restart"]
+                ]
+                
+                nginx_restarted = False
+                for nginx_cmd in nginx_commands:
+                    try:
+                        nginx_process = await asyncio.create_subprocess_exec(
+                            *nginx_cmd,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        nginx_stdout, nginx_stderr = await asyncio.wait_for(
+                            nginx_process.communicate(), 
+                            timeout=15
+                        )
+                        if nginx_process.returncode == 0:
+                            logger.info(f"✅ Nginx redémarré avec: {' '.join(nginx_cmd)}")
+                            nginx_restarted = True
+                            break
+                    except:
+                        continue
+                
+                if not nginx_restarted:
+                    logger.warning("⚠️ Impossible de redémarrer nginx automatiquement")
+                    logger.info("ℹ️ Veuillez redémarrer manuellement : sudo systemctl restart nginx")
                     
             except asyncio.TimeoutError:
                 logger.warning("⚠️ Timeout lors du redémarrage des services")
