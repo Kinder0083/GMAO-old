@@ -2469,6 +2469,7 @@ class SensorUpdate(BaseModel):
     unite: Optional[str] = None
     mqtt_topic: Optional[str] = None
     format_json: Optional[bool] = None
+    formula: Optional[str] = None  # Formule à appliquer à la valeur (ex: x/100, (x-32)*5/9)
     min_threshold: Optional[float] = None
     max_threshold: Optional[float] = None
     alert_enabled: Optional[bool] = None
