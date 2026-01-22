@@ -90,6 +90,22 @@ const SpecialSettings = () => {
   const [llmVersions, setLlmVersions] = useState(null);
   const [checkingLlmVersions, setCheckingLlmVersions] = useState(false);
   
+  // États Configuration Fuseau Horaire
+  const [timezoneConfig, setTimezoneConfig] = useState({
+    timezone_offset: 1,
+    timezone_name: 'Europe/Paris',
+    ntp_server: 'pool.ntp.org'
+  });
+  const [loadingTimezone, setLoadingTimezone] = useState(true);
+  const [savingTimezone, setSavingTimezone] = useState(false);
+  const [testingNtp, setTestingNtp] = useState(false);
+  const [ntpTestResult, setNtpTestResult] = useState(null);
+  const [availableTimezones, setAvailableTimezones] = useState([]);
+  const [availableNtpServers, setAvailableNtpServers] = useState([]);
+  const [customNtpServer, setCustomNtpServer] = useState('');
+  const [timezoneSearchQuery, setTimezoneSearchQuery] = useState('');
+  const [currentServerTime, setCurrentServerTime] = useState(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -100,6 +116,7 @@ const SpecialSettings = () => {
     loadMqttConfig();
     loadLlmKeys();
     loadLlmVersions();
+    loadTimezoneConfig();
   }, []);
 
   const loadUsers = async () => {
