@@ -2437,8 +2437,7 @@ class Sensor(BaseModel):
     emplacement: Optional[Dict] = None
     unite: str  # °C, %, bar, lux, ppm, etc.
     mqtt_topic: str  # Topic MQTT obligatoire
-    mqtt_json_path: Optional[str] = None  # Chemin JSON pour extraire la valeur
-    refresh_interval: int = 1  # Intervalle de rafraîchissement en minutes
+    format_json: bool = False  # Mettre en forme le contenu JSON
     current_value: Optional[float] = None  # Valeur actuelle
     last_update: Optional[str] = None  # Dernière mise à jour
     min_threshold: Optional[float] = None  # Seuil minimum pour alerte
@@ -2455,8 +2454,7 @@ class SensorCreate(BaseModel):
     emplacement_id: Optional[str] = None
     unite: str
     mqtt_topic: str
-    mqtt_json_path: Optional[str] = None
-    refresh_interval: int = 1
+    format_json: bool = False
     min_threshold: Optional[float] = None
     max_threshold: Optional[float] = None
     alert_enabled: bool = False
@@ -2468,8 +2466,7 @@ class SensorUpdate(BaseModel):
     emplacement_id: Optional[str] = None
     unite: Optional[str] = None
     mqtt_topic: Optional[str] = None
-    mqtt_json_path: Optional[str] = None
-    refresh_interval: Optional[int] = None
+    format_json: Optional[bool] = None
     min_threshold: Optional[float] = None
     max_threshold: Optional[float] = None
     alert_enabled: Optional[bool] = None
