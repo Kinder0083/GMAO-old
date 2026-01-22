@@ -8,27 +8,30 @@ import {
   Zap,
   Droplet,
   Gauge as GaugeIcon,
-  RefreshCw
+  RefreshCw,
+  Download,
+  FileSpreadsheet,
+  Calendar
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog';
+import { Label } from '../components/ui/label';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   LineChart,
   Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine
 } from 'recharts';
 import api from '../services/api';
 import { useSensors } from '../hooks/useSensors';
+import { useToast } from '../hooks/use-toast';
 
 const IoTDashboard = () => {
   const [sensorReadings, setSensorReadings] = useState({});
