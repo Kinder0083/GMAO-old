@@ -7,7 +7,7 @@ from typing import Optional
 import ntplib
 import socket
 from models import TimezoneConfig, TimezoneConfigUpdate, NTPTestResult
-from auth import get_current_admin_user
+from dependencies import get_current_admin_user
 from database import db
 
 router = APIRouter(prefix="/timezone", tags=["Timezone"])
