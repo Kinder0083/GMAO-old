@@ -1,98 +1,81 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to fix a series of bugs and introduce significant UI/UX improvements.
-1.  **Bug Fix:** A dialog for changing a Work Order's status was appearing incorrectly immediately after creation.
-2.  **Bug Fix:** After creation or import, new Work Orders were not appearing on the main list page. This turned out to be a critical and recurring data integrity issue in the backend.
-3.  **UI/UX Bug Fix:** On the Reports page, the Evolution horaire des maintenances chart had visual bugs: the bars were not aligned with the Y-axis, and tooltips for the highest bars were being cut off.
-4.  **Feature Request:** A complete overhaul of the View Work Order dialog. The user requested to replace separate hour/minute inputs with a single flexible time field, consolidate actions into Valider and Annuler buttons, and create a new workflow where Valider saves both time and comments before opening the status change dialog.
-5.  **Bug Fix:** The general Import/Export feature was broken for Work Orders, failing to show imported items.
-6.  **Current Request:** Apply the exact same UI/UX overhaul from the View Work Order dialog to the View Improvement dialog.
+The user's initial goal was to redesign the IoT Dashboard chart. This led to several subsequent tasks and bug fixes:
+
+1.  **Initial Task (P0):** A complete redesign of the sensor chart on the Dashboard IoT page with very specific visual and functional requirements (spline curve, adaptive axes, thresholds, global export).
+2.  **Bug Fix (User Feedback):** After the initial implementation, the user provided a screenshot showing the chart was not rendering correctly (no curve, incorrect axes). This required a significant debugging effort.
+3.  **Feature Request:** The user requested a new feature in the sensor creation form: a text field Formule à appliquer to allow applying a mathematical formula (e.g., ) to the raw sensor value before it's stored and displayed.
+4.  **Critical Bug Fix (Deployment):** After the formula feature was implemented, the user's Proxmox deployment failed with a 403 Forbidden error from nginx. This initiated a critical debugging session focused on the deployment script (). The root cause was an incomplete frontend build and a fragile service restart sequence.
+5.  **Task (User Request):** After fixing the deployment issues, the user asked the agent to proceed with two pending refactoring tasks: modularizing the import/export endpoints in  and breaking down the large  component.
 
 **User's preferred language**: French
 
 **what currently exists?**
-- The application is stable.
-- The Import/Export functionality for Work Order Templates and now for general Work Orders has been fixed and tested. The root causes (incorrect data serialization in backend export/import logic, Pydantic validation errors due to data type mismatches) have been addressed.
-- The bug causing the Change Status dialog to appear incorrectly after creating a Work Order has been resolved.
-- The visual bugs in the Reports page chart (bar alignment and tooltip visibility) have been fixed.
-- The View Work Order dialog () has been completely refactored to match the user's new UX requirements, including a flexible time input and a new validation workflow.
-- The corresponding Change Status dialog for Work Orders () has been updated to remove the redundant time input field.
+- The application is stable. The critical 403 Forbidden deployment issue has been resolved by making the  script significantly more robust.
+- The IoT Dashboard has been completely redesigned as per the user's specifications. The initial rendering bugs have been fixed by correcting backend Pydantic models (, ) and refining the frontend chart component ().
+- The Sensor creation/editing form now includes a Formule à appliquer field, with backend logic to securely evaluate and apply the formula to incoming MQTT data, and a frontend UI to test the formula live.
+- The backend  file has been refactored. The large import/export logic has been moved into its own dedicated router file, .
+- The refactoring of the frontend  component has begun.
 
 **Last working item**:
-- **Last item agent was working:** Replicating the UI/UX overhaul from the Work Order visualization dialog to the Improvement visualization dialog. The agent has started modifying  and  (for improvements) to match the new design and workflow.
+- **Last item agent was working:** The agent was actively refactoring the large  component. It had already modularized the backend  file. For the frontend, it created new files for the menu configuration and a custom hook, and was in the process of creating the  and  components. The last action was creating the file for the  component.
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** Frontend testing agent or manual testing via screenshot tool. The test must verify the new UI in the  (single time field, Valider/Annuler buttons), test the validation logic (time and comment are mandatory), and confirm the full workflow: clicking Valider saves the data and then opens the  without a time input field.
+- **Which testing method agent to use?** Frontend testing agent. After the refactoring of  is complete, a full frontend regression test should be run to ensure all navigation, layout, and interactive elements (sidebar collapse, header notifications, etc.) work as expected.
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Apply View Dialog UX Overhaul to Improvements Page (P0)**
+- **Issue 1: Finish refactoring  (P0)**
 - **Issue 2: Rapport P.accident page does not update in real-time (P2)**
 
 **Issues Detail:**
-- **Issue 1: Apply View Dialog UX Overhaul to Improvements Page (P0)**
-    - **Attempted fixes:** The agent has begun implementing the changes.
-        - In , the agent has added the  utility function, added state for the new time input field and comments, and started refactoring the JSX to replace the old time/comment sections with the new unified layout (single time input, Valider & Annuler buttons).
-        - In , the agent removed the redundant Temps passé input field.
+- **Issue 1: Finish refactoring  (P0)**
+    - **Attempted fixes:** This is an ongoing refactoring task, not a bug fix.
     - **Next debug checklist:**
-        1.  Complete the implementation in  by wiring up the  function to save both the comment and the parsed time.
-        2.  Ensure the  function correctly closes the  and triggers the .
-        3.  Ensure client-side validation makes the new time and comment fields mandatory.
-        4.  Perform a full end-to-end test via screenshots:
-            -   Open an existing improvement.
-            -   Verify the new UI is present.
-            -   Enter a time (e.g., 1h30) and a comment.
-            -   Click Valider.
-            -   Verify a success toast appears and the Change Status dialog opens.
-            -   Verify the Change Status dialog does **not** contain a time input field.
-    - **Why fix this issue and what will be achieved with the fix?** To ensure a consistent and improved user experience across both the Work Orders and Improvements modules.
+        1.  Populate  with the header-related JSX and logic (user menu, notifications, search bar) from .
+        2.  Populate  with the sidebar JSX and logic (menu items, collapse button) from .
+        3.  Modify the main  to import and use the new , , , and  hook, significantly reducing its size and complexity.
+        4.  Ensure all props and state are passed correctly between the new components.
+    - **Why fix this issue and what will be achieved with the fix?** To improve code maintainability, readability, and separation of concerns by breaking down a monolithic 1200+ line component into smaller, manageable pieces.
     - **Status:** IN PROGRESS
     - **Is recurring issue?** N
     - **Should Test frontend/backend/both after fix?** Frontend
     - **Blocked on other issue:** None.
 - **Issue 2: Rapport P.accident page does not update in real-time (P2)**
-    - **Attempted fixes:** None in this session.
+    - **Attempted fixes:** None in this session. This is a known, low-priority issue from a previous fork.
     - **Next debug checklist:**
         1.  Examine  to ensure  is called on all CRUD operations.
-        2.  Verify the frontend page () correctly uses the  hook.
-    - **Why fix this issue and what will be achieved with the fix?** To provide a consistent, real-time user experience across all modules.
+        2.  Verify the frontend page correctly uses the  hook for that specific module.
+    - **Why fix this issue and what will be achieved with the fix?** To provide a consistent, real-time user experience across all application modules.
     - **Status:** NOT STARTED
     - **Is recurring issue?** Y
     - **Should Test frontend/backend/both after fix?** Frontend
     - **Blocked on other issue:** None.
 
 **In progress Task List**:
-- **Task 1: Complete the refactoring of the Improvement Dialog (P0)**
-    - **Where to resume:** The agent has already modified  and . The next step is to finalize the logic within , particularly the  function, and then thoroughly test the entire user flow.
-    - **What will be achieved with this?** UI/UX consistency between the Work Orders and Improvements modules.
+- **Task 1: Refactor  (P0)**
+    - **Where to resume:** The agent has created the file structure for the refactor. The next step is to populate the newly created files (, ) with code extracted from , and then update  to use these new components.
+    - **What will be achieved with this?** A cleaner, more modular, and maintainable layout structure for the application.
     - **Status:** IN PROGRESS
     - **Should Test frontend/backend/both after fix?** Frontend
     - **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 
-**Upcoming Tasks:**
--   **(P1)** **Continue WebSocket Migration**: Migrate the Rapports and Historique Achat pages to use WebSockets for real-time updates (this includes resolving Issue #2).
-
 **Future Tasks:**
--   **(P2)** **Implement specific functions for Responsables de service**: De-prioritized by the user.
--   **(P2)** **Surveillance Plan Dashboard**: An agent-suggested enhancement.
--   **(P2)** **Checklist Analytics**: An agent-suggested enhancement.
--   **(P2)** **Guided Tour**: An agent-suggested enhancement.
+-   **(P2)** Implement specific functions for Responsables de service (De-prioritized by user).
+-   **(P2)** Surveillance Plan Dashboard (Agent-suggested enhancement).
+-   **(P2)** Checklist Analytics (Agent-suggested enhancement).
+-   **(P2)** Guided Tour (Agent-suggested enhancement).
 
 **Completed work in this session**
-- **Bug Fix: Critical Data Integrity in Import/Export**: Diagnosed and fixed a recurring, critical bug where imported Work Orders wouldn't appear.
-    - Corrected backend export logic in  that wrongly converted lists to strings (e.g.,  to ).
-    - Hardened the import logic to parse stringified lists back into lists.
-    - Corrected the import's field mapping from English () to French ().
-    - Added a missing  value to the  enum in  to prevent validation errors.
-    - Wrote and executed multiple Python scripts to clean corrupted data ( field) directly in the MongoDB collection.
-- **Bug Fix: Incorrect Dialog on Work Order Creation**: Fixed a bug where the Change Status dialog appeared incorrectly after creating a new WO. The final fix involved using a React  to prevent a race condition.
-- **Feature: View Work Order Dialog Overhaul**: Completely refactored  with a single flexible time input, consolidated Valider/Annuler buttons, and a new workflow as per user specs.
-- **Bug Fix: Chart Visualization in Reports**: Fixed the Evolution horaire des maintenances chart in  to ensure bars align perfectly with the Y-axis and that tooltips are always visible.
-- **Feature: Duplicate Handling for Template Import**: Completed and tested the dialog for managing duplicate work order templates during import.
+- **Critical Fix: Deployment Stability:** Debugged and resolved a 403 Forbidden error on the user's Proxmox server. This involved a major overhaul of  to make the update process robust by adding fallback logic for yarn/npm, build verification ( existence check), automatic permission fixing, and a graceful service restart sequence with health checks and delays.
+- **Feature: Sensor Value Formula:** Implemented a feature to apply mathematical formulas to sensor values. This included adding a  field to the Sensor model (), updating the MQTT collector () to securely evaluate the formula, adding a new API endpoint for testing (), and updating the sensor form () with the new field and a live test button.
+- **Bug Fix: IoT Dashboard Chart:** Resolved a critical bug where the redesigned IoT chart failed to display data. The fix involved correcting Pydantic models ( - adding  to  and fixing  type in ) and making the chart component () more robust.
+- **Bug Fix: API Route Ordering:** Fixed a bug in  where a dynamic route () was incorrectly intercepting a static route () by reordering the routes.
+- **Refactoring: Backend :** Modularized the main  file by extracting all import/export logic into a new, dedicated file: .
 
 **Earlier issues found/mentioned but not fixed**
-- The Rapport P.accident real-time update issue is the only one.
+- The Rapport P.accident real-time update issue (P2) is the only known issue that was not addressed.
 
 **Known issue recurrence from previous fork**
 - **Issue recurrence in previous fork:** Real-time updates on the Rapport P.accident page are not working correctly.
@@ -100,60 +83,61 @@ The user's initial goal was to fix a series of bugs and introduce significant UI
 - **Status:** NOT STARTED
 
 **Code Architecture**
-
+formulavaluelast_update/test-formula
 
 **Key Technical Concepts**
-- **Data Integrity & Pydantic Validation:** The session was dominated by fixing backend Pydantic validation errors caused by data type mismatches between MongoDB and the models (e.g.,  vs. ). This required writing data cleanup scripts and hardening the import/export logic.
-- **React State Management (useState vs. useRef):** A key bug fix for an incorrect dialog appearing depended on understanding the asynchronous nature of  and switching to the synchronous  to prevent a race condition within an event handler.
-- **Async/Await in React Hooks:** Fixed a bug where  was not working because a  hook wrapper did not  the promise from the inner async function.
-- **Data Serialization (JSON vs. Python ):** The root cause of the main data corruption bug was identified in the backend export logic, which was incorrectly using  on lists instead of a proper JSON serializer, turning  into the string .
-- **Custom Charting & CSS:** Refactored a custom bar chart component using TailwindCSS, demonstrating control over flexbox layouts, , and positioning to fix alignment and tooltip visibility issues.
+- **Robust Deployment Scripting:** The critical fix for the user's Proxmox server involved enhancing  with a multi-step, resilient process: build, verify (), set permissions, restart backend, wait, health-check backend, and gracefully reload nginx. This is crucial for application stability.
+- **Pydantic Model Integrity:** Debugging revealed that frontend bugs were caused by backend data model inconsistencies (missing fields like , incorrect types like  vs ). Maintaining strict type alignment between DB, Pydantic, and frontend is critical.
+- **Secure Dynamic Code Execution:** Implemented a secure  for user-provided formulas by restricting the available namespace to safe math functions and variables, preventing potential injection attacks.
+- **FastAPI Route Precedence:** Learned and fixed a bug caused by FastAPI's route evaluation order, where a static path () must be defined *before* a dynamic one ().
+- **React Component Refactoring:** The ongoing task of decomposing a large, monolithic component () into smaller, single-responsibility components (, ) and custom hooks () to improve maintainability.
 
 **key DB schema**
-- No new collections were added. The structure of the  collection was repeatedly investigated and cleaned up.
+- **sensors**:
+    - :  (NEW) - Stores the mathematical formula to apply to the sensor's value.
 
 **All files of reference**
--   : **Core file for the current task.**
--   : Reference file for the completed implementation that needs to be replicated.
--   : The source of the critical import/export bugs.
--   : Defines the data structures that were causing validation errors.
--   : The refactored chart component.
--   : The component where the  fix was implemented.
+-   : **Core file for the current refactoring task.**
+-   : Contains the critical logic for application updates on the user's server.
+-   : Newly created module for refactored backend logic.
+-   : The main server file, now slimmer after refactoring.
+-   : The form with the new formula feature.
+-   : The fixed and enhanced chart component.
+-   : Contains key data model fixes and additions.
 
 **Areas that need refactoring**:
--   The import/export endpoint in  handles many different modules with large  blocks. This logic could be refactored into separate, more maintainable functions or classes for each module.
--    remains a very large component that would benefit from being broken down.
+-   The refactoring of  is currently in progress.
 
 **key api endpoints**
--    (HEAVILY MODIFIED & FIXED)
--    (MODIFIED & FIXED)
--    (DEBUGGED: The API itself was fine, but bad data in the DB caused it to fail)
+-    (NEW): A POST endpoint to test a given formula with a sample value.
+-    (MOVED): Now handled by .
+-    (MOVED): Now handled by .
 
 **Critical Info for New Agent**
 -   **You MUST respond in French.**
--   The immediate priority is to finish applying the  UI/UX changes to .
--   **DATA CORRUPTION IS THE BIGGEST RISK.** The most critical and time-consuming bugs in this session were due to bad data in the database (e.g., a field being a  instead of a ). When a list/view fails to load, **immediately suspect a Pydantic validation error in the backend API**. Check the backend logs and the data in the MongoDB collection before debugging the frontend.
--   The user is very meticulous and will test edge cases. Ensure your work is thoroughly tested before finishing.
--   Remember the  vs.  lesson to avoid re-introducing race condition bugs in dialog workflows.
+-   The immediate priority (P0) is to **complete the refactoring of **. The file structure has been laid out; you need to move the code into the new  and  components and wire everything back together in a simplified .
+-   The user is highly sensitive to deployment issues. The recent 403 Forbidden error was a major problem. Be mindful of the changes made to  as they are critical for stability. Do not suggest changes to it unless absolutely necessary.
+-   After completing the  refactor, propose a full frontend regression test using the testing agent to ensure no functionality was broken.
 
 **documents and test reports created in this job**
--    has been updated with the latest completed tasks.
+-   
+-    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Reported a new bug: After the View Work Order dialog was fixed, clicking Create shows a success message, but the new work order doesn't appear in the list. (ADDRESSED)
-2.  **User**: Clarified a problem with the Reports page chart: the time value is correct (3h), but the bar is visually misaligned, stopping between 3h and 4h. (ADDRESSED)
-3.  **User**: Reported a follow-up bug on the fixed chart: the tooltip for the highest bar is cut off and not visible. (ADDRESSED)
-4.  **User**: Requested a major UX overhaul for the View Work Order dialog, detailing the new single time input field and Valider/Annuler workflow. (ADDRESSED)
-5.  **User**: Provided clarifications on the View Work Order dialog request, specifying input formats, button actions, and mandatory fields. (ADDRESSED)
-6.  **User**: Reported a bug: Exporting and re-importing work orders shows a success message, but the items don't appear in the Work Orders list. (ADDRESSED)
-7.  **User**: Corrected the agent, clarifying the import/export issue is on the general Import/Export page, not the Work Order Templates page. (ADDRESSED)
-8.  **User**: Reported that the import/export fix did not work, and manually created work orders are also not appearing. (ADDRESSED)
-9.  **User**: Reported the same issue again with more frustration, confirming the list is still not updating. (ADDRESSED)
-10. **User**: Confirmed the import/export and creation bugs are fixed, and requested that all the recent changes to the View Work Order dialog be applied to the Améliorations page as well. (IN PROGRESS)
+1.  **User:** Reports the application is now working correctly after the deployment script fixes. Asks the agent to proceed with the pending refactoring tasks for  and .
+2.  **Agent:** Acknowledges and starts the refactoring tasks.
+3.  **User:** Confirms the update script works perfectly and the  error is gone.
+4.  **Agent:** Proposes a final, more robust version of the  script that adds delays and health checks to prevent race conditions during service restarts.
+5.  **User:** Reports the  error returned after an update, requiring a manual container restart.
+6.  **Agent:** Identifies the issue is likely a race condition and asks for confirmation to modify the  script to be more robust.
+7.  **User:** Confirms that the  file was created by the agent and provides the file's content.
+8.  **Agent:** Asks the user to provide the  script content to improve it.
+9.  **User:** Explains their deployment process: Save to GitHub, followed by a custom update function in the app that pulls the latest changes.
+10. **Agent:** Asks about the user's deployment process to understand why the frontend build was failing.
 
 **Project Health Check:**
--   **Broken:** None.
--   **Mocked:** None.
+-   **Broken:** None
+-   **Mocked:** None
 
 **3rd Party Integrations**
 -   **OpenAI Whisper (STT)** via  (Uses Emergent LLM Key)
@@ -204,10 +188,10 @@ options:
 -   
 
 **Testing status**
--   **Testing agent used after significant changes:** NO. The agent performed extensive manual testing using screenshots, , and Python scripts to interact with the API and database directly.
+-   **Testing agent used after significant changes:** YES (for the IoT dashboard redesign).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None.
--   **Known regressions:** A major regression where work orders stopped appearing was introduced and then fixed. The root cause was data corruption from the export/import feature.
+-   **Test files created:** None
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **Admin Account:**
@@ -215,5 +199,4 @@ options:
     -   **Password:** 
 
 **What agent forgot to execute**
-- The agent initially failed to address the root cause of the data corruption ( as string), leading to the bug recurring multiple times until the export logic itself was fixed.
-- The long-standing P2 issue regarding real-time updates for Rapport P.accident remains untouched.</analysis>
+- The agent has successfully followed all user requests in this session. The low-priority task to fix real-time updates on the Rapport P.accident page remains pending as per the established priorities.</analysis>
