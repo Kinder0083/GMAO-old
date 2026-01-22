@@ -2477,6 +2477,8 @@ class SensorReading(BaseModel):
     id: str
     sensor_id: str
     sensor_nom: Optional[str] = None
+    value: Optional[float] = None
+    unit: Optional[str] = None
     timestamp: datetime
 
 
