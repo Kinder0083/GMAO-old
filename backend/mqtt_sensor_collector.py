@@ -328,13 +328,18 @@ class MQTTSensorCollector:
             
     async def refresh_subscriptions(self):
         """Rafraîchir les abonnements (appelé quand un capteur est modifié)"""
+        logger.info("🔄 Rafraîchissement des abonnements MQTT capteurs...")
+        
         # Désabonner de tous les topics actuels
         for topic in self.subscribed_topics:
             mqtt_manager.unsubscribe(topic)
         self.subscribed_topics.clear()
+        self.topic_sensor_map.clear()
         
         # Réabonner aux capteurs actifs
         await self.subscribe_to_sensors()
+        
+        logger.info(f"✅ Rafraîchissement terminé - {len(self.subscribed_topics)} topic(s) abonné(s)")
 
 # Instance globale
 mqtt_sensor_collector = MQTTSensorCollector()
