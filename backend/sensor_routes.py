@@ -649,6 +649,8 @@ async def get_sensor_readings(
         # Calculer la date de début (utiliser datetime naive pour compatibilité MongoDB)
         start_date = datetime.utcnow() - timedelta(hours=hours)
         
+        logger.info(f"📊 Getting readings for sensor {sensor_id}, hours={hours}, start_date={start_date}")
+        
         readings = []
         async for reading in db.sensor_readings.find(
             {
@@ -657,8 +659,10 @@ async def get_sensor_readings(
             },
             {"_id": 0}
         ).sort("timestamp", -1).limit(limit):
+            logger.info(f"📊 Found reading: {reading.get('timestamp')}, value={reading.get('value')}")
             readings.append(SensorReading(**reading))
         
+        logger.info(f"📊 Total readings found: {len(readings)}")
         return readings
         
     except Exception as e:
