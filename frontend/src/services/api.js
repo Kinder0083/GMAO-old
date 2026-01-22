@@ -720,6 +720,12 @@ const sensorsAPI = {
     api.get('/sensors/export/readings', { 
       params: { period_days: periodDays, format },
       responseType: 'blob'
+    }),
+  
+  // Test de formule
+  testFormula: (formula, testValue) =>
+    api.post('/sensors/test-formula', null, {
+      params: { formula, test_value: testValue }
     })
 };
 
