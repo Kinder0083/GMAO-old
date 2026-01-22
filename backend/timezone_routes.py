@@ -8,9 +8,16 @@ import ntplib
 import socket
 from models import TimezoneConfig, TimezoneConfigUpdate, NTPTestResult
 from dependencies import get_current_admin_user
-from database import db
 
 router = APIRouter(prefix="/timezone", tags=["Timezone"])
+
+# Base de données - initialisée depuis server.py
+db = None
+
+def init_timezone_routes(database):
+    """Initialiser les routes timezone avec la base de données"""
+    global db
+    db = database
 
 # Liste des fuseaux horaires populaires
 POPULAR_TIMEZONES = [
