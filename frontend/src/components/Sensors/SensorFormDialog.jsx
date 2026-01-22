@@ -12,12 +12,16 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '../../hooks/use-toast';
 import api from '../../services/api';
+import { HelpCircle, Calculator, Check, X, Loader2 } from 'lucide-react';
 
 const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
   const [locations, setLocations] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(!sensor);
+  const [formulaTestValue, setFormulaTestValue] = useState('100');
+  const [formulaTestResult, setFormulaTestResult] = useState(null);
+  const [testingFormula, setTestingFormula] = useState(false);
   const [formData, setFormData] = useState({
     nom: '',
     type: 'TEMPERATURE',
@@ -25,6 +29,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
     unite: '°C',
     mqtt_topic: '',
     format_json: false,
+    formula: '',
     min_threshold: '',
     max_threshold: '',
     alert_enabled: false,
@@ -57,6 +62,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
     if (open) {
       loadLocations();
       loadTemplates();
+      setFormulaTestResult(null);
       
       if (sensor) {
         setFormData({
@@ -66,6 +72,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
           unite: sensor.unite || '°C',
           mqtt_topic: sensor.mqtt_topic || '',
           format_json: sensor.format_json || false,
+          formula: sensor.formula || '',
           min_threshold: sensor.min_threshold || '',
           max_threshold: sensor.max_threshold || '',
           alert_enabled: sensor.alert_enabled || false,
@@ -80,6 +87,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
           unite: '°C',
           mqtt_topic: '',
           format_json: false,
+          formula: '',
           min_threshold: '',
           max_threshold: '',
           alert_enabled: false,
@@ -114,6 +122,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
       type: template.type,
       unite: template.unit,
       format_json: template.format_json || false,
+      formula: template.formula || '',
       min_threshold: template.default_min_threshold?.toString() || '',
       max_threshold: template.default_max_threshold?.toString() || '',
       alert_enabled: !!template.default_min_threshold || !!template.default_max_threshold,
@@ -133,6 +142,42 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
       type,
       unite: selectedType?.defaultUnit || formData.unite
     });
+  };
+
+  const handleTestFormula = async () => {
+    if (!formData.formula.trim()) {
+      toast({
+        title: 'Formule vide',
+        description: 'Veuillez saisir une formule à tester',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const testVal = parseFloat(formulaTestValue);
+    if (isNaN(testVal)) {
+      toast({
+        title: 'Valeur invalide',
+        description: 'Veuillez saisir une valeur numérique de test',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setTestingFormula(true);
+    setFormulaTestResult(null);
+
+    try {
+      const response = await api.sensors.testFormula(formData.formula, testVal);
+      setFormulaTestResult(response.data);
+    } catch (error) {
+      setFormulaTestResult({
+        success: false,
+        error: error.response?.data?.detail || 'Erreur lors du test'
+      });
+    } finally {
+      setTestingFormula(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -161,6 +206,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
     try {
       const payload = {
         ...formData,
+        formula: formData.formula.trim() || null,
         min_threshold: formData.min_threshold ? parseFloat(formData.min_threshold) : null,
         max_threshold: formData.max_threshold ? parseFloat(formData.max_threshold) : null
       };
@@ -326,6 +372,97 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
                 <Label htmlFor="format_json" className="cursor-pointer">
                   Mettre en forme le contenu JSON
                 </Label>
+              </div>
+
+              {/* Section Formule */}
+              <div className="space-y-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="formula" className="font-semibold text-blue-900">
+                    🔢 Formule à appliquer
+                  </Label>
+                  <div className="relative group">
+                    <HelpCircle size={16} className="text-blue-500 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50">
+                      <p className="font-semibold mb-2">Transformez la valeur reçue avant affichage</p>
+                      <p className="mb-2">Utilisez <code className="bg-gray-700 px-1 rounded">x</code> pour représenter la valeur brute.</p>
+                      <p className="font-semibold mt-2">Exemples :</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li><code className="bg-gray-700 px-1 rounded">x/100</code> → Diviser par 100</li>
+                        <li><code className="bg-gray-700 px-1 rounded">x*1000</code> → mV vers V</li>
+                        <li><code className="bg-gray-700 px-1 rounded">(x-32)*5/9</code> → °F vers °C</li>
+                        <li><code className="bg-gray-700 px-1 rounded">x+2.5</code> → Offset calibration</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <Input
+                  id="formula"
+                  value={formData.formula}
+                  onChange={(e) => {
+                    setFormData({ ...formData, formula: e.target.value });
+                    setFormulaTestResult(null);
+                  }}
+                  placeholder="Ex: x/100 ou (x-32)*5/9"
+                  className="bg-white"
+                />
+                <p className="text-xs text-blue-700">
+                  Laissez vide pour utiliser la valeur brute. Opérateurs : + - * / ( ) et fonctions abs, round, min, max, pow
+                </p>
+
+                {/* Test de formule */}
+                <div className="flex items-center gap-2 mt-3">
+                  <div className="flex items-center gap-2 flex-1">
+                    <Label htmlFor="test_value" className="text-sm whitespace-nowrap">Valeur de test :</Label>
+                    <Input
+                      id="test_value"
+                      type="number"
+                      step="any"
+                      value={formulaTestValue}
+                      onChange={(e) => setFormulaTestValue(e.target.value)}
+                      className="w-24 bg-white"
+                      placeholder="100"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestFormula}
+                    disabled={testingFormula || !formData.formula.trim()}
+                    className="flex items-center gap-1"
+                  >
+                    {testingFormula ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Calculator size={14} />
+                    )}
+                    Tester
+                  </Button>
+                </div>
+
+                {/* Résultat du test */}
+                {formulaTestResult && (
+                  <div className={`mt-2 p-2 rounded-lg flex items-center gap-2 ${
+                    formulaTestResult.success 
+                      ? 'bg-green-100 text-green-800 border border-green-300'
+                      : 'bg-red-100 text-red-800 border border-red-300'
+                  }`}>
+                    {formulaTestResult.success ? (
+                      <>
+                        <Check size={16} className="text-green-600" />
+                        <span className="text-sm">
+                          <strong>{formulaTestResult.input_value}</strong> → <strong>{formulaTestResult.output_value}</strong>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <X size={16} className="text-red-600" />
+                        <span className="text-sm">{formulaTestResult.error}</span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
