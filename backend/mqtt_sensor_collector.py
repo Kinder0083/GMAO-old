@@ -338,6 +338,76 @@ class MQTTSensorCollector:
         except Exception as e:
             logger.error(f"Erreur extraction valeur: {e}")
             return None
+    
+    def apply_formula(self, value: float, formula: str) -> Optional[float]:
+        """Appliquer une formule mathématique à la valeur
+        
+        Args:
+            value: La valeur brute à transformer
+            formula: La formule à appliquer (ex: x/100, (x-32)*5/9, x*2+10)
+            
+        Returns:
+            La valeur transformée ou None en cas d'erreur
+        """
+        if not formula or not formula.strip():
+            return value
+            
+        try:
+            # Nettoyer la formule
+            formula = formula.strip()
+            
+            # Vérifier que la formule contient bien 'x'
+            if 'x' not in formula.lower():
+                # Si la formule ne contient pas x, c'est peut-être une opération simple comme "/100"
+                # Dans ce cas, préfixer avec x
+                if formula.startswith(('+', '-', '*', '/')):
+                    formula = f"x{formula}"
+                else:
+                    return value
+            
+            # Remplacer 'x' ou 'X' par la valeur
+            expression = formula.lower().replace('x', str(value))
+            
+            # Liste des caractères/fonctions autorisés pour la sécurité
+            allowed_chars = set('0123456789.+-*/() ')
+            allowed_funcs = {'abs', 'round', 'min', 'max', 'pow'}
+            
+            # Vérifier que l'expression ne contient que des caractères autorisés
+            # (sauf les fonctions mathématiques autorisées)
+            clean_expr = expression
+            for func in allowed_funcs:
+                clean_expr = clean_expr.replace(func, '')
+            
+            if not all(c in allowed_chars for c in clean_expr):
+                logger.warning(f"Caractères non autorisés dans la formule: {formula}")
+                return None
+            
+            # Évaluer l'expression de manière sécurisée
+            # Utiliser un environnement restreint
+            safe_dict = {
+                '__builtins__': {},
+                'abs': abs,
+                'round': round,
+                'min': min,
+                'max': max,
+                'pow': pow
+            }
+            
+            result = eval(expression, safe_dict)
+            
+            # S'assurer que le résultat est un nombre
+            if isinstance(result, (int, float)) and not isinstance(result, bool):
+                return float(result)
+            else:
+                logger.warning(f"Résultat non numérique de la formule: {result}")
+                return None
+                
+        except ZeroDivisionError:
+            logger.error(f"Division par zéro dans la formule: {formula}")
+            return None
+        except Exception as e:
+            logger.error(f"Erreur évaluation formule '{formula}': {e}")
+            return None
             
     async def create_reading(self, sensor: dict, value: float):
         """Créer un relevé pour chaque message reçu"""
