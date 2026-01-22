@@ -5108,6 +5108,11 @@ def get_time_index(date, start_date, group_by, max_len):
     return 0
 
 
+# ==================== IMPORT/EXPORT ROUTES ====================
+# NOTE: Ces routes ont été modularisées dans import_export_routes.py
+# Voir l'inclusion du router dans la section des includes (api_router.include_router)
+
+
 # ==================== UPDATE ROUTES ====================
 from update_manager import UpdateManager
 
