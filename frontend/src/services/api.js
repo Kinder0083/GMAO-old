@@ -376,6 +376,16 @@ api.settings = {
   updateSettings: (data) => api.put('/settings', data)
 };
 
+// ==================== TIMEZONE ====================
+api.timezone = {
+  getConfig: () => api.get('/timezone/config'),
+  updateConfig: (data) => api.put('/timezone/config', data),
+  getTimezones: () => api.get('/timezone/timezones'),
+  getNtpServers: () => api.get('/timezone/ntp-servers'),
+  testNtp: (server) => api.post(`/timezone/test-ntp?server=${encodeURIComponent(server)}`),
+  getCurrentTime: () => api.get('/timezone/current-time')
+};
+
 // ==================== SURVEILLANCE ====================
 export const surveillanceAPI = {
   // CRUD
