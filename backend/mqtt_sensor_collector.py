@@ -215,6 +215,25 @@ class MQTTSensorCollector:
                         error_message=f"Valeur non numérique: {value}"
                     )
                 return
+            
+            # Appliquer la formule si définie
+            formula = sensor.get("formula")
+            if formula:
+                original_value = value_float
+                value_float = self.apply_formula(value_float, formula)
+                if value_float is None:
+                    logger.error(f"Erreur application formule '{formula}' sur valeur {original_value} pour {sensor['nom']}")
+                    if mqtt_logger:
+                        await mqtt_logger.log_message(
+                            topic=topic,
+                            payload=payload[:200],
+                            sensor_id=sensor_id,
+                            sensor_name=sensor.get('nom'),
+                            success=False,
+                            error_message=f"Erreur formule: {formula}"
+                        )
+                    return
+                logger.info(f"🔢 Formule '{formula}' appliquée: {original_value} → {value_float}")
                 
             logger.info(f"📊 Valeur MQTT reçue pour capteur '{sensor['nom']}': {value_float} {sensor.get('unite', '')}")
             
