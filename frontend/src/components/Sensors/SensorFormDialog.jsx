@@ -301,43 +301,31 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
             <h3 className="text-lg font-semibold mb-4">📡 Configuration MQTT</h3>
             
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="mqtt_topic">Topic MQTT *</Label>
-                  <Input
-                    id="mqtt_topic"
-                    value={formData.mqtt_topic}
-                    onChange={(e) => setFormData({ ...formData, mqtt_topic: e.target.value })}
-                    placeholder="Ex: home/sensors/temperature1"
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="mqtt_topic">Topic MQTT *</Label>
+                <Input
+                  id="mqtt_topic"
+                  value={formData.mqtt_topic}
+                  onChange={(e) => setFormData({ ...formData, mqtt_topic: e.target.value })}
+                  placeholder="Ex: home/sensors/temperature1"
+                  required
+                />
+                <p className="text-xs text-gray-600">
+                  Le capteur sera mis à jour à chaque message reçu sur ce topic
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="mqtt_json_path">Chemin JSON (optionnel)</Label>
-                  <Input
-                    id="mqtt_json_path"
-                    value={formData.mqtt_json_path}
-                    onChange={(e) => setFormData({ ...formData, mqtt_json_path: e.target.value })}
-                    placeholder="Ex: value ou sensor.temperature"
-                  />
-                  <p className="text-xs text-gray-600">
-                    Laisser vide si la valeur est directe
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="refresh_interval">Intervalle (min) *</Label>
-                  <Input
-                    id="refresh_interval"
-                    type="number"
-                    min="1"
-                    max="1440"
-                    value={formData.refresh_interval}
-                    onChange={(e) => setFormData({ ...formData, refresh_interval: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="format_json"
+                  checked={formData.format_json}
+                  onChange={(e) => setFormData({ ...formData, format_json: e.target.checked })}
+                  className="w-4 h-4 text-purple-600"
+                />
+                <Label htmlFor="format_json" className="cursor-pointer">
+                  Mettre en forme le contenu JSON
+                </Label>
               </div>
             </div>
           </div>
