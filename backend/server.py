@@ -7622,7 +7622,8 @@ init_roles_routes(db)
 api_router.include_router(roles_router)
 
 # Timezone Configuration routes
-from timezone_routes import router as timezone_router
+from timezone_routes import router as timezone_router, init_timezone_routes
+init_timezone_routes(db)
 api_router.include_router(timezone_router)
 
 # Work Order Templates routes (Ordres Type)
