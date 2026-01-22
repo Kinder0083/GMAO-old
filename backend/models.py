@@ -2456,6 +2456,7 @@ class SensorCreate(BaseModel):
     unite: str
     mqtt_topic: str
     format_json: bool = False
+    formula: Optional[str] = None  # Formule à appliquer à la valeur (ex: x/100, (x-32)*5/9)
     min_threshold: Optional[float] = None
     max_threshold: Optional[float] = None
     alert_enabled: bool = False
