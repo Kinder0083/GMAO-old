@@ -17,6 +17,7 @@ class MQTTSensorCollector:
         self.db = None
         self.running = False
         self.subscribed_topics = set()
+        self.topic_sensor_map = {}  # Mapping topic -> sensor_id
         
     async def initialize(self, database):
         """Initialiser le collecteur avec la base de données"""
