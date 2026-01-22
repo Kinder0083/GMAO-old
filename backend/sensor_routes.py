@@ -559,6 +559,135 @@ async def get_sensors_by_type(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# =======================
+# Export des lectures (pour le Dashboard IoT)
+# =======================
+
+@router.get("/export/readings")
+async def export_all_sensors_readings(
+    period_days: int = 7,
+    format: str = "csv",
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Exporter l'historique des lectures de tous les capteurs sur une période donnée.
+    Périodes supportées: jusqu'à 180 jours (6 mois)
+    Formats: csv, xlsx
+    """
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    
+    try:
+        # Limiter à 180 jours maximum
+        if period_days > 180:
+            period_days = 180
+        
+        start_date = datetime.now(timezone.utc) - timedelta(days=period_days)
+        
+        # Récupérer tous les capteurs actifs
+        sensors = await db.sensors.find({"actif": True}, {"_id": 0}).to_list(length=None)
+        sensor_map = {s["id"]: s for s in sensors}
+        
+        # Récupérer toutes les lectures de la période
+        readings = await db.sensor_readings.find(
+            {"timestamp": {"$gte": start_date}},
+            {"_id": 0}
+        ).sort("timestamp", -1).to_list(length=None)
+        
+        if format == "xlsx":
+            # Export Excel
+            import openpyxl
+            from openpyxl.utils import get_column_letter
+            from openpyxl.styles import Font, Alignment, PatternFill
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Données Capteurs"
+            
+            # En-têtes
+            headers = ["Date/Heure", "Capteur", "Type", "Valeur", "Unité", "Emplacement"]
+            header_fill = PatternFill(start_color="7C3AED", end_color="7C3AED", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Données
+            for row_idx, reading in enumerate(readings, 2):
+                sensor = sensor_map.get(reading.get("sensor_id"), {})
+                timestamp = reading.get("timestamp")
+                if isinstance(timestamp, datetime):
+                    timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    timestamp_str = str(timestamp)
+                
+                ws.cell(row=row_idx, column=1, value=timestamp_str)
+                ws.cell(row=row_idx, column=2, value=sensor.get("nom", "Inconnu"))
+                ws.cell(row=row_idx, column=3, value=sensor.get("type", ""))
+                ws.cell(row=row_idx, column=4, value=reading.get("value"))
+                ws.cell(row=row_idx, column=5, value=sensor.get("unite", reading.get("unit", "")))
+                ws.cell(row=row_idx, column=6, value=sensor.get("emplacement", {}).get("nom", "") if sensor.get("emplacement") else "")
+            
+            # Ajuster les largeurs de colonnes
+            for col in range(1, len(headers) + 1):
+                ws.column_dimensions[get_column_letter(col)].width = 20
+            
+            # Sauvegarder dans un buffer
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"capteurs_historique_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+        else:
+            # Export CSV par défaut
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # En-têtes
+            writer.writerow(["Date/Heure", "Capteur", "Type", "Valeur", "Unité", "Emplacement"])
+            
+            # Données
+            for reading in readings:
+                sensor = sensor_map.get(reading.get("sensor_id"), {})
+                timestamp = reading.get("timestamp")
+                if isinstance(timestamp, datetime):
+                    timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    timestamp_str = str(timestamp)
+                
+                writer.writerow([
+                    timestamp_str,
+                    sensor.get("nom", "Inconnu"),
+                    sensor.get("type", ""),
+                    reading.get("value", ""),
+                    sensor.get("unite", reading.get("unit", "")),
+                    sensor.get("emplacement", {}).get("nom", "") if sensor.get("emplacement") else ""
+                ])
+            
+            output.seek(0)
+            
+            filename = f"capteurs_historique_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="text/csv",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+    except Exception as e:
+        logger.error(f"Erreur export lectures capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/import/json")
 async def import_sensors_json(
     file: UploadFile = File(...),
