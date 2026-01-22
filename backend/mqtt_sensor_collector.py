@@ -239,6 +239,18 @@ class MQTTSensorCollector:
                 }
             )
             
+            # Notifier via WebSocket pour mise à jour temps réel
+            try:
+                from realtime_manager import realtime_manager
+                await realtime_manager.broadcast_update("sensors", {
+                    "action": "sensor_value_update",
+                    "sensor_id": sensor_id,
+                    "value": value_float,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            except Exception as ws_error:
+                logger.debug(f"WebSocket notification error (non-critical): {ws_error}")
+            
             # Créer un relevé (toujours, car on veut enregistrer chaque changement)
             await self.create_reading(sensor, value_float)
             
