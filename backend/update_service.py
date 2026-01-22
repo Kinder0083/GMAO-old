@@ -576,24 +576,51 @@ class UpdateService:
             # Frontend dependencies
             frontend_package = self.frontend_dir / "package.json"
             if frontend_package.exists():
-                logger.info("⚛️  Installation des dépendances frontend...")
-                yarn_process = await asyncio.create_subprocess_exec(
-                    "yarn", "install",
+                # Déterminer si yarn ou npm est disponible
+                use_yarn = True
+                try:
+                    yarn_check = await asyncio.create_subprocess_exec(
+                        "yarn", "--version",
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    await yarn_check.communicate()
+                    use_yarn = (yarn_check.returncode == 0)
+                except FileNotFoundError:
+                    use_yarn = False
+                
+                pkg_manager = "yarn" if use_yarn else "npm"
+                logger.info(f"⚛️  Utilisation de {pkg_manager} pour le frontend...")
+                
+                # Installation des dépendances
+                logger.info(f"📦 Installation des dépendances frontend avec {pkg_manager}...")
+                if use_yarn:
+                    install_cmd = ["yarn", "install"]
+                else:
+                    install_cmd = ["npm", "install"]
+                
+                install_process = await asyncio.create_subprocess_exec(
+                    *install_cmd,
                     cwd=self.frontend_dir,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
-                yarn_stdout, yarn_stderr = await asyncio.wait_for(yarn_process.communicate(), timeout=300)
+                install_stdout, install_stderr = await asyncio.wait_for(install_process.communicate(), timeout=300)
                 
-                if yarn_process.returncode != 0:
-                    logger.warning(f"⚠️ yarn install a échoué: {yarn_stderr.decode()[:200]}")
+                if install_process.returncode != 0:
+                    logger.warning(f"⚠️ {pkg_manager} install a échoué: {install_stderr.decode()[:200]}")
                 else:
-                    logger.info("✅ Dépendances frontend installées")
+                    logger.info(f"✅ Dépendances frontend installées avec {pkg_manager}")
                 
                 # 🔥 CRITIQUE: Recompiler le frontend React pour appliquer les modifications
-                logger.info("🔧 Compilation du frontend React (yarn build)...")
+                logger.info(f"🔧 Compilation du frontend React ({pkg_manager} build)...")
+                if use_yarn:
+                    build_cmd = ["yarn", "build"]
+                else:
+                    build_cmd = ["npm", "run", "build"]
+                
                 build_process = await asyncio.create_subprocess_exec(
-                    "yarn", "build",
+                    *build_cmd,
                     cwd=self.frontend_dir,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
@@ -608,8 +635,39 @@ class UpdateService:
                         "message": "Échec de la compilation du frontend",
                         "error": build_stderr.decode()[:500]
                     }
-                else:
-                    logger.info("✅ Frontend compilé avec succès")
+                
+                # 🔥 VÉRIFICATION CRITIQUE: S'assurer que index.html existe après le build
+                index_html_path = self.frontend_dir / "build" / "index.html"
+                if not index_html_path.exists():
+                    logger.error(f"❌ ERREUR CRITIQUE: {index_html_path} n'existe pas après le build!")
+                    return {
+                        "success": False,
+                        "message": "La compilation du frontend n'a pas généré index.html",
+                        "error": "Le fichier build/index.html est manquant"
+                    }
+                
+                logger.info(f"✅ Frontend compilé avec succès (index.html vérifié)")
+                
+                # Corriger les permissions du dossier build
+                build_dir = self.frontend_dir / "build"
+                try:
+                    # Changer le propriétaire en www-data pour nginx
+                    chown_process = await asyncio.create_subprocess_exec(
+                        "sudo", "chown", "-R", "www-data:www-data", str(build_dir),
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    await chown_process.communicate()
+                    
+                    chmod_process = await asyncio.create_subprocess_exec(
+                        "sudo", "chmod", "-R", "755", str(build_dir),
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    await chmod_process.communicate()
+                    logger.info("✅ Permissions du dossier build corrigées")
+                except Exception as e:
+                    logger.warning(f"⚠️ Impossible de corriger les permissions: {str(e)}")
             
             logger.info("✅ Dépendances installées et frontend compilé")
             
