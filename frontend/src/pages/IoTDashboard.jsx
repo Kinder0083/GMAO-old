@@ -346,76 +346,123 @@ const IoTDashboard = () => {
               const chartData = formatChartData(sensorReadings[sensor.id]);
               const stats = statistics[sensor.id];
 
-              if (chartData.length === 0) return null;
-
               return (
-                <Card key={sensor.id} className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">{sensor.nom}</h3>
-                      <p className="text-sm text-gray-600">{sensor.unite}</p>
+                <Card key={sensor.id} className="p-4">
+                  {/* Graphique épuré style moderne */}
+                  <div className="relative bg-gray-50 rounded-lg p-4" style={{ height: '220px' }}>
+                    {/* Nom du capteur centré en overlay */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+                      <span className="text-lg font-semibold text-gray-700">{sensor.nom}</span>
+                      <span className="text-3xl font-bold text-purple-600">
+                        {sensor.current_value !== null && sensor.current_value !== undefined 
+                          ? `${sensor.current_value.toFixed(1)} ${sensor.unite}`
+                          : '--'}
+                      </span>
                     </div>
-                    {stats && (
-                      <div className="text-right">
-                        <p className="text-sm text-gray-600">Moyenne</p>
-                        <p className="text-lg font-semibold">
-                          {stats.avg?.toFixed(1)} {sensor.unite}
-                        </p>
+                    
+                    {chartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                          <defs>
+                            <linearGradient id={`gradient-${sensor.id}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05}/>
+                            </linearGradient>
+                          </defs>
+                          
+                          {/* Lignes pointillées pour min/max */}
+                          {sensor.min_threshold && (
+                            <CartesianGrid 
+                              horizontal={false}
+                              strokeDasharray="5 5" 
+                              stroke="#3b82f6"
+                              strokeOpacity={0.5}
+                            />
+                          )}
+                          
+                          <XAxis 
+                            dataKey="time" 
+                            hide={true}
+                          />
+                          <YAxis 
+                            hide={true}
+                            domain={[
+                              sensor.min_threshold ? Math.min(sensor.min_threshold, stats?.min || 0) - 5 : 'auto',
+                              sensor.max_threshold ? Math.max(sensor.max_threshold, stats?.max || 100) + 5 : 'auto'
+                            ]}
+                          />
+                          
+                          {/* Ligne min threshold */}
+                          {sensor.min_threshold && (
+                            <ReferenceLine 
+                              y={sensor.min_threshold} 
+                              stroke="#3b82f6" 
+                              strokeDasharray="5 5"
+                              strokeWidth={1}
+                              label={{ 
+                                value: `Min: ${sensor.min_threshold}`, 
+                                position: 'left',
+                                fill: '#3b82f6',
+                                fontSize: 10
+                              }}
+                            />
+                          )}
+                          
+                          {/* Ligne max threshold */}
+                          {sensor.max_threshold && (
+                            <ReferenceLine 
+                              y={sensor.max_threshold} 
+                              stroke="#ef4444" 
+                              strokeDasharray="5 5"
+                              strokeWidth={1}
+                              label={{ 
+                                value: `Max: ${sensor.max_threshold}`, 
+                                position: 'left',
+                                fill: '#ef4444',
+                                fontSize: 10
+                              }}
+                            />
+                          )}
+                          
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: 'rgba(255,255,255,0.95)',
+                              border: 'none',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                            }}
+                            formatter={(value) => [`${value.toFixed(1)} ${sensor.unite}`, 'Valeur']}
+                          />
+                          
+                          <Area 
+                            type="monotone" 
+                            dataKey="value" 
+                            stroke="#8b5cf6" 
+                            strokeWidth={2}
+                            fillOpacity={1}
+                            fill={`url(#gradient-${sensor.id})`}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                        Aucune donnée disponible
                       </div>
                     )}
                   </div>
-
-                  <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={chartData}>
-                      <defs>
-                        <linearGradient id={`gradient-${sensor.id}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis 
-                        dataKey="time" 
-                        stroke="#9ca3af"
-                        style={{ fontSize: '12px' }}
-                      />
-                      <YAxis 
-                        stroke="#9ca3af"
-                        style={{ fontSize: '12px' }}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: '#fff',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#8b5cf6" 
-                        fillOpacity={1}
-                        fill={`url(#gradient-${sensor.id})`}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-
-                  {stats && (
-                    <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600">Min</p>
-                        <p className="text-sm font-semibold">{stats.min?.toFixed(1)}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600">Max</p>
-                        <p className="text-sm font-semibold">{stats.max?.toFixed(1)}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600">Actuel</p>
-                        <p className="text-sm font-semibold">{stats.current?.toFixed(1)}</p>
-                      </div>
-                    </div>
-                  )}
+                  
+                  {/* Footer avec min/max actuels */}
+                  <div className="flex justify-between items-center mt-2 px-2 text-xs text-gray-500">
+                    <span>
+                      {stats?.min !== undefined ? `Min: ${stats.min.toFixed(1)}` : ''}
+                    </span>
+                    <span>
+                      {sensor.last_update && new Date(sensor.last_update).toLocaleTimeString('fr-FR')}
+                    </span>
+                    <span>
+                      {stats?.max !== undefined ? `Max: ${stats.max.toFixed(1)}` : ''}
+                    </span>
+                  </div>
                 </Card>
               );
             })}
