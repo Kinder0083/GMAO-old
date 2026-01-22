@@ -52,7 +52,7 @@ class MQTTSensorCollector:
                 # Attendre un peu avant de vérifier
                 await asyncio.sleep(2)
                 
-                if not self.db:
+                if self.db is None:
                     continue
                 
                 # Récupérer les messages récents (depuis la dernière vérification)
