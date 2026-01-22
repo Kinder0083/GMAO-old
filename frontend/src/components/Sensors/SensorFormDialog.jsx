@@ -162,8 +162,7 @@ const SensorFormDialog = ({ open, onOpenChange, sensor, onSuccess }) => {
       const payload = {
         ...formData,
         min_threshold: formData.min_threshold ? parseFloat(formData.min_threshold) : null,
-        max_threshold: formData.max_threshold ? parseFloat(formData.max_threshold) : null,
-        refresh_interval: parseInt(formData.refresh_interval) || 1
+        max_threshold: formData.max_threshold ? parseFloat(formData.max_threshold) : null
       };
 
       if (sensor) {
