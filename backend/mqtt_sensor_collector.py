@@ -33,10 +33,65 @@ class MQTTSensorCollector:
         self.running = True
         logger.info("🚀 Démarrage du collecteur MQTT pour les capteurs")
         
-        # S'abonner aux topics des capteurs actifs
+        # S'abonner aux topics des capteurs actifs (si MQTT connecté)
         await self.subscribe_to_sensors()
         
+        # Démarrer également le watcher de messages MQTT (solution de secours)
+        asyncio.create_task(self._watch_mqtt_messages())
+        
         logger.info("✅ Collecteur MQTT capteurs démarré")
+    
+    async def _watch_mqtt_messages(self):
+        """Observer les nouveaux messages MQTT et les traiter pour les capteurs"""
+        logger.info("👀 Démarrage du watcher de messages MQTT pour les capteurs")
+        
+        last_processed_time = datetime.now(timezone.utc)
+        
+        while self.running:
+            try:
+                # Attendre un peu avant de vérifier
+                await asyncio.sleep(2)
+                
+                if not self.db:
+                    continue
+                
+                # Récupérer les messages récents (depuis la dernière vérification)
+                recent_messages = await self.db.mqtt_messages.find({
+                    "received_at": {"$gt": last_processed_time.isoformat()}
+                }).sort("received_at", 1).to_list(length=100)
+                
+                if recent_messages:
+                    # Récupérer tous les capteurs actifs avec leurs topics
+                    sensors = await self.db.sensors.find({
+                        "actif": True,
+                        "mqtt_topic": {"$exists": True, "$ne": ""}
+                    }, {"_id": 0}).to_list(length=None)
+                    
+                    # Créer un mapping topic -> sensor
+                    topic_to_sensor = {s["mqtt_topic"]: s for s in sensors}
+                    
+                    for msg in recent_messages:
+                        topic = msg.get("topic")
+                        payload = msg.get("payload", "")
+                        
+                        # Vérifier si ce topic correspond à un capteur
+                        if topic in topic_to_sensor:
+                            sensor = topic_to_sensor[topic]
+                            logger.info(f"📨 Message MQTT détecté pour capteur '{sensor['nom']}': {payload[:50]}...")
+                            await self.handle_mqtt_message(sensor["id"], topic, payload)
+                    
+                    # Mettre à jour le timestamp du dernier message traité
+                    last_msg = recent_messages[-1]
+                    try:
+                        last_processed_time = datetime.fromisoformat(last_msg["received_at"].replace("Z", "+00:00"))
+                    except:
+                        last_processed_time = datetime.now(timezone.utc)
+                        
+            except Exception as e:
+                logger.error(f"Erreur dans le watcher MQTT capteurs: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                await asyncio.sleep(5)
         
     async def stop(self):
         """Arrêter la collecte"""
