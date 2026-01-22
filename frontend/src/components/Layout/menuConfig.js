@@ -1,0 +1,168 @@
+/**
+ * Configuration des menus pour MainLayout
+ * Extrait de MainLayout.jsx pour une meilleure modularité
+ */
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Package,
+  MapPin,
+  Wrench,
+  BarChart3,
+  Users,
+  ShoppingCart,
+  ShoppingBag,
+  Calendar,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  LogOut,
+  Bell,
+  Database,
+  RefreshCw,
+  FileText,
+  Gauge,
+  MessageSquare,
+  Lightbulb,
+  Sparkles,
+  Shield,
+  Eye,
+  AlertTriangle,
+  FolderOpen,
+  Folder,
+  Terminal,
+  Palette,
+  Mail,
+  Radio,
+  Activity,
+  Presentation
+} from 'lucide-react';
+
+// Mapping des noms d'icônes vers les composants
+export const iconMap = {
+  'LayoutDashboard': LayoutDashboard,
+  'Mail': Mail,
+  'MessageSquare': MessageSquare,
+  'ClipboardList': ClipboardList,
+  'Lightbulb': Lightbulb,
+  'Sparkles': Sparkles,
+  'Calendar': Calendar,
+  'Wrench': Wrench,
+  'Package': Package,
+  'MapPin': MapPin,
+  'Gauge': Gauge,
+  'Eye': Eye,
+  'FileText': FileText,
+  'AlertTriangle': AlertTriangle,
+  'FolderOpen': FolderOpen,
+  'Folder': Folder,
+  'BarChart3': BarChart3,
+  'Users': Users,
+  'ShoppingCart': ShoppingCart,
+  'ShoppingBag': ShoppingBag,
+  'Database': Database,
+  'Activity': Activity,
+  'Terminal': Terminal,
+  'Shield': Shield,
+  'Presentation': Presentation,
+  'PresentationIcon': Presentation,
+  'Menu': Menu,
+  'X': X,
+  'ChevronLeft': ChevronLeft,
+  'ChevronRight': ChevronRight,
+  'ChevronDown': ChevronDown,
+  'LogOut': LogOut,
+  'Bell': Bell,
+  'RefreshCw': RefreshCw,
+  'Radio': Radio,
+  'Palette': Palette
+};
+
+// Liste par défaut des items du menu
+export const getDefaultMenuItems = (isAdmin) => [
+  { id: 'dashboard', icon: 'LayoutDashboard', label: 'Tableau de bord', path: '/dashboard', module: 'dashboard', visible: true, order: 0 },
+  { id: 'chat-live', icon: 'Mail', label: 'Chat Live', path: '/chat-live', module: 'chatLive', visible: true, order: 0.5 },
+  { id: 'intervention-requests', icon: 'MessageSquare', label: 'Demandes d\'inter.', path: '/intervention-requests', module: 'interventionRequests', visible: true, order: 1 },
+  { id: 'work-orders', icon: 'ClipboardList', label: 'Ordres de travail', path: '/work-orders', module: 'workOrders', visible: true, order: 2 },
+  { id: 'improvement-requests', icon: 'Lightbulb', label: 'Demandes d\'amél.', path: '/improvement-requests', module: 'improvementRequests', visible: true, order: 3 },
+  { id: 'improvements', icon: 'Sparkles', label: 'Améliorations', path: '/improvements', module: 'improvements', visible: true, order: 4 },
+  { id: 'preventive-maintenance', icon: 'Calendar', label: 'Maintenance prev.', path: '/preventive-maintenance', module: 'preventiveMaintenance', visible: true, order: 5 },
+  { id: 'planning-mprev', icon: 'Calendar', label: 'Planning M.Prev.', path: '/planning-mprev', module: 'planningMprev', visible: true, order: 6 },
+  { id: 'assets', icon: 'Wrench', label: 'Équipements', path: '/assets', module: 'assets', visible: true, order: 7 },
+  { id: 'inventory', icon: 'Package', label: 'Inventaire', path: '/inventory', module: 'inventory', visible: true, order: 8 },
+  { id: 'purchase-requests', icon: 'ShoppingCart', label: 'Demandes d\'Achat', path: '/purchase-requests', module: 'purchaseRequests', visible: true, order: 8.5 },
+  { id: 'locations', icon: 'MapPin', label: 'Zones', path: '/locations', module: 'locations', visible: true, order: 9 },
+  { id: 'meters', icon: 'Gauge', label: 'Compteurs', path: '/meters', module: 'meters', visible: true, order: 10 },
+  { id: 'sensors', icon: 'Activity', label: 'Capteurs MQTT', path: '/sensors', module: 'sensors', visible: isAdmin, order: 11 },
+  { id: 'iot-dashboard', icon: 'BarChart3', label: 'Dashboard IoT', path: '/iot-dashboard', module: 'sensors', visible: isAdmin, order: 12 },
+  { id: 'mqtt-logs', icon: 'Terminal', label: 'Logs MQTT', path: '/mqtt-logs', module: 'sensors', visible: isAdmin, order: 13 },
+  { id: 'surveillance-plan', icon: 'Eye', label: 'Plan de Surveillance', path: '/surveillance-plan', module: 'surveillance', visible: true, order: 11 },
+  { id: 'surveillance-rapport', icon: 'FileText', label: 'Rapport Surveillance', path: '/surveillance-rapport', module: 'surveillanceRapport', visible: true, order: 12 },
+  { id: 'presqu-accident', icon: 'AlertTriangle', label: 'Presqu\'accident', path: '/presqu-accident', module: 'presquaccident', visible: true, order: 13 },
+  { id: 'presqu-accident-rapport', icon: 'FileText', label: 'Rapport P.accident', path: '/presqu-accident-rapport', module: 'presquaccidentRapport', visible: true, order: 14 },
+  { id: 'documentations', icon: 'FolderOpen', label: 'Documentations', path: '/documentations', module: 'documentations', visible: true, order: 15 },
+  { id: 'reports', icon: 'BarChart3', label: 'Rapports', path: '/reports', module: 'reports', visible: true, order: 16 },
+  { id: 'people', icon: 'Users', label: 'Utilisateurs', path: '/people', module: 'people', visible: true, order: 17 },
+  { id: 'planning', icon: 'Calendar', label: 'Planning', path: '/planning', module: 'planning', visible: true, order: 18 },
+  { id: 'vendors', icon: 'ShoppingCart', label: 'Fournisseurs', path: '/vendors', module: 'vendors', visible: true, order: 19 },
+  { id: 'purchase-history', icon: 'ShoppingBag', label: 'Historique Achat', path: '/purchase-history', module: 'purchaseHistory', visible: true, order: 20 },
+  { id: 'import-export', icon: 'Database', label: 'Import / Export', path: '/import-export', module: 'importExport', visible: true, order: 21 },
+  { id: 'whiteboard', icon: 'PresentationIcon', label: 'Tableau d\'affichage', path: '/whiteboard', module: 'whiteboard', visible: true, order: 22 }
+];
+
+// Fonction pour obtenir l'icône par nom
+export const getIcon = (iconName) => {
+  return iconMap[iconName] || LayoutDashboard;
+};
+
+// Fonction pour filtrer et trier les items du menu
+export const getFilteredMenuItems = (menuItems, canView) => {
+  return menuItems
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .filter(item => {
+      if (item.visible === false) return false;
+      if (item.module && !canView(item.module)) return false;
+      return true;
+    });
+};
+
+// Export des icônes individuelles pour utilisation directe
+export {
+  LayoutDashboard,
+  ClipboardList,
+  Package,
+  MapPin,
+  Wrench,
+  BarChart3,
+  Users,
+  ShoppingCart,
+  ShoppingBag,
+  Calendar,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  LogOut,
+  Bell,
+  Database,
+  RefreshCw,
+  FileText,
+  Gauge,
+  MessageSquare,
+  Lightbulb,
+  Sparkles,
+  Shield,
+  Eye,
+  AlertTriangle,
+  FolderOpen,
+  Folder,
+  Terminal,
+  Palette,
+  Mail,
+  Radio,
+  Activity,
+  Presentation
+};
