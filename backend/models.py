@@ -2439,7 +2439,7 @@ class Sensor(BaseModel):
     mqtt_topic: str  # Topic MQTT obligatoire
     format_json: bool = False  # Mettre en forme le contenu JSON
     current_value: Optional[float] = None  # Valeur actuelle
-    last_update: Optional[str] = None  # Dernière mise à jour
+    last_update: Optional[datetime] = None  # Dernière mise à jour
     min_threshold: Optional[float] = None  # Seuil minimum pour alerte
     max_threshold: Optional[float] = None  # Seuil maximum pour alerte
     alert_enabled: bool = False  # Activer les alertes
