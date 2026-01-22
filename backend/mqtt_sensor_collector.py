@@ -169,52 +169,48 @@ class MQTTSensorCollector:
                     error_message=str(e)
                 )
             
-    def extract_value(self, payload: str, json_path: Optional[str]) -> Optional[float]:
-        """Extraire la valeur du payload MQTT"""
+    def extract_value(self, payload: str, format_json: bool = False) -> Optional[float]:
+        """Extraire la valeur du payload MQTT
+        
+        Args:
+            payload: Le contenu du message MQTT
+            format_json: Si True, essayer de parser comme JSON et extraire la valeur
+        """
         try:
-            # Si pas de chemin JSON, essayer de convertir directement
-            if not json_path:
-                try:
-                    return float(payload)
-                except ValueError:
-                    # Essayer de parser comme JSON
-                    data = json.loads(payload)
-                    # Si c'est un dict avec une seule clé "value" ou similaire
-                    if isinstance(data, dict):
-                        if "value" in data:
-                            return float(data["value"])
-                        elif "data" in data:
-                            return float(data["data"])
-                        elif "reading" in data:
-                            return float(data["reading"])
-                        # Sinon prendre la première valeur numérique
-                        for v in data.values():
+            # Essayer d'abord de convertir directement en nombre
+            try:
+                return float(payload.strip())
+            except (ValueError, TypeError):
+                pass
+            
+            # Si format_json est activé ou si la conversion directe a échoué, essayer JSON
+            try:
+                data = json.loads(payload)
+                
+                if isinstance(data, (int, float)):
+                    return float(data)
+                    
+                if isinstance(data, dict):
+                    # Chercher les clés communes pour la valeur
+                    for key in ["value", "data", "reading", "val", "v", "voltage", "current", "power", "temperature", "humidity", "pressure"]:
+                        if key in data:
                             try:
-                                return float(v)
+                                return float(data[key])
                             except (ValueError, TypeError):
                                 continue
-                    return None
-            
-            # Parser le JSON
-            data = json.loads(payload)
-            
-            # Suivre le chemin JSON (ex: "sensor.temperature" -> data['sensor']['temperature'])
-            parts = json_path.split('.')
-            value = data
-            for part in parts:
-                if isinstance(value, dict):
-                    value = value.get(part)
-                else:
-                    return None
                     
-            return value
-            
-        except json.JSONDecodeError:
-            # Pas du JSON, essayer conversion directe
-            try:
-                return float(payload)
-            except ValueError:
+                    # Sinon prendre la première valeur numérique
+                    for v in data.values():
+                        try:
+                            return float(v)
+                        except (ValueError, TypeError):
+                            continue
+                            
                 return None
+                
+            except json.JSONDecodeError:
+                return None
+                
         except Exception as e:
             logger.error(f"Erreur extraction valeur: {e}")
             return None
