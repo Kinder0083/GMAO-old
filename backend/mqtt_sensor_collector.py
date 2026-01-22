@@ -55,20 +55,57 @@ class MQTTSensorCollector:
             
             for sensor in sensors:
                 topic = sensor.get("mqtt_topic")
+                sensor_id = sensor.get("id")
+                sensor_name = sensor.get("nom", "Unknown")
+                
                 if topic and topic not in self.subscribed_topics:
-                    # S'abonner au topic avec callback
-                    mqtt_manager.subscribe(
+                    # Enregistrer le mapping topic -> sensor_id
+                    self.topic_sensor_map[topic] = sensor_id
+                    
+                    # S'abonner au topic (sans callback spécifique, on utilisera le handler global)
+                    success = mqtt_manager.subscribe(
                         topic=topic,
                         qos=0,
-                        callback=lambda t, p, q, sid=sensor['id']: asyncio.create_task(
-                            self.handle_mqtt_message(sid, t, p)
-                        )
+                        callback=self._create_sync_callback(sensor_id)
                     )
-                    self.subscribed_topics.add(topic)
-                    logger.info(f"📡 Abonné au topic '{topic}' pour le capteur '{sensor['nom']}'")
+                    
+                    if success:
+                        self.subscribed_topics.add(topic)
+                        logger.info(f"📡 Abonné au topic '{topic}' pour le capteur '{sensor_name}'")
+                    else:
+                        logger.error(f"❌ Échec abonnement au topic '{topic}' pour le capteur '{sensor_name}'")
                     
         except Exception as e:
             logger.error(f"Erreur lors de l'abonnement aux capteurs MQTT: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+    
+    def _create_sync_callback(self, sensor_id: str):
+        """Créer un callback synchrone qui schedule le traitement async"""
+        def callback(topic: str, payload: str, qos: int):
+            # Utiliser le loop de l'application pour scheduler la tâche async
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Si on est dans un thread différent, utiliser call_soon_threadsafe
+                    loop.call_soon_threadsafe(
+                        lambda: asyncio.create_task(
+                            self.handle_mqtt_message(sensor_id, topic, payload)
+                        )
+                    )
+                else:
+                    # Sinon, créer directement la tâche
+                    asyncio.create_task(self.handle_mqtt_message(sensor_id, topic, payload))
+            except RuntimeError:
+                # Pas de loop en cours, utiliser run_coroutine_threadsafe
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(self.handle_mqtt_message(sensor_id, topic, payload))
+                except Exception as e:
+                    logger.error(f"Erreur exécution callback async: {e}")
+        
+        return callback
             
     async def handle_mqtt_message(self, sensor_id: str, topic: str, payload: str):
         """Traiter un message MQTT reçu pour un capteur"""
