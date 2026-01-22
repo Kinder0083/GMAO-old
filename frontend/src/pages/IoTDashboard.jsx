@@ -1,37 +1,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Activity,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   Thermometer,
   Zap,
-  Droplet,
-  Gauge as GaugeIcon,
   RefreshCw,
   Download,
   FileSpreadsheet,
-  Calendar
+  Calendar,
+  X
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
-import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  ReferenceLine
+  Legend,
+  ResponsiveContainer
 } from 'recharts';
 import api from '../services/api';
 import { useSensors } from '../hooks/useSensors';
 import { useToast } from '../hooks/use-toast';
+import SensorChart from '../components/Sensors/SensorChart';
 
 const IoTDashboard = () => {
   const [sensorReadings, setSensorReadings] = useState({});
@@ -39,23 +36,25 @@ const IoTDashboard = () => {
   const [groupsByType, setGroupsByType] = useState([]);
   const [groupsByLocation, setGroupsByLocation] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState(24); // heures
-  const [activeTab, setActiveTab] = useState('overview'); // overview, groups-type, groups-location
-
-  // Utiliser le hook temps réel pour les capteurs
+  const [timeRange, setTimeRange] = useState(8); // heures - par défaut 8h
+  const [activeTab, setActiveTab] = useState('overview');
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportPeriod, setExportPeriod] = useState('7');
+  const [exportFormat, setExportFormat] = useState('csv');
+  const [exporting, setExporting] = useState(false);
+  
+  const { toast } = useToast();
   const { sensors: realtimeSensors, loading: loadingSensors, refresh: refreshSensors } = useSensors();
 
-  // Charger les données détaillées quand les capteurs changent ou au premier chargement
+  // Charger les données détaillées
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Utiliser les capteurs temps réel s'ils sont disponibles, sinon charger
       const sensorsToUse = realtimeSensors && realtimeSensors.length > 0 
         ? realtimeSensors 
         : (await api.sensors.getAll()).data;
       
-      // Charger les groupes
       const [groupsTypeResponse, groupsLocationResponse] = await Promise.all([
         api.sensors.getGroupsByType(),
         api.sensors.getGroupsByLocation()
@@ -65,9 +64,8 @@ const IoTDashboard = () => {
       setGroupsByLocation(groupsLocationResponse.data.groups || []);
 
       if (sensorsToUse.length > 0) {
-        // Charger les relevés et statistiques pour chaque capteur
         const readingsPromises = sensorsToUse.map(sensor =>
-          api.sensors.getReadings(sensor.id, 100, timeRange).catch(() => ({ data: [] }))
+          api.sensors.getReadings(sensor.id, 500, timeRange).catch(() => ({ data: [] }))
         );
         const statsPromises = sensorsToUse.map(sensor =>
           api.sensors.getStatistics(sensor.id, timeRange).catch(() => ({ data: {} }))
@@ -76,7 +74,6 @@ const IoTDashboard = () => {
         const readingsResults = await Promise.all(readingsPromises);
         const statsResults = await Promise.all(statsPromises);
 
-        // Organiser les données par sensor_id
         const readingsMap = {};
         const statsMap = {};
         
@@ -90,21 +87,80 @@ const IoTDashboard = () => {
       }
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données du dashboard",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  }, [realtimeSensors, timeRange]);
+  }, [realtimeSensors, timeRange, toast]);
 
-  // Charger au montage et quand timeRange change
   useEffect(() => {
     if (!loadingSensors) {
       loadDashboardData();
     }
   }, [loadingSensors, timeRange]);
 
-  // Récupérer les capteurs depuis le hook temps réel ou l'état local
   const sensors = realtimeSensors || [];
 
+  // Formater les données pour le graphique
+  const formatChartData = (readings) => {
+    if (!readings || readings.length === 0) return [];
+    
+    return readings.map(r => ({
+      time: new Date(r.timestamp).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      value: r.value,
+      timestamp: r.timestamp
+    })).reverse();
+  };
+
+  // Export des données
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      const periodDays = parseInt(exportPeriod);
+      
+      const response = await api.sensors.exportReadings(periodDays, exportFormat);
+      
+      // Créer un lien de téléchargement
+      const blob = new Blob([response.data], { 
+        type: exportFormat === 'xlsx' 
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+          : 'text/csv'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `capteurs_historique_${new Date().toISOString().slice(0,10)}.${exportFormat}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export réussi",
+        description: `Les données ont été exportées en ${exportFormat.toUpperCase()}`,
+      });
+      
+      setExportDialogOpen(false);
+    } catch (error) {
+      console.error('Erreur export:', error);
+      toast({
+        title: "Erreur d'export",
+        description: "Impossible d'exporter les données",
+        variant: "destructive"
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // KPIs
   const getKPICards = () => {
     const activeSensors = sensors.filter(s => s.actif).length;
     const alertCount = sensors.filter(s => {
@@ -127,97 +183,69 @@ const IoTDashboard = () => {
         value: activeSensors,
         icon: Activity,
         color: 'bg-blue-500',
-        trend: null
       },
       {
         title: 'Alertes Actives',
         value: alertCount,
         icon: AlertTriangle,
         color: alertCount > 0 ? 'bg-red-500' : 'bg-green-500',
-        trend: null
       },
       {
         title: 'Température Moyenne',
         value: avgTemperature !== null ? `${avgTemperature.toFixed(1)}°C` : '--',
         icon: Thermometer,
         color: 'bg-orange-500',
-        trend: null
       },
       {
         title: 'Puissance Totale',
         value: powerSensors.length > 0 ? `${totalPower.toFixed(0)} W` : '--',
         icon: Zap,
         color: 'bg-yellow-500',
-        trend: null
       }
     ];
   };
 
-  const formatChartData = (readings) => {
-    if (!readings || readings.length === 0) return [];
-    
-    return readings.map(r => ({
-      time: new Date(r.timestamp).toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      value: r.value,
-      timestamp: r.timestamp
-    })).reverse();
-  };
-
-  const getGaugeColor = (sensor) => {
-    if (!sensor.alert_enabled || sensor.current_value === null) return '#10b981';
-    
-    if (sensor.min_threshold && sensor.current_value < sensor.min_threshold) return '#f59e0b';
-    if (sensor.max_threshold && sensor.current_value > sensor.max_threshold) return '#ef4444';
-    
-    return '#10b981';
-  };
-
+  // Jauge circulaire
   const GaugeWidget = ({ sensor }) => {
     if (!sensor) return null;
     const rawValue = sensor.current_value;
     const value = (rawValue !== null && rawValue !== undefined && !isNaN(rawValue)) ? Number(rawValue) : 0;
     const max = sensor.max_threshold || 100;
     const percentage = Math.min((value / max) * 100, 100);
-    const color = getGaugeColor(sensor);
+    
+    // Couleur selon les seuils
+    let color = '#10b981'; // vert par défaut
+    if (sensor.alert_enabled && rawValue !== null) {
+      if (sensor.min_threshold && rawValue < sensor.min_threshold) color = '#f59e0b';
+      if (sensor.max_threshold && rawValue > sensor.max_threshold) color = '#ef4444';
+    }
 
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <div className="relative w-40 h-40">
-          <svg className="transform -rotate-90 w-40 h-40">
+        <div className="relative w-36 h-36">
+          <svg className="transform -rotate-90 w-36 h-36">
+            <circle cx="72" cy="72" r="64" stroke="#e5e7eb" strokeWidth="8" fill="none" />
             <circle
-              cx="80"
-              cy="80"
-              r="70"
-              stroke="#e5e7eb"
-              strokeWidth="10"
-              fill="none"
-            />
-            <circle
-              cx="80"
-              cy="80"
-              r="70"
+              cx="72" cy="72" r="64"
               stroke={color}
-              strokeWidth="10"
+              strokeWidth="8"
               fill="none"
-              strokeDasharray={`${2 * Math.PI * 70}`}
-              strokeDashoffset={`${2 * Math.PI * 70 * (1 - percentage / 100)}`}
+              strokeDasharray={`${2 * Math.PI * 64}`}
+              strokeDashoffset={`${2 * Math.PI * 64 * (1 - percentage / 100)}`}
               strokeLinecap="round"
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold" style={{ color }}>
+            <span className="text-2xl font-bold" style={{ color }}>
               {typeof value === 'number' ? value.toFixed(1) : '--'}
             </span>
-            <span className="text-sm text-gray-600">{sensor.unite}</span>
+            <span className="text-xs text-gray-600">{sensor.unite}</span>
           </div>
         </div>
-        <p className="text-sm font-medium mt-4 text-center">{sensor.nom}</p>
+        <p className="text-sm font-medium mt-3 text-center">{sensor.nom}</p>
         {sensor.last_update && (
           <p className="text-xs text-gray-500">
-            {new Date(sensor.last_update).toLocaleTimeString()}
+            {new Date(sensor.last_update).toLocaleTimeString('fr-FR')}
           </p>
         )}
       </div>
@@ -238,7 +266,7 @@ const IoTDashboard = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
+      {/* Header avec bouton Export */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -250,14 +278,29 @@ const IoTDashboard = () => {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Bouton Export Global */}
+          <Button
+            variant="outline"
+            onClick={() => setExportDialogOpen(true)}
+            className="flex items-center gap-2"
+            data-testid="export-global-btn"
+          >
+            <Download size={18} />
+            Exporter
+          </Button>
+          
+          {/* Sélecteur de période */}
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white"
+            data-testid="time-range-select"
           >
-            <option value={1}>Dernière heure</option>
-            <option value={6}>6 heures</option>
+            <option value={1}>1 heure</option>
+            <option value={2}>2 heures</option>
+            <option value={4}>4 heures</option>
+            <option value={8}>8 heures</option>
             <option value={24}>24 heures</option>
             <option value={168}>7 jours</option>
           </select>
@@ -266,11 +309,84 @@ const IoTDashboard = () => {
             variant="outline"
             onClick={loadDashboardData}
             disabled={loading}
+            data-testid="refresh-btn"
           >
             <RefreshCw className={loading ? 'animate-spin' : ''} size={18} />
           </Button>
         </div>
       </div>
+
+      {/* Dialog Export */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="text-purple-600" size={20} />
+              Exporter les données
+            </DialogTitle>
+            <DialogDescription>
+              Exportez l'historique des lectures de tous les capteurs
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="export-period">Période</Label>
+              <Select value={exportPeriod} onValueChange={setExportPeriod}>
+                <SelectTrigger id="export-period" data-testid="export-period-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Dernières 24 heures</SelectItem>
+                  <SelectItem value="7">7 derniers jours</SelectItem>
+                  <SelectItem value="30">30 derniers jours</SelectItem>
+                  <SelectItem value="90">3 derniers mois</SelectItem>
+                  <SelectItem value="180">6 derniers mois</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="export-format">Format</Label>
+              <Select value={exportFormat} onValueChange={setExportFormat}>
+                <SelectTrigger id="export-format" data-testid="export-format-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="csv">CSV</SelectItem>
+                  <SelectItem value="xlsx">Excel (XLSX)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setExportDialogOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleExport} 
+              disabled={exporting}
+              data-testid="export-confirm-btn"
+            >
+              {exporting ? (
+                <>
+                  <RefreshCw className="animate-spin mr-2" size={16} />
+                  Export en cours...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2" size={16} />
+                  Télécharger
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Tabs Navigation */}
       <div className="flex gap-2 mb-6 border-b">
@@ -281,6 +397,7 @@ const IoTDashboard = () => {
               ? 'text-purple-600 border-b-2 border-purple-600'
               : 'text-gray-600 hover:text-purple-600'
           }`}
+          data-testid="tab-overview"
         >
           Vue d'ensemble
         </button>
@@ -291,6 +408,7 @@ const IoTDashboard = () => {
               ? 'text-purple-600 border-b-2 border-purple-600'
               : 'text-gray-600 hover:text-purple-600'
           }`}
+          data-testid="tab-groups-type"
         >
           Groupes par Type
         </button>
@@ -301,18 +419,19 @@ const IoTDashboard = () => {
               ? 'text-purple-600 border-b-2 border-purple-600'
               : 'text-gray-600 hover:text-purple-600'
           }`}
+          data-testid="tab-groups-location"
         >
           Groupes par Localisation
         </button>
       </div>
 
-      {/* KPI Cards - Only in Overview */}
+      {/* KPI Cards - Vue d'ensemble uniquement */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {kpiCards.map((kpi, index) => {
             const Icon = kpi.icon;
             return (
-              <Card key={index} className="p-6">
+              <Card key={index} className="p-6" data-testid={`kpi-card-${index}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">{kpi.title}</p>
@@ -328,10 +447,10 @@ const IoTDashboard = () => {
         </div>
       )}
 
-      {/* Overview Tab */}
+      {/* Vue d'ensemble Tab */}
       {activeTab === 'overview' && (
         <>
-          {/* Gauges Section */}
+          {/* Section Jauges */}
           {sensors.filter(s => ['TEMPERATURE', 'HUMIDITY', 'PRESSURE', 'POWER'].includes(s.type)).length > 0 && (
             <Card className="p-6 mb-6">
               <h2 className="text-xl font-semibold mb-4">Valeurs Actuelles</h2>
@@ -346,127 +465,52 @@ const IoTDashboard = () => {
             </Card>
           )}
 
-          {/* Charts Section */}
+          {/* Section Graphiques */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {sensors.slice(0, 6).map(sensor => {
               const chartData = formatChartData(sensorReadings[sensor.id]);
               const stats = statistics[sensor.id];
 
               return (
-                <Card key={sensor.id} className="p-4">
-                  {/* Graphique épuré style moderne */}
-                  <div className="relative bg-gray-50 rounded-lg p-4" style={{ height: '220px' }}>
-                    {/* Nom du capteur centré en overlay */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-                      <span className="text-lg font-semibold text-gray-700">{sensor.nom}</span>
-                      <span className="text-3xl font-bold text-purple-600">
-                        {sensor.current_value !== null && sensor.current_value !== undefined 
-                          ? `${Number(sensor.current_value).toFixed(1)} ${sensor.unite}`
-                          : '--'}
-                      </span>
+                <Card key={sensor.id} className="p-4" data-testid={`sensor-chart-${sensor.id}`}>
+                  {/* Header du graphique */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-800">{sensor.nom}</h3>
+                      <p className="text-sm text-gray-500">{sensor.type}</p>
                     </div>
-                    
-                    {chartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                          <defs>
-                            <linearGradient id={`gradient-${sensor.id}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05}/>
-                            </linearGradient>
-                          </defs>
-                          
-                          {/* Lignes pointillées pour min/max */}
-                          {sensor.min_threshold && (
-                            <CartesianGrid 
-                              horizontal={false}
-                              strokeDasharray="5 5" 
-                              stroke="#3b82f6"
-                              strokeOpacity={0.5}
-                            />
-                          )}
-                          
-                          <XAxis 
-                            dataKey="time" 
-                            hide={true}
-                          />
-                          <YAxis 
-                            hide={true}
-                            domain={[
-                              sensor.min_threshold ? Math.min(sensor.min_threshold, stats?.min || 0) - 5 : 'auto',
-                              sensor.max_threshold ? Math.max(sensor.max_threshold, stats?.max || 100) + 5 : 'auto'
-                            ]}
-                          />
-                          
-                          {/* Ligne min threshold */}
-                          {sensor.min_threshold && (
-                            <ReferenceLine 
-                              y={sensor.min_threshold} 
-                              stroke="#3b82f6" 
-                              strokeDasharray="5 5"
-                              strokeWidth={1}
-                              label={{ 
-                                value: `Min: ${sensor.min_threshold}`, 
-                                position: 'left',
-                                fill: '#3b82f6',
-                                fontSize: 10
-                              }}
-                            />
-                          )}
-                          
-                          {/* Ligne max threshold */}
-                          {sensor.max_threshold && (
-                            <ReferenceLine 
-                              y={sensor.max_threshold} 
-                              stroke="#ef4444" 
-                              strokeDasharray="5 5"
-                              strokeWidth={1}
-                              label={{ 
-                                value: `Max: ${sensor.max_threshold}`, 
-                                position: 'left',
-                                fill: '#ef4444',
-                                fontSize: 10
-                              }}
-                            />
-                          )}
-                          
-                          <Tooltip 
-                            contentStyle={{
-                              backgroundColor: 'rgba(255,255,255,0.95)',
-                              border: 'none',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                            }}
-                            formatter={(value) => [value != null ? `${value.toFixed(1)} ${sensor.unite}` : '--', 'Valeur']}
-                          />
-                          
-                          <Area 
-                            type="monotone" 
-                            dataKey="value" 
-                            stroke="#8b5cf6" 
-                            strokeWidth={2}
-                            fillOpacity={1}
-                            fill={`url(#gradient-${sensor.id})`}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-                        Aucune donnée disponible
-                      </div>
-                    )}
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-purple-600">
+                        {sensor.current_value !== null && sensor.current_value !== undefined 
+                          ? `${Number(sensor.current_value).toFixed(1)}`
+                          : '--'}
+                        <span className="text-sm font-normal text-gray-500 ml-1">
+                          {sensor.unite}
+                        </span>
+                      </p>
+                    </div>
                   </div>
                   
-                  {/* Footer avec min/max actuels */}
-                  <div className="flex justify-between items-center mt-2 px-2 text-xs text-gray-500">
+                  {/* Graphique */}
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <SensorChart 
+                      sensor={sensor}
+                      chartData={chartData}
+                      stats={stats}
+                      height={200}
+                    />
+                  </div>
+                  
+                  {/* Footer avec statistiques */}
+                  <div className="flex justify-between items-center mt-3 px-2 text-xs text-gray-500">
                     <span>
-                      {stats?.min != null ? `Min: ${Number(stats.min).toFixed(1)}` : ''}
+                      {stats?.min != null ? `Min: ${Number(stats.min).toFixed(1)} ${sensor.unite}` : ''}
                     </span>
                     <span>
-                      {sensor.last_update && new Date(sensor.last_update).toLocaleTimeString('fr-FR')}
+                      {sensor.last_update && new Date(sensor.last_update).toLocaleString('fr-FR')}
                     </span>
                     <span>
-                      {stats?.max != null ? `Max: ${Number(stats.max).toFixed(1)}` : ''}
+                      {stats?.max != null ? `Max: ${Number(stats.max).toFixed(1)} ${sensor.unite}` : ''}
                     </span>
                   </div>
                 </Card>
@@ -476,7 +520,7 @@ const IoTDashboard = () => {
         </>
       )}
 
-      {/* Groups by Type Tab */}
+      {/* Groupes par Type Tab */}
       {activeTab === 'groups-type' && (
         <div className="space-y-6">
           <Card className="p-6">
@@ -507,28 +551,17 @@ const IoTDashboard = () => {
             </div>
           </Card>
 
-          {/* Comparison Chart */}
+          {/* Graphique de comparaison */}
           {groupsByType.length > 0 && (
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Comparaison des Moyennes par Type</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={groupsByType.filter(g => g.avg_value !== null)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="type_label" 
-                    stroke="#9ca3af"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis 
-                    stroke="#9ca3af"
-                    style={{ fontSize: '12px' }}
-                  />
+                  <XAxis dataKey="type_label" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
                   <Tooltip 
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px'
-                    }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
                   />
                   <Legend />
                   <Bar dataKey="avg_value" fill="#8b5cf6" name="Moyenne" />
@@ -539,7 +572,7 @@ const IoTDashboard = () => {
             </Card>
           )}
 
-          {/* Sensor Details by Type */}
+          {/* Détails par type */}
           {groupsByType.map(group => (
             <Card key={`details-${group.type}`} className="p-6">
               <h3 className="text-lg font-semibold mb-4">
@@ -561,7 +594,7 @@ const IoTDashboard = () => {
                       <tr key={sensor.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm">{sensor.nom}</td>
                         <td className="px-4 py-3 text-sm font-semibold">
-                          {sensor.current_value?.toFixed(2) || 'N/A'}
+                          {sensor.current_value != null ? Number(sensor.current_value).toFixed(2) : 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-sm">{sensor.unite}</td>
                         <td className="px-4 py-3 text-sm">
@@ -582,7 +615,7 @@ const IoTDashboard = () => {
         </div>
       )}
 
-      {/* Groups by Location Tab */}
+      {/* Groupes par Localisation Tab */}
       {activeTab === 'groups-location' && (
         <div className="space-y-6">
           <Card className="p-6">
@@ -611,28 +644,17 @@ const IoTDashboard = () => {
             </div>
           </Card>
 
-          {/* Location Comparison Chart */}
+          {/* Graphique par localisation */}
           {groupsByLocation.length > 0 && (
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Répartition des Capteurs par Localisation</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={groupsByLocation}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="location_name" 
-                    stroke="#9ca3af"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis 
-                    stroke="#9ca3af"
-                    style={{ fontSize: '12px' }}
-                  />
+                  <XAxis dataKey="location_name" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
                   <Tooltip 
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px'
-                    }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
                   />
                   <Legend />
                   <Bar dataKey="count" fill="#10b981" name="Nombre de capteurs" />
@@ -642,7 +664,7 @@ const IoTDashboard = () => {
             </Card>
           )}
 
-          {/* Sensor Details by Location */}
+          {/* Détails par localisation */}
           {groupsByLocation.map(group => (
             <Card key={`details-${group.location_id}`} className="p-6">
               <h3 className="text-lg font-semibold mb-4">
@@ -666,7 +688,7 @@ const IoTDashboard = () => {
                         <td className="px-4 py-3 text-sm">{sensor.nom}</td>
                         <td className="px-4 py-3 text-sm">{sensor.type}</td>
                         <td className="px-4 py-3 text-sm font-semibold">
-                          {sensor.current_value?.toFixed(2) || 'N/A'}
+                          {sensor.current_value != null ? Number(sensor.current_value).toFixed(2) : 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-sm">{sensor.unite}</td>
                         <td className="px-4 py-3">
@@ -695,7 +717,7 @@ const IoTDashboard = () => {
         </div>
       )}
 
-      {/* No sensors message */}
+      {/* Message si aucun capteur */}
       {sensors.length === 0 && (
         <Card className="p-12 text-center">
           <Activity size={48} className="mx-auto mb-4 text-gray-400" />
