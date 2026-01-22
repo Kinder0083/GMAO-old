@@ -2438,6 +2438,7 @@ class Sensor(BaseModel):
     unite: str  # °C, %, bar, lux, ppm, etc.
     mqtt_topic: str  # Topic MQTT obligatoire
     format_json: bool = False  # Mettre en forme le contenu JSON
+    formula: Optional[str] = None  # Formule à appliquer à la valeur (ex: x/100, (x-32)*5/9)
     current_value: Optional[float] = None  # Valeur actuelle
     last_update: Optional[datetime] = None  # Dernière mise à jour
     min_threshold: Optional[float] = None  # Seuil minimum pour alerte
