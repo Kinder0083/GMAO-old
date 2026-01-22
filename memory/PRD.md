@@ -819,3 +819,36 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - Dashboard Plan de Surveillance
 - Analytique Checklists
 - Visite guidée
+
+---
+
+### Session du 22 Janvier 2026 (Fuseau Horaire)
+
+#### ✅ Feature: Configuration Fuseau Horaire et NTP (22 Jan 2026)
+**Objectif** : Permettre la configuration du fuseau horaire global de l'application et la synchronisation NTP pour corriger l'horodatage des capteurs MQTT.
+
+**Backend créé** :
+- `/app/backend/timezone_routes.py` : Nouveau module avec endpoints :
+  - `GET /api/timezone/config` : Récupérer la configuration actuelle
+  - `PUT /api/timezone/config` : Mettre à jour le fuseau horaire et serveur NTP
+  - `GET /api/timezone/timezones` : Liste des 29 fuseaux horaires (GMT-12 à GMT+14)
+  - `GET /api/timezone/ntp-servers` : Liste des serveurs NTP populaires
+  - `POST /api/timezone/test-ntp?server=xxx` : Tester la connexion NTP
+  - `GET /api/timezone/current-time` : Heure actuelle avec fuseau configuré
+
+**Frontend ajouté dans `/app/frontend/src/pages/SpecialSettings.jsx`** :
+- Section "Fuseau Horaire et Synchronisation NTP" avec :
+  - Indicateur d'heure en temps réel du serveur
+  - Recherche et sélection des fuseaux horaires par ville ou GMT
+  - Grille des serveurs NTP populaires (pool.ntp.org, time.google.com, etc.)
+  - Champ personnalisé pour serveur NTP custom
+  - Bouton "Tester la connexion" avec affichage du décalage en ms
+  - Bouton "Sauvegarder la configuration"
+
+**Modifications supplémentaires** :
+- `/app/backend/mqtt_sensor_collector.py` : Applique le fuseau configuré aux horodatages des capteurs MQTT
+- `/app/backend/models.py` : Nouveaux modèles Pydantic (TimezoneConfig, NTPTestResult)
+- Dépendance `ntplib` ajoutée pour les tests NTP
+
+**Tests** : API validée par curl, frontend validé par screenshots
+
