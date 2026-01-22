@@ -11,7 +11,7 @@ SENSOR_TEMPLATES = {
         "icon": "thermometer",
         "default_min_threshold": -10.0,
         "default_max_threshold": 40.0,
-        "mqtt_refresh_interval": 60,
+        "format_json": False,
         "sample_topics": [
             "home/room/temperature",
             "factory/zone1/temp",
@@ -26,7 +26,7 @@ SENSOR_TEMPLATES = {
         "icon": "droplet",
         "default_min_threshold": 30.0,
         "default_max_threshold": 70.0,
-        "mqtt_refresh_interval": 60,
+        "format_json": False,
         "sample_topics": [
             "home/room/humidity",
             "factory/zone1/humidity",
@@ -41,7 +41,7 @@ SENSOR_TEMPLATES = {
         "icon": "gauge",
         "default_min_threshold": 950.0,
         "default_max_threshold": 1050.0,
-        "mqtt_refresh_interval": 300,
+        "format_json": False,
         "sample_topics": [
             "home/room/pressure",
             "factory/zone1/pressure",
@@ -56,7 +56,7 @@ SENSOR_TEMPLATES = {
         "icon": "wind",
         "default_min_threshold": 0.0,
         "default_max_threshold": 1000.0,
-        "mqtt_refresh_interval": 120,
+        "format_json": False,
         "sample_topics": [
             "home/room/air-quality",
             "factory/zone1/co2",
@@ -71,7 +71,7 @@ SENSOR_TEMPLATES = {
         "icon": "sun",
         "default_min_threshold": 0.0,
         "default_max_threshold": 10000.0,
-        "mqtt_refresh_interval": 120,
+        "format_json": False,
         "sample_topics": [
             "home/room/light",
             "factory/zone1/luminosity",
@@ -86,7 +86,7 @@ SENSOR_TEMPLATES = {
         "icon": "zap",
         "default_min_threshold": 0.0,
         "default_max_threshold": 5000.0,
-        "mqtt_refresh_interval": 30,
+        "format_json": False,
         "sample_topics": [
             "home/power/total",
             "factory/machine1/power",
@@ -101,7 +101,7 @@ SENSOR_TEMPLATES = {
         "icon": "zap",
         "default_min_threshold": 0.0,
         "default_max_threshold": 10000.0,
-        "mqtt_refresh_interval": 300,
+        "format_json": False,
         "sample_topics": [
             "home/energy/total",
             "factory/machine1/energy",
@@ -116,7 +116,7 @@ SENSOR_TEMPLATES = {
         "icon": "zap",
         "default_min_threshold": 200.0,
         "default_max_threshold": 250.0,
-        "mqtt_refresh_interval": 60,
+        "format_json": False,
         "sample_topics": [
             "home/power/voltage",
             "factory/machine1/voltage",
@@ -131,7 +131,7 @@ SENSOR_TEMPLATES = {
         "icon": "zap",
         "default_min_threshold": 0.0,
         "default_max_threshold": 50.0,
-        "mqtt_refresh_interval": 60,
+        "format_json": False,
         "sample_topics": [
             "home/power/current",
             "factory/machine1/current",
@@ -146,7 +146,7 @@ SENSOR_TEMPLATES = {
         "icon": "droplet",
         "default_min_threshold": 10.0,
         "default_max_threshold": 100.0,
-        "mqtt_refresh_interval": 300,
+        "format_json": False,
         "sample_topics": [
             "home/tank/water-level",
             "factory/reservoir/level",
@@ -161,7 +161,7 @@ SENSOR_TEMPLATES = {
         "icon": "droplet",
         "default_min_threshold": 0.0,
         "default_max_threshold": 100.0,
-        "mqtt_refresh_interval": 60,
+        "format_json": False,
         "sample_topics": [
             "home/water/flow",
             "factory/pipe1/flow",
@@ -176,7 +176,7 @@ SENSOR_TEMPLATES = {
         "icon": "activity",
         "default_min_threshold": 0.0,
         "default_max_threshold": 10.0,
-        "mqtt_refresh_interval": 30,
+        "format_json": False,
         "sample_topics": [
             "factory/motor1/vibration",
             "machine/bearing/vibration",
@@ -191,7 +191,7 @@ SENSOR_TEMPLATES = {
         "icon": "wind",
         "default_min_threshold": 400.0,
         "default_max_threshold": 1000.0,
-        "mqtt_refresh_interval": 120,
+        "format_json": False,
         "sample_topics": [
             "home/room/co2",
             "factory/zone1/co2",
@@ -206,7 +206,7 @@ SENSOR_TEMPLATES = {
         "icon": "activity",
         "default_min_threshold": 0.0,
         "default_max_threshold": 85.0,
-        "mqtt_refresh_interval": 60,
+        "format_json": False,
         "sample_topics": [
             "home/room/noise",
             "factory/zone1/noise",
@@ -221,7 +221,7 @@ SENSOR_TEMPLATES = {
         "icon": "activity",
         "default_min_threshold": 0.0,
         "default_max_threshold": 1.0,
-        "mqtt_refresh_interval": 10,
+        "format_json": False,
         "sample_topics": [
             "home/room/motion",
             "factory/entrance/motion",
@@ -236,7 +236,7 @@ SENSOR_TEMPLATES = {
         "icon": "activity",
         "default_min_threshold": 0.0,
         "default_max_threshold": 1.0,
-        "mqtt_refresh_interval": 10,
+        "format_json": False,
         "sample_topics": [
             "home/door/status",
             "factory/gate/status",
