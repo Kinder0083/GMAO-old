@@ -768,6 +768,45 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 
 ---
 
+### Session du 22 Janvier 2026 (Suite)
+
+#### ✅ Refactoring: Modularisation de MainLayout.jsx (22 Jan 2026)
+**Objectif** : Réduire la complexité du fichier monolithique `MainLayout.jsx` (~1260 lignes) en extrayant des composants modulaires.
+
+**Résultat du refactoring** :
+| Fichier | Avant | Après |
+|---------|-------|-------|
+| `MainLayout.jsx` | ~1260 lignes | 616 lignes (-51%) |
+| `Header.jsx` | nouveau | 388 lignes |
+| `Sidebar.jsx` | nouveau | 287 lignes |
+| `menuConfig.js` | existait | 168 lignes |
+| `useOverdueItems.js` | existait | 210 lignes |
+
+**Composants créés/modifiés** :
+- `/app/frontend/src/components/Layout/Header.jsx` - Composant header avec :
+  - Toggle sidebar
+  - Logo GMAO Iris
+  - Boutons Manuel, IA, Aide
+  - Badges notifications (Chat Live, Échéances, Surveillance, Inventaire, OT)
+  - Menu déroulant échéances dépassées
+  - Profil utilisateur
+
+- `/app/frontend/src/components/Layout/Sidebar.jsx` - Composant sidebar avec :
+  - Menus de navigation principaux
+  - Catégories avec sous-menus extensibles
+  - Section admin (Paramètres Spéciaux, MQTT, Mise à jour, Journal, SSH)
+  - Personnalisation et Déconnexion
+
+- `/app/frontend/src/components/Layout/MainLayout.jsx` - Composant principal simplifié avec :
+  - Logique métier (chargement données, événements)
+  - Composition des composants Header et Sidebar
+  - Zone de contenu principal (Outlet)
+  - Modaux et popups
+
+**Tests** : 100% frontend validé (rapport `/app/test_reports/iteration_12.json`)
+
+---
+
 ## Tâches à venir
 
 ### P1 - Migration WebSocket
