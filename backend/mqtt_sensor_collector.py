@@ -432,9 +432,11 @@ class MQTTSensorCollector:
     async def create_reading(self, sensor: dict, value: float):
         """Créer un relevé pour chaque message reçu"""
         try:
-            now = datetime.now(timezone.utc)
+            # Récupérer le fuseau horaire configuré
+            offset = await get_configured_timezone_offset(self.db)
+            now = get_local_datetime(offset)
             
-            # Créer le relevé
+            # Créer le relevé avec l'horodatage local
             reading = {
                 "id": f"sensor_{sensor['id']}_{int(now.timestamp())}",
                 "sensor_id": sensor["id"],
@@ -442,12 +444,13 @@ class MQTTSensorCollector:
                 "timestamp": now,
                 "value": value,
                 "unit": sensor.get("unite", ""),
-                "date_creation": now
+                "date_creation": now,
+                "timezone_offset": offset
             }
             
             await self.db.sensor_readings.insert_one(reading)
             
-            logger.debug(f"✅ Relevé capteur créé pour '{sensor['nom']}': {value} {sensor.get('unite', '')}")
+            logger.debug(f"✅ Relevé capteur créé pour '{sensor['nom']}': {value} {sensor.get('unite', '')} (GMT{'+' if offset >= 0 else ''}{offset})")
                 
         except Exception as e:
             logger.error(f"Erreur création relevé capteur: {e}")
