@@ -576,6 +576,150 @@ const SpecialSettings = () => {
     }
   };
 
+  // Fonctions Configuration Fuseau Horaire
+  const loadTimezoneConfig = async () => {
+    try {
+      setLoadingTimezone(true);
+      
+      // Charger la configuration actuelle
+      const configResponse = await api.timezone.getConfig();
+      setTimezoneConfig(configResponse.data);
+      
+      // Charger les listes disponibles
+      const timezonesResponse = await api.timezone.getTimezones();
+      setAvailableTimezones(timezonesResponse.data);
+      
+      const ntpServersResponse = await api.timezone.getNtpServers();
+      setAvailableNtpServers(ntpServersResponse.data);
+      
+      // Charger l'heure actuelle du serveur
+      const timeResponse = await api.timezone.getCurrentTime();
+      setCurrentServerTime(timeResponse.data);
+      
+    } catch (error) {
+      console.error('Erreur chargement config timezone:', error);
+    } finally {
+      setLoadingTimezone(false);
+    }
+  };
+
+  const handleSaveTimezoneConfig = async () => {
+    try {
+      setSavingTimezone(true);
+      
+      const response = await api.timezone.updateConfig(timezoneConfig);
+      
+      toast({
+        title: 'Configuration sauvegardée',
+        description: 'Le fuseau horaire a été mis à jour avec succès'
+      });
+      
+      // Recharger l'heure actuelle
+      const timeResponse = await api.timezone.getCurrentTime();
+      setCurrentServerTime(timeResponse.data);
+      
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: formatErrorMessage(error, 'Impossible de sauvegarder la configuration'),
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingTimezone(false);
+    }
+  };
+
+  const handleTestNtp = async (serverToTest) => {
+    const server = serverToTest || customNtpServer || timezoneConfig.ntp_server;
+    
+    if (!server || !server.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez spécifier un serveur NTP à tester',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setTestingNtp(true);
+      setNtpTestResult(null);
+      
+      const response = await api.timezone.testNtp(server.trim());
+      setNtpTestResult(response.data);
+      
+      if (response.data.success) {
+        toast({
+          title: 'Test réussi',
+          description: `Connexion au serveur ${server} réussie`
+        });
+      } else {
+        toast({
+          title: 'Test échoué',
+          description: response.data.message,
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: formatErrorMessage(error, 'Erreur lors du test NTP'),
+        variant: 'destructive'
+      });
+    } finally {
+      setTestingNtp(false);
+    }
+  };
+
+  const handleSelectTimezone = (tz) => {
+    setTimezoneConfig({
+      ...timezoneConfig,
+      timezone_offset: tz.offset,
+      timezone_name: tz.name
+    });
+  };
+
+  const handleSelectNtpServer = (server) => {
+    setTimezoneConfig({
+      ...timezoneConfig,
+      ntp_server: server
+    });
+    setCustomNtpServer('');
+  };
+
+  const handleSetCustomNtpServer = () => {
+    if (customNtpServer.trim()) {
+      setTimezoneConfig({
+        ...timezoneConfig,
+        ntp_server: customNtpServer.trim()
+      });
+    }
+  };
+
+  // Filtrer les fuseaux horaires selon la recherche
+  const filteredTimezones = availableTimezones.filter(tz => {
+    if (!timezoneSearchQuery) return true;
+    const query = timezoneSearchQuery.toLowerCase();
+    return tz.name.toLowerCase().includes(query) || 
+           tz.cities.toLowerCase().includes(query);
+  });
+
+  // Actualiser l'heure du serveur toutes les secondes
+  useEffect(() => {
+    if (!currentServerTime) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const timeResponse = await api.timezone.getCurrentTime();
+        setCurrentServerTime(timeResponse.data);
+      } catch (error) {
+        // Silencieux
+      }
+    }, 30000); // Actualiser toutes les 30 secondes
+    
+    return () => clearInterval(interval);
+  }, [currentServerTime]);
+
 
   const handleResetPassword = async (userId, userName) => {
     confirm({
