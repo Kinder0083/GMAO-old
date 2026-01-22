@@ -90,8 +90,9 @@ class MQTTSensorCollector:
                     )
                 return
                 
-            # Parser le payload
-            value = self.extract_value(payload, sensor.get("mqtt_json_path"))
+            # Parser le payload - utiliser format_json pour déterminer si on doit formater
+            format_json = sensor.get("format_json", False)
+            value = self.extract_value(payload, format_json)
             
             if value is None:
                 logger.warning(f"Impossible d'extraire la valeur du payload pour {sensor['nom']}: {payload[:100]}")
@@ -145,8 +146,8 @@ class MQTTSensorCollector:
                 }
             )
             
-            # Créer un relevé selon l'intervalle configuré
-            await self.create_reading_if_needed(sensor, value_float)
+            # Créer un relevé (toujours, car on veut enregistrer chaque changement)
+            await self.create_reading(sensor, value_float)
             
             # Vérifier les seuils d'alerte si activé
             if sensor.get("alert_enabled"):
