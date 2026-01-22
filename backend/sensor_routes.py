@@ -95,6 +95,463 @@ async def get_all_sensors(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# =======================
+# Templates, Export & Import (AVANT les routes avec {sensor_id} pour éviter les conflits)
+# =======================
+
+@router.get("/templates/list")
+async def get_sensor_templates(
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer tous les modèles de capteurs disponibles"""
+    from sensor_templates import get_all_templates
+    return get_all_templates()
+
+
+@router.get("/templates/{template_id}")
+async def get_sensor_template(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer un modèle de capteur spécifique"""
+    from sensor_templates import get_template
+    template = get_template(template_id)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+    
+    return template
+
+
+@router.get("/export/json")
+async def export_sensors_json(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Exporter tous les capteurs en JSON (admin seulement)"""
+    from fastapi.responses import JSONResponse
+    import json
+    
+    try:
+        sensors = await db.sensors.find({"actif": True}, {"_id": 0}).to_list(length=None)
+        
+        # Convertir les dates en ISO format
+        for sensor in sensors:
+            if sensor.get("date_creation") and isinstance(sensor["date_creation"], datetime):
+                sensor["date_creation"] = sensor["date_creation"].isoformat()
+            if sensor.get("last_update") and isinstance(sensor["last_update"], datetime):
+                sensor["last_update"] = sensor["last_update"].isoformat()
+        
+        export_data = {
+            "export_date": datetime.now(timezone.utc).isoformat(),
+            "exported_by": current_user.get("email"),
+            "total_sensors": len(sensors),
+            "sensors": sensors
+        }
+        
+        return JSONResponse(
+            content=export_data,
+            headers={
+                "Content-Disposition": f"attachment; filename=sensors_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Erreur export capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/export/csv")
+async def export_sensors_csv(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Exporter tous les capteurs en CSV (admin seulement)"""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    
+    try:
+        sensors = await db.sensors.find({"actif": True}, {"_id": 0}).to_list(length=None)
+        
+        # Créer le CSV
+        output = io.StringIO()
+        fieldnames = ['nom', 'type', 'unite', 'mqtt_topic', 'mqtt_json_key', 'mqtt_refresh_interval', 
+                      'alert_enabled', 'min_threshold', 'max_threshold', 'emplacement_id']
+        
+        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        
+        for sensor in sensors:
+            # Extraire seulement les champs nécessaires
+            row = {
+                'nom': sensor.get('nom', ''),
+                'type': sensor.get('type', ''),
+                'unite': sensor.get('unite', ''),
+                'mqtt_topic': sensor.get('mqtt_topic', ''),
+                'mqtt_json_key': sensor.get('mqtt_json_key', 'value'),
+                'mqtt_refresh_interval': sensor.get('mqtt_refresh_interval', 60),
+                'alert_enabled': sensor.get('alert_enabled', False),
+                'min_threshold': sensor.get('min_threshold', ''),
+                'max_threshold': sensor.get('max_threshold', ''),
+                'emplacement_id': sensor.get('emplacement_id', '')
+            }
+            writer.writerow(row)
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=sensors_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Erreur export CSV capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/export/readings")
+async def export_all_sensors_readings(
+    period_days: int = 7,
+    format: str = "csv",
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Exporter l'historique des lectures de tous les capteurs sur une période donnée.
+    Périodes supportées: jusqu'à 180 jours (6 mois)
+    Formats: csv, xlsx
+    """
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    
+    try:
+        # Limiter à 180 jours maximum
+        if period_days > 180:
+            period_days = 180
+        
+        start_date = datetime.now(timezone.utc) - timedelta(days=period_days)
+        
+        # Récupérer tous les capteurs actifs
+        sensors = await db.sensors.find({"actif": True}, {"_id": 0}).to_list(length=None)
+        sensor_map = {s["id"]: s for s in sensors}
+        
+        # Récupérer toutes les lectures de la période
+        readings = await db.sensor_readings.find(
+            {"timestamp": {"$gte": start_date}},
+            {"_id": 0}
+        ).sort("timestamp", -1).to_list(length=None)
+        
+        if format == "xlsx":
+            # Export Excel
+            import openpyxl
+            from openpyxl.utils import get_column_letter
+            from openpyxl.styles import Font, Alignment, PatternFill
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Données Capteurs"
+            
+            # En-têtes
+            headers = ["Date/Heure", "Capteur", "Type", "Valeur", "Unité", "Emplacement"]
+            header_fill = PatternFill(start_color="7C3AED", end_color="7C3AED", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF")
+            
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Données
+            for row_idx, reading in enumerate(readings, 2):
+                sensor = sensor_map.get(reading.get("sensor_id"), {})
+                timestamp = reading.get("timestamp")
+                if isinstance(timestamp, datetime):
+                    timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    timestamp_str = str(timestamp)
+                
+                ws.cell(row=row_idx, column=1, value=timestamp_str)
+                ws.cell(row=row_idx, column=2, value=sensor.get("nom", "Inconnu"))
+                ws.cell(row=row_idx, column=3, value=sensor.get("type", ""))
+                ws.cell(row=row_idx, column=4, value=reading.get("value"))
+                ws.cell(row=row_idx, column=5, value=sensor.get("unite", reading.get("unit", "")))
+                ws.cell(row=row_idx, column=6, value=sensor.get("emplacement", {}).get("nom", "") if sensor.get("emplacement") else "")
+            
+            # Ajuster les largeurs de colonnes
+            for col in range(1, len(headers) + 1):
+                ws.column_dimensions[get_column_letter(col)].width = 20
+            
+            # Sauvegarder dans un buffer
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f"capteurs_historique_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+        else:
+            # Export CSV par défaut
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # En-têtes
+            writer.writerow(["Date/Heure", "Capteur", "Type", "Valeur", "Unité", "Emplacement"])
+            
+            # Données
+            for reading in readings:
+                sensor = sensor_map.get(reading.get("sensor_id"), {})
+                timestamp = reading.get("timestamp")
+                if isinstance(timestamp, datetime):
+                    timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    timestamp_str = str(timestamp)
+                
+                writer.writerow([
+                    timestamp_str,
+                    sensor.get("nom", "Inconnu"),
+                    sensor.get("type", ""),
+                    reading.get("value", ""),
+                    sensor.get("unite", reading.get("unit", "")),
+                    sensor.get("emplacement", {}).get("nom", "") if sensor.get("emplacement") else ""
+                ])
+            
+            output.seek(0)
+            
+            filename = f"capteurs_historique_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="text/csv",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+    except Exception as e:
+        logger.error(f"Erreur export lectures capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/groups/by-location")
+async def get_sensors_by_location(
+    current_user: dict = Depends(get_current_user)
+):
+    """Regrouper les capteurs par localisation"""
+    try:
+        # Pipeline d'agrégation MongoDB
+        pipeline = [
+            {"$match": {"actif": True}},
+            {"$group": {
+                "_id": "$emplacement_id",
+                "location_name": {"$first": "$emplacement.nom"},
+                "sensors": {"$push": {
+                    "id": "$id",
+                    "nom": "$nom",
+                    "type": "$type",
+                    "unite": "$unite",
+                    "current_value": "$current_value",
+                    "last_update": "$last_update",
+                    "alert_enabled": "$alert_enabled"
+                }},
+                "count": {"$sum": 1},
+                "avg_value": {"$avg": "$current_value"},
+                "alerts_active": {"$sum": {"$cond": ["$alert_enabled", 1, 0]}}
+            }},
+            {"$sort": {"count": -1}}
+        ]
+        
+        results = await db.sensors.aggregate(pipeline).to_list(length=None)
+        
+        # Formater les résultats
+        groups = []
+        for result in results:
+            group = {
+                "location_id": result["_id"] if result["_id"] else "no_location",
+                "location_name": result["location_name"] if result.get("location_name") else "Sans emplacement",
+                "sensors": result["sensors"],
+                "count": result["count"],
+                "avg_value": round(result["avg_value"], 2) if result.get("avg_value") else None,
+                "alerts_active": result["alerts_active"]
+            }
+            groups.append(group)
+        
+        return {
+            "groups": groups,
+            "total_groups": len(groups),
+            "total_sensors": sum(g["count"] for g in groups)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur regroupement capteurs par localisation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/groups/by-type")
+async def get_sensors_by_type(
+    current_user: dict = Depends(get_current_user)
+):
+    """Regrouper les capteurs par type"""
+    try:
+        # Pipeline d'agrégation MongoDB
+        pipeline = [
+            {"$match": {"actif": True}},
+            {"$group": {
+                "_id": "$type",
+                "sensors": {"$push": {
+                    "id": "$id",
+                    "nom": "$nom",
+                    "unite": "$unite",
+                    "current_value": "$current_value",
+                    "last_update": "$last_update",
+                    "emplacement": "$emplacement"
+                }},
+                "count": {"$sum": 1},
+                "avg_value": {"$avg": "$current_value"},
+                "min_value": {"$min": "$current_value"},
+                "max_value": {"$max": "$current_value"}
+            }},
+            {"$sort": {"count": -1}}
+        ]
+        
+        results = await db.sensors.aggregate(pipeline).to_list(length=None)
+        
+        # Noms de types en français
+        type_labels = {
+            "TEMPERATURE": "Température",
+            "HUMIDITY": "Humidité",
+            "PRESSURE": "Pression",
+            "AIR_QUALITY": "Qualité d'air",
+            "LIGHT": "Luminosité",
+            "POWER": "Puissance",
+            "ENERGY": "Énergie",
+            "VOLTAGE": "Tension",
+            "CURRENT": "Courant",
+            "WATER_LEVEL": "Niveau d'eau",
+            "FLOW": "Débit",
+            "VIBRATION": "Vibration",
+            "NOISE": "Bruit",
+            "CO2": "CO2",
+            "MOTION": "Mouvement",
+            "DOOR": "Ouverture",
+            "OTHER": "Autre"
+        }
+        
+        # Formater les résultats
+        groups = []
+        for result in results:
+            sensor_type = result["_id"]
+            group = {
+                "type": sensor_type,
+                "type_label": type_labels.get(sensor_type, sensor_type),
+                "sensors": result["sensors"],
+                "count": result["count"],
+                "avg_value": round(result["avg_value"], 2) if result.get("avg_value") else None,
+                "min_value": round(result["min_value"], 2) if result.get("min_value") else None,
+                "max_value": round(result["max_value"], 2) if result.get("max_value") else None
+            }
+            groups.append(group)
+        
+        return {
+            "groups": groups,
+            "total_groups": len(groups),
+            "total_sensors": sum(g["count"] for g in groups)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur regroupement capteurs par type: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/import/json")
+async def import_sensors_json(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Importer des capteurs depuis un fichier JSON (admin seulement)"""
+    import json
+    
+    try:
+        # Lire le fichier
+        content = await file.read()
+        data = json.loads(content)
+        
+        # Valider la structure
+        if "sensors" not in data:
+            raise HTTPException(status_code=400, detail="Format JSON invalide: clé 'sensors' manquante")
+        
+        sensors_to_import = data["sensors"]
+        imported_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for sensor_data in sensors_to_import:
+            try:
+                # Vérifier si un capteur avec le même topic existe déjà
+                existing = await db.sensors.find_one({
+                    "mqtt_topic": sensor_data.get("mqtt_topic"),
+                    "actif": True
+                })
+                
+                if existing:
+                    skipped_count += 1
+                    errors.append(f"Capteur '{sensor_data.get('nom')}' ignoré (topic déjà existant)")
+                    continue
+                
+                # Créer un nouveau capteur
+                sensor_id = str(uuid4())
+                new_sensor = {
+                    "id": sensor_id,
+                    "nom": sensor_data.get("nom"),
+                    "type": sensor_data.get("type"),
+                    "unite": sensor_data.get("unite"),
+                    "mqtt_topic": sensor_data.get("mqtt_topic"),
+                    "mqtt_json_key": sensor_data.get("mqtt_json_key", "value"),
+                    "mqtt_refresh_interval": sensor_data.get("mqtt_refresh_interval", 60),
+                    "alert_enabled": sensor_data.get("alert_enabled", False),
+                    "min_threshold": sensor_data.get("min_threshold"),
+                    "max_threshold": sensor_data.get("max_threshold"),
+                    "emplacement_id": sensor_data.get("emplacement_id"),
+                    "date_creation": datetime.now(timezone.utc),
+                    "actif": True,
+                    "created_by": current_user["id"],
+                    "current_value": None,
+                    "last_update": None
+                }
+                
+                # Récupérer l'emplacement si fourni
+                if new_sensor.get("emplacement_id"):
+                    location = await db.locations.find_one({"id": new_sensor["emplacement_id"]}, {"_id": 0})
+                    if location:
+                        new_sensor["emplacement"] = {"id": location["id"], "nom": location["nom"]}
+                
+                await db.sensors.insert_one(new_sensor)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Erreur import capteur '{sensor_data.get('nom', 'inconnu')}': {str(e)}")
+        
+        return {
+            "success": True,
+            "imported": imported_count,
+            "skipped": skipped_count,
+            "errors": errors
+        }
+        
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Fichier JSON invalide")
+    except Exception as e:
+        logger.error(f"Erreur import capteurs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =======================
+# Routes avec {sensor_id} - DOIVENT être définies APRÈS les routes avec chemins fixes
+# =======================
+
 @router.get("/{sensor_id}", response_model=Sensor)
 async def get_sensor(
     sensor_id: str,
