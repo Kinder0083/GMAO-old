@@ -5108,6 +5108,813 @@ def get_time_index(date, start_date, group_by, max_len):
     return 0
 
 
+# ==================== IMPORT/EXPORT ROUTES ====================
+EXPORT_MODULES = {
+    "intervention-requests": "intervention_requests",
+    "work-orders": "work_orders",
+    "improvement-requests": "improvement_requests",
+    "improvements": "improvements",
+    "equipments": "equipments",
+    "meters": "meters",
+    "meter-readings": "meter_readings",
+    "surveillance-items": "surveillance_items",
+    "presqu-accident-items": "presqu_accident_items",
+    "users": "users",
+    "inventory": "inventory",
+    "locations": "locations",
+    "vendors": "vendors",
+    "purchase-history": "purchase_history",
+    "purchase-requests": "purchase_requests",
+    "preventive-maintenance": "preventive_maintenance",
+    "preventive-checklists": "preventive_checklists",
+    "preventive-checklist-templates": "preventive_checklist_templates",
+    "preventive-checklist-executions": "preventive_checklist_executions",
+    "sensors": "sensors",
+    "documentations": "documentations",
+    "mqtt-logs": "mqtt_logs",
+    "chat-messages": "chat_messages"
+}
+
+@api_router.get("/export/{module}")
+async def export_data(
+    module: str,
+    format: str = "csv",  # csv ou xlsx
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Exporter les données d'un module (admin uniquement)"""
+    try:
+        if module not in EXPORT_MODULES and module != "all":
+            raise HTTPException(status_code=400, detail="Module invalide")
+        
+        # Préparer les données
+        data_to_export = {}
+        
+        if module == "all":
+            modules_to_export = EXPORT_MODULES
+        else:
+            modules_to_export = {module: EXPORT_MODULES[module]}
+        
+        for mod_name, collection_name in modules_to_export.items():
+            items = await db[collection_name].find().to_list(10000)
+            
+            # Nettoyer les données
+            cleaned_items = []
+            for item in items:
+                cleaned_item = {k: v for k, v in item.items() if k != "_id"}
+                cleaned_item["id"] = str(item["_id"])
+                
+                # Convertir les dates et ObjectId en strings
+                # NE PAS convertir les listes en strings - les garder comme JSON
+                for key, value in cleaned_item.items():
+                    if isinstance(value, datetime):
+                        cleaned_item[key] = value.isoformat()
+                    elif isinstance(value, ObjectId):
+                        cleaned_item[key] = str(value)
+                    elif isinstance(value, list):
+                        # Convertir la liste en JSON string pour l'export CSV/Excel
+                        import json
+                        cleaned_item[key] = json.dumps(value, default=str)
+                    elif isinstance(value, dict):
+                        import json
+                        cleaned_item[key] = json.dumps(value, default=str)
+                
+                cleaned_items.append(cleaned_item)
+            
+            data_to_export[mod_name] = cleaned_items
+        
+        # Générer le fichier
+        if format == "csv":
+            # Pour CSV, un fichier par module
+            if len(data_to_export) == 1:
+                mod_name = list(data_to_export.keys())[0]
+                df = pd.DataFrame(data_to_export[mod_name])
+                
+                output = io.StringIO()
+                df.to_csv(output, index=False, encoding='utf-8')
+                output.seek(0)
+                
+                return StreamingResponse(
+                    io.BytesIO(output.getvalue().encode('utf-8')),
+                    media_type="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename={mod_name}.csv"}
+                )
+            else:
+                # Pour "all", créer un zip avec plusieurs CSV
+                raise HTTPException(status_code=400, detail="Pour exporter tout, utilisez le format xlsx")
+        
+        elif format == "xlsx":
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                for mod_name, items in data_to_export.items():
+                    df = pd.DataFrame(items)
+                    sheet_name = mod_name[:31]  # Excel limite à 31 caractères
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+            
+            output.seek(0)
+            filename = "export_all.xlsx" if module == "all" else f"{module}.xlsx"
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
+            )
+        
+        else:
+            raise HTTPException(status_code=400, detail="Format invalide (csv ou xlsx)")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/purchase-history/template")
+async def download_purchase_template(format: str = "csv", current_user: dict = Depends(require_permission("purchaseHistory", "view"))):
+    """Télécharger un template vide pour l'import des achats"""
+    
+    # Structure du template avec les noms de colonnes françaises
+    template_data = {
+        "Fournisseur": ["Exemple Fournisseur"],
+        "N° Commande": ["CMD-001"],
+        "N° reception": ["REC-001"],
+        "Date de création": ["19/09/2025"],
+        "Article": ["Article exemple"],
+        "Description 1": ["Description de l'article"],
+        "Groupe statistique": ["STK-A"],
+        "STK quantité": ["10,00"],
+        "Montant ligne HT": ["1500,50"],
+        "Quantité retournée": ["0,00"],
+        "Site": ["Site Principal"],
+        "Creation user": ["admin@example.com"]
+    }
+    
+    df = pd.DataFrame(template_data)
+    
+    # Générer le fichier CSV avec point-virgule
+    output = io.StringIO()
+    df.to_csv(output, index=False, sep=';')
+    content = output.getvalue()
+    
+    return Response(
+        content=content.encode('utf-8'),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=template_historique_achat.csv"
+        }
+    )
+
+
+@api_router.post("/import/{module}")
+async def import_data(
+    module: str,
+    mode: str = "add",  # add ou replace
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Importer les données d'un module (admin uniquement)"""
+    try:
+        if module not in EXPORT_MODULES and module != "all":
+            raise HTTPException(status_code=400, detail="Module invalide")
+        
+        # Déterminer les modules à traiter
+        if module == "all":
+            modules_to_import = EXPORT_MODULES
+        else:
+            modules_to_import = {module: EXPORT_MODULES[module]}
+        
+        # Lire le fichier
+        content = await file.read()
+        
+        # Mappings de colonnes pour chaque module
+        column_mappings = {
+            "purchase-history": {
+                "Fournisseur": "fournisseur",
+                "N° Commande ": "numeroCommande",
+                "N° Commande": "numeroCommande",
+                "N° reception": "numeroReception",
+                "Date de création": "dateCreation",
+                "Article": "article",
+                "Description 1": "description",
+                "Description": "description",
+                "Groupe statistique": "groupeStatistique",
+                "Groupe statistique STK": "groupeStatistique",
+                "STK quantité": "quantite",
+                "quantité": "quantite",
+                "Quantité": "quantite",
+                "Montant ligne HT": "montantLigneHT",
+                "Quantité retournée": "quantiteRetournee",
+                "Site ": "site",
+                "Site": "site",
+                "Creation user": "creationUser"
+            },
+            "work-orders": {
+                "ID": "id",
+                "id": "id",
+                "Titre": "titre",
+                "Title": "titre",
+                "titre": "titre",
+                "Description": "description",
+                "description": "description",
+                "Priorité": "priorite",
+                "Priority": "priorite",
+                "priorite": "priorite",
+                "Statut": "statut",
+                "Status": "statut",
+                "statut": "statut",
+                "Catégorie": "categorie",
+                "Category": "categorie",
+                "categorie": "categorie",
+                "Date création": "dateCreation",
+                "dateCreation": "dateCreation",
+                "Date début": "dateDebut",
+                "dateDebut": "dateDebut",
+                "Date fin": "dateFin",
+                "dateFin": "dateFin",
+                "Date limite": "dateLimite",
+                "dateLimite": "dateLimite",
+                "Équipement": "equipement_id",
+                "Equipment": "equipement_id",
+                "equipement_id": "equipement_id",
+                "Assigné à": "assigne_a_id",
+                "Assigned To": "assigne_a_id",
+                "assigne_a_id": "assigne_a_id",
+                "Emplacement": "emplacement_id",
+                "Location": "emplacement_id",
+                "emplacement_id": "emplacement_id",
+                "Temps estimé": "tempsEstime",
+                "tempsEstime": "tempsEstime",
+                "Temps réel": "tempsReel",
+                "tempsReel": "tempsReel",
+                "Numéro": "numero",
+                "numero": "numero",
+                "Créé par": "createdBy",
+                "createdBy": "createdBy"
+            },
+            "equipments": {
+                "ID": "id",
+                "Nom": "name",
+                "Name": "name",
+                "Code": "code",
+                "Type": "type",
+                "Marque": "brand",
+                "Brand": "brand",
+                "Modèle": "model",
+                "Model": "model",
+                "Numéro de série": "serialNumber",
+                "Serial Number": "serialNumber",
+                "Zone": "location",
+                "Location": "location",
+                "Statut": "status",
+                "Status": "status",
+                "Date installation": "installDate"
+            },
+            "intervention-requests": {
+                "ID": "id",
+                "Titre": "title",
+                "Title": "title",
+                "Description": "description",
+                "Priorité": "priority",
+                "Priority": "priority",
+                "Statut": "status",
+                "Status": "status",
+                "Date création": "dateCreation",
+                "Équipement": "equipment",
+                "Equipment": "equipment",
+                "Demandeur": "requestedBy",
+                "Requested By": "requestedBy"
+            },
+            "improvement-requests": {
+                "ID": "id",
+                "Titre": "title",
+                "Title": "title",
+                "Description": "description",
+                "Priorité": "priority",
+                "Priority": "priority",
+                "Statut": "status",
+                "Status": "status",
+                "Date création": "dateCreation",
+                "Demandeur": "requestedBy"
+            },
+            "improvements": {
+                "ID": "id",
+                "Titre": "title",
+                "Title": "title",
+                "Description": "description",
+                "Priorité": "priority",
+                "Priority": "priority",
+                "Statut": "status",
+                "Status": "status",
+                "Date création": "dateCreation",
+                "Date début": "dateDebut",
+                "Date fin": "dateFin",
+                "Assigné à": "assignedTo"
+            },
+            "locations": {
+                "ID": "id",
+                "Nom": "name",
+                "Name": "name",
+                "Code": "code",
+                "Type": "type",
+                "Parent": "parent",
+                "Description": "description"
+            },
+            "meters": {
+                "ID": "id",
+                "Nom": "name",
+                "Name": "name",
+                "Type": "type",
+                "Équipement": "equipment",
+                "Equipment": "equipment",
+                "Unité": "unit",
+                "Unit": "unit",
+                "Valeur actuelle": "currentValue",
+                "Current Value": "currentValue"
+            },
+            "users": {
+                "ID": "id",
+                "Email": "email",
+                "Prénom": "prenom",
+                "First Name": "prenom",
+                "Nom": "nom",
+                "Last Name": "nom",
+                "Rôle": "role",
+                "Role": "role",
+                "Téléphone": "telephone",
+                "Phone": "telephone",
+                "Service": "service"
+            },
+            "inventory": {
+                "ID": "id",
+                "Nom": "name",
+                "Name": "name",
+                "Code": "code",
+                "Type": "type",
+                "Catégorie": "category",
+                "Category": "category",
+                "Quantité": "quantity",
+                "Quantity": "quantity",
+                "Zone": "location",
+                "Location": "location"
+            },
+            "surveillance-items": {
+                "ID": "id",
+                "Titre": "titre",
+                "Title": "titre",
+                "Catégorie": "category",
+                "Category": "category",
+                "Bâtiment": "batiment",
+                "Building": "batiment",
+                "Zone": "zone",
+                "Équipement": "equipement",
+                "Equipment": "equipement",
+                "Responsable": "responsable",
+                "Responsible": "responsable",
+                "Périodicité": "periodicite",
+                "Frequency": "periodicite",
+                "Dernier contrôle": "dernierControle",
+                "Last Check": "dernierControle",
+                "Prochain contrôle": "prochainControle",
+                "Next Check": "prochainControle",
+                "Statut": "status",
+                "Status": "status",
+                "Commentaire": "commentaire",
+                "Comment": "commentaire",
+                "Durée rappel échéance": "duree_rappel_echeance",
+                "Reminder Duration": "duree_rappel_echeance"
+            },
+            "presqu-accident-items": {
+                "ID": "id",
+                "Titre": "titre",
+                "Title": "titre",
+                "Description": "description",
+                "Date incident": "date_incident",
+                "Incident Date": "date_incident",
+                "Lieu": "lieu",
+                "Location": "lieu",
+                "Service": "service",
+                "Personnes impliquées": "personnes_impliquees",
+                "People Involved": "personnes_impliquees",
+                "Déclarant": "declarant",
+                "Reporter": "declarant",
+                "Contexte/Cause": "contexte_cause",
+                "Context/Cause": "contexte_cause",
+                "Sévérité": "severite",
+                "Severity": "severite",
+                "Actions proposées": "actions_proposees",
+                "Proposed Actions": "actions_proposees",
+                "Actions préventions": "actions_preventions",
+                "Prevention Actions": "actions_preventions",
+                "Responsable action": "responsable_action",
+                "Action Responsible": "responsable_action",
+                "Date échéance": "date_echeance_action",
+                "Deadline": "date_echeance_action",
+                "Statut": "status",
+                "Status": "status",
+                "Commentaire": "commentaire",
+                "Comment": "commentaire"
+            },
+            "vendors": {
+                "ID": "id",
+                "Nom": "name",
+                "Name": "name",
+                "Email": "email",
+                "Téléphone": "phone",
+                "Phone": "phone",
+                "Adresse": "address",
+                "Address": "address",
+                "Type": "type",
+                "Statut": "status",
+                "Status": "status"
+            }
+        }
+        
+        # Lire le fichier selon le type et le module
+        data_sheets = {}
+        
+        try:
+            if file.filename.endswith('.csv'):
+                if module == "all":
+                    raise HTTPException(status_code=400, detail="Pour importer toutes les données, utilisez un fichier Excel multi-feuilles")
+                
+                # Détecter automatiquement le séparateur CSV
+                content_str = content.decode('utf-8', errors='ignore')
+                first_line = content_str.split('\n')[0] if content_str else ""
+                
+                comma_count = first_line.count(',')
+                semicolon_count = first_line.count(';')
+                tab_count = first_line.count('\t')
+                
+                if semicolon_count > comma_count and semicolon_count > tab_count:
+                    separator = ';'
+                elif tab_count > comma_count:
+                    separator = '\t'
+                else:
+                    separator = ','
+                
+                logger.info(f"📋 Séparateur détecté: '{separator}'")
+                df = pd.read_csv(io.BytesIO(content), sep=separator, encoding='utf-8')
+                logger.info(f"✅ CSV lu: {len(df)} lignes, {len(df.columns)} colonnes")
+                data_sheets[module] = df
+                
+            elif file.filename.endswith(('.xlsx', '.xls', '.xlsb')):
+                if module == "all":
+                    # Lire toutes les feuilles pour l'import complet
+                    try:
+                        all_sheets = pd.read_excel(io.BytesIO(content), sheet_name=None, engine='openpyxl')
+                        logger.info(f"✅ Fichier Excel multi-feuilles lu: {len(all_sheets)} feuilles")
+                        
+                        # Mapper les noms de feuilles aux modules
+                        sheet_to_module = {
+                            "intervention-requests": "intervention-requests",
+                            "intervention_requests": "intervention-requests", 
+                            "work-orders": "work-orders",
+                            "work_orders": "work-orders",
+                            "improvement-requests": "improvement-requests",
+                            "improvement_requests": "improvement-requests",
+                            "improvements": "improvements",
+                            "equipments": "equipments",
+                            "locations": "locations",
+                            "inventory": "inventory",
+                            "purchase-history": "purchase-history",
+                            "purchase_history": "purchase-history",
+                            "meters": "meters",
+                            "users": "users",
+                            "people": "users",  # Support both names
+                            "vendors": "vendors",
+                            "fournisseurs": "vendors"
+                        }
+                        
+                        for sheet_name, df in all_sheets.items():
+                            # Essayer de mapper le nom de la feuille à un module
+                            module_name = sheet_to_module.get(sheet_name.lower())
+                            if module_name and module_name in modules_to_import:
+                                data_sheets[module_name] = df
+                                logger.info(f"📋 Feuille '{sheet_name}' mappée au module '{module_name}': {len(df)} lignes")
+                        
+                        if not data_sheets:
+                            available_sheets = list(all_sheets.keys())
+                            expected_sheets = list(modules_to_import.keys())
+                            raise HTTPException(
+                                status_code=400, 
+                                detail=f"Aucune feuille reconnue. Feuilles disponibles: {available_sheets}. Feuilles attendues: {expected_sheets}"
+                            )
+                            
+                    except Exception as e:
+                        if "Aucune feuille reconnue" in str(e):
+                            raise
+                        raise HTTPException(status_code=400, detail=f"Erreur lecture multi-feuilles: {str(e)}")
+                else:
+                    # Lire une seule feuille pour un module spécifique
+                    df = None
+                    errors = []
+                    
+                    # Tentatives multiples de lecture
+                    if file.filename.endswith('.xlsx'):
+                        try:
+                            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
+                            logger.info("✅ Fichier lu avec openpyxl")
+                        except Exception as e1:
+                            errors.append(f"openpyxl: {str(e1)[:100]}")
+                    
+                    if df is None:
+                        try:
+                            df = pd.read_excel(io.BytesIO(content), engine='xlrd')
+                            logger.info("✅ Fichier lu avec xlrd")
+                        except Exception as e2:
+                            errors.append(f"xlrd: {str(e2)[:100]}")
+                    
+                    if df is None and file.filename.endswith('.xlsb'):
+                        try:
+                            df = pd.read_excel(io.BytesIO(content), engine='pyxlsb')
+                            logger.info("✅ Fichier lu avec pyxlsb")
+                        except Exception as e3:
+                            errors.append(f"pyxlsb: {str(e3)[:100]}")
+                    
+                    if df is None:
+                        try:
+                            df = pd.read_excel(io.BytesIO(content))
+                            logger.info("✅ Fichier lu avec méthode par défaut")
+                        except Exception as e4:
+                            errors.append(f"default: {str(e4)[:100]}")
+                    
+                    if df is None:
+                        error_msg = "Impossible de lire le fichier Excel. Erreurs:\n" + "\n".join(errors)
+                        error_msg += "\n\n💡 Solutions:\n"
+                        error_msg += "1. Ouvrez le fichier dans Excel et sauvegardez-le à nouveau\n"
+                        error_msg += "2. Exportez en CSV depuis Excel\n"
+                        error_msg += "3. Utilisez un fichier Excel plus simple"
+                        raise HTTPException(status_code=400, detail=error_msg)
+                    
+                    data_sheets[module] = df
+            else:
+                raise HTTPException(status_code=400, detail="Format non supporté (CSV, XLSX, XLS ou XLSB)")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Erreur de lecture: {str(e)}. Essayez CSV."
+            )
+        
+        # Traiter chaque feuille/module
+        overall_stats = {
+            "total": 0,
+            "inserted": 0,
+            "updated": 0,
+            "skipped": 0,
+            "errors": [],
+            "modules": {}
+        }
+        
+        for current_module, df in data_sheets.items():
+            collection_name = modules_to_import[current_module]
+            
+            # Appliquer le mapping des colonnes si disponible
+            if current_module in column_mappings:
+                df = df.rename(columns=column_mappings[current_module])
+            
+            # Nettoyer les noms de colonnes - convertir en string d'abord
+            df.columns = [str(col).strip() if col is not None else f'col_{i}' for i, col in enumerate(df.columns)]
+            
+            # Convertir en dictionnaires
+            items_to_import = df.to_dict('records')
+            
+            module_stats = {
+                "total": len(items_to_import),
+                "inserted": 0,
+                "updated": 0,
+                "skipped": 0,
+                "errors": []
+            }
+            
+            logger.info(f"🔄 Traitement du module '{current_module}': {len(items_to_import)} éléments")
+            
+            for idx, item in enumerate(items_to_import):
+                try:
+                    # Nettoyer les NaN
+                    cleaned_item = {k: v for k, v in item.items() if pd.notna(v)}
+                    
+                    # Convertir et initialiser les champs qui doivent être des listes
+                    list_fields = ["comments", "attachments", "historique", "permissions", "parts_used"]
+                    for list_field in list_fields:
+                        if list_field in cleaned_item:
+                            if isinstance(cleaned_item[list_field], str):
+                                # Convertir string JSON en liste
+                                import json
+                                try:
+                                    parsed = json.loads(cleaned_item[list_field])
+                                    cleaned_item[list_field] = parsed if isinstance(parsed, list) else []
+                                except:
+                                    # Si c'est '[]' ou un string vide, mettre liste vide
+                                    cleaned_item[list_field] = []
+                            elif not isinstance(cleaned_item[list_field], list):
+                                cleaned_item[list_field] = []
+                        else:
+                            # Initialiser le champ s'il n'existe pas
+                            cleaned_item[list_field] = []
+                    
+                    # Traitement spécifique purchase-history
+                    if current_module == "purchase-history":
+                        for num_field in ["quantite", "montantLigneHT", "quantiteRetournee"]:
+                            if num_field in cleaned_item:
+                                try:
+                                    value = cleaned_item[num_field]
+                                    if isinstance(value, str):
+                                        value = value.replace(',', '.').replace(' ', '')
+                                    cleaned_item[num_field] = float(value)
+                                except:
+                                    if num_field == "quantiteRetournee":
+                                        cleaned_item[num_field] = 0.0
+                                    elif num_field == "quantite":
+                                        cleaned_item[num_field] = 0.0
+                        
+                        # Convertir dates françaises
+                        if "dateCreation" in cleaned_item:
+                            try:
+                                date_val = cleaned_item["dateCreation"]
+                                if isinstance(date_val, str):
+                                    if '/' in date_val:
+                                        parts = date_val.split('/')
+                                        if len(parts) == 3:
+                                            cleaned_item["dateCreation"] = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+                                    cleaned_item["dateCreation"] = datetime.fromisoformat(cleaned_item["dateCreation"])
+                                elif hasattr(date_val, 'to_pydatetime'):
+                                    cleaned_item["dateCreation"] = date_val.to_pydatetime()
+                            except Exception as e:
+                                logger.warning(f"Module {current_module}, ligne {idx+1}: date invalide")
+                                pass
+                        
+                        cleaned_item["dateEnregistrement"] = datetime.utcnow()
+                        if "creationUser" not in cleaned_item or not cleaned_item["creationUser"]:
+                            cleaned_item["creationUser"] = current_user.get("email", "import")
+                    
+                    # Traitement générique pour les autres modules
+                    else:
+                        # Convertir les dates
+                        date_fields = ["dateCreation", "dateDebut", "dateFin", "installDate", "dateEnregistrement"]
+                        for date_field in date_fields:
+                            if date_field in cleaned_item:
+                                try:
+                                    date_val = cleaned_item[date_field]
+                                    if isinstance(date_val, str):
+                                        if '/' in date_val:
+                                            parts = date_val.split('/')
+                                            if len(parts) == 3:
+                                                cleaned_item[date_field] = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+                                        cleaned_item[date_field] = datetime.fromisoformat(cleaned_item[date_field])
+                                    elif hasattr(date_val, 'to_pydatetime'):
+                                        cleaned_item[date_field] = date_val.to_pydatetime()
+                                except:
+                                    pass
+                        
+                        # Ajouter métadonnées obligatoires
+                        if "dateCreation" not in cleaned_item:
+                            cleaned_item["dateCreation"] = datetime.utcnow()
+                        
+                        # Initialiser champs spécifiques par module
+                        if current_module in ["work-orders", "improvements"]:
+                            # Champs obligatoires pour work-orders et improvements
+                            if "numero" not in cleaned_item:
+                                # Générer un numéro séquentiel
+                                last_item = await db[collection_name].find_one(
+                                    sort=[("numero", -1)]
+                                )
+                                last_num = last_item.get("numero", 0) if last_item else 0
+                                if isinstance(last_num, str):
+                                    try:
+                                        last_num = int(last_num.replace("N/A", "0"))
+                                    except:
+                                        last_num = 0
+                                cleaned_item["numero"] = last_num + 1
+                            if "statut" not in cleaned_item:
+                                cleaned_item["statut"] = "OUVERT"
+                            if "priorite" not in cleaned_item:
+                                cleaned_item["priorite"] = "AUCUNE"
+                            if "categorie" not in cleaned_item:
+                                cleaned_item["categorie"] = "TRAVAUX_DIVERS"
+                            # Initialiser les listes vides si pas présentes
+                            if "attachments" not in cleaned_item:
+                                cleaned_item["attachments"] = []
+                            if "comments" not in cleaned_item:
+                                cleaned_item["comments"] = []
+                            if "historique" not in cleaned_item:
+                                cleaned_item["historique"] = []
+                            if "permissions" not in cleaned_item:
+                                cleaned_item["permissions"] = []
+                            if "parts_used" not in cleaned_item:
+                                cleaned_item["parts_used"] = []
+                            if "tempsReel" not in cleaned_item:
+                                cleaned_item["tempsReel"] = 0
+                            if "tempsEstime" not in cleaned_item:
+                                cleaned_item["tempsEstime"] = 0
+                            if "createdBy" not in cleaned_item:
+                                cleaned_item["createdBy"] = current_user.get("email", "import")
+                            # Convertir numero en string si c'est un int
+                            if "numero" in cleaned_item and isinstance(cleaned_item["numero"], int):
+                                cleaned_item["numero"] = str(cleaned_item["numero"])
+                        
+                        elif current_module in ["intervention-requests", "improvement-requests"]:
+                            # Champs obligatoires pour les demandes
+                            if "statut" not in cleaned_item:
+                                cleaned_item["statut"] = "EN_ATTENTE"
+                            if "priorite" not in cleaned_item:
+                                cleaned_item["priorite"] = "MOYENNE"
+                        
+                        elif current_module == "equipments":
+                            # Champs obligatoires pour équipements
+                            if "statut" not in cleaned_item:
+                                cleaned_item["statut"] = "OPERATIONNEL"
+                            if "actif" not in cleaned_item:
+                                cleaned_item["actif"] = True
+                        
+                        elif current_module == "meters":
+                            # Champs obligatoires pour compteurs
+                            if "actif" not in cleaned_item:
+                                cleaned_item["actif"] = True
+                        
+                        elif current_module == "users":
+                            # Champs obligatoires pour utilisateurs
+                            if "actif" not in cleaned_item:
+                                cleaned_item["actif"] = True
+                            if "role" not in cleaned_item:
+                                cleaned_item["role"] = "VISUALISEUR"
+                    
+                    # Gérer l'ID
+                    item_id = cleaned_item.get('id')
+                    if item_id and 'id' in cleaned_item:
+                        del cleaned_item['id']
+                    
+                    if mode == "replace" and item_id:
+                        try:
+                            existing = await db[collection_name].find_one({"_id": ObjectId(item_id)})
+                            
+                            if existing:
+                                # Garder l'id lors du replace
+                                cleaned_item["id"] = item_id
+                                await db[collection_name].replace_one(
+                                    {"_id": ObjectId(item_id)},
+                                    cleaned_item
+                                )
+                                module_stats["updated"] += 1
+                            else:
+                                cleaned_item["_id"] = ObjectId(item_id)
+                                # Ajouter le champ id
+                                cleaned_item["id"] = item_id
+                                await db[collection_name].insert_one(cleaned_item)
+                                module_stats["inserted"] += 1
+                        except:
+                            # Si l'ID n'est pas valide, insérer comme nouveau
+                            if "_id" in cleaned_item:
+                                del cleaned_item["_id"]
+                            
+                            # Générer nouvel ObjectId
+                            new_id = ObjectId()
+                            cleaned_item["_id"] = new_id
+                            
+                            # IMPORTANT: Ajouter le champ 'id' (string) pour Pydantic
+                            cleaned_item["id"] = str(new_id)
+                            
+                            await db[collection_name].insert_one(cleaned_item)
+                            module_stats["inserted"] += 1
+                    else:
+                        # Mode add
+                        if "_id" in cleaned_item:
+                            del cleaned_item["_id"]
+                        
+                        # Générer nouvel ObjectId
+                        new_id = ObjectId()
+                        cleaned_item["_id"] = new_id
+                        
+                        # IMPORTANT: Ajouter le champ 'id' (string) pour Pydantic
+                        cleaned_item["id"] = str(new_id)
+                        
+                        await db[collection_name].insert_one(cleaned_item)
+                        module_stats["inserted"] += 1
+                
+                except Exception as e:
+                    module_stats["skipped"] += 1
+                    error_msg = f"Module {current_module}, ligne {module_stats['inserted'] + module_stats['updated'] + module_stats['skipped']}: {str(e)[:100]}"
+                    module_stats["errors"].append(error_msg)
+                    logger.warning(error_msg)
+            
+            # Ajouter les stats du module aux stats globales
+            overall_stats["total"] += module_stats["total"]
+            overall_stats["inserted"] += module_stats["inserted"]
+            overall_stats["updated"] += module_stats["updated"]
+            overall_stats["skipped"] += module_stats["skipped"]
+            overall_stats["errors"].extend(module_stats["errors"])
+            overall_stats["modules"][current_module] = module_stats
+            
+            logger.info(f"✅ Module '{current_module}' traité: {module_stats['inserted']} ajoutés, {module_stats['updated']} mis à jour, {module_stats['skipped']} ignorés")
+        
+        return overall_stats
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur import: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==================== UPDATE ROUTES ====================
 from update_manager import UpdateManager
 
