@@ -646,8 +646,8 @@ async def get_sensor_readings(
 ):
     """Récupérer les relevés d'un capteur"""
     try:
-        # Calculer la date de début
-        start_date = datetime.now(timezone.utc) - timedelta(hours=hours)
+        # Calculer la date de début (utiliser datetime naive pour compatibilité MongoDB)
+        start_date = datetime.utcnow() - timedelta(hours=hours)
         
         readings = []
         async for reading in db.sensor_readings.find(
