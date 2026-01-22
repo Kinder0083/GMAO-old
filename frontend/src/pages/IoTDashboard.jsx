@@ -24,7 +24,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ReferenceLine
 } from 'recharts';
 import api from '../services/api';
 import { useSensors } from '../hooks/useSensors';
