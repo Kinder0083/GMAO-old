@@ -713,7 +713,14 @@ const sensorsAPI = {
   
   // Groupements
   getGroupsByLocation: () => api.get('/sensors/groups/by-location'),
-  getGroupsByType: () => api.get('/sensors/groups/by-type')
+  getGroupsByType: () => api.get('/sensors/groups/by-type'),
+  
+  // Export historique des lectures
+  exportReadings: (periodDays = 7, format = 'csv') => 
+    api.get('/sensors/export/readings', { 
+      params: { period_days: periodDays, format },
+      responseType: 'blob'
+    })
 };
 
 api.sensors = sensorsAPI;
