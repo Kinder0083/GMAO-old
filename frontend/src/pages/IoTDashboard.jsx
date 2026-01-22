@@ -105,18 +105,18 @@ const IoTDashboard = () => {
   const getKPICards = () => {
     const activeSensors = sensors.filter(s => s.actif).length;
     const alertCount = sensors.filter(s => {
-      if (!s.alert_enabled || s.current_value === null) return false;
+      if (!s.alert_enabled || s.current_value === null || s.current_value === undefined) return false;
       return (s.min_threshold && s.current_value < s.min_threshold) ||
              (s.max_threshold && s.current_value > s.max_threshold);
     }).length;
 
-    const avgTemperature = sensors
-      .filter(s => s.type === 'TEMPERATURE' && s.current_value !== null)
-      .reduce((sum, s, _, arr) => sum + s.current_value / arr.length, 0);
+    const tempSensors = sensors.filter(s => s.type === 'TEMPERATURE' && s.current_value !== null && s.current_value !== undefined);
+    const avgTemperature = tempSensors.length > 0 
+      ? tempSensors.reduce((sum, s) => sum + s.current_value, 0) / tempSensors.length
+      : null;
 
-    const totalPower = sensors
-      .filter(s => s.type === 'POWER' && s.current_value !== null)
-      .reduce((sum, s) => sum + s.current_value, 0);
+    const powerSensors = sensors.filter(s => s.type === 'POWER' && s.current_value !== null && s.current_value !== undefined);
+    const totalPower = powerSensors.reduce((sum, s) => sum + s.current_value, 0);
 
     return [
       {
@@ -135,14 +135,14 @@ const IoTDashboard = () => {
       },
       {
         title: 'Température Moyenne',
-        value: avgTemperature ? `${avgTemperature.toFixed(1)}°C` : '--',
+        value: avgTemperature !== null ? `${avgTemperature.toFixed(1)}°C` : '--',
         icon: Thermometer,
         color: 'bg-orange-500',
         trend: null
       },
       {
         title: 'Puissance Totale',
-        value: totalPower ? `${totalPower.toFixed(0)} W` : '--',
+        value: powerSensors.length > 0 ? `${totalPower.toFixed(0)} W` : '--',
         icon: Zap,
         color: 'bg-yellow-500',
         trend: null
