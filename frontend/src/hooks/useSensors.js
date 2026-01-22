@@ -3,6 +3,7 @@ import api from '../services/api';
 
 /**
  * Hook pour gérer les capteurs MQTT avec synchronisation temps réel
+ * Polling rapide pour avoir les valeurs quasi-instantanément
  */
 export const useSensors = (options = {}) => {
   const fetchSensors = async () => {
@@ -19,7 +20,7 @@ export const useSensors = (options = {}) => {
   } = useRealtimeData('sensors', fetchSensors, {
     enableWebSocket: true,
     fallbackPolling: true,
-    pollingInterval: 30000,
+    pollingInterval: 2000, // Polling rapide toutes les 2 secondes pour les valeurs temps réel
     ...options
   });
 
