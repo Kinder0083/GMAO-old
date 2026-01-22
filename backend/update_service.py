@@ -722,13 +722,38 @@ class UpdateService:
                     logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all")
                     # Ne pas bloquer - la mise à jour est quand même installée
                 
-                # 🔥 IMPORTANT: Redémarrer nginx pour appliquer les changements frontend
-                logger.info("🔄 Redémarrage de nginx...")
+                # 🔥 CRITIQUE: Attendre que le backend soit prêt avant de toucher à nginx
+                logger.info("⏳ Attente du démarrage complet du backend (10 secondes)...")
+                await asyncio.sleep(10)
+                
+                # Vérifier que le backend répond
+                backend_ready = False
+                for attempt in range(5):
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get('http://localhost:8001/api/health', timeout=aiohttp.ClientTimeout(total=5)) as response:
+                                if response.status == 200:
+                                    logger.info("✅ Backend prêt et répond correctement")
+                                    backend_ready = True
+                                    break
+                    except Exception as e:
+                        logger.info(f"⏳ Backend pas encore prêt (tentative {attempt + 1}/5)...")
+                        await asyncio.sleep(3)
+                
+                if not backend_ready:
+                    logger.warning("⚠️ Le backend ne répond pas après 25 secondes")
+                    logger.info("⏳ Attente supplémentaire de 10 secondes...")
+                    await asyncio.sleep(10)
+                
+                # 🔥 IMPORTANT: Recharger nginx (pas restart) pour appliquer les changements
+                logger.info("🔄 Rechargement de nginx...")
                 nginx_commands = [
+                    ["sudo", "nginx", "-s", "reload"],
+                    ["sudo", "systemctl", "reload", "nginx"],
+                    ["sudo", "service", "nginx", "reload"],
+                    # Fallback sur restart si reload ne fonctionne pas
                     ["sudo", "systemctl", "restart", "nginx"],
-                    ["sudo", "service", "nginx", "restart"],
-                    ["systemctl", "restart", "nginx"],
-                    ["service", "nginx", "restart"]
+                    ["sudo", "service", "nginx", "restart"]
                 ]
                 
                 nginx_restarted = False
@@ -744,15 +769,18 @@ class UpdateService:
                             timeout=15
                         )
                         if nginx_process.returncode == 0:
-                            logger.info(f"✅ Nginx redémarré avec: {' '.join(nginx_cmd)}")
+                            logger.info(f"✅ Nginx rechargé avec: {' '.join(nginx_cmd)}")
                             nginx_restarted = True
                             break
                     except:
                         continue
                 
                 if not nginx_restarted:
-                    logger.warning("⚠️ Impossible de redémarrer nginx automatiquement")
-                    logger.info("ℹ️ Veuillez redémarrer manuellement : sudo systemctl restart nginx")
+                    logger.warning("⚠️ Impossible de recharger nginx automatiquement")
+                    logger.info("ℹ️ Veuillez recharger manuellement : sudo nginx -s reload")
+                
+                # Attendre que nginx soit stable
+                await asyncio.sleep(2)
                     
             except asyncio.TimeoutError:
                 logger.warning("⚠️ Timeout lors du redémarrage des services")
