@@ -211,6 +211,122 @@ async def export_sensors_csv(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/test-formula")
+async def test_sensor_formula(
+    formula: str,
+    test_value: float,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Tester une formule mathématique sur une valeur d'entrée.
+    La formule utilise 'x' comme variable représentant la valeur reçue.
+    Exemples: x/100, (x-32)*5/9, x*2+10
+    """
+    try:
+        if not formula or not formula.strip():
+            return {
+                "success": True,
+                "input_value": test_value,
+                "output_value": test_value,
+                "formula": formula,
+                "message": "Aucune formule appliquée"
+            }
+        
+        formula = formula.strip()
+        
+        # Vérifier que la formule contient bien 'x'
+        if 'x' not in formula.lower():
+            # Si la formule ne contient pas x, c'est peut-être une opération simple comme "/100"
+            if formula.startswith(('+', '-', '*', '/')):
+                formula = f"x{formula}"
+            else:
+                return {
+                    "success": False,
+                    "input_value": test_value,
+                    "output_value": None,
+                    "formula": formula,
+                    "error": "La formule doit contenir 'x' comme variable"
+                }
+        
+        # Remplacer 'x' ou 'X' par la valeur de test
+        expression = formula.lower().replace('x', str(test_value))
+        
+        # Liste des caractères/fonctions autorisés pour la sécurité
+        allowed_chars = set('0123456789.+-*/() ')
+        allowed_funcs = {'abs', 'round', 'min', 'max', 'pow'}
+        
+        # Vérifier que l'expression ne contient que des caractères autorisés
+        clean_expr = expression
+        for func in allowed_funcs:
+            clean_expr = clean_expr.replace(func, '')
+        
+        if not all(c in allowed_chars for c in clean_expr):
+            return {
+                "success": False,
+                "input_value": test_value,
+                "output_value": None,
+                "formula": formula,
+                "error": "Caractères non autorisés dans la formule. Seuls +, -, *, /, (), les nombres et les fonctions abs, round, min, max, pow sont permis."
+            }
+        
+        # Évaluer l'expression de manière sécurisée
+        safe_dict = {
+            '__builtins__': {},
+            'abs': abs,
+            'round': round,
+            'min': min,
+            'max': max,
+            'pow': pow
+        }
+        
+        try:
+            result = eval(expression, safe_dict)
+        except ZeroDivisionError:
+            return {
+                "success": False,
+                "input_value": test_value,
+                "output_value": None,
+                "formula": formula,
+                "error": "Division par zéro"
+            }
+        except SyntaxError:
+            return {
+                "success": False,
+                "input_value": test_value,
+                "output_value": None,
+                "formula": formula,
+                "error": "Syntaxe de formule invalide"
+            }
+        
+        # S'assurer que le résultat est un nombre
+        if isinstance(result, (int, float)) and not isinstance(result, bool):
+            return {
+                "success": True,
+                "input_value": test_value,
+                "output_value": round(float(result), 4),
+                "formula": formula,
+                "message": f"{test_value} → {round(float(result), 4)}"
+            }
+        else:
+            return {
+                "success": False,
+                "input_value": test_value,
+                "output_value": None,
+                "formula": formula,
+                "error": "Le résultat n'est pas un nombre valide"
+            }
+            
+    except Exception as e:
+        logger.error(f"Erreur test formule: {e}")
+        return {
+            "success": False,
+            "input_value": test_value,
+            "output_value": None,
+            "formula": formula,
+            "error": str(e)
+        }
+
+
 @router.get("/export/readings")
 async def export_all_sensors_readings(
     period_days: int = 7,
