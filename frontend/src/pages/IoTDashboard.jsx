@@ -42,9 +42,25 @@ const IoTDashboard = () => {
   const [exportPeriod, setExportPeriod] = useState('7');
   const [exportFormat, setExportFormat] = useState('csv');
   const [exporting, setExporting] = useState(false);
+  const [timezoneOffset, setTimezoneOffset] = useState(1); // Défaut GMT+1 (France)
   
   const { toast } = useToast();
   const { sensors: realtimeSensors, loading: loadingSensors, refresh: refreshSensors } = useSensors();
+
+  // Charger le fuseau horaire configuré
+  useEffect(() => {
+    const loadTimezoneOffset = async () => {
+      try {
+        const response = await api.timezone.getOffset();
+        if (response.data && typeof response.data.timezone_offset === 'number') {
+          setTimezoneOffset(response.data.timezone_offset);
+        }
+      } catch (error) {
+        console.warn('Erreur chargement timezone offset, utilisation défaut GMT+1:', error);
+      }
+    };
+    loadTimezoneOffset();
+  }, []);
 
   // Charger les données détaillées
   const loadDashboardData = useCallback(async () => {
