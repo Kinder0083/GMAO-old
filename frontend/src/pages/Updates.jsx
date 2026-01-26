@@ -110,7 +110,7 @@ const Updates = () => {
       const token = localStorage.getItem('token');
       
       // Récupérer les informations de mise à jour
-      const [currentRes, checkRes, changelogRes, historyRes] = await Promise.all([
+      const [currentRes, checkRes, changelogRes, historyRes, gitHistoryRes] = await Promise.all([
         axios.get(`${BACKEND_URL}/api/updates/current`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -122,7 +122,10 @@ const Updates = () => {
         }),
         axios.get(`${BACKEND_URL}/api/updates/history-list`, {
           headers: { Authorization: `Bearer ${token}` }
-        })
+        }),
+        axios.get(`${BACKEND_URL}/api/updates/git-history`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { commits: [] } })) // Fallback si Git non disponible
       ]);
 
       setCurrentVersion(currentRes.data.version);
@@ -130,6 +133,7 @@ const Updates = () => {
       setUpdateAvailable(checkRes.data.update_available);
       setChangelog(changelogRes.data.changelog || []);
       setHistory(historyRes.data.data || []);
+      setGitHistory(gitHistoryRes.data.commits || []);
     } catch (error) {
       toast({
         title: 'Erreur',
