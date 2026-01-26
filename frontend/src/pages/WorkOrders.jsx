@@ -213,52 +213,6 @@ const WorkOrders = () => {
     }
   }, [searchParams]);
 
-  const getDateRange = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    let startDate, endDate;
-    
-    switch (dateFilter) {
-      case 'today':
-        startDate = new Date(today);
-        endDate = new Date(today);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case 'week':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - today.getDay());
-        endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case 'month':
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          startDate = new Date(customStartDate);
-          endDate = new Date(customEndDate);
-          endDate.setHours(23, 59, 59, 999);
-        }
-        break;
-      default:
-        return {};
-    }
-    
-    if (startDate && endDate) {
-      return {
-        date_debut: startDate.toISOString(),
-        date_fin: endDate.toISOString(),
-        date_type: dateType
-      };
-    }
-    
-    return {};
-  };
-
   // Plus besoin de loadWorkOrders ni useAutoRefresh !
   // Le hook useWorkOrders gère tout automatiquement
   
