@@ -383,7 +383,8 @@ api.timezone = {
   getTimezones: () => api.get('/timezone/timezones'),
   getNtpServers: () => api.get('/timezone/ntp-servers'),
   testNtp: (server) => api.post(`/timezone/test-ntp?server=${encodeURIComponent(server)}`),
-  getCurrentTime: () => api.get('/timezone/current-time')
+  getCurrentTime: () => api.get('/timezone/current-time'),
+  getOffset: () => api.get('/timezone/offset')
 };
 
 // ==================== SURVEILLANCE ====================
