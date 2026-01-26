@@ -10,7 +10,9 @@ import {
   ChevronDown,
   ChevronRight,
   RotateCcw,
-  Package
+  Package,
+  GitBranch,
+  History
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
