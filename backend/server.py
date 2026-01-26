@@ -5195,6 +5195,58 @@ async def rollback_update(
     
     return result
 
+@api_router.get("/updates/git-history")
+async def get_git_history(
+    limit: int = 20,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """
+    Récupère l'historique des commits Git (versions précédentes) (admin uniquement)
+    Permet de voir et restaurer des versions antérieures du code
+    """
+    try:
+        commits = await update_manager.get_git_history(limit)
+        return {
+            "success": True,
+            "commits": commits,
+            "total": len(commits)
+        }
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération historique Git: {str(e)}")
+        return {
+            "success": False,
+            "commits": [],
+            "error": str(e)
+        }
+
+@api_router.post("/updates/git-rollback")
+async def rollback_to_git_commit(
+    commit_hash: str,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """
+    Effectue un rollback Git vers un commit spécifique (admin uniquement)
+    ⚠️ ATTENTION: Cette action modifie le code source de l'application
+    """
+    try:
+        result = await update_manager.rollback_to_commit(commit_hash)
+        
+        if not result["success"]:
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("message", "Erreur lors du rollback Git")
+            )
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur rollback Git: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors du rollback: {str(e)}"
+        )
+
 # ==================== AUDIT LOG ROUTES (JOURNAL) ====================
 @api_router.get("/audit-logs")
 async def get_audit_logs(
