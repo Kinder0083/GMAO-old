@@ -505,6 +505,35 @@ class UpdateService:
                         await stash_process.communicate()
                     
                     if git_available:
+                        # S'assurer qu'on est sur la bonne branche (après un rollback, on peut être en detached HEAD)
+                        checkout_process = await asyncio.create_subprocess_exec(
+                            "git", "checkout", self.github_branch,
+                            cwd=git_dir,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        checkout_stdout, checkout_stderr = await checkout_process.communicate()
+                        if checkout_process.returncode != 0:
+                            logger.warning(f"⚠️ Git checkout a échoué: {checkout_stderr.decode()}")
+                        
+                        # Configurer le tracking si nécessaire
+                        set_upstream = await asyncio.create_subprocess_exec(
+                            "git", "branch", f"--set-upstream-to=origin/{self.github_branch}", self.github_branch,
+                            cwd=git_dir,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        await set_upstream.communicate()
+                        
+                        # Git fetch d'abord pour récupérer les refs
+                        fetch_process = await asyncio.create_subprocess_exec(
+                            "git", "fetch", "origin",
+                            cwd=git_dir,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        await asyncio.wait_for(fetch_process.communicate(), timeout=60)
+                        
                         # Git pull
                         pull_process = await asyncio.create_subprocess_exec(
                             "git", "pull", "origin", self.github_branch,
@@ -518,22 +547,43 @@ class UpdateService:
                         if pull_process.returncode != 0:
                             error_msg = pull_stderr.decode()
                             logger.warning(f"⚠️ Git pull a échoué: {error_msg}")
-                            # Vérifier si c'est un problème de configuration Git (non bloquant)
-                            if ("No remote" in error_msg or "no remote" in error_msg or 
-                                "not a git repository" in error_msg or 
-                                "does not appear to be a git repository" in error_msg or
-                                "'origin' does not appear" in error_msg or
-                                "Could not resolve host" in error_msg):
+                            # Liste étendue des erreurs non bloquantes
+                            non_blocking_errors = [
+                                "No remote", "no remote",
+                                "not a git repository",
+                                "does not appear to be a git repository",
+                                "'origin' does not appear",
+                                "Could not resolve host",
+                                "unable to access",
+                                "Connection refused",
+                                "Network is unreachable",
+                                "fatal: refusing to merge unrelated histories",
+                                "fatal: couldn't find remote ref",
+                                "Already up to date",
+                                "Already up-to-date"
+                            ]
+                            
+                            is_non_blocking = any(err in error_msg for err in non_blocking_errors)
+                            
+                            if is_non_blocking:
                                 logger.info("ℹ️ Git non configuré ou réseau indisponible - CONTINUE sans Git")
                                 git_available = False
                             else:
-                                # Erreur Git réelle (permissions, conflit, etc.)
-                                logger.error(f"❌ Échec du git pull: {error_msg}")
-                                return {
-                                    "success": False,
-                                    "message": "Échec du téléchargement de la mise à jour",
-                                    "error": error_msg
-                                }
+                                # Essayer un reset vers origin/main si le pull échoue
+                                logger.info("🔄 Tentative de reset vers origin/main...")
+                                reset_process = await asyncio.create_subprocess_exec(
+                                    "git", "reset", "--hard", f"origin/{self.github_branch}",
+                                    cwd=git_dir,
+                                    stdout=asyncio.subprocess.PIPE,
+                                    stderr=asyncio.subprocess.PIPE
+                                )
+                                reset_stdout, reset_stderr = await reset_process.communicate()
+                                
+                                if reset_process.returncode == 0:
+                                    logger.info("✅ Reset vers origin/main réussi")
+                                else:
+                                    logger.warning(f"⚠️ Reset également échoué: {reset_stderr.decode()}")
+                                    git_available = False
                         else:
                             logger.info("✅ Mise à jour téléchargée via Git")
                     
