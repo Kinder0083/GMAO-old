@@ -67,6 +67,18 @@ POPULAR_NTP_SERVERS = [
 ]
 
 
+@router.get("/offset")
+async def get_timezone_offset():
+    """Récupérer uniquement l'offset du fuseau horaire (endpoint public pour les graphiques)"""
+    settings = await db.system_settings.find_one({"_id": "default"})
+    
+    offset = 1  # Défaut France GMT+1
+    if settings and "timezone_offset" in settings:
+        offset = settings.get("timezone_offset", 1)
+    
+    return {"timezone_offset": offset}
+
+
 @router.get("/config")
 async def get_timezone_config(current_user: dict = Depends(get_current_admin_user)):
     """Récupérer la configuration du fuseau horaire"""
