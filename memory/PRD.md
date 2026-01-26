@@ -889,6 +889,31 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - ✅ Filtrage "Aujourd'hui" fonctionne (0 OT car aucun n'a été créé aujourd'hui, l'unique OT date du 21/01)
 - ✅ Frontend compile sans erreurs
 
+#### ✅ Feature: Historique Git et Rollback de versions (26 Jan 2026)
+**Objectif** : Permettre de voir l'historique des versions déployées et revenir à une version précédente via Git.
+
+**Backend ajouté** (`/app/backend/update_manager.py`) :
+- `get_git_history(limit)` : Récupère les derniers commits Git avec hash, date, message, auteur
+- `rollback_to_commit(commit_hash)` : Effectue un `git reset --hard` vers un commit spécifique avec backup automatique
+
+**Nouveaux endpoints** (`/app/backend/server.py`) :
+- `GET /api/updates/git-history` : Liste les commits Git disponibles
+- `POST /api/updates/git-rollback?commit_hash=xxx` : Rollback vers un commit spécifique
+
+**Frontend modifié** (`/app/frontend/src/pages/Updates.jsx`) :
+- Nouvelle section "Historique des versions (Git)" en violet
+- Affiche la liste des commits avec :
+  - Hash court (ex: `a1b2c3d`)
+  - Message du commit
+  - Date et auteur
+  - Badge "VERSION ACTUELLE" pour le commit actif
+  - Bouton "Revenir" pour chaque version précédente
+- Message explicatif si Git non configuré sur le serveur
+- Confirmation avec description avant rollback
+- Backup automatique de la BDD avant rollback
+
+**Note** : Cette fonctionnalité nécessite que Git soit installé et configuré sur le serveur Proxmox. Sur l'environnement Emergent, la section affiche "Aucun historique Git disponible".
+
 ---
 
 ## Tâches à venir
