@@ -613,6 +613,98 @@ const Updates = () => {
         )}
       </Card>
 
+      {/* Historique des versions Git (Rollback) */}
+      <Card className="border-purple-200">
+        <CardHeader 
+          className="cursor-pointer hover:bg-purple-50"
+          onClick={() => setExpandedGitHistory(!expandedGitHistory)}
+        >
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-purple-700">
+              <GitBranch size={20} />
+              Historique des versions (Git)
+              {gitHistory.length > 0 && (
+                <span className="text-sm font-normal text-gray-500">
+                  ({gitHistory.length} commits)
+                </span>
+              )}
+            </CardTitle>
+            {expandedGitHistory ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+          </div>
+        </CardHeader>
+        {expandedGitHistory && (
+          <CardContent>
+            {gitHistory.length === 0 ? (
+              <div className="text-center py-6">
+                <History size={48} className="mx-auto text-gray-300 mb-3" />
+                <p className="text-gray-500">Aucun historique Git disponible</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Le dépôt Git n&apos;est pas configuré ou accessible sur ce serveur
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600 mb-4">
+                  Sélectionnez une version précédente pour y revenir. Un backup sera créé automatiquement.
+                </p>
+                {gitHistory.map((commit, index) => (
+                  <div
+                    key={commit.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      commit.is_current 
+                        ? 'bg-purple-50 border-purple-300' 
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                        commit.is_current ? 'bg-purple-600 text-white' : 'bg-gray-300 text-gray-600'
+                      }`}>
+                        {commit.is_current ? (
+                          <CheckCircle size={16} />
+                        ) : (
+                          <span className="text-xs font-mono">{index + 1}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs bg-gray-200 px-2 py-0.5 rounded font-mono">
+                            {commit.short_id}
+                          </code>
+                          {commit.is_current && (
+                            <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded">
+                              VERSION ACTUELLE
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium text-gray-900 truncate mt-1" title={commit.message}>
+                          {commit.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {new Date(commit.date).toLocaleString('fr-FR')} • {commit.author}
+                        </p>
+                      </div>
+                    </div>
+                    {!commit.is_current && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-3 flex-shrink-0 border-purple-300 text-purple-700 hover:bg-purple-100"
+                        onClick={() => handleGitRollback(commit.id, commit.message)}
+                        disabled={rollingBack || updating}
+                      >
+                        <RotateCcw size={14} className="mr-1" />
+                        Revenir
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
+
       {/* Dialogue de gestion des conflits Git */}
       <GitConflictDialog
         open={showConflictDialog}
