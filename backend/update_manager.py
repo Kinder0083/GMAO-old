@@ -325,3 +325,117 @@ class UpdateManager:
                 "success": False,
                 "error": str(e)
             }
+
+    async def get_git_history(self, limit: int = 20) -> List[Dict]:
+        """Récupère l'historique des commits Git (versions précédentes)"""
+        try:
+            app_root = "/opt/gmao-iris"
+            
+            # Vérifier si c'est un dépôt Git
+            if not Path(f"{app_root}/.git").exists():
+                return []
+            
+            # Obtenir le commit actuel
+            current_result = subprocess.run(
+                ['git', 'rev-parse', 'HEAD'],
+                cwd=app_root,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            current_commit = current_result.stdout.strip() if current_result.returncode == 0 else None
+            
+            # Obtenir l'historique des commits
+            result = subprocess.run(
+                ['git', 'log', f'--max-count={limit}', '--format=%H|%h|%ai|%s|%an'],
+                cwd=app_root,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode != 0:
+                return []
+            
+            commits = []
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
+                parts = line.split('|', 4)
+                if len(parts) >= 5:
+                    full_hash, short_hash, date, message, author = parts
+                    commits.append({
+                        "id": full_hash,
+                        "short_id": short_hash,
+                        "date": date,
+                        "message": message,
+                        "author": author,
+                        "is_current": full_hash == current_commit
+                    })
+            
+            return commits
+            
+        except Exception as e:
+            print(f"Erreur récupération historique Git: {e}")
+            return []
+
+    async def rollback_to_commit(self, commit_hash: str) -> Dict:
+        """Effectue un rollback Git vers un commit spécifique"""
+        try:
+            app_root = "/opt/gmao-iris"
+            
+            # Vérifier si c'est un dépôt Git
+            if not Path(f"{app_root}/.git").exists():
+                return {
+                    "success": False,
+                    "message": "Pas de dépôt Git trouvé"
+                }
+            
+            # Créer un backup de sécurité avant le rollback
+            backup_result = await self.create_backup()
+            
+            # Stash les modifications locales si présentes
+            stash_result = subprocess.run(
+                ['git', 'stash', 'save', f'Auto-stash before rollback to {commit_hash[:7]}'],
+                cwd=app_root,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            # Reset vers le commit spécifié
+            reset_result = subprocess.run(
+                ['git', 'reset', '--hard', commit_hash],
+                cwd=app_root,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if reset_result.returncode != 0:
+                return {
+                    "success": False,
+                    "message": "Échec du rollback Git",
+                    "error": reset_result.stderr
+                }
+            
+            # Enregistrer dans l'historique
+            await self.save_update_record(
+                version=f"rollback-{commit_hash[:7]}",
+                status="success",
+                message=f"Rollback vers le commit {commit_hash[:7]}"
+            )
+            
+            return {
+                "success": True,
+                "message": f"Rollback vers {commit_hash[:7]} effectué avec succès",
+                "backup_path": backup_result.get("path") if backup_result.get("success") else None,
+                "needs_restart": True
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "message": "Erreur lors du rollback",
+                "error": str(e)
+            }
