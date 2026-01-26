@@ -365,6 +365,49 @@ const Updates = () => {
     });
   };
 
+  const handleGitRollback = async (commitHash, commitMessage) => {
+    confirm({
+      title: '⚠️ ATTENTION - Rollback vers une version précédente',
+      description: `Ceci va restaurer le code source vers le commit:\n\n"${commitMessage.substring(0, 100)}${commitMessage.length > 100 ? '...' : ''}"\n\nUn backup de la base de données sera créé automatiquement.\nL'application redémarrera après le rollback.\n\nVoulez-vous continuer ?`,
+      confirmText: 'Revenir à cette version',
+      cancelText: 'Annuler',
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          setRollingBack(true);
+          const token = localStorage.getItem('token');
+          
+          const response = await axios.post(
+            `${BACKEND_URL}/api/updates/git-rollback?commit_hash=${commitHash}`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+
+          if (response.data.success) {
+            toast({
+              title: 'Rollback réussi',
+              description: 'L\'application va redémarrer. Veuillez patienter...'
+            });
+
+            // Attendre et recharger
+            setTimeout(() => {
+              window.location.reload();
+            }, 5000);
+          }
+        } catch (error) {
+          toast({
+            title: 'Erreur',
+            description: formatErrorMessage(error, 'Échec du rollback'),
+            variant: 'destructive'
+          });
+          setRollingBack(false);
+        }
+      }
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
