@@ -25,14 +25,6 @@ const WorkOrders = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { canEdit, canDelete } = usePermissions();
   
-  // Utiliser le hook temps réel au lieu de l'ancien système
-  const { 
-    workOrders: allWorkOrders, 
-    loading: isLoading, 
-    refresh: refreshWorkOrders,
-    setWorkOrders: setAllWorkOrders
-  } = useWorkOrders({});
-  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,6 +50,66 @@ const WorkOrders = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+
+  // Calculer les paramètres de date pour le hook
+  const getDateFilters = useCallback(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let startDate, endDate;
+    
+    switch (dateFilter) {
+      case 'today':
+        startDate = new Date(today);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'week':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - today.getDay());
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'month':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          startDate = new Date(customStartDate);
+          endDate = new Date(customEndDate);
+          endDate.setHours(23, 59, 59, 999);
+        }
+        break;
+      default:
+        return {};
+    }
+    
+    if (startDate && endDate) {
+      return {
+        date_debut: startDate.toISOString(),
+        date_fin: endDate.toISOString(),
+        date_type: dateType
+      };
+    }
+    
+    return {};
+  }, [dateFilter, dateType, customStartDate, customEndDate]);
+
+  // Obtenir les filtres de date actuels
+  const dateFilters = getDateFilters();
+
+  // Utiliser le hook temps réel avec les filtres de date
+  const { 
+    workOrders: allWorkOrders, 
+    loading: isLoading, 
+    refresh: refreshWorkOrders,
+    setWorkOrders: setAllWorkOrders
+  } = useWorkOrders({
+    ...dateFilters
+  });
 
   useEffect(() => {
     refreshWorkOrders();
