@@ -852,3 +852,53 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 
 **Tests** : API validée par curl, frontend validé par screenshots
 
+---
+
+### Session du 26 Janvier 2026
+
+#### ✅ Bug Fix: Abscisses graphique IoT décalées de -1h (26 Jan 2026)
+**Problème** : Les heures sur les abscisses du graphique des capteurs IoT étaient toujours décalées de -1h par rapport à l'heure réelle, même après avoir configuré le fuseau horaire.
+
+**Cause** : La fonction `formatChartData` dans `IoTDashboard.jsx` utilisait `toLocaleTimeString` qui appliquait le fuseau horaire local du navigateur au lieu du fuseau horaire configuré dans l'application.
+
+**Solution** :
+- Créé un nouvel endpoint public `GET /api/timezone/offset` qui retourne uniquement le décalage horaire configuré
+- Modifié `IoTDashboard.jsx` pour charger le fuseau horaire au démarrage
+- Réécrit `formatChartData` en `useCallback` pour appliquer manuellement le décalage horaire aux timestamps avant l'affichage
+
+**Fichiers modifiés** :
+- `/app/backend/timezone_routes.py` : Ajout de l'endpoint `GET /api/timezone/offset`
+- `/app/frontend/src/services/api.js` : Ajout de la méthode `api.timezone.getOffset()`
+- `/app/frontend/src/pages/IoTDashboard.jsx` : Chargement du timezone et correction de `formatChartData`
+
+#### ✅ Bug Fix: Filtrage par date non fonctionnel sur "Ordres de travail" (26 Jan 2026)
+**Problème** : Sur la page "Ordres de travail", les boutons de filtrage par date (Aujourd'hui, Cette semaine, Ce mois, Personnalisé) n'avaient aucun effet - tous les OT étaient affichés quelle que soit la sélection.
+
+**Cause** : Le hook `useWorkOrders` était appelé avec des paramètres vides `{}` et ne transmettait jamais les filtres de date calculés (`date_debut`, `date_fin`, `date_type`) à l'API backend.
+
+**Solution** :
+- Modifié `useWorkOrders.js` pour accepter et transmettre les paramètres de date (`date_debut`, `date_fin`, `date_type`) à `workOrdersAPI.getAll(params)`
+- Refactorisé `WorkOrders.jsx` pour calculer les filtres de date via `getDateFilters()` (useCallback) et les passer au hook `useWorkOrders`
+
+**Fichiers modifiés** :
+- `/app/frontend/src/hooks/useWorkOrders.js` : Ajout de la transmission des paramètres de date à l'API
+- `/app/frontend/src/pages/WorkOrders.jsx` : Calcul des filtres de date et passage au hook
+
+**Tests effectués** :
+- ✅ API `/api/timezone/offset` retourne correctement `{"timezone_offset": 1}`
+- ✅ Filtrage "Aujourd'hui" fonctionne (0 OT car aucun n'a été créé aujourd'hui, l'unique OT date du 21/01)
+- ✅ Frontend compile sans erreurs
+
+---
+
+## Tâches à venir
+
+### P1 - Priorité Haute
+- Bug "Rapport P.accident" temps réel (récurrent - 10+ occurrences, NON RÉSOLU)
+
+### P2 - Backlog
+- Fonctions spécifiques "Responsables de service"
+- Dashboard Plan de Surveillance
+- Analytique Checklists
+- Visite guidée
+- Refactoring `SpecialSettings.jsx` (~1800 lignes)
