@@ -29,9 +29,12 @@ const Updates = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [changelog, setChangelog] = useState([]);
   const [history, setHistory] = useState([]);
+  const [gitHistory, setGitHistory] = useState([]);
   const [expandedChangelog, setExpandedChangelog] = useState(false);
   const [expandedHistory, setExpandedHistory] = useState(false);
+  const [expandedGitHistory, setExpandedGitHistory] = useState(true);
   const [updateLogs, setUpdateLogs] = useState([]);
+  const [rollingBack, setRollingBack] = useState(false);
   
   // États pour la gestion des conflits Git
   const [showConflictDialog, setShowConflictDialog] = useState(false);
