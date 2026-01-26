@@ -121,19 +121,27 @@ const IoTDashboard = () => {
 
   const sensors = realtimeSensors || [];
 
-  // Formater les données pour le graphique
-  const formatChartData = (readings) => {
+  // Formater les données pour le graphique avec le bon fuseau horaire
+  const formatChartData = useCallback((readings) => {
     if (!readings || readings.length === 0) return [];
     
-    return readings.map(r => ({
-      time: new Date(r.timestamp).toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      value: r.value,
-      timestamp: r.timestamp
-    })).reverse();
-  };
+    return readings.map(r => {
+      // Parser le timestamp et appliquer le décalage horaire configuré
+      const utcDate = new Date(r.timestamp);
+      // Appliquer le décalage horaire (timezoneOffset est en heures)
+      const localDate = new Date(utcDate.getTime() + (timezoneOffset * 60 * 60 * 1000));
+      
+      return {
+        time: localDate.toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'UTC' // Utiliser UTC car on a déjà appliqué le décalage manuellement
+        }),
+        value: r.value,
+        timestamp: r.timestamp
+      };
+    }).reverse();
+  }, [timezoneOffset]);
 
   // Export des données
   const handleExport = async () => {
