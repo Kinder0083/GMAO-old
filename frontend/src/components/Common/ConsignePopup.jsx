@@ -211,7 +211,7 @@ const ConsignePopup = () => {
             ) : (
               <span className="flex items-center gap-2">
                 <CheckCircle size={24} />
-                OK - J'ai lu la consigne
+                OK - J&apos;ai lu la consigne
               </span>
             )}
           </Button>
