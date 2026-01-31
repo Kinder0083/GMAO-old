@@ -6376,6 +6376,16 @@ async def create_improvement_request(
         request_data["date_creation"] = datetime.utcnow()
         request_data["created_by"] = current_user["id"]
         request_data["created_by_name"] = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}"
+        request_data["service"] = current_user.get("service")  # Service du demandeur
+        request_data["status"] = "SOUMISE"  # Statut initial
+        request_data["history"] = [{
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "user_id": current_user["id"],
+            "user_name": request_data["created_by_name"],
+            "action": "Création de la demande",
+            "old_status": None,
+            "new_status": "SOUMISE"
+        }]
         request_data["improvement_id"] = None
         request_data["improvement_numero"] = None
         request_data["improvement_date_limite"] = None
