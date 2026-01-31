@@ -723,6 +723,7 @@ class WorkOrderBase(BaseModel):
     createdBy: Optional[str] = None  # ID de l'utilisateur créateur
     preventive_maintenance_id: Optional[str] = None  # ID de la PM source si créé depuis PM
     checklist_id: Optional[str] = None  # ID du template de checklist associé
+    service: Optional[str] = None  # Service associé pour le filtrage par responsable
 
 class WorkOrderCreate(WorkOrderBase):
     pass
