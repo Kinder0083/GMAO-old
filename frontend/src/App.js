@@ -68,6 +68,7 @@ import FormTemplatesPage from "./pages/FormTemplatesPage";
 import WorkOrderTemplatesPage from "./pages/WorkOrderTemplatesPage";
 import CustomWidgetEditor from "./pages/CustomWidgetEditor";
 import ServiceDashboard from "./pages/ServiceDashboard";
+import ServiceTeamView from "./pages/ServiceTeamView";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
