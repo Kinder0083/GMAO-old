@@ -402,6 +402,13 @@ const ImprovementRequests = () => {
         onSuccess={refreshRequests}
       />
 
+      <ImprovementRequestValidationDialog
+        open={validationDialogOpen}
+        onOpenChange={setValidationDialogOpen}
+        request={selectedRequest}
+        onSuccess={refreshRequests}
+      />
+
       <DeleteConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
