@@ -185,6 +185,9 @@ function App() {
             <Route path="mqtt-pubsub" element={<MQTTPubSub />} />
             <Route path="sensors" element={<Sensors />} />
             <Route path="iot-dashboard" element={<IoTDashboard />} />
+            <Route path="service-dashboard" element={<ServiceDashboard />} />
+            <Route path="service-dashboard/widgets/new" element={<CustomWidgetEditor />} />
+            <Route path="service-dashboard/widgets/:widgetId/edit" element={<CustomWidgetEditor />} />
             <Route path="mqtt-logs" element={<MQTTLogs />} />
           </Route>
         </Routes>
