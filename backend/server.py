@@ -7732,7 +7732,7 @@ from realtime_manager import realtime_manager
 from realtime_events import EntityType as RealtimeEntityType
 
 @app.websocket("/ws/realtime/{entity_type}")
-async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: str):
+async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: str = None):
     """
     WebSocket centralisé pour la synchronisation temps réel de toutes les entités
     
@@ -7741,6 +7741,8 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
         user_id: ID de l'utilisateur connecté
     """
     try:
+        logger.info(f"[Realtime] Nouvelle connexion WebSocket demandée: entity_type={entity_type}, user_id={user_id}")
+        
         # Valider le type d'entité
         valid_types = [e.value for e in RealtimeEntityType]
         if entity_type not in valid_types:
@@ -7748,12 +7750,19 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
             await websocket.close(code=1008, reason=f"Invalid entity type: {entity_type}")
             return
         
+        # Valider user_id
+        if not user_id:
+            logger.warning(f"[Realtime] user_id manquant pour {entity_type}")
+            await websocket.close(code=1008, reason="user_id is required")
+            return
+        
         # Accepter la connexion WebSocket
         await websocket.accept()
-        logger.info(f"[Realtime] WebSocket connecté: {entity_type}/{user_id}")
+        logger.info(f"[Realtime] WebSocket accepté: {entity_type}/{user_id}")
         
         # Connecter l'utilisateur au manager (connexion déjà acceptée)
         await realtime_manager.connect(entity_type, user_id, websocket, already_accepted=True)
+        logger.info(f"[Realtime] Utilisateur {user_id} connecté au room {entity_type}. Total: {realtime_manager.get_connection_count(entity_type)}")
         
         # Garder la connexion ouverte
         while True:
