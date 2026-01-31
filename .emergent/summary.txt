@@ -1,27 +1,37 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to redesign the IoT Dashboard chart. This evolved into several subsequent tasks:
-1.  **P0 Task (Completed):** A complete redesign of the sensor chart on the Dashboard IoT page.
-2.  **Bug Fix (Completed):** Corrected chart rendering issues.
-3.  **Feature (Completed):** Added a Formule à appliquer text field to the sensor creation form to apply mathematical formulas to raw sensor values.
-4.  **Critical Bug Fix (Completed):** Resolved a 403 Forbidden deployment error by making the  script more robust.
-5.  **Refactoring (Completed):** Modularized  by extracting import/export routes and refactored the monolithic  into smaller ,  components.
-6.  **New Feature (Just Implemented):** Following the refactoring, the user reported that MQTT sensor timestamps were incorrect due to timezone issues. They requested a new feature in the Paramètres spéciaux page to configure the application's global timezone and set an NTP server for time synchronization.
+The user's initial goal was to fix two bugs: one where the IoT Dashboard chart's x-axis time was off by -1 hour, and another where the Ordres de travail (Work Orders) page date filtering was not working.
+
+After fixing these, the user requested a series of new features and bug fixes, evolving the project significantly:
+1.  **Feature:** Add an update history and rollback mechanism based on Git, accessible from the UI.
+2.  **Bug Fix:** Make the  process during updates more robust to handle local repository issues.
+3.  **Feature:** Implement a Consigne (Instruction) system in the Live Chat. This involved:
+    *   Adding MQTT configuration fields to user profiles.
+    *   Adding a Consigne button in the chat UI to send a blocking pop-up message to a specific user.
+    *   Triggering specific MQTT messages on sending and on acknowledgement.
+4.  **Bug Fixes for Consigne feature:**
+    *   Fix a UI bug where the Edit User dialog became too tall and needed a scrollbar.
+    *   Fix a backend bug preventing consignes from being sent.
+    *   Fix a bug where user MQTT settings were not being saved.
+    *   Fix a bug where a user's online status was always shown as offline.
+    *   Correct the MQTT message format to send payloads to topics, not as topic suffixes.
+    *   Add a Topic Discret for sending detailed JSON messages.
+    *   Fix the UI display of the online status indicator (green/grey dot).
+    *   Implement broadcasting of an acknowledgement message into the main chat when a user reads a consigne.
+5.  **New Feature (In Progress):** Implement a Consigne générale (Group Instruction) feature to send consignes to all users within a specific service/department, or to all services at once.
 
 **User's preferred language**: French
 
 **what currently exists?**
-- The application is stable. The critical deployment and chart rendering bugs are resolved.
-- The major refactoring of the backend  file and the frontend  component is complete and has been validated by a testing agent, improving code maintainability.
-- A new feature for global timezone and NTP server configuration has been fully implemented in the Paramètres spéciaux page. This includes:
-    - Backend models () and new API endpoints () to manage and test the configuration.
-    - A new frontend section with UI elements to select a timezone, choose/add an NTP server, test the NTP connection, and view the current server/UTC time.
-    - The MQTT collector service () has been updated to use this new global timezone setting when creating timestamps for sensor readings.
+- The application is stable. The IoT chart and Work Order filtering bugs have been fixed and tested.
+- A new UI section in the Updates page has been created to display Git commit history and allow rollbacks, with a more robust backend process for applying updates.
+- The Consigne feature for sending pop-up instructions to individual users is fully implemented. This includes UI changes in the user profile and chat, backend logic for sending/storing messages, WebSocket communication for the pop-up, and integration with MQTT.
+- The Consigne générale (Group Instruction) feature is partially implemented. The backend is ready with new API endpoints to fetch a list of services and send a message to a group. The frontend has the new Consigne générale button in the chat UI and the necessary API-calling functions.
 
 **Last working item**:
-- **Last item agent was working:** The agent just completed the implementation of the Timezone and NTP Configuration feature. This included backend changes (models, new routes file ), frontend changes (, ), and updating the  to apply the configured timezone to new sensor data timestamps.
-- **Status:** USER VERIFICATION PENDING
-- **Agent Testing Done:** Y (Backend endpoints tested with , Frontend UI visually verified with screenshots. The end-to-end data flow for MQTT timestamps was not tested.)
-- **Which testing method agent to use?** Manual user testing is required to confirm that new sensor data appears with the correct timestamps on the dashboard.
+- **Last item agent was working:** Implementing the Consigne générale (Group Instruction) feature. The agent just finished adding the backend logic (, ) and the frontend button/API call functions in . The next step is to create the UI modal for this feature.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Frontend testing agent (to verify the new modal and end-to-end flow) and manual testing with  for the backend.
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
@@ -29,46 +39,54 @@ The user's initial goal was to redesign the IoT Dashboard chart. This evolved in
 
 **Issues Detail:**
 - **Issue 1: Rapport P.accident page does not update in real-time (P2)**
-    - **Attempted fixes:** None in this or the previous session. It's a long-standing low-priority issue.
+    - **Attempted fixes:** None in this session. This is a recurring, low-priority issue from the previous fork.
     - **Next debug checklist:**
-        1.  Examine  to ensure  is called on all CRUD operations (create, update, delete).
-        2.  Verify the frontend page correctly uses the  hook for the presqu_accident module.
-        3.  Check the WebSocket connection and event names on the client-side for this specific page.
-    - **Why fix this issue and what will be achieved with the fix?** To provide a consistent, real-time user experience across all application modules, which is a core feature of the app.
+        1. Examine  to ensure  is called on all CRUD operations.
+        2. Verify the frontend page () correctly uses the  hook for the  module.
+        3. Check the WebSocket connection and event names on the client-side for this specific page.
+    - **Why fix this issue and what will be achieved with the fix?** To provide a consistent, real-time user experience across all application modules.
     - **Status:** NOT STARTED
     - **Is recurring issue?** Y
     - **Should Test frontend/backend/both after fix?** Frontend
     - **Blocked on other issue:** None.
 
 **In progress Task List**:
-- None. The timezone configuration task is complete, pending user validation.
+- **Task 1: Complete Consigne générale feature (P0)**
+
+**Task Detail:**
+- **Task 1: Complete Consigne générale feature (P0)**
+    - **Where to resume:** Resume in . The agent needs to create and add the JSX for the modal dialog that opens when the Consigne générale button is clicked. This modal should include a dropdown to select a service (or All Services) and a textarea for the message content.
+    - **What will be achieved with this?** Users will be able to send important instructions to entire departments at once, improving communication efficiency.
+    - **Status:** IN PROGRESS
+    - **Should Test frontend/backend/both after fix?** Both
+    - **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 
 **Upcoming Tasks:**
--   **P1 - Verify Timezone Feature:** The user needs to verify that the new timezone setting correctly applies to timestamps for incoming MQTT sensor data.
--   **P2 - Fix Rapport P.accident Real-Time Bug:** Address the recurring issue where the Presque Accident report page does not update in real-time.
+*   **(P2)** Fix Rapport P.accident Real-Time Bug.
 
 **Future Tasks:**
--   **(P2)** Implement specific functions for Responsables de service.
--   **(P2)** Surveillance Plan Dashboard (Agent-suggested enhancement).
--   **(P2)** Checklist Analytics (Agent-suggested enhancement).
--   **(P2)** Guided Tour (Agent-suggested enhancement).
--   **(P3)** Refactor : The file has become very large and could be broken down into smaller components for better maintainability.
+*   **(P2)** Implement specific functions for Responsables de service.
+*   **(P2)** Surveillance Plan Dashboard.
+*   **(P2)** Checklist Analytics.
+*   **(P2)** Guided Tour.
+*   **(P3)** Refactor .
+*   **(P3)** Implement RTSP/ONVIF camera viewing feature (pending user confirmation, acknowledging deployment environment limitations).
 
 **Completed work in this session**
-- **Refactoring  (DONE):** Successfully broke down the monolithic  (reduced from ~1260 to 616 lines) into smaller, manageable components:  and . The refactoring was validated with a 100% pass rate from the frontend testing agent.
-- **Feature: Timezone & NTP Configuration (DONE):**
-    -   **Backend:**
-        -   Updated  () to include  and .
-        -   Created  with endpoints to get/set config, list timezones, test NTP, and get current time.
-        -   Installed  dependency.
-        -   Integrated the new router into .
-    -   **Frontend:**
-        -   Heavily modified  to add a new UI section for managing timezone and NTP settings.
-        -   Updated  with functions to call the new timezone endpoints.
-    -   **Integration:**
-        -   Modified  to fetch the global timezone setting and apply it to all new sensor reading timestamps, ensuring data accuracy.
+- **Bug Fix (IoT Chart):** Corrected a -1h time offset on the IoT dashboard chart's x-axis by creating a public timezone offset endpoint and using it for date formatting in .
+- **Bug Fix (Work Orders):** Fixed the broken date filtering on the work orders page by passing filter parameters from the frontend () to the backend API via the  hook.
+- **Feature (Update History & Rollback):**
+    - Added Git-based version history and a rollback feature to the Updates page ().
+    - Created backend endpoints (, ) in  and logic in .
+- **Bug Fix (Update Robustness):** Improved the  mechanism in  to be more resilient to local repository issues by adding a  and HEAD is now at 5c2203d4 auto-commit for e6600ef1-e864-4394-a529-39ca79a923d7 fallback.
+- **Feature (Individual Consigne):** Implemented the full feature for sending pop-up instructions to individual users, including MQTT integration, backend routes (), and frontend UI (, , ).
+- **Bug Fixes (Consigne Feature):**
+    - Added a scrollbar to the Edit User dialog ().
+    - Fixed multiple bugs related to saving MQTT settings, detecting user online status, and broadcasting acknowledgement messages in the chat.
+    - Corrected the MQTT payload logic and added a Topic Discret field.
+    - Fixed the UI display of the online status indicator (green dot) in .
 
 **Earlier issues found/mentioned but not fixed**
 - The Rapport P.accident real-time update issue (P2) is the only known issue that was not addressed.
@@ -82,121 +100,134 @@ The user's initial goal was to redesign the IoT Dashboard chart. This evolved in
 
 
 **Key Technical Concepts**
-- **Component Refactoring:** Decomposing a large monolithic React component () into smaller, single-responsibility components (, ) to improve maintainability and readability. Validated with a testing agent.
-- **Modular API Design (FastAPI):** Creating a self-contained router () for a specific feature set and using a dependency injection pattern () to provide database access from the main  application.
-- **External Library Integration:** Installing (Looking in indexes: https://pypi.org/simple, https://d33sy5i8bnduwe.cloudfront.net/simple/
-Requirement already satisfied: ntplib in /root/.venv/lib/python3.11/site-packages (0.4.0)) and using a third-party Python library to add new functionality (NTP client).
-- **Global Application Configuration:** Implementing a system to store and retrieve application-wide settings (like timezone) that affect multiple services (like the MQTT data collector).
-- **Timezone-Aware Timestamps:** Updating the data ingestion pipeline () to convert naive  objects to timezone-aware ones before storing them, ensuring data integrity.
+- **Frontend State Management:** Refactored state logic in  to correctly manage and pass date filters to a hook.
+- **API Design:** Created a public, unauthenticated endpoint () for UI display data. Created a full CRUD-like set of routes for a new feature ().
+- **Git Integration:** Used  in Python to execute usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
+           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
+           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
+           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
+           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
+           <command> [<args>]
+
+These are common Git commands used in various situations:
+
+start a working area (see also: git help tutorial)
+   clone     Clone a repository into a new directory
+   init      Create an empty Git repository or reinitialize an existing one
+
+work on the current change (see also: git help everyday)
+   add       Add file contents to the index
+   mv        Move or rename a file, a directory, or a symlink
+   restore   Restore working tree files
+   rm        Remove files from the working tree and from the index
+
+examine the history and state (see also: git help revisions)
+   bisect    Use binary search to find the commit that introduced a bug
+   diff      Show changes between commits, commit and working tree, etc
+   grep      Print lines matching a pattern
+   log       Show commit logs
+   show      Show various types of objects
+   status    Show the working tree status
+
+grow, mark and tweak your common history
+   branch    List, create, or delete branches
+   commit    Record changes to the repository
+   merge     Join two or more development histories together
+   rebase    Reapply commits on top of another base tip
+   reset     Reset current HEAD to the specified state
+   switch    Switch branches
+   tag       Create, list, delete or verify a tag object signed with GPG
+
+collaborate (see also: git help workflows)
+   fetch     Download objects and refs from another repository
+   pull      Fetch from and integrate with another repository or a local branch
+   push      Update remote refs along with associated objects
+
+'git help -a' and 'git help -g' list available subcommands and some
+concept guides. See 'git help <command>' or 'git help <concept>'
+to read about a specific subcommand or concept.
+See 'git help git' for an overview of the system. commands (, , , ) from the backend, exposing version control to the application UI.
+- **WebSocket Communication:** Implemented a global, blocking pop-up () that listens for WebSocket events. Implemented WebSocket broadcasting from the backend to push events to clients (e.g., new consigne, chat acknowledgement).
+- **Dependency Injection (FastAPI):** Correctly used and passed dependency functions (like ) to modular routers.
+- **Robust Error Handling:** Enhanced the application's self-update mechanism to handle common Git failures beyond simple network errors.
 
 **key DB schema**
--   **settings (collection,  model):**
-    -    (NEW)
-    -    (NEW)
+- **users (collection):**
+    -  (NEW)
+    -  (NEW)
+    -  (NEW)
+    -  (NEW)
+- **pending_consignes (collection, NEW):**
+    - 
+    - 
+    - 
+    - 
+    - 
 
 **All files of reference**
--   : Contains the new UI for Timezone/NTP settings.
--   : Contains the new backend logic for the feature.
--   : Defines the data structure for the new settings.
--   : Consumes the new timezone setting.
--   : The successfully refactored main layout component.
--   : Contains the project documentation.
-
-**Areas that need refactoring**:
--    is now over 1800 lines long. While functional, it could be a candidate for future refactoring into smaller, more focused components.
+- : Core file for the ongoing Consigne générale feature.
+- : Backend logic for all Consigne features.
+- : Contains the MQTT configuration UI for users.
+- : Contains the Git history/rollback UI.
+- : Contains the robust Git update logic.
 
 **key api endpoints**
--   : Get current timezone settings.
--   : Update timezone settings.
--   : Get a list of all available timezones.
--   : Get current server time in UTC and local format.
--   : Test connection to a given NTP server.
+- : Send a consigne to a single user.
+- : (NEW) Send a consigne to a service/all users.
+- : (NEW) Get a list of all unique services/departments.
+- : Get pending consignes for the current user.
+- : Acknowledge receipt of a consigne.
+- : Get version history from Git commits.
+- : Trigger a rollback to a specific Git commit.
+- : Get the server's timezone offset.
 
 **Critical Info for New Agent**
--   **You MUST respond in French.**
--   The last user instruction was:  (Finish your P0 task and wait for my green light for the rest.). The P0 task (refactoring ) is complete. The agent then correctly addressed a new, urgent user request for the timezone feature.
--   Before proceeding with any other tasks (like the pending real-time bug), **you must ask the user for confirmation**.
--   The immediate next step is to present the completed work (refactoring and timezone feature) and ask the user to verify the timezone functionality and provide direction on what to work on next.
+- **You MUST respond in French.**
+- The immediate task is to build the frontend modal for the Consigne générale feature in . The backend is already done.
+- The user is technically savvy and often reports bugs with specific details (e.g., MQTT messages, error codes). Pay close attention to their descriptions.
+- The Rapport P.accident real-time bug is a long-standing, low-priority issue. Do not work on it unless the current high-priority tasks are finished and the user approves.
 
 **documents and test reports created in this job**
--   
--    (updated)
+-  (updated multiple times)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks to add a timezone and NTP server configuration section to the Special Settings page to fix incorrect MQTT sensor timestamps. (New Feature Request)
-2.  **Agent:** Asks clarifying questions about the implementation details (scope, NTP server list, etc.).
-3.  **User:** Answers the questions, providing clear requirements for the new feature.
-4.  **Agent:** Acknowledges the requirements and begins exploring the codebase.
-5.  **Agent:** *Thinking/Internal monologue while implementing the feature.*
-6.  **Agent:** *Finishes implementation and provides a detailed  message thought process.*
-7.  **User:** Asks to add a timezone and NTP server configuration section to the Special Settings page. (This seems to be a duplicate or rephrasing of the initial request from this turn).
-8.  **Agent:** Asks clarifying questions again.
-9.  **User:** Answers the questions again, confirming the requirements.
-10. **Agent:** Acknowledges and proceeds with implementation.
+1.  **User:** Reports the MQTT settings are not saving and the online status is always wrong. (Bug Report) - **Status: DONE**
+2.  **User:** Clarifies that MQTT Actions are payloads, not topic suffixes, and requests a new Topic Discret field. (Requirement Change) - **Status: DONE**
+3.  **User:** Acknowledges the payload/topic fix but reports the online status *display* (green/grey dot) is still broken. Also requests that acknowledging a consigne should post a message in the main chat. (Bug Report + Feature Request) - **Status: DONE**
+4.  **User:** Confirms the acknowledgement message and online status detection are working but reports the UI dot is still not updating. (Bug Report) - **Status: DONE**
+5.  **User:** Requests the Consigne générale feature to send messages to entire services. (New Feature) - **Status: IN PROGRESS**
+6.  **Agent:** Asks clarifying questions about the group consigne feature. (Clarification)
+7.  **User:** Answers the clarifying questions, providing the go-ahead. (User Response)
+8.  **User:** Complains about a new bug where the Edit User dialog is too large and has no scrollbar. (Bug Report) - **Status: DONE**
+9.  **User:** Reports a critical bug where sending a consigne fails on their server. (Bug Report) - **Status: DONE**
+10. **User:** Reports that the online status is still wrong and MQTT settings don't save. (This is a restatement of an earlier bug report). (Bug Report) - **Status: DONE**
 
 **Project Health Check:**
--   **Broken:** None
--   **Mocked:** None
+- **Broken:** None
+- **Mocked:** None
 
 **3rd Party Integrations**
--   **ntplib:** (NEW) For NTP client functionality.
--   **OpenAI Whisper (STT)** via  (Uses Emergent LLM Key)
--   **OpenAI TTS** via a custom backend endpoint using usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit library
--   **Multiple LLMs** for chatbot via  (Uses Emergent LLM Key)
--   **** & ****: For Excel/CSV import/export.
--   , 
--   
--   WebSockets (via FastAPI)
--   SMTP (via Gmail)
--   
+- **ntplib:** For NTP client functionality.
+- **OpenAI Whisper (STT)** via 
+- **OpenAI TTS**
+- **Multiple LLMs** for chatbot via 
+- **** & ****: For Excel/CSV import/export.
+- , 
+- 
+- WebSockets (via FastAPI)
+- SMTP (via Gmail)
+- 
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (for the  refactoring, resulting in ).
--   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None
--   **Known regressions:** None.
+- **Testing agent used after significant changes:** NO (Agent used self-testing with  and screenshots).
+- **Troubleshoot agent used after agent stuck in loop:** NO
+- **Test files created:** None
+- **Known regressions:** None.
 
 **Credentials to test flow:**
--   **Admin Account:**
-    -   **Email:** 
-    -   **Password:** 
+- **Admin Account:**
+    - **Email:** 
+    - **Password:** 
 
 **What agent forgot to execute**
--   The agent did not perform a final end-to-end test for the timezone feature's main purpose. While the backend routes were created and the MQTT collector code was updated, the agent did not simulate an MQTT message to verify that a new  document was created in the database with the correct, timezone-aware timestamp. This is a critical verification step left for the user or the next agent.</analysis>
+- Nothing was explicitly forgotten. The agent has been methodically working through a long and evolving list of user requests.</analysis>
