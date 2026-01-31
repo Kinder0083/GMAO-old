@@ -322,7 +322,7 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
             <Button
               type="button"
               variant="outline"
