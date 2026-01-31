@@ -774,6 +774,40 @@ const DataSourceEditor = ({
             )}
           </div>
 
+          {/* Credentials SMB */}
+          <div className="p-3 border rounded-lg bg-gray-50">
+            <Label className="text-sm font-medium mb-2 block">Identifiants SMB (optionnel)</Label>
+            <p className="text-xs text-gray-500 mb-3">
+              Laissez vide pour utiliser les identifiants système, ou entrez des identifiants spécifiques pour ce fichier.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Nom d'utilisateur</Label>
+                <Input
+                  type="text"
+                  value={source.excel_config?.smb_username || ''}
+                  onChange={(e) => onUpdate({
+                    excel_config: { ...source.excel_config, smb_username: e.target.value }
+                  })}
+                  placeholder="DOMAINE\\utilisateur"
+                  className="text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Mot de passe</Label>
+                <Input
+                  type="password"
+                  value={source.excel_config?.smb_password || ''}
+                  onChange={(e) => onUpdate({
+                    excel_config: { ...source.excel_config, smb_password: e.target.value }
+                  })}
+                  placeholder="••••••••"
+                  className="text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Feuille (optionnel)</Label>
