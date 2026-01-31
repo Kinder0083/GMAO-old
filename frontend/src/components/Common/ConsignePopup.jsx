@@ -74,8 +74,12 @@ const ConsignePopup = () => {
           // Jouer un son d'alerte
           try {
             const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => {});
-          } catch (e) {}
+            audio.play().catch(() => {
+              // Audio autoplay blocked - ignore
+            });
+          } catch (audioError) {
+            console.log('Audio not available:', audioError);
+          }
         }
       } catch (error) {
         console.error('Erreur parsing message consigne:', error);
