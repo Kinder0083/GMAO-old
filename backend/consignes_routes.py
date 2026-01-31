@@ -122,13 +122,9 @@ async def send_consigne(
         consigne["id"] = consigne_id
         logger.info(f"✅ Consigne créée avec ID: {consigne_id}")
         
-        # Vérifier si l'utilisateur est en ligne via la collection online_users (utilisée par le Chat)
-        online_user = await db.online_users.find_one({
-            "user_id": data.recipient_id,
-            "is_online": True
-        })
-        recipient_online = online_user is not None
-        logger.debug(f"   - Destinataire en ligne (DB check): {recipient_online}")
+        # Vérifier si l'utilisateur est en ligne via le WebSocket Manager du Chat
+        recipient_online = chat_ws_manager.is_user_online(data.recipient_id)
+        logger.debug(f"   - Destinataire en ligne (WebSocket check): {recipient_online}")
         
         # Notifier via WebSocket consigne si connecté à ce canal
         websocket_sent = False
