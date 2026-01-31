@@ -888,7 +888,7 @@ async def get_widget_templates(current_user: dict = Depends(get_current_user)):
     return templates
 
 
-@router.post("/widget-templates/{template_id}/create")
+@router.post("/tpl/{template_id}/create")
 async def create_widget_from_template(
     template_id: str,
     sensor_id: Optional[str] = None,
