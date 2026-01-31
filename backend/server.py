@@ -6565,6 +6565,207 @@ async def delete_improvement_request(request_id: str, current_user: dict = Depen
     
     return {"message": "Demande supprimée"}
 
+
+@api_router.put("/improvement-requests/{request_id}/status", response_model=dict)
+async def update_improvement_request_status(
+    request_id: str,
+    status_update: ImprovementRequestStatusUpdate,
+    current_user: dict = Depends(require_permission("improvementRequests", "edit"))
+):
+    """Valider ou rejeter une demande d'amélioration (Responsable de service ou Admin)"""
+    from service_filter import is_service_manager, get_user_managed_services
+    
+    try:
+        # Récupérer la demande
+        req = await db.improvement_requests.find_one({"id": request_id})
+        if not req:
+            try:
+                req = await db.improvement_requests.find_one({"_id": ObjectId(request_id)})
+            except:
+                pass
+        
+        if not req:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que le statut actuel permet la validation
+        current_status = req.get("status", "SOUMISE")
+        if current_status not in ["SOUMISE", None]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cette demande ne peut pas être modifiée (statut actuel: {current_status})"
+            )
+        
+        # Vérifier les permissions
+        is_admin = current_user.get("role") == "ADMIN"
+        is_manager = await is_service_manager(current_user)
+        
+        if not is_admin and not is_manager:
+            raise HTTPException(
+                status_code=403, 
+                detail="Seuls les administrateurs et responsables de service peuvent valider/rejeter"
+            )
+        
+        # Si responsable de service, vérifier que la demande est dans son service
+        if not is_admin and is_manager:
+            managed_services = await get_user_managed_services(current_user)
+            request_service = req.get("service")
+            
+            # Récupérer le service du demandeur si non présent sur la demande
+            if not request_service:
+                creator = await db.users.find_one({"id": req.get("created_by")}, {"service": 1})
+                request_service = creator.get("service") if creator else None
+            
+            if request_service and request_service not in managed_services:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Vous ne pouvez valider que les demandes de votre service"
+                )
+        
+        # Valider le nouveau statut
+        new_status = status_update.status.upper()
+        if new_status not in ["VALIDEE", "REJETEE"]:
+            raise HTTPException(status_code=400, detail="Statut invalide. Utilisez VALIDEE ou REJETEE")
+        
+        # Préparer la mise à jour
+        user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}"
+        now = datetime.now(timezone.utc)
+        
+        history_entry = {
+            "timestamp": now.isoformat(),
+            "user_id": current_user["id"],
+            "user_name": user_name,
+            "action": "Validation" if new_status == "VALIDEE" else "Rejet",
+            "old_status": current_status,
+            "new_status": new_status,
+            "comment": status_update.comment
+        }
+        
+        update_data = {
+            "status": new_status,
+            "validated_at": now.isoformat(),
+            "validated_by": current_user["id"],
+            "validated_by_name": user_name
+        }
+        
+        if new_status == "REJETEE" and status_update.comment:
+            update_data["rejection_reason"] = status_update.comment
+        
+        # Mettre à jour dans la DB
+        query_filter = {"id": request_id} if req.get("id") == request_id else {"_id": ObjectId(request_id)}
+        await db.improvement_requests.update_one(
+            query_filter,
+            {
+                "$set": update_data,
+                "$push": {"history": history_entry}
+            }
+        )
+        
+        # Notifier le demandeur par email
+        try:
+            creator = await db.users.find_one({"id": req.get("created_by")}, {"_id": 0, "email": 1, "nom": 1, "prenom": 1})
+            if creator and creator.get("email"):
+                status_label = "validée" if new_status == "VALIDEE" else "rejetée"
+                subject = f"Demande d'amélioration {status_label}: {req['titre']}"
+                
+                body = f"""
+                <h2>Votre demande d'amélioration a été {status_label}</h2>
+                <p><strong>Titre :</strong> {req['titre']}</p>
+                <p><strong>Par :</strong> {user_name}</p>
+                """
+                if status_update.comment:
+                    body += f"<p><strong>Commentaire :</strong> {status_update.comment}</p>"
+                
+                if new_status == "VALIDEE":
+                    body += "<p>Votre demande sera prochainement convertie en projet d'amélioration.</p>"
+                else:
+                    body += "<p>Vous pouvez soumettre une nouvelle demande avec les modifications suggérées.</p>"
+                
+                await email_service.send_email(
+                    to_email=creator["email"],
+                    subject=subject,
+                    body=body
+                )
+        except Exception as e:
+            logger.warning(f"Erreur envoi email notification: {e}")
+        
+        # Broadcast WebSocket
+        updated_req = await db.improvement_requests.find_one(query_filter)
+        if updated_req:
+            updated_req = serialize_doc(updated_req)
+            await realtime_manager.emit_event(
+                "improvement_requests",
+                "status_changed",
+                updated_req,
+                user_id=current_user["id"]
+            )
+        
+        logger.info(f"✅ Demande d'amélioration {req['titre']} {new_status.lower()} par {user_name}")
+        
+        return {
+            "message": f"Demande {new_status.lower()} avec succès",
+            "status": new_status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur validation demande d'amélioration: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/improvement-requests/pending-validation", response_model=List[dict])
+async def get_pending_improvement_requests(
+    current_user: dict = Depends(require_permission("improvementRequests", "view"))
+):
+    """Récupérer les demandes d'amélioration en attente de validation pour le responsable"""
+    from service_filter import is_service_manager, get_user_managed_services
+    
+    try:
+        is_admin = current_user.get("role") == "ADMIN"
+        is_manager = await is_service_manager(current_user)
+        
+        if not is_admin and not is_manager:
+            return []  # Pas de permissions pour voir les demandes en attente
+        
+        query = {"$or": [{"status": "SOUMISE"}, {"status": {"$exists": False}}, {"status": None}]}
+        
+        # Si responsable (non admin), filtrer par service
+        if not is_admin and is_manager:
+            managed_services = await get_user_managed_services(current_user)
+            if managed_services:
+                # Récupérer les IDs des utilisateurs de ces services
+                service_users = await db.users.find(
+                    {"service": {"$in": managed_services}},
+                    {"id": 1, "_id": 0}
+                ).to_list(1000)
+                user_ids = [u["id"] for u in service_users]
+                
+                query = {
+                    "$and": [
+                        {"$or": [{"status": "SOUMISE"}, {"status": {"$exists": False}}, {"status": None}]},
+                        {"$or": [
+                            {"created_by": {"$in": user_ids}},
+                            {"service": {"$in": managed_services}}
+                        ]}
+                    ]
+                }
+        
+        requests = await db.improvement_requests.find(query, {"_id": 0}).sort("date_creation", -1).to_list(1000)
+        
+        # Enrichir avec les infos créateur
+        for req in requests:
+            if req.get("created_by"):
+                creator = await db.users.find_one({"id": req["created_by"]}, {"_id": 0, "service": 1})
+                if creator:
+                    req["service"] = creator.get("service")
+        
+        return requests
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération demandes en attente: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/improvement-requests/{request_id}/convert-to-improvement", response_model=dict)
 async def convert_to_improvement(
     request_id: str,
