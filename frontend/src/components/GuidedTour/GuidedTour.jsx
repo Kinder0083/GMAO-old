@@ -57,7 +57,7 @@ const tourSteps = {
       disableBeacon: true
     },
     {
-      target: '[data-testid="notifications-bell"]',
+      target: '[data-testid="notifications-btn"]',
       content: (
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">🔔 Notifications</h4>
@@ -71,7 +71,7 @@ const tourSteps = {
       disableBeacon: true
     },
     {
-      target: '[data-testid="user-menu"]',
+      target: '[data-testid="user-profile-btn"]',
       content: (
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">👤 Menu utilisateur</h4>
