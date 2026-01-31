@@ -96,12 +96,17 @@ const CustomWidgetEditor = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [gmaoDataTypes, setGmaoDataTypes] = useState([]);
+  const [availableSensors, setAvailableSensors] = useState([]);
+  const [availableMeters, setAvailableMeters] = useState([]);
+  const [loadingSensors, setLoadingSensors] = useState(false);
+  const [loadingMeters, setLoadingMeters] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
 
   // Charger les types de données GMAO
   useEffect(() => {
     loadGmaoDataTypes();
+    loadSensorsAndMeters();
     if (isEditing) {
       loadWidget();
     }
@@ -113,6 +118,30 @@ const CustomWidgetEditor = () => {
       setGmaoDataTypes(response.data);
     } catch (error) {
       console.error('Erreur chargement types GMAO:', error);
+    }
+  };
+
+  const loadSensorsAndMeters = async () => {
+    // Charger les capteurs
+    setLoadingSensors(true);
+    try {
+      const response = await api.get('/custom-widgets/data-sources/sensors');
+      setAvailableSensors(response.data || []);
+    } catch (error) {
+      console.error('Erreur chargement capteurs:', error);
+    } finally {
+      setLoadingSensors(false);
+    }
+
+    // Charger les compteurs
+    setLoadingMeters(true);
+    try {
+      const response = await api.get('/custom-widgets/data-sources/meters');
+      setAvailableMeters(response.data || []);
+    } catch (error) {
+      console.error('Erreur chargement compteurs:', error);
+    } finally {
+      setLoadingMeters(false);
     }
   };
 
