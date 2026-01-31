@@ -45,7 +45,8 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
     role: 'VISUALISEUR',
     mqtt_topic: '',
     mqtt_action_ok: '',
-    mqtt_action_reception: ''
+    mqtt_action_reception: '',
+    mqtt_topic_discret: ''
   });
 
   useEffect(() => {
