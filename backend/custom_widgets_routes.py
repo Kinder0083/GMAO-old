@@ -96,7 +96,7 @@ async def get_my_widgets(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/{widget_id}", response_model=Dict)
-async def get_widget(widget_id: str, current_user: dict = Depends(get_current_user)):
+async def get_widget(widget_id: str = Path(..., regex=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"), current_user: dict = Depends(get_current_user)):
     """Récupère un widget par son ID"""
     widget = await db.custom_widgets.find_one({"id": widget_id}, {"_id": 0})
     if not widget:
