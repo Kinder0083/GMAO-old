@@ -161,6 +161,7 @@ async def get_gmao_data(
         date_filter=date_filter,
         group_by=group_by,
         sensor_id=sensor_id,
+        meter_id=meter_id,
         **kwargs
     )
 
