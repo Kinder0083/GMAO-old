@@ -15,6 +15,7 @@ const AIButton = () => {
       variant="outline"
       size="sm"
       onClick={() => openChat()}
+      data-testid="ai-assistant-button"
       className={`gap-2 ${chatOpen ? 'bg-purple-100 border-purple-300' : 'bg-purple-50 hover:bg-purple-100'} text-purple-700 border-purple-200`}
       title={`Discuter avec ${aiName}`}
     >
