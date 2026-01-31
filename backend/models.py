@@ -1274,6 +1274,13 @@ class ImprovementRequestUpdate(BaseModel):
     emplacement_id: Optional[str] = None
     date_limite_desiree: Optional[datetime] = None
 
+
+class ImprovementRequestStatusUpdate(BaseModel):
+    """Modèle pour valider/rejeter une demande d'amélioration"""
+    status: str  # VALIDEE ou REJETEE
+    comment: Optional[str] = None
+
+
 # Improvement (Amélioration) Models - Copie de WorkOrder
 class Improvement(BaseModel):
     id: str
