@@ -1587,6 +1587,118 @@ const ChatLive = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Consigne Générale (par service) */}
+      <Dialog open={showConsigneGroupModal} onOpenChange={(open) => !open && closeConsigneGroupModal()}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <Users size={20} />
+              Consigne générale
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Sélection du service */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Service destinataire *</label>
+              <select
+                value={consigneGroupService}
+                onChange={(e) => setConsigneGroupService(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                data-testid="consigne-group-service-select"
+                disabled={sendingConsigneGroup}
+              >
+                <option value="">-- Sélectionner un service --</option>
+                <option value="ALL">📢 Tous les services</option>
+                {servicesList.map(service => (
+                  <option key={service} value={service}>
+                    {service}
+                  </option>
+                ))}
+              </select>
+              {consigneGroupService === 'ALL' && (
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  <AlertTriangle size={12} />
+                  Cette consigne sera envoyée à TOUS les utilisateurs de l&apos;application.
+                </p>
+              )}
+            </div>
+
+            {/* Message */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message de la consigne *</label>
+              <textarea
+                value={consigneGroupMessage}
+                onChange={(e) => setConsigneGroupMessage(e.target.value)}
+                placeholder="Écrivez votre consigne ici..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[120px] resize-none"
+                data-testid="consigne-group-message-input"
+                disabled={sendingConsigneGroup}
+              />
+            </div>
+
+            {/* Info box */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+              <p className="font-medium mb-1">📢 Cette consigne sera :</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Affichée en popup sur l&apos;écran de chaque destinataire</li>
+                <li>Envoyée via MQTT (si configuré pour chaque utilisateur)</li>
+                <li>Enregistrée dans le journal d&apos;audit</li>
+              </ul>
+            </div>
+
+            {/* Résultat après envoi */}
+            {consigneGroupResult && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+                <p className="font-medium text-green-800 mb-2">✅ Consigne envoyée avec succès</p>
+                <div className="grid grid-cols-2 gap-2 text-xs text-green-700">
+                  <div>Total envoyés: <span className="font-bold">{consigneGroupResult.total_sent}</span></div>
+                  <div>En ligne: <span className="font-bold text-green-600">{consigneGroupResult.online_count}</span></div>
+                  <div>Hors ligne: <span className="font-bold text-amber-600">{consigneGroupResult.offline_count}</span></div>
+                  <div>MQTT envoyés: <span className="font-bold">{consigneGroupResult.mqtt_sent_count}</span></div>
+                </div>
+                {consigneGroupResult.recipients && consigneGroupResult.recipients.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-green-600 hover:underline">
+                      Voir les détails ({consigneGroupResult.recipients.length} destinataires)
+                    </summary>
+                    <div className="mt-2 max-h-32 overflow-y-auto">
+                      {consigneGroupResult.recipients.map(r => (
+                        <div key={r.id} className="text-xs flex items-center gap-2 py-0.5">
+                          <span className={`w-2 h-2 rounded-full ${r.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                          <span>{r.name}</span>
+                          {r.mqtt_sent && <span className="text-blue-600">📡</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeConsigneGroupModal}
+              disabled={sendingConsigneGroup}
+            >
+              {consigneGroupResult ? 'Fermer' : 'Annuler'}
+            </Button>
+            {!consigneGroupResult && (
+              <Button
+                onClick={sendConsigneGroup}
+                disabled={sendingConsigneGroup || !consigneGroupService || !consigneGroupMessage.trim()}
+                className="bg-red-600 hover:bg-red-700"
+                data-testid="send-consigne-group-button"
+              >
+                {sendingConsigneGroup ? 'Envoi en cours...' : 'Envoyer à tous'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
