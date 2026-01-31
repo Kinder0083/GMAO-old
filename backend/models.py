@@ -619,6 +619,10 @@ class User(UserBase):
     derniereConnexion: Optional[datetime] = None
     permissions: UserPermissions = Field(default_factory=UserPermissions)
     firstLogin: Optional[bool] = False  # True si premier login, nécessite changement de mot de passe
+    # Champs MQTT pour les consignes
+    mqtt_topic: Optional[str] = None
+    mqtt_action_ok: Optional[str] = None
+    mqtt_action_reception: Optional[str] = None
 
     class Config:
         from_attributes = True
