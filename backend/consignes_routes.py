@@ -365,11 +365,39 @@ async def acknowledge_consigne(
         if user and mqtt_manager:
             mqtt_topic = user.get("mqtt_topic")
             mqtt_action_ok = user.get("mqtt_action_ok", "")
+            mqtt_topic_discret = user.get("mqtt_topic_discret", "")
             
-            if mqtt_topic:
+            # 1. Envoyer le payload simple sur le topic principal
+            if mqtt_topic and mqtt_action_ok:
                 try:
-                    full_topic = f"{mqtt_topic}{mqtt_action_ok}"
-                    payload = json.dumps({
+                    mqtt_sent = mqtt_manager.publish(
+                        topic=mqtt_topic,
+                        payload=mqtt_action_ok,  # Payload simple (ex: "OFF")
+                        qos=1,
+                        retain=False
+                    )
+                    
+                    if mqtt_sent:
+                        logger.info(f"✅ Payload '{mqtt_action_ok}' envoyé sur {mqtt_topic}")
+                        
+                        # Enregistrer dans l'historique MQTT
+                        await db.mqtt_publish_history.insert_one({
+                            "topic": mqtt_topic,
+                            "payload": mqtt_action_ok,
+                            "qos": 1,
+                            "retain": False,
+                            "published_at": ack_time.isoformat(),
+                            "published_by": user_id,
+                            "user_email": user.get("email"),
+                            "context": "consigne_ack_action"
+                        })
+                except Exception as e:
+                    logger.error(f"❌ Erreur envoi payload ACK: {e}")
+            
+            # 2. Envoyer le JSON détaillé sur le topic discret
+            if mqtt_topic_discret:
+                try:
+                    json_payload = json.dumps({
                         "type": "consigne_acknowledged",
                         "consigne_id": consigne_id,
                         "acknowledged_by": user_name,
@@ -377,29 +405,29 @@ async def acknowledge_consigne(
                         "original_sender": consigne.get("sender_name")
                     })
                     
-                    mqtt_sent = mqtt_manager.publish(
-                        topic=full_topic,
-                        payload=payload,
+                    discret_sent = mqtt_manager.publish(
+                        topic=mqtt_topic_discret,
+                        payload=json_payload,
                         qos=1,
                         retain=False
                     )
                     
-                    if mqtt_sent:
-                        logger.info(f"✅ Message MQTT ACK envoyé sur {full_topic}")
+                    if discret_sent:
+                        logger.info(f"✅ JSON ACK envoyé sur {mqtt_topic_discret}")
                         
                         # Enregistrer dans l'historique MQTT
                         await db.mqtt_publish_history.insert_one({
-                            "topic": full_topic,
-                            "payload": payload,
+                            "topic": mqtt_topic_discret,
+                            "payload": json_payload,
                             "qos": 1,
                             "retain": False,
                             "published_at": ack_time.isoformat(),
                             "published_by": user_id,
                             "user_email": user.get("email"),
-                            "context": "consigne_ack"
+                            "context": "consigne_ack_discret"
                         })
                 except Exception as e:
-                    logger.error(f"❌ Erreur envoi MQTT ACK: {e}")
+                    logger.error(f"❌ Erreur envoi JSON ACK discret: {e}")
         
         # Envoyer un message dans le Chat Live
         sender_name = consigne.get("sender_name", "Expéditeur")
