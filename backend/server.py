@@ -905,6 +905,104 @@ async def change_password(request: ChangePasswordRequest, current_user: dict = D
     
     return {"message": "Mot de passe changé avec succès"}
 
+
+# ==================== SERVICE MANAGER ROUTES ====================
+
+@api_router.get("/service-manager/status")
+async def get_service_manager_status(current_user: dict = Depends(get_current_user)):
+    """Vérifie si l'utilisateur est un responsable de service et retourne ses services"""
+    from service_filter import is_service_manager, get_user_managed_services, get_user_service_filter
+    
+    is_manager = await is_service_manager(current_user)
+    managed_services = await get_user_managed_services(current_user)
+    service_filter = await get_user_service_filter(current_user)
+    
+    return {
+        "is_service_manager": is_manager,
+        "managed_services": managed_services,
+        "service_filter": service_filter,
+        "user_service": current_user.get("service"),
+        "user_role": current_user.get("role")
+    }
+
+
+@api_router.get("/service-manager/team")
+async def get_service_team(current_user: dict = Depends(get_current_user)):
+    """Récupère les membres de l'équipe du responsable de service"""
+    from service_filter import is_service_manager, get_service_team_members
+    
+    is_manager = await is_service_manager(current_user)
+    if not is_manager:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas responsable de service")
+    
+    team = await get_service_team_members(current_user)
+    
+    # Nettoyer les données sensibles
+    for member in team:
+        member.pop("password", None)
+        member.pop("hashed_password", None)
+    
+    return {
+        "team_count": len(team),
+        "team_members": team
+    }
+
+
+@api_router.get("/service-manager/stats")
+async def get_service_manager_stats(current_user: dict = Depends(get_current_user)):
+    """Statistiques du service pour le responsable"""
+    from service_filter import is_service_manager, get_user_service_filter
+    
+    is_manager = await is_service_manager(current_user)
+    if not is_manager:
+        raise HTTPException(status_code=403, detail="Vous n'êtes pas responsable de service")
+    
+    service_filter = await get_user_service_filter(current_user)
+    
+    # Construire la requête de filtrage
+    query = {}
+    if service_filter:
+        query["service"] = service_filter
+    
+    # Statistiques des ordres de travail
+    ot_total = await db.work_orders.count_documents(query)
+    ot_en_cours = await db.work_orders.count_documents({**query, "status": "EN_COURS"})
+    ot_en_attente = await db.work_orders.count_documents({**query, "status": "EN_ATTENTE"})
+    ot_termines = await db.work_orders.count_documents({**query, "status": {"$in": ["TERMINE", "CLOTURE"]}})
+    
+    # Statistiques des équipements
+    eq_total = await db.equipments.count_documents(query)
+    eq_panne = await db.equipments.count_documents({**query, "status": "EN_PANNE"})
+    
+    # Statistiques des demandes d'intervention
+    di_en_attente = await db.intervention_requests.count_documents({**query, "status": "EN_ATTENTE"})
+    
+    # Membres de l'équipe
+    team_count = await db.users.count_documents(query) if service_filter else 0
+    
+    return {
+        "service": service_filter or "Tous",
+        "work_orders": {
+            "total": ot_total,
+            "en_cours": ot_en_cours,
+            "en_attente": ot_en_attente,
+            "termines": ot_termines,
+            "taux_completion": round((ot_termines / ot_total * 100) if ot_total > 0 else 0, 1)
+        },
+        "equipments": {
+            "total": eq_total,
+            "en_panne": eq_panne,
+            "taux_disponibilite": round(((eq_total - eq_panne) / eq_total * 100) if eq_total > 0 else 100, 1)
+        },
+        "demandes_intervention": {
+            "en_attente": di_en_attente
+        },
+        "team": {
+            "count": team_count
+        }
+    }
+
+
 # ==================== WORK ORDERS ROUTES ====================
 @api_router.get("/work-orders", response_model=List[WorkOrder])
 async def get_work_orders(
