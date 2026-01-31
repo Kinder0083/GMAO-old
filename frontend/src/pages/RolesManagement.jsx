@@ -159,26 +159,20 @@ const RolesManagement = () => {
       
       // Charger les utilisateurs
       try {
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          // Gérer différents formats de réponse API
-          if (Array.isArray(data)) {
-            usersData = data;
-          } else if (data && Array.isArray(data.data)) {
-            usersData = data.data;
-          } else if (data && Array.isArray(data.users)) {
-            usersData = data.users;
-          } else {
-            console.warn('Format de réponse utilisateurs inattendu:', data);
-            usersData = [];
-          }
-          console.log(`${usersData.length} utilisateurs chargés pour la gestion des rôles`);
+        const response = await api.get('/users');
+        const data = response.data;
+        // Gérer différents formats de réponse API
+        if (Array.isArray(data)) {
+          usersData = data;
+        } else if (data && Array.isArray(data.data)) {
+          usersData = data.data;
+        } else if (data && Array.isArray(data.users)) {
+          usersData = data.users;
         } else {
-          console.error('Erreur HTTP chargement utilisateurs:', response.status, response.statusText);
+          console.warn('Format de réponse utilisateurs inattendu:', data);
+          usersData = [];
         }
+        console.log(`${usersData.length} utilisateurs chargés pour la gestion des rôles`);
       } catch (error) {
         console.error('Erreur chargement utilisateurs:', error);
         // Non bloquant - on continue
