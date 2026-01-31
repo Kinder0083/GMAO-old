@@ -163,7 +163,20 @@ const RolesManagement = () => {
         });
         if (response.ok) {
           const data = await response.json();
-          usersData = data.data || data || [];
+          // Gérer différents formats de réponse API
+          if (Array.isArray(data)) {
+            usersData = data;
+          } else if (data && Array.isArray(data.data)) {
+            usersData = data.data;
+          } else if (data && Array.isArray(data.users)) {
+            usersData = data.users;
+          } else {
+            console.warn('Format de réponse utilisateurs inattendu:', data);
+            usersData = [];
+          }
+          console.log(`${usersData.length} utilisateurs chargés pour la gestion des rôles`);
+        } else {
+          console.error('Erreur HTTP chargement utilisateurs:', response.status, response.statusText);
         }
       } catch (error) {
         console.error('Erreur chargement utilisateurs:', error);
