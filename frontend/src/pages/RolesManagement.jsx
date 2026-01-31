@@ -33,6 +33,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { useToast } from '../hooks/use-toast';
 import { rolesAPI } from '../services/api';
+import api from '../services/api';
 
 // Liste des modules avec leur libellé
 const MODULES = [
