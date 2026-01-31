@@ -3450,7 +3450,7 @@ async def update_user_permissions(
 @api_router.post("/users/{user_id}/set-password-permanent")
 async def set_password_permanent(
     user_id: str,
-    current_user: dict = Depends(get_current_admin_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Marquer le mot de passe temporaire comme permanent (désactiver le changement obligatoire au premier login)
