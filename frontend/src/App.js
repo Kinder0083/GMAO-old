@@ -188,6 +188,7 @@ function App() {
             <Route path="service-dashboard" element={<ServiceDashboard />} />
             <Route path="service-dashboard/widgets/new" element={<CustomWidgetEditor />} />
             <Route path="service-dashboard/widgets/:widgetId/edit" element={<CustomWidgetEditor />} />
+            <Route path="service-dashboard/team" element={<ServiceTeamView />} />
             <Route path="mqtt-logs" element={<MQTTLogs />} />
           </Route>
         </Routes>
