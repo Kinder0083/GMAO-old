@@ -88,7 +88,7 @@ const ServiceDashboard = () => {
   // Charger les templates
   const loadTemplates = async () => {
     try {
-      const response = await api.get('/custom-widgets/templates');
+      const response = await api.get('/custom-widgets/widget-templates');
       setTemplates(response.data || []);
     } catch (error) {
       console.error('Erreur chargement templates:', error);
