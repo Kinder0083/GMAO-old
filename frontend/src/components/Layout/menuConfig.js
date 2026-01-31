@@ -83,7 +83,7 @@ export const iconMap = {
 // Liste par défaut des items du menu
 export const getDefaultMenuItems = (isAdmin) => [
   { id: 'dashboard', icon: 'LayoutDashboard', label: 'Tableau de bord', path: '/dashboard', module: 'dashboard', visible: true, order: 0 },
-  { id: 'service-dashboard', icon: 'Presentation', label: 'Dashboard Service', path: '/service-dashboard', module: 'dashboard', visible: true, order: 0.3 },
+  { id: 'service-dashboard', icon: 'Presentation', label: 'Dashboard Service', path: '/service-dashboard', module: 'serviceDashboard', visible: true, order: 0.3 },
   { id: 'chat-live', icon: 'Mail', label: 'Chat Live', path: '/chat-live', module: 'chatLive', visible: true, order: 0.5 },
   { id: 'intervention-requests', icon: 'MessageSquare', label: 'Demandes d\'inter.', path: '/intervention-requests', module: 'interventionRequests', visible: true, order: 1 },
   { id: 'work-orders', icon: 'ClipboardList', label: 'Ordres de travail', path: '/work-orders', module: 'workOrders', visible: true, order: 2 },
