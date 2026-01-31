@@ -158,12 +158,22 @@ async def init_system_roles():
 @router.get("")
 async def get_all_roles(current_user: dict = Depends(get_current_user)):
     """Récupérer tous les rôles"""
-    roles = await db.roles.find({}, {"_id": 0}).to_list(length=None)
-    
-    # Trier: rôles système en premier, puis par label
-    roles.sort(key=lambda r: (not r.get("is_system", False), r.get("label", "")))
-    
-    return roles
+    try:
+        roles = await db.roles.find({}, {"_id": 0}).to_list(length=None)
+        
+        # Si aucun rôle n'existe, initialiser les rôles système
+        if not roles or len(roles) == 0:
+            print("⚠️ Aucun rôle trouvé, initialisation des rôles système...")
+            await init_system_roles()
+            roles = await db.roles.find({}, {"_id": 0}).to_list(length=None)
+        
+        # Trier: rôles système en premier, puis par label
+        roles.sort(key=lambda r: (not r.get("is_system", False), r.get("label", "")))
+        
+        return roles
+    except Exception as e:
+        print(f"❌ Erreur get_all_roles: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des rôles: {str(e)}")
 
 
 @router.get("/{role_id}")
