@@ -1116,14 +1116,104 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 
 ---
 
+### Session du 31 Janvier 2026
+
+#### ✅ Feature: Système de Widgets Personnalisés pour Responsables de Service (31 Jan 2026)
+**Implémentation complète** du système de widgets customisables avec dashboard dédié :
+
+**Nouvelle page ServiceDashboard** (`/app/frontend/src/pages/ServiceDashboard.jsx`) :
+- Grille responsive de widgets (4 colonnes)
+- Auto-refresh toutes les 60 secondes (configurable)
+- Actions par widget : Rafraîchir, Modifier, Supprimer
+- Affichage de l'horodatage de dernière mise à jour
+- Badge "Partagé" pour widgets partagés
+- Badge "Erreur" pour widgets en échec
+- Accessible via `/service-dashboard` depuis le menu principal
+
+**Éditeur de widgets** (`/app/frontend/src/pages/CustomWidgetEditor.jsx`) :
+- 4 onglets : Général, Sources de données, Visualisation, Partage
+- **Types de sources** :
+  - Valeur manuelle (input direct)
+  - Fichier Excel via SMB (avec credentials optionnels)
+  - Données GMAO (26 types de données disponibles)
+  - Formules combinant plusieurs sources
+- **Types de visualisation** :
+  - Valeur simple, Jauge, Graphique ligne, Graphique barres
+  - Camembert, Donut, Tableau
+- **Personnalisation** :
+  - Taille (petit, moyen, large, plein)
+  - 10 schémas de couleurs
+  - Préfixe/Suffixe, Unité, Décimales
+- **Partage** :
+  - Privé, Service, Admins seulement, Rôles spécifiques
+
+**Backend API** (`/app/backend/custom_widgets_routes.py`) :
+- `GET /api/custom-widgets` - Liste des widgets accessibles
+- `GET /api/custom-widgets/{id}` - Détail d'un widget
+- `POST /api/custom-widgets` - Création
+- `PUT /api/custom-widgets/{id}` - Modification
+- `DELETE /api/custom-widgets/{id}` - Suppression
+- `POST /api/custom-widgets/{id}/refresh` - Rafraîchir les données
+- `GET /api/custom-widgets/data-types/gmao` - 26 types de données GMAO
+- `POST /api/custom-widgets/test/excel-connection` - Test connexion SMB
+- `POST /api/custom-widgets/validate/formula` - Validation formule
+
+**Service GMAO** (`/app/backend/gmao_data_service.py`) :
+- 26 types de données extraites de la base MongoDB :
+  - Ordres de travail (total, en attente, en cours, complétion, durée moyenne)
+  - Équipements (total, actifs, pannes, taux disponibilité)
+  - Maintenance préventive (planifiées, réalisées, taux réalisation)
+  - Interventions (demandes, terminées, temps réponse)
+  - Inventaire (articles, valeur stock, alertes)
+  - Capteurs (actifs, en alarme)
+  - Utilisateurs (total, actifs)
+- Support des filtres par service et période
+
+**Modèles de données** (`/app/backend/custom_widgets_models.py`) :
+```python
+CustomWidgetCreate:
+  - name, description
+  - data_sources: List[WidgetDataSource]
+  - primary_source_id
+  - visualization: WidgetVisualization
+  - refresh_interval (minutes)
+  - is_shared, shared_with_roles
+
+WidgetDataSource:
+  - id, name, type
+  - manual_value, excel_config, gmao_config, formula
+  - cached_value, last_refresh, error_message
+
+ExcelDataSource:
+  - smb_path, sheet_name, cell_reference
+  - column_name, row_filter, aggregation
+  - smb_username, smb_password (optionnels)
+```
+
+**Tests** (`/app/backend/tests/test_custom_widgets.py`) :
+- 11 tests unitaires passent à 100%
+- Couverture : CRUD, refresh, types GMAO, connexion Excel, formules
+
+**Notes importantes** :
+- Le service Excel SMB (`excel_smb_service.py`) est un PLACEHOLDER - retourne des données mock car pas de serveur SMB disponible dans l'environnement de preview
+- Les credentials SMB peuvent être saisis manuellement par l'utilisateur pour chaque source
+- L'entrée "Dashboard Service" a été ajoutée au menu de navigation
+
+---
+
 ## Tâches à venir
 
 ### P1 - Priorité Haute
-- Bug "Rapport P.accident" temps réel (récurrent - 10+ occurrences)
+- Filtrage automatique par service (responsables ne voient que leurs données)
+- Validation/Approbation des demandes (workflow)
+- Rapport hebdomadaire automatique (scheduler)
+- Gestion d'équipe et pointage
 
 ### P2 - Backlog
-- Fonctions spécifiques "Responsables de service"
 - Dashboard Plan de Surveillance
-- Analytique Checklists
-- Visite guidée
-- Refactoring `SpecialSettings.jsx` (~1800 lignes)
+- Analytics Checklist
+- Caméras RTSP/ONVIF (requires infrastructure)
+
+### P3 - Futur
+- Intégration calendrier externe
+- Application mobile
