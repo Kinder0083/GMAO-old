@@ -119,6 +119,42 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 **Tests** : Screenshot Playwright ✅ + Compilation réussie ✅
 
+#### ✅ Feature: Visite guidée interactive - P2
+**Implémentation complète** d'un système de visite guidée pour les nouveaux utilisateurs :
+
+**Composants créés** :
+- `/app/frontend/src/contexts/GuidedTourContext.jsx` - Contexte React pour gérer l'état de la visite
+- `/app/frontend/src/components/GuidedTour/GuidedTour.jsx` - Composant principal avec 11 étapes
+- `/app/frontend/src/components/Settings/GuidedTourSettings.jsx` - Section dans les paramètres
+
+**Fonctionnalités** :
+- Tour de 11 étapes couvrant les principales fonctionnalités
+- Overlay avec spotlight sur l'élément ciblé
+- Navigation : Précédent, Suivant, Passer
+- Progression visuelle (points + compteur)
+- Démarrage automatique pour les nouveaux utilisateurs
+- Possibilité de relancer depuis Paramètres
+- Stockage dans localStorage pour mémoriser la complétion
+- Compatible React 19 (solution custom sans dépendances externes)
+
+**Étapes de la visite** :
+1. Introduction de bienvenue
+2. Menu de navigation (sidebar)
+3. Tableau de bord (statistiques)
+4. Notifications
+5. Menu utilisateur (profil)
+6. Équipements
+7. Ordres de travail
+8. Planning
+9. Chat en direct
+10. Assistant IA
+11. Conclusion
+
+**Data-testid ajoutés** :
+- `sidebar-nav`, `dashboard-stats`, `ai-assistant-button`
+
+**Tests** : Screenshots Playwright ✅ (3 étapes testées)
+
 ---
 
 ### Session du 18 Janvier 2026
