@@ -82,7 +82,9 @@ const ImprovementRequests = () => {
     const matchesSearch = req.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesPriority = filterPriority === 'ALL' || req.priorite === filterPriority;
-    return matchesSearch && matchesPriority;
+    const reqStatus = req.status || 'SOUMISE';
+    const matchesStatus = filterStatus === 'ALL' || reqStatus === filterStatus;
+    return matchesSearch && matchesPriority && matchesStatus;
   });
 
   const getPriorityBadge = (priorite) => {
@@ -99,6 +101,26 @@ const ImprovementRequests = () => {
       </span>
     );
   };
+
+  const getStatusBadge = (status) => {
+    const badges = {
+      'SOUMISE': { bg: 'bg-amber-100', text: 'text-amber-700', icon: Clock, label: 'En attente' },
+      'VALIDEE': { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle2, label: 'Validée' },
+      'REJETEE': { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle, label: 'Rejetée' },
+      'CONVERTIE': { bg: 'bg-blue-100', text: 'text-blue-700', icon: Wrench, label: 'Convertie' }
+    };
+    const badge = badges[status] || badges['SOUMISE'];
+    const Icon = badge.icon;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${badge.bg} ${badge.text}`}>
+        <Icon size={12} />
+        {badge.label}
+      </span>
+    );
+  };
+
+  // Vérifier si l'utilisateur peut valider (admin ou responsable de service)
+  const canValidate = user && (user.role === 'ADMIN' || isServiceManager);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
