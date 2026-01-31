@@ -185,7 +185,7 @@ const ServiceDashboard = () => {
               key={widget.id}
               widget={widget}
               onRefresh={() => refreshWidget(widget.id)}
-              onEdit={() => navigate(`/custom-widget/${widget.id}`)}
+              onEdit={() => navigate(`/service-dashboard/widgets/${widget.id}/edit`)}
               onDelete={() => deleteWidget(widget.id)}
               isOwner={widget.created_by === user?.id}
             />
