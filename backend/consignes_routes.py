@@ -10,6 +10,9 @@ from bson import ObjectId
 import json
 import asyncio
 
+# Import direct de la dépendance d'authentification
+from dependencies import get_current_user
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -19,7 +22,6 @@ router = APIRouter(prefix="/consignes", tags=["Consignes"])
 db = None
 mqtt_manager = None
 audit_service = None
-_get_current_user_func = None
 
 # WebSocket connections pour les consignes
 consigne_connections = {}  # user_id -> WebSocket
@@ -44,33 +46,21 @@ class ConsigneResponse(BaseModel):
 
 def init_consignes_routes(database, current_user_dep, mqtt_mgr, audit_svc):
     """Initialise les routes avec les dépendances"""
-    global db, mqtt_manager, audit_service, _get_current_user_func
+    global db, mqtt_manager, audit_service
     db = database
-    _get_current_user_func = current_user_dep
     mqtt_manager = mqtt_mgr
     audit_service = audit_svc
     logger.info("✅ Routes consignes initialisées")
     logger.info(f"   - DB: {db is not None}")
     logger.info(f"   - MQTT Manager: {mqtt_manager is not None}")
     logger.info(f"   - Audit Service: {audit_service is not None}")
-    logger.info(f"   - Auth Function: {_get_current_user_func is not None}")
     return router
-
-
-# Fonction pour obtenir l'utilisateur courant
-async def get_current_user_dependency():
-    """Wrapper pour la dépendance d'authentification"""
-    if _get_current_user_func is None:
-        logger.error("❌ Fonction d'authentification non initialisée!")
-        raise HTTPException(status_code=500, detail="Service non initialisé")
-    # La fonction est déjà une dépendance FastAPI, on l'appelle directement
-    return _get_current_user_func
 
 
 @router.post("/send")
 async def send_consigne(
     data: ConsigneCreate,
-    current_user: dict = Depends(get_current_user_dependency)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Envoyer une consigne à un utilisateur
@@ -80,8 +70,8 @@ async def send_consigne(
     """
     logger.info(f"📩 Tentative d'envoi de consigne")
     logger.debug(f"   - Destinataire ID: {data.recipient_id}")
-    logger.debug(f"   - Message (aperçu): {data.message[:50]}...")
-    logger.debug(f"   - Utilisateur courant: {current_user}")
+    logger.debug(f"   - Message (aperçu): {data.message[:50] if len(data.message) > 50 else data.message}...")
+    logger.debug(f"   - Utilisateur courant: {current_user.get('email') if current_user else 'None'}")
     
     try:
         # Vérifier que la DB est initialisée
@@ -246,7 +236,7 @@ async def send_consigne(
 
 @router.get("/pending")
 async def get_pending_consignes(
-    current_user: dict = Depends(get_current_user_dependency)
+    current_user: dict = Depends(get_current_user)
 ):
     """Récupérer les consignes non acquittées pour l'utilisateur connecté"""
     try:
@@ -285,7 +275,7 @@ async def get_pending_consignes(
 @router.post("/{consigne_id}/acknowledge")
 async def acknowledge_consigne(
     consigne_id: str,
-    current_user: dict = Depends(get_current_user_dependency)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Acquitter une consigne (clic sur OK)
@@ -435,7 +425,7 @@ async def acknowledge_consigne(
 @router.get("/history")
 async def get_consignes_history(
     limit: int = 50,
-    current_user: dict = Depends(get_current_user_dependency)
+    current_user: dict = Depends(get_current_user)
 ):
     """Récupérer l'historique des consignes (envoyées et reçues)"""
     try:
