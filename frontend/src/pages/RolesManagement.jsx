@@ -66,6 +66,7 @@ const MODULES = [
   { key: 'chatLive', label: 'Chat Live' },
   { key: 'sensors', label: 'Capteurs' },
   { key: 'iotDashboard', label: 'Dashboard IoT' },
+  { key: 'serviceDashboard', label: 'Dashboard Service' },
   { key: 'mqttLogs', label: 'Logs MQTT' },
   { key: 'whiteboard', label: 'Tableau d\'affichage' },
   { key: 'achat', label: 'Gestion achats' },
