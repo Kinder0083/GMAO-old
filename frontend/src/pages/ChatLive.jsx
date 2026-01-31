@@ -35,6 +35,13 @@ const ChatLive = () => {
   const [consigneMessage, setConsigneMessage] = useState('');
   const [sendingConsigne, setSendingConsigne] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
+  // États pour les consignes générales (par service)
+  const [showConsigneGroupModal, setShowConsigneGroupModal] = useState(false);
+  const [consigneGroupService, setConsigneGroupService] = useState('');
+  const [consigneGroupMessage, setConsigneGroupMessage] = useState('');
+  const [sendingConsigneGroup, setSendingConsigneGroup] = useState(false);
+  const [servicesList, setServicesList] = useState([]);
+  const [consigneGroupResult, setConsigneGroupResult] = useState(null);
   
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({}); // Références pour scroll vers message
