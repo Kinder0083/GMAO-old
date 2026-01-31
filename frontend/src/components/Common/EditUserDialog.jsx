@@ -32,6 +32,9 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isCustomService, setIsCustomService] = useState(false);
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = currentUser?.role === 'ADMIN';
+  
   const [formData, setFormData] = useState({
     prenom: '',
     nom: '',
@@ -39,7 +42,10 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
     telephone: '',
     service: '',
     regime: 'Journée',
-    role: 'VISUALISEUR'
+    role: 'VISUALISEUR',
+    mqtt_topic: '',
+    mqtt_action_ok: '',
+    mqtt_action_reception: ''
   });
 
   useEffect(() => {
