@@ -6723,59 +6723,6 @@ async def update_improvement_request_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/improvement-requests/pending-validation", response_model=List[dict])
-async def get_pending_improvement_requests(
-    current_user: dict = Depends(require_permission("improvementRequests", "view"))
-):
-    """Récupérer les demandes d'amélioration en attente de validation pour le responsable"""
-    from service_filter import is_service_manager, get_user_managed_services
-    
-    try:
-        is_admin = current_user.get("role") == "ADMIN"
-        is_manager = await is_service_manager(current_user)
-        
-        if not is_admin and not is_manager:
-            return []  # Pas de permissions pour voir les demandes en attente
-        
-        query = {"$or": [{"status": "SOUMISE"}, {"status": {"$exists": False}}, {"status": None}]}
-        
-        # Si responsable (non admin), filtrer par service
-        if not is_admin and is_manager:
-            managed_services = await get_user_managed_services(current_user)
-            if managed_services:
-                # Récupérer les IDs des utilisateurs de ces services
-                service_users = await db.users.find(
-                    {"service": {"$in": managed_services}},
-                    {"id": 1, "_id": 0}
-                ).to_list(1000)
-                user_ids = [u["id"] for u in service_users]
-                
-                query = {
-                    "$and": [
-                        {"$or": [{"status": "SOUMISE"}, {"status": {"$exists": False}}, {"status": None}]},
-                        {"$or": [
-                            {"created_by": {"$in": user_ids}},
-                            {"service": {"$in": managed_services}}
-                        ]}
-                    ]
-                }
-        
-        requests = await db.improvement_requests.find(query, {"_id": 0}).sort("date_creation", -1).to_list(1000)
-        
-        # Enrichir avec les infos créateur
-        for req in requests:
-            if req.get("created_by"):
-                creator = await db.users.find_one({"id": req["created_by"]}, {"_id": 0, "service": 1})
-                if creator:
-                    req["service"] = creator.get("service")
-        
-        return requests
-        
-    except Exception as e:
-        logger.error(f"Erreur récupération demandes en attente: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @api_router.post("/improvement-requests/{request_id}/convert-to-improvement", response_model=dict)
 async def convert_to_improvement(
     request_id: str,
