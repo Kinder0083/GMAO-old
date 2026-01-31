@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Script idempotent unifié pour générer le manuel complet GMAO Iris (23 chapitres)
+Script idempotent unifié pour générer le manuel complet GMAO Iris (25 chapitres)
 Ce script remplace generate_complete_manual.py et add_missing_manual_chapters.py
 
 Caractéristiques :
 - Idempotent : Peut être exécuté plusieurs fois sans dupliquer les données
-- Complet : Génère tous les 23 chapitres et leurs sections (61 sections au total)
+- Complet : Génère tous les 25 chapitres et leurs sections (70 sections au total)
 - Maintenable : Code centralisé et organisé
 
 Utilisation :
