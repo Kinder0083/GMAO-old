@@ -298,6 +298,54 @@ const ChatLive = () => {
     }
   };
 
+  // Fonction pour envoyer une consigne de groupe (par service)
+  const sendConsigneGroup = async () => {
+    if (!consigneGroupService || !consigneGroupMessage.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner un service et écrire un message',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSendingConsigneGroup(true);
+    setConsigneGroupResult(null);
+    
+    try {
+      const response = await api.post('/consignes/send-group', {
+        service: consigneGroupService,
+        message: consigneGroupMessage.trim()
+      });
+
+      if (response.data.success) {
+        setConsigneGroupResult(response.data);
+        
+        toast({
+          title: 'Consigne générale envoyée',
+          description: `${response.data.total_sent} utilisateur(s) notifié(s)`
+        });
+      }
+    } catch (error) {
+      console.error('Erreur envoi consigne groupe:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer la consigne générale',
+        variant: 'destructive'
+      });
+    } finally {
+      setSendingConsigneGroup(false);
+    }
+  };
+
+  // Fermer le modal de consigne groupe et réinitialiser
+  const closeConsigneGroupModal = () => {
+    setShowConsigneGroupModal(false);
+    setConsigneGroupService('');
+    setConsigneGroupMessage('');
+    setConsigneGroupResult(null);
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
