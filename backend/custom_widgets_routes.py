@@ -37,10 +37,7 @@ def init_custom_widgets_routes(database, audit_svc=None):
 
 # === Dépendances ===
 
-async def get_current_user(request):
-    """Récupère l'utilisateur courant depuis le token"""
-    from server import get_current_user as server_get_current_user
-    return await server_get_current_user(request)
+from dependencies import get_current_user
 
 
 # === Routes CRUD Widgets ===
