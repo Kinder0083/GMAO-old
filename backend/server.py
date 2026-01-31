@@ -7678,6 +7678,11 @@ from timezone_routes import router as timezone_router, init_timezone_routes
 init_timezone_routes(db)
 api_router.include_router(timezone_router)
 
+# Consignes routes (notifications MQTT)
+from consignes_routes import router as consignes_router, init_consignes_routes, consignes_websocket_endpoint
+init_consignes_routes(db, get_current_user, mqtt_manager, audit_service)
+api_router.include_router(consignes_router)
+
 # Work Order Templates routes (Ordres Type)
 from work_order_templates_routes import router as wo_templates_router
 api_router.include_router(wo_templates_router)
