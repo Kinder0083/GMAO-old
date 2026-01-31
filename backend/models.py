@@ -1206,6 +1206,26 @@ class InterventionRequestUpdate(BaseModel):
     date_limite_desiree: Optional[datetime] = None
 
 
+# Statut de validation pour les demandes d'amélioration
+class ImprovementRequestStatus(str, Enum):
+    """Statut de validation d'une demande d'amélioration"""
+    SOUMISE = "SOUMISE"  # En attente de validation
+    VALIDEE = "VALIDEE"  # Validée par le responsable
+    REJETEE = "REJETEE"  # Rejetée par le responsable
+    CONVERTIE = "CONVERTIE"  # Convertie en projet d'amélioration
+
+
+# Historique de validation pour demandes d'amélioration
+class ImprovementRequestHistoryEntry(BaseModel):
+    """Entrée d'historique pour une demande d'amélioration"""
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    user_id: str
+    user_name: str
+    action: str
+    old_status: Optional[str] = None
+    new_status: str
+    comment: Optional[str] = None
+
 
 # Improvement Request (Demande d'amélioration) Models
 class ImprovementRequest(BaseModel):
@@ -1221,6 +1241,17 @@ class ImprovementRequest(BaseModel):
     date_creation: datetime
     created_by: str
     created_by_name: Optional[str] = None
+    service: Optional[str] = None  # Service du demandeur pour le filtrage
+    
+    # Statut de validation
+    status: Optional[str] = "SOUMISE"  # SOUMISE, VALIDEE, REJETEE, CONVERTIE
+    validated_at: Optional[datetime] = None
+    validated_by: Optional[str] = None
+    validated_by_name: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    history: List[Dict] = Field(default_factory=list)
+    
+    # Lien avec le projet d'amélioration créé
     improvement_id: Optional[str] = None  # ID de l'amélioration créée
     improvement_numero: Optional[str] = None  # Numéro de l'amélioration créée
     improvement_date_limite: Optional[datetime] = None  # Date limite de l'amélioration créée
