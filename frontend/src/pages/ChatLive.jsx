@@ -834,14 +834,27 @@ const ChatLive = () => {
             </div>
           </div>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowUserSelector(!showUserSelector)}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            Message privé
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowUserSelector(!showUserSelector)}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Message privé
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConsigneModal(true)}
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+              data-testid="consigne-button"
+            >
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Consigne
+            </Button>
+          </div>
         </div>
 
         {/* Sélection destinataires (messages privés) */}
