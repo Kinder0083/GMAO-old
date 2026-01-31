@@ -95,6 +95,30 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 **Tests** : API testée via curl ✅ + Screenshots Playwright ✅
 
+#### ✅ Refactoring: SpecialSettings.jsx - P3
+**Découpage** du fichier monolithique de 2073 lignes en 7 composants réutilisables :
+
+**Fichiers créés dans `/app/frontend/src/components/Settings/`** :
+- `UserPasswordReset.jsx` (242 lignes) - Gestion des mots de passe utilisateurs
+- `SecuritySettings.jsx` (126 lignes) - Paramètres de déconnexion automatique
+- `TailscaleSettings.jsx` (307 lignes) - Configuration IP Tailscale
+- `SmtpSettings.jsx` (394 lignes) - Configuration emails (SMTP)
+- `MqttSettings.jsx` (340 lignes) - Configuration MQTT/IoT
+- `LlmKeysSettings.jsx` (259 lignes) - Clés API des fournisseurs LLM
+- `TimezoneSettings.jsx` (423 lignes) - Fuseau horaire et NTP
+- `index.js` - Export centralisé des composants
+
+**Fichier principal refactorisé** :
+- `/app/frontend/src/pages/SpecialSettings.jsx` (70 lignes) - Importe et assemble les composants
+
+**Avantages** :
+- Meilleure maintenabilité et lisibilité
+- Composants isolés et réutilisables
+- Tests unitaires facilités
+- Chaque composant gère son propre état
+
+**Tests** : Screenshot Playwright ✅ + Compilation réussie ✅
+
 ---
 
 ### Session du 18 Janvier 2026
