@@ -64,7 +64,8 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
         role: user.role || 'VISUALISEUR',
         mqtt_topic: user.mqtt_topic || '',
         mqtt_action_ok: user.mqtt_action_ok || '',
-        mqtt_action_reception: user.mqtt_action_reception || ''
+        mqtt_action_reception: user.mqtt_action_reception || '',
+        mqtt_topic_discret: user.mqtt_topic_discret || ''
       });
     }
   }, [user]);
