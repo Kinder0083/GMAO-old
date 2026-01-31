@@ -60,7 +60,10 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
         telephone: user.telephone || '',
         service: userService,
         regime: user.regime || 'Journée',
-        role: user.role || 'VISUALISEUR'
+        role: user.role || 'VISUALISEUR',
+        mqtt_topic: user.mqtt_topic || '',
+        mqtt_action_ok: user.mqtt_action_ok || '',
+        mqtt_action_reception: user.mqtt_action_reception || ''
       });
     }
   }, [user]);
