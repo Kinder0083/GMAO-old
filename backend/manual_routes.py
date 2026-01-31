@@ -141,12 +141,22 @@ async def search_manual(
                 # Trouver le chapitre parent
                 chapter_id = None
                 chapter_title = None
-                chapters = await db.manual_chapters.find({}, {"_id": 0}).to_list(None)
-                for chapter in chapters:
-                    if section.get("id") in chapter.get("sections", []):
-                        chapter_id = chapter.get("id")  # Utiliser l'ID personnalisé (ch-001)
+                
+                # D'abord vérifier si la section a un chapter_id
+                if section.get("chapter_id"):
+                    chapter = await db.manual_chapters.find_one({"id": section.get("chapter_id")}, {"_id": 0})
+                    if chapter:
+                        chapter_id = chapter.get("id")
                         chapter_title = chapter.get("title")
-                        break
+                
+                # Sinon, utiliser l'ancienne méthode
+                if not chapter_id:
+                    chapters = await db.manual_chapters.find({}, {"_id": 0}).to_list(None)
+                    for chapter in chapters:
+                        if section.get("id") in chapter.get("sections", []):
+                            chapter_id = chapter.get("id")  # Utiliser l'ID personnalisé (ch-001)
+                            chapter_title = chapter.get("title")
+                            break
                 
                 results.append({
                     "section_id": section.get("id"),  # ID personnalisé (sec-001-01)
