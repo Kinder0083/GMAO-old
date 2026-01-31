@@ -801,6 +801,7 @@ class EquipmentCreate(BaseModel):
     anneeFabrication: Optional[int] = None
     garantie: Optional[str] = None
     parent_id: Optional[str] = None
+    service: Optional[str] = None  # Service associé pour le filtrage par responsable
 
 class EquipmentUpdate(BaseModel):
     nom: Optional[str] = None
