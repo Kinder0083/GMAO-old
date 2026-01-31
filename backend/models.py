@@ -740,6 +740,7 @@ class WorkOrderUpdate(BaseModel):
     dateLimite: Optional[datetime] = None
     tempsEstime: Optional[float] = None
     tempsReel: Optional[float] = None
+    service: Optional[str] = None  # Service associé pour le filtrage par responsable
 
 
 class AddTimeSpent(BaseModel):
