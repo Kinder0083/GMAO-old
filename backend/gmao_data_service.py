@@ -90,7 +90,7 @@ async def get_gmao_data(
     Returns:
         Valeur numérique, dict ou liste selon le type de données
     """
-    if not _db:
+    if _db is None:
         raise Exception("Service GMAO non initialisé")
     
     # Construire les filtres de date
