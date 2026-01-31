@@ -916,16 +916,16 @@ const DataSourceEditor = ({
             <div className="space-y-2">
               <Label>Période (depuis)</Label>
               <Select
-                value={source.gmao_config?.date_from || ''}
+                value={source.gmao_config?.date_from || 'all'}
                 onValueChange={(value) => onUpdate({
-                  gmao_config: { ...source.gmao_config, date_from: value || null }
+                  gmao_config: { ...source.gmao_config, date_from: value === 'all' ? null : value }
                 })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Toute la période" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Toute la période</SelectItem>
+                  <SelectItem value="all">Toute la période</SelectItem>
                   <SelectItem value="-7d">7 derniers jours</SelectItem>
                   <SelectItem value="-30d">30 derniers jours</SelectItem>
                   <SelectItem value="-1m">Mois en cours</SelectItem>
