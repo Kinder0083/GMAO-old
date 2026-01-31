@@ -19,7 +19,7 @@ export const usePresquAccident = (options = {}) => {
   } = useRealtimeData('near_miss', fetchItems, {
     enableWebSocket: true,
     fallbackPolling: true,
-    pollingInterval: 30000,
+    pollingInterval: 10000, // 10 secondes pour une meilleure réactivité
     ...options
   });
 
