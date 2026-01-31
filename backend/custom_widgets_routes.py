@@ -303,7 +303,8 @@ async def refresh_widget_data(widget_id: str):
                         date_from=gmao_config.get("date_from"),
                         date_to=gmao_config.get("date_to"),
                         group_by=gmao_config.get("group_by"),
-                        sensor_id=gmao_config.get("sensor_id")
+                        sensor_id=gmao_config.get("sensor_id"),
+                        meter_id=gmao_config.get("meter_id")
                     )
                 
                 sources_values[source.get("name")] = value
