@@ -616,7 +616,7 @@ class UserPermissionsUpdate(BaseModel):
 class User(UserBase):
     id: str
     statut: str = "actif"
-    dateCreation: datetime
+    dateCreation: Optional[datetime] = None
     derniereConnexion: Optional[datetime] = None
     permissions: UserPermissions = Field(default_factory=UserPermissions)
     firstLogin: Optional[bool] = False  # True si premier login, nécessite changement de mot de passe
