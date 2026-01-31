@@ -924,6 +924,17 @@ const ChatLive = () => {
               <AlertTriangle className="mr-2 h-4 w-4" />
               Consigne
             </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConsigneGroupModal(true)}
+              className="border-red-300 text-red-700 hover:bg-red-50"
+              data-testid="consigne-group-button"
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Consigne générale
+            </Button>
           </div>
         </div>
 
