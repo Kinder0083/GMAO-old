@@ -609,6 +609,7 @@ const MainLayout = () => {
       <TokenValidator />
       <InactivityHandler />
       <ContextualHelpButton />
+      <ConsignePopup />
     </div>
     </TooltipProvider>
   );
