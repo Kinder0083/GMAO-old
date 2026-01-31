@@ -170,7 +170,7 @@ async def _get_work_orders_count(service_filter=None, status_filter=None, date_f
         query["service"] = service_filter
     if status_filter:
         query["status"] = {"$in": status_filter}
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["created_at"] = date_filter
     
     return await _db.work_orders.count_documents(query)
@@ -181,7 +181,7 @@ async def _get_work_orders_by_status(service_filter=None, date_filter=None, **kw
     match_stage = {}
     if service_filter:
         match_stage["service"] = service_filter
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         match_stage["created_at"] = date_filter
     
     pipeline = [
@@ -199,7 +199,7 @@ async def _get_work_orders_by_priority(service_filter=None, date_filter=None, **
     match_stage = {}
     if service_filter:
         match_stage["service"] = service_filter
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         match_stage["created_at"] = date_filter
     
     pipeline = [
@@ -235,7 +235,7 @@ async def _get_work_orders_avg_duration(service_filter=None, status_filter=None,
     match_stage = {"status": {"$in": ["TERMINE", "CLOTURE", "completed", "closed"]}}
     if service_filter:
         match_stage["service"] = service_filter
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         match_stage["created_at"] = date_filter
     
     pipeline = [
@@ -329,7 +329,7 @@ async def _get_preventive_completion_rate(service_filter=None, date_filter=None,
     query = {}
     if service_filter:
         query["service"] = service_filter
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["scheduled_date"] = date_filter
     
     total = await _db.preventive_maintenance.count_documents(query)
@@ -380,7 +380,7 @@ async def _get_intervention_requests_count(service_filter=None, status_filter=No
         query["service"] = service_filter
     if status_filter:
         query["status"] = {"$in": status_filter}
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["created_at"] = date_filter
     
     return await _db.intervention_requests.count_documents(query)
@@ -393,7 +393,7 @@ async def _get_improvement_requests_count(service_filter=None, status_filter=Non
         query["service"] = service_filter
     if status_filter:
         query["status"] = {"$in": status_filter}
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["created_at"] = date_filter
     
     return await _db.improvement_requests.count_documents(query)
@@ -406,7 +406,7 @@ async def _get_purchase_requests_count(service_filter=None, status_filter=None, 
         query["service"] = service_filter
     if status_filter:
         query["status"] = {"$in": status_filter}
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["created_at"] = date_filter
     
     return await _db.purchase_requests.count_documents(query)
@@ -421,7 +421,7 @@ async def _get_near_miss_count(service_filter=None, status_filter=None, date_fil
         query["service"] = service_filter
     if status_filter:
         query["status"] = {"$in": status_filter}
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["date_incident"] = date_filter
     
     return await _db.presqu_accident.count_documents(query)
@@ -432,7 +432,7 @@ async def _get_near_miss_by_severity(service_filter=None, date_filter=None, **kw
     match_stage = {}
     if service_filter:
         match_stage["service"] = service_filter
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         match_stage["date_incident"] = date_filter
     
     pipeline = [
@@ -464,7 +464,7 @@ async def _get_sensor_history(sensor_id=None, date_filter=None, **kwargs):
         return []
     
     query = {"sensor_id": sensor_id}
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["timestamp"] = date_filter
     
     history = await _db.sensor_history.find(query, {"_id": 0}).sort("timestamp", -1).to_list(length=100)
@@ -516,7 +516,7 @@ async def _get_surveillance_compliance_rate(service_filter=None, date_filter=Non
     query = {}
     if service_filter:
         query["service"] = service_filter
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["date_controle"] = date_filter
     
     total = await _db.surveillance_controls.count_documents(query)
