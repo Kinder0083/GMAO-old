@@ -130,16 +130,50 @@ const RolesManagement = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [rolesRes, responsablesRes, usersRes] = await Promise.all([
-        rolesAPI.getAll(),
-        rolesAPI.getServiceResponsables(),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users`, {
+      
+      // Charger chaque ressource séparément pour mieux identifier les erreurs
+      let rolesData = [];
+      let responsablesData = [];
+      let usersData = [];
+      
+      // Charger les rôles
+      try {
+        rolesData = await rolesAPI.getAll();
+      } catch (error) {
+        console.error('Erreur chargement rôles:', error);
+        toast({
+          title: 'Erreur partielle',
+          description: 'Impossible de charger les rôles',
+          variant: 'destructive'
+        });
+      }
+      
+      // Charger les responsables de service
+      try {
+        responsablesData = await rolesAPI.getServiceResponsables();
+      } catch (error) {
+        console.error('Erreur chargement responsables:', error);
+        // Non bloquant - on continue
+      }
+      
+      // Charger les utilisateurs
+      try {
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/users`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        }).then(r => r.json())
-      ]);
-      setRoles(rolesRes);
-      setServiceResponsables(responsablesRes);
-      setUsers(usersRes.data || usersRes || []);
+        });
+        if (response.ok) {
+          const data = await response.json();
+          usersData = data.data || data || [];
+        }
+      } catch (error) {
+        console.error('Erreur chargement utilisateurs:', error);
+        // Non bloquant - on continue
+      }
+      
+      setRoles(rolesData || []);
+      setServiceResponsables(responsablesData || []);
+      setUsers(usersData || []);
+      
     } catch (error) {
       console.error('Erreur chargement:', error);
       toast({
