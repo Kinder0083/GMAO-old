@@ -6,6 +6,8 @@ import { Toaster } from "./components/ui/toaster";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { AIContextMenuProvider } from "./contexts/AIContextMenuContext";
 import { AINavigationProvider } from "./contexts/AINavigationContext";
+import { GuidedTourProvider } from "./contexts/GuidedTourContext";
+import { GuidedTour } from "./components/GuidedTour";
 
 // Layout
 import MainLayout from "./components/Layout/MainLayout";
