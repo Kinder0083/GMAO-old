@@ -11,7 +11,7 @@ import time
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://iotchat.preview.emergentagent.com/api"
+BACKEND_URL = "https://dash-manager-8.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"
