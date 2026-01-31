@@ -1201,10 +1201,58 @@ ExcelDataSource:
 
 ---
 
+## Session du 31 Janvier 2026 (Suite)
+
+### ✅ Feature: Filtrage automatique par service (P0 - COMPLÉTÉ)
+**Implémentation complète** du filtrage automatique des données par service pour les responsables :
+
+**Backend** (`/app/backend/service_filter.py`) :
+- `get_user_service_filter(user)` : Retourne le filtre service pour un utilisateur
+- `get_user_managed_services(user)` : Retourne les services gérés par un responsable
+- `is_service_manager(user)` : Vérifie si l'utilisateur est responsable de service
+- `apply_service_filter(query, user, field)` : Applique le filtre aux requêtes MongoDB
+- `get_service_team_members(user)` : Retourne les membres de l'équipe du service
+
+**Nouveaux endpoints API** (`/app/backend/server.py`) :
+- `GET /api/service-manager/status` : Statut de responsable + services gérés
+- `GET /api/service-manager/team` : Liste des membres de l'équipe
+- `GET /api/service-manager/stats` : Statistiques filtrées (OT, équipements, etc.)
+
+**Endpoints avec filtrage automatique** :
+- `GET /api/work-orders` : Filtrage par champ `service`
+- `GET /api/equipments` : Filtrage par champ `service`
+- `GET /api/preventive-maintenance` : Filtrage par champ `service`
+- `GET /api/intervention-requests` : Filtrage par champ `service`
+- `GET /api/improvement-requests` : Filtrage par champ `service`
+- `GET /api/presqu-accidents` : Filtrage par champ `service`
+
+**Frontend** :
+- `/app/frontend/src/hooks/useServiceManagerStatus.js` : Hook pour récupérer le statut de manager
+- `/app/frontend/src/components/Common/ServiceFilterBadge.jsx` : Badge "Service : X" affiché sur les pages filtrées
+- Badge intégré dans `WorkOrders.jsx` et `Assets.jsx`
+- Page `ServiceTeamView.jsx` complète avec stats et liste d'équipe
+
+**Modèles mis à jour** (`/app/backend/models.py`) :
+- `WorkOrderBase`, `WorkOrderUpdate` : Ajout du champ `service`
+- `EquipmentBase`, `EquipmentCreate`, `EquipmentUpdate` : Ajout du champ `service`
+
+**Comportement** :
+- **Admin** : Voit toutes les données, pas de badge affiché
+- **Responsable de service** : Voit uniquement les données de son service, badge bleu "Service : X" affiché
+- **Utilisateur normal** : Voit les données de son propre service (si défini)
+
+**Utilisateur de test créé** :
+- Email : `responsable.maintenance@test.com`
+- Password : `password`
+- Rôle : TECHNICIEN, responsable du service "Maintenance"
+
+**Tests** : 100% backend (11/11) + 100% frontend (rapport `/app/test_reports/iteration_14.json`)
+
+---
+
 ## Tâches à venir
 
 ### P1 - Priorité Haute
-- Filtrage automatique par service (responsables ne voient que leurs données)
 - Validation/Approbation des demandes (workflow)
 - Rapport hebdomadaire automatique (scheduler)
 - Gestion d'équipe et pointage
