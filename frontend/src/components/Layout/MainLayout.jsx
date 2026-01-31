@@ -35,6 +35,7 @@ import RecentUpdatePopup from '../Common/RecentUpdatePopup';
 import InactivityHandler from '../Common/InactivityHandler';
 import TokenValidator from '../Common/TokenValidator';
 import ContextualHelpButton from '../Common/ContextualHelpButton';
+import ConsignePopup from '../Common/ConsignePopup';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { iconMap } from './menuConfig';
