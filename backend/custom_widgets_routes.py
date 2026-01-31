@@ -445,7 +445,7 @@ async def get_available_services(current_user: dict = Depends(get_current_user))
 
 # === Templates de widgets prédéfinis ===
 
-@router.get("/widget-templates")
+@router.get("/tpl/list")
 async def get_widget_templates(current_user: dict = Depends(get_current_user)):
     """Retourne la liste des templates de widgets prédéfinis"""
     templates = [
