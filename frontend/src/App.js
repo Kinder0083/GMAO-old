@@ -124,11 +124,14 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <AINavigationProvider>
-                  <AIContextMenuProvider>
-                    <MainLayout />
-                  </AIContextMenuProvider>
-                </AINavigationProvider>
+                <GuidedTourProvider>
+                  <AINavigationProvider>
+                    <AIContextMenuProvider>
+                      <GuidedTour />
+                      <MainLayout />
+                    </AIContextMenuProvider>
+                  </AINavigationProvider>
+                </GuidedTourProvider>
               </ProtectedRoute>
             }
           >
