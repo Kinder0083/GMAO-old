@@ -217,7 +217,7 @@ async def _get_work_orders_completion_rate(service_filter=None, date_filter=None
     query = {}
     if service_filter:
         query["service"] = service_filter
-    if date_filter:
+    if date_filter and len(date_filter) > 0:
         query["created_at"] = date_filter
     
     total = await _db.work_orders.count_documents(query)
