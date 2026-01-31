@@ -263,6 +263,10 @@ const ServiceDashboard = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Rafraîchir
           </Button>
+          <Button variant="outline" onClick={() => navigate('/service-dashboard/team')} data-testid="view-team-button">
+            <Users className="h-4 w-4 mr-2" />
+            Mon équipe
+          </Button>
           <Button variant="outline" onClick={openTemplateModal} data-testid="use-template-button">
             <LayoutTemplate className="h-4 w-4 mr-2" />
             Utiliser un template
