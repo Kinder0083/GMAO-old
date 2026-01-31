@@ -7752,8 +7752,8 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
         await websocket.accept()
         logger.info(f"[Realtime] WebSocket connecté: {entity_type}/{user_id}")
         
-        # Connecter l'utilisateur au manager
-        await realtime_manager.connect(entity_type, user_id, websocket)
+        # Connecter l'utilisateur au manager (connexion déjà acceptée)
+        await realtime_manager.connect(entity_type, user_id, websocket, already_accepted=True)
         
         # Garder la connexion ouverte
         while True:
