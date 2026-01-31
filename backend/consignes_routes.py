@@ -434,7 +434,7 @@ async def acknowledge_consigne(
         try:
             # Créer le message chat
             chat_message = {
-                "user_id": user_id,
+                "user_id": "system",
                 "user_name": "Système",
                 "user_email": "system@gmao.local",
                 "message": ack_message,
@@ -445,8 +445,26 @@ async def acknowledge_consigne(
                 "attachments": []
             }
             
-            await db.chat_messages.insert_one(chat_message)
-            logger.info(f"✅ Message Chat Live envoyé: {ack_message}")
+            # Insérer en base de données
+            result = await db.chat_messages.insert_one(chat_message)
+            chat_message["id"] = str(result.inserted_id)
+            
+            # Broadcaster via WebSocket à tous les utilisateurs connectés
+            await chat_ws_manager.broadcast({
+                "type": "new_message",
+                "message": {
+                    "id": chat_message["id"],
+                    "user_id": "system",
+                    "user_name": "Système",
+                    "message": ack_message,
+                    "timestamp": ack_time.isoformat(),
+                    "is_private": False,
+                    "is_system": True,
+                    "attachments": []
+                }
+            })
+            
+            logger.info(f"✅ Message Chat Live broadcasté: {ack_message}")
         except Exception as e:
             logger.warning(f"⚠️ Erreur envoi message Chat: {e}")
         
