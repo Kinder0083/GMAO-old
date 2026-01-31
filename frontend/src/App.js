@@ -66,6 +66,8 @@ import WhiteboardPage from "./pages/WhiteboardPage";
 import PurchaseRequestsArchives from "./pages/PurchaseRequestsArchives";
 import FormTemplatesPage from "./pages/FormTemplatesPage";
 import WorkOrderTemplatesPage from "./pages/WorkOrderTemplatesPage";
+import CustomWidgetEditor from "./pages/CustomWidgetEditor";
+import ServiceDashboard from "./pages/ServiceDashboard";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
