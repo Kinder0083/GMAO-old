@@ -336,6 +336,9 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Visite guidée */}
+          <GuidedTourSettings />
         </div>
       </div>
 
