@@ -564,6 +564,240 @@ async def get_consignes_history(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/services")
+async def get_services_list(
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer la liste des services utilisés (pour la consigne générale)"""
+    try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Base de données non initialisée")
+        
+        # Récupérer tous les services distincts des utilisateurs
+        services = await db.users.distinct("service")
+        
+        # Filtrer les valeurs vides et trier
+        services = sorted([s for s in services if s and s.strip()])
+        
+        logger.debug(f"📋 Services trouvés: {services}")
+        
+        return {
+            "success": True,
+            "services": services
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération services: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/send-group")
+async def send_consigne_group(
+    data: ConsigneGroupCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Envoyer une consigne à tous les utilisateurs d'un service (ou tous les services)
+    """
+    logger.info(f"📩 Envoi consigne de groupe - Service: {data.service}")
+    
+    try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Base de données non initialisée")
+        
+        sender_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        sender_id = current_user.get("id")
+        
+        # Construire la requête pour trouver les utilisateurs
+        if data.service == "ALL":
+            # Tous les utilisateurs (sauf l'expéditeur)
+            query = {"_id": {"$ne": ObjectId(sender_id)}}
+            service_label = "Tous les services"
+        else:
+            # Utilisateurs du service spécifié (sauf l'expéditeur)
+            query = {
+                "service": data.service,
+                "_id": {"$ne": ObjectId(sender_id)}
+            }
+            service_label = data.service
+        
+        # Récupérer les utilisateurs
+        recipients = await db.users.find(query).to_list(length=None)
+        
+        if not recipients:
+            return {
+                "success": True,
+                "total_sent": 0,
+                "online_count": 0,
+                "offline_count": 0,
+                "mqtt_sent_count": 0,
+                "service": service_label,
+                "recipients": [],
+                "message": "Aucun utilisateur trouvé dans ce service"
+            }
+        
+        logger.info(f"📤 Envoi à {len(recipients)} utilisateur(s) - Service: {service_label}")
+        
+        # Compteurs pour le récapitulatif
+        online_count = 0
+        offline_count = 0
+        mqtt_sent_count = 0
+        recipients_info = []
+        created_at = datetime.now(timezone.utc).isoformat()
+        
+        # Créer une consigne pour chaque utilisateur
+        for recipient in recipients:
+            recipient_id = str(recipient["_id"])
+            recipient_name = f"{recipient.get('prenom', '')} {recipient.get('nom', '')}".strip()
+            
+            # Créer la consigne
+            consigne = {
+                "sender_id": sender_id,
+                "sender_name": sender_name,
+                "sender_email": current_user.get("email"),
+                "recipient_id": recipient_id,
+                "recipient_name": recipient_name,
+                "recipient_email": recipient.get("email"),
+                "message": data.message,
+                "created_at": created_at,
+                "acknowledged": False,
+                "acknowledged_at": None,
+                "is_group_consigne": True,
+                "group_service": data.service
+            }
+            
+            # Insérer en base
+            result = await db.consignes.insert_one(consigne)
+            consigne_id = str(result.inserted_id)
+            
+            # Vérifier statut en ligne
+            is_online = chat_ws_manager.is_user_online(recipient_id)
+            if is_online:
+                online_count += 1
+            else:
+                offline_count += 1
+            
+            # Notifier via WebSocket consigne si connecté
+            if recipient_id in consigne_connections:
+                try:
+                    ws = consigne_connections[recipient_id]
+                    await ws.send_json({
+                        "type": "new_consigne",
+                        "consigne": {
+                            "id": consigne_id,
+                            "sender_name": sender_name,
+                            "message": data.message,
+                            "created_at": created_at
+                        }
+                    })
+                except Exception as e:
+                    logger.error(f"❌ Erreur WebSocket pour {recipient_name}: {e}")
+            
+            # Envoyer MQTT
+            mqtt_sent = False
+            mqtt_topic = recipient.get("mqtt_topic")
+            mqtt_action_reception = recipient.get("mqtt_action_reception", "")
+            mqtt_topic_discret = recipient.get("mqtt_topic_discret", "")
+            
+            if mqtt_manager:
+                # 1. Payload simple sur topic principal
+                if mqtt_topic and mqtt_action_reception:
+                    try:
+                        if mqtt_manager.publish(topic=mqtt_topic, payload=mqtt_action_reception, qos=1, retain=False):
+                            mqtt_sent = True
+                            await db.mqtt_publish_history.insert_one({
+                                "topic": mqtt_topic,
+                                "payload": mqtt_action_reception,
+                                "qos": 1,
+                                "retain": False,
+                                "published_at": created_at,
+                                "published_by": sender_id,
+                                "user_email": current_user.get("email"),
+                                "context": "consigne_group_reception_action"
+                            })
+                    except Exception as e:
+                        logger.error(f"❌ Erreur MQTT action pour {recipient_name}: {e}")
+                
+                # 2. JSON détaillé sur topic discret
+                if mqtt_topic_discret:
+                    try:
+                        json_payload = json.dumps({
+                            "type": "consigne_received",
+                            "sender": sender_name,
+                            "message": data.message,
+                            "timestamp": created_at,
+                            "consigne_id": consigne_id,
+                            "is_group": True,
+                            "service": data.service
+                        })
+                        if mqtt_manager.publish(topic=mqtt_topic_discret, payload=json_payload, qos=1, retain=False):
+                            mqtt_sent = True
+                            await db.mqtt_publish_history.insert_one({
+                                "topic": mqtt_topic_discret,
+                                "payload": json_payload,
+                                "qos": 1,
+                                "retain": False,
+                                "published_at": created_at,
+                                "published_by": sender_id,
+                                "user_email": current_user.get("email"),
+                                "context": "consigne_group_reception_discret"
+                            })
+                    except Exception as e:
+                        logger.error(f"❌ Erreur MQTT discret pour {recipient_name}: {e}")
+            
+            if mqtt_sent:
+                mqtt_sent_count += 1
+            
+            recipients_info.append({
+                "id": recipient_id,
+                "name": recipient_name,
+                "online": is_online,
+                "mqtt_sent": mqtt_sent
+            })
+        
+        # Log dans le journal d'audit
+        if audit_service:
+            try:
+                await audit_service.log_action(
+                    user_id=sender_id,
+                    user_name=sender_name,
+                    user_email=current_user.get("email"),
+                    action="CREATE",
+                    entity_type="CONSIGNE_GROUP",
+                    entity_id=f"group_{data.service}_{created_at}",
+                    entity_name=f"Consigne générale - {service_label}",
+                    details={
+                        "service": data.service,
+                        "recipients_count": len(recipients),
+                        "message_preview": data.message[:100] if len(data.message) > 100 else data.message
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"⚠️ Erreur audit consigne groupe: {e}")
+        
+        response = {
+            "success": True,
+            "total_sent": len(recipients),
+            "online_count": online_count,
+            "offline_count": offline_count,
+            "mqtt_sent_count": mqtt_sent_count,
+            "service": service_label,
+            "recipients": recipients_info,
+            "message": f"Consigne envoyée à {len(recipients)} utilisateur(s)"
+        }
+        
+        logger.info(f"✅ Consigne groupe envoyée: {response}")
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi consigne groupe: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Erreur envoi consigne: {str(e)}")
+
+
 # WebSocket pour les notifications de consignes en temps réel
 async def consignes_websocket_endpoint(websocket: WebSocket, token: str):
     """WebSocket pour recevoir les consignes en temps réel"""
