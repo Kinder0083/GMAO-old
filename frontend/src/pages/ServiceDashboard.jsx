@@ -146,7 +146,7 @@ const ServiceDashboard = () => {
       if (selectedSensorId) params.append('sensor_id', selectedSensorId);
       if (selectedMeterId) params.append('meter_id', selectedMeterId);
       
-      await api.post(`/custom-widgets/widget-templates/${selectedTemplate.id}/create?${params.toString()}`);
+      await api.post(`/custom-widgets/tpl/${selectedTemplate.id}/create?${params.toString()}`);
       
       toast({
         title: 'Widget créé',
