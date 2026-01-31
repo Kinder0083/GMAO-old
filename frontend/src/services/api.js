@@ -322,6 +322,10 @@ export const improvementRequestsAPI = {
     } 
   }),
   
+  // Validation
+  updateStatus: (id, statusData) => api.put(`/improvement-requests/${id}/status`, statusData),
+  getPendingValidation: () => api.get('/improvement-requests/pending-validation'),
+  
   // Attachments
   uploadAttachment: (id, file) => {
     const formData = new FormData();
