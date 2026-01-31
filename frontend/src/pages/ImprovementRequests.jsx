@@ -184,6 +184,19 @@ const ImprovementRequests = () => {
                 </Button>
               ))}
             </div>
+            <div className="flex gap-2 flex-wrap border-l pl-4">
+              {['ALL', 'SOUMISE', 'VALIDEE', 'REJETEE', 'CONVERTIE'].map(status => (
+                <Button
+                  key={status}
+                  variant={filterStatus === status ? 'default' : 'outline'}
+                  onClick={() => setFilterStatus(status)}
+                  size="sm"
+                  className={filterStatus === status ? 'bg-gray-700 hover:bg-gray-800' : ''}
+                >
+                  {status === 'ALL' ? 'Tous statuts' : status === 'SOUMISE' ? 'En attente' : status === 'VALIDEE' ? 'Validées' : status === 'REJETEE' ? 'Rejetées' : 'Converties'}
+                </Button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
