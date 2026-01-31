@@ -938,6 +938,96 @@ const DataSourceEditor = ({
             </Select>
           </div>
 
+          {/* Sélecteur de capteur MQTT */}
+          {requiresSensorSelection && (
+            <div className="space-y-2 p-3 border rounded-lg bg-cyan-50 border-cyan-200">
+              <Label className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-cyan-600" />
+                Sélectionner un capteur MQTT
+              </Label>
+              {availableSensors.length === 0 ? (
+                <div className="text-sm text-gray-500 italic">
+                  Aucun capteur MQTT disponible. Configurez vos capteurs dans la section "Capteurs MQTT".
+                </div>
+              ) : (
+                <Select
+                  value={source.gmao_config?.sensor_id || ''}
+                  onValueChange={(value) => onUpdate({
+                    gmao_config: { ...source.gmao_config, sensor_id: value || null }
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un capteur..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSensors.map(sensor => (
+                      <SelectItem key={sensor.id} value={sensor.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{sensor.name}</span>
+                          <span className="text-xs text-gray-500">
+                            {sensor.type} - {sensor.location || 'Sans emplacement'} 
+                            {sensor.current_value !== null && ` (${sensor.current_value}${sensor.unit || ''})`}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {!source.gmao_config?.sensor_id && availableSensors.length > 0 && (
+                <p className="text-xs text-orange-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Vous devez sélectionner un capteur pour que ce widget fonctionne
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Sélecteur de compteur */}
+          {requiresMeterSelection && (
+            <div className="space-y-2 p-3 border rounded-lg bg-teal-50 border-teal-200">
+              <Label className="flex items-center gap-2">
+                <Gauge className="h-4 w-4 text-teal-600" />
+                Sélectionner un compteur
+              </Label>
+              {availableMeters.length === 0 ? (
+                <div className="text-sm text-gray-500 italic">
+                  Aucun compteur disponible. Configurez vos compteurs dans la section "Compteurs".
+                </div>
+              ) : (
+                <Select
+                  value={source.gmao_config?.meter_id || ''}
+                  onValueChange={(value) => onUpdate({
+                    gmao_config: { ...source.gmao_config, meter_id: value || null }
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un compteur..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMeters.map(meter => (
+                      <SelectItem key={meter.id} value={meter.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{meter.name}</span>
+                          <span className="text-xs text-gray-500">
+                            {meter.type} - {meter.unit || 'Sans unité'}
+                            {meter.current_value !== null && ` (${meter.current_value})`}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {!source.gmao_config?.meter_id && availableMeters.length > 0 && (
+                <p className="text-xs text-orange-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Vous devez sélectionner un compteur pour que ce widget fonctionne
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Filtrer par service</Label>
