@@ -309,7 +309,28 @@ const ImprovementRequests = () => {
                               <TooltipContent>Supprimer la demande</TooltipContent>
                             </Tooltip>
                             
-                            {canConvert && !req.improvement_id && (
+                            {/* Bouton de validation pour responsables/admins */}
+                            {canValidate && (req.status === 'SOUMISE' || !req.status) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedRequest(req);
+                                      setValidationDialogOpen(true);
+                                    }}
+                                    className="hover:bg-amber-50 hover:text-amber-600"
+                                    data-testid={`validate-btn-${req.id}`}
+                                  >
+                                    <CheckCircle2 size={16} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Valider / Rejeter</TooltipContent>
+                              </Tooltip>
+                            )}
+                            
+                            {canConvert && !req.improvement_id && req.status === 'VALIDEE' && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
