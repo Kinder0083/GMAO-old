@@ -62,7 +62,42 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
-### Session du 18 Janvier 2026 (Session actuelle)
+### Session du 31 Janvier 2026 (Session actuelle)
+
+#### ✅ Feature: Consigne Générale (envoi par service) - P0
+**Implémentation complète** de la fonctionnalité "Consigne générale" permettant d'envoyer des messages pop-up à tous les utilisateurs d'un service ou à tous les services :
+
+**Backend** (`/app/backend/consignes_routes.py`) :
+- `GET /api/consignes/services` - Récupère la liste des services distincts des utilisateurs
+- `POST /api/consignes/send-group` - Envoie une consigne à tous les utilisateurs d'un service (ou tous)
+  - Paramètres : `service` (nom du service ou "ALL"), `message`
+  - Retourne : total envoyés, en ligne, hors ligne, MQTT envoyés, liste des destinataires
+  - Crée une consigne individuelle pour chaque destinataire
+  - Envoie MQTT si configuré (topic principal + topic discret)
+  - Log dans le journal d'audit
+
+**Frontend** (`/app/frontend/src/pages/ChatLive.jsx`) :
+- Nouveau bouton **"Consigne générale"** (rouge) à côté du bouton "Consigne" (orange)
+- Modal complet avec :
+  - Dropdown de sélection de service (ou "📢 Tous les services")
+  - Textarea pour le message
+  - Zone d'information sur ce que fait la consigne
+  - Affichage du résultat après envoi :
+    - Stats (total, en ligne, hors ligne, MQTT)
+    - Liste détaillée des destinataires avec indicateur en ligne/hors ligne et MQTT
+  - Bouton "Fermer" après envoi (au lieu de "Annuler")
+
+**Data-testid ajoutés** :
+- `consigne-group-button` - Bouton d'ouverture du modal
+- `consigne-group-service-select` - Dropdown de sélection de service
+- `consigne-group-message-input` - Textarea du message
+- `send-consigne-group-button` - Bouton d'envoi
+
+**Tests** : API testée via curl ✅ + Screenshots Playwright ✅
+
+---
+
+### Session du 18 Janvier 2026
 
 #### ✅ Feature: Gestion des rôles
 **Nouvelle page** `/people/roles` accessible via le bouton "Gestion des rôles" dans la page Équipe :
