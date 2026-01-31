@@ -65,6 +65,16 @@ const ServiceDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  
+  // Templates
+  const [templates, setTemplates] = useState([]);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [availableSensors, setAvailableSensors] = useState([]);
+  const [availableMeters, setAvailableMeters] = useState([]);
+  const [selectedSensorId, setSelectedSensorId] = useState('');
+  const [selectedMeterId, setSelectedMeterId] = useState('');
+  const [creatingFromTemplate, setCreatingFromTemplate] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -72,7 +82,89 @@ const ServiceDashboard = () => {
       setUser(JSON.parse(userData));
     }
     loadWidgets();
+    loadTemplates();
   }, []);
+
+  // Charger les templates
+  const loadTemplates = async () => {
+    try {
+      const response = await api.get('/custom-widgets/templates');
+      setTemplates(response.data || []);
+    } catch (error) {
+      console.error('Erreur chargement templates:', error);
+    }
+  };
+
+  // Charger les capteurs et compteurs pour les templates qui en ont besoin
+  const loadSensorsAndMeters = async () => {
+    try {
+      const [sensorsRes, metersRes] = await Promise.all([
+        api.get('/custom-widgets/data-sources/sensors'),
+        api.get('/custom-widgets/data-sources/meters')
+      ]);
+      setAvailableSensors(sensorsRes.data || []);
+      setAvailableMeters(metersRes.data || []);
+    } catch (error) {
+      console.error('Erreur chargement sources:', error);
+    }
+  };
+
+  // Ouvrir le modal template
+  const openTemplateModal = async () => {
+    await loadSensorsAndMeters();
+    setSelectedTemplate(null);
+    setSelectedSensorId('');
+    setSelectedMeterId('');
+    setShowTemplateModal(true);
+  };
+
+  // Créer un widget à partir d'un template
+  const createFromTemplate = async () => {
+    if (!selectedTemplate) return;
+    
+    // Vérifier si le template nécessite une sélection
+    if (selectedTemplate.requires_selection === 'sensor' && !selectedSensorId) {
+      toast({
+        title: 'Sélection requise',
+        description: 'Veuillez sélectionner un capteur',
+        variant: 'destructive'
+      });
+      return;
+    }
+    if (selectedTemplate.requires_selection === 'meter' && !selectedMeterId) {
+      toast({
+        title: 'Sélection requise',
+        description: 'Veuillez sélectionner un compteur',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setCreatingFromTemplate(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedSensorId) params.append('sensor_id', selectedSensorId);
+      if (selectedMeterId) params.append('meter_id', selectedMeterId);
+      
+      await api.post(`/custom-widgets/create-from-template/${selectedTemplate.id}?${params.toString()}`);
+      
+      toast({
+        title: 'Widget créé',
+        description: `Le widget "${selectedTemplate.name}" a été créé avec succès`
+      });
+      
+      setShowTemplateModal(false);
+      loadWidgets();
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de créer le widget',
+        variant: 'destructive'
+      });
+    } finally {
+      setCreatingFromTemplate(false);
+    }
+  };
 
   // Auto-refresh
   useEffect(() => {
