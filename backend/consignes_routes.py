@@ -11,14 +11,15 @@ import json
 import asyncio
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 router = APIRouter(prefix="/consignes", tags=["Consignes"])
 
 # Variables globales initialisées par init_consignes_routes
 db = None
-get_current_user = None
 mqtt_manager = None
 audit_service = None
+_get_current_user_func = None
 
 # WebSocket connections pour les consignes
 consigne_connections = {}  # user_id -> WebSocket
@@ -43,18 +44,33 @@ class ConsigneResponse(BaseModel):
 
 def init_consignes_routes(database, current_user_dep, mqtt_mgr, audit_svc):
     """Initialise les routes avec les dépendances"""
-    global db, get_current_user, mqtt_manager, audit_service
+    global db, mqtt_manager, audit_service, _get_current_user_func
     db = database
-    get_current_user = current_user_dep
+    _get_current_user_func = current_user_dep
     mqtt_manager = mqtt_mgr
     audit_service = audit_svc
+    logger.info("✅ Routes consignes initialisées")
+    logger.info(f"   - DB: {db is not None}")
+    logger.info(f"   - MQTT Manager: {mqtt_manager is not None}")
+    logger.info(f"   - Audit Service: {audit_service is not None}")
+    logger.info(f"   - Auth Function: {_get_current_user_func is not None}")
     return router
+
+
+# Fonction pour obtenir l'utilisateur courant
+async def get_current_user_dependency():
+    """Wrapper pour la dépendance d'authentification"""
+    if _get_current_user_func is None:
+        logger.error("❌ Fonction d'authentification non initialisée!")
+        raise HTTPException(status_code=500, detail="Service non initialisé")
+    # La fonction est déjà une dépendance FastAPI, on l'appelle directement
+    return _get_current_user_func
 
 
 @router.post("/send")
 async def send_consigne(
     data: ConsigneCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """
     Envoyer une consigne à un utilisateur
@@ -62,14 +78,36 @@ async def send_consigne(
     - Notifie via WebSocket si l'utilisateur est connecté
     - Envoie un message MQTT sur le topic de l'utilisateur
     """
+    logger.info(f"📩 Tentative d'envoi de consigne")
+    logger.debug(f"   - Destinataire ID: {data.recipient_id}")
+    logger.debug(f"   - Message (aperçu): {data.message[:50]}...")
+    logger.debug(f"   - Utilisateur courant: {current_user}")
+    
     try:
+        # Vérifier que la DB est initialisée
+        if db is None:
+            logger.error("❌ Base de données non initialisée!")
+            raise HTTPException(status_code=500, detail="Base de données non initialisée")
+        
         # Récupérer les infos du destinataire
-        recipient = await db.users.find_one({"_id": ObjectId(data.recipient_id)})
+        logger.debug(f"   - Recherche du destinataire: {data.recipient_id}")
+        try:
+            recipient_oid = ObjectId(data.recipient_id)
+        except Exception as e:
+            logger.error(f"❌ ID destinataire invalide: {data.recipient_id} - {e}")
+            raise HTTPException(status_code=400, detail=f"ID destinataire invalide: {data.recipient_id}")
+        
+        recipient = await db.users.find_one({"_id": recipient_oid})
         if not recipient:
+            logger.error(f"❌ Destinataire non trouvé: {data.recipient_id}")
             raise HTTPException(status_code=404, detail="Destinataire non trouvé")
+        
+        logger.debug(f"   - Destinataire trouvé: {recipient.get('email')}")
         
         recipient_name = f"{recipient.get('prenom', '')} {recipient.get('nom', '')}".strip()
         sender_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        
+        logger.info(f"📤 Envoi consigne de '{sender_name}' à '{recipient_name}'")
         
         # Créer la consigne
         consigne = {
@@ -86,12 +124,15 @@ async def send_consigne(
         }
         
         # Insérer en base
+        logger.debug("   - Insertion en base de données...")
         result = await db.consignes.insert_one(consigne)
         consigne_id = str(result.inserted_id)
         consigne["id"] = consigne_id
+        logger.info(f"✅ Consigne créée avec ID: {consigne_id}")
         
         # Vérifier si l'utilisateur est en ligne (WebSocket connecté)
         recipient_online = data.recipient_id in consigne_connections
+        logger.debug(f"   - Destinataire en ligne: {recipient_online}")
         
         # Notifier via WebSocket si connecté
         if recipient_online:
@@ -116,6 +157,10 @@ async def send_consigne(
         mqtt_topic = recipient.get("mqtt_topic")
         mqtt_action_reception = recipient.get("mqtt_action_reception", "")
         
+        logger.debug(f"   - MQTT Topic: {mqtt_topic}")
+        logger.debug(f"   - MQTT Action Reception: {mqtt_action_reception}")
+        logger.debug(f"   - MQTT Manager disponible: {mqtt_manager is not None}")
+        
         if mqtt_topic and mqtt_manager:
             try:
                 full_topic = f"{mqtt_topic}{mqtt_action_reception}"
@@ -127,6 +172,7 @@ async def send_consigne(
                     "consigne_id": consigne_id
                 })
                 
+                logger.debug(f"   - Publication MQTT sur: {full_topic}")
                 mqtt_sent = mqtt_manager.publish(
                     topic=full_topic,
                     payload=payload,
@@ -148,8 +194,15 @@ async def send_consigne(
                         "user_email": current_user.get("email"),
                         "context": "consigne_reception"
                     })
+                else:
+                    logger.warning(f"⚠️ Échec publication MQTT (publish retourné False)")
             except Exception as e:
                 logger.error(f"❌ Erreur envoi MQTT consigne: {e}")
+        else:
+            if not mqtt_topic:
+                logger.debug("   - Pas de topic MQTT configuré pour ce destinataire")
+            if not mqtt_manager:
+                logger.debug("   - MQTT Manager non disponible")
         
         # Log dans le journal d'audit
         if audit_service:
@@ -168,10 +221,11 @@ async def send_consigne(
                         "message_preview": data.message[:100] if len(data.message) > 100 else data.message
                     }
                 )
+                logger.debug("   - Audit log créé")
             except Exception as e:
                 logger.warning(f"⚠️ Erreur audit consigne: {e}")
         
-        return {
+        response = {
             "success": True,
             "consigne_id": consigne_id,
             "recipient_online": recipient_online,
@@ -180,20 +234,28 @@ async def send_consigne(
                       (" (hors ligne - stockée)" if not recipient_online else " (en ligne)")
         }
         
+        logger.info(f"✅ Consigne envoyée avec succès: {response}")
+        return response
+        
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Erreur envoi consigne: {e}")
+        logger.error(f"❌ Erreur inattendue envoi consigne: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur envoi consigne: {str(e)}")
 
 
 @router.get("/pending")
 async def get_pending_consignes(
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """Récupérer les consignes non acquittées pour l'utilisateur connecté"""
     try:
+        if db is None:
+            logger.error("❌ Base de données non initialisée!")
+            raise HTTPException(status_code=500, detail="Base de données non initialisée")
+        
         user_id = current_user.get("id")
+        logger.debug(f"📋 Récupération consignes en attente pour user: {user_id}")
         
         consignes = await db.consignes.find({
             "recipient_id": user_id,
@@ -210,17 +272,20 @@ async def get_pending_consignes(
                 "created_at": c.get("created_at")
             })
         
+        logger.debug(f"   - {len(result)} consigne(s) en attente")
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"❌ Erreur récupération consignes: {e}")
+        logger.error(f"❌ Erreur récupération consignes: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{consigne_id}/acknowledge")
 async def acknowledge_consigne(
     consigne_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """
     Acquitter une consigne (clic sur OK)
@@ -228,32 +293,45 @@ async def acknowledge_consigne(
     - Envoie le message MQTT "Action OK"
     - Envoie un message dans le Chat Live
     """
+    logger.info(f"✅ Acquittement consigne: {consigne_id}")
+    
     try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Base de données non initialisée")
+        
         user_id = current_user.get("id")
         user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
         
         # Récupérer la consigne
+        try:
+            consigne_oid = ObjectId(consigne_id)
+        except:
+            raise HTTPException(status_code=400, detail="ID consigne invalide")
+        
         consigne = await db.consignes.find_one({
-            "_id": ObjectId(consigne_id),
+            "_id": consigne_oid,
             "recipient_id": user_id
         })
         
         if not consigne:
+            logger.error(f"❌ Consigne non trouvée: {consigne_id} pour user {user_id}")
             raise HTTPException(status_code=404, detail="Consigne non trouvée")
         
         if consigne.get("acknowledged"):
+            logger.debug("   - Consigne déjà acquittée")
             return {"success": True, "message": "Consigne déjà acquittée"}
         
         ack_time = datetime.now(timezone.utc)
         
         # Mettre à jour la consigne
         await db.consignes.update_one(
-            {"_id": ObjectId(consigne_id)},
+            {"_id": consigne_oid},
             {"$set": {
                 "acknowledged": True,
                 "acknowledged_at": ack_time.isoformat()
             }}
         )
+        logger.debug("   - Consigne mise à jour en base")
         
         # Récupérer les infos utilisateur pour MQTT
         user = await db.users.find_one({"_id": ObjectId(user_id)})
@@ -350,17 +428,20 @@ async def acknowledge_consigne(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Erreur acquittement consigne: {e}")
+        logger.error(f"❌ Erreur acquittement consigne: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/history")
 async def get_consignes_history(
     limit: int = 50,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user_dependency)
 ):
     """Récupérer l'historique des consignes (envoyées et reçues)"""
     try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Base de données non initialisée")
+        
         user_id = current_user.get("id")
         
         # Consignes envoyées
@@ -392,8 +473,10 @@ async def get_consignes_history(
         
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"❌ Erreur historique consignes: {e}")
+        logger.error(f"❌ Erreur historique consignes: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -403,13 +486,16 @@ async def consignes_websocket_endpoint(websocket: WebSocket, token: str):
     import jwt
     import os
     
+    user_id = None
+    
     try:
         # Vérifier le token
         secret = os.environ.get("JWT_SECRET", "your-secret-key")
         payload = jwt.decode(token, secret, algorithms=["HS256"])
-        user_id = payload.get("id")
+        user_id = payload.get("sub")
         
         if not user_id:
+            logger.warning("❌ WebSocket consignes: token sans user_id")
             await websocket.close(code=4001)
             return
         
@@ -429,13 +515,29 @@ async def consignes_websocket_endpoint(websocket: WebSocket, token: str):
                     
         except asyncio.TimeoutError:
             # Envoyer un ping
-            await websocket.send_json({"type": "ping"})
+            try:
+                await websocket.send_json({"type": "ping"})
+            except:
+                pass
             
     except WebSocketDisconnect:
-        logger.info(f"🔌 WebSocket consignes déconnecté: user {user_id if 'user_id' in dir() else 'unknown'}")
+        logger.info(f"🔌 WebSocket consignes déconnecté: user {user_id}")
+    except jwt.ExpiredSignatureError:
+        logger.warning("❌ WebSocket consignes: token expiré")
+        try:
+            await websocket.close(code=4001)
+        except:
+            pass
+    except jwt.InvalidTokenError as e:
+        logger.warning(f"❌ WebSocket consignes: token invalide - {e}")
+        try:
+            await websocket.close(code=4001)
+        except:
+            pass
     except Exception as e:
         logger.error(f"❌ Erreur WebSocket consignes: {e}")
     finally:
         # Nettoyer la connexion
-        if 'user_id' in dir() and user_id in consigne_connections:
+        if user_id and user_id in consigne_connections:
             del consigne_connections[user_id]
+            logger.debug(f"   - Connexion WebSocket nettoyée pour {user_id}")
