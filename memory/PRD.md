@@ -927,3 +927,84 @@ ADMIN, DIRECTEUR, QHSE, RSP_PROD, PROD, TECHNICIEN, LABO, ADV, LOGISTIQUE, INDUS
 - Analytique Checklists
 - Visite guidée
 - Refactoring `SpecialSettings.jsx` (~1800 lignes)
+
+---
+
+### Session du 31 Janvier 2026
+
+#### ✅ Feature: Système de Consignes avec notification MQTT (31 Jan 2026)
+**Objectif** : Permettre aux administrateurs d'envoyer des consignes importantes aux utilisateurs avec notification popup et intégration MQTT.
+
+**Backend créé** (`/app/backend/consignes_routes.py`) :
+- `POST /api/consignes/send` : Envoie une consigne à un utilisateur
+  - Stocke en base de données (collection `consignes`)
+  - Notifie via WebSocket si l'utilisateur est connecté
+  - Envoie un message MQTT sur `{topic_utilisateur}{action_reception}`
+  - Avertit l'expéditeur si le destinataire est hors ligne
+- `GET /api/consignes/pending` : Récupère les consignes non acquittées
+- `POST /api/consignes/{id}/acknowledge` : Acquitte une consigne
+  - Envoie un message MQTT sur `{topic_utilisateur}{action_ok}`
+  - Envoie un message dans le Chat Live
+  - Log dans le journal d'audit
+- `GET /api/consignes/history` : Historique des consignes envoyées/reçues
+- WebSocket `/ws/consignes/{token}` : Notifications temps réel
+
+**Frontend - Profil utilisateur** (`EditUserDialog.jsx`) :
+- Nouveaux champs visibles uniquement pour les administrateurs :
+  - **Topic Récepteur MQTT** : Topic de base pour l'utilisateur
+  - **Action Réception** : Suffixe ajouté lors de la réception d'une consigne
+  - **Action OK** : Suffixe ajouté lors de l'acquittement
+
+**Frontend - Chat Live** (`ChatLive.jsx`) :
+- Nouveau bouton **"Consigne"** (orange) à côté de "Message privé"
+- Modal pour sélectionner un destinataire et écrire le message
+- Indicateur si l'utilisateur est en ligne (🟢) ou hors ligne (⚫)
+- Avertissement si l'utilisateur est hors ligne
+
+**Frontend - Popup globale** (`ConsignePopup.jsx`) :
+- Composant intégré dans `MainLayout.jsx`
+- S'affiche par-dessus toute l'application
+- Affiche : nom de l'expéditeur, date/heure, message
+- Bouton "OK - J'ai lu la consigne" pour acquitter
+- Gère plusieurs consignes en file d'attente
+
+**Format des messages MQTT** (identique à "Publier un paquet") :
+```json
+// À la réception (topic: {mqtt_topic}{action_reception})
+{
+  "type": "consigne_received",
+  "sender": "Nom Expéditeur",
+  "message": "Contenu de la consigne",
+  "timestamp": "2026-01-31T...",
+  "consigne_id": "..."
+}
+
+// À l'acquittement (topic: {mqtt_topic}{action_ok})
+{
+  "type": "consigne_acknowledged",
+  "consigne_id": "...",
+  "acknowledged_by": "Nom Utilisateur",
+  "timestamp": "2026-01-31T...",
+  "original_sender": "Nom Expéditeur"
+}
+```
+
+**Tests effectués** :
+- ✅ API `/api/consignes/pending` retourne les consignes en attente
+- ✅ Interface Chat Live avec bouton "Consigne" visible
+- ✅ Modal d'envoi de consigne fonctionnel
+- ✅ Champs MQTT dans le formulaire d'édition utilisateur
+
+---
+
+## Tâches à venir
+
+### P1 - Priorité Haute
+- Bug "Rapport P.accident" temps réel (récurrent - 10+ occurrences)
+
+### P2 - Backlog
+- Fonctions spécifiques "Responsables de service"
+- Dashboard Plan de Surveillance
+- Analytique Checklists
+- Visite guidée
+- Refactoring `SpecialSettings.jsx` (~1800 lignes)
