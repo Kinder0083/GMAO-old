@@ -147,57 +147,87 @@ async def send_consigne(
             except Exception as e:
                 logger.error(f"❌ Erreur envoi WebSocket consigne: {e}")
         
-        # Envoyer le message MQTT (même si utilisateur hors ligne)
+        # Envoyer les messages MQTT (même si utilisateur hors ligne)
         mqtt_sent = False
         mqtt_topic = recipient.get("mqtt_topic")
         mqtt_action_reception = recipient.get("mqtt_action_reception", "")
+        mqtt_topic_discret = recipient.get("mqtt_topic_discret", "")
         
         logger.debug(f"   - MQTT Topic: {mqtt_topic}")
-        logger.debug(f"   - MQTT Action Reception: {mqtt_action_reception}")
+        logger.debug(f"   - MQTT Action Reception (payload): {mqtt_action_reception}")
+        logger.debug(f"   - MQTT Topic Discret: {mqtt_topic_discret}")
         logger.debug(f"   - MQTT Manager disponible: {mqtt_manager is not None}")
         
-        if mqtt_topic and mqtt_manager:
-            try:
-                full_topic = f"{mqtt_topic}{mqtt_action_reception}"
-                payload = json.dumps({
-                    "type": "consigne_received",
-                    "sender": sender_name,
-                    "message": data.message,
-                    "timestamp": consigne["created_at"],
-                    "consigne_id": consigne_id
-                })
-                
-                logger.debug(f"   - Publication MQTT sur: {full_topic}")
-                mqtt_sent = mqtt_manager.publish(
-                    topic=full_topic,
-                    payload=payload,
-                    qos=1,
-                    retain=False
-                )
-                
-                if mqtt_sent:
-                    logger.info(f"✅ Message MQTT envoyé sur {full_topic}")
+        if mqtt_manager:
+            # 1. Envoyer le payload simple sur le topic principal
+            if mqtt_topic and mqtt_action_reception:
+                try:
+                    logger.debug(f"   - Publication payload simple sur: {mqtt_topic}")
+                    mqtt_sent = mqtt_manager.publish(
+                        topic=mqtt_topic,
+                        payload=mqtt_action_reception,  # Payload simple (ex: "ON")
+                        qos=1,
+                        retain=False
+                    )
                     
-                    # Enregistrer dans l'historique MQTT
-                    await db.mqtt_publish_history.insert_one({
-                        "topic": full_topic,
-                        "payload": payload,
-                        "qos": 1,
-                        "retain": False,
-                        "published_at": datetime.now(timezone.utc).isoformat(),
-                        "published_by": current_user.get("id"),
-                        "user_email": current_user.get("email"),
-                        "context": "consigne_reception"
+                    if mqtt_sent:
+                        logger.info(f"✅ Payload '{mqtt_action_reception}' envoyé sur {mqtt_topic}")
+                        
+                        # Enregistrer dans l'historique MQTT
+                        await db.mqtt_publish_history.insert_one({
+                            "topic": mqtt_topic,
+                            "payload": mqtt_action_reception,
+                            "qos": 1,
+                            "retain": False,
+                            "published_at": datetime.now(timezone.utc).isoformat(),
+                            "published_by": current_user.get("id"),
+                            "user_email": current_user.get("email"),
+                            "context": "consigne_reception_action"
+                        })
+                    else:
+                        logger.warning(f"⚠️ Échec publication payload simple")
+                except Exception as e:
+                    logger.error(f"❌ Erreur envoi payload simple: {e}")
+            
+            # 2. Envoyer le JSON détaillé sur le topic discret
+            if mqtt_topic_discret:
+                try:
+                    json_payload = json.dumps({
+                        "type": "consigne_received",
+                        "sender": sender_name,
+                        "message": data.message,
+                        "timestamp": consigne["created_at"],
+                        "consigne_id": consigne_id
                     })
-                else:
-                    logger.warning(f"⚠️ Échec publication MQTT (publish retourné False)")
-            except Exception as e:
-                logger.error(f"❌ Erreur envoi MQTT consigne: {e}")
+                    
+                    logger.debug(f"   - Publication JSON détaillé sur: {mqtt_topic_discret}")
+                    discret_sent = mqtt_manager.publish(
+                        topic=mqtt_topic_discret,
+                        payload=json_payload,
+                        qos=1,
+                        retain=False
+                    )
+                    
+                    if discret_sent:
+                        logger.info(f"✅ JSON détaillé envoyé sur {mqtt_topic_discret}")
+                        
+                        # Enregistrer dans l'historique MQTT
+                        await db.mqtt_publish_history.insert_one({
+                            "topic": mqtt_topic_discret,
+                            "payload": json_payload,
+                            "qos": 1,
+                            "retain": False,
+                            "published_at": datetime.now(timezone.utc).isoformat(),
+                            "published_by": current_user.get("id"),
+                            "user_email": current_user.get("email"),
+                            "context": "consigne_reception_discret"
+                        })
+                    else:
+                        logger.warning(f"⚠️ Échec publication JSON discret")
+                except Exception as e:
+                    logger.error(f"❌ Erreur envoi JSON discret: {e}")
         else:
-            if not mqtt_topic:
-                logger.debug("   - Pas de topic MQTT configuré pour ce destinataire")
-            if not mqtt_manager:
-                logger.debug("   - MQTT Manager non disponible")
+            logger.debug("   - MQTT Manager non disponible")
         
         # Log dans le journal d'audit
         if audit_service:
