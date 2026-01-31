@@ -850,7 +850,7 @@ const DataSourceEditor = ({
             <div className="space-y-2">
               <Label>Agrégation</Label>
               <Select
-                value={source.excel_config?.aggregation || ''}
+                value={source.excel_config?.aggregation || 'none'}
                 onValueChange={(value) => onUpdate({
                   excel_config: { ...source.excel_config, aggregation: value === "none" ? null : value }
                 })}
