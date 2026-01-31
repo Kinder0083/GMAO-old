@@ -256,6 +256,70 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
                 <option value="VISUALISEUR">Visualiseur - Accès en lecture seule</option>
               </select>
             </div>
+
+            {/* Section MQTT - Visible uniquement pour les administrateurs */}
+            {isAdmin && (
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-2 text-orange-600">
+                  <Radio size={18} />
+                  <span className="font-medium text-sm">Configuration MQTT (Consignes)</span>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="mqtt_topic" className="text-sm">
+                    Topic Récepteur MQTT
+                  </Label>
+                  <Input
+                    id="mqtt_topic"
+                    name="mqtt_topic"
+                    value={formData.mqtt_topic}
+                    onChange={handleChange}
+                    placeholder="Ex: factory/user1"
+                    className="font-mono text-sm"
+                    data-testid="mqtt-topic-input"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Topic MQTT de base pour cet utilisateur
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mqtt_action_reception" className="text-sm">
+                    Action Réception
+                  </Label>
+                  <Input
+                    id="mqtt_action_reception"
+                    name="mqtt_action_reception"
+                    value={formData.mqtt_action_reception}
+                    onChange={handleChange}
+                    placeholder="Ex: /consigne/received"
+                    className="font-mono text-sm"
+                    data-testid="mqtt-action-reception-input"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Suffixe ajouté au topic lors de la réception d&apos;une consigne
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mqtt_action_ok" className="text-sm">
+                    Action OK
+                  </Label>
+                  <Input
+                    id="mqtt_action_ok"
+                    name="mqtt_action_ok"
+                    value={formData.mqtt_action_ok}
+                    onChange={handleChange}
+                    placeholder="Ex: /consigne/ack"
+                    className="font-mono text-sm"
+                    data-testid="mqtt-action-ok-input"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Suffixe ajouté au topic lors du clic sur OK
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
