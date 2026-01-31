@@ -197,33 +197,48 @@ async def get_role_by_code(code: str, current_user: dict = Depends(get_current_u
 @router.post("")
 async def create_role(role_data: RoleCreate, current_user: dict = Depends(get_current_user)):
     """Créer un nouveau rôle personnalisé"""
-    # Vérifier que l'utilisateur est admin
-    if current_user.get("role") != "ADMIN":
-        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent créer des rôles")
-    
-    # Vérifier que le code n'existe pas déjà
-    existing = await db.roles.find_one({"code": role_data.code.upper()})
-    if existing:
-        raise HTTPException(status_code=400, detail="Un rôle avec ce code existe déjà")
-    
-    role = {
-        "id": str(uuid.uuid4()),
-        "code": role_data.code.upper(),
-        "label": role_data.label,
-        "description": role_data.description,
-        "color_bg": role_data.color_bg,
-        "color_text": role_data.color_text,
-        "is_system": False,  # Les rôles créés manuellement ne sont pas système
-        "permissions": role_data.permissions.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": current_user.get("id")
-    }
-    
-    await db.roles.insert_one(role)
-    
-    # Retourner sans _id
-    role.pop("_id", None)
-    return role
+    try:
+        # Vérifier que l'utilisateur est admin
+        if current_user.get("role") != "ADMIN":
+            raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent créer des rôles")
+        
+        # Valider les données requises
+        if not role_data.code or not role_data.code.strip():
+            raise HTTPException(status_code=400, detail="Le code du rôle est obligatoire")
+        
+        if not role_data.label or not role_data.label.strip():
+            raise HTTPException(status_code=400, detail="Le libellé du rôle est obligatoire")
+        
+        # Vérifier que le code n'existe pas déjà
+        existing = await db.roles.find_one({"code": role_data.code.upper()})
+        if existing:
+            raise HTTPException(status_code=400, detail="Un rôle avec ce code existe déjà")
+        
+        role = {
+            "id": str(uuid.uuid4()),
+            "code": role_data.code.upper(),
+            "label": role_data.label,
+            "description": role_data.description,
+            "color_bg": role_data.color_bg,
+            "color_text": role_data.color_text,
+            "is_system": False,  # Les rôles créés manuellement ne sont pas système
+            "permissions": role_data.permissions.model_dump(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user.get("id")
+        }
+        
+        await db.roles.insert_one(role)
+        
+        # Retourner sans _id
+        role.pop("_id", None)
+        print(f"✅ Rôle créé: {role['code']} par {current_user.get('email')}")
+        return role
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Erreur create_role: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la création du rôle: {str(e)}")
 
 
 @router.put("/{role_id}")
