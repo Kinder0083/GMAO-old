@@ -840,4 +840,50 @@ export const workOrderTemplatesAPI = {
   checkAccess: () => api.get('/work-order-templates/check-access/me').then(res => res.data)
 };
 
+// ==================== CUSTOM WIDGETS API ====================
+export const customWidgetsAPI = {
+  // CRUD
+  getAll: (params = {}) => api.get('/custom-widgets', { params }).then(res => res.data),
+  getMyWidgets: () => api.get('/custom-widgets/my-widgets').then(res => res.data),
+  getById: (id) => api.get(`/custom-widgets/${id}`).then(res => res.data),
+  create: (data) => api.post('/custom-widgets', data).then(res => res.data),
+  update: (id, data) => api.put(`/custom-widgets/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/custom-widgets/${id}`).then(res => res.data),
+  updatePosition: (id, position) => api.put(`/custom-widgets/${id}/position`, null, { params: { position } }),
+
+  // Rafraîchissement
+  refresh: (id) => api.post(`/custom-widgets/${id}/refresh`).then(res => res.data),
+
+  // Configuration dashboard
+  getDashboardConfig: () => api.get('/custom-widgets/dashboard/config').then(res => res.data),
+  updateDashboardConfig: (data) => api.put('/custom-widgets/dashboard/config', data).then(res => res.data),
+
+  // Types de données GMAO
+  getGmaoDataTypes: () => api.get('/custom-widgets/data-types/gmao').then(res => res.data),
+
+  // Tests et validations
+  testExcelConnection: (smbPath, username, password) => 
+    api.post('/custom-widgets/test/excel-connection', null, {
+      params: { smb_path: smbPath, username, password }
+    }).then(res => res.data),
+  previewExcel: (smbPath, sheetName, maxRows, username, password) =>
+    api.post('/custom-widgets/preview/excel', null, {
+      params: { smb_path: smbPath, sheet_name: sheetName, max_rows: maxRows, username, password }
+    }).then(res => res.data),
+  validateFormula: (formula, sourceNames) =>
+    api.post('/custom-widgets/validate/formula', null, {
+      params: { formula, source_names: sourceNames }
+    }).then(res => res.data),
+  testFormula: (formula, testValues) =>
+    api.post('/custom-widgets/test/formula', testValues, {
+      params: { formula }
+    }).then(res => res.data),
+
+  // Configuration SMB (admin)
+  configureSMB: (username, password, domain) =>
+    api.post('/custom-widgets/config/smb', null, {
+      params: { username, password, domain }
+    }).then(res => res.data),
+};
+
 export default api;
