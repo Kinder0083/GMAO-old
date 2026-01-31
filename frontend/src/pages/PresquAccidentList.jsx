@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
-import { Plus, Download, Upload, AlertTriangle, Search, Filter, Edit, Trash2, Paperclip, ClipboardCheck, X, Eye } from 'lucide-react';
+import { Plus, Download, Upload, AlertTriangle, Search, Filter, Edit, Trash2, Paperclip, ClipboardCheck, X, Eye, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { presquAccidentAPI, usersAPI, rolesAPI } from '../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
