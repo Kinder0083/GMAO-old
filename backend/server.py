@@ -7902,6 +7902,12 @@ async def chat_live_websocket(websocket: WebSocket, token: str):
             )
             await chat_manager.broadcast_user_status(user_id, user_name, "offline")
 
+# WebSocket pour les consignes (notifications temps réel)
+@app.websocket("/ws/consignes/{token}")
+async def consignes_websocket(websocket: WebSocket, token: str):
+    """WebSocket pour recevoir les consignes en temps réel"""
+    await consignes_websocket_endpoint(websocket, token)
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
