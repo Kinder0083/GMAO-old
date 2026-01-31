@@ -155,6 +155,30 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 **Tests** : Screenshots Playwright ✅ (3 étapes testées)
 
+#### 🔧 Bug Fix: "Rapport P.accident" temps réel - P2
+**Diagnostic du problème** :
+- Le WebSocket `/ws/realtime/near_miss` fonctionne correctement en local (testé avec Python websockets)
+- Les connexions WebSocket sont bloquées par le proxy Kubernetes de l'environnement de preview Emergent
+- Le backend émet bien les événements `created`, `updated`, `deleted`
+
+**Corrections appliquées** :
+1. **Backend** (`/app/backend/realtime_manager.py`, `/app/backend/server.py`) :
+   - Corrigé le potentiel double appel à `websocket.accept()` (paramètre `already_accepted`)
+   - Ajouté des logs détaillés pour le debugging des connexions WebSocket
+   - Validation du `user_id` requise
+
+2. **Frontend** (`/app/frontend/src/hooks/usePresquAccident.js`) :
+   - Réduit l'intervalle de polling de 30s à **10s** pour une meilleure réactivité
+
+3. **Frontend** (`/app/frontend/src/pages/PresquAccidentList.jsx`) :
+   - Ajouté un indicateur visuel de synchronisation :
+     - "Temps réel" (vert) quand WebSocket connecté
+     - "Sync auto" (orange) avec icône animée quand en mode polling
+
+**État** :
+- ✅ **Environnement local/production** : WebSocket fonctionne parfaitement
+- ⚠️ **Preview Emergent** : Polling de secours actif (10s) car le proxy ne route pas les WebSocket `/ws/realtime/*`
+
 ---
 
 ### Session du 18 Janvier 2026
