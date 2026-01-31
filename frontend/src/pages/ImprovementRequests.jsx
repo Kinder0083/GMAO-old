@@ -219,6 +219,7 @@ const ImprovementRequests = () => {
                   <tr className="border-b">
                     <th className="text-center py-3 px-2 text-sm font-semibold text-gray-700">Créé par</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Titre</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Statut</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Priorité</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Équipement</th>
                     <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Date Limite Désirée</th>
