@@ -8,7 +8,8 @@ import {
   Plus, Settings, RefreshCw, MoreVertical, Edit, Trash2, Share2,
   BarChart2, PieChart, TrendingUp, Gauge, Table2, Hash, Clock,
   AlertCircle, Loader2, Eye, EyeOff, LayoutTemplate, CheckCircle,
-  Wrench, Package, Calendar, MessageSquare, ShoppingCart, Activity, Euro
+  Wrench, Package, Calendar, MessageSquare, ShoppingCart, Activity, Euro,
+  Users
 } from 'lucide-react';
 import {
   DropdownMenu,
