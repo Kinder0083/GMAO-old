@@ -8,6 +8,7 @@ import { User, Mail, Phone, Lock, Bell, Globe } from 'lucide-react';
 import { Switch } from '../components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import ChangePasswordDialog from '../components/Common/ChangePasswordDialog';
+import { GuidedTourSettings } from '../components/Settings';
 import { authAPI } from '../services/api';
 import { formatErrorMessage } from '../utils/errorFormatter';
 
