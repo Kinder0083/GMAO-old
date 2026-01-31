@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Edit, Building2, Clock } from 'lucide-react';
+import { Edit, Building2, Clock, Radio } from 'lucide-react';
 import { usersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { formatErrorMessage } from '../../utils/errorFormatter';
