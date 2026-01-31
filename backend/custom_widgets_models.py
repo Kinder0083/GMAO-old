@@ -117,6 +117,9 @@ class ExcelDataSource(BaseModel):
     column_name: Optional[str] = None  # Nom de colonne pour recherche
     row_filter: Optional[Dict[str, Any]] = None  # Filtre sur les lignes
     aggregation: Optional[str] = None  # SUM, AVG, COUNT, etc.
+    # Credentials SMB optionnels (si non renseignés, utilise les credentials système)
+    smb_username: Optional[str] = None
+    smb_password: Optional[str] = None
 
 
 class GmaoDataSource(BaseModel):
