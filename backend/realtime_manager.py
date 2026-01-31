@@ -24,7 +24,7 @@ class RealtimeManager:
         # Compteur de connexions
         self.connection_counts: Dict[str, int] = {}
         
-    async def connect(self, entity_type: str, user_id: str, websocket: WebSocket):
+    async def connect(self, entity_type: str, user_id: str, websocket: WebSocket, already_accepted: bool = False):
         """
         Connecter un utilisateur à une room d'entité
         
@@ -32,8 +32,10 @@ class RealtimeManager:
             entity_type: Type d'entité (work_orders, equipments, etc.)
             user_id: ID de l'utilisateur
             websocket: WebSocket connection
+            already_accepted: True si websocket.accept() a déjà été appelé
         """
-        await websocket.accept()
+        if not already_accepted:
+            await websocket.accept()
         
         # Initialiser la room si nécessaire
         if entity_type not in self.connections:
