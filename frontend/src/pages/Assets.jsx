@@ -8,6 +8,7 @@ import EquipmentFormDialog from '../components/Equipment/EquipmentFormDialog';
 import EquipmentTreeView from '../components/Equipment/EquipmentTreeView';
 import QuickStatusChanger from '../components/Equipment/QuickStatusChanger';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
+import ServiceFilterBadge from '../components/Common/ServiceFilterBadge';
 import { equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useEquipments } from '../hooks/useEquipments';
