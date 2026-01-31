@@ -3168,11 +3168,12 @@ async def generate_manual():
             "version": "3.1",
             "release_date": now.isoformat(),
             "changes": [
-                "Manuel complet avec 24 chapitres",
-                "65 sections détaillées couvrant tous les modules",
+                "Manuel complet avec 25 chapitres",
+                "70 sections détaillées couvrant tous les modules",
                 "Guide complet de A à Z",
                 "Chapitres Chat Live, MQTT/IoT, Demandes d'Achat, Zones, Compteurs, etc.",
                 "Nouveau chapitre Assistant IA avec 4 sections",
+                "Nouveau chapitre Fonctions Responsable de Service avec 5 sections",
                 "FAQ et dépannage inclus",
                 "Recherche intuitive intégrée"
             ],
