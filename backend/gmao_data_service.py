@@ -129,9 +129,11 @@ async def get_gmao_data(
         "near_miss_count": _get_near_miss_count,
         "near_miss_by_severity": _get_near_miss_by_severity,
         
-        # Capteurs IoT
+        # Capteurs IoT et Compteurs
         "sensor_value": _get_sensor_value,
         "sensor_history": _get_sensor_history,
+        "meter_value": _get_meter_value,
+        "meter_history": _get_meter_history,
         
         # Inventaire
         "inventory_count": _get_inventory_count,
