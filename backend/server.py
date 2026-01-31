@@ -7692,6 +7692,10 @@ from custom_widgets_routes import router as custom_widgets_router, init_custom_w
 init_custom_widgets_routes(db, audit_service)
 api_router.include_router(custom_widgets_router)
 
+# Service de filtrage par service
+from service_filter import init_service_filter
+init_service_filter(db)
+
 # Whiteboard (Tableau d'affichage) routes
 from whiteboard_routes import router as whiteboard_router, init_whiteboards, init_whiteboard_audit
 from whiteboard_object_routes import router as whiteboard_object_router
