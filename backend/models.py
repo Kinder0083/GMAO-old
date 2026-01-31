@@ -816,6 +816,7 @@ class EquipmentUpdate(BaseModel):
     garantie: Optional[str] = None
     derniereMaintenance: Optional[datetime] = None
     parent_id: Optional[str] = None
+    service: Optional[str] = None  # Service associé pour le filtrage par responsable
 
 class Equipment(EquipmentBase):
     id: str
