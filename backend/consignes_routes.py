@@ -34,6 +34,11 @@ class ConsigneCreate(BaseModel):
     message: str
 
 
+class ConsigneGroupCreate(BaseModel):
+    service: str  # Nom du service ou "ALL" pour tous
+    message: str
+
+
 class ConsigneResponse(BaseModel):
     id: str
     sender_id: str
@@ -44,6 +49,16 @@ class ConsigneResponse(BaseModel):
     created_at: str
     acknowledged: bool
     acknowledged_at: Optional[str] = None
+
+
+class ConsigneGroupResponse(BaseModel):
+    success: bool
+    total_sent: int
+    online_count: int
+    offline_count: int
+    mqtt_sent_count: int
+    service: str
+    recipients: list
 
 
 def init_consignes_routes(database, current_user_dep, mqtt_mgr, audit_svc):
