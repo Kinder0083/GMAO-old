@@ -48,7 +48,9 @@ async def get_presqu_accident_items(
     lieu: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Récupérer tous les presqu'accidents avec filtres"""
+    """Récupérer tous les presqu'accidents avec filtres et filtrage par service"""
+    from service_filter import apply_service_filter
+    
     try:
         query = {}
         
@@ -60,6 +62,10 @@ async def get_presqu_accident_items(
             query["severite"] = severite
         if lieu:
             query["lieu"] = {"$regex": lieu, "$options": "i"}
+        
+        # Appliquer le filtre par service automatique si pas de filtre service explicite
+        if not service:
+            query = await apply_service_filter(query, current_user, "service")
         
         items = await db.presqu_accident_items.find(query).to_list(length=None)
         
