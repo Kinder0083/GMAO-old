@@ -190,20 +190,25 @@ const CustomWidgetEditor = () => {
   const testExcelConnection = async (source) => {
     try {
       setTestResult({ loading: true, sourceId: source.id });
+      const excelConfig = source.excel_config || {};
       const response = await api.post('/custom-widgets/test/excel-connection', null, {
-        params: { smb_path: source.excel_config?.smb_path }
+        params: { 
+          smb_path: excelConfig.smb_path,
+          username: excelConfig.smb_username || null,
+          password: excelConfig.smb_password || null
+        }
       });
       setTestResult({
         sourceId: source.id,
         success: response.data.success,
-        message: response.data.success ? 'Connexion réussie' : response.data.error,
+        message: response.data.success ? `Connexion réussie - Feuilles: ${response.data.sheets?.join(', ')}` : response.data.error,
         sheets: response.data.sheets
       });
     } catch (error) {
       setTestResult({
         sourceId: source.id,
         success: false,
-        message: error.response?.data?.detail || 'Erreur de connexion'
+        message: error.response?.data?.detail || 'Erreur de connexion SMB'
       });
     }
   };
