@@ -357,6 +357,607 @@ async def get_gmao_data_types(current_user: dict = Depends(get_current_user)):
     return get_available_gmao_data_types()
 
 
+# === Routes pour lister les sources de données disponibles ===
+
+@router.get("/data-sources/sensors")
+async def get_available_sensors(current_user: dict = Depends(get_current_user)):
+    """Retourne la liste des capteurs MQTT disponibles"""
+    sensors = await db.sensors.find(
+        {},
+        {"_id": 0, "id": 1, "name": 1, "type": 1, "unit": 1, "location": 1, "current_value": 1, "status": 1}
+    ).to_list(length=500)
+    
+    return [
+        {
+            "id": s.get("id"),
+            "name": s.get("name", f"Capteur {s.get('id', 'N/A')[:8]}"),
+            "type": s.get("type", "Inconnu"),
+            "unit": s.get("unit", ""),
+            "location": s.get("location", ""),
+            "current_value": s.get("current_value"),
+            "status": s.get("status", "unknown"),
+            "label": f"{s.get('name', 'Capteur')} ({s.get('type', '')} - {s.get('location', 'Sans emplacement')})"
+        }
+        for s in sensors
+    ]
+
+
+@router.get("/data-sources/meters")
+async def get_available_meters(current_user: dict = Depends(get_current_user)):
+    """Retourne la liste des compteurs disponibles"""
+    meters = await db.meters.find(
+        {},
+        {"_id": 0, "id": 1, "name": 1, "type": 1, "unit": 1, "location": 1, "current_value": 1, "last_reading": 1}
+    ).to_list(length=500)
+    
+    return [
+        {
+            "id": m.get("id"),
+            "name": m.get("name", f"Compteur {m.get('id', 'N/A')[:8]}"),
+            "type": m.get("type", "Inconnu"),
+            "unit": m.get("unit", ""),
+            "location": m.get("location", ""),
+            "current_value": m.get("current_value") or m.get("last_reading"),
+            "label": f"{m.get('name', 'Compteur')} ({m.get('type', '')} - {m.get('unit', '')})"
+        }
+        for m in meters
+    ]
+
+
+@router.get("/data-sources/equipments")
+async def get_available_equipments(current_user: dict = Depends(get_current_user)):
+    """Retourne la liste des équipements disponibles"""
+    equipments = await db.equipments.find(
+        {},
+        {"_id": 0, "id": 1, "name": 1, "type": 1, "status": 1, "location": 1, "service": 1}
+    ).to_list(length=500)
+    
+    return [
+        {
+            "id": e.get("id"),
+            "name": e.get("name", f"Équipement {e.get('id', 'N/A')[:8]}"),
+            "type": e.get("type", "Inconnu"),
+            "status": e.get("status", ""),
+            "location": e.get("location", ""),
+            "service": e.get("service", ""),
+            "label": f"{e.get('name', 'Équipement')} ({e.get('type', '')})"
+        }
+        for e in equipments
+    ]
+
+
+@router.get("/data-sources/services")
+async def get_available_services(current_user: dict = Depends(get_current_user)):
+    """Retourne la liste des services disponibles"""
+    # Récupérer les services distincts depuis les utilisateurs et équipements
+    user_services = await db.users.distinct("service")
+    equipment_services = await db.equipments.distinct("service")
+    
+    all_services = list(set([s for s in user_services + equipment_services if s]))
+    all_services.sort()
+    
+    return [
+        {"id": s, "name": s, "label": s}
+        for s in all_services
+    ]
+
+
+# === Templates de widgets prédéfinis ===
+
+@router.get("/templates")
+async def get_widget_templates(current_user: dict = Depends(get_current_user)):
+    """Retourne la liste des templates de widgets prédéfinis"""
+    templates = [
+        # === Ordres de Travail ===
+        {
+            "id": "tpl_ot_completion_today",
+            "name": "Taux de complétion OT",
+            "description": "Pourcentage d'ordres de travail terminés sur la période",
+            "category": "Ordres de Travail",
+            "icon": "CheckCircle",
+            "preview_value": "78%",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Taux complétion",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "work_orders_completion_rate",
+                            "date_from": "-30d"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Complétion OT",
+                    "subtitle": "30 derniers jours",
+                    "type": "gauge",
+                    "min_value": 0,
+                    "max_value": 100,
+                    "unit": "%",
+                    "size": "medium",
+                    "color_scheme": "green"
+                },
+                "refresh_interval": 5
+            }
+        },
+        {
+            "id": "tpl_ot_pending",
+            "name": "OT en attente",
+            "description": "Nombre d'ordres de travail en attente de traitement",
+            "category": "Ordres de Travail",
+            "icon": "Clock",
+            "preview_value": "12",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "OT en attente",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "work_orders_count",
+                            "status_filter": "EN_ATTENTE"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "OT en attente",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "orange"
+                },
+                "refresh_interval": 5
+            }
+        },
+        {
+            "id": "tpl_ot_in_progress",
+            "name": "OT en cours",
+            "description": "Nombre d'ordres de travail actuellement en cours",
+            "category": "Ordres de Travail",
+            "icon": "Wrench",
+            "preview_value": "8",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "OT en cours",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "work_orders_count",
+                            "status_filter": "EN_COURS"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "OT en cours",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "blue"
+                },
+                "refresh_interval": 5
+            }
+        },
+        
+        # === Équipements ===
+        {
+            "id": "tpl_equipment_failures",
+            "name": "Équipements en panne",
+            "description": "Nombre d'équipements actuellement en panne",
+            "category": "Équipements",
+            "icon": "AlertTriangle",
+            "preview_value": "3",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "En panne",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "assets_count",
+                            "status_filter": "EN_PANNE"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Équipements en panne",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "red"
+                },
+                "refresh_interval": 5
+            }
+        },
+        {
+            "id": "tpl_equipment_availability",
+            "name": "Disponibilité équipements",
+            "description": "Taux de disponibilité des équipements",
+            "category": "Équipements",
+            "icon": "Activity",
+            "preview_value": "94%",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Disponibilité",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "assets_availability_rate"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Disponibilité",
+                    "subtitle": "Équipements",
+                    "type": "gauge",
+                    "min_value": 0,
+                    "max_value": 100,
+                    "unit": "%",
+                    "size": "medium",
+                    "color_scheme": "green"
+                },
+                "refresh_interval": 15
+            }
+        },
+        
+        # === Inventaire ===
+        {
+            "id": "tpl_stock_critical",
+            "name": "Stock critique",
+            "description": "Nombre d'articles sous le seuil de stock minimum",
+            "category": "Inventaire",
+            "icon": "Package",
+            "preview_value": "5",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Stock bas",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "inventory_low_stock"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Stock critique",
+                    "subtitle": "Articles sous seuil",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "red"
+                },
+                "refresh_interval": 30
+            }
+        },
+        {
+            "id": "tpl_stock_value",
+            "name": "Valeur du stock",
+            "description": "Valeur totale du stock en inventaire",
+            "category": "Inventaire",
+            "icon": "Euro",
+            "preview_value": "45 230 €",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Valeur",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "inventory_value"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Valeur stock",
+                    "type": "value",
+                    "suffix": " €",
+                    "size": "medium",
+                    "color_scheme": "blue"
+                },
+                "refresh_interval": 60
+            }
+        },
+        
+        # === Maintenance Préventive ===
+        {
+            "id": "tpl_mprev_completion",
+            "name": "Réalisation M.Prev",
+            "description": "Taux de réalisation de la maintenance préventive",
+            "category": "Maintenance Préventive",
+            "icon": "Calendar",
+            "preview_value": "85%",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Taux réalisation",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "preventive_completion_rate",
+                            "date_from": "-30d"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Réalisation M.Prev",
+                    "subtitle": "30 derniers jours",
+                    "type": "gauge",
+                    "min_value": 0,
+                    "max_value": 100,
+                    "unit": "%",
+                    "size": "medium",
+                    "color_scheme": "purple"
+                },
+                "refresh_interval": 15
+            }
+        },
+        {
+            "id": "tpl_mprev_overdue",
+            "name": "M.Prev en retard",
+            "description": "Nombre de maintenances préventives en retard",
+            "category": "Maintenance Préventive",
+            "icon": "AlertCircle",
+            "preview_value": "2",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "En retard",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "preventive_overdue_count"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "M.Prev en retard",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "red"
+                },
+                "refresh_interval": 15
+            }
+        },
+        
+        # === IoT / Capteurs ===
+        {
+            "id": "tpl_sensor_value",
+            "name": "Valeur capteur",
+            "description": "Affiche la valeur actuelle d'un capteur MQTT spécifique",
+            "category": "IoT",
+            "icon": "Activity",
+            "preview_value": "23.5°C",
+            "requires_selection": "sensor",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Valeur capteur",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "sensor_value",
+                            "sensor_id": null
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Capteur",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "cyan"
+                },
+                "refresh_interval": 1
+            }
+        },
+        {
+            "id": "tpl_meter_value",
+            "name": "Relevé compteur",
+            "description": "Affiche le dernier relevé d'un compteur spécifique",
+            "category": "IoT",
+            "icon": "Gauge",
+            "preview_value": "1 234 kWh",
+            "requires_selection": "meter",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Valeur compteur",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "meter_value",
+                            "meter_id": null
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Compteur",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "teal"
+                },
+                "refresh_interval": 5
+            }
+        },
+        
+        # === Demandes ===
+        {
+            "id": "tpl_intervention_requests",
+            "name": "Demandes d'intervention",
+            "description": "Nombre de demandes d'intervention en attente",
+            "category": "Demandes",
+            "icon": "MessageSquare",
+            "preview_value": "7",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Demandes",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "intervention_requests_count",
+                            "status_filter": "EN_ATTENTE"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Demandes d'inter.",
+                    "subtitle": "En attente",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "orange"
+                },
+                "refresh_interval": 5
+            }
+        },
+        {
+            "id": "tpl_purchase_requests",
+            "name": "Demandes d'achat",
+            "description": "Nombre de demandes d'achat en attente de validation",
+            "category": "Demandes",
+            "icon": "ShoppingCart",
+            "preview_value": "4",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Demandes achat",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "purchase_requests_count",
+                            "status_filter": "EN_ATTENTE"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Demandes d'achat",
+                    "subtitle": "En attente",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "indigo"
+                },
+                "refresh_interval": 10
+            }
+        },
+        
+        # === Sécurité ===
+        {
+            "id": "tpl_near_miss_month",
+            "name": "Presqu'accidents du mois",
+            "description": "Nombre de presqu'accidents signalés ce mois",
+            "category": "Sécurité",
+            "icon": "AlertTriangle",
+            "preview_value": "2",
+            "config": {
+                "data_sources": [
+                    {
+                        "id": "src_main",
+                        "name": "Presqu'accidents",
+                        "type": "gmao",
+                        "gmao_config": {
+                            "data_type": "near_miss_count",
+                            "date_from": "-1m"
+                        }
+                    }
+                ],
+                "primary_source_id": "src_main",
+                "visualization": {
+                    "title": "Presqu'accidents",
+                    "subtitle": "Ce mois",
+                    "type": "value",
+                    "size": "small",
+                    "color_scheme": "yellow"
+                },
+                "refresh_interval": 30
+            }
+        }
+    ]
+    
+    return templates
+
+
+@router.post("/create-from-template/{template_id}")
+async def create_widget_from_template(
+    template_id: str,
+    sensor_id: Optional[str] = None,
+    meter_id: Optional[str] = None,
+    equipment_id: Optional[str] = None,
+    custom_name: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Crée un widget à partir d'un template prédéfini"""
+    # Récupérer les templates
+    templates = await get_widget_templates(current_user)
+    template = next((t for t in templates if t["id"] == template_id), None)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template non trouvé")
+    
+    # Copier la configuration
+    import copy
+    config = copy.deepcopy(template["config"])
+    
+    # Appliquer les sélections spécifiques (capteur, compteur, etc.)
+    for source in config.get("data_sources", []):
+        gmao_config = source.get("gmao_config", {})
+        
+        if sensor_id and gmao_config.get("data_type") == "sensor_value":
+            gmao_config["sensor_id"] = sensor_id
+            # Récupérer le nom du capteur pour le titre
+            sensor = await db.sensors.find_one({"id": sensor_id}, {"_id": 0, "name": 1, "unit": 1})
+            if sensor:
+                config["visualization"]["title"] = sensor.get("name", "Capteur")
+                config["visualization"]["unit"] = sensor.get("unit", "")
+        
+        if meter_id and gmao_config.get("data_type") == "meter_value":
+            gmao_config["meter_id"] = meter_id
+            # Récupérer le nom du compteur
+            meter = await db.meters.find_one({"id": meter_id}, {"_id": 0, "name": 1, "unit": 1})
+            if meter:
+                config["visualization"]["title"] = meter.get("name", "Compteur")
+                config["visualization"]["unit"] = meter.get("unit", "")
+    
+    # Créer le widget
+    user_id = current_user.get("id")
+    user_name = current_user.get("name", current_user.get("email", "Inconnu"))
+    
+    widget = {
+        "id": str(uuid.uuid4()),
+        "name": custom_name or template["name"],
+        "description": template["description"],
+        "created_by": user_id,
+        "created_by_name": user_name,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "from_template": template_id,
+        **config,
+        "is_shared": False,
+        "shared_with_roles": []
+    }
+    
+    await db.custom_widgets.insert_one(widget)
+    
+    # Rafraîchir immédiatement les données
+    try:
+        await refresh_widget_data(widget["id"])
+        widget = await db.custom_widgets.find_one({"id": widget["id"]}, {"_id": 0})
+    except Exception as e:
+        logger.warning(f"Erreur rafraîchissement initial: {e}")
+    
+    return widget
+
+
 @router.post("/test/excel-connection")
 async def test_excel_connection(
     smb_path: str,
