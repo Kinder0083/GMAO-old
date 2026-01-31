@@ -187,6 +187,19 @@ const ChatLive = () => {
     return () => clearInterval(pollingInterval);
   }, [isConnected]);
 
+  // Charger tous les utilisateurs pour les consignes
+  useEffect(() => {
+    const loadAllUsers = async () => {
+      try {
+        const response = await api.get('/users');
+        setAllUsers(response.data || []);
+      } catch (error) {
+        console.error('Erreur chargement utilisateurs:', error);
+      }
+    };
+    loadAllUsers();
+  }, []);
+
   const loadMessages = async () => {
     try {
       const response = await api.chat.getMessages();
@@ -207,6 +220,59 @@ const ChatLive = () => {
       setOnlineUsers(response.data.online_users || []);
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
+    }
+  };
+
+  // Fonction pour envoyer une consigne
+  const sendConsigne = async () => {
+    if (!consigneRecipient || !consigneMessage.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner un destinataire et écrire un message',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSendingConsigne(true);
+    try {
+      const response = await api.post('/consignes/send', {
+        recipient_id: consigneRecipient.id,
+        message: consigneMessage.trim()
+      });
+
+      if (response.data.success) {
+        const statusMsg = response.data.recipient_online 
+          ? 'Consigne envoyée et affichée à l\'utilisateur' 
+          : 'Consigne envoyée (utilisateur hors ligne - sera affichée à sa connexion)';
+        
+        toast({
+          title: 'Consigne envoyée',
+          description: statusMsg + (response.data.mqtt_sent ? ' • MQTT envoyé' : '')
+        });
+
+        // Si l'utilisateur est hors ligne, notifier l'expéditeur
+        if (!response.data.recipient_online) {
+          toast({
+            title: '⚠️ Utilisateur hors ligne',
+            description: `${consigneRecipient.prenom} ${consigneRecipient.nom} n'est pas connecté. La consigne sera affichée à sa prochaine connexion.`,
+            variant: 'warning'
+          });
+        }
+
+        setShowConsigneModal(false);
+        setConsigneRecipient(null);
+        setConsigneMessage('');
+      }
+    } catch (error) {
+      console.error('Erreur envoi consigne:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer la consigne',
+        variant: 'destructive'
+      });
+    } finally {
+      setSendingConsigne(false);
     }
   };
 
