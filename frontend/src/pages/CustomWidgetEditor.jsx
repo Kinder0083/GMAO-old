@@ -713,6 +713,8 @@ const DataSourceEditor = ({
   gmaoDataTypes,
   allSources,
   testResult,
+  availableSensors,
+  availableMeters,
   onUpdate,
   onRemove,
   onSetPrimary,
@@ -728,6 +730,11 @@ const DataSourceEditor = ({
     acc[dt.category].push(dt);
     return acc;
   }, {});
+
+  // Trouver le type GMAO sélectionné pour vérifier s'il nécessite une sélection supplémentaire
+  const selectedGmaoType = gmaoDataTypes.find(dt => dt.type === source.gmao_config?.data_type);
+  const requiresSensorSelection = selectedGmaoType?.requires_selection === 'sensor';
+  const requiresMeterSelection = selectedGmaoType?.requires_selection === 'meter';
 
   return (
     <div className={`p-4 border rounded-lg ${isPrimary ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
