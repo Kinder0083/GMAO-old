@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Paperclip, Camera, Users, X, Lock, Download, FileText, ArrowRightCircle, Mail as MailIcon } from 'lucide-react';
+import { Send, Paperclip, Camera, Users, X, Lock, Download, FileText, ArrowRightCircle, Mail as MailIcon, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
@@ -29,6 +29,13 @@ const ChatLive = () => {
   const [emailMessage, setEmailMessage] = useState('');
   const [selectedEmailUsers, setSelectedEmailUsers] = useState([]);
   const [replyingTo, setReplyingTo] = useState(null); // { id, user_name, message }
+  // États pour les consignes
+  const [showConsigneModal, setShowConsigneModal] = useState(false);
+  const [consigneRecipient, setConsigneRecipient] = useState(null);
+  const [consigneMessage, setConsigneMessage] = useState('');
+  const [sendingConsigne, setSendingConsigne] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({}); // Références pour scroll vers message
   const fileInputRef = useRef(null);
