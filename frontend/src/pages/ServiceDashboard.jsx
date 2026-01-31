@@ -7,7 +7,8 @@ import { useToast } from '../hooks/use-toast';
 import {
   Plus, Settings, RefreshCw, MoreVertical, Edit, Trash2, Share2,
   BarChart2, PieChart, TrendingUp, Gauge, Table2, Hash, Clock,
-  AlertCircle, Loader2, Eye, EyeOff
+  AlertCircle, Loader2, Eye, EyeOff, LayoutTemplate, CheckCircle,
+  Wrench, Package, Calendar, MessageSquare, ShoppingCart, Activity, Euro
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -16,6 +17,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
+import { Label } from '../components/ui/label';
 import api from '../services/api';
 
 // Composants de visualisation
