@@ -207,6 +207,21 @@ const ChatLive = () => {
     loadAllUsers();
   }, []);
 
+  // Charger la liste des services pour les consignes générales
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const response = await api.get('/consignes/services');
+        if (response.data && response.data.services) {
+          setServicesList(response.data.services);
+        }
+      } catch (error) {
+        console.error('Erreur chargement services:', error);
+      }
+    };
+    loadServices();
+  }, []);
+
   const loadMessages = async () => {
     try {
       const response = await api.chat.getMessages();
