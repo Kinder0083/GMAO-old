@@ -49,7 +49,7 @@ def main():
             print("=" * 70)
             print()
             print("Le manuel complet a été généré avec :")
-            print("  • 24 chapitres")
+            print("  • 25 chapitres")
             print("  • 70+ sections")
             print("  • Nouvelles fonctionnalités documentées :")
             print("    - Ordres Type (Modèles d'OT)")
@@ -57,6 +57,8 @@ def main():
             print("    - Créateur de Formulaires Personnalisés")
             print("    - Gestion des Rôles et Permissions")
             print("    - Aide Contextuelle et Tooltips")
+            print("    - Fonctions Responsable de Service")
+            print("    - Filtrage automatique par service")
             print()
             return True
         else:
