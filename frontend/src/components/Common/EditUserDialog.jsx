@@ -276,38 +276,73 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
                     name="mqtt_topic"
                     value={formData.mqtt_topic}
                     onChange={handleChange}
-                    placeholder="Ex: factory/user1"
+                    placeholder="Ex: set1"
                     className="font-mono text-sm"
                     data-testid="mqtt-topic-input"
                   />
                   <p className="text-xs text-gray-500">
-                    Topic MQTT de base pour cet utilisateur
+                    Topic MQTT pour envoyer les payloads simples (Action Réception / Action OK)
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="mqtt_action_reception" className="text-sm">
-                    Action Réception
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="mqtt_action_reception" className="text-sm">
+                      Action Réception (Payload)
+                    </Label>
+                    <Input
+                      id="mqtt_action_reception"
+                      name="mqtt_action_reception"
+                      value={formData.mqtt_action_reception}
+                      onChange={handleChange}
+                      placeholder="Ex: ON"
+                      className="font-mono text-sm"
+                      data-testid="mqtt-action-reception-input"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Payload envoyé à la réception
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="mqtt_action_ok" className="text-sm">
+                      Action OK (Payload)
+                    </Label>
+                    <Input
+                      id="mqtt_action_ok"
+                      name="mqtt_action_ok"
+                      value={formData.mqtt_action_ok}
+                      onChange={handleChange}
+                      placeholder="Ex: OFF"
+                      className="font-mono text-sm"
+                      data-testid="mqtt-action-ok-input"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Payload envoyé au clic sur OK
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-dashed border-gray-200">
+                  <Label htmlFor="mqtt_topic_discret" className="text-sm">
+                    Topic Discret (JSON détaillé)
                   </Label>
                   <Input
-                    id="mqtt_action_reception"
-                    name="mqtt_action_reception"
-                    value={formData.mqtt_action_reception}
+                    id="mqtt_topic_discret"
+                    name="mqtt_topic_discret"
+                    value={formData.mqtt_topic_discret}
                     onChange={handleChange}
-                    placeholder="Ex: /consigne/received"
+                    placeholder="Ex: factory/consignes/details"
                     className="font-mono text-sm"
-                    data-testid="mqtt-action-reception-input"
+                    data-testid="mqtt-topic-discret-input"
                   />
                   <p className="text-xs text-gray-500">
-                    Suffixe ajouté au topic lors de la réception d&apos;une consigne
+                    Topic séparé pour envoyer le message JSON complet (sender, message, timestamp...)
                   </p>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="mqtt_action_ok" className="text-sm">
-                    Action OK
-                  </Label>
-                  <Input
+              </div>
+            )}
+          </div>
                     id="mqtt_action_ok"
                     name="mqtt_action_ok"
                     value={formData.mqtt_action_ok}
