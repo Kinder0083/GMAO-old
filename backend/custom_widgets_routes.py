@@ -294,7 +294,9 @@ async def refresh_widget_data(widget_id: str):
                         cell_reference=excel_config.get("cell_reference"),
                         column_name=excel_config.get("column_name"),
                         row_filter=excel_config.get("row_filter"),
-                        aggregation=excel_config.get("aggregation")
+                        aggregation=excel_config.get("aggregation"),
+                        username=excel_config.get("smb_username"),
+                        password=excel_config.get("smb_password")
                     )
                 
                 elif source_type == "gmao":
