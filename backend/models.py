@@ -574,9 +574,10 @@ class UserUpdate(BaseModel):
     service: Optional[str] = None
     regime: Optional[UserRegime] = None
     # Champs MQTT pour les consignes
-    mqtt_topic: Optional[str] = None
-    mqtt_action_ok: Optional[str] = None
-    mqtt_action_reception: Optional[str] = None
+    mqtt_topic: Optional[str] = None           # Topic principal pour les actions simples
+    mqtt_action_ok: Optional[str] = None       # Payload à envoyer sur mqtt_topic quand OK
+    mqtt_action_reception: Optional[str] = None # Payload à envoyer sur mqtt_topic à la réception
+    mqtt_topic_discret: Optional[str] = None   # Topic pour envoyer le JSON détaillé
     
     @field_validator('email')
     @classmethod
