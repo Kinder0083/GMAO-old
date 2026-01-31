@@ -73,6 +73,7 @@ async def get_gmao_data(
     date_to: Optional[str] = None,
     group_by: Optional[str] = None,
     sensor_id: Optional[str] = None,
+    meter_id: Optional[str] = None,
     **kwargs
 ) -> Union[float, Dict, List]:
     """
@@ -86,6 +87,7 @@ async def get_gmao_data(
         date_to: Date de fin (relative ou ISO)
         group_by: Grouper les résultats
         sensor_id: ID du capteur pour les données IoT
+        meter_id: ID du compteur pour les relevés
     
     Returns:
         Valeur numérique, dict ou liste selon le type de données
