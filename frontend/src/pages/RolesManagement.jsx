@@ -67,7 +67,8 @@ const MODULES = [
   { key: 'iotDashboard', label: 'Dashboard IoT' },
   { key: 'mqttLogs', label: 'Logs MQTT' },
   { key: 'whiteboard', label: 'Tableau d\'affichage' },
-  { key: 'achat', label: 'Gestion achats' }
+  { key: 'achat', label: 'Gestion achats' },
+  { key: 'timeTracking', label: 'Pointage horaire' }
 ];
 
 // Couleurs disponibles pour les badges
