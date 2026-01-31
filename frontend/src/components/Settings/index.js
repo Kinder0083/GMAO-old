@@ -5,3 +5,4 @@ export { default as SmtpSettings } from './SmtpSettings';
 export { default as MqttSettings } from './MqttSettings';
 export { default as LlmKeysSettings } from './LlmKeysSettings';
 export { default as TimezoneSettings } from './TimezoneSettings';
+export { default as GuidedTourSettings } from './GuidedTourSettings';
