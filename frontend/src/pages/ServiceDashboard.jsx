@@ -304,6 +304,133 @@ const ServiceDashboard = () => {
           ))}
         </div>
       )}
+
+      {/* Modal Templates */}
+      <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LayoutTemplate className="h-5 w-5" />
+              Créer un widget à partir d'un template
+            </DialogTitle>
+            <DialogDescription>
+              Sélectionnez un template pour créer rapidement un widget prêt à l'emploi
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Liste des templates par catégorie */}
+          <div className="space-y-6 mt-4">
+            {Object.entries(
+              templates.reduce((acc, t) => {
+                if (!acc[t.category]) acc[t.category] = [];
+                acc[t.category].push(t);
+                return acc;
+              }, {})
+            ).map(([category, categoryTemplates]) => (
+              <div key={category}>
+                <h3 className="font-semibold text-sm text-gray-500 mb-3">{category}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {categoryTemplates.map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => setSelectedTemplate(template)}
+                      className={`p-4 border rounded-lg text-left transition-all ${
+                        selectedTemplate?.id === template.id
+                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="font-medium text-sm">{template.name}</span>
+                        <span className="text-lg font-bold text-blue-600">{template.preview_value}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 line-clamp-2">{template.description}</p>
+                      {template.requires_selection && (
+                        <Badge variant="outline" className="mt-2 text-xs">
+                          Sélection requise
+                        </Badge>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sélection supplémentaire si nécessaire */}
+          {selectedTemplate?.requires_selection === 'sensor' && (
+            <div className="mt-6 p-4 border rounded-lg bg-cyan-50 border-cyan-200">
+              <Label className="flex items-center gap-2 mb-3">
+                <Activity className="h-4 w-4 text-cyan-600" />
+                Sélectionner un capteur MQTT
+              </Label>
+              {availableSensors.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">
+                  Aucun capteur disponible. Configurez d'abord vos capteurs MQTT.
+                </p>
+              ) : (
+                <Select value={selectedSensorId} onValueChange={setSelectedSensorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un capteur..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSensors.map(sensor => (
+                      <SelectItem key={sensor.id} value={sensor.id}>
+                        {sensor.name} ({sensor.type} - {sensor.location || 'Sans emplacement'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
+          {selectedTemplate?.requires_selection === 'meter' && (
+            <div className="mt-6 p-4 border rounded-lg bg-teal-50 border-teal-200">
+              <Label className="flex items-center gap-2 mb-3">
+                <Gauge className="h-4 w-4 text-teal-600" />
+                Sélectionner un compteur
+              </Label>
+              {availableMeters.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">
+                  Aucun compteur disponible. Configurez d'abord vos compteurs.
+                </p>
+              ) : (
+                <Select value={selectedMeterId} onValueChange={setSelectedMeterId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un compteur..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMeters.map(meter => (
+                      <SelectItem key={meter.id} value={meter.id}>
+                        {meter.name} ({meter.type} - {meter.unit || 'Sans unité'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
+          {/* Bouton de création */}
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowTemplateModal(false)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={createFromTemplate} 
+              disabled={!selectedTemplate || creatingFromTemplate}
+            >
+              {creatingFromTemplate ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              Créer le widget
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
