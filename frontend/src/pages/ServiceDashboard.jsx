@@ -155,7 +155,7 @@ const ServiceDashboard = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Rafraîchir
           </Button>
-          <Button onClick={() => navigate('/custom-widget/new')}>
+          <Button onClick={() => navigate('/service-dashboard/widgets/new')} data-testid="create-widget-button">
             <Plus className="h-4 w-4 mr-2" />
             Créer un widget
           </Button>
@@ -172,7 +172,7 @@ const ServiceDashboard = () => {
               Créez votre premier widget personnalisé pour afficher des KPIs,
               des graphiques ou des données de votre service.
             </p>
-            <Button onClick={() => navigate('/custom-widget/new')}>
+            <Button onClick={() => navigate('/service-dashboard/widgets/new')} data-testid="create-first-widget-button">
               <Plus className="h-4 w-4 mr-2" />
               Créer mon premier widget
             </Button>
