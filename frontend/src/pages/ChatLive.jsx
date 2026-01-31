@@ -1420,6 +1420,92 @@ const ChatLive = () => {
           </button>
         </div>
       )}
+
+      {/* Modal Consigne */}
+      <Dialog open={showConsigneModal} onOpenChange={setShowConsigneModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-700">
+              <AlertTriangle size={20} />
+              Envoyer une consigne
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Destinataire *</label>
+              <select
+                value={consigneRecipient?.id || ''}
+                onChange={(e) => {
+                  const selected = allUsers.find(u => u.id === e.target.value);
+                  setConsigneRecipient(selected || null);
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                data-testid="consigne-recipient-select"
+              >
+                <option value="">-- Sélectionner un utilisateur --</option>
+                {allUsers
+                  .filter(u => u.id !== userId) // Exclure soi-même
+                  .map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.prenom} {u.nom} ({u.role})
+                      {onlineUsers.some(ou => ou.user_id === u.id) ? ' 🟢' : ' ⚫'}
+                    </option>
+                  ))
+                }
+              </select>
+              {consigneRecipient && !onlineUsers.some(ou => ou.user_id === consigneRecipient.id) && (
+                <p className="text-xs text-amber-600 flex items-center gap-1">
+                  <AlertTriangle size={12} />
+                  Cet utilisateur est hors ligne. La consigne sera affichée à sa prochaine connexion.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message de la consigne *</label>
+              <textarea
+                value={consigneMessage}
+                onChange={(e) => setConsigneMessage(e.target.value)}
+                placeholder="Écrivez votre consigne ici..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[120px] resize-none"
+                data-testid="consigne-message-input"
+              />
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-800">
+              <p className="font-medium mb-1">📢 Cette consigne sera :</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Affichée en popup sur l&apos;écran du destinataire</li>
+                <li>Envoyée via MQTT (si configuré pour cet utilisateur)</li>
+                <li>Enregistrée dans le journal d&apos;audit</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowConsigneModal(false);
+                setConsigneRecipient(null);
+                setConsigneMessage('');
+              }}
+              disabled={sendingConsigne}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={sendConsigne}
+              disabled={sendingConsigne || !consigneRecipient || !consigneMessage.trim()}
+              className="bg-orange-600 hover:bg-orange-700"
+              data-testid="send-consigne-button"
+            >
+              {sendingConsigne ? 'Envoi en cours...' : 'Envoyer la consigne'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
