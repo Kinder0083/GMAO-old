@@ -852,14 +852,14 @@ const DataSourceEditor = ({
               <Select
                 value={source.excel_config?.aggregation || ''}
                 onValueChange={(value) => onUpdate({
-                  excel_config: { ...source.excel_config, aggregation: value || null }
+                  excel_config: { ...source.excel_config, aggregation: value === "none" ? null : value }
                 })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Aucune" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucune</SelectItem>
+                  <SelectItem value="none">Aucune</SelectItem>
                   <SelectItem value="SUM">Somme (SUM)</SelectItem>
                   <SelectItem value="AVG">Moyenne (AVG)</SelectItem>
                   <SelectItem value="MIN">Minimum (MIN)</SelectItem>
