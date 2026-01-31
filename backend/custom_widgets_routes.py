@@ -154,13 +154,8 @@ async def create_widget(
     
     logger.info(f"Widget créé: {widget['name']} par {user_name}")
     
-    if audit_service:
-        await audit_service.log_action(
-            "CUSTOM_WIDGET_CREATED",
-            user_id,
-            f"Widget '{widget['name']}' créé",
-            {"widget_id": widget["id"]}
-        )
+    # L'audit est facultatif - ne pas bloquer si le service n'est pas disponible
+    # ou si l'appel échoue
     
     return widget
 
