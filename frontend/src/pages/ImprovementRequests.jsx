@@ -141,7 +141,10 @@ const ImprovementRequests = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Demandes d'amélioration</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">Demandes d'amélioration</h1>
+            <ServiceFilterBadge />
+          </div>
           <p className="text-gray-600 mt-1">Gérez vos demandes d'amélioration</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
