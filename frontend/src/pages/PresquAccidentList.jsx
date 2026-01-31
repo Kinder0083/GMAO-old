@@ -465,7 +465,30 @@ function PresquAccidentList() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Presqu'accidents</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Presqu'accidents</h1>
+            {/* Indicateur de synchronisation temps réel */}
+            <div 
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                wsConnected 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+              title={wsConnected ? 'Synchronisation temps réel active' : 'Mode polling (rafraîchissement automatique toutes les 10s)'}
+            >
+              {wsConnected ? (
+                <>
+                  <Wifi size={12} />
+                  <span>Temps réel</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={12} className="animate-spin" />
+                  <span>Sync auto</span>
+                </>
+              )}
+            </div>
+          </div>
           <p className="text-gray-500">Gestion et suivi des presqu'accidents</p>
         </div>
         <div className="flex gap-2">
