@@ -343,21 +343,6 @@ const EditUserDialog = ({ open, onOpenChange, user, onSuccess }) => {
               </div>
             )}
           </div>
-                    id="mqtt_action_ok"
-                    name="mqtt_action_ok"
-                    value={formData.mqtt_action_ok}
-                    onChange={handleChange}
-                    placeholder="Ex: /consigne/ack"
-                    className="font-mono text-sm"
-                    data-testid="mqtt-action-ok-input"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Suffixe ajouté au topic lors du clic sur OK
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
 
           <DialogFooter>
             <Button
