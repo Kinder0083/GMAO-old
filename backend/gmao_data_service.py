@@ -625,9 +625,13 @@ def get_available_gmao_data_types() -> List[Dict[str, Any]]:
         {"type": "near_miss_count", "label": "Presqu'accidents", "category": "QHSE", "returns": "number"},
         {"type": "near_miss_by_severity", "label": "Presqu'accidents par sévérité", "category": "QHSE", "returns": "dict"},
         
-        # Capteurs IoT
-        {"type": "sensor_value", "label": "Valeur capteur", "category": "IoT", "returns": "number", "requires": ["sensor_id"]},
-        {"type": "sensor_history", "label": "Historique capteur", "category": "IoT", "returns": "list", "requires": ["sensor_id"]},
+        # Capteurs MQTT
+        {"type": "sensor_value", "label": "Valeur d'un capteur MQTT", "category": "Capteurs MQTT", "returns": "number", "requires": ["sensor_id"], "requires_selection": "sensor"},
+        {"type": "sensor_history", "label": "Historique d'un capteur", "category": "Capteurs MQTT", "returns": "list", "requires": ["sensor_id"], "requires_selection": "sensor"},
+        
+        # Compteurs
+        {"type": "meter_value", "label": "Relevé d'un compteur", "category": "Compteurs", "returns": "number", "requires": ["meter_id"], "requires_selection": "meter"},
+        {"type": "meter_history", "label": "Historique d'un compteur", "category": "Compteurs", "returns": "list", "requires": ["meter_id"], "requires_selection": "meter"},
         
         # Inventaire
         {"type": "inventory_count", "label": "Articles en stock", "category": "Inventaire", "returns": "number"},
