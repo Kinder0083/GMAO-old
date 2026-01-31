@@ -1,7 +1,7 @@
 """
 Routes API pour les Widgets Personnalisés
 """
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Path
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
