@@ -50,7 +50,7 @@ function PresquAccidentList() {
   const [pendingFiles, setPendingFiles] = useState([]);
   
   // Utiliser le hook temps réel
-  const { items, loading, refresh: loadItems } = usePresquAccident();
+  const { items, loading, wsConnected, refresh: loadItems } = usePresquAccident();
   
   const [filters, setFilters] = useState({
     service: 'all',
