@@ -245,6 +245,7 @@ const ImprovementRequests = () => {
                         )}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900 font-medium">{req.titre}</td>
+                      <td className="py-3 px-4">{getStatusBadge(req.status || 'SOUMISE')}</td>
                       <td className="py-3 px-4">{getPriorityBadge(req.priorite)}</td>
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {req.equipement ? req.equipement.nom : '-'}
