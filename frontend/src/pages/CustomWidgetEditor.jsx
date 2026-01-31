@@ -447,6 +447,8 @@ const CustomWidgetEditor = () => {
                         isPrimary={source.id === widget.primary_source_id}
                         gmaoDataTypes={gmaoDataTypes}
                         allSources={widget.data_sources}
+                        availableSensors={availableSensors}
+                        availableMeters={availableMeters}
                         testResult={testResult?.sourceId === source.id ? testResult : null}
                         onUpdate={(updates) => updateDataSource(source.id, updates)}
                         onRemove={() => removeDataSource(source.id)}
