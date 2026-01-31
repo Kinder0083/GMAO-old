@@ -1449,12 +1449,12 @@ const ChatLive = () => {
                   .map(u => (
                     <option key={u.id} value={u.id}>
                       {u.prenom} {u.nom} ({u.role})
-                      {onlineUsers.some(ou => ou.user_id === u.id) ? ' 🟢' : ' ⚫'}
+                      {onlineUsers.some(ou => ou.id === u.id) ? ' 🟢' : ' ⚫'}
                     </option>
                   ))
                 }
               </select>
-              {consigneRecipient && !onlineUsers.some(ou => ou.user_id === consigneRecipient.id) && (
+              {consigneRecipient && !onlineUsers.some(ou => ou.id === consigneRecipient.id) && (
                 <p className="text-xs text-amber-600 flex items-center gap-1">
                   <AlertTriangle size={12} />
                   Cet utilisateur est hors ligne. La consigne sera affichée à sa prochaine connexion.
