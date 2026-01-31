@@ -50,6 +50,7 @@ const Sidebar = ({
   return (
     <div
       id="main-sidebar"
+      data-testid="sidebar-nav"
       className="fixed top-16 bottom-0 text-white transition-all duration-300 z-20"
       style={{
         backgroundColor: preferences?.sidebar_bg_color || '#1f2937',
