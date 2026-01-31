@@ -573,6 +573,10 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     service: Optional[str] = None
     regime: Optional[UserRegime] = None
+    # Champs MQTT pour les consignes
+    mqtt_topic: Optional[str] = None
+    mqtt_action_ok: Optional[str] = None
+    mqtt_action_reception: Optional[str] = None
     
     @field_validator('email')
     @classmethod
