@@ -84,7 +84,7 @@ const tourSteps = {
       disableBeacon: true
     },
     {
-      target: '[data-testid="nav-equipements"]',
+      target: '[data-testid="sidebar-assets"]',
       content: (
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">🔧 Équipements</h4>
@@ -98,10 +98,10 @@ const tourSteps = {
       disableBeacon: true
     },
     {
-      target: '[data-testid="nav-interventions"]',
+      target: '[data-testid="sidebar-work-orders"]',
       content: (
         <div>
-          <h4 className="font-semibold text-gray-800 mb-2">🛠️ Interventions</h4>
+          <h4 className="font-semibold text-gray-800 mb-2">🛠️ Ordres de travail</h4>
           <p className="text-gray-600 text-sm">
             Créez et suivez les interventions de maintenance. Assignez des techniciens,
             définissez les priorités et suivez l'avancement.
@@ -112,7 +112,7 @@ const tourSteps = {
       disableBeacon: true
     },
     {
-      target: '[data-testid="nav-planning"]',
+      target: '[data-testid="sidebar-planning"]',
       content: (
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">📅 Planning</h4>
@@ -126,7 +126,7 @@ const tourSteps = {
       disableBeacon: true
     },
     {
-      target: '[data-testid="nav-chat"]',
+      target: '[data-testid="sidebar-chat-live"]',
       content: (
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">💬 Chat en direct</h4>
@@ -140,7 +140,7 @@ const tourSteps = {
       disableBeacon: true
     },
     {
-      target: '[data-testid="nav-iot"]',
+      target: '[data-testid="sidebar-iot-dashboard"]',
       content: (
         <div>
           <h4 className="font-semibold text-gray-800 mb-2">📡 IoT / Capteurs</h4>
