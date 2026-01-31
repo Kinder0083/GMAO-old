@@ -263,6 +263,10 @@ const ServiceDashboard = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Rafraîchir
           </Button>
+          <Button variant="outline" onClick={openTemplateModal} data-testid="use-template-button">
+            <LayoutTemplate className="h-4 w-4 mr-2" />
+            Utiliser un template
+          </Button>
           <Button onClick={() => navigate('/service-dashboard/widgets/new')} data-testid="create-widget-button">
             <Plus className="h-4 w-4 mr-2" />
             Créer un widget
