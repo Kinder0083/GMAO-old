@@ -473,6 +473,32 @@ async def _get_sensor_history(sensor_id=None, date_filter=None, **kwargs):
     return history
 
 
+# === Fonctions pour les Compteurs ===
+
+async def _get_meter_value(meter_id=None, **kwargs):
+    """Récupère la dernière valeur d'un compteur"""
+    if not meter_id:
+        return None
+    
+    meter = await _db.meters.find_one({"id": meter_id}, {"_id": 0})
+    if meter:
+        return meter.get("current_value") or meter.get("last_reading") or meter.get("value")
+    return None
+
+
+async def _get_meter_history(meter_id=None, date_filter=None, **kwargs):
+    """Récupère l'historique d'un compteur"""
+    if not meter_id:
+        return []
+    
+    query = {"meter_id": meter_id}
+    if date_filter and len(date_filter) > 0:
+        query["timestamp"] = date_filter
+    
+    history = await _db.meter_readings.find(query, {"_id": 0}).sort("timestamp", -1).to_list(length=100)
+    return history
+
+
 # === Fonctions pour l'Inventaire ===
 
 async def _get_inventory_count(service_filter=None, **kwargs):
