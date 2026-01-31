@@ -745,7 +745,7 @@ async def get_widget_templates(current_user: dict = Depends(get_current_user)):
                         "type": "gmao",
                         "gmao_config": {
                             "data_type": "sensor_value",
-                            "sensor_id": null
+                            "sensor_id": None
                         }
                     }
                 ],
@@ -775,7 +775,7 @@ async def get_widget_templates(current_user: dict = Depends(get_current_user)):
                         "type": "gmao",
                         "gmao_config": {
                             "data_type": "meter_value",
-                            "meter_id": null
+                            "meter_id": None
                         }
                     }
                 ],
