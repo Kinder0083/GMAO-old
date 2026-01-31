@@ -12,6 +12,8 @@ import asyncio
 
 # Import direct de la dépendance d'authentification
 from dependencies import get_current_user
+# Import du websocket manager pour vérifier le statut en ligne
+from websocket_manager import manager as chat_ws_manager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
