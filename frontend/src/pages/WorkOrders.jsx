@@ -10,6 +10,7 @@ import WorkOrderFormDialog from '../components/WorkOrders/WorkOrderFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import ChecklistExecutionDialog from '../components/PreventiveMaintenance/ChecklistExecutionDialog';
 import TemplateSelectionDialog from '../components/WorkOrders/TemplateSelectionDialog';
+import ServiceFilterBadge from '../components/Common/ServiceFilterBadge';
 import { workOrdersAPI, checklistsAPI, workOrderTemplatesAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useWorkOrders } from '../hooks/useWorkOrders';
