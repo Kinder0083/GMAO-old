@@ -11,6 +11,7 @@ import logging
 import os
 from pathlib import Path
 
+from dependencies import get_current_user
 from camera_service import (
     discover_onvif_cameras,
     get_onvif_camera_info,
