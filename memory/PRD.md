@@ -62,7 +62,28 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
-### Session du 1er Février 2026 (Session actuelle)
+### Session du 1er Février 2026
+
+#### ✅ Bug Fix: Persistance mot de passe caméras + Live interrompu (1 Fév 2026)
+**Corrections de deux bugs critiques sur le module Caméras** :
+
+**Bug 1 - Mot de passe non persisté après redémarrage** :
+- **Cause** : La clé de chiffrement Fernet était générée aléatoirement à chaque démarrage du backend
+- **Solution** : Ajout d'une variable `CAMERA_ENCRYPTION_KEY` fixe dans `/app/backend/.env`
+- **Script d'installation** : Mis à jour pour générer automatiquement cette clé lors de l'installation
+
+**Bug 2 - Flux Live interrompu toutes les 30 secondes** :
+- **Cause** : Le rafraîchissement automatique des vignettes (30s) déclenchait un re-render complet, coupant le flux Live
+- **Solution** : Le rafraîchissement ne s'applique maintenant que lorsque l'onglet "Vignettes" est actif
+
+**Fichiers modifiés** :
+- `/app/backend/.env` - Ajout `CAMERA_ENCRYPTION_KEY`
+- `/app/frontend/src/pages/CamerasPage.jsx` - État `activeTab` pour contrôler le rafraîchissement
+- `/app/gmao-iris-v1.1.7-install-auto.sh` - Génération automatique de la clé de chiffrement
+
+**Tests** : Validé sur environnement Proxmox utilisateur ✅
+
+---
 
 #### ✅ Feature: Centre d'aide (Support Request) - P0
 **Implémentation complète** d'un bouton "Centre d'aide" sur la page Paramètres permettant aux utilisateurs d'envoyer des demandes d'aide aux administrateurs :
