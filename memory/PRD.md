@@ -1447,6 +1447,74 @@ ExcelDataSource:
 
 ---
 
+#### ✅ Feature: Caméras RTSP/ONVIF - P3 (1er Février 2026)
+**Implémentation complète** du module de surveillance vidéo avec caméras IP :
+
+**Spécifications** :
+- Support multi-marques : Hikvision, Dahua, Axis, ONVIF générique
+- Caméras sur réseau local (IP)
+- Max 3 flux live simultanés
+- Nombre illimité de caméras enregistrées (~35-40 prévues)
+- Découverte ONVIF automatique
+- Stockage local des snapshots avec rétention configurable
+
+**Backend** - Nouveaux fichiers :
+- **`/app/backend/camera_routes.py`** : Routes API complètes
+  - `GET /api/cameras` - Liste toutes les caméras
+  - `POST /api/cameras` - Créer une caméra
+  - `PUT /api/cameras/{id}` - Modifier une caméra
+  - `DELETE /api/cameras/{id}` - Supprimer une caméra
+  - `GET /api/cameras/count` - Statistiques (total, online, offline, streams actifs)
+  - `POST /api/cameras/{id}/test` - Tester la connexion RTSP
+  - `GET /api/cameras/{id}/snapshot` - Capturer un snapshot (base64)
+  - `POST /api/cameras/{id}/stream/start` - Démarrer le stream HLS
+  - `POST /api/cameras/{id}/stream/stop` - Arrêter le stream HLS
+  - `GET /api/cameras/discover/onvif` - Découverte automatique ONVIF
+  - `GET /api/cameras/settings/snapshot` - Paramètres de rétention
+  - `PUT /api/cameras/settings/snapshot` - Modifier les paramètres
+
+- **`/app/backend/camera_service.py`** : Logique métier
+  - Découverte ONVIF avec WSDiscovery
+  - Capture de snapshots via OpenCV
+  - Streaming HLS via FFmpeg (max 3 flux simultanés)
+  - Chiffrement des mots de passe caméras
+
+- **`/app/backend/camera_snapshot_scheduler.py`** : Scheduler APScheduler
+  - Capture automatique toutes les 30 secondes
+  - Nettoyage horaire selon rétention
+
+**Frontend** - Nouveaux fichiers :
+- **`/app/frontend/src/pages/CamerasPage.jsx`** : Page principale
+  - 4 KPIs : Total, En ligne, Hors ligne, Streams actifs
+  - 2 onglets : Vignettes (grille) et Live (3 slots)
+  - Boutons : Actualiser, Découvrir ONVIF, Paramètres, Ajouter
+
+- **`/app/frontend/src/components/Cameras/`** :
+  - `CameraGrid.jsx` : Grille de vignettes avec refresh 30s
+  - `LiveStreamPanel.jsx` : 3 lecteurs vidéo HLS simultanés
+  - `AddCameraDialog.jsx` : Formulaire ajout/modification
+  - `OnvifDiscoveryDialog.jsx` : Scan réseau ONVIF
+  - `CameraSettingsDialog.jsx` : Paramètres de rétention
+
+**Collections MongoDB** :
+- `cameras` : Caméras enregistrées
+- `camera_settings` : Paramètres de snapshot/rétention
+
+**Permissions** :
+- Module `cameras` ajouté aux permissions utilisateur
+- Admin : view + edit + delete
+- Responsables de service : view uniquement
+
+**Dépendances** :
+- `onvif-zeep` : Protocole ONVIF
+- `opencv-python-headless` : Capture de snapshots
+- `WSDiscovery` : Découverte réseau ONVIF
+- `hls.js` : Lecteur vidéo HLS (frontend)
+
+**Tests** : 100% backend (18/18) + 100% frontend - Rapport `/app/test_reports/iteration_16.json`
+
+---
+
 ## Tâches à venir
 
 ### P1 - Priorité Haute
@@ -1458,9 +1526,9 @@ ExcelDataSource:
 ### P2 - Backlog
 - Dashboard Plan de Surveillance
 - Analytics Checklist
-- Caméras RTSP/ONVIF (requires infrastructure)
 
 ### P3 - Futur
+- ✅ Caméras RTSP/ONVIF - TERMINÉ
 - Intégration calendrier externe
 - Application mobile
 - Pointage NFC (champ `badge_id` préparé dans le modèle)
