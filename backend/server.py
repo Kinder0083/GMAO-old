@@ -8962,6 +8962,12 @@ async def startup_scheduler():
         scheduled_count = await load_all_report_schedules(db)
         logger.info(f"✅ Scheduler rapports initialisé ({scheduled_count} rapport(s) planifié(s))")
         
+        # Initialiser le service d'alertes caméras
+        from camera_alert_service import set_database as set_camera_alert_db, start_camera_alert_scheduler
+        set_camera_alert_db(db)
+        asyncio.create_task(start_camera_alert_scheduler(interval_seconds=60))
+        logger.info("✅ Service d'alertes caméras démarré (vérification toutes les 60s)")
+        
     except Exception as e:
         logger.error(f"❌ Erreur lors du démarrage du scheduler: {str(e)}")
 
