@@ -98,17 +98,23 @@ async def send_improvement_request_email_to_manager(
         attachments: Liste des pièces jointes [{filename, path, size}]
     """
     try:
+        # Vérifier que le destinataire a un ID
+        recipient_id = recipient.get("id")
+        if not recipient_id:
+            logger.warning(f"Destinataire sans ID: {recipient.get('email')}")
+            return False
+        
         # Créer les tokens d'approbation
         approve_token = await create_approval_token(
-            request_data["id"], "approve", recipient["id"]
+            request_data["id"], "approve", recipient_id
         )
         reject_token = await create_approval_token(
-            request_data["id"], "reject", recipient["id"]
+            request_data["id"], "reject", recipient_id
         )
         
-        # URLs des boutons (via l'API backend)
-        approve_url = f"{FRONTEND_URL}/api/improvement-requests/email-action/{approve_token}"
-        reject_url = f"{FRONTEND_URL}/api/improvement-requests/email-action/{reject_token}?action=reject"
+        # URLs des boutons (redirige vers page frontend de confirmation)
+        approve_url = f"{FRONTEND_URL}/validate-improvement-request?token={approve_token}"
+        reject_url = f"{FRONTEND_URL}/validate-improvement-request?token={reject_token}&action=reject"
         
         # Section pièces jointes
         attachments_html = ""
