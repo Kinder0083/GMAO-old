@@ -596,6 +596,7 @@ const AnalyticsChecklistsPage = () => {
           </CardContent>
         </Card>
       </div>
+      </div> {/* Fin du contenu à exporter */}
     </div>
   );
 };
