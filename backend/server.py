@@ -8569,6 +8569,11 @@ set_camera_db(db)
 set_camera_scheduler_db(db)
 api_router.include_router(camera_router)
 
+# Routes Analytics Checklists
+from analytics_routes import router as analytics_router, set_database as set_analytics_db
+set_analytics_db(db)
+api_router.include_router(analytics_router)
+
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 
