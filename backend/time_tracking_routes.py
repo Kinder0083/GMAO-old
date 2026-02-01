@@ -46,8 +46,12 @@ from team_management_routes import (
 )
 
 
-async def get_member_info(member_id: str, member_type: str = "user") -> dict:
-    """Récupère les informations d'un membre (user ou temporaire)"""
+async def get_member_info(member_id: str, member_type: str = None) -> dict:
+    """Récupère les informations d'un membre (user ou temporaire)
+    
+    Si member_type n'est pas spécifié, cherche d'abord dans users puis dans team_members
+    """
+    # Si type explicitement spécifié comme temporary, chercher uniquement dans team_members
     if member_type == "temporary":
         member = await db.team_members.find_one({"id": member_id})
         if member:
@@ -59,8 +63,9 @@ async def get_member_info(member_id: str, member_type: str = "user") -> dict:
                 "work_rhythm": member.get("work_rhythm", "journee"),
                 "work_rhythm_config": member.get("work_rhythm_config", get_work_rhythm_config("journee"))
             }
+        return None
     
-    # Chercher dans users
+    # Chercher dans users d'abord
     user = await db.users.find_one({"id": member_id})
     if not user:
         try:
@@ -76,6 +81,18 @@ async def get_member_info(member_id: str, member_type: str = "user") -> dict:
             "service": user.get("service", ""),
             "work_rhythm": user.get("work_rhythm", "journee"),
             "work_rhythm_config": get_work_rhythm_config(user.get("work_rhythm", "journee"))
+        }
+    
+    # Si pas trouvé dans users, chercher dans team_members (temporaires)
+    member = await db.team_members.find_one({"id": member_id})
+    if member:
+        return {
+            "member_id": member_id,
+            "member_type": "temporary",
+            "member_name": f"{member.get('prenom', '')} {member.get('nom', '')}".strip(),
+            "service": member.get("service", ""),
+            "work_rhythm": member.get("work_rhythm", "journee"),
+            "work_rhythm_config": member.get("work_rhythm_config", get_work_rhythm_config("journee"))
         }
     
     return None
