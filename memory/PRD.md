@@ -16,9 +16,9 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 - **User**: user@test.com / password
 
 ## Script d'Installation
-- **Version actuelle**: `gmao-iris-v1.1.7-install-auto.sh`
+- **Version actuelle**: `gmao-iris-v1.1.8-install-auto.sh`
 - Compatible Proxmox 9.0 / Debian 12
-- Installation automatique de toutes les dépendances (MongoDB, FFmpeg, OpenCV, etc.)
+- Installation automatique de toutes les dépendances (MongoDB, FFmpeg, OpenCV, jsPDF, etc.)
 
 ---
 
