@@ -22,7 +22,7 @@
 # - Rapports hebdomadaires automatiques
 #
 # NOUVEAUTÉS v1.1.5:
-# - Manuel utilisateur enrichi : 24 chapitres, 70+ sections
+# - Manuel utilisateur enrichi : 27 chapitres, 80+ sections
 # - Documentation des Ordres Type (Modèles d'OT)
 # - Documentation des Modèles de Formulaires personnalisés
 # - Documentation de la Gestion des Rôles et Permissions
@@ -668,7 +668,7 @@ python3 init_manual_on_install.py
 if [ $? -eq 0 ]; then
     echo "✅ Manuel complet généré avec succès"
     echo "   ✓ 24 chapitres créés"
-    echo "   ✓ 70+ sections détaillées"
+    echo "   ✓ 80+ sections détaillées"
     echo "   ✓ Nouvelles fonctionnalités documentées :"
     echo "     - Ordres Type (Modèles d'OT)"
     echo "     - Modèles de Formulaires"
@@ -935,7 +935,7 @@ if [[ "$BACKEND_STATUS" == *"RUNNING"* ]]; then
     echo ""
     echo "✅ Tout est opérationnel !"
     echo ""
-    echo "📚 Manuel utilisateur : 24 chapitres, 70+ sections avec recherche intuitive 🔍"
+    echo "📚 Manuel utilisateur : 27 chapitres, 80+ sections avec recherche intuitive 🔍"
     echo "   Nouvelles fonctionnalités documentées :"
     echo "   • Ordres Type (Modèles d'OT)"
     echo "   • Modèles de Formulaires personnalisés"
