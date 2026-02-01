@@ -3173,3 +3173,201 @@ class WeeklyReportSettings(BaseModel):
     class Config:
         from_attributes = True
 
+
+
+# ==================== TEAM MANAGEMENT & TIME TRACKING MODELS ====================
+
+class MemberType(str, Enum):
+    """Type de membre d'équipe"""
+    USER = "user"           # Utilisateur existant de l'app
+    TEMPORARY = "temporary" # Intérimaire/temporaire (entrée manuelle)
+
+class TimeEntryStatus(str, Enum):
+    """Statut d'une entrée de pointage"""
+    COMPLETE = "complete"   # Arrivée + Départ enregistrés
+    PARTIAL = "partial"     # Seulement arrivée ou départ
+    ABSENT = "absent"       # Absence déclarée
+
+class TimeEntrySource(str, Enum):
+    """Source du pointage"""
+    MANUAL_BUTTON = "manual_button"     # Bouton arrivée/départ
+    MANUAL_ENTRY = "manual_entry"       # Saisie manuelle des heures
+    PRESENT_AT_POST = "present_at_post" # Bouton "Présent à poste"
+    NFC_BADGE = "nfc_badge"             # Badge NFC (futur)
+
+class AbsenceType(str, Enum):
+    """Types d'absences"""
+    CP = "CP"               # Congés payés
+    RTT = "RTT"             # RTT
+    MALADIE = "MALADIE"     # Maladie
+    FORMATION = "FORMATION" # Formation
+    RQP = "RQP"             # RQP
+    TT = "TT"               # Télétravail
+
+# --- Rythmes de travail ---
+class WorkRhythmConfig(BaseModel):
+    """Configuration d'un rythme de travail"""
+    default_start: str = "08:00"
+    default_end: str = "17:00"
+    break_start: str = "12:00"
+    break_end: str = "13:00"
+    break_duration_minutes: int = 60
+    weekly_hours: float = 35.0
+
+class WorkRhythmCreate(BaseModel):
+    """Création d'un rythme de travail"""
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=100)
+    config: WorkRhythmConfig = WorkRhythmConfig()
+    service: Optional[str] = None  # null = global
+
+class WorkRhythm(WorkRhythmCreate):
+    """Rythme de travail complet"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    is_system: bool = False  # true = non supprimable
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    class Config:
+        from_attributes = True
+
+# --- Membres d'équipe (temporaires/intérimaires) ---
+class TeamMemberCreate(BaseModel):
+    """Création d'un membre temporaire"""
+    nom: str = Field(..., min_length=1, max_length=100)
+    prenom: str = Field(..., min_length=1, max_length=100)
+    service: str = Field(..., min_length=1)
+    poste: Optional[str] = None
+    mission_start: str  # Date ISO
+    mission_end: str    # Date ISO
+    work_rhythm: str = "journee"
+    work_rhythm_config: Optional[WorkRhythmConfig] = None
+    competences: List[str] = []
+    badge_id: Optional[str] = None
+    notes: Optional[str] = None
+
+class TeamMemberUpdate(BaseModel):
+    """Mise à jour d'un membre temporaire"""
+    nom: Optional[str] = None
+    prenom: Optional[str] = None
+    poste: Optional[str] = None
+    mission_start: Optional[str] = None
+    mission_end: Optional[str] = None
+    work_rhythm: Optional[str] = None
+    work_rhythm_config: Optional[WorkRhythmConfig] = None
+    competences: Optional[List[str]] = None
+    badge_id: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class TeamMember(BaseModel):
+    """Membre d'équipe complet"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    type: MemberType = MemberType.TEMPORARY
+    user_id: Optional[str] = None  # null pour intérimaires
+    nom: str
+    prenom: str
+    service: str
+    poste: Optional[str] = None
+    mission_start: Optional[str] = None
+    mission_end: Optional[str] = None
+    work_rhythm: str = "journee"
+    work_rhythm_config: WorkRhythmConfig = WorkRhythmConfig()
+    competences: List[str] = []
+    badge_id: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: bool = True
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    class Config:
+        from_attributes = True
+
+# --- Entrées de pointage ---
+class TimeEntryCreate(BaseModel):
+    """Création d'une entrée de pointage"""
+    member_id: str
+    member_type: MemberType = MemberType.USER
+    date: str  # YYYY-MM-DD
+    clock_in: Optional[str] = None   # HH:MM
+    clock_out: Optional[str] = None  # HH:MM
+    absence_type: Optional[AbsenceType] = None
+    absence_reason: Optional[str] = None
+    notes: Optional[str] = None
+
+class TimeEntryManual(BaseModel):
+    """Saisie manuelle d'un pointage"""
+    member_id: str
+    date: str  # YYYY-MM-DD
+    clock_in: str  # HH:MM
+    clock_out: str  # HH:MM
+    reason: Optional[str] = "Saisie manuelle"
+    notes: Optional[str] = None
+
+class TimeEntry(BaseModel):
+    """Entrée de pointage complète"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    member_id: str
+    member_type: MemberType = MemberType.USER
+    member_name: str
+    service: str
+    date: str  # YYYY-MM-DD
+    clock_in: Optional[str] = None
+    clock_out: Optional[str] = None
+    break_duration_minutes: int = 60
+    worked_hours: float = 0.0
+    theoretical_hours: float = 7.0
+    overtime_hours: float = 0.0
+    status: TimeEntryStatus = TimeEntryStatus.PARTIAL
+    absence_type: Optional[AbsenceType] = None
+    absence_reason: Optional[str] = None
+    source: TimeEntrySource = TimeEntrySource.MANUAL_BUTTON
+    badge_id: Optional[str] = None
+    validated: bool = True  # Auto-validation par défaut
+    validated_by: Optional[str] = None
+    validated_at: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    class Config:
+        from_attributes = True
+
+# --- Absences ---
+class AbsenceCreate(BaseModel):
+    """Déclaration d'absence"""
+    member_id: str
+    member_type: MemberType = MemberType.USER
+    absence_type: AbsenceType
+    start_date: str  # YYYY-MM-DD
+    end_date: str    # YYYY-MM-DD
+    reason: Optional[str] = None
+    notes: Optional[str] = None
+
+class Absence(AbsenceCreate):
+    """Absence complète"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    member_name: str = ""
+    service: str = ""
+    days_count: int = 0
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    class Config:
+        from_attributes = True
+
+# --- Solde heures supplémentaires ---
+class OvertimeBalance(BaseModel):
+    """Solde d'heures supplémentaires"""
+    member_id: str
+    member_type: MemberType = MemberType.USER
+    member_name: str
+    year: int
+    month: int
+    total_overtime: float = 0.0
+    recovered: float = 0.0
+    balance: float = 0.0
+
+    class Config:
+        from_attributes = True
+
