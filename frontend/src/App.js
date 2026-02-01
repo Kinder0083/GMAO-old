@@ -71,6 +71,7 @@ import CustomWidgetEditor from "./pages/CustomWidgetEditor";
 import ServiceDashboard from "./pages/ServiceDashboard";
 import ServiceTeamView from "./pages/ServiceTeamView";
 import WeeklyReportsPage from "./pages/WeeklyReportsPage";
+import TeamManagementPage from "./pages/TeamManagementPage";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
@@ -195,6 +196,7 @@ function App() {
             <Route path="service-dashboard/team" element={<ServiceTeamView />} />
             <Route path="mqtt-logs" element={<MQTTLogs />} />
             <Route path="weekly-reports" element={<WeeklyReportsPage />} />
+            <Route path="team-management" element={<TeamManagementPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
