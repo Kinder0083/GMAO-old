@@ -72,6 +72,7 @@ import ServiceDashboard from "./pages/ServiceDashboard";
 import ServiceTeamView from "./pages/ServiceTeamView";
 import WeeklyReportsPage from "./pages/WeeklyReportsPage";
 import TeamManagementPage from "./pages/TeamManagementPage";
+import CamerasPage from "./pages/CamerasPage";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
