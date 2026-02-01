@@ -105,14 +105,20 @@ const AddCameraDialog = ({ open, onOpenChange, camera, onSuccess }) => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         rtsp_url: formData.rtsp_url,
-        username: formData.username,
-        password: formData.password
+        username: formData.username || '',
+        password: formData.password || ''
       });
       
       const response = await fetch(`${API_URL}/api/cameras/test-url?${params}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        setTestResult({ success: false, message: errorData.detail || 'Erreur serveur' });
+        return;
+      }
       
       const result = await response.json();
       setTestResult(result);
@@ -122,9 +128,16 @@ const AddCameraDialog = ({ open, onOpenChange, camera, onSuccess }) => {
           title: 'Connexion réussie',
           description: `Résolution: ${result.resolution}`
         });
+      } else {
+        toast({
+          title: 'Connexion échouée',
+          description: result.message || 'Impossible de se connecter à la caméra',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
-      setTestResult({ success: false, message: 'Erreur de test' });
+      console.error('Erreur test caméra:', error);
+      setTestResult({ success: false, message: 'Erreur de connexion au serveur' });
     } finally {
       setTesting(false);
     }
