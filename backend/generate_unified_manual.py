@@ -3150,6 +3150,278 @@ Créez des widgets pour suivre :
         "target_roles": [],
         "target_modules": ["serviceDashboard"],
         "keywords": ["bonnes pratiques", "conseils", "organisation", "gestion"]
+    },
+    
+    # Chapitre 26 : Surveillance Vidéo (Caméras RTSP/ONVIF)
+    "sec-026-01": {
+        "title": "Introduction à la Surveillance Vidéo",
+        "content": """📹 **Module Caméras RTSP/ONVIF**
+
+Le module de surveillance vidéo permet d'intégrer vos caméras IP dans GMAO Iris pour visualiser en temps réel vos installations.
+
+### Fonctionnalités principales
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| **Vignettes** | Vue en grille de toutes vos caméras avec rafraîchissement automatique |
+| **Live** | Visualisation en temps réel jusqu'à 3 caméras simultanément |
+| **Alertes** | Notifications email quand une caméra passe hors ligne |
+| **ONVIF** | Découverte automatique des caméras sur le réseau |
+
+### Protocoles supportés
+
+- **RTSP** (Real Time Streaming Protocol) - Standard pour les flux vidéo
+- **ONVIF** - Standard de découverte et configuration des caméras IP
+
+### Accès
+
+Menu latéral → **Caméras**
+
+💡 **Prérequis :** Les caméras doivent être accessibles sur le même réseau que le serveur GMAO Iris.""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["cameras"],
+        "keywords": ["caméras", "surveillance", "vidéo", "rtsp", "onvif"]
+    },
+    
+    "sec-026-02": {
+        "title": "Ajouter une Caméra",
+        "content": """➕ **Ajouter une nouvelle caméra**
+
+### Méthode 1 : Ajout manuel
+
+1. Cliquez sur le bouton **Ajouter** en haut à droite
+2. Remplissez les informations :
+   - **Nom** : Identifiant de la caméra (ex: "Entrée principale")
+   - **URL RTSP** : L'adresse du flux vidéo
+   - **Utilisateur/Mot de passe** : Si la caméra est protégée
+   - **Emplacement** : Zone où se trouve la caméra
+   
+3. Cliquez sur **Tester la connexion** pour vérifier
+4. Validez avec **Enregistrer**
+
+### Format URL RTSP
+
+```
+rtsp://[utilisateur:motdepasse@]IP:PORT/chemin
+```
+
+Exemples par marque :
+- **Hikvision** : `rtsp://admin:password@192.168.1.100:554/Streaming/Channels/101`
+- **Dahua** : `rtsp://admin:password@192.168.1.100:554/cam/realmonitor?channel=1&subtype=0`
+- **Axis** : `rtsp://admin:password@192.168.1.100:554/axis-media/media.amp`
+
+### Méthode 2 : Découverte ONVIF
+
+1. Cliquez sur **Découvrir ONVIF**
+2. Attendez la recherche sur le réseau
+3. Sélectionnez les caméras trouvées
+4. Complétez les identifiants si nécessaire
+
+⚠️ **Note** : La découverte ONVIF nécessite que le multicast UDP soit autorisé sur le réseau.""",
+        "level": "intermediate",
+        "target_roles": ["ADMIN", "TECHNICIEN"],
+        "target_modules": ["cameras"],
+        "keywords": ["ajouter", "caméra", "rtsp", "onvif", "configuration"]
+    },
+    
+    "sec-026-03": {
+        "title": "Visualisation Live",
+        "content": """🎬 **Visualisation en temps réel**
+
+### Onglet Vignettes
+
+Vue en grille de toutes vos caméras avec :
+- Aperçu statique (snapshot)
+- Rafraîchissement automatique (30 secondes)
+- Indicateur de statut (en ligne/hors ligne)
+
+### Onglet Live
+
+Permet de visualiser jusqu'à **3 caméras en simultané** en streaming vidéo.
+
+**Pour activer le Live :**
+1. Allez dans l'onglet **Vignettes**
+2. Cliquez sur une caméra
+3. Choisissez le slot (1, 2 ou 3)
+4. Passez à l'onglet **Live**
+
+### Actions disponibles
+
+| Action | Description |
+|--------|-------------|
+| ▶️ Sélectionner | Ajouter au panel Live |
+| ✏️ Modifier | Éditer les paramètres |
+| 🔄 Tester | Vérifier la connexion |
+| 🗑️ Supprimer | Retirer la caméra |
+
+💡 **Astuce** : Le Live ne se coupe plus lors du rafraîchissement des vignettes !""",
+        "level": "beginner",
+        "target_roles": [],
+        "target_modules": ["cameras"],
+        "keywords": ["live", "visualisation", "streaming", "vignettes"]
+    },
+    
+    "sec-026-04": {
+        "title": "Alertes Caméras",
+        "content": """🔔 **Configuration des alertes email**
+
+Le système peut vous alerter automatiquement par email quand une caméra devient inaccessible.
+
+### Configurer une alerte
+
+1. Allez dans l'onglet **Alertes**
+2. Trouvez la caméra concernée
+3. Activez **Alertes email activées**
+4. Saisissez l'adresse email du destinataire
+5. Choisissez le délai avant alerte (1 à 30 minutes)
+6. Cliquez sur **Sauvegarder**
+
+### Paramètres
+
+| Option | Description |
+|--------|-------------|
+| **Destinataire** | Email qui recevra l'alerte (peut être différent par caméra) |
+| **Délai** | Temps d'indisponibilité avant envoi (évite les fausses alertes) |
+
+### Icône Header
+
+Une icône caméra apparaît dans le header de l'application :
+- **Grise** : Tout est normal
+- **Rouge avec badge** : Alertes actives
+
+Cliquez dessus pour voir les alertes en cours et les marquer comme résolues.
+
+### Emails envoyés
+
+- **Alerte rouge** : Caméra hors ligne depuis X minutes
+- **Notification verte** : Caméra revenue en ligne
+
+⚠️ **Important** : Chaque caméra peut avoir un destinataire différent (utile si plusieurs responsables).""",
+        "level": "intermediate",
+        "target_roles": ["ADMIN", "TECHNICIEN"],
+        "target_modules": ["cameras"],
+        "keywords": ["alertes", "email", "notification", "hors ligne"]
+    },
+    
+    # Chapitre 27 : Analytics Checklists
+    "sec-027-01": {
+        "title": "Dashboard Analytics Checklists",
+        "content": """📊 **Analyse des résultats des contrôles préventifs**
+
+Le module Analytics Checklists permet d'analyser en détail les résultats de vos checklists de maintenance préventive.
+
+### Accès
+
+Menu latéral → **Analytics Checklists**
+
+### Vue d'ensemble
+
+Le dashboard affiche :
+
+| Indicateur | Description |
+|------------|-------------|
+| **Taux de conformité** | Pourcentage d'items conformes sur la période |
+| **Exécutions** | Nombre de checklists complétées |
+| **Non-conformités** | Nombre d'items non conformes |
+| **Temps moyen** | Durée moyenne d'exécution |
+
+### Graphiques disponibles
+
+1. **Évolution du taux de conformité** - Tendance sur 12 semaines/mois
+2. **Top des non-conformités** - Items les plus souvent en échec
+3. **Par équipement** - Taux de conformité par équipement
+4. **Par technicien** - Performance des techniciens
+
+### Filtres
+
+- **Période** : 7 jours, 30 jours, 90 jours, 12 mois
+- **Affichage** : Par semaine ou par mois
+
+💡 **Utilisation** : Identifiez rapidement les problèmes récurrents pour les traiter en priorité.""",
+        "level": "intermediate",
+        "target_roles": ["ADMIN", "DIRECTEUR", "RESPONSABLE"],
+        "target_modules": ["analyticsChecklists", "preventiveMaintenance"],
+        "keywords": ["analytics", "checklists", "statistiques", "conformité"]
+    },
+    
+    "sec-027-02": {
+        "title": "Export PDF des Analytics",
+        "content": """📄 **Générer un rapport PDF**
+
+Le dashboard Analytics peut être exporté en PDF pour vos réunions ou archives.
+
+### Procédure
+
+1. Configurez les filtres souhaités (période, type d'affichage)
+2. Cliquez sur le bouton rouge **Export PDF** en haut à droite
+3. Attendez la génération (quelques secondes)
+4. Le fichier se télécharge automatiquement
+
+### Contenu du PDF
+
+Le rapport inclut :
+- **En-tête** : Titre, période sélectionnée, date de génération
+- **Statistiques** : Les 4 indicateurs clés
+- **Graphiques** : Tous les graphiques du dashboard
+- **Pied de page** : Numéro de page
+
+### Format
+
+- **Orientation** : Paysage (A4) pour un meilleur affichage des graphiques
+- **Nom du fichier** : `analytics-checklists-YYYY-MM-DD.pdf`
+
+💡 **Conseil** : Générez un rapport mensuel pour suivre l'évolution de vos indicateurs et le présenter en réunion de direction.""",
+        "level": "beginner",
+        "target_roles": ["ADMIN", "DIRECTEUR", "RESPONSABLE", "QHSE"],
+        "target_modules": ["analyticsChecklists"],
+        "keywords": ["export", "pdf", "rapport", "impression"]
+    },
+    
+    "sec-027-03": {
+        "title": "Interpréter les statistiques",
+        "content": """📈 **Comprendre les indicateurs**
+
+### Taux de conformité
+
+| Valeur | Interprétation | Action recommandée |
+|--------|----------------|-------------------|
+| **> 90%** | Excellent | Maintenir les efforts |
+| **75-90%** | Acceptable | Identifier les points d'amélioration |
+| **< 75%** | Critique | Action corrective urgente |
+
+### Top des non-conformités
+
+Ce classement révèle les **problèmes récurrents** :
+
+1. **Même item souvent non-conforme** → Problème systémique sur l'équipement
+2. **Items variés** → Formation des techniciens à revoir
+3. **Même checklist** → Équipement à rénover ou remplacer
+
+### Par équipement
+
+Un équipement avec un faible taux de conformité peut indiquer :
+- Vieillissement de l'équipement
+- Conditions d'exploitation inadaptées
+- Maintenance insuffisante
+
+### Par technicien
+
+| Observation | Cause possible |
+|-------------|----------------|
+| Conformité faible | Formation à renforcer |
+| Temps élevé | Difficulté technique, équipement complexe |
+| Peu d'exécutions | Charge de travail déséquilibrée |
+
+💡 **Bonnes pratiques** :
+- Comparez les données sur plusieurs mois
+- Croisez avec l'historique des pannes
+- Utilisez ces données pour la planification"""
+,
+        "level": "advanced",
+        "target_roles": ["ADMIN", "DIRECTEUR", "RESPONSABLE"],
+        "target_modules": ["analyticsChecklists"],
+        "keywords": ["analyse", "interprétation", "kpi", "amélioration"]
     }
 }
 
