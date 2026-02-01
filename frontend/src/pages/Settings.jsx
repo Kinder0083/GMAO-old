@@ -375,9 +375,14 @@ const Settings = () => {
             <CardContent className="pt-6">
               <h3 className="font-semibold text-blue-900 mb-2">Besoin d'aide ?</h3>
               <p className="text-sm text-blue-700 mb-4">
-                Consultez notre documentation ou contactez le support
+                Contactez le support pour toute question ou problème
               </p>
-              <Button variant="outline" className="w-full border-blue-600 text-blue-600 hover:bg-blue-100">
+              <Button 
+                variant="outline" 
+                className="w-full border-blue-600 text-blue-600 hover:bg-blue-100"
+                onClick={() => setSupportDialogOpen(true)}
+              >
+                <HelpCircle className="h-4 w-4 mr-2" />
                 Centre d'aide
               </Button>
             </CardContent>
