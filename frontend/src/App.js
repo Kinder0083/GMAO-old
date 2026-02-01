@@ -73,6 +73,7 @@ import ServiceTeamView from "./pages/ServiceTeamView";
 import WeeklyReportsPage from "./pages/WeeklyReportsPage";
 import TeamManagementPage from "./pages/TeamManagementPage";
 import CamerasPage from "./pages/CamerasPage";
+import AnalyticsChecklistsPage from "./pages/AnalyticsChecklistsPage";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
