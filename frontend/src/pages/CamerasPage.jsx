@@ -129,6 +129,16 @@ const CamerasPage = () => {
     });
   };
 
+  // Mettre à jour une caméra dans la liste (après modification des alertes)
+  const handleCameraUpdate = (updatedCamera) => {
+    setCameras(prev => prev.map(c => 
+      c.id === updatedCamera.id ? updatedCamera : c
+    ));
+  };
+
+  // Compteur des alertes configurées
+  const alertsConfiguredCount = cameras.filter(c => c.alert_enabled).length;
+
   // Supprimer une caméra
   const handleDeleteCamera = async (cameraId) => {
     if (!window.confirm('Supprimer cette caméra ?')) return;
