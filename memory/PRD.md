@@ -91,6 +91,43 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
+#### ✅ Feature: Système d'Alertes Caméras (1 Fév 2026)
+**Implémentation complète** d'un système d'alertes email automatiques quand une caméra passe hors ligne :
+
+**Backend** :
+- **`/app/backend/camera_alert_service.py`** (NOUVEAU) - Service de vérification périodique et envoi d'alertes
+  - Scheduler vérifiant l'état des caméras toutes les 60 secondes
+  - Envoi d'email HTML formaté quand une caméra est hors ligne > délai configuré
+  - Envoi d'email de notification quand une caméra revient en ligne
+  - Anti-spam : pas de renvoi d'alerte dans les 30 minutes
+
+- **`/app/backend/camera_routes.py`** - Nouvelles routes API :
+  - `PUT /api/cameras/{id}/alert` - Configure les paramètres d'alerte d'une caméra
+  - `GET /api/cameras/alerts/active` - Récupère les alertes actives
+  - `GET /api/cameras/alerts/history` - Historique des alertes
+  - `POST /api/cameras/alerts/{id}/resolve` - Marque une alerte comme résolue
+
+**Frontend** :
+- **`/app/frontend/src/components/Cameras/CameraAlertsPanel.jsx`** (NOUVEAU) :
+  - Onglet "Alertes" dans la page Caméras
+  - Configuration individuelle par caméra avec destinataire email différent
+  - Délai d'alerte configurable (1, 2, 5, 10, 15, 30 minutes)
+  - Toggle activation/désactivation
+
+- **`/app/frontend/src/components/Common/CameraAlertIcon.jsx`** (NOUVEAU) :
+  - Icône caméra dans le header (à gauche de l'enveloppe)
+  - Badge rouge animé si alertes actives
+  - Dropdown avec liste des alertes et bouton "Résolu"
+
+**Fichiers modifiés** :
+- `/app/backend/server.py` - Import asyncio + démarrage du scheduler d'alertes
+- `/app/frontend/src/components/Layout/Header.jsx` - Ajout de CameraAlertIcon
+- `/app/frontend/src/pages/CamerasPage.jsx` - Ajout onglet "Alertes"
+
+**Tests** : Screenshots Playwright ✅
+
+---
+
 #### ✅ Feature: Centre d'aide (Support Request) - P0
 **Implémentation complète** d'un bouton "Centre d'aide" sur la page Paramètres permettant aux utilisateurs d'envoyer des demandes d'aide aux administrateurs :
 
