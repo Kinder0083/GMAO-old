@@ -1,0 +1,32 @@
+# Paquets système requis pour GMAO Iris
+# À installer avec: apt install -y $(cat system-requirements.txt | grep -v '^#' | tr '\n' ' ')
+
+# Base Python
+python3
+python3-pip
+python3-venv
+python3-full
+
+# FFmpeg - Streaming vidéo HLS pour les caméras
+ffmpeg
+
+# Dépendances OpenCV
+libgl1-mesa-glx
+libglib2.0-0
+libsm6
+libxext6
+libxrender1
+
+# Dépendances ONVIF/XML
+libxml2-dev
+libxslt1-dev
+
+# SMB Client - Widgets personnalisés (accès fichiers réseau)
+smbclient
+
+# MongoDB (si installé localement)
+# mongodb-org
+
+# Autres utilitaires
+curl
+wget
