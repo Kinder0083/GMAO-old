@@ -211,37 +211,59 @@ const Settings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="service">Service</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="service">Service</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info size={14} className="text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ce champ est défini par un administrateur</p>
+                          <p className="text-xs text-gray-400">dans votre profil utilisateur</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="service"
-                    value={settings.service}
-                    onChange={(e) => setSettings({ ...settings, service: e.target.value })}
-                    placeholder="Ex: Maintenance, Production..."
+                    value={settings.service || 'Non défini'}
+                    disabled
+                    className="bg-gray-50 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500">
+                    Contactez un administrateur pour modifier votre service
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="responsable">Responsable Hiérarchique (N+1)</Label>
-                  <Select
-                    value={settings.responsable_hierarchique_id || "none"}
-                    onValueChange={(value) => setSettings({ ...settings, responsable_hierarchique_id: value === "none" ? "" : value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner votre N+1" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Aucun</SelectItem>
-                      {users
-                        .filter(u => u.id !== JSON.parse(localStorage.getItem('user') || '{}').id)
-                        .map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.prenom} {user.nom} ({user.role})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="responsable">Responsable Hiérarchique (N+1)</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info size={14} className="text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Déterminé automatiquement selon votre service</p>
+                          <p className="text-xs text-gray-400">via Gestion des rôles → Responsables de service</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Input
+                    id="responsable"
+                    value={responsableInfo 
+                      ? `${responsableInfo.prenom || ''} ${responsableInfo.nom || ''}`.trim() || 'Non défini'
+                      : settings.service 
+                        ? 'Aucun responsable assigné pour ce service'
+                        : 'Service non défini'
+                    }
+                    disabled
+                    className="bg-gray-50 cursor-not-allowed"
+                  />
                   <p className="text-xs text-gray-500">
-                    Votre N+1 recevra vos demandes d'achat pour validation
+                    Votre N+1 recevra vos demandes d'amélioration et d'achat pour validation
                   </p>
                 </div>
               </div>
