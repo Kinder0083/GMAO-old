@@ -409,6 +409,12 @@ const Settings = () => {
         open={changePasswordDialogOpen}
         onOpenChange={setChangePasswordDialogOpen}
       />
+
+      {/* Support Request Dialog */}
+      <SupportRequestDialog
+        open={supportDialogOpen}
+        onOpenChange={setSupportDialogOpen}
+      />
     </div>
   );
 };
