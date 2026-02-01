@@ -3606,6 +3606,41 @@ async def update_user_permissions(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@api_router.post("/users/init-time-tracking-permissions")
+async def init_time_tracking_permissions(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Initialiser les permissions timeTracking pour tous les utilisateurs selon leur rôle"""
+    try:
+        # Mettre à jour les ADMIN avec toutes les permissions timeTracking
+        admin_result = await db.users.update_many(
+            {"role": "ADMIN"},
+            {"$set": {"permissions.timeTracking": {"view": True, "edit": True, "delete": True}}}
+        )
+        
+        # Mettre à jour les TECHNICIEN et DIRECTEUR avec view et edit
+        tech_result = await db.users.update_many(
+            {"role": {"$in": ["TECHNICIEN", "DIRECTEUR"]}},
+            {"$set": {"permissions.timeTracking": {"view": True, "edit": True, "delete": False}}}
+        )
+        
+        # Mettre à jour les autres rôles avec view seulement
+        other_result = await db.users.update_many(
+            {"role": {"$nin": ["ADMIN", "TECHNICIEN", "DIRECTEUR", "AFFICHAGE"]}},
+            {"$set": {"permissions.timeTracking": {"view": True, "edit": False, "delete": False}}}
+        )
+        
+        return {
+            "message": "Permissions timeTracking initialisées",
+            "updated": {
+                "admin": admin_result.modified_count,
+                "technicien_directeur": tech_result.modified_count,
+                "others": other_result.modified_count
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/users/{user_id}/set-password-permanent")
 async def set_password_permanent(
     user_id: str,
