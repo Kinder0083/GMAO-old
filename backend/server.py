@@ -6477,7 +6477,7 @@ async def create_improvement_request(
                 await email_service.send_email(
                     to_email=recipient["email"],
                     subject=subject,
-                    body=body
+                    html_content=body
                 )
                 logger.info(f"📧 Email envoyé à {recipient['email']} pour validation demande d'amélioration")
                 
