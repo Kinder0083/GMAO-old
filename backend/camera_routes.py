@@ -138,7 +138,13 @@ def serialize_camera(camera: dict) -> dict:
         "last_snapshot": camera.get("last_snapshot"),
         "last_check": camera.get("last_check"),
         "created_at": camera.get("created_at", datetime.now(timezone.utc).isoformat()),
-        "created_by": str(camera["created_by"]) if camera.get("created_by") else None
+        "created_by": str(camera["created_by"]) if camera.get("created_by") else None,
+        # Champs alertes
+        "alert_enabled": camera.get("alert_enabled", False),
+        "alert_email": camera.get("alert_email"),
+        "alert_delay_minutes": camera.get("alert_delay_minutes", 5),
+        "last_alert_sent": camera.get("last_alert_sent"),
+        "offline_since": camera.get("offline_since")
     }
 
 
