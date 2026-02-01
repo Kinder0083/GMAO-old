@@ -518,10 +518,10 @@ class TestAbsences:
         assert response.status_code == 200, f"Failed to get absences: {response.text}"
         
         data = response.json()
-        assert "absences" in data
+        # API returns a list directly, not wrapped in "absences" key
+        assert isinstance(data, list), f"Expected list, got {type(data)}"
         
-        print(f"✅ Absences retrieved: {len(data['absences'])} absences")
-        return data
+        print(f"✅ Absences retrieved: {len(data)} absences")
 
 
 class TestTeamPresence:
