@@ -2,7 +2,7 @@
  * Page Analytics Checklists
  * Dashboard d'analyse des résultats des contrôles préventifs
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -40,9 +40,12 @@ import {
   RefreshCw,
   Loader2,
   Calendar,
-  BarChart3
+  BarChart3,
+  FileDown
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
