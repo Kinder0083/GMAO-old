@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# GMAO Iris v1.1.6 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
+# GMAO Iris v1.1.7 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
 # 
-# NOUVEAUTÉS v1.1.6:
+# NOUVEAUTÉS v1.1.7:
 # - Module Caméras RTSP/ONVIF (surveillance vidéo)
 # - Dépendances FFmpeg, OpenCV ajoutées automatiquement
 # - Module Gestion d'équipe et Pointage horaire
@@ -48,7 +48,7 @@ warn() { echo -e "${YELLOW}⚠${NC} $1"; }
 
 clear
 echo "╔════════════════════════════════════════════════════════════════╗"
-echo "║   GMAO IRIS v1.1.6 - Installation Auto (Proxmox 9.0 Ready)    ║"
+echo "║   GMAO IRIS v1.1.7 - Installation Auto (Proxmox 9.0 Ready)    ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 
