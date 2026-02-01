@@ -6819,7 +6819,7 @@ async def update_improvement_request_status(
                 else:
                     body += "<p>Vous pouvez soumettre une nouvelle demande avec les modifications suggérées.</p>"
                 
-                await email_service.send_email(
+                email_service.send_email(
                     to_email=creator["email"],
                     subject=subject,
                     html_content=body
