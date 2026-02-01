@@ -194,6 +194,7 @@ function App() {
             <Route path="service-dashboard/widgets/:widgetId/edit" element={<CustomWidgetEditor />} />
             <Route path="service-dashboard/team" element={<ServiceTeamView />} />
             <Route path="mqtt-logs" element={<MQTTLogs />} />
+            <Route path="weekly-reports" element={<WeeklyReportsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
