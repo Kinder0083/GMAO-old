@@ -25,7 +25,7 @@ async def check_camera_and_send_alerts():
     Vérifie l'état de toutes les caméras avec alertes activées
     et envoie des emails si une caméra est hors ligne depuis trop longtemps
     """
-    if not db:
+    if db is None:
         logger.warning("Base de données non initialisée pour les alertes caméras")
         return
     
