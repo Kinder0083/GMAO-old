@@ -8483,6 +8483,15 @@ from weekly_report_routes import router as weekly_report_router, set_database as
 set_weekly_report_db(db)
 api_router.include_router(weekly_report_router)
 
+# Routes de gestion d'équipe et pointage
+from team_management_routes import router as team_router, set_database as set_team_db
+set_team_db(db)
+api_router.include_router(team_router)
+
+from time_tracking_routes import router as time_tracking_router, set_database as set_time_tracking_db
+set_time_tracking_db(db)
+api_router.include_router(time_tracking_router)
+
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 
