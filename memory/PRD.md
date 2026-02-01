@@ -156,6 +156,38 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
+#### Mise à jour: Intégration complète v1.1.8 (1 Fév 2026)
+
+**Ajouts pour installation fraîche complète :**
+
+1. **Permissions utilisateurs** (`/app/backend/models.py`) :
+   - Module `cameras` ajouté à tous les rôles
+   - Module `analyticsChecklists` ajouté à tous les rôles
+   - ADMIN/TECHNICIEN : accès complet
+   - DIRECTEUR/RESPONSABLE/VISUALISEUR : accès en lecture
+   - Autres rôles : accès configurable
+
+2. **Gestion des rôles** (`/app/frontend/src/pages/RolesManagement.jsx`) :
+   - "Caméras" et "Analytics Checklists" ajoutés à la liste des modules
+
+3. **Manuel utilisateur** (`/app/backend/generate_unified_manual.py`) :
+   - **Chapitre 26** : Surveillance Vidéo (4 sections)
+     - Introduction aux caméras RTSP/ONVIF
+     - Ajouter une caméra
+     - Visualisation Live
+     - Alertes Caméras
+   - **Chapitre 27** : Analytics Checklists (3 sections)
+     - Dashboard Analytics
+     - Export PDF
+     - Interpréter les statistiques
+
+4. **Script d'installation** : `gmao-iris-v1.1.8-install-auto.sh`
+   - 27 chapitres, 80+ sections dans le manuel
+   - CAMERA_ENCRYPTION_KEY généré automatiquement
+   - Dépendance jspdf incluse
+
+---
+
 #### ✅ Feature: Centre d'aide (Support Request) - P0
 **Implémentation complète** d'un bouton "Centre d'aide" sur la page Paramètres permettant aux utilisateurs d'envoyer des demandes d'aide aux administrateurs :
 
