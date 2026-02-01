@@ -12,7 +12,7 @@
 # - Dépendance jspdf ajoutée pour l'export PDF
 # - Fusion automatique des nouveaux menus avec les préférences existantes
 #
-# NOUVEAUTÉS v1.1.7:
+# NOUVEAUTÉS v1.1.8:
 # - CORRECTIF: Persistance des mots de passe caméras après redémarrage
 #   (Ajout clé de chiffrement CAMERA_ENCRYPTION_KEY dans .env)
 # - CORRECTIF: Le flux Live ne se coupe plus lors du rafraîchissement des vignettes
