@@ -50,7 +50,9 @@ import {
   Terminal,
   Mail,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  UserCog,
+  Clock
 } from 'lucide-react';
 
 // Liste des icônes disponibles pour les catégories
@@ -90,6 +92,7 @@ const DEFAULT_MENU_ITEMS = [
   { id: 'weekly-reports', label: 'Rapports Hebdo.', path: '/weekly-reports', icon: 'FileText', module: 'reports', visible: true, favorite: false, order: 14.5, category_id: null },
   { id: 'presqu-accident', label: 'Presqu\'accident', path: '/presqu-accident', icon: 'AlertTriangle', module: 'presquaccident', visible: true, favorite: false, order: 15, category_id: null },
   { id: 'presqu-accident-rapport', label: 'Rapport P.accident', path: '/presqu-accident-rapport', icon: 'FileText', module: 'presquaccident', visible: true, favorite: false, order: 16, category_id: null },
+  { id: 'team-management', label: 'Gestion d\'équipe', path: '/team-management', icon: 'UserCog', module: 'timeTracking', visible: true, favorite: false, order: 16.5, category_id: null },
   { id: 'documentations', label: 'Documentations', path: '/documentations', icon: 'FolderOpen', module: 'documentations', visible: true, favorite: false, order: 17, category_id: null },
   { id: 'reports', label: 'Rapports', path: '/reports', icon: 'BarChart3', module: 'reports', visible: true, favorite: false, order: 18, category_id: null },
   { id: 'people', label: 'Utilisateurs', path: '/people', icon: 'Users', module: 'people', visible: true, favorite: false, order: 19, category_id: null },
