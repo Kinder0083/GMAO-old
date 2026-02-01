@@ -86,8 +86,10 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'blue' })
 const AnalyticsChecklistsPage = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [period, setPeriod] = useState('30'); // jours
   const [periodType, setPeriodType] = useState('weekly');
+  const reportRef = useRef(null);
   
   // Données
   const [summary, setSummary] = useState(null);
@@ -95,6 +97,124 @@ const AnalyticsChecklistsPage = () => {
   const [nonConformities, setNonConformities] = useState({ total: 0, items: [] });
   const [equipmentStats, setEquipmentStats] = useState([]);
   const [technicianStats, setTechnicianStats] = useState([]);
+
+  // Fonction d'export PDF
+  const exportToPDF = async () => {
+    if (!reportRef.current) return;
+    
+    setExporting(true);
+    toast({
+      title: 'Génération du PDF',
+      description: 'Veuillez patienter...'
+    });
+    
+    try {
+      const element = reportRef.current;
+      
+      // Capturer le contenu en canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Créer le PDF en format A4 paysage pour mieux afficher les graphiques
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calculer les dimensions pour conserver le ratio
+      const imgWidth = pageWidth - 20; // Marges de 10mm de chaque côté
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Ajouter un en-tête
+      pdf.setFontSize(18);
+      pdf.setTextColor(31, 41, 55);
+      pdf.text('Rapport Analytics Checklists', 10, 15);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(107, 114, 128);
+      const periodLabel = period === '7' ? '7 derniers jours' : period === '30' ? '30 derniers jours' : period === '90' ? '90 derniers jours' : '12 derniers mois';
+      pdf.text(`Période: ${periodLabel} | Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, 10, 22);
+      
+      // Vérifier si le contenu tient sur une page
+      const startY = 28;
+      const availableHeight = pageHeight - startY - 10;
+      
+      if (imgHeight <= availableHeight) {
+        // Tout sur une page
+        pdf.addImage(imgData, 'PNG', 10, startY, imgWidth, imgHeight);
+      } else {
+        // Plusieurs pages nécessaires
+        let remainingHeight = imgHeight;
+        let sourceY = 0;
+        let isFirstPage = true;
+        
+        while (remainingHeight > 0) {
+          const currentStartY = isFirstPage ? startY : 10;
+          const currentAvailableHeight = isFirstPage ? availableHeight : pageHeight - 20;
+          
+          // Calculer la hauteur de la portion à dessiner
+          const drawHeight = Math.min(currentAvailableHeight, remainingHeight);
+          const sourceHeight = (drawHeight / imgWidth) * canvas.width;
+          
+          // Créer un canvas temporaire pour la portion
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = sourceHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+          tempCtx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+          
+          const tempImgData = tempCanvas.toDataURL('image/png');
+          pdf.addImage(tempImgData, 'PNG', 10, currentStartY, imgWidth, drawHeight);
+          
+          remainingHeight -= drawHeight;
+          sourceY += sourceHeight;
+          
+          if (remainingHeight > 0) {
+            pdf.addPage();
+            isFirstPage = false;
+          }
+        }
+      }
+      
+      // Ajouter un pied de page
+      const pageCount = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text(`GMAO Iris - Analytics Checklists | Page ${i}/${pageCount}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+      }
+      
+      // Télécharger le PDF
+      const fileName = `analytics-checklists-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+      toast({
+        title: 'PDF généré',
+        description: `Le fichier ${fileName} a été téléchargé`
+      });
+      
+    } catch (error) {
+      console.error('Erreur export PDF:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de générer le PDF',
+        variant: 'destructive'
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
