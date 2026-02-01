@@ -526,6 +526,7 @@ cd gmao-iris
 
 # Backend .env
 SECRET_KEY=\$(openssl rand -hex 32)
+CAMERA_ENCRYPTION_KEY=\$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
 cat > backend/.env <<BEOF
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=gmao_iris
@@ -540,6 +541,7 @@ SMTP_FROM=noreply@gmao-iris.local
 SMTP_FROM_NAME=GMAO Iris
 APP_URL=${FRONTEND_URL}
 EMERGENT_LLM_KEY=sk-emergent-12d3316F4Fe54F79e6
+CAMERA_ENCRYPTION_KEY=\${CAMERA_ENCRYPTION_KEY}
 BEOF
 
 # Frontend .env - NE PAS définir REACT_APP_BACKEND_URL pour permettre la détection automatique
