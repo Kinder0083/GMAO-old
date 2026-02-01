@@ -471,14 +471,13 @@ class TestAbsences:
         assert isinstance(types, list)
         assert len(types) >= 6, f"Expected at least 6 absence types, got {len(types)}"
         
-        # Check for expected types
+        # Check for expected types (TT is the code for Télétravail)
         type_codes = [t["code"] for t in types]
-        expected_codes = ["CP", "RTT", "MALADIE", "FORMATION", "RQP", "TELETRAVAIL"]
+        expected_codes = ["CP", "RTT", "MALADIE", "FORMATION", "RQP", "TT"]
         for code in expected_codes:
             assert code in type_codes, f"Missing expected absence type: {code}"
         
         print(f"✅ Absence types retrieved: {len(types)} types")
-        return types
     
     def test_declare_absence(self, admin_headers, test_member_for_absence):
         """POST /api/time-tracking/absences - Declare an absence"""
