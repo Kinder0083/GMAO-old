@@ -186,6 +186,219 @@ async def get_cameras_count(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ========================
+# Routes Paramètres (AVANT les routes dynamiques /{camera_id})
+# ========================
+
+@router.get("/settings/snapshot")
+async def get_snapshot_settings(current_user: dict = Depends(get_current_user)):
+    """Récupère les paramètres de snapshot"""
+    try:
+        settings = await db.camera_settings.find_one({"type": "snapshot"})
+        if not settings:
+            # Paramètres par défaut
+            settings = {
+                "type": "snapshot",
+                "snapshot_frequency_seconds": 30,
+                "retention_days": 7,
+                "retention_max_count": 1000,
+                "storage_path": str(SNAPSHOTS_BASE_PATH)
+            }
+            await db.camera_settings.insert_one(settings)
+        
+        return {
+            "snapshot_frequency_seconds": settings.get("snapshot_frequency_seconds", 30),
+            "retention_days": settings.get("retention_days", 7),
+            "retention_max_count": settings.get("retention_max_count", 1000),
+            "storage_path": settings.get("storage_path", str(SNAPSHOTS_BASE_PATH))
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/settings/snapshot")
+async def update_snapshot_settings(
+    settings_data: CameraSettingsUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Met à jour les paramètres de snapshot"""
+    try:
+        update_data = {}
+        if settings_data.snapshot_frequency_seconds is not None:
+            update_data["snapshot_frequency_seconds"] = settings_data.snapshot_frequency_seconds
+        if settings_data.retention_days is not None:
+            update_data["retention_days"] = settings_data.retention_days
+        if settings_data.retention_max_count is not None:
+            update_data["retention_max_count"] = settings_data.retention_max_count
+        
+        if update_data:
+            await db.camera_settings.update_one(
+                {"type": "snapshot"},
+                {"$set": update_data},
+                upsert=True
+            )
+        
+        return await get_snapshot_settings(current_user)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================
+# Routes Découverte ONVIF (AVANT les routes dynamiques /{camera_id})
+# ========================
+
+@router.get("/discover/onvif")
+async def discover_onvif(
+    timeout: int = Query(10, ge=5, le=30),
+    current_user: dict = Depends(get_current_user)
+):
+    """Découvre les caméras ONVIF sur le réseau"""
+    try:
+        discovered = await discover_onvif_cameras(timeout)
+        
+        # Filtrer les caméras déjà enregistrées
+        existing_urls = set()
+        async for camera in db.cameras.find({}, {"rtsp_url": 1}):
+            existing_urls.add(camera.get("rtsp_url", "").split("@")[-1])  # Enlever credentials
+        
+        for cam in discovered:
+            cam["already_added"] = any(
+                cam.get("ip", "") in url for url in existing_urls
+            )
+        
+        return {
+            "count": len(discovered),
+            "cameras": discovered
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur découverte ONVIF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/discover/onvif/add")
+async def add_discovered_camera(
+    camera_data: OnvifCameraAdd,
+    current_user: dict = Depends(get_current_user)
+):
+    """Ajoute une caméra découverte par ONVIF"""
+    try:
+        # Récupérer les infos de la caméra
+        info = await get_onvif_camera_info(
+            camera_data.xaddr,
+            camera_data.username,
+            camera_data.password
+        )
+        
+        if not info:
+            raise HTTPException(status_code=400, detail="Impossible de récupérer les infos de la caméra")
+        
+        # Créer la caméra
+        camera_doc = {
+            "name": camera_data.name,
+            "rtsp_url": info.get("stream_uri", camera_data.xaddr),
+            "username": camera_data.username,
+            "password": encrypt_password(camera_data.password) if camera_data.password else "",
+            "brand": info.get("manufacturer", "onvif").lower(),
+            "location": camera_data.location,
+            "zone_id": None,
+            "is_online": True,
+            "onvif_info": {
+                "manufacturer": info.get("manufacturer"),
+                "model": info.get("model"),
+                "firmware": info.get("firmware"),
+                "serial": info.get("serial")
+            },
+            "last_snapshot": None,
+            "last_check": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": ObjectId(current_user.get("id")) if current_user.get("id") else None
+        }
+        
+        result = await db.cameras.insert_one(camera_doc)
+        camera_doc["_id"] = result.inserted_id
+        
+        logger.info(f"Caméra ONVIF ajoutée: {camera_data.name}")
+        return serialize_camera(camera_doc)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur ajout caméra ONVIF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================
+# Route Nettoyage (AVANT les routes dynamiques /{camera_id})
+# ========================
+
+@router.post("/cleanup/snapshots")
+async def cleanup_all_snapshots(current_user: dict = Depends(get_current_user)):
+    """Lance le nettoyage des snapshots pour toutes les caméras"""
+    try:
+        settings = await db.camera_settings.find_one({"type": "snapshot"})
+        retention_days = settings.get("retention_days", 7) if settings else 7
+        max_count = settings.get("retention_max_count", 1000) if settings else 1000
+        
+        cleaned_count = 0
+        async for camera in db.cameras.find({}, {"_id": 1}):
+            camera_id = str(camera["_id"])
+            await cleanup_old_snapshots(camera_id, retention_days, max_count)
+            cleaned_count += 1
+        
+        return {
+            "success": True,
+            "message": f"Nettoyage effectué pour {cleaned_count} caméras",
+            "retention_days": retention_days,
+            "max_count": max_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================
+# Route Test URL (AVANT les routes dynamiques /{camera_id})
+# ========================
+
+@router.post("/test-url")
+async def test_camera_url(
+    rtsp_url: str = Query(...),
+    username: str = Query(""),
+    password: str = Query(""),
+    current_user: dict = Depends(get_current_user)
+):
+    """Teste une URL RTSP sans créer de caméra"""
+    result = await test_camera_connection(rtsp_url, username, password)
+    return result
+
+
+# ========================
+# Routes HLS (AVANT les routes dynamiques /{camera_id})
+# ========================
+
+@router.get("/hls/{camera_id}/{filename}")
+async def serve_hls_file(camera_id: str, filename: str):
+    """Sert les fichiers HLS (m3u8 et segments ts)"""
+    filepath = HLS_BASE_PATH / camera_id / filename
+    
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="Fichier non trouvé")
+    
+    if filename.endswith(".m3u8"):
+        media_type = "application/vnd.apple.mpegurl"
+    elif filename.endswith(".ts"):
+        media_type = "video/mp2t"
+    else:
+        media_type = "application/octet-stream"
+    
+    return FileResponse(filepath, media_type=media_type)
+
+
+# ========================
+# Routes dynamiques avec {camera_id} (APRÈS les routes statiques)
+# ========================
+
 @router.get("/{camera_id}", response_model=CameraResponse)
 async def get_camera(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Récupère une caméra par ID"""
