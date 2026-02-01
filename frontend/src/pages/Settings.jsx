@@ -20,6 +20,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
   const [responsableInfo, setResponsableInfo] = useState(null); // Info du responsable de service
   const [settings, setSettings] = useState({
     nom: '',
