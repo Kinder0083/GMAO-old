@@ -95,14 +95,19 @@ const CamerasPage = () => {
     loadData();
   }, [loadCameras, loadStats, refreshKey]);
 
-  // Rafraîchir les vignettes toutes les 30 secondes
+  // Rafraîchir les vignettes toutes les 30 secondes (uniquement si on est sur l'onglet grille)
+  const [activeTab, setActiveTab] = useState('grid');
+  
   useEffect(() => {
+    // Ne rafraîchir automatiquement que si on est sur l'onglet vignettes
+    if (activeTab !== 'grid') return;
+    
     const interval = setInterval(() => {
       setRefreshKey(k => k + 1);
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [activeTab]);
 
   // Sélectionner une caméra pour le live
   const handleSelectForLive = (camera, slotIndex) => {
