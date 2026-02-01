@@ -39,7 +39,8 @@ import {
   Activity,
   Presentation,
   UserCog,
-  Clock
+  Clock,
+  Camera
 } from 'lucide-react';
 
 // Mapping des noms d'icônes vers les composants
