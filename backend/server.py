@@ -6410,6 +6410,81 @@ async def create_improvement_request(
         request_data = serialize_doc(request_data)
         request_data["id"] = original_id
         
+        # Envoyer email au responsable de service pour validation
+        try:
+            user_service = current_user.get("service")
+            recipients = []
+            
+            if user_service:
+                # Chercher le(s) responsable(s) de ce service
+                service_managers = await db.service_responsables.find(
+                    {"service": user_service}
+                ).to_list(100)
+                
+                for manager_entry in service_managers:
+                    manager = await db.users.find_one(
+                        {"id": manager_entry["user_id"], "statut": "actif"},
+                        {"_id": 0, "email": 1, "nom": 1, "prenom": 1}
+                    )
+                    if manager and manager.get("email"):
+                        recipients.append(manager)
+            
+            # Si pas de responsable, envoyer aux admins
+            if not recipients:
+                admins = await db.users.find(
+                    {"role": "ADMIN", "statut": "actif"},
+                    {"_id": 0, "email": 1, "nom": 1, "prenom": 1}
+                ).to_list(10)
+                recipients = [a for a in admins if a.get("email")]
+            
+            # Envoyer l'email
+            for recipient in recipients:
+                subject = f"[GMAO] Nouvelle demande d'amélioration à valider: {request.titre}"
+                body = f"""
+                <h2>Nouvelle demande d'amélioration à valider</h2>
+                <p>Une nouvelle demande d'amélioration a été soumise et nécessite votre validation.</p>
+                
+                <table style="border-collapse: collapse; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Titre</td>
+                        <td style="padding: 8px;">{request.titre}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Description</td>
+                        <td style="padding: 8px;">{request.description[:200]}{'...' if len(request.description) > 200 else ''}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Priorité</td>
+                        <td style="padding: 8px;">{request.priorite}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Demandeur</td>
+                        <td style="padding: 8px;">{request_data["created_by_name"]}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Service</td>
+                        <td style="padding: 8px;">{user_service or 'Non défini'}</td>
+                    </tr>
+                </table>
+                
+                <p>Veuillez vous connecter à l'application GMAO pour valider ou rejeter cette demande.</p>
+                
+                <p style="color: #666; font-size: 12px;">
+                    Cet email a été envoyé automatiquement par le système GMAO.
+                </p>
+                """
+                
+                await email_service.send_email(
+                    to_email=recipient["email"],
+                    subject=subject,
+                    body=body
+                )
+                logger.info(f"📧 Email envoyé à {recipient['email']} pour validation demande d'amélioration")
+                
+        except Exception as email_error:
+            logger.warning(f"Erreur envoi email notification création demande: {email_error}")
+            # On ne bloque pas la création si l'email échoue
+        
         # Broadcast WebSocket pour la synchronisation temps réel
         await realtime_manager.emit_event(
             "improvement_requests",
