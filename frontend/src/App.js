@@ -31,6 +31,7 @@ import PlanningMPrev from "./pages/PlanningMPrev";
 import ValidateDemandeArret from "./pages/ValidateDemandeArret";
 import ValidateReport from "./pages/ValidateReport";
 import ValidateCounterProposal from "./pages/ValidateCounterProposal";
+import ValidateImprovementRequest from "./pages/ValidateImprovementRequest";
 import EndMaintenance from "./pages/EndMaintenance";
 import Vendors from "./pages/Vendors";
 import Settings from "./pages/Settings";
