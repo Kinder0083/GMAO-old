@@ -454,3 +454,96 @@ async def get_reports_stats(current_user: dict = Depends(get_current_user)):
         "total_sent": total_sent,
         "last_sent": last_history.get("sent_at") if last_history else None
     }
+
+
+# ==================== DEFAULT TEMPLATES ====================
+
+@router.get("/default-templates")
+async def get_default_templates_info(current_user: dict = Depends(get_current_user)):
+    """
+    Récupérer les informations sur les templates par défaut disponibles.
+    """
+    from default_report_templates import get_available_default_templates, DEFAULT_REPORT_TEMPLATES, DEFAULT_GENERIC_TEMPLATE
+    
+    available_services = get_available_default_templates()
+    
+    templates_info = []
+    for service in available_services:
+        template = DEFAULT_REPORT_TEMPLATES.get(service, {})
+        templates_info.append({
+            "service": service,
+            "name": template.get("name", f"Rapport Hebdo {service}"),
+            "description": template.get("description", ""),
+            "frequency": template.get("schedule", {}).get("frequency", "weekly"),
+            "sections_enabled": sum(1 for s in template.get("sections", {}).values() if s.get("enabled", False))
+        })
+    
+    return {
+        "available_templates": templates_info,
+        "generic_template": {
+            "name": DEFAULT_GENERIC_TEMPLATE["name"],
+            "description": DEFAULT_GENERIC_TEMPLATE["description"],
+            "frequency": DEFAULT_GENERIC_TEMPLATE["schedule"]["frequency"]
+        }
+    }
+
+
+@router.post("/init-default-templates")
+async def initialize_default_templates(current_user: dict = Depends(get_current_user)):
+    """
+    Initialiser les templates par défaut pour tous les services existants.
+    Seuls les services sans template existant recevront un nouveau template.
+    Admin uniquement.
+    """
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+    
+    from default_report_templates import create_default_templates_for_all_services
+    
+    created_templates = await create_default_templates_for_all_services(
+        db=db,
+        created_by=current_user.get("id")
+    )
+    
+    return {
+        "success": True,
+        "message": f"{len(created_templates)} template(s) créé(s)",
+        "templates": [
+            {"service": t["service"], "name": t["name"]}
+            for t in created_templates
+        ]
+    }
+
+
+@router.post("/create-default-template/{service}")
+async def create_default_template_for_single_service(
+    service: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Créer le template par défaut pour un service spécifique.
+    """
+    # Vérifier l'accès
+    await check_report_access(current_user, service=service)
+    
+    from default_report_templates import create_default_template_for_service
+    
+    template = await create_default_template_for_service(
+        db=db,
+        service=service,
+        created_by=current_user.get("id"),
+        created_by_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+    )
+    
+    if not template:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Un template existe déjà pour le service {service}"
+        )
+    
+    return {
+        "success": True,
+        "message": f"Template créé pour {service}",
+        "template": template
+    }
+
