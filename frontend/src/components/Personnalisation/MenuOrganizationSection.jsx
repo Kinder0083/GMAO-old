@@ -87,6 +87,7 @@ const DEFAULT_MENU_ITEMS = [
   { id: 'meters', label: 'Compteurs', path: '/meters', icon: 'Gauge', module: 'meters', visible: true, favorite: false, order: 12, category_id: null },
   { id: 'surveillance-plan', label: 'Plan de Surveillance', path: '/surveillance-plan', icon: 'Shield', module: 'surveillance', visible: true, favorite: false, order: 13, category_id: null },
   { id: 'surveillance-rapport', label: 'Rapport Surveillance', path: '/surveillance-rapport', icon: 'FileText', module: 'surveillance', visible: true, favorite: false, order: 14, category_id: null },
+  { id: 'weekly-reports', label: 'Rapports Hebdo.', path: '/weekly-reports', icon: 'FileText', module: 'reports', visible: true, favorite: false, order: 14.5, category_id: null },
   { id: 'presqu-accident', label: 'Presqu\'accident', path: '/presqu-accident', icon: 'AlertTriangle', module: 'presquaccident', visible: true, favorite: false, order: 15, category_id: null },
   { id: 'presqu-accident-rapport', label: 'Rapport P.accident', path: '/presqu-accident-rapport', icon: 'FileText', module: 'presquaccident', visible: true, favorite: false, order: 16, category_id: null },
   { id: 'documentations', label: 'Documentations', path: '/documentations', icon: 'FolderOpen', module: 'documentations', visible: true, favorite: false, order: 17, category_id: null },
