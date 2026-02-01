@@ -4111,6 +4111,7 @@ async def migrate_menu_preferences(current_user: dict = Depends(get_current_user
             { "id": "documentations", "label": "Documentations", "path": "/documentations", "icon": "FolderOpen", "module": "documentations", "visible": True, "favorite": False, "order": 15 },
             { "id": "reports", "label": "Rapports", "path": "/reports", "icon": "BarChart3", "module": "reports", "visible": True, "favorite": False, "order": 16 },
             { "id": "team-management", "label": "Gestion d'équipe", "path": "/team-management", "icon": "UserCog", "module": "timeTracking", "visible": True, "favorite": False, "order": 16.5 },
+            { "id": "cameras", "label": "Caméras", "path": "/cameras", "icon": "Camera", "module": "cameras", "visible": True, "favorite": False, "order": 16.6 },
             { "id": "people", "label": "Équipes", "path": "/people", "icon": "Users", "module": "people", "visible": True, "favorite": False, "order": 17 },
             { "id": "planning", "label": "Planning", "path": "/planning", "icon": "Calendar", "module": "planning", "visible": True, "favorite": False, "order": 18 },
             { "id": "vendors", "label": "Fournisseurs", "path": "/vendors", "icon": "ShoppingCart", "module": "vendors", "visible": True, "favorite": False, "order": 19 },
