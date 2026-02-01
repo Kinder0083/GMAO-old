@@ -3641,6 +3641,37 @@ async def init_time_tracking_permissions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/users/init-cameras-permissions")
+async def init_cameras_permissions(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Initialiser les permissions caméras pour tous les utilisateurs selon leur rôle"""
+    try:
+        # ADMIN : toutes les permissions
+        admin_result = await db.users.update_many(
+            {"role": "ADMIN"},
+            {"$set": {"permissions.cameras": {"view": True, "edit": True, "delete": True}}}
+        )
+        
+        # Responsables de service (DIRECTEUR, responsable) : view seulement
+        responsable_result = await db.users.update_many(
+            {"$or": [
+                {"role": "DIRECTEUR"},
+                {"is_service_manager": True}
+            ]},
+            {"$set": {"permissions.cameras": {"view": True, "edit": False, "delete": False}}}
+        )
+        
+        return {
+            "message": "Permissions caméras initialisées",
+            "updated": {
+                "admin": admin_result.modified_count,
+                "responsables": responsable_result.modified_count
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/users/{user_id}/set-password-permanent")
 async def set_password_permanent(
     user_id: str,
