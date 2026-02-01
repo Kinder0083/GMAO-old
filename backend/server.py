@@ -4241,6 +4241,177 @@ async def test_smtp_config(
 # Stockage en mémoire des demandes d'aide par utilisateur (anti-spam)
 help_request_tracker = {}
 
+
+class SimpleSupportRequest(BaseModel):
+    """Modèle pour une demande d'aide simple depuis la page Paramètres"""
+    subject: Optional[str] = "Demande d'assistance"
+    message: str
+
+
+@api_router.post("/support/request")
+async def submit_support_request(
+    request: SimpleSupportRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Envoyer une demande d'aide simple aux administrateurs (depuis la page Paramètres)
+    """
+    try:
+        user_id = current_user.get("id")
+        user_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        user_email = current_user.get('email', '')
+        user_service = current_user.get('service', 'Non défini')
+        user_role = current_user.get('role', 'N/A')
+        
+        # Anti-spam : Vérifier le nombre de demandes dans la dernière heure
+        now = datetime.now(timezone.utc)
+        one_hour_ago = now - timedelta(hours=1)
+        
+        if user_id in help_request_tracker:
+            help_request_tracker[user_id] = [
+                req_time for req_time in help_request_tracker[user_id] 
+                if req_time > one_hour_ago
+            ]
+            if len(help_request_tracker[user_id]) >= 10:
+                raise HTTPException(
+                    status_code=429, 
+                    detail="Limite de demandes atteinte. Veuillez réessayer dans 1 heure."
+                )
+        else:
+            help_request_tracker[user_id] = []
+        
+        help_request_tracker[user_id].append(now)
+        
+        # Récupérer les emails des administrateurs
+        admins = await db.users.find({"role": "ADMIN", "statut": "actif"}).to_list(100)
+        admin_emails = [admin['email'] for admin in admins if admin.get('email')]
+        
+        if not admin_emails:
+            raise HTTPException(
+                status_code=500,
+                detail="Aucun administrateur disponible pour recevoir la demande"
+            )
+        
+        # Créer l'email
+        email_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <!-- En-tête -->
+                <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 22px;">💬 Demande d'assistance</h1>
+                </div>
+                
+                <!-- Corps -->
+                <div style="background: white; padding: 25px; border: 1px solid #e0e0e0; border-top: none;">
+                    <p style="margin: 0 0 20px 0;">Un utilisateur a envoyé une demande d'assistance via le Centre d'aide.</p>
+                    
+                    <!-- Informations utilisateur -->
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 14px;">👤 Informations de l'utilisateur</h3>
+                        <table style="width: 100%; font-size: 14px;">
+                            <tr>
+                                <td style="padding: 5px 0; color: #64748b; width: 100px;">Nom</td>
+                                <td style="padding: 5px 0; font-weight: 500;">{user_name or 'Non défini'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; color: #64748b;">Email</td>
+                                <td style="padding: 5px 0;">{user_email}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; color: #64748b;">Service</td>
+                                <td style="padding: 5px 0;">{user_service}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; color: #64748b;">Rôle</td>
+                                <td style="padding: 5px 0;">{user_role}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Sujet -->
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="margin: 0 0 5px 0; color: #1e40af; font-size: 14px;">📋 Sujet</h3>
+                        <p style="margin: 0; padding: 10px; background: #eff6ff; border-radius: 5px; font-weight: 500;">
+                            {request.subject or 'Demande d\\'assistance'}
+                        </p>
+                    </div>
+                    
+                    <!-- Message -->
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 5px 0; color: #1e40af; font-size: 14px;">💬 Message</h3>
+                        <div style="padding: 15px; background: #fefce8; border-left: 4px solid #eab308; border-radius: 0 5px 5px 0;">
+                            <p style="margin: 0; white-space: pre-wrap;">{request.message}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Action -->
+                    <div style="text-align: center; padding: 15px; background: #f0fdf4; border-radius: 8px;">
+                        <p style="margin: 0 0 10px 0; color: #166534;">
+                            Veuillez répondre directement à cet utilisateur par email.
+                        </p>
+                        <a href="mailto:{user_email}?subject=Re: {request.subject}" 
+                           style="display: inline-block; padding: 10px 25px; background-color: #22c55e; 
+                                  color: white; text-decoration: none; border-radius: 5px; font-weight: 500;">
+                            ✉️ Répondre à {user_name or user_email}
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Pied de page -->
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
+                    <p style="color: #aaa; font-size: 10px; margin: 0; text-align: center;">
+                        Demande envoyée le {now.strftime('%d/%m/%Y à %H:%M')} depuis GMAO Iris - Centre d'aide
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Envoyer l'email à tous les admins
+        subject = f"[GMAO Support] {request.subject} - {user_name or user_email}"
+        
+        for admin_email in admin_emails:
+            try:
+                email_service.send_email(
+                    to_email=admin_email,
+                    subject=subject,
+                    html_content=email_html
+                )
+            except Exception as e:
+                logger.warning(f"Erreur envoi email support à {admin_email}: {e}")
+        
+        # Sauvegarder la demande en base de données
+        support_request_data = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "user_name": user_name,
+            "user_email": user_email,
+            "user_service": user_service,
+            "subject": request.subject,
+            "message": request.message,
+            "status": "pending",
+            "created_at": now.isoformat(),
+            "notified_admins": admin_emails
+        }
+        
+        await db.support_requests.insert_one(support_request_data)
+        
+        logger.info(f"📬 Demande de support reçue de {user_email}: {request.subject}")
+        
+        return {
+            "success": True,
+            "message": "Votre demande a été envoyée aux administrateurs"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur envoi demande support: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/support/request-help", response_model=HelpRequestResponse)
 async def request_help(
     help_request: HelpRequest,
