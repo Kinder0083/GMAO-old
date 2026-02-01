@@ -78,6 +78,9 @@ const Header = ({
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Icône Alertes Caméras */}
+        <CameraAlertIcon />
+
         {/* Icône Chat Live avec badge messages non lus */}
         {canViewChatLive && (
           <Tooltip>
