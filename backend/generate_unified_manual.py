@@ -3515,7 +3515,9 @@ async def generate_manual():
             {"id": "ch-022", "title": "🏭 Fournisseurs", "description": "Gérer les fournisseurs", "icon": "Building", "order": 22, "sections": ["sec-022-01"], "target_roles": [], "target_modules": ["vendors"]},
             {"id": "ch-023", "title": "💾 Import / Export", "description": "Importer et exporter des données", "icon": "Database", "order": 23, "sections": ["sec-023-01"], "target_roles": [], "target_modules": ["importExport"]},
             {"id": "ch-024", "title": "🤖 Assistant IA", "description": "Votre assistant intelligent", "icon": "Bot", "order": 24, "sections": ["sec-024-01", "sec-024-02", "sec-024-03", "sec-024-04"], "target_roles": [], "target_modules": []},
-            {"id": "ch-025", "title": "👔 Fonctions Responsable de Service", "description": "Guide des fonctionnalités pour les responsables de service", "icon": "Building2", "order": 25, "sections": ["sec-025-01", "sec-025-02", "sec-025-03", "sec-025-04", "sec-025-05"], "target_roles": [], "target_modules": ["serviceDashboard"]}
+            {"id": "ch-025", "title": "👔 Fonctions Responsable de Service", "description": "Guide des fonctionnalités pour les responsables de service", "icon": "Building2", "order": 25, "sections": ["sec-025-01", "sec-025-02", "sec-025-03", "sec-025-04", "sec-025-05"], "target_roles": [], "target_modules": ["serviceDashboard"]},
+            {"id": "ch-026", "title": "📹 Surveillance Vidéo", "description": "Caméras RTSP/ONVIF et alertes", "icon": "Camera", "order": 26, "sections": ["sec-026-01", "sec-026-02", "sec-026-03", "sec-026-04"], "target_roles": [], "target_modules": ["cameras"]},
+            {"id": "ch-027", "title": "📊 Analytics Checklists", "description": "Analyse des résultats des contrôles préventifs", "icon": "BarChart3", "order": 27, "sections": ["sec-027-01", "sec-027-02", "sec-027-03"], "target_roles": [], "target_modules": ["analyticsChecklists"]}
         ]
         
         # Insérer ou mettre à jour les chapitres (idempotent)
