@@ -6474,7 +6474,7 @@ async def create_improvement_request(
                 </p>
                 """
                 
-                await email_service.send_email(
+                email_service.send_email(
                     to_email=recipient["email"],
                     subject=subject,
                     html_content=body
