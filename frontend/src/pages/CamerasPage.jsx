@@ -342,6 +342,10 @@ const CamerasPage = () => {
               <Video className="w-4 h-4 mr-2" />
               Live ({selectedCameras.filter(c => c).length}/3)
             </TabsTrigger>
+            <TabsTrigger value="alerts" data-testid="tab-alerts">
+              <Bell className="w-4 h-4 mr-2" />
+              Alertes ({alertsConfiguredCount})
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="grid" className="mt-4">
@@ -365,6 +369,13 @@ const CamerasPage = () => {
               selectedCameras={selectedCameras}
               onSelect={handleSelectForLive}
               onDeselect={handleDeselectLive}
+            />
+          </TabsContent>
+          
+          <TabsContent value="alerts" className="mt-4">
+            <CameraAlertsPanel
+              cameras={cameras}
+              onCameraUpdate={handleCameraUpdate}
             />
           </TabsContent>
         </Tabs>
