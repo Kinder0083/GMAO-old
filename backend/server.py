@@ -6822,7 +6822,7 @@ async def update_improvement_request_status(
                 await email_service.send_email(
                     to_email=creator["email"],
                     subject=subject,
-                    body=body
+                    html_content=body
                 )
         except Exception as e:
             logger.warning(f"Erreur envoi email notification: {e}")
