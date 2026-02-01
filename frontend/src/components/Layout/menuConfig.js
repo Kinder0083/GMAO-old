@@ -37,7 +37,9 @@ import {
   Mail,
   Radio,
   Activity,
-  Presentation
+  Presentation,
+  UserCog,
+  Clock
 } from 'lucide-react';
 
 // Mapping des noms d'icônes vers les composants
@@ -68,6 +70,8 @@ export const iconMap = {
   'Shield': Shield,
   'Presentation': Presentation,
   'PresentationIcon': Presentation,
+  'UserCog': UserCog,
+  'Clock': Clock,
   'Menu': Menu,
   'X': X,
   'ChevronLeft': ChevronLeft,
@@ -102,6 +106,7 @@ export const getDefaultMenuItems = (isAdmin) => [
   { id: 'surveillance-plan', icon: 'Eye', label: 'Plan de Surveillance', path: '/surveillance-plan', module: 'surveillance', visible: true, order: 11 },
   { id: 'surveillance-rapport', icon: 'FileText', label: 'Rapport Surveillance', path: '/surveillance-rapport', module: 'surveillanceRapport', visible: true, order: 12 },
   { id: 'weekly-reports', icon: 'FileText', label: 'Rapports Hebdo.', path: '/weekly-reports', module: 'reports', visible: true, order: 12.5 },
+  { id: 'team-management', icon: 'UserCog', label: 'Gestion d\'équipe', path: '/team-management', module: 'timeTracking', visible: true, order: 17.5 },
   { id: 'presqu-accident', icon: 'AlertTriangle', label: 'Presqu\'accident', path: '/presqu-accident', module: 'presquaccident', visible: true, order: 13 },
   { id: 'presqu-accident-rapport', icon: 'FileText', label: 'Rapport P.accident', path: '/presqu-accident-rapport', module: 'presquaccidentRapport', visible: true, order: 14 },
   { id: 'documentations', icon: 'FolderOpen', label: 'Documentations', path: '/documentations', module: 'documentations', visible: true, order: 15 },
