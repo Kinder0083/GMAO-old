@@ -8246,6 +8246,10 @@ api_router.include_router(custom_widgets_router)
 from service_filter import init_service_filter
 init_service_filter(db)
 
+# Service d'email pour les demandes d'amélioration
+from improvement_request_email_service import init_improvement_request_email_service
+init_improvement_request_email_service(db)
+
 # Whiteboard (Tableau d'affichage) routes
 from whiteboard_routes import router as whiteboard_router, init_whiteboards, init_whiteboard_audit
 from whiteboard_object_routes import router as whiteboard_object_router
