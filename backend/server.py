@@ -8529,6 +8529,13 @@ from time_tracking_routes import router as time_tracking_router, set_database as
 set_time_tracking_db(db)
 api_router.include_router(time_tracking_router)
 
+# Routes de gestion des caméras RTSP/ONVIF
+from camera_routes import router as camera_router, set_database as set_camera_db
+from camera_snapshot_scheduler import set_database as set_camera_scheduler_db, start_snapshot_scheduler
+set_camera_db(db)
+set_camera_scheduler_db(db)
+api_router.include_router(camera_router)
+
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 
