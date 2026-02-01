@@ -143,3 +143,8 @@ zipp==3.23.0
 ntplib
 smbprotocol
 reportlab==4.4.5
+
+# Dépendances pour le module Caméras RTSP/ONVIF
+onvif-zeep==0.2.12
+opencv-python-headless==4.10.0.84
+WSDiscovery==2.1.2
