@@ -707,3 +707,51 @@ Ceci est un email de test automatique envoyé depuis GMAO Iris.
 
 
 
+
+
+def send_weekly_report_email(
+    to_email: str,
+    subject: str,
+    html_content: str,
+    pdf_path: str = None
+) -> bool:
+    """
+    Envoie un rapport périodique (hebdomadaire/mensuel/annuel) avec PDF en pièce jointe
+    
+    Args:
+        to_email: Email du destinataire
+        subject: Sujet de l'email
+        html_content: Contenu HTML du rapport
+        pdf_path: Chemin vers le fichier PDF à joindre (optionnel)
+    
+    Returns:
+        bool: True si envoi réussi, False sinon
+    """
+    try:
+        attachment_data = None
+        attachment_filename = None
+        
+        # Lire le PDF si fourni
+        if pdf_path:
+            import os
+            if os.path.exists(pdf_path):
+                with open(pdf_path, 'rb') as f:
+                    attachment_data = f.read()
+                attachment_filename = os.path.basename(pdf_path)
+                logger.info(f"📎 PDF joint: {attachment_filename} ({len(attachment_data)} bytes)")
+            else:
+                logger.warning(f"⚠️ Fichier PDF non trouvé: {pdf_path}")
+        
+        # Utiliser la fonction existante d'envoi avec pièce jointe
+        return send_email_with_attachment(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            attachment_data=attachment_data,
+            attachment_filename=attachment_filename
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur envoi rapport hebdomadaire à {to_email}: {e}")
+        return False
+
