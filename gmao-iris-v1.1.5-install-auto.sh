@@ -418,7 +418,10 @@ export LANG=en_US.UTF-8
 
 apt-get upgrade -y -qq
 apt-get install -y -qq curl wget git gnupg ca-certificates build-essential \
-  supervisor nginx ufw python3 python3-pip python3-venv
+  supervisor nginx ufw python3 python3-pip python3-venv \
+  smbclient \
+  ffmpeg libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender1 \
+  libxml2-dev libxslt1-dev
 
 # Node.js
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
