@@ -362,6 +362,20 @@ async def set_service_responsable(data: ServiceResponsableCreate, current_user: 
         # Créer
         responsable_data["id"] = str(uuid.uuid4())
         await db.service_responsables.insert_one(responsable_data)
+        
+        # Créer automatiquement un template de rapport pour ce nouveau service
+        try:
+            from default_report_templates import create_default_template_for_service
+            await create_default_template_for_service(
+                db=db,
+                service=data.service,
+                created_by=current_user.get("id"),
+                created_by_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip() or "Admin"
+            )
+        except Exception as e:
+            # Log l'erreur mais ne bloque pas la création du responsable
+            import logging
+            logging.getLogger(__name__).warning(f"Impossible de créer le template par défaut pour {data.service}: {e}")
     
     responsable_data.pop("_id", None)
     return responsable_data
