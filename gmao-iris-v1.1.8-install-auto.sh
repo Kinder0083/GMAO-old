@@ -60,7 +60,7 @@ warn() { echo -e "${YELLOW}⚠${NC} $1"; }
 
 clear
 echo "╔════════════════════════════════════════════════════════════════╗"
-echo "║   GMAO IRIS v1.1.7 - Installation Auto (Proxmox 9.0 Ready)    ║"
+echo "║   GMAO IRIS v1.1.8 - Installation Auto (Proxmox 9.0 Ready)    ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 
