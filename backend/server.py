@@ -6412,6 +6412,8 @@ async def create_improvement_request(
         
         # Envoyer email au responsable de service pour validation
         try:
+            from improvement_request_email_service import send_improvement_request_email_to_manager
+            
             user_service = current_user.get("service")
             recipients = []
             
@@ -6424,7 +6426,7 @@ async def create_improvement_request(
                 for manager_entry in service_managers:
                     manager = await db.users.find_one(
                         {"id": manager_entry["user_id"], "statut": "actif"},
-                        {"_id": 0, "email": 1, "nom": 1, "prenom": 1}
+                        {"_id": 0, "id": 1, "email": 1, "nom": 1, "prenom": 1}
                     )
                     if manager and manager.get("email"):
                         recipients.append(manager)
@@ -6433,53 +6435,20 @@ async def create_improvement_request(
             if not recipients:
                 admins = await db.users.find(
                     {"role": "ADMIN", "statut": "actif"},
-                    {"_id": 0, "email": 1, "nom": 1, "prenom": 1}
+                    {"_id": 0, "id": 1, "email": 1, "nom": 1, "prenom": 1}
                 ).to_list(10)
                 recipients = [a for a in admins if a.get("email")]
             
-            # Envoyer l'email
+            # Récupérer les pièces jointes (si uploadées)
+            attachments = request_data.get("attachments", [])
+            
+            # Envoyer l'email avec boutons d'action
             for recipient in recipients:
-                subject = f"[GMAO] Nouvelle demande d'amélioration à valider: {request.titre}"
-                body = f"""
-                <h2>Nouvelle demande d'amélioration à valider</h2>
-                <p>Une nouvelle demande d'amélioration a été soumise et nécessite votre validation.</p>
-                
-                <table style="border-collapse: collapse; margin: 20px 0;">
-                    <tr>
-                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Titre</td>
-                        <td style="padding: 8px;">{request.titre}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Description</td>
-                        <td style="padding: 8px;">{request.description[:200]}{'...' if len(request.description) > 200 else ''}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Priorité</td>
-                        <td style="padding: 8px;">{request.priorite}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Demandeur</td>
-                        <td style="padding: 8px;">{request_data["created_by_name"]}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; font-weight: bold; background: #f5f5f5;">Service</td>
-                        <td style="padding: 8px;">{user_service or 'Non défini'}</td>
-                    </tr>
-                </table>
-                
-                <p>Veuillez vous connecter à l'application GMAO pour valider ou rejeter cette demande.</p>
-                
-                <p style="color: #666; font-size: 12px;">
-                    Cet email a été envoyé automatiquement par le système GMAO.
-                </p>
-                """
-                
-                email_service.send_email(
-                    to_email=recipient["email"],
-                    subject=subject,
-                    html_content=body
+                await send_improvement_request_email_to_manager(
+                    request_data=request_data,
+                    recipient=recipient,
+                    attachments=attachments
                 )
-                logger.info(f"📧 Email envoyé à {recipient['email']} pour validation demande d'amélioration")
                 
         except Exception as email_error:
             logger.warning(f"Erreur envoi email notification création demande: {email_error}")
