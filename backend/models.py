@@ -101,7 +101,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             purchaseRequests=ModulePermission(view=True, edit=True, delete=True),
             whiteboard=ModulePermission(view=True, edit=True, delete=True),
             achat=ModulePermission(view=True, edit=True, delete=True),  # Permission Achat complète pour Admin
-            timeTracking=ModulePermission(view=True, edit=True, delete=True)  # Admin peut voir tous les utilisateurs
+            timeTracking=ModulePermission(view=True, edit=True, delete=True),  # Admin peut voir tous les utilisateurs
+            cameras=ModulePermission(view=True, edit=True, delete=True)  # Admin peut gérer et voir les caméras
         )
     
     # Rôle spécial AFFICHAGE : Uniquement accès au tableau d'affichage
