@@ -49,8 +49,8 @@ def main():
             print("=" * 70)
             print()
             print("Le manuel complet a été généré avec :")
-            print("  • 25 chapitres")
-            print("  • 70+ sections")
+            print("  • 27 chapitres")
+            print("  • 80+ sections")
             print("  • Nouvelles fonctionnalités documentées :")
             print("    - Ordres Type (Modèles d'OT)")
             print("    - Modèles de Formulaires")
@@ -59,6 +59,9 @@ def main():
             print("    - Aide Contextuelle et Tooltips")
             print("    - Fonctions Responsable de Service")
             print("    - Filtrage automatique par service")
+            print("    - Surveillance Vidéo (Caméras RTSP/ONVIF)")
+            print("    - Alertes Caméras par email")
+            print("    - Analytics Checklists avec export PDF")
             print()
             return True
         else:
