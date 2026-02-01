@@ -8,7 +8,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://team-tracker-204.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://video-stream-413.preview.emergentagent.com').rstrip('/')
 
 class TestDocumentationsRefonte:
     """Tests for Documentations page refactoring"""
