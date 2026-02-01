@@ -320,7 +320,7 @@ const CamerasPage = () => {
           <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
         </div>
       ) : (
-        <Tabs defaultValue="grid" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
             <TabsTrigger value="grid" data-testid="tab-grid">
               <Grid3X3 className="w-4 h-4 mr-2" />
