@@ -1360,12 +1360,100 @@ ExcelDataSource:
 
 ---
 
+#### ✅ Feature: Gestion de l'équipe et Pointage - P1-3 (1er Février 2026)
+**Implémentation complète** d'un module de gestion d'équipe et de pointage horaire :
+
+**Backend** - Nouveaux fichiers :
+- **`/app/backend/team_management_routes.py`** : Routes de gestion des membres
+  - `GET /api/team/members` - Liste tous les membres (permanents + temporaires)
+  - `POST /api/team/members` - Ajouter un intérimaire
+  - `PUT /api/team/members/{id}` - Modifier un intérimaire
+  - `DELETE /api/team/members/{id}` - Supprimer un intérimaire
+  - `GET /api/team/work-rhythms` - Rythmes de travail disponibles
+  - `GET /api/team/presence` - Statut de présence du jour
+  - `GET /api/team/dashboard` - KPIs de l'équipe
+  - `GET /api/team/workload` - Charge de travail par membre
+  - `GET /api/team/overtime` - Heures supplémentaires
+
+- **`/app/backend/time_tracking_routes.py`** : Routes de pointage
+  - `POST /api/time-tracking/clock-in` - Pointer l'arrivée
+  - `POST /api/time-tracking/clock-out` - Pointer le départ
+  - `POST /api/time-tracking/present-at-post` - Présent à poste (remplit journée complète)
+  - `POST /api/time-tracking/manual-entry` - Saisie manuelle par manager
+  - `POST /api/time-tracking/absences` - Déclarer une absence
+  - `GET /api/time-tracking/entries` - Historique des pointages
+
+**Rythmes de travail pré-configurés** :
+- `journee` : 08:00-17:00 (pause 60min)
+- `2x8_matin` : 05:00-13:00 (pause 30min)
+- `2x8_aprem` : 13:00-21:00 (pause 30min)
+- `3x8_matin` : 06:00-14:00 (pause 30min)
+- `3x8_aprem` : 14:00-22:00 (pause 30min)
+- `3x8_nuit` : 22:00-06:00 (pause 30min)
+- `nuit` : 21:00-05:00 (pause 30min)
+
+**Types d'absence supportés** : `CP` (Congés payés), `RTT`, `MALADIE`, `FORMATION`, `RQP`, `TT` (Télétravail)
+
+**Frontend** - Nouveaux fichiers :
+- **`/app/frontend/src/pages/TeamManagementPage.jsx`** : Page principale
+  - 4 onglets : Mon équipe, Pointage, Charge de travail, Tableau de bord
+  - 4 KPIs en haut : Membres, Présents, Absents, Non pointés
+  - Filtres : Tous, Permanents, Intérimaires
+
+- **`/app/frontend/src/components/TeamManagement/`** :
+  - `TeamMembersList.jsx` : Liste des membres avec avatar et badges
+  - `TimeTrackingPanel.jsx` : Interface de pointage avec 3 boutons par membre
+  - `WorkloadOverview.jsx` : Charge de travail avec barres de progression
+  - `TeamDashboardStats.jsx` : Dashboard avec KPIs et graphiques
+  - `AddTemporaryMemberDialog.jsx` : Dialog d'ajout d'intérimaire
+  - `ManualTimeEntryDialog.jsx` : Dialog de saisie manuelle
+  - `AbsenceDeclarationDialog.jsx` : Dialog de déclaration d'absence
+
+**Collections MongoDB** :
+- `team_members` : Membres temporaires/intérimaires
+- `time_entries` : Pointages journaliers
+- `absences` : Déclarations d'absence
+- `overtime_balance` : Compteurs d'heures supplémentaires
+
+**Permissions** :
+- Nouveau module `timeTracking` ajouté aux permissions utilisateur
+- Endpoint `POST /api/users/init-time-tracking-permissions` pour initialiser
+
+**Tests** : 100% backend (23/23) + 100% frontend (rapport `/app/test_reports/iteration_15.json`)
+
+---
+
+#### ✅ Feature: Organisation du Menu - P1-4 (1er Février 2026)
+**Ajout des menus "Rapports Hebdo." et "Gestion d'équipe"** à la sidebar et au système d'organisation du menu :
+
+**Modifications** :
+- **`/app/frontend/src/components/Layout/menuConfig.js`** :
+  - Ajout entrée `team-management` (ordre 17.5)
+  - Ajout entrée `weekly-reports` (ordre 12.5)
+  - Import icônes `UserCog` et `Clock`
+
+- **`/app/frontend/src/components/Personnalisation/MenuOrganizationSection.jsx`** :
+  - Ajout entrée `team-management` dans `DEFAULT_MENU_ITEMS`
+  - Ajout icônes `UserCog` et `Clock` dans `AVAILABLE_ICONS`
+
+- **`/app/backend/server.py`** :
+  - Mise à jour liste `complete_menu_items` dans endpoint `/migrate-menus`
+  - Inclut `weekly-reports` et `team-management`
+
+**Endpoint de migration** : `POST /api/user-preferences/migrate-menus`
+- Ajoute automatiquement les menus manquants aux préférences utilisateur
+
+**Tests** : API curl ✅ + Screenshot Playwright ✅
+
+---
+
 ## Tâches à venir
 
 ### P1 - Priorité Haute
+- ✅ Rapport hebdomadaire automatique (scheduler) - TERMINÉ
+- ✅ Gestion d'équipe et pointage - TERMINÉ
+- ✅ Organisation du menu - TERMINÉ
 - Validation/Approbation des demandes (workflow)
-- Rapport hebdomadaire automatique (scheduler)
-- Gestion d'équipe et pointage
 
 ### P2 - Backlog
 - Dashboard Plan de Surveillance
@@ -1375,3 +1463,4 @@ ExcelDataSource:
 ### P3 - Futur
 - Intégration calendrier externe
 - Application mobile
+- Pointage NFC (champ `badge_id` préparé dans le modèle)
