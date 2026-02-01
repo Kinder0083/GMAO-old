@@ -6852,6 +6852,173 @@ async def update_improvement_request_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============ Endpoints pour action via email (sans authentification) ============
+
+@api_router.get("/improvement-requests/email-action/validate/{token}")
+async def validate_improvement_request_email_token(token: str):
+    """Valide un token d'approbation et retourne les informations de la demande"""
+    from improvement_request_email_service import validate_approval_token
+    
+    try:
+        token_data = await validate_approval_token(token)
+        
+        if not token_data:
+            raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+        
+        if token_data.get("request_type") != "improvement_request":
+            raise HTTPException(status_code=400, detail="Token non valide pour ce type de demande")
+        
+        # Récupérer la demande
+        request_id = token_data.get("request_id")
+        req = await db.improvement_requests.find_one({"id": request_id}, {"_id": 0})
+        
+        if not req:
+            req = await db.improvement_requests.find_one({"_id": ObjectId(request_id)})
+            if req:
+                req = serialize_doc(req)
+        
+        if not req:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande n'a pas déjà été traitée
+        if req.get("status") not in ["SOUMISE", None]:
+            raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée")
+        
+        return {
+            "token_data": {
+                "action": token_data.get("action"),
+                "expiration": token_data.get("expiration")
+            },
+            "request": req
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur validation token: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/improvement-requests/email-action/{token}")
+async def process_improvement_request_email_action(token: str, action_data: dict = None):
+    """Traite une action d'approbation/rejet via le lien email"""
+    from improvement_request_email_service import validate_approval_token, mark_token_used, send_validation_notification_email
+    
+    try:
+        token_data = await validate_approval_token(token)
+        
+        if not token_data:
+            raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+        
+        if token_data.get("request_type") != "improvement_request":
+            raise HTTPException(status_code=400, detail="Token non valide pour ce type de demande")
+        
+        request_id = token_data.get("request_id")
+        user_id = token_data.get("user_id")
+        
+        # Récupérer la demande
+        req = await db.improvement_requests.find_one({"id": request_id})
+        query_filter = {"id": request_id}
+        
+        if not req:
+            try:
+                req = await db.improvement_requests.find_one({"_id": ObjectId(request_id)})
+                query_filter = {"_id": ObjectId(request_id)}
+            except:
+                pass
+        
+        if not req:
+            raise HTTPException(status_code=404, detail="Demande non trouvée")
+        
+        # Vérifier que la demande n'a pas déjà été traitée
+        current_status = req.get("status", "SOUMISE")
+        if current_status not in ["SOUMISE", None]:
+            raise HTTPException(status_code=400, detail="Cette demande a déjà été traitée")
+        
+        # Récupérer l'utilisateur qui a validé
+        validator = await db.users.find_one({"id": user_id}, {"_id": 0})
+        if not validator:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        validator_name = f"{validator.get('prenom', '')} {validator.get('nom', '')}"
+        
+        # Déterminer l'action (depuis le body ou depuis le token)
+        action = "reject"
+        if action_data and action_data.get("action"):
+            action = action_data.get("action")
+        elif token_data.get("action") == "approve":
+            action = "approve"
+        
+        new_status = "VALIDEE" if action == "approve" else "REJETEE"
+        comment = action_data.get("comment") if action_data else None
+        
+        now = datetime.now(timezone.utc)
+        
+        # Créer l'entrée d'historique
+        history_entry = {
+            "timestamp": now.isoformat(),
+            "user_id": user_id,
+            "user_name": validator_name,
+            "action": "Validation via email" if new_status == "VALIDEE" else "Rejet via email",
+            "old_status": current_status,
+            "new_status": new_status,
+            "comment": comment
+        }
+        
+        # Mettre à jour la demande
+        update_data = {
+            "status": new_status,
+            "validated_at": now.isoformat(),
+            "validated_by": user_id,
+            "validated_by_name": validator_name
+        }
+        
+        if new_status == "REJETEE" and comment:
+            update_data["rejection_reason"] = comment
+        
+        await db.improvement_requests.update_one(
+            query_filter,
+            {
+                "$set": update_data,
+                "$push": {"history": history_entry}
+            }
+        )
+        
+        # Marquer le token comme utilisé
+        await mark_token_used(token)
+        
+        # Envoyer notification au demandeur
+        try:
+            creator = await db.users.find_one({"id": req.get("created_by")}, {"_id": 0})
+            if creator:
+                await send_validation_notification_email(req, creator, new_status, validator_name, comment)
+        except Exception as email_error:
+            logger.warning(f"Erreur envoi email notification: {email_error}")
+        
+        # Broadcast WebSocket
+        updated_req = await db.improvement_requests.find_one(query_filter)
+        if updated_req:
+            updated_req = serialize_doc(updated_req)
+            await realtime_manager.emit_event(
+                "improvement_requests",
+                "status_changed",
+                updated_req
+            )
+        
+        logger.info(f"✅ Demande d'amélioration {req['titre']} {new_status.lower()} via email par {validator_name}")
+        
+        return {
+            "message": f"Demande {new_status.lower()} avec succès",
+            "status": new_status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur action email: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/improvement-requests/{request_id}/convert-to-improvement", response_model=dict)
 async def convert_to_improvement(
     request_id: str,
