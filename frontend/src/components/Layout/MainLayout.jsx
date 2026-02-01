@@ -505,10 +505,19 @@ const MainLayout = () => {
     { id: 'whiteboard', icon: 'PresentationIcon', label: 'Tableau d\'affichage', path: '/whiteboard', module: 'whiteboard', visible: true, order: 22 }
   ];
 
-  // Utiliser les préférences ou la liste par défaut
-  const userMenuItems = preferences?.menu_items && preferences.menu_items.length > 0 
-    ? preferences.menu_items 
-    : defaultMenuItems;
+  // Fusionner les préférences utilisateur avec les items par défaut (pour ajouter les nouveaux)
+  const mergeMenuItems = (savedItems, defaultItems) => {
+    if (!savedItems || savedItems.length === 0) return defaultItems;
+    
+    const savedIds = new Set(savedItems.map(item => item.id));
+    const newItems = defaultItems.filter(item => !savedIds.has(item.id));
+    
+    // Ajouter les nouveaux items à la fin
+    return [...savedItems, ...newItems];
+  };
+
+  // Utiliser les préférences fusionnées avec les nouveaux items
+  const userMenuItems = mergeMenuItems(preferences?.menu_items, defaultMenuItems);
 
   // Trier par ordre et filtrer par visibilité et permissions
   const menuItems = userMenuItems
