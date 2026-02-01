@@ -38,19 +38,32 @@ const CameraThumbnail = ({
   isSelected
 }) => {
   const [snapshot, setSnapshot] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  // Charger le snapshot
+  // Charger le snapshot uniquement si la caméra est en ligne
   const loadSnapshot = useCallback(async () => {
+    // Ne pas essayer de charger si la caméra est hors ligne
+    if (!camera.is_online) {
+      setLoading(false);
+      setError(true);
+      return;
+    }
+    
     setLoading(true);
     setError(false);
     
     try {
       const token = localStorage.getItem('token');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // Timeout 8s côté client
+      
       const response = await fetch(`${API_URL}/api/cameras/${camera.id}/snapshot`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) throw new Error('Erreur snapshot');
       
@@ -63,14 +76,18 @@ const CameraThumbnail = ({
         setError(true);
       }
     } catch (err) {
-      console.error(`Erreur snapshot ${camera.name}:`, err);
+      if (err.name === 'AbortError') {
+        console.log(`Timeout snapshot ${camera.name}`);
+      } else {
+        console.error(`Erreur snapshot ${camera.name}:`, err);
+      }
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [camera.id, camera.name]);
+  }, [camera.id, camera.name, camera.is_online]);
 
-  // Charger au montage et à chaque refreshKey
+  // Charger au montage et à chaque refreshKey (seulement si en ligne)
   useEffect(() => {
     loadSnapshot();
   }, [loadSnapshot, refreshKey]);
