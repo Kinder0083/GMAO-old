@@ -71,6 +71,8 @@ const AVAILABLE_ICONS = [
   { id: 'Activity', icon: Activity, label: 'IoT' },
   { id: 'Database', icon: Database, label: 'Données' },
   { id: 'MessageSquare', icon: MessageSquare, label: 'Messages' },
+  { id: 'UserCog', icon: UserCog, label: 'Gestion Équipe' },
+  { id: 'Clock', icon: Clock, label: 'Pointage' },
 ];
 
 const DEFAULT_MENU_ITEMS = [
