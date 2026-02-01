@@ -11,7 +11,8 @@ import {
   Package,
   Eye,
   Mail,
-  Settings
+  Settings,
+  Camera
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
@@ -20,6 +21,7 @@ import AIButton from '../Common/AIButton';
 import ManualButton from '../Common/ManualButton';
 import AlertNotifications from '../Common/AlertNotifications';
 import NotificationsDropdown from '../Common/NotificationsDropdown';
+import CameraAlertIcon from '../Common/CameraAlertIcon';
 
 const Header = ({
   sidebarOpen,
