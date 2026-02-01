@@ -4,12 +4,14 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useToast } from '../hooks/use-toast';
-import { User, Mail, Phone, Lock, Bell, Globe } from 'lucide-react';
+import { User, Mail, Phone, Lock, Bell, Globe, Info } from 'lucide-react';
 import { Switch } from '../components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import ChangePasswordDialog from '../components/Common/ChangePasswordDialog';
 import { GuidedTourSettings } from '../components/Settings';
 import { authAPI } from '../services/api';
+import api from '../services/api';
 import { formatErrorMessage } from '../utils/errorFormatter';
 
 const Settings = () => {
@@ -17,6 +19,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+  const [responsableInfo, setResponsableInfo] = useState(null); // Info du responsable de service
   const [settings, setSettings] = useState({
     nom: '',
     prenom: '',
@@ -35,6 +38,25 @@ const Settings = () => {
     loadUserProfile();
     loadUsers();
   }, []);
+
+  // Charger le responsable de service quand le service change
+  useEffect(() => {
+    if (settings.service) {
+      loadServiceManager(settings.service);
+    } else {
+      setResponsableInfo(null);
+    }
+  }, [settings.service]);
+
+  const loadServiceManager = async (service) => {
+    try {
+      const response = await api.get(`/users/service-manager/${encodeURIComponent(service)}`);
+      setResponsableInfo(response.data);
+    } catch (error) {
+      // Pas de responsable trouvé pour ce service
+      setResponsableInfo(null);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
