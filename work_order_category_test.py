@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://approval-flow-62.preview.emergentagent.com/api"
+BACKEND_URL = "https://team-tracker-204.preview.emergentagent.com/api"
 
 # Test credentials - admin account as specified in the request
 ADMIN_EMAIL = "admin@gmao-iris.local"

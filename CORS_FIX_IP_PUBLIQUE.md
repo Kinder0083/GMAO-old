@@ -50,7 +50,7 @@ app.add_middleware(
 
 ```bash
 # Test depuis n'importe quelle IP
-curl https://approval-flow-62.preview.emergentagent.com/api/version
+curl https://team-tracker-204.preview.emergentagent.com/api/version
 
 # Résultat attendu :
 {"version":"1.5.0","versionName":"...","releaseDate":"..."}
