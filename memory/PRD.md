@@ -144,6 +144,32 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 **Tests** : API curl ✅ + Screenshot Playwright ✅ (page avec modèle, envoi test réussi, PDF généré)
 
+#### ✅ Feature: Templates pré-configurés automatiques - Ajout
+**Ajout de templates pré-configurés** qui s'installent automatiquement pour chaque service :
+
+**Backend** - Nouveau fichier :
+- **`/app/backend/default_report_templates.py`** : Définitions des templates par service
+  - 8 templates optimisés : MAINTENANCE, QHSE, PRODUCTION, LOGISTIQUE, LABO, INDUS, DIRECTION, ADV
+  - Template générique pour les services non définis
+  - Fonction `create_default_template_for_service()` pour création unitaire
+  - Fonction `create_default_templates_for_all_services()` pour initialisation globale
+
+**Nouveaux endpoints** :
+- `GET /api/weekly-reports/default-templates` - Liste des templates disponibles
+- `POST /api/weekly-reports/init-default-templates` - Initialise tous les services (admin)
+- `POST /api/weekly-reports/create-default-template/{service}` - Crée pour un service
+
+**Automatisation** :
+- Création automatique du template quand un responsable est assigné à un nouveau service (via `roles_routes.py`)
+- Templates créés **inactifs par défaut** (le responsable les active manuellement)
+- Option `include_service_managers: true` par défaut
+
+**Frontend** - Mise à jour `ReportGlobalSettings.jsx` :
+- Section "Templates pré-configurés" avec liste des services disponibles
+- Bouton "Créer les templates pour tous les services"
+
+**Tests** : API curl ✅ + Screenshot Playwright ✅ (4 modèles affichés, 3 auto-générés)
+
 ---
 
 ### Session du 31 Janvier 2026
