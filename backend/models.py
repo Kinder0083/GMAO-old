@@ -236,7 +236,9 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             purchaseHistory=ModulePermission(view=True, edit=False, delete=False),
             importExport=ModulePermission(view=False, edit=False, delete=False),
             journal=ModulePermission(view=False, edit=False, delete=False),
-            chatLive=ModulePermission(view=True, edit=True, delete=False)
+            chatLive=ModulePermission(view=True, edit=True, delete=False),
+            cameras=ModulePermission(view=False, edit=False, delete=False),
+            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False)
         )
     
     # PROD (RSP_PROD et PROD) : Demande d'inter./Demandes d'amél./Ordres de travail/Améliorations/Equipement en visualisation et modification
