@@ -62,7 +62,35 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
-### Session du 31 Janvier 2026 (Session actuelle)
+### Session du 1er Février 2026 (Session actuelle)
+
+#### ✅ Feature: Centre d'aide (Support Request) - P0
+**Implémentation complète** d'un bouton "Centre d'aide" sur la page Paramètres permettant aux utilisateurs d'envoyer des demandes d'aide aux administrateurs :
+
+**Backend** (`/app/backend/server.py`) :
+- `POST /api/support/request` - Envoie une demande de support aux administrateurs
+  - Paramètres : `subject` (optionnel), `message` (requis)
+  - Envoie un email à tous les administrateurs actifs
+  - Sauvegarde la demande dans la collection `support_requests`
+  - Retourne `success: true` et message de confirmation
+
+**Frontend** :
+- **Composant `SupportRequestDialog.jsx`** (`/app/frontend/src/components/Common/`) :
+  - Dialogue modal avec icône et titre "Centre d'aide"
+  - Champ sujet (optionnel) et message (requis)
+  - État de chargement pendant l'envoi
+  - Écran de succès avec checkmark vert et message de confirmation
+  - Fermeture automatique après 2 secondes
+
+- **Page `Settings.jsx`** :
+  - Carte "Besoin d'aide ?" dans la sidebar avec bouton "Centre d'aide"
+  - Intégration du dialogue `SupportRequestDialog`
+
+**Tests** : API curl ✅ + Screenshot Playwright ✅ (dialogue ouvert, formulaire rempli, succès)
+
+---
+
+### Session du 31 Janvier 2026
 
 #### ✅ Feature: Consigne Générale (envoi par service) - P0
 **Implémentation complète** de la fonctionnalité "Consigne générale" permettant d'envoyer des messages pop-up à tous les utilisateurs d'un service ou à tous les services :
