@@ -9,10 +9,16 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 - **Database**: MongoDB
 - **Real-time**: WebSockets via FastAPI
 - **AI Integration**: Google Gemini 2.5 Flash (Emergent LLM Key)
+- **Video Surveillance**: RTSP/ONVIF + OpenCV + FFmpeg (HLS streaming)
 
 ## Comptes de Test
 - **Admin**: admin@test.com / password
 - **User**: user@test.com / password
+
+## Script d'Installation
+- **Version actuelle**: `gmao-iris-v1.1.7-install-auto.sh`
+- Compatible Proxmox 9.0 / Debian 12
+- Installation automatique de toutes les dépendances (MongoDB, FFmpeg, OpenCV, etc.)
 
 ---
 
