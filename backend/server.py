@@ -4292,6 +4292,11 @@ async def submit_support_request(
                 detail="Aucun administrateur disponible pour recevoir la demande"
             )
         
+        # Préparer les valeurs
+        subject_display = request.subject or "Demande d'assistance"
+        user_display = user_name or user_email
+        date_display = now.strftime('%d/%m/%Y à %H:%M')
+        
         # Créer l'email
         email_html = f"""
         <html>
@@ -4299,7 +4304,7 @@ async def submit_support_request(
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                 <!-- En-tête -->
                 <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
-                    <h1 style="color: white; margin: 0; font-size: 22px;">💬 Demande d'assistance</h1>
+                    <h1 style="color: white; margin: 0; font-size: 22px;">Demande d'assistance</h1>
                 </div>
                 
                 <!-- Corps -->
@@ -4308,11 +4313,11 @@ async def submit_support_request(
                     
                     <!-- Informations utilisateur -->
                     <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 14px;">👤 Informations de l'utilisateur</h3>
+                        <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 14px;">Informations de l'utilisateur</h3>
                         <table style="width: 100%; font-size: 14px;">
                             <tr>
                                 <td style="padding: 5px 0; color: #64748b; width: 100px;">Nom</td>
-                                <td style="padding: 5px 0; font-weight: 500;">{user_name or 'Non défini'}</td>
+                                <td style="padding: 5px 0; font-weight: 500;">{user_display}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 5px 0; color: #64748b;">Email</td>
@@ -4331,15 +4336,15 @@ async def submit_support_request(
                     
                     <!-- Sujet -->
                     <div style="margin-bottom: 15px;">
-                        <h3 style="margin: 0 0 5px 0; color: #1e40af; font-size: 14px;">📋 Sujet</h3>
+                        <h3 style="margin: 0 0 5px 0; color: #1e40af; font-size: 14px;">Sujet</h3>
                         <p style="margin: 0; padding: 10px; background: #eff6ff; border-radius: 5px; font-weight: 500;">
-                            {request.subject or 'Demande d\\'assistance'}
+                            {subject_display}
                         </p>
                     </div>
                     
                     <!-- Message -->
                     <div style="margin-bottom: 20px;">
-                        <h3 style="margin: 0 0 5px 0; color: #1e40af; font-size: 14px;">💬 Message</h3>
+                        <h3 style="margin: 0 0 5px 0; color: #1e40af; font-size: 14px;">Message</h3>
                         <div style="padding: 15px; background: #fefce8; border-left: 4px solid #eab308; border-radius: 0 5px 5px 0;">
                             <p style="margin: 0; white-space: pre-wrap;">{request.message}</p>
                         </div>
@@ -4350,10 +4355,10 @@ async def submit_support_request(
                         <p style="margin: 0 0 10px 0; color: #166534;">
                             Veuillez répondre directement à cet utilisateur par email.
                         </p>
-                        <a href="mailto:{user_email}?subject=Re: {request.subject}" 
+                        <a href="mailto:{user_email}?subject=Re: {subject_display}" 
                            style="display: inline-block; padding: 10px 25px; background-color: #22c55e; 
                                   color: white; text-decoration: none; border-radius: 5px; font-weight: 500;">
-                            ✉️ Répondre à {user_name or user_email}
+                            Répondre à {user_display}
                         </a>
                     </div>
                 </div>
@@ -4361,7 +4366,7 @@ async def submit_support_request(
                 <!-- Pied de page -->
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
                     <p style="color: #aaa; font-size: 10px; margin: 0; text-align: center;">
-                        Demande envoyée le {now.strftime('%d/%m/%Y à %H:%M')} depuis GMAO Iris - Centre d'aide
+                        Demande envoyée le {date_display} depuis GMAO Iris - Centre d'aide
                     </p>
                 </div>
             </div>
