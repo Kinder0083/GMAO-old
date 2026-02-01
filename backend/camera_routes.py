@@ -155,7 +155,7 @@ async def check_camera_permission(current_user: dict, require_edit: bool = False
 # ========================
 
 @router.get("", response_model=List[CameraResponse])
-async def list_cameras(current_user: dict = Depends(lambda: None)):
+async def list_cameras(current_user: dict = Depends(get_current_user)):
     """Liste toutes les caméras"""
     try:
         cameras = []
@@ -168,7 +168,7 @@ async def list_cameras(current_user: dict = Depends(lambda: None)):
 
 
 @router.get("/count")
-async def get_cameras_count(current_user: dict = Depends(lambda: None)):
+async def get_cameras_count(current_user: dict = Depends(get_current_user)):
     """Retourne le nombre de caméras et stats"""
     try:
         total = await db.cameras.count_documents({})
@@ -187,7 +187,7 @@ async def get_cameras_count(current_user: dict = Depends(lambda: None)):
 
 
 @router.get("/{camera_id}", response_model=CameraResponse)
-async def get_camera(camera_id: str, current_user: dict = Depends(lambda: None)):
+async def get_camera(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Récupère une caméra par ID"""
     try:
         camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
@@ -201,7 +201,7 @@ async def get_camera(camera_id: str, current_user: dict = Depends(lambda: None))
 
 
 @router.post("", response_model=CameraResponse)
-async def create_camera(camera_data: CameraCreate, current_user: dict = Depends(lambda: None)):
+async def create_camera(camera_data: CameraCreate, current_user: dict = Depends(get_current_user)):
     """Crée une nouvelle caméra"""
     try:
         # Vérifier si le nom existe déjà
@@ -238,7 +238,7 @@ async def create_camera(camera_data: CameraCreate, current_user: dict = Depends(
 
 
 @router.put("/{camera_id}", response_model=CameraResponse)
-async def update_camera(camera_id: str, camera_data: CameraUpdate, current_user: dict = Depends(lambda: None)):
+async def update_camera(camera_id: str, camera_data: CameraUpdate, current_user: dict = Depends(get_current_user)):
     """Met à jour une caméra"""
     try:
         camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
@@ -278,7 +278,7 @@ async def update_camera(camera_id: str, camera_data: CameraUpdate, current_user:
 
 
 @router.delete("/{camera_id}")
-async def delete_camera(camera_id: str, current_user: dict = Depends(lambda: None)):
+async def delete_camera(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Supprime une caméra"""
     try:
         camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
@@ -305,7 +305,7 @@ async def delete_camera(camera_id: str, current_user: dict = Depends(lambda: Non
 # ========================
 
 @router.post("/{camera_id}/test")
-async def test_camera(camera_id: str, current_user: dict = Depends(lambda: None)):
+async def test_camera(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Teste la connexion à une caméra"""
     try:
         camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
@@ -341,7 +341,7 @@ async def test_camera_url(
     rtsp_url: str = Query(...),
     username: str = Query(""),
     password: str = Query(""),
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """Teste une URL RTSP sans créer de caméra"""
     result = await test_camera_connection(rtsp_url, username, password)
@@ -349,7 +349,7 @@ async def test_camera_url(
 
 
 @router.get("/{camera_id}/snapshot")
-async def get_camera_snapshot(camera_id: str, current_user: dict = Depends(lambda: None)):
+async def get_camera_snapshot(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Capture et retourne un snapshot en base64"""
     try:
         camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
@@ -391,7 +391,7 @@ async def get_camera_snapshot(camera_id: str, current_user: dict = Depends(lambd
 
 
 @router.get("/{camera_id}/snapshot/latest")
-async def get_latest_snapshot_file(camera_id: str, current_user: dict = Depends(lambda: None)):
+async def get_latest_snapshot_file(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Retourne le dernier snapshot sauvegardé (fichier)"""
     try:
         filepath = get_latest_snapshot_path(camera_id)
@@ -409,7 +409,7 @@ async def get_latest_snapshot_file(camera_id: str, current_user: dict = Depends(
 # ========================
 
 @router.post("/{camera_id}/stream/start")
-async def start_camera_stream(camera_id: str, current_user: dict = Depends(lambda: None)):
+async def start_camera_stream(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Démarre le streaming HLS pour une caméra"""
     try:
         camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
@@ -444,7 +444,7 @@ async def start_camera_stream(camera_id: str, current_user: dict = Depends(lambd
 
 
 @router.post("/{camera_id}/stream/stop")
-async def stop_camera_stream(camera_id: str, current_user: dict = Depends(lambda: None)):
+async def stop_camera_stream(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Arrête le streaming HLS pour une caméra"""
     stopped = stop_hls_stream(camera_id)
     return {
@@ -478,7 +478,7 @@ async def serve_hls_file(camera_id: str, filename: str):
 @router.get("/discover/onvif")
 async def discover_onvif(
     timeout: int = Query(10, ge=5, le=30),
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """Découvre les caméras ONVIF sur le réseau"""
     try:
@@ -507,7 +507,7 @@ async def discover_onvif(
 @router.post("/discover/onvif/add")
 async def add_discovered_camera(
     camera_data: OnvifCameraAdd,
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """Ajoute une caméra découverte par ONVIF"""
     try:
@@ -561,7 +561,7 @@ async def add_discovered_camera(
 # ========================
 
 @router.get("/settings/snapshot")
-async def get_snapshot_settings(current_user: dict = Depends(lambda: None)):
+async def get_snapshot_settings(current_user: dict = Depends(get_current_user)):
     """Récupère les paramètres de snapshot"""
     try:
         settings = await db.camera_settings.find_one({"type": "snapshot"})
@@ -589,7 +589,7 @@ async def get_snapshot_settings(current_user: dict = Depends(lambda: None)):
 @router.put("/settings/snapshot")
 async def update_snapshot_settings(
     settings_data: CameraSettingsUpdate,
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """Met à jour les paramètres de snapshot"""
     try:
@@ -619,7 +619,7 @@ async def update_snapshot_settings(
 # ========================
 
 @router.post("/cleanup/snapshots")
-async def cleanup_all_snapshots(current_user: dict = Depends(lambda: None)):
+async def cleanup_all_snapshots(current_user: dict = Depends(get_current_user)):
     """Lance le nettoyage des snapshots pour toutes les caméras"""
     try:
         settings = await db.camera_settings.find_one({"type": "snapshot"})
