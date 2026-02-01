@@ -184,6 +184,71 @@ const ReportGlobalSettings = ({ onSave }) => {
           </ul>
         </CardContent>
       </Card>
+
+      {/* Default Templates Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-600" />
+            Templates pré-configurés
+          </CardTitle>
+          <CardDescription>
+            Créez automatiquement des templates optimisés pour chaque service
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {defaultTemplates.map(template => (
+              <div key={template.service} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm">
+                <FileText className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                <span className="truncate">{template.service}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="pt-4 border-t">
+            <p className="text-sm text-gray-600 mb-3">
+              Cette action crée un template par défaut pour chaque service qui n'en possède pas encore.
+              Les templates sont créés <strong>inactifs</strong> par défaut.
+            </p>
+            <Button 
+              onClick={async () => {
+                setInitializingTemplates(true);
+                try {
+                  const response = await api.post('/weekly-reports/init-default-templates');
+                  toast({
+                    title: 'Succès',
+                    description: response.data.message
+                  });
+                  if (onSave) onSave();
+                } catch (error) {
+                  toast({
+                    title: 'Erreur',
+                    description: error.response?.data?.detail || 'Impossible de créer les templates',
+                    variant: 'destructive'
+                  });
+                } finally {
+                  setInitializingTemplates(false);
+                }
+              }}
+              disabled={initializingTemplates}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {initializingTemplates ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Création en cours...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Créer les templates pour tous les services
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
