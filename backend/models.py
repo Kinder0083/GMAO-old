@@ -60,6 +60,7 @@ class UserPermissions(BaseModel):
     whiteboard: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Tableau d'affichage
     achat: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Permission Achat - Permet de modifier les statuts des demandes d'achat
     timeTracking: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Pointage horaire - Permet de voir les données des autres utilisateurs
+    cameras: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Caméras RTSP/ONVIF - Visualisation et gestion des caméras
 
 # Fonction helper pour obtenir les permissions par défaut selon le rôle
 def get_default_permissions_by_role(role: str) -> UserPermissions:
