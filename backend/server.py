@@ -8871,6 +8871,12 @@ async def startup_scheduler():
         await init_system_roles()
         logger.info("✅ Rôles système initialisés")
         
+        # Initialiser le scheduler des rapports hebdomadaires
+        from weekly_report_scheduler import init_report_scheduler, load_all_report_schedules
+        init_report_scheduler(scheduler, db)
+        scheduled_count = await load_all_report_schedules(db)
+        logger.info(f"✅ Scheduler rapports initialisé ({scheduled_count} rapport(s) planifié(s))")
+        
     except Exception as e:
         logger.error(f"❌ Erreur lors du démarrage du scheduler: {str(e)}")
 
