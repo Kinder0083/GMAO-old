@@ -3546,11 +3546,23 @@ async def get_service_manager_for_user(
         if not manager_entry:
             raise HTTPException(status_code=404, detail="Aucun responsable assigné pour ce service")
         
-        # Récupérer les infos du responsable
+        user_id = manager_entry["user_id"]
+        
+        # Récupérer les infos du responsable (chercher par id OU par _id)
         manager = await db.users.find_one(
-            {"id": manager_entry["user_id"], "statut": "actif"},
+            {"id": user_id, "statut": "actif"},
             {"_id": 0, "id": 1, "nom": 1, "prenom": 1, "email": 1, "role": 1}
         )
+        
+        # Si non trouvé, essayer avec _id (ObjectId)
+        if not manager:
+            try:
+                manager = await db.users.find_one(
+                    {"_id": ObjectId(user_id), "statut": "actif"},
+                    {"_id": 0, "id": 1, "nom": 1, "prenom": 1, "email": 1, "role": 1}
+                )
+            except:
+                pass
         
         if not manager:
             raise HTTPException(status_code=404, detail="Responsable non trouvé ou inactif")
