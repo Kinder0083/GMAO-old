@@ -171,5 +171,7 @@ export {
   Mail,
   Radio,
   Activity,
-  Presentation
+  Presentation,
+  UserCog,
+  Clock
 };
