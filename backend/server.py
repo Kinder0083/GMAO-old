@@ -8478,6 +8478,11 @@ init_whiteboard_audit(audit_service)  # Initialiser le service d'audit pour le w
 api_router.include_router(whiteboard_router)
 api_router.include_router(whiteboard_object_router)  # Nouvelles routes API granulaires
 
+# Routes des rapports hebdomadaires/mensuels/annuels
+from weekly_report_routes import router as weekly_report_router, set_database as set_weekly_report_db
+set_weekly_report_db(db)
+api_router.include_router(weekly_report_router)
+
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 
