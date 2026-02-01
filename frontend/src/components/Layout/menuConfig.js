@@ -176,5 +176,6 @@ export {
   Activity,
   Presentation,
   UserCog,
-  Clock
+  Clock,
+  Camera
 };
