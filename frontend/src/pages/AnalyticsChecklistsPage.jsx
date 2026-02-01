@@ -342,6 +342,22 @@ const AnalyticsChecklistsPage = () => {
           <Button variant="outline" size="sm" onClick={fetchData} data-testid="refresh-btn">
             <RefreshCw className="w-4 h-4" />
           </Button>
+          
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={exportToPDF}
+            disabled={exporting}
+            data-testid="export-pdf-btn"
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4 mr-2" />
+            )}
+            Export PDF
+          </Button>
         </div>
       </div>
 
