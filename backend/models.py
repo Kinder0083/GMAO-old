@@ -172,7 +172,9 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             settings=ModulePermission(view=False, edit=False, delete=False),
             personalization=ModulePermission(view=True, edit=True, delete=False),
-            chatLive=ModulePermission(view=True, edit=True, delete=False)
+            chatLive=ModulePermission(view=True, edit=True, delete=False),
+            cameras=ModulePermission(view=True, edit=False, delete=False),  # Directeur peut voir les caméras
+            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False)  # Directeur peut voir les analytics
         )
     
     # QHSE : Demande d'inter./Demandes d'amél. en visualisation et modification
