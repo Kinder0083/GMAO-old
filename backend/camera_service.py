@@ -245,10 +245,10 @@ async def capture_snapshot_base64(camera: Dict[str, Any]) -> Optional[str]:
         
         full_url = build_rtsp_url_with_auth(rtsp_url, username, password)
         
-        cap = cv2.VideoCapture(full_url)
+        cap = cv2.VideoCapture(full_url, cv2.CAP_FFMPEG)
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 10000)
-        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
+        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)  # 5 secondes max
+        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)  # 5 secondes max
         
         ret, frame = cap.read()
         cap.release()
