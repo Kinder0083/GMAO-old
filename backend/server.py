@@ -3532,6 +3532,38 @@ async def get_default_permissions_for_role(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erreur lors de la récupération des permissions: {str(e)}")
 
+
+@api_router.get("/users/service-manager/{service}")
+async def get_service_manager_for_user(
+    service: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer le responsable de service pour un service donné"""
+    try:
+        # Chercher dans service_responsables
+        manager_entry = await db.service_responsables.find_one({"service": service})
+        
+        if not manager_entry:
+            raise HTTPException(status_code=404, detail="Aucun responsable assigné pour ce service")
+        
+        # Récupérer les infos du responsable
+        manager = await db.users.find_one(
+            {"id": manager_entry["user_id"], "statut": "actif"},
+            {"_id": 0, "id": 1, "nom": 1, "prenom": 1, "email": 1, "role": 1}
+        )
+        
+        if not manager:
+            raise HTTPException(status_code=404, detail="Responsable non trouvé ou inactif")
+        
+        return manager
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération responsable service: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.put("/users/{user_id}/permissions", response_model=User)
 async def update_user_permissions(
     user_id: str, 
