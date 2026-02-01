@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# GMAO Iris v1.1.5 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
+# GMAO Iris v1.1.6 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
 # 
+# NOUVEAUTÉS v1.1.6:
+# - Module Caméras RTSP/ONVIF (surveillance vidéo)
+# - Dépendances FFmpeg, OpenCV ajoutées automatiquement
+# - Module Gestion d'équipe et Pointage horaire
+# - Rapports hebdomadaires automatiques
+#
 # NOUVEAUTÉS v1.1.5:
 # - Manuel utilisateur enrichi : 24 chapitres, 70+ sections
 # - Documentation des Ordres Type (Modèles d'OT)
