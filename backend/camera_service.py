@@ -212,13 +212,11 @@ async def capture_snapshot(camera: Dict[str, Any]) -> Optional[str]:
         filename = f"snapshot_{timestamp}.jpg"
         filepath = camera_folder / filename
         
-        # Capture via OpenCV
-        cap = cv2.VideoCapture(full_url)
+        # Capture via OpenCV avec timeout court (5 secondes)
+        cap = cv2.VideoCapture(full_url, cv2.CAP_FFMPEG)
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        
-        # Timeout de 10 secondes
-        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 10000)
-        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
+        cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)  # 5 secondes max
+        cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)  # 5 secondes max
         
         ret, frame = cap.read()
         cap.release()
