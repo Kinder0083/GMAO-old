@@ -70,7 +70,9 @@ const MODULES = [
   { key: 'mqttLogs', label: 'Logs MQTT' },
   { key: 'whiteboard', label: 'Tableau d\'affichage' },
   { key: 'achat', label: 'Gestion achats' },
-  { key: 'timeTracking', label: 'Pointage horaire' }
+  { key: 'timeTracking', label: 'Pointage horaire' },
+  { key: 'cameras', label: 'Caméras' },
+  { key: 'analyticsChecklists', label: 'Analytics Checklists' }
 ];
 
 // Couleurs disponibles pour les badges
