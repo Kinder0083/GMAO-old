@@ -299,7 +299,9 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             settings=ModulePermission(view=False, edit=False, delete=False),
             personalization=ModulePermission(view=True, edit=True, delete=False),
             journal=ModulePermission(view=False, edit=False, delete=False),
-            chatLive=ModulePermission(view=True, edit=True, delete=False)
+            chatLive=ModulePermission(view=True, edit=True, delete=False),
+            cameras=ModulePermission(view=False, edit=False, delete=False),
+            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False)
         )
     
     # LOGISTIQUE : Même que PROD mais peut-être avec accès Fournisseurs
