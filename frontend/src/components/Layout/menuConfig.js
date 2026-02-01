@@ -73,6 +73,7 @@ export const iconMap = {
   'PresentationIcon': Presentation,
   'UserCog': UserCog,
   'Clock': Clock,
+  'Camera': Camera,
   'Menu': Menu,
   'X': X,
   'ChevronLeft': ChevronLeft,
