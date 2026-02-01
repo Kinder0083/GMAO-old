@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# GMAO Iris v1.1.7 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
+# GMAO Iris v1.1.8 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
 # 
+# NOUVEAUTÉS v1.1.8:
+# - Analytics Checklists : Dashboard d'analyse des résultats des contrôles
+#   préventifs avec graphiques, tendances et export PDF
+# - Alertes Caméras : Notifications email automatiques quand une caméra 
+#   passe hors ligne (configurable par caméra avec délai personnalisé)
+# - Icône caméra dans le header avec dropdown des alertes actives
+# - Dépendance jspdf ajoutée pour l'export PDF
+# - Fusion automatique des nouveaux menus avec les préférences existantes
+#
 # NOUVEAUTÉS v1.1.7:
 # - CORRECTIF: Persistance des mots de passe caméras après redémarrage
 #   (Ajout clé de chiffrement CAMERA_ENCRYPTION_KEY dans .env)
