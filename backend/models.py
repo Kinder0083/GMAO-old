@@ -2994,3 +2994,182 @@ class Notification(NotificationBase):
 
     class Config:
         from_attributes = True
+
+
+# ==================== WEEKLY REPORT MODELS ====================
+
+class ReportFrequency(str, Enum):
+    """Fréquence d'envoi des rapports"""
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    ANNUAL = "annual"
+
+class DayOfWeek(str, Enum):
+    """Jour de la semaine pour l'envoi"""
+    MONDAY = "monday"
+    TUESDAY = "tuesday"
+    WEDNESDAY = "wednesday"
+    THURSDAY = "thursday"
+    FRIDAY = "friday"
+    SATURDAY = "saturday"
+    SUNDAY = "sunday"
+
+class ReportPeriod(str, Enum):
+    """Période couverte par le rapport"""
+    PREVIOUS_WEEK = "previous_week"
+    CURRENT_WEEK = "current_week"
+    PREVIOUS_MONTH = "previous_month"
+    CURRENT_MONTH = "current_month"
+    PREVIOUS_YEAR = "previous_year"
+    LAST_7_DAYS = "last_7_days"
+    LAST_30_DAYS = "last_30_days"
+    LAST_365_DAYS = "last_365_days"
+
+class ReportSendStatus(str, Enum):
+    """Statut d'envoi d'un rapport"""
+    SENT = "sent"
+    FAILED = "failed"
+    PARTIAL = "partial"
+
+# --- Sous-modèles pour les sections ---
+class WorkOrdersSectionConfig(BaseModel):
+    """Configuration de la section Ordres de Travail"""
+    enabled: bool = True
+    include_created: bool = True
+    include_completed: bool = True
+    include_overdue: bool = True
+    include_in_progress: bool = True
+    include_completion_rate: bool = True
+
+class EquipmentSectionConfig(BaseModel):
+    """Configuration de la section Équipements"""
+    enabled: bool = True
+    include_broken: bool = True
+    include_maintenance: bool = True
+    include_availability: bool = True
+    include_alerts: bool = True
+
+class PendingRequestsSectionConfig(BaseModel):
+    """Configuration de la section Demandes en attente"""
+    enabled: bool = True
+    include_improvements: bool = True
+    include_purchases: bool = True
+    include_interventions: bool = True
+
+class TeamPerformanceSectionConfig(BaseModel):
+    """Configuration de la section Performance équipe"""
+    enabled: bool = True
+    include_time_spent: bool = True
+    include_by_technician: bool = True
+
+class ReportSectionsConfig(BaseModel):
+    """Configuration complète des sections du rapport"""
+    work_orders: WorkOrdersSectionConfig = WorkOrdersSectionConfig()
+    equipment: EquipmentSectionConfig = EquipmentSectionConfig()
+    pending_requests: PendingRequestsSectionConfig = PendingRequestsSectionConfig()
+    team_performance: TeamPerformanceSectionConfig = TeamPerformanceSectionConfig()
+
+# --- Modèle principal du template ---
+class ReportScheduleConfig(BaseModel):
+    """Configuration de la planification du rapport"""
+    frequency: ReportFrequency = ReportFrequency.WEEKLY
+    day_of_week: Optional[DayOfWeek] = DayOfWeek.MONDAY  # Pour hebdomadaire
+    day_of_month: Optional[int] = 1  # Pour mensuel (1-31)
+    month_of_year: Optional[int] = 1  # Pour annuel (1-12)
+    time: str = "07:00"  # HH:MM format
+    timezone: str = "Europe/Paris"
+
+class ReportRecipientsConfig(BaseModel):
+    """Configuration des destinataires"""
+    emails: List[str] = []
+    include_service_managers: bool = False
+
+class WeeklyReportTemplateCreate(BaseModel):
+    """Création d'un modèle de rapport"""
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    service: str = Field(..., min_length=1)
+    is_active: bool = True
+    schedule: ReportScheduleConfig = ReportScheduleConfig()
+    recipients: ReportRecipientsConfig = ReportRecipientsConfig()
+    sections: ReportSectionsConfig = ReportSectionsConfig()
+    period: ReportPeriod = ReportPeriod.PREVIOUS_WEEK
+
+class WeeklyReportTemplateUpdate(BaseModel):
+    """Mise à jour d'un modèle de rapport"""
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = None
+    service: Optional[str] = None
+    is_active: Optional[bool] = None
+    schedule: Optional[ReportScheduleConfig] = None
+    recipients: Optional[ReportRecipientsConfig] = None
+    sections: Optional[ReportSectionsConfig] = None
+    period: Optional[ReportPeriod] = None
+
+class WeeklyReportTemplate(BaseModel):
+    """Modèle de rapport complet"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    service: str
+    is_active: bool = True
+    
+    schedule: ReportScheduleConfig = ReportScheduleConfig()
+    recipients: ReportRecipientsConfig = ReportRecipientsConfig()
+    sections: ReportSectionsConfig = ReportSectionsConfig()
+    period: ReportPeriod = ReportPeriod.PREVIOUS_WEEK
+    
+    # Métadonnées
+    created_by: str
+    created_by_name: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    last_sent_at: Optional[str] = None
+    send_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+# --- Historique des envois ---
+class WeeklyReportHistoryCreate(BaseModel):
+    """Création d'une entrée d'historique"""
+    template_id: str
+    template_name: str
+    period_start: str
+    period_end: str
+    recipients: List[str]
+    status: ReportSendStatus = ReportSendStatus.SENT
+    pdf_path: Optional[str] = None
+    email_count: int = 0
+    errors: List[str] = []
+
+class WeeklyReportHistory(WeeklyReportHistoryCreate):
+    """Entrée d'historique complète"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sent_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    sent_by: Optional[str] = None
+    sent_by_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Paramètres globaux ---
+class WeeklyReportSettingsUpdate(BaseModel):
+    """Mise à jour des paramètres globaux"""
+    enabled: Optional[bool] = None
+    default_timezone: Optional[str] = None
+    sender_email: Optional[str] = None
+    sender_name: Optional[str] = None
+
+class WeeklyReportSettings(BaseModel):
+    """Paramètres globaux des rapports"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    enabled: bool = True
+    default_timezone: str = "Europe/Paris"
+    sender_email: Optional[str] = None
+    sender_name: str = "GMAO Iris - Rapports"
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    class Config:
+        from_attributes = True
+
