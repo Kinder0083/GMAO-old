@@ -200,6 +200,7 @@ function App() {
             <Route path="weekly-reports" element={<WeeklyReportsPage />} />
             <Route path="team-management" element={<TeamManagementPage />} />
             <Route path="cameras" element={<CamerasPage />} />
+            <Route path="analytics/checklists" element={<AnalyticsChecklistsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
