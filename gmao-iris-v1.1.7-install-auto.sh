@@ -4,6 +4,9 @@
 # GMAO Iris v1.1.7 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
 # 
 # NOUVEAUTÉS v1.1.7:
+# - CORRECTIF: Persistance des mots de passe caméras après redémarrage
+#   (Ajout clé de chiffrement CAMERA_ENCRYPTION_KEY dans .env)
+# - CORRECTIF: Le flux Live ne se coupe plus lors du rafraîchissement des vignettes
 # - Module Caméras RTSP/ONVIF (surveillance vidéo)
 # - Dépendances FFmpeg, OpenCV ajoutées automatiquement
 # - Module Gestion d'équipe et Pointage horaire
