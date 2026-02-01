@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
-import { Settings, Save, Loader2, Globe, Mail } from 'lucide-react';
+import { Settings, Save, Loader2, Globe, Mail, Sparkles, FileText } from 'lucide-react';
 import api from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 
@@ -12,6 +12,8 @@ const ReportGlobalSettings = ({ onSave }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [initializingTemplates, setInitializingTemplates] = useState(false);
+  const [defaultTemplates, setDefaultTemplates] = useState([]);
   const [settings, setSettings] = useState({
     enabled: true,
     default_timezone: 'Europe/Paris',
@@ -21,6 +23,7 @@ const ReportGlobalSettings = ({ onSave }) => {
 
   useEffect(() => {
     loadSettings();
+    loadDefaultTemplatesInfo();
   }, []);
 
   const loadSettings = async () => {
@@ -31,6 +34,15 @@ const ReportGlobalSettings = ({ onSave }) => {
       console.error('Erreur chargement paramètres:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDefaultTemplatesInfo = async () => {
+    try {
+      const response = await api.get('/weekly-reports/default-templates');
+      setDefaultTemplates(response.data.available_templates || []);
+    } catch (error) {
+      console.error('Erreur chargement templates par défaut:', error);
     }
   };
 
