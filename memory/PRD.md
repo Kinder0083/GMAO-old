@@ -90,6 +90,62 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
+#### ✅ Feature: Rapports Hebdo. (Rapports automatiques) - P1
+**Implémentation complète** d'une page dédiée "Rapports Hebdo." pour configurer et gérer des rapports automatiques hebdomadaires, mensuels ou annuels :
+
+**Backend** - Nouveaux fichiers :
+- **`/app/backend/weekly_report_routes.py`** : Routes CRUD complètes
+  - `GET /api/weekly-reports/templates` - Liste des modèles
+  - `POST /api/weekly-reports/templates` - Créer un modèle
+  - `PUT /api/weekly-reports/templates/{id}` - Modifier un modèle
+  - `DELETE /api/weekly-reports/templates/{id}` - Supprimer un modèle
+  - `POST /api/weekly-reports/templates/{id}/duplicate` - Dupliquer
+  - `POST /api/weekly-reports/templates/{id}/test` - Envoyer un test
+  - `GET /api/weekly-reports/history` - Historique des envois
+  - `GET /api/weekly-reports/history/{id}/pdf` - Télécharger PDF archivé
+  - `GET/PUT /api/weekly-reports/settings` - Paramètres globaux
+  
+- **`/app/backend/weekly_report_service.py`** : Service de génération
+  - Collecte des données par service (OT, équipements, demandes, performance)
+  - Génération HTML email avec design professionnel
+  - Génération PDF avec reportlab (fallback si weasyprint non disponible)
+  - Envoi email avec PDF en pièce jointe
+
+- **`/app/backend/weekly_report_scheduler.py`** : Scheduler APScheduler
+  - Planification automatique au démarrage
+  - Support hebdomadaire (jour + heure), mensuel (jour du mois + heure), annuel
+  - Gestion dynamique des jobs (ajout/suppression/mise à jour)
+
+**Frontend** - Nouveaux fichiers :
+- **`/app/frontend/src/pages/WeeklyReportsPage.jsx`** : Page principale avec 3 onglets
+  - Onglet "Modèles" : Liste des modèles avec cards détaillées
+  - Onglet "Historique" : Tableau des envois avec téléchargement PDF
+  - Onglet "Paramètres" : Configuration globale (admin uniquement)
+  - Stats : Nombre de modèles, actifs, envoyés, dernier envoi
+
+- **`/app/frontend/src/components/WeeklyReports/`** :
+  - `ReportTemplateCard.jsx` : Card d'affichage d'un modèle avec actions
+  - `ReportTemplateForm.jsx` : Formulaire de création/édition avec 4 onglets
+    - Général : Nom, description, service, période, actif/inactif
+    - Planification : Fréquence, jour, heure, fuseau horaire
+    - Destinataires : Emails personnalisés + responsables du service
+    - Sections : OT, équipements, demandes, performance équipe
+  - `ReportHistoryTable.jsx` : Tableau d'historique avec statuts et téléchargement
+  - `ReportGlobalSettings.jsx` : Paramètres globaux (fuseau, email expéditeur)
+
+**Collections MongoDB** :
+- `weekly_report_templates` : Modèles de rapports configurés
+- `weekly_report_history` : Historique des envois avec chemin PDF
+- `weekly_report_settings` : Paramètres globaux
+
+**Accès** :
+- Administrateurs : Accès complet à tous les services
+- Responsables de service : Accès uniquement à leur service
+
+**Tests** : API curl ✅ + Screenshot Playwright ✅ (page avec modèle, envoi test réussi, PDF généré)
+
+---
+
 ### Session du 31 Janvier 2026
 
 #### ✅ Feature: Consigne Générale (envoi par service) - P0
