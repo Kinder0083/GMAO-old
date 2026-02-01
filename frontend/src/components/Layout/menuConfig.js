@@ -110,7 +110,7 @@ export const getDefaultMenuItems = (isAdmin) => [
   { id: 'weekly-reports', icon: 'FileText', label: 'Rapports Hebdo.', path: '/weekly-reports', module: 'reports', visible: true, order: 12.5 },
   { id: 'team-management', icon: 'UserCog', label: 'Gestion d\'équipe', path: '/team-management', module: 'timeTracking', visible: true, order: 17.5 },
   { id: 'cameras', icon: 'Camera', label: 'Caméras', path: '/cameras', module: 'cameras', visible: true, order: 17.6 },
-  { id: 'analytics-checklists', icon: 'BarChart3', label: 'Analytics Checklists', path: '/analytics/checklists', module: 'preventiveMaintenance', visible: true, order: 17.7 },
+  { id: 'analytics-checklists', icon: 'BarChart3', label: 'Analytics Checklists', path: '/analytics/checklists', module: 'analyticsChecklists', visible: true, order: 17.7 },
   { id: 'presqu-accident', icon: 'AlertTriangle', label: 'Presqu\'accident', path: '/presqu-accident', module: 'presquaccident', visible: true, order: 13 },
   { id: 'presqu-accident-rapport', icon: 'FileText', label: 'Rapport P.accident', path: '/presqu-accident-rapport', module: 'presquaccidentRapport', visible: true, order: 14 },
   { id: 'documentations', icon: 'FolderOpen', label: 'Documentations', path: '/documentations', module: 'documentations', visible: true, order: 15 },
