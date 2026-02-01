@@ -361,18 +361,20 @@ const AnalyticsChecklistsPage = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Taux de conformité"
-          value={`${summary?.conformity_rate || 0}%`}
-          subtitle="Global sur la période"
-          icon={CheckCircle}
-          color={summary?.conformity_rate >= 90 ? 'green' : summary?.conformity_rate >= 75 ? 'amber' : 'red'}
-        />
-        <StatCard
-          title="Exécutions"
-          value={summary?.total_executions || 0}
+      {/* Contenu à exporter en PDF */}
+      <div ref={reportRef} className="space-y-6 bg-white">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Taux de conformité"
+            value={`${summary?.conformity_rate || 0}%`}
+            subtitle="Global sur la période"
+            icon={CheckCircle}
+            color={summary?.conformity_rate >= 90 ? 'green' : summary?.conformity_rate >= 75 ? 'amber' : 'red'}
+          />
+          <StatCard
+            title="Exécutions"
+            value={summary?.total_executions || 0}
           subtitle={`${summary?.total_items_checked || 0} items vérifiés`}
           icon={ClipboardList}
           color="blue"
