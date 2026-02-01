@@ -679,3 +679,120 @@ async def stop_camera_stream(camera_id: str, current_user: dict = Depends(get_cu
         "success": stopped,
         "active_streams": get_active_streams_count()
     }
+
+
+# ========================
+# Routes Alertes Caméras
+# ========================
+
+@router.put("/{camera_id}/alert")
+async def update_camera_alert(
+    camera_id: str, 
+    alert_data: CameraAlertUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Configure les paramètres d'alerte d'une caméra"""
+    try:
+        camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
+        if not camera:
+            raise HTTPException(status_code=404, detail="Caméra non trouvée")
+        
+        update_data = {
+            "alert_enabled": alert_data.alert_enabled,
+            "alert_email": alert_data.alert_email if alert_data.alert_enabled else None,
+            "alert_delay_minutes": alert_data.alert_delay_minutes,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.cameras.update_one(
+            {"_id": ObjectId(camera_id)},
+            {"$set": update_data}
+        )
+        
+        logger.info(f"Alerte caméra {camera.get('name')} mise à jour: enabled={alert_data.alert_enabled}")
+        
+        updated = await db.cameras.find_one({"_id": ObjectId(camera_id)})
+        return serialize_camera(updated)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur mise à jour alerte caméra: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/alerts/history")
+async def get_camera_alerts_history(
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupère l'historique des alertes caméras"""
+    try:
+        alerts = []
+        async for alert in db.camera_alerts.find().sort("created_at", -1).limit(limit):
+            alerts.append({
+                "id": str(alert["_id"]),
+                "camera_id": str(alert.get("camera_id")),
+                "camera_name": alert.get("camera_name"),
+                "alert_type": alert.get("alert_type", "offline"),
+                "message": alert.get("message"),
+                "email_sent_to": alert.get("email_sent_to"),
+                "created_at": alert.get("created_at"),
+                "resolved_at": alert.get("resolved_at"),
+                "is_resolved": alert.get("is_resolved", False)
+            })
+        return alerts
+    except Exception as e:
+        logger.error(f"Erreur récupération historique alertes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/alerts/active")
+async def get_active_camera_alerts(current_user: dict = Depends(get_current_user)):
+    """Récupère les alertes actives (non résolues)"""
+    try:
+        alerts = []
+        async for alert in db.camera_alerts.find({"is_resolved": False}).sort("created_at", -1):
+            alerts.append({
+                "id": str(alert["_id"]),
+                "camera_id": str(alert.get("camera_id")),
+                "camera_name": alert.get("camera_name"),
+                "alert_type": alert.get("alert_type", "offline"),
+                "message": alert.get("message"),
+                "email_sent_to": alert.get("email_sent_to"),
+                "created_at": alert.get("created_at"),
+                "offline_duration_minutes": alert.get("offline_duration_minutes", 0)
+            })
+        return {
+            "count": len(alerts),
+            "alerts": alerts
+        }
+    except Exception as e:
+        logger.error(f"Erreur récupération alertes actives: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/alerts/{alert_id}/resolve")
+async def resolve_camera_alert(
+    alert_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Marque une alerte comme résolue"""
+    try:
+        result = await db.camera_alerts.update_one(
+            {"_id": ObjectId(alert_id)},
+            {"$set": {
+                "is_resolved": True,
+                "resolved_at": datetime.now(timezone.utc).isoformat(),
+                "resolved_by": current_user.get("id")
+            }}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Alerte non trouvée")
+        
+        return {"success": True, "message": "Alerte résolue"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
