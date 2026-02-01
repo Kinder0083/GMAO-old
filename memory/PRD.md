@@ -128,6 +128,34 @@ Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec table
 
 ---
 
+#### ✅ Feature: Analytics Checklists - P2 (1 Fév 2026)
+**Dashboard d'analyse des résultats des contrôles préventifs** :
+
+**Backend** (`/app/backend/analytics_routes.py`) - NOUVEAU :
+- `GET /api/analytics/checklists/stats/summary` - Stats globales (taux conformité, exécutions, temps moyen)
+- `GET /api/analytics/checklists/stats/trends` - Évolution du taux de conformité par semaine/mois
+- `GET /api/analytics/checklists/stats/non-conformities` - Top des items non-conformes
+- `GET /api/analytics/checklists/stats/by-equipment` - Stats par équipement
+- `GET /api/analytics/checklists/stats/by-technician` - Stats par technicien
+
+**Frontend** :
+- **`/app/frontend/src/pages/AnalyticsChecklistsPage.jsx`** (NOUVEAU) :
+  - 4 cartes statistiques (conformité, exécutions, non-conformités, temps moyen)
+  - Graphique linéaire de l'évolution du taux de conformité
+  - Liste des top non-conformités avec occurrences
+  - Graphique horizontal par équipement
+  - Liste par technicien avec barres de progression
+  - Filtres : période (7j, 30j, 90j, 12 mois) et type (semaine/mois)
+
+**Fichiers modifiés** :
+- `/app/backend/server.py` - Enregistrement des routes analytics
+- `/app/frontend/src/App.js` - Route `/analytics/checklists`
+- `/app/frontend/src/components/Layout/menuConfig.js` - Menu "Analytics Checklists"
+
+**Tests** : Screenshot Playwright ✅
+
+---
+
 #### ✅ Feature: Centre d'aide (Support Request) - P0
 **Implémentation complète** d'un bouton "Centre d'aide" sur la page Paramètres permettant aux utilisateurs d'envoyer des demandes d'aide aux administrateurs :
 
