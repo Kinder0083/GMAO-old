@@ -65,6 +65,10 @@ class CameraUpdate(BaseModel):
     brand: Optional[str] = None
     location: Optional[str] = None
     zone_id: Optional[str] = None
+    # Champs pour les alertes
+    alert_enabled: Optional[bool] = None
+    alert_email: Optional[str] = None
+    alert_delay_minutes: Optional[int] = None  # Délai avant envoi d'alerte (défaut: 5 min)
 
 
 class CameraResponse(BaseModel):
@@ -80,6 +84,19 @@ class CameraResponse(BaseModel):
     last_check: Optional[str] = None
     created_at: str
     created_by: Optional[str] = None
+    # Champs pour les alertes
+    alert_enabled: bool = False
+    alert_email: Optional[str] = None
+    alert_delay_minutes: int = 5
+    last_alert_sent: Optional[str] = None
+    offline_since: Optional[str] = None
+
+
+class CameraAlertUpdate(BaseModel):
+    """Modèle pour mise à jour des paramètres d'alerte d'une caméra"""
+    alert_enabled: bool
+    alert_email: Optional[str] = None
+    alert_delay_minutes: int = 5
 
 
 class CameraSettingsUpdate(BaseModel):
