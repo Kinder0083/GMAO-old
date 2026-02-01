@@ -19,16 +19,18 @@ import {
   Grid3X3,
   Wifi,
   WifiOff,
-  Loader2
+  Loader2,
+  Bell
 } from 'lucide-react';
 
 import CameraGrid from '../components/Cameras/CameraGrid';
 import LiveStreamPanel from '../components/Cameras/LiveStreamPanel';
+import CameraAlertsPanel from '../components/Cameras/CameraAlertsPanel';
 import AddCameraDialog from '../components/Cameras/AddCameraDialog';
 import OnvifDiscoveryDialog from '../components/Cameras/OnvifDiscoveryDialog';
 import CameraSettingsDialog from '../components/Cameras/CameraSettingsDialog';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const CamerasPage = () => {
   const { toast } = useToast();
