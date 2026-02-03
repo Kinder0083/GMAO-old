@@ -2,13 +2,14 @@
 Routes API pour la gestion des caméras RTSP/ONVIF
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from bson import ObjectId
 import logging
 import os
+import asyncio
 from pathlib import Path
 
 from dependencies import get_current_user
@@ -25,6 +26,7 @@ from camera_service import (
     get_latest_snapshot_path,
     encrypt_password,
     decrypt_password,
+    build_rtsp_url_with_auth,
     SNAPSHOTS_BASE_PATH,
     HLS_BASE_PATH
 )
