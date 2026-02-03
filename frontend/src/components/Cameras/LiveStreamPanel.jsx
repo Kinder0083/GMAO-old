@@ -116,9 +116,6 @@ const LiveStreamSlot = ({
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
-      }
     };
   }, []);
 
