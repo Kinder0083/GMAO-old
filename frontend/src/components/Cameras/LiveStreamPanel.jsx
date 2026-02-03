@@ -72,7 +72,7 @@ const LiveStreamSlot = ({
       }
     } catch (err) {
       console.error('Erreur snapshot:', err);
-      setError('Impossible de charger l\'image');
+      setError('Impossible de charger l&apos;image');
       setLoading(false);
     }
   };
