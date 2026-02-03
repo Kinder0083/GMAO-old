@@ -184,11 +184,11 @@ const LiveStreamSlot = ({
           </div>
           
           <div className="flex gap-1">
-            {camera && !isStreaming && (
+            {camera && !isLive && (
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={startStream}
+                onClick={startLive}
                 disabled={loading}
               >
                 {loading ? (
@@ -199,20 +199,12 @@ const LiveStreamSlot = ({
               </Button>
             )}
             
-            {isStreaming && (
+            {isLive && (
               <>
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={refreshStream}
-                  title="Rafraîchir"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={stopStream}
+                  onClick={stopLive}
                 >
                   <Square className="w-4 h-4" />
                 </Button>
