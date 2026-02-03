@@ -318,13 +318,16 @@ def start_hls_stream(camera_id: str, rtsp_url: str, username: str = "", password
             proc = active_streams[camera_id]
             if proc.poll() is None:  # Encore en cours
                 return f"/api/cameras/hls/{camera_id}/stream.m3u8"
+            else:
+                # Le processus est terminé, le supprimer
+                del active_streams[camera_id]
         
-        # Vérifier la limite de streams
         # Nettoyer les streams terminés
         for cid in list(active_streams.keys()):
             if active_streams[cid].poll() is not None:
                 del active_streams[cid]
         
+        # Vérifier la limite de streams
         if len(active_streams) >= MAX_ACTIVE_STREAMS:
             logger.warning(f"Limite de {MAX_ACTIVE_STREAMS} streams atteinte")
             return None
@@ -333,41 +336,61 @@ def start_hls_stream(camera_id: str, rtsp_url: str, username: str = "", password
         hls_folder = HLS_BASE_PATH / camera_id
         hls_folder.mkdir(parents=True, exist_ok=True)
         
+        # IMPORTANT: Supprimer tous les anciens fichiers HLS pour éviter le cache
+        for old_file in hls_folder.glob("*.ts"):
+            try:
+                old_file.unlink()
+            except:
+                pass
+        for old_file in hls_folder.glob("*.m3u8"):
+            try:
+                old_file.unlink()
+            except:
+                pass
+        
         # Construire l'URL avec auth
         full_url = build_rtsp_url_with_auth(rtsp_url, username, password)
         
-        # Commande FFmpeg pour convertir RTSP en HLS
+        # Commande FFmpeg pour convertir RTSP en HLS en TEMPS RÉEL
         m3u8_path = hls_folder / "stream.m3u8"
         
         cmd = [
             "ffmpeg",
+            "-fflags", "nobuffer",           # Pas de buffering
+            "-flags", "low_delay",           # Faible latence
             "-rtsp_transport", "tcp",
             "-i", full_url,
+            "-vsync", "0",                   # Pas de sync vidéo (temps réel)
+            "-copyts",                       # Copier les timestamps
             "-c:v", "libx264",
             "-preset", "ultrafast",
             "-tune", "zerolatency",
+            "-g", "30",                      # Keyframe toutes les 30 frames
+            "-sc_threshold", "0",
             "-c:a", "aac",
+            "-ac", "2",
             "-f", "hls",
-            "-hls_time", "2",
-            "-hls_list_size", "3",
-            "-hls_flags", "delete_segments+append_list",
+            "-hls_time", "1",                # Segments de 1 seconde (plus court = moins de latence)
+            "-hls_list_size", "3",           # Garder seulement 3 segments
+            "-hls_flags", "delete_segments+omit_endlist",  # Supprimer les anciens segments, pas de #EXT-X-ENDLIST
             "-hls_segment_filename", str(hls_folder / "segment_%03d.ts"),
+            "-start_number", "0",            # Toujours commencer à 0
             str(m3u8_path),
-            "-y"
+            "-y"                             # Écraser les fichiers existants
         ]
         
         try:
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.PIPE
             )
             active_streams[camera_id] = proc
-            logger.info(f"Stream HLS démarré pour {camera_id}")
+            logger.info(f"Stream HLS démarré pour {camera_id} (PID: {proc.pid})")
             
-            # Attendre que le fichier m3u8 soit créé
+            # Attendre que le fichier m3u8 soit créé (max 5 secondes)
             for _ in range(10):
-                if m3u8_path.exists():
+                if m3u8_path.exists() and m3u8_path.stat().st_size > 0:
                     return f"/api/cameras/hls/{camera_id}/stream.m3u8"
                 time.sleep(0.5)
             
