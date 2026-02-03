@@ -48,31 +48,32 @@ const LiveStreamSlot = ({
     
     try {
       const token = localStorage.getItem('token');
-      // Ajouter timestamp pour éviter le cache
-      const url = `${API_URL}/api/cameras/${camera.id}/snapshot?t=${Date.now()}`;
+      const url = `${API_URL}/api/cameras/${camera.id}/snapshot`;
       
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
+        const data = await response.json();
         
-        // Libérer l'ancienne URL
-        if (imageUrl) {
-          URL.revokeObjectURL(imageUrl);
+        if (data.success && data.snapshot) {
+          // Convertir base64 en URL d'image
+          const newImageUrl = `data:image/jpeg;base64,${data.snapshot}`;
+          setImageUrl(newImageUrl);
+          setError(null);
+        } else {
+          throw new Error(data.message || 'Snapshot non disponible');
         }
-        
-        setImageUrl(objectUrl);
-        setError(null);
-        setLoading(false);
       } else {
         throw new Error('Erreur snapshot');
       }
     } catch (err) {
       console.error('Erreur snapshot:', err);
-      setError('Impossible de charger l&apos;image');
+      if (!imageUrl) {
+        setError('Impossible de charger l&apos;image');
+      }
+    } finally {
       setLoading(false);
     }
   };
