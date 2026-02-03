@@ -229,11 +229,11 @@ const LiveStreamSlot = ({
               <span className="text-sm">Slot {slotIndex + 1}</span>
               <span className="text-xs mt-1">Sélectionnez une caméra</span>
             </div>
-          ) : loading ? (
+          ) : loading && !imageUrl ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
             </div>
-          ) : error ? (
+          ) : error && !imageUrl ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
               <VideoOff className="w-12 h-12 mb-2 text-red-400" />
               <span className="text-sm text-red-400">{error}</span>
@@ -241,21 +241,17 @@ const LiveStreamSlot = ({
                 size="sm" 
                 variant="outline" 
                 className="mt-3"
-                onClick={startStream}
+                onClick={startLive}
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Réessayer
               </Button>
             </div>
-          ) : isStreaming ? (
-            /* Stream MJPEG via balise img - TEMPS RÉEL */
+          ) : imageUrl ? (
             <img
-              ref={imgRef}
-              src={getMjpegUrl()}
+              src={imageUrl}
               alt={`Live ${camera.name}`}
               className="w-full h-full object-contain"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
@@ -264,7 +260,7 @@ const LiveStreamSlot = ({
               <Button 
                 size="sm" 
                 className="mt-3 bg-blue-600 hover:bg-blue-700"
-                onClick={startStream}
+                onClick={startLive}
               >
                 <Play className="w-4 h-4 mr-2" />
                 Démarrer le live
@@ -273,7 +269,7 @@ const LiveStreamSlot = ({
           )}
           
           {/* Badge caméra */}
-          {camera && isStreaming && !loading && !error && (
+          {camera && isLive && imageUrl && (
             <div className="absolute top-2 left-2">
               <Badge className="bg-red-600 animate-pulse">
                 ● LIVE
