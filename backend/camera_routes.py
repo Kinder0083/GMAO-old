@@ -682,6 +682,104 @@ async def stop_camera_stream(camera_id: str, current_user: dict = Depends(get_cu
 
 
 # ========================
+# Route Streaming MJPEG (TEMPS RÉEL)
+# ========================
+
+@router.get("/{camera_id}/mjpeg")
+async def stream_mjpeg(camera_id: str, token: str = None):
+    """
+    Stream MJPEG temps réel pour une caméra
+    Utilise un générateur qui envoie des frames JPEG en continu
+    """
+    import cv2
+    
+    # Vérifier le token
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requis")
+    
+    try:
+        # Vérifier le token (simplifié)
+        from jose import jwt
+        payload = jwt.decode(token, os.environ.get('SECRET_KEY', ''), algorithms=["HS256"])
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    
+    try:
+        camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
+        if not camera:
+            raise HTTPException(status_code=404, detail="Caméra non trouvée")
+        
+        rtsp_url = camera.get("rtsp_url")
+        username = camera.get("username", "")
+        password = decrypt_password(camera.get("password", ""))
+        
+        # Construire l'URL avec auth
+        full_url = build_rtsp_url_with_auth(rtsp_url, username, password)
+        
+        async def generate_frames():
+            """Générateur de frames MJPEG"""
+            cap = None
+            try:
+                cap = cv2.VideoCapture(full_url, cv2.CAP_FFMPEG)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Buffer minimal
+                cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 10000)
+                cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)
+                
+                if not cap.isOpened():
+                    logger.error(f"Impossible d'ouvrir le flux RTSP pour {camera_id}")
+                    return
+                
+                logger.info(f"MJPEG stream démarré pour caméra {camera_id}")
+                
+                frame_count = 0
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        # Tentative de reconnexion
+                        cap.release()
+                        await asyncio.sleep(1)
+                        cap = cv2.VideoCapture(full_url, cv2.CAP_FFMPEG)
+                        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                        continue
+                    
+                    # Encoder en JPEG avec qualité réduite pour la performance
+                    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]
+                    ret, buffer = cv2.imencode('.jpg', frame, encode_param)
+                    
+                    if ret:
+                        frame_bytes = buffer.tobytes()
+                        # Format MJPEG multipart
+                        yield (
+                            b'--frame\r\n'
+                            b'Content-Type: image/jpeg\r\n'
+                            b'Content-Length: ' + str(len(frame_bytes)).encode() + b'\r\n'
+                            b'\r\n' + frame_bytes + b'\r\n'
+                        )
+                    
+                    frame_count += 1
+                    # Limiter à ~15 fps pour ne pas surcharger
+                    await asyncio.sleep(0.066)
+                    
+            except Exception as e:
+                logger.error(f"Erreur MJPEG stream: {e}")
+            finally:
+                if cap:
+                    cap.release()
+                logger.info(f"MJPEG stream terminé pour caméra {camera_id}")
+        
+        return StreamingResponse(
+            generate_frames(),
+            media_type="multipart/x-mixed-replace; boundary=frame"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur démarrage MJPEG: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================
 # Routes Alertes Caméras
 # ========================
 
