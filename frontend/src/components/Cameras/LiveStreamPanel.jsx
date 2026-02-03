@@ -145,7 +145,7 @@ const LiveStreamSlot = ({
           </div>
           
           <div className="flex gap-1">
-            {camera && !streamUrl && (
+            {camera && !isStreaming && (
               <Button 
                 size="sm" 
                 variant="outline"
@@ -160,8 +160,16 @@ const LiveStreamSlot = ({
               </Button>
             )}
             
-            {streamUrl && (
+            {isStreaming && (
               <>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={refreshStream}
+                  title="Rafraîchir"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
                 <Button 
                   size="sm" 
                   variant="outline"
@@ -174,7 +182,7 @@ const LiveStreamSlot = ({
                   variant="outline"
                   onClick={toggleFullscreen}
                 >
-                  <Maximize className="w-4 h-4" />
+                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                 </Button>
               </>
             )}
@@ -208,13 +216,15 @@ const LiveStreamSlot = ({
                 Réessayer
               </Button>
             </div>
-          ) : streamUrl ? (
-            <video
-              ref={videoRef}
+          ) : isStreaming ? (
+            /* Stream MJPEG via balise img - TEMPS RÉEL */
+            <img
+              ref={imgRef}
+              src={getMjpegUrl()}
+              alt={`Live ${camera.name}`}
               className="w-full h-full object-contain"
-              muted
-              playsInline
-              controls={isFullscreen}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
@@ -232,7 +242,7 @@ const LiveStreamSlot = ({
           )}
           
           {/* Badge caméra */}
-          {camera && streamUrl && (
+          {camera && isStreaming && !loading && !error && (
             <div className="absolute top-2 left-2">
               <Badge className="bg-red-600 animate-pulse">
                 ● LIVE
