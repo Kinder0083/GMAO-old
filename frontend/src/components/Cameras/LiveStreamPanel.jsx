@@ -100,19 +100,47 @@ const LiveStreamSlot = ({
           hls = new Hls({
             enableWorker: true,
             lowLatencyMode: true,
-            backBufferLength: 0
+            backBufferLength: 0,
+            // Options pour réduire la latence et forcer le temps réel
+            liveSyncDurationCount: 1,        // Nombre de segments à garder
+            liveMaxLatencyDurationCount: 3,  // Max latence en segments
+            liveDurationInfinity: true,      // Stream infini
+            maxBufferLength: 2,              // Buffer max 2 secondes
+            maxMaxBufferLength: 4,           // Buffer max absolu
+            startLevel: -1,                  // Auto qualité
+            debug: false
           });
           
           hls.loadSource(streamUrl);
           hls.attachMedia(videoRef.current);
           
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            videoRef.current?.play().catch(e => console.log('Autoplay blocked:', e));
+            // Forcer la lecture à la fin du buffer (live edge)
+            if (videoRef.current) {
+              videoRef.current.currentTime = videoRef.current.duration || 0;
+              videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
+            }
           });
+          
+          // Sync périodique pour rester au live edge
+          const syncInterval = setInterval(() => {
+            if (videoRef.current && hls.liveSyncPosition) {
+              const currentTime = videoRef.current.currentTime;
+              const liveEdge = hls.liveSyncPosition;
+              // Si plus de 3 secondes de retard, sauter au live
+              if (liveEdge - currentTime > 3) {
+                videoRef.current.currentTime = liveEdge;
+              }
+            }
+          }, 2000);
+          
+          // Cleanup de l'interval
+          hls._syncInterval = syncInterval;
           
           hls.on(Hls.Events.ERROR, (event, data) => {
             if (data.fatal) {
               setError('Erreur de lecture du flux');
+              clearInterval(syncInterval);
             }
           });
         } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
