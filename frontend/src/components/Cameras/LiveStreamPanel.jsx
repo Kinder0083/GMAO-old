@@ -1,5 +1,5 @@
 /**
- * Panel de visualisation live avec 3 slots de streaming
+ * Panel de visualisation live avec 3 slots de streaming MJPEG temps réel
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -20,10 +20,11 @@ import {
   Loader2,
   Play,
   Square,
-  RefreshCw
+  RefreshCw,
+  Minimize
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const LiveStreamSlot = ({ 
   slotIndex, 
@@ -32,146 +33,57 @@ const LiveStreamSlot = ({
   onSelect, 
   onDeselect 
 }) => {
-  const videoRef = useRef(null);
-  const [streamUrl, setStreamUrl] = useState(null);
+  const imgRef = useRef(null);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
+  const [streamKey, setStreamKey] = useState(0);
 
-  // Démarrer le stream
-  const startStream = async () => {
+  // URL du stream MJPEG
+  const getMjpegUrl = () => {
+    if (!camera) return null;
+    const token = localStorage.getItem('token');
+    return `${API_URL}/api/cameras/${camera.id}/mjpeg?token=${token}&t=${streamKey}`;
+  };
+
+  // Démarrer le stream MJPEG
+  const startStream = () => {
     if (!camera) return;
-    
     setLoading(true);
     setError(null);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/cameras/${camera.id}/stream/start`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setStreamUrl(`${API_URL}${data.stream_url}`);
-      } else {
-        setError(data.message || 'Impossible de démarrer le stream');
-      }
-    } catch (err) {
-      setError('Erreur de connexion au stream');
-      console.error('Erreur stream:', err);
-    } finally {
-      setLoading(false);
-    }
+    setStreamKey(Date.now()); // Force refresh
+    setIsStreaming(true);
   };
 
   // Arrêter le stream
-  const stopStream = async () => {
-    if (!camera) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      await fetch(`${API_URL}/api/cameras/${camera.id}/stream/stop`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-    } catch (err) {
-      console.error('Erreur arrêt stream:', err);
-    }
-    
-    setStreamUrl(null);
+  const stopStream = () => {
+    setIsStreaming(false);
+    setStreamKey(0);
+    // Le stream s'arrête automatiquement quand l'img src est vidé
+  };
+
+  // Refresh stream
+  const refreshStream = () => {
+    setStreamKey(Date.now());
+  };
+
+  // Gestion du chargement de l'image
+  const handleImageLoad = () => {
+    setLoading(false);
     setError(null);
   };
 
-  // Charger HLS.js dynamiquement
-  useEffect(() => {
-    if (!streamUrl || !videoRef.current) return;
-    
-    let hls = null;
-    
-    const loadHls = async () => {
-      try {
-        const Hls = (await import('hls.js')).default;
-        
-        if (Hls.isSupported()) {
-          hls = new Hls({
-            enableWorker: true,
-            lowLatencyMode: true,
-            backBufferLength: 0,
-            // Options pour réduire la latence et forcer le temps réel
-            liveSyncDurationCount: 1,        // Nombre de segments à garder
-            liveMaxLatencyDurationCount: 3,  // Max latence en segments
-            liveDurationInfinity: true,      // Stream infini
-            maxBufferLength: 2,              // Buffer max 2 secondes
-            maxMaxBufferLength: 4,           // Buffer max absolu
-            startLevel: -1,                  // Auto qualité
-            debug: false
-          });
-          
-          hls.loadSource(streamUrl);
-          hls.attachMedia(videoRef.current);
-          
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            // Forcer la lecture à la fin du buffer (live edge)
-            if (videoRef.current) {
-              videoRef.current.currentTime = videoRef.current.duration || 0;
-              videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
-            }
-          });
-          
-          // Sync périodique pour rester au live edge
-          const syncInterval = setInterval(() => {
-            if (videoRef.current && hls.liveSyncPosition) {
-              const currentTime = videoRef.current.currentTime;
-              const liveEdge = hls.liveSyncPosition;
-              // Si plus de 3 secondes de retard, sauter au live
-              if (liveEdge - currentTime > 3) {
-                videoRef.current.currentTime = liveEdge;
-              }
-            }
-          }, 2000);
-          
-          // Cleanup de l'interval
-          hls._syncInterval = syncInterval;
-          
-          hls.on(Hls.Events.ERROR, (event, data) => {
-            if (data.fatal) {
-              setError('Erreur de lecture du flux');
-              clearInterval(syncInterval);
-            }
-          });
-        } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-          // Safari natif HLS
-          videoRef.current.src = streamUrl;
-          videoRef.current.play().catch(e => console.log('Autoplay blocked:', e));
-        }
-      } catch (err) {
-        console.error('Erreur HLS:', err);
-        setError('Lecteur vidéo non disponible');
-      }
-    };
-    
-    loadHls();
-    
-    return () => {
-      if (hls) {
-        if (hls._syncInterval) {
-          clearInterval(hls._syncInterval);
-        }
-        hls.destroy();
-      }
-    };
-  }, [streamUrl]);
+  const handleImageError = () => {
+    setLoading(false);
+    setError('Impossible de charger le flux vidéo');
+  };
 
   // Cleanup au démontage ou changement de caméra
   useEffect(() => {
     return () => {
-      if (camera) {
-        stopStream();
-      }
+      setIsStreaming(false);
     };
   }, [camera?.id]);
 
