@@ -104,10 +104,7 @@ const LiveStreamSlot = ({
       intervalRef.current = null;
     }
     
-    if (imageUrl) {
-      URL.revokeObjectURL(imageUrl);
-      setImageUrl(null);
-    }
+    setImageUrl(null);
   };
 
   // Cleanup au démontage ou changement de caméra
