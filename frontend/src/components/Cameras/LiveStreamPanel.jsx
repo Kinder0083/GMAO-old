@@ -313,7 +313,7 @@ const LiveStreamPanel = ({
       </div>
       
       <p className="text-sm text-gray-500">
-        Sélectionnez jusqu'à 3 caméras pour les visualiser en direct simultanément.
+        Sélectionnez jusqu&apos;à 3 caméras pour les visualiser en direct simultanément.
       </p>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
