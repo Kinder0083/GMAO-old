@@ -1,5 +1,6 @@
 /**
- * Panel de visualisation live avec 3 slots de streaming MJPEG temps réel
+ * Panel de visualisation live avec 3 slots - Mode Snapshot Rapide
+ * Rafraîchit l'image toutes les secondes pour un pseudo-live fiable
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -33,58 +34,96 @@ const LiveStreamSlot = ({
   onSelect, 
   onDeselect 
 }) => {
-  const imgRef = useRef(null);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
-  const [streamKey, setStreamKey] = useState(0);
+  const intervalRef = useRef(null);
 
-  // URL du stream MJPEG
-  const getMjpegUrl = () => {
-    if (!camera) return null;
-    const token = localStorage.getItem('token');
-    return `${API_URL}/api/cameras/${camera.id}/mjpeg?token=${token}&t=${streamKey}`;
+  // Charger un snapshot frais
+  const loadSnapshot = async () => {
+    if (!camera) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      // Ajouter timestamp pour éviter le cache
+      const url = `${API_URL}/api/cameras/${camera.id}/snapshot?t=${Date.now()}`;
+      
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        
+        // Libérer l'ancienne URL
+        if (imageUrl) {
+          URL.revokeObjectURL(imageUrl);
+        }
+        
+        setImageUrl(objectUrl);
+        setError(null);
+        setLoading(false);
+      } else {
+        throw new Error('Erreur snapshot');
+      }
+    } catch (err) {
+      console.error('Erreur snapshot:', err);
+      setError('Impossible de charger l\'image');
+      setLoading(false);
+    }
   };
 
-  // Démarrer le stream MJPEG
-  const startStream = () => {
+  // Démarrer le mode live (refresh toutes les secondes)
+  const startLive = () => {
     if (!camera) return;
+    
     setLoading(true);
     setError(null);
-    setStreamKey(Date.now()); // Force refresh
-    setIsStreaming(true);
+    setIsLive(true);
+    
+    // Charger immédiatement
+    loadSnapshot();
+    
+    // Puis rafraîchir toutes les secondes
+    intervalRef.current = setInterval(() => {
+      loadSnapshot();
+    }, 1000); // 1 image par seconde
   };
 
-  // Arrêter le stream
-  const stopStream = () => {
-    setIsStreaming(false);
-    setStreamKey(0);
-    // Le stream s'arrête automatiquement quand l'img src est vidé
-  };
-
-  // Refresh stream
-  const refreshStream = () => {
-    setStreamKey(Date.now());
-  };
-
-  // Gestion du chargement de l'image
-  const handleImageLoad = () => {
-    setLoading(false);
-    setError(null);
-  };
-
-  const handleImageError = () => {
-    setLoading(false);
-    setError('Impossible de charger le flux vidéo');
+  // Arrêter le mode live
+  const stopLive = () => {
+    setIsLive(false);
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+      setImageUrl(null);
+    }
   };
 
   // Cleanup au démontage ou changement de caméra
   useEffect(() => {
     return () => {
-      setIsStreaming(false);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
     };
+  }, []);
+
+  // Reset quand la caméra change
+  useEffect(() => {
+    stopLive();
   }, [camera?.id]);
 
   // Toggle fullscreen
