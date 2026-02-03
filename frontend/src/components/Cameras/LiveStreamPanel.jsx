@@ -158,6 +158,9 @@ const LiveStreamSlot = ({
     
     return () => {
       if (hls) {
+        if (hls._syncInterval) {
+          clearInterval(hls._syncInterval);
+        }
         hls.destroy();
       }
     };
