@@ -142,8 +142,8 @@ def _frame_capture_loop(camera_id: str, rtsp_url: str):
                 else:
                     raise Exception("Impossible de lire la frame")
                 
-                # ~10 fps
-                time.sleep(0.1)
+                # Limiter à 15 fps (1/15 = 0.067 secondes entre chaque frame)
+                time.sleep(0.067)
                 
             except Exception as e:
                 logger.warning(f"Erreur capture {camera_id}: {e}")
