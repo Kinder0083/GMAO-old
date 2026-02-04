@@ -348,8 +348,9 @@ async def init_frigate_from_db():
             init_frigate_service(
                 settings.get("host"),
                 settings.get("api_port", 5000),
-                settings.get("go2rtc_port", 1984)
+                settings.get("go2rtc_port", 1984),
+                settings.get("use_https", False)
             )
-            logger.info(f"Service Frigate initialisé: {settings.get('host')}")
+            logger.info(f"Service Frigate initialisé: {settings.get('host')} (HTTPS: {settings.get('use_https', False)})")
     except Exception as e:
         logger.error(f"Erreur initialisation Frigate depuis DB: {e}")
