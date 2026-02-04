@@ -690,6 +690,117 @@ async def stop_camera_stream(camera_id: str, current_user: dict = Depends(get_cu
 
 
 # ========================
+# Routes Live (Cache de frames)
+# ========================
+
+@router.post("/{camera_id}/live/start")
+async def start_camera_live(camera_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Démarre la capture live pour une caméra.
+    Les frames seront capturées en continu en arrière-plan (~10 fps).
+    """
+    try:
+        camera = await db.cameras.find_one({"_id": ObjectId(camera_id)})
+        if not camera:
+            raise HTTPException(status_code=404, detail="Caméra non trouvée")
+        
+        # Vérifier si déjà actif
+        if is_capture_active(camera_id):
+            return {
+                "success": True,
+                "message": "Capture déjà active",
+                "active_captures": get_active_capture_count()
+            }
+        
+        # Limiter à 6 captures simultanées
+        if get_active_capture_count() >= 6:
+            return {
+                "success": False,
+                "message": "Limite de 6 captures simultanées atteinte",
+                "active_captures": get_active_capture_count()
+            }
+        
+        rtsp_url = camera.get("rtsp_url")
+        username = camera.get("username", "")
+        password = decrypt_password(camera.get("password", ""))
+        
+        # Démarrer le worker de capture
+        success = start_frame_capture_worker(camera_id, rtsp_url, username, password)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Capture démarrée",
+                "active_captures": get_active_capture_count()
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Impossible de démarrer la capture"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur démarrage live: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{camera_id}/live/stop")
+async def stop_camera_live(camera_id: str, current_user: dict = Depends(get_current_user)):
+    """Arrête la capture live pour une caméra."""
+    try:
+        stop_frame_capture_worker(camera_id)
+        return {
+            "success": True,
+            "message": "Capture arrêtée",
+            "active_captures": get_active_capture_count()
+        }
+    except Exception as e:
+        logger.error(f"Erreur arrêt live: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{camera_id}/live/frame")
+async def get_live_frame(camera_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Récupère la dernière frame capturée (instantané depuis le cache).
+    Très rapide car la frame est déjà en mémoire.
+    """
+    try:
+        # Vérifier si la capture est active
+        if not is_capture_active(camera_id):
+            return {
+                "success": False,
+                "message": "Capture non active pour cette caméra"
+            }
+        
+        # Récupérer la frame du cache
+        frame_data = get_cached_frame(camera_id)
+        
+        if frame_data and frame_data.get("frame_base64"):
+            return {
+                "success": True,
+                "snapshot": frame_data["frame_base64"],
+                "timestamp": frame_data["timestamp"]
+            }
+        elif frame_data and frame_data.get("error"):
+            return {
+                "success": False,
+                "message": f"Erreur de capture: {frame_data['error']}"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Frame non disponible, en attente..."
+            }
+            
+    except Exception as e:
+        logger.error(f"Erreur récupération frame: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================
 # Route Streaming MJPEG (TEMPS RÉEL)
 # ========================
 
