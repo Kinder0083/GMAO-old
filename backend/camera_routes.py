@@ -113,16 +113,6 @@ class CameraSettingsUpdate(BaseModel):
     retention_max_count: Optional[int] = Field(None, ge=100, le=10000)
 
 
-class FrigateSettingsUpdate(BaseModel):
-    """Paramètres de connexion à Frigate NVR"""
-    enabled: bool = False
-    host: str = ""
-    api_port: int = Field(5000, ge=1, le=65535)
-    go2rtc_port: int = Field(1984, ge=1, le=65535)
-    # Streams configurés (nom dans GMAO -> nom dans go2rtc)
-    stream_mapping: Optional[Dict[str, str]] = None
-
-
 class OnvifDiscoveredCamera(BaseModel):
     xaddr: str
     ip: Optional[str]
