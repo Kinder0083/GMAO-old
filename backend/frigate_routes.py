@@ -61,6 +61,7 @@ async def get_frigate_settings(current_user: dict = Depends(get_current_user)):
                 "host": "",
                 "api_port": 5000,
                 "go2rtc_port": 1984,
+                "use_https": False,
                 "stream_mapping": {},
                 "connected": False,
                 "frigate_version": None
@@ -81,6 +82,7 @@ async def get_frigate_settings(current_user: dict = Depends(get_current_user)):
             "host": settings.get("host", ""),
             "api_port": settings.get("api_port", 5000),
             "go2rtc_port": settings.get("go2rtc_port", 1984),
+            "use_https": settings.get("use_https", False),
             "stream_mapping": settings.get("stream_mapping", {}),
             "connected": connected,
             "frigate_version": frigate_version
