@@ -310,8 +310,8 @@ const LiveStreamSlot = ({
                 ● LIVE
               </Badge>
               {fps > 0 && (
-                <Badge className="bg-blue-600">
-                  {fps} FPS
+                <Badge variant="secondary" className="bg-black/60 text-white">
+                  {fps} fps
                 </Badge>
               )}
             </div>
