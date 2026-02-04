@@ -48,6 +48,7 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
     host: '',
     api_port: 5000,
     go2rtc_port: 1984,
+    use_https: false,
     stream_mapping: {}
   });
   
@@ -78,6 +79,7 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
             host: data.host || '',
             api_port: data.api_port || 5000,
             go2rtc_port: data.go2rtc_port || 1984,
+            use_https: data.use_https || false,
             stream_mapping: data.stream_mapping || {}
           });
           
