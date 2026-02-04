@@ -3,6 +3,7 @@ Service de gestion des caméras RTSP/ONVIF
 - Découverte ONVIF automatique
 - Capture de snapshots
 - Gestion du streaming HLS
+- Cache de frames en mémoire pour le live
 """
 import os
 import asyncio
@@ -16,6 +17,7 @@ import base64
 from cryptography.fernet import Fernet
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,182 @@ HLS_BASE_PATH.mkdir(parents=True, exist_ok=True)
 active_streams: Dict[str, subprocess.Popen] = {}
 stream_lock = threading.Lock()
 MAX_ACTIVE_STREAMS = 3
+
+# ============================================
+# SYSTÈME DE CACHE DE FRAMES POUR LE LIVE
+# ============================================
+
+# Cache des frames en mémoire (camera_id -> {frame_base64, timestamp, capturing})
+frame_cache: Dict[str, Dict[str, Any]] = {}
+frame_cache_lock = threading.Lock()
+
+# Workers de capture actifs
+capture_workers: Dict[str, threading.Thread] = {}
+capture_workers_lock = threading.Lock()
+
+# Thread pool pour les captures parallèles
+capture_executor = ThreadPoolExecutor(max_workers=6, thread_name_prefix="cam_capture_")
+
+
+def start_frame_capture_worker(camera_id: str, rtsp_url: str, username: str = "", password: str = ""):
+    """
+    Démarre un worker qui capture des frames en continu pour une caméra.
+    Les frames sont stockées en mémoire pour un accès instantané.
+    """
+    with capture_workers_lock:
+        # Vérifier si déjà actif
+        if camera_id in capture_workers and capture_workers[camera_id].is_alive():
+            logger.debug(f"Worker déjà actif pour {camera_id}")
+            return True
+        
+        # Initialiser le cache
+        with frame_cache_lock:
+            frame_cache[camera_id] = {
+                "frame_base64": None,
+                "timestamp": None,
+                "capturing": True,
+                "error": None
+            }
+        
+        # Construire l'URL avec auth
+        full_url = build_rtsp_url_with_auth(rtsp_url, username, password)
+        
+        # Créer et démarrer le thread worker
+        worker = threading.Thread(
+            target=_frame_capture_loop,
+            args=(camera_id, full_url),
+            daemon=True,
+            name=f"capture_{camera_id[:8]}"
+        )
+        capture_workers[camera_id] = worker
+        worker.start()
+        
+        logger.info(f"Worker de capture démarré pour {camera_id}")
+        return True
+
+
+def _frame_capture_loop(camera_id: str, rtsp_url: str):
+    """
+    Boucle de capture des frames (exécutée dans un thread séparé).
+    Capture ~10 frames par seconde.
+    """
+    cap = None
+    reconnect_delay = 1
+    max_reconnect_delay = 10
+    
+    try:
+        while True:
+            # Vérifier si on doit continuer
+            with frame_cache_lock:
+                if camera_id not in frame_cache or not frame_cache[camera_id].get("capturing", False):
+                    logger.info(f"Arrêt du worker de capture pour {camera_id}")
+                    break
+            
+            try:
+                # Ouvrir la connexion si nécessaire
+                if cap is None or not cap.isOpened():
+                    cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
+                    cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 3000)
+                    
+                    if not cap.isOpened():
+                        raise Exception("Impossible d'ouvrir le flux RTSP")
+                    
+                    reconnect_delay = 1  # Reset delay on success
+                    logger.info(f"Connexion RTSP établie pour {camera_id}")
+                
+                # Lire une frame
+                ret, frame = cap.read()
+                
+                if ret and frame is not None:
+                    # Encoder en JPEG
+                    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 75]
+                    ret_enc, buffer = cv2.imencode('.jpg', frame, encode_param)
+                    
+                    if ret_enc:
+                        frame_base64 = base64.b64encode(buffer).decode('utf-8')
+                        
+                        # Mettre à jour le cache
+                        with frame_cache_lock:
+                            if camera_id in frame_cache:
+                                frame_cache[camera_id]["frame_base64"] = frame_base64
+                                frame_cache[camera_id]["timestamp"] = datetime.now(timezone.utc).isoformat()
+                                frame_cache[camera_id]["error"] = None
+                else:
+                    raise Exception("Impossible de lire la frame")
+                
+                # ~10 fps
+                time.sleep(0.1)
+                
+            except Exception as e:
+                logger.warning(f"Erreur capture {camera_id}: {e}")
+                
+                with frame_cache_lock:
+                    if camera_id in frame_cache:
+                        frame_cache[camera_id]["error"] = str(e)
+                
+                # Fermer et réessayer
+                if cap:
+                    cap.release()
+                    cap = None
+                
+                time.sleep(reconnect_delay)
+                reconnect_delay = min(reconnect_delay * 2, max_reconnect_delay)
+                
+    finally:
+        if cap:
+            cap.release()
+        logger.info(f"Worker de capture terminé pour {camera_id}")
+
+
+def stop_frame_capture_worker(camera_id: str):
+    """Arrête le worker de capture pour une caméra."""
+    with frame_cache_lock:
+        if camera_id in frame_cache:
+            frame_cache[camera_id]["capturing"] = False
+    
+    # Attendre un peu que le thread s'arrête
+    with capture_workers_lock:
+        if camera_id in capture_workers:
+            worker = capture_workers[camera_id]
+            worker.join(timeout=2)
+            del capture_workers[camera_id]
+    
+    # Nettoyer le cache
+    with frame_cache_lock:
+        if camera_id in frame_cache:
+            del frame_cache[camera_id]
+    
+    logger.info(f"Worker de capture arrêté pour {camera_id}")
+
+
+def get_cached_frame(camera_id: str) -> Optional[Dict[str, Any]]:
+    """Récupère la dernière frame en cache pour une caméra."""
+    with frame_cache_lock:
+        if camera_id in frame_cache:
+            data = frame_cache[camera_id]
+            if data.get("frame_base64"):
+                return {
+                    "frame_base64": data["frame_base64"],
+                    "timestamp": data["timestamp"],
+                    "error": data.get("error")
+                }
+            elif data.get("error"):
+                return {"error": data["error"]}
+    return None
+
+
+def is_capture_active(camera_id: str) -> bool:
+    """Vérifie si la capture est active pour une caméra."""
+    with capture_workers_lock:
+        return camera_id in capture_workers and capture_workers[camera_id].is_alive()
+
+
+def get_active_capture_count() -> int:
+    """Retourne le nombre de captures actives."""
+    with capture_workers_lock:
+        return sum(1 for w in capture_workers.values() if w.is_alive())
 
 
 def encrypt_password(password: str) -> str:
