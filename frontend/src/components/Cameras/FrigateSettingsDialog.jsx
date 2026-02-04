@@ -141,16 +141,37 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams({
         host: settings.host,
-        api_port: settings.api_port,
-        go2rtc_port: settings.go2rtc_port
+        api_port: settings.api_port.toString(),
+        go2rtc_port: settings.go2rtc_port.toString()
       });
+      
+      console.log('[FRIGATE] Test connexion:', settings.host, settings.api_port, settings.go2rtc_port);
+      console.log('[FRIGATE] URL:', `${API_URL}/api/cameras/frigate/test?${params}`);
       
       const response = await fetch(`${API_URL}/api/cameras/frigate/test?${params}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      console.log('[FRIGATE] Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[FRIGATE] Erreur HTTP:', response.status, errorText);
+        setTestResult({
+          success: false,
+          message: `Erreur HTTP ${response.status}: ${errorText}`
+        });
+        toast({
+          title: 'Erreur serveur',
+          description: `HTTP ${response.status}: ${errorText.substring(0, 100)}`,
+          variant: 'destructive'
+        });
+        return;
+      }
+      
       const result = await response.json();
+      console.log('[FRIGATE] Résultat:', result);
       setTestResult(result);
       
       if (result.success) {
@@ -164,14 +185,19 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
       } else {
         toast({
           title: 'Échec de connexion',
-          description: result.message,
+          description: result.message || 'Erreur inconnue',
           variant: 'destructive'
         });
       }
     } catch (error) {
+      console.error('[FRIGATE] Exception:', error);
+      setTestResult({
+        success: false,
+        message: `Erreur réseau: ${error.message}`
+      });
       toast({
-        title: 'Erreur',
-        description: 'Impossible de tester la connexion',
+        title: 'Erreur réseau',
+        description: `Impossible de contacter le serveur: ${error.message}`,
         variant: 'destructive'
       });
     } finally {
