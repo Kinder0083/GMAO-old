@@ -303,12 +303,17 @@ const LiveStreamSlot = ({
             </div>
           )}
           
-          {/* Badge caméra */}
+          {/* Badge caméra avec FPS */}
           {camera && isLive && imageUrl && (
-            <div className="absolute top-2 left-2">
+            <div className="absolute top-2 left-2 flex gap-2">
               <Badge className="bg-red-600 animate-pulse">
                 ● LIVE
               </Badge>
+              {fps > 0 && (
+                <Badge className="bg-blue-600">
+                  {fps} FPS
+                </Badge>
+              )}
             </div>
           )}
           
