@@ -69,10 +69,10 @@ const LiveStreamSlot = ({
         // Attendre un peu que le worker démarre
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Commencer à récupérer les frames (~10 fps)
+        // Commencer à récupérer les frames (15 fps max)
         intervalRef.current = setInterval(() => {
           fetchFrame();
-        }, 100); // 100ms = ~10 fps
+        }, 67); // 67ms = ~15 fps
         
         // Première frame
         fetchFrame();
