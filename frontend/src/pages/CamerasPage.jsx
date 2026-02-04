@@ -50,7 +50,12 @@ const CamerasPage = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [discoveryDialogOpen, setDiscoveryDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [frigateSettingsOpen, setFrigateSettingsOpen] = useState(false);
   const [editingCamera, setEditingCamera] = useState(null);
+  
+  // Frigate settings
+  const [frigateSettings, setFrigateSettings] = useState(null);
+  const [frigateLoading, setFrigateLoading] = useState(true);
 
   // Charger les caméras
   const loadCameras = useCallback(async () => {
