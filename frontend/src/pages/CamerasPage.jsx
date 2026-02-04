@@ -371,6 +371,15 @@ const CamerasPage = () => {
               <Video className="w-4 h-4 mr-2" />
               Live ({selectedCameras.filter(c => c).length}/3)
             </TabsTrigger>
+            <TabsTrigger value="frigate" data-testid="tab-frigate">
+              <Server className="w-4 h-4 mr-2" />
+              Frigate
+              {frigateSettings?.connected && (
+                <Badge variant="default" className="ml-2 bg-green-500 h-5 px-1.5">
+                  ●
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="alerts" data-testid="tab-alerts">
               <Bell className="w-4 h-4 mr-2" />
               Alertes ({alertsConfiguredCount})
@@ -398,6 +407,25 @@ const CamerasPage = () => {
               selectedCameras={selectedCameras}
               onSelect={handleSelectForLive}
               onDeselect={handleDeselectLive}
+            />
+          </TabsContent>
+          
+          <TabsContent value="frigate" className="mt-4 space-y-6">
+            {/* Vignettes Frigate */}
+            {frigateSettings?.enabled && frigateSettings?.connected && (
+              <FrigateThumbnailGrid
+                frigateSettings={frigateSettings}
+                refreshInterval={30000}
+                onSelectForLive={(streamName) => {
+                  // On pourrait auto-sélectionner un slot ici
+                  console.log('Sélectionner pour live:', streamName);
+                }}
+              />
+            )}
+            
+            {/* Panel Live Frigate avec 3 slots */}
+            <FrigateLivePanel
+              onOpenSettings={() => setFrigateSettingsOpen(true)}
             />
           </TabsContent>
           
