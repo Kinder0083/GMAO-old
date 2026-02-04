@@ -144,10 +144,11 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
       const params = new URLSearchParams({
         host: settings.host,
         api_port: settings.api_port.toString(),
-        go2rtc_port: settings.go2rtc_port.toString()
+        go2rtc_port: settings.go2rtc_port.toString(),
+        use_https: settings.use_https.toString()
       });
       
-      console.log('[FRIGATE] Test connexion:', settings.host, settings.api_port, settings.go2rtc_port);
+      console.log('[FRIGATE] Test connexion:', settings.host, settings.api_port, settings.go2rtc_port, 'HTTPS:', settings.use_https);
       console.log('[FRIGATE] URL:', `${API_URL}/api/cameras/frigate/test?${params}`);
       
       const response = await fetch(`${API_URL}/api/cameras/frigate/test?${params}`, {
