@@ -1030,3 +1030,293 @@ async def resolve_camera_alert(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================
+# Routes Frigate NVR
+# ========================
+
+@router.get("/frigate/settings")
+async def get_frigate_settings(current_user: dict = Depends(get_current_user)):
+    """Récupère les paramètres Frigate"""
+    try:
+        settings = await db.camera_settings.find_one({"type": "frigate"})
+        if not settings:
+            # Paramètres par défaut
+            return {
+                "enabled": False,
+                "host": "",
+                "api_port": 5000,
+                "go2rtc_port": 1984,
+                "stream_mapping": {},
+                "connected": False,
+                "frigate_version": None
+            }
+        
+        # Vérifier la connexion si activé
+        connected = False
+        frigate_version = None
+        if settings.get("enabled") and settings.get("host"):
+            service = get_frigate_service()
+            if service:
+                result = await service.test_connection()
+                connected = result.get("success", False)
+                frigate_version = result.get("version")
+        
+        return {
+            "enabled": settings.get("enabled", False),
+            "host": settings.get("host", ""),
+            "api_port": settings.get("api_port", 5000),
+            "go2rtc_port": settings.get("go2rtc_port", 1984),
+            "stream_mapping": settings.get("stream_mapping", {}),
+            "connected": connected,
+            "frigate_version": frigate_version
+        }
+    except Exception as e:
+        logger.error(f"Erreur récupération paramètres Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/frigate/settings")
+async def update_frigate_settings(
+    settings_data: FrigateSettingsUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Met à jour les paramètres Frigate"""
+    try:
+        update_data = {
+            "type": "frigate",
+            "enabled": settings_data.enabled,
+            "host": settings_data.host,
+            "api_port": settings_data.api_port,
+            "go2rtc_port": settings_data.go2rtc_port,
+            "stream_mapping": settings_data.stream_mapping or {},
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.camera_settings.update_one(
+            {"type": "frigate"},
+            {"$set": update_data},
+            upsert=True
+        )
+        
+        # Réinitialiser le service Frigate
+        if settings_data.enabled and settings_data.host:
+            init_frigate_service(
+                settings_data.host,
+                settings_data.api_port,
+                settings_data.go2rtc_port
+            )
+        else:
+            reset_frigate_service()
+        
+        logger.info(f"Paramètres Frigate mis à jour: enabled={settings_data.enabled}, host={settings_data.host}")
+        return await get_frigate_settings(current_user)
+        
+    except Exception as e:
+        logger.error(f"Erreur mise à jour paramètres Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/frigate/test")
+async def test_frigate_connection(
+    host: str = Query(...),
+    api_port: int = Query(5000),
+    go2rtc_port: int = Query(1984),
+    current_user: dict = Depends(get_current_user)
+):
+    """Teste la connexion à Frigate"""
+    try:
+        service = FrigateService(host, api_port, go2rtc_port)
+        result = await service.test_connection()
+        
+        if result.get("success"):
+            # Récupérer aussi les streams disponibles
+            streams = await service.get_go2rtc_streams()
+            cameras = await service.get_cameras()
+            result["streams"] = streams
+            result["cameras"] = cameras
+        
+        return result
+    except Exception as e:
+        logger.error(f"Erreur test connexion Frigate: {e}")
+        return {
+            "success": False,
+            "message": str(e)
+        }
+
+
+@router.get("/frigate/cameras")
+async def get_frigate_cameras(current_user: dict = Depends(get_current_user)):
+    """Récupère la liste des caméras configurées dans Frigate"""
+    try:
+        service = get_frigate_service()
+        if not service:
+            return {"cameras": [], "message": "Frigate non configuré"}
+        
+        cameras = await service.get_cameras()
+        return {"cameras": cameras}
+    except Exception as e:
+        logger.error(f"Erreur récupération caméras Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/frigate/streams")
+async def get_frigate_streams(current_user: dict = Depends(get_current_user)):
+    """Récupère la liste des streams go2rtc disponibles"""
+    try:
+        service = get_frigate_service()
+        if not service:
+            return {"streams": [], "message": "Frigate non configuré"}
+        
+        streams = await service.get_go2rtc_streams()
+        return {"streams": streams}
+    except Exception as e:
+        logger.error(f"Erreur récupération streams go2rtc: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/frigate/snapshot/{camera_name}")
+async def get_frigate_snapshot(
+    camera_name: str,
+    quality: int = Query(70, ge=10, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupère le snapshot d'une caméra Frigate (proxy pour éviter CORS)"""
+    try:
+        service = get_frigate_service()
+        if not service:
+            raise HTTPException(status_code=503, detail="Frigate non configuré")
+        
+        snapshot = await service.get_camera_snapshot(camera_name, quality)
+        if snapshot:
+            # Retourner en base64 pour le frontend
+            snapshot_b64 = base64.b64encode(snapshot).decode('utf-8')
+            return {
+                "success": True,
+                "snapshot": snapshot_b64,
+                "camera": camera_name,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Snapshot non disponible pour {camera_name}"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération snapshot Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/frigate/thumbnail/{camera_name}")
+async def get_frigate_thumbnail(
+    camera_name: str,
+    height: int = Query(180, ge=60, le=480),
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupère une vignette d'une caméra Frigate"""
+    try:
+        service = get_frigate_service()
+        if not service:
+            raise HTTPException(status_code=503, detail="Frigate non configuré")
+        
+        thumbnail = await service.get_camera_thumbnail(camera_name, height)
+        if thumbnail:
+            thumbnail_b64 = base64.b64encode(thumbnail).decode('utf-8')
+            return {
+                "success": True,
+                "thumbnail": thumbnail_b64,
+                "camera": camera_name
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Thumbnail non disponible pour {camera_name}"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération thumbnail Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/frigate/events")
+async def get_frigate_events(
+    camera: str = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupère les événements de détection Frigate"""
+    try:
+        service = get_frigate_service()
+        if not service:
+            return {"events": [], "message": "Frigate non configuré"}
+        
+        events = await service.get_camera_events(camera, limit)
+        return {"events": events}
+    except Exception as e:
+        logger.error(f"Erreur récupération événements Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/frigate/stats")
+async def get_frigate_stats(current_user: dict = Depends(get_current_user)):
+    """Récupère les statistiques Frigate"""
+    try:
+        service = get_frigate_service()
+        if not service:
+            return {"stats": {}, "message": "Frigate non configuré"}
+        
+        stats = await service.get_stats()
+        return {"stats": stats}
+    except Exception as e:
+        logger.error(f"Erreur récupération stats Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/frigate/webrtc-info/{stream_name}")
+async def get_frigate_webrtc_info(
+    stream_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Retourne les informations nécessaires pour établir une connexion WebRTC
+    Le frontend utilisera ces URLs pour se connecter directement à go2rtc
+    """
+    try:
+        service = get_frigate_service()
+        if not service:
+            raise HTTPException(status_code=503, detail="Frigate non configuré")
+        
+        return {
+            "success": True,
+            "stream_name": stream_name,
+            "ws_url": service.get_webrtc_url(stream_name),
+            "http_url": service.get_webrtc_offer_url(stream_name),
+            "host": service.host,
+            "go2rtc_port": service.go2rtc_port
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération info WebRTC: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Fonction d'initialisation au démarrage
+async def init_frigate_from_db():
+    """Initialise le service Frigate depuis les paramètres DB"""
+    try:
+        settings = await db.camera_settings.find_one({"type": "frigate"})
+        if settings and settings.get("enabled") and settings.get("host"):
+            init_frigate_service(
+                settings.get("host"),
+                settings.get("api_port", 5000),
+                settings.get("go2rtc_port", 1984)
+            )
+            logger.info(f"Service Frigate initialisé: {settings.get('host')}")
+    except Exception as e:
+        logger.error(f"Erreur initialisation Frigate depuis DB: {e}")
+
