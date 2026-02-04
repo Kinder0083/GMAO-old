@@ -100,11 +100,31 @@ const CamerasPage = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([loadCameras(), loadStats()]);
+      await Promise.all([loadCameras(), loadStats(), loadFrigateSettings()]);
       setLoading(false);
     };
     loadData();
   }, [loadCameras, loadStats, refreshKey]);
+
+  // Charger les paramètres Frigate
+  const loadFrigateSettings = async () => {
+    try {
+      setFrigateLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/cameras/frigate/settings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFrigateSettings(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement Frigate:', error);
+    } finally {
+      setFrigateLoading(false);
+    }
+  };
 
   // Rafraîchir les vignettes toutes les 30 secondes (uniquement si on est sur l'onglet grille)
   const [activeTab, setActiveTab] = useState('grid');
