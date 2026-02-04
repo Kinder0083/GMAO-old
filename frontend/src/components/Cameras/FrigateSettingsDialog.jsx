@@ -382,20 +382,43 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
                   {/* Résultat du test */}
                   {testResult && (
                     <div className={`p-3 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-start gap-2">
                         {testResult.success ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                         ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
+                          <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                         )}
-                        <span className={testResult.success ? 'text-green-700' : 'text-red-700'}>
-                          {testResult.success ? `Frigate ${testResult.version}` : testResult.message}
-                        </span>
+                        <div className="flex-1 min-w-0">
+                          <span className={`block ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                            {testResult.success ? `Frigate ${testResult.version}` : 'Échec de connexion'}
+                          </span>
+                          {!testResult.success && testResult.message && (
+                            <p className="text-sm text-red-600 mt-1 break-words">
+                              {testResult.message}
+                            </p>
+                          )}
+                          {!testResult.success && testResult.details && (
+                            <details className="mt-2">
+                              <summary className="text-xs text-red-500 cursor-pointer hover:underline">
+                                Détails techniques
+                              </summary>
+                              <pre className="mt-1 text-xs bg-red-100 p-2 rounded overflow-x-auto max-h-32 overflow-y-auto">
+                                {JSON.stringify(testResult.details, null, 2)}
+                              </pre>
+                            </details>
+                          )}
+                        </div>
                       </div>
                       {testResult.success && testResult.go2rtc_available && (
                         <div className="flex items-center gap-2 mt-2 text-sm text-green-600">
                           <Wifi className="w-4 h-4" />
                           go2rtc disponible pour WebRTC
+                        </div>
+                      )}
+                      {testResult.success && !testResult.go2rtc_available && (
+                        <div className="flex items-center gap-2 mt-2 text-sm text-yellow-600">
+                          <WifiOff className="w-4 h-4" />
+                          go2rtc non disponible (WebRTC désactivé)
                         </div>
                       )}
                     </div>
