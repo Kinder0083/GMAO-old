@@ -1126,23 +1126,44 @@ async def test_frigate_connection(
     current_user: dict = Depends(get_current_user)
 ):
     """Teste la connexion à Frigate"""
+    import traceback
+    logger.info(f"[FRIGATE API] Test connexion demandé: host={host}, api_port={api_port}, go2rtc_port={go2rtc_port}")
+    
     try:
         service = FrigateService(host, api_port, go2rtc_port)
         result = await service.test_connection()
         
+        logger.info(f"[FRIGATE API] Résultat test: success={result.get('success')}, message={result.get('message')}")
+        
         if result.get("success"):
             # Récupérer aussi les streams disponibles
-            streams = await service.get_go2rtc_streams()
-            cameras = await service.get_cameras()
-            result["streams"] = streams
-            result["cameras"] = cameras
+            try:
+                streams = await service.get_go2rtc_streams()
+                cameras = await service.get_cameras()
+                result["streams"] = streams
+                result["cameras"] = cameras
+                logger.info(f"[FRIGATE API] Streams trouvés: {len(streams)}, Caméras: {len(cameras)}")
+            except Exception as e:
+                logger.warning(f"[FRIGATE API] Erreur récup streams/cameras: {e}")
+                result["streams"] = []
+                result["cameras"] = []
+                result["streams_error"] = str(e)
         
         return result
     except Exception as e:
-        logger.error(f"Erreur test connexion Frigate: {e}")
+        error_msg = f"Exception dans test_frigate_connection: {type(e).__name__}: {str(e)}"
+        logger.error(f"[FRIGATE API] {error_msg}")
+        logger.error(f"[FRIGATE API] Traceback: {traceback.format_exc()}")
         return {
             "success": False,
-            "message": str(e)
+            "message": error_msg,
+            "details": {
+                "host": host,
+                "api_port": api_port,
+                "go2rtc_port": go2rtc_port,
+                "error_type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }
         }
 
 
