@@ -105,6 +105,7 @@ async def update_frigate_settings(
             "host": settings_data.host,
             "api_port": settings_data.api_port,
             "go2rtc_port": settings_data.go2rtc_port,
+            "use_https": settings_data.use_https,
             "stream_mapping": settings_data.stream_mapping or {},
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
@@ -120,12 +121,13 @@ async def update_frigate_settings(
             init_frigate_service(
                 settings_data.host,
                 settings_data.api_port,
-                settings_data.go2rtc_port
+                settings_data.go2rtc_port,
+                settings_data.use_https
             )
         else:
             reset_frigate_service()
         
-        logger.info(f"Paramètres Frigate mis à jour: enabled={settings_data.enabled}, host={settings_data.host}")
+        logger.info(f"Paramètres Frigate mis à jour: enabled={settings_data.enabled}, host={settings_data.host}, https={settings_data.use_https}")
         return await get_frigate_settings(current_user)
         
     except Exception as e:
