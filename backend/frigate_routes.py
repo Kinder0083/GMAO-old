@@ -140,13 +140,14 @@ async def test_frigate_connection(
     host: str = Query(...),
     api_port: int = Query(5000),
     go2rtc_port: int = Query(1984),
+    use_https: bool = Query(False),
     current_user: dict = Depends(get_current_user)
 ):
     """Teste la connexion à Frigate"""
-    logger.info(f"[FRIGATE API] Test connexion demandé: host={host}, api_port={api_port}, go2rtc_port={go2rtc_port}")
+    logger.info(f"[FRIGATE API] Test connexion demandé: host={host}, api_port={api_port}, go2rtc_port={go2rtc_port}, https={use_https}")
     
     try:
-        service = FrigateService(host, api_port, go2rtc_port)
+        service = FrigateService(host, api_port, go2rtc_port, use_https)
         result = await service.test_connection()
         
         logger.info(f"[FRIGATE API] Résultat test: success={result.get('success')}, message={result.get('message')}")
@@ -176,6 +177,7 @@ async def test_frigate_connection(
                 "host": host,
                 "api_port": api_port,
                 "go2rtc_port": go2rtc_port,
+                "use_https": use_https,
                 "error_type": type(e).__name__,
                 "traceback": traceback.format_exc()
             }
