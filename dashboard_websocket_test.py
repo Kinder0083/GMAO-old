@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime, timedelta
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://video-stream-413.preview.emergentagent.com/api"
+BACKEND_URL = "https://fps-manager.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"
