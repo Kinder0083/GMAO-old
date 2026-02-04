@@ -42,6 +42,7 @@ class FrigateSettingsUpdate(BaseModel):
     host: str = ""
     api_port: int = Field(5000, ge=1, le=65535)
     go2rtc_port: int = Field(1984, ge=1, le=65535)
+    use_https: bool = False  # Nouveau: utiliser HTTPS
     stream_mapping: Optional[Dict[str, str]] = None
 
 
