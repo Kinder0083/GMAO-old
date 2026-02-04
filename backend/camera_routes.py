@@ -36,13 +36,6 @@ from camera_service import (
     is_capture_active,
     get_active_capture_count
 )
-from frigate_service import (
-    FrigateService,
-    get_frigate_service,
-    init_frigate_service,
-    reset_frigate_service
-)
-import base64
 
 logger = logging.getLogger(__name__)
 
