@@ -341,10 +341,10 @@ def get_frigate_service() -> Optional[FrigateService]:
     return _frigate_service
 
 
-def init_frigate_service(host: str, api_port: int = 5000, go2rtc_port: int = 1984) -> FrigateService:
+def init_frigate_service(host: str, api_port: int = 5000, go2rtc_port: int = 1984, use_https: bool = False) -> FrigateService:
     """Initialise le service Frigate avec les paramètres donnés"""
     global _frigate_service
-    _frigate_service = FrigateService(host, api_port, go2rtc_port)
+    _frigate_service = FrigateService(host, api_port, go2rtc_port, use_https)
     return _frigate_service
 
 
