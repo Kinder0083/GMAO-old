@@ -367,6 +367,25 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
                     </div>
                   </div>
                   
+                  {/* Option HTTPS */}
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <span className="text-green-600 text-xs font-bold">SSL</span>
+                      </div>
+                      <div>
+                        <Label>Utiliser HTTPS</Label>
+                        <p className="text-xs text-gray-500">
+                          Activez si Frigate utilise un certificat SSL
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settings.use_https}
+                      onCheckedChange={(checked) => setSettings(prev => ({ ...prev, use_https: checked }))}
+                    />
+                  </div>
+                  
                   {/* Bouton Test */}
                   <Button
                     variant="outline"
