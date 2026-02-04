@@ -1,6 +1,6 @@
 /**
- * Panel de visualisation live avec 3 slots - Mode Snapshot Rapide
- * Rafraîchit l'image toutes les secondes pour un pseudo-live fiable
+ * Panel de visualisation live avec 3 slots - Mode Cache de Frames (~10 fps)
+ * Utilise un worker backend qui capture en continu pour un live fluide
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -39,75 +39,113 @@ const LiveStreamSlot = ({
   const [error, setError] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fps, setFps] = useState(0);
   const containerRef = useRef(null);
   const intervalRef = useRef(null);
+  const frameCountRef = useRef(0);
+  const lastFpsUpdateRef = useRef(Date.now());
 
-  // Charger un snapshot frais
-  const loadSnapshot = async () => {
+  // Démarrer la capture côté serveur et commencer à récupérer les frames
+  const startLive = async () => {
     if (!camera) return;
+    
+    setLoading(true);
+    setError(null);
     
     try {
       const token = localStorage.getItem('token');
-      const url = `${API_URL}/api/cameras/${camera.id}/snapshot`;
       
-      const response = await fetch(url, {
+      // Démarrer le worker de capture côté serveur
+      const response = await fetch(`${API_URL}/api/cameras/${camera.id}/live/start`, {
+        method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsLive(true);
         
-        if (data.success && data.snapshot) {
-          // Convertir base64 en URL d'image
-          const newImageUrl = `data:image/jpeg;base64,${data.snapshot}`;
-          setImageUrl(newImageUrl);
-          setError(null);
-        } else {
-          throw new Error(data.message || 'Snapshot non disponible');
-        }
+        // Attendre un peu que le worker démarre
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Commencer à récupérer les frames (~10 fps)
+        intervalRef.current = setInterval(() => {
+          fetchFrame();
+        }, 100); // 100ms = ~10 fps
+        
+        // Première frame
+        fetchFrame();
       } else {
-        throw new Error('Erreur snapshot');
+        setError(data.message || 'Impossible de démarrer le live');
       }
     } catch (err) {
-      console.error('Erreur snapshot:', err);
-      if (!imageUrl) {
-        setError('Impossible de charger l&apos;image');
-      }
+      console.error('Erreur démarrage live:', err);
+      setError('Erreur de connexion');
     } finally {
       setLoading(false);
     }
   };
 
-  // Démarrer le mode live (refresh toutes les secondes)
-  const startLive = () => {
+  // Récupérer une frame depuis le cache serveur (très rapide)
+  const fetchFrame = async () => {
     if (!camera) return;
     
-    setLoading(true);
-    setError(null);
-    setIsLive(true);
-    
-    // Charger immédiatement
-    loadSnapshot();
-    
-    // Puis rafraîchir toutes les secondes
-    intervalRef.current = setInterval(() => {
-      loadSnapshot();
-    }, 1000); // 1 image par seconde
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/cameras/${camera.id}/live/frame`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.snapshot) {
+        setImageUrl(`data:image/jpeg;base64,${data.snapshot}`);
+        setError(null);
+        setLoading(false);
+        
+        // Compteur FPS
+        frameCountRef.current++;
+        const now = Date.now();
+        if (now - lastFpsUpdateRef.current >= 1000) {
+          setFps(frameCountRef.current);
+          frameCountRef.current = 0;
+          lastFpsUpdateRef.current = now;
+        }
+      }
+      // Ne pas afficher d'erreur si frame pas encore prête
+    } catch (err) {
+      // Ignorer les erreurs réseau silencieusement
+    }
   };
 
-  // Arrêter le mode live
-  const stopLive = () => {
-    setIsLive(false);
-    
+  // Arrêter le live
+  const stopLive = async () => {
+    // Arrêter le polling
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
+    setIsLive(false);
     setImageUrl(null);
+    setFps(0);
+    
+    // Arrêter le worker côté serveur
+    if (camera) {
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(`${API_URL}/api/cameras/${camera.id}/live/stop`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error('Erreur arrêt live:', err);
+      }
+    }
   };
 
-  // Cleanup au démontage ou changement de caméra
+  // Cleanup au démontage
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
@@ -118,7 +156,9 @@ const LiveStreamSlot = ({
 
   // Reset quand la caméra change
   useEffect(() => {
-    stopLive();
+    if (isLive) {
+      stopLive();
+    }
   }, [camera?.id]);
 
   // Toggle fullscreen
