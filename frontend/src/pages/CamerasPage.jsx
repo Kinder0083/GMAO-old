@@ -463,6 +463,15 @@ const CamerasPage = () => {
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
       />
+      
+      <FrigateSettingsDialog
+        open={frigateSettingsOpen}
+        onOpenChange={setFrigateSettingsOpen}
+        onSettingsChange={(newSettings) => {
+          setFrigateSettings(newSettings);
+          loadFrigateSettings();
+        }}
+      />
     </div>
   );
 };
