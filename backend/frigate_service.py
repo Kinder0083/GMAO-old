@@ -22,7 +22,7 @@ FRIGATE_TIMEOUT = 15.0
 class FrigateService:
     """Service de connexion à Frigate NVR"""
     
-    def __init__(self, host: str, api_port: int = 5000, go2rtc_port: int = 1984):
+    def __init__(self, host: str, api_port: int = 5000, go2rtc_port: int = 1984, use_https: bool = False):
         """
         Initialise le service Frigate
         
@@ -30,12 +30,18 @@ class FrigateService:
             host: Adresse IP ou hostname de Frigate
             api_port: Port de l'API Frigate (défaut: 5000)
             go2rtc_port: Port de go2rtc pour WebRTC (défaut: 1984)
+            use_https: Utiliser HTTPS au lieu de HTTP (défaut: False)
         """
         self.host = host
         self.api_port = api_port
         self.go2rtc_port = go2rtc_port
-        self.base_url = f"http://{host}:{api_port}"
-        self.go2rtc_url = f"http://{host}:{go2rtc_port}"
+        self.use_https = use_https
+        
+        # Protocole HTTP ou HTTPS
+        protocol = "https" if use_https else "http"
+        self.base_url = f"{protocol}://{host}:{api_port}"
+        self.go2rtc_url = f"http://{host}:{go2rtc_port}"  # go2rtc est généralement en HTTP
+        
         logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}")
     
     async def test_connection(self) -> Dict[str, Any]:
