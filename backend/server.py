@@ -8563,11 +8563,16 @@ set_time_tracking_db(db)
 api_router.include_router(time_tracking_router)
 
 # Routes de gestion des caméras RTSP/ONVIF
-from camera_routes import router as camera_router, set_database as set_camera_db
+from camera_routes import router as camera_router, set_database as set_camera_db, init_frigate_from_db
 from camera_snapshot_scheduler import set_database as set_camera_scheduler_db, start_snapshot_scheduler
 set_camera_db(db)
 set_camera_scheduler_db(db)
 api_router.include_router(camera_router)
+
+# Initialiser Frigate depuis la DB au démarrage
+@app.on_event("startup")
+async def init_frigate():
+    await init_frigate_from_db()
 
 # Routes Analytics Checklists
 from analytics_routes import router as analytics_router, set_database as set_analytics_db
