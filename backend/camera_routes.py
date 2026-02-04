@@ -28,7 +28,13 @@ from camera_service import (
     decrypt_password,
     build_rtsp_url_with_auth,
     SNAPSHOTS_BASE_PATH,
-    HLS_BASE_PATH
+    HLS_BASE_PATH,
+    # Nouveau système de cache de frames
+    start_frame_capture_worker,
+    stop_frame_capture_worker,
+    get_cached_frame,
+    is_capture_active,
+    get_active_capture_count
 )
 
 logger = logging.getLogger(__name__)
