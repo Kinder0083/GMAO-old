@@ -159,18 +159,34 @@ class FrigateService:
                 if go2rtc_resp.status_code == 200:
                     go2rtc_ok = True
                     go2rtc_data = go2rtc_resp.json()
-                    go2rtc_streams = list(go2rtc_data.keys()) if isinstance(go2rtc_data, dict) else []
-                    logger.info(f"[FRIGATE] go2rtc streams disponibles: {go2rtc_streams}")
+                    go2rtc_streams = [{"name": name, "active": len(producers) > 0 if isinstance(producers, list) else False}
+                                      for name, producers in go2rtc_data.items()]
+                    logger.info(f"[FRIGATE] go2rtc streams disponibles: {[s['name'] for s in go2rtc_streams]}")
             except Exception as e:
                 logger.warning(f"[FRIGATE] Erreur test go2rtc: {e}")
+            
+            # Récupérer les caméras
+            cameras = []
+            try:
+                cameras_resp = await client.get(f"{self.base_url}/api/config")
+                logger.info(f"[FRIGATE] cameras config: {cameras_resp.status_code}")
+                if cameras_resp.status_code == 200:
+                    config = cameras_resp.json()
+                    cameras = [{"name": name, "enabled": cfg.get("enabled", True)} 
+                               for name, cfg in config.get("cameras", {}).items()]
+                    logger.info(f"[FRIGATE] Caméras trouvées: {[c['name'] for c in cameras]}")
+            except Exception as e:
+                logger.warning(f"[FRIGATE] Erreur récup caméras: {e}")
             
             await client.aclose()
             return {
                 "success": True,
                 "version": version,
                 "go2rtc_available": go2rtc_ok,
+                "streams": go2rtc_streams,  # Inclure les streams dans le résultat
+                "cameras": cameras,  # Inclure les caméras dans le résultat
                 "message": f"Connecté à Frigate {version}" + (" (go2rtc OK)" if go2rtc_ok else ""),
-                "details": {"host": self.host, "api_port": self.api_port, "go2rtc_port": self.go2rtc_port}
+                "details": {"host": self.host, "api_port": self.api_port, "go2rtc_port": self.webrtc_port}
             }
                 
         except httpx.ConnectError as e:
