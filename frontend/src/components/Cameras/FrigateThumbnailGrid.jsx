@@ -20,31 +20,49 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const FrigateThumbnailGrid = ({ 
   frigateSettings, 
-  refreshInterval = 30000, // 30 secondes par défaut
+  refreshInterval = 30000,
   onSelectForLive 
 }) => {
   const [thumbnails, setThumbnails] = useState({});
+  const [cameras, setCameras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Liste des caméras à afficher (depuis le mapping ou les caméras Frigate)
-  const getCameraList = useCallback(() => {
-    if (frigateSettings?.stream_mapping && Object.keys(frigateSettings.stream_mapping).length > 0) {
-      return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => ({
-        displayName,
-        cameraName: streamName.replace('_hq', '').replace('_lq', ''), // Extraire le nom de la caméra
-        streamName
-      }));
+  // Charger les caméras depuis Frigate
+  const loadCameras = useCallback(async () => {
+    if (!frigateSettings?.enabled || !frigateSettings?.connected) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/cameras/frigate/cameras`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCameras(data.cameras || []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement caméras:', error);
     }
-    return [];
+  }, [frigateSettings]);
+
+  // Obtenir le nom d'affichage depuis le mapping
+  const getDisplayName = useCallback((cameraName) => {
+    if (!frigateSettings?.stream_mapping) return cameraName;
+    
+    for (const [displayName, streamName] of Object.entries(frigateSettings.stream_mapping)) {
+      if (streamName.startsWith(cameraName) || streamName === cameraName) {
+        return displayName;
+      }
+    }
+    return cameraName;
   }, [frigateSettings]);
 
   // Charger les thumbnails
   const loadThumbnails = useCallback(async () => {
     if (!frigateSettings?.enabled || !frigateSettings?.connected) return;
-    
-    const cameras = getCameraList();
     if (cameras.length === 0) return;
     
     setRefreshing(true);
@@ -55,36 +73,34 @@ const FrigateThumbnailGrid = ({
     await Promise.all(
       cameras.map(async (camera) => {
         try {
-          // Utiliser le nom de la caméra Frigate (pas le stream)
-          const cameraName = camera.cameraName;
           const response = await fetch(
-            `${API_URL}/api/cameras/frigate/thumbnail/${cameraName}?height=200`,
+            `${API_URL}/api/cameras/frigate/thumbnail/${camera.name}?height=200`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
           
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.thumbnail) {
-              newThumbnails[cameraName] = {
+              newThumbnails[camera.name] = {
                 image: `data:image/jpeg;base64,${data.thumbnail}`,
                 timestamp: new Date().toISOString(),
                 error: null
               };
             } else {
-              newThumbnails[cameraName] = {
+              newThumbnails[camera.name] = {
                 image: null,
                 error: data.message || 'Erreur'
               };
             }
           } else {
-            newThumbnails[cameraName] = {
+            newThumbnails[camera.name] = {
               image: null,
-              error: 'Non disponible'
+              error: `HTTP ${response.status}`
             };
           }
         } catch (error) {
-          console.error(`Erreur thumbnail ${camera.cameraName}:`, error);
-          newThumbnails[camera.cameraName] = {
+          console.error(`Erreur thumbnail ${camera.name}:`, error);
+          newThumbnails[camera.name] = {
             image: null,
             error: 'Erreur réseau'
           };
@@ -96,15 +112,22 @@ const FrigateThumbnailGrid = ({
     setLastRefresh(new Date());
     setLoading(false);
     setRefreshing(false);
-  }, [frigateSettings, getCameraList]);
+  }, [frigateSettings, cameras]);
 
-  // Charger au montage et rafraîchir périodiquement
+  // Charger les caméras au montage
   useEffect(() => {
-    loadThumbnails();
-    
-    const interval = setInterval(loadThumbnails, refreshInterval);
-    return () => clearInterval(interval);
-  }, [loadThumbnails, refreshInterval]);
+    loadCameras();
+  }, [loadCameras]);
+
+  // Charger les thumbnails quand les caméras sont chargées
+  useEffect(() => {
+    if (cameras.length > 0) {
+      loadThumbnails();
+      
+      const interval = setInterval(loadThumbnails, refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [cameras, loadThumbnails, refreshInterval]);
 
   // Rafraîchir manuellement
   const handleManualRefresh = () => {
@@ -112,8 +135,6 @@ const FrigateThumbnailGrid = ({
       loadThumbnails();
     }
   };
-
-  const cameras = getCameraList();
 
   if (!frigateSettings?.enabled || !frigateSettings?.connected) {
     return null;
@@ -124,7 +145,7 @@ const FrigateThumbnailGrid = ({
       <Card className="p-6">
         <div className="text-center text-gray-500">
           <Camera className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p>Aucune caméra configurée</p>
+          <p>Aucune caméra détectée</p>
         </div>
       </Card>
     );
@@ -162,26 +183,27 @@ const FrigateThumbnailGrid = ({
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {cameras.map((camera) => {
-            const thumbnail = thumbnails[camera.cameraName];
+            const thumbnail = thumbnails[camera.name];
+            const displayName = getDisplayName(camera.name);
             
             return (
               <Card 
-                key={camera.streamName}
+                key={camera.name}
                 className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
-                onClick={() => onSelectForLive?.(camera.streamName)}
-                data-testid={`frigate-thumbnail-${camera.cameraName}`}
+                onClick={() => onSelectForLive?.(camera.name)}
+                data-testid={`frigate-thumbnail-${camera.name}`}
               >
                 <div className="relative aspect-video bg-gray-900">
                   {thumbnail?.image ? (
                     <img
                       src={thumbnail.image}
-                      alt={camera.displayName}
+                      alt={displayName}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
                       {thumbnail?.error ? (
-                        <div className="text-center text-gray-400">
+                        <div className="text-center text-gray-400 p-2">
                           <AlertCircle className="w-6 h-6 mx-auto mb-1 text-yellow-500" />
                           <p className="text-xs">{thumbnail.error}</p>
                         </div>
@@ -210,7 +232,7 @@ const FrigateThumbnailGrid = ({
                 {/* Nom de la caméra */}
                 <CardContent className="p-2">
                   <p className="text-xs font-medium truncate text-center">
-                    {camera.displayName}
+                    {displayName}
                   </p>
                 </CardContent>
               </Card>
