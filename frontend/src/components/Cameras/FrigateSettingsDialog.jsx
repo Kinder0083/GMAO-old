@@ -47,7 +47,7 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
     enabled: false,
     host: '',
     api_port: 5000,
-    go2rtc_port: 8555,  // Port WebRTC par défaut
+    go2rtc_port: 1984,  // Port go2rtc pour streaming
     use_https: false,
     username: '',
     password: '',
