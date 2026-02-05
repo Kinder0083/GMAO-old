@@ -55,10 +55,10 @@ class FrigateService:
     
     async def test_connection(self) -> Dict[str, Any]:
         """Teste la connexion à Frigate"""
-        logger.info(f"[FRIGATE] Test connexion vers {self.base_url}")
+        logger.info(f"[FRIGATE] Test connexion vers {self.base_url} (auth: {'oui' if self.auth else 'non'})")
         
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False) as client:
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
                 # Tester l'API Frigate - essayer plusieurs endpoints
                 test_urls = [
                     f"{self.base_url}/api/version",
@@ -85,6 +85,9 @@ class FrigateService:
                                 version = data.get('service', {}).get('version', 'unknown')
                             logger.info(f"[FRIGATE] API OK! Version: {version}")
                             break
+                        elif response.status_code == 401:
+                            last_error = f"Authentification requise (401) - Vérifiez vos identifiants"
+                            logger.warning(f"[FRIGATE] {url}: {last_error}")
                         else:
                             last_error = f"HTTP {response.status_code}: {response.text[:200]}"
                             logger.warning(f"[FRIGATE] {url} retourné: {last_error}")
