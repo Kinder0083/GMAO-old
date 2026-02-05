@@ -259,59 +259,91 @@ class FrigateService:
     
     async def get_camera_snapshot(self, camera_name: str, quality: int = 70) -> Optional[bytes]:
         """Récupère le snapshot d'une caméra"""
+        client = None
         try:
             client, login_ok = await self._create_authenticated_client()
-            async with client:
-                if not login_ok:
-                    return None
-                url = f"{self.base_url}/api/{camera_name}/latest.jpg"
-                response = await client.get(url, params={"quality": quality})
-                return response.content if response.status_code == 200 else None
+            if not login_ok:
+                if client:
+                    await client.aclose()
+                return None
+            url = f"{self.base_url}/api/{camera_name}/latest.jpg"
+            response = await client.get(url, params={"quality": quality})
+            await client.aclose()
+            return response.content if response.status_code == 200 else None
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur snapshot: {e}")
+            if client:
+                try:
+                    await client.aclose()
+                except:
+                    pass
             return None
     
     async def get_camera_thumbnail(self, camera_name: str, height: int = 180) -> Optional[bytes]:
         """Récupère une vignette"""
+        client = None
         try:
             client, login_ok = await self._create_authenticated_client()
-            async with client:
-                if not login_ok:
-                    return None
-                url = f"{self.base_url}/api/{camera_name}/latest.jpg"
-                response = await client.get(url, params={"h": height, "quality": 60})
-                return response.content if response.status_code == 200 else None
+            if not login_ok:
+                if client:
+                    await client.aclose()
+                return None
+            url = f"{self.base_url}/api/{camera_name}/latest.jpg"
+            response = await client.get(url, params={"h": height, "quality": 60})
+            await client.aclose()
+            return response.content if response.status_code == 200 else None
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur thumbnail: {e}")
+            if client:
+                try:
+                    await client.aclose()
+                except:
+                    pass
             return None
     
     async def get_camera_events(self, camera_name: str = None, limit: int = 20) -> List[Dict[str, Any]]:
         """Récupère les événements de détection"""
+        client = None
         try:
             client, login_ok = await self._create_authenticated_client()
-            async with client:
-                if not login_ok:
-                    return []
-                params = {"limit": limit}
-                if camera_name:
-                    params["camera"] = camera_name
-                response = await client.get(f"{self.base_url}/api/events", params=params)
-                return response.json() if response.status_code == 200 else []
+            if not login_ok:
+                if client:
+                    await client.aclose()
+                return []
+            params = {"limit": limit}
+            if camera_name:
+                params["camera"] = camera_name
+            response = await client.get(f"{self.base_url}/api/events", params=params)
+            await client.aclose()
+            return response.json() if response.status_code == 200 else []
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur events: {e}")
+            if client:
+                try:
+                    await client.aclose()
+                except:
+                    pass
             return []
     
     async def get_stats(self) -> Dict[str, Any]:
         """Récupère les statistiques Frigate"""
+        client = None
         try:
             client, login_ok = await self._create_authenticated_client()
-            async with client:
-                if not login_ok:
-                    return {}
-                response = await client.get(f"{self.base_url}/api/stats")
-                return response.json() if response.status_code == 200 else {}
+            if not login_ok:
+                if client:
+                    await client.aclose()
+                return {}
+            response = await client.get(f"{self.base_url}/api/stats")
+            await client.aclose()
+            return response.json() if response.status_code == 200 else {}
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur stats: {e}")
+            if client:
+                try:
+                    await client.aclose()
+                except:
+                    pass
             return {}
     
     def get_webrtc_url(self, stream_name: str) -> str:
