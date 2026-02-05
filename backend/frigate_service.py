@@ -361,6 +361,55 @@ class FrigateService:
     
     def get_mjpeg_url(self, camera_name: str) -> str:
         return f"{self.base_url}/api/{camera_name}"
+    
+    async def stream_mjpeg(self, camera_name: str):
+        """
+        Génère un flux MJPEG en récupérant des frames depuis Frigate.
+        Retourne un générateur async pour StreamingResponse.
+        """
+        client = None
+        try:
+            client, login_ok = await self._create_authenticated_client()
+            if not login_ok:
+                logger.error("[FRIGATE] MJPEG stream: échec authentification")
+                if client:
+                    await client.aclose()
+                return
+            
+            # Streamer les frames en continu
+            while True:
+                try:
+                    url = f"{self.base_url}/api/{camera_name}/latest.jpg"
+                    response = await client.get(url, params={"quality": 70})
+                    
+                    if response.status_code == 200:
+                        frame = response.content
+                        # Format MJPEG: chaque frame est précédée d'un boundary
+                        yield (
+                            b"--frame\r\n"
+                            b"Content-Type: image/jpeg\r\n"
+                            b"Content-Length: " + str(len(frame)).encode() + b"\r\n"
+                            b"\r\n" + frame + b"\r\n"
+                        )
+                    else:
+                        logger.warning(f"[FRIGATE] MJPEG frame erreur: {response.status_code}")
+                    
+                    # ~10 fps
+                    import asyncio
+                    await asyncio.sleep(0.1)
+                    
+                except Exception as e:
+                    logger.error(f"[FRIGATE] MJPEG stream erreur frame: {e}")
+                    break
+                    
+        except Exception as e:
+            logger.error(f"[FRIGATE] MJPEG stream erreur: {e}")
+        finally:
+            if client:
+                try:
+                    await client.aclose()
+                except:
+                    pass
 
 
 # Instance globale
