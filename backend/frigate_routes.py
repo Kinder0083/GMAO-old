@@ -335,11 +335,13 @@ async def get_frigate_stats(current_user: dict = Depends(get_current_user)):
 @router.get("/stream/{camera_name}")
 async def stream_frigate_mjpeg(
     camera_name: str,
+    token: str = Query(None, description="JWT token pour l'authentification"),
     current_user: dict = Depends(get_current_user)
 ):
     """
     Stream MJPEG d'une caméra Frigate via proxy authentifié.
     Le backend récupère les frames depuis Frigate et les transmet au client.
+    Note: Le token peut être passé via query param pour les balises img.
     """
     try:
         service = get_frigate_service()
