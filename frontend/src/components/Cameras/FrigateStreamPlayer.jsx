@@ -1,8 +1,8 @@
 /**
- * Player de streaming Frigate via proxy backend
- * Utilise MJPEG ou MSE pour le streaming (pas de WebSocket direct)
+ * Player de streaming Frigate via proxy backend MJPEG
+ * Utilise une simple balise img pointant vers le stream MJPEG du backend
  */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -14,80 +14,59 @@ import {
   Play,
   Square,
   RefreshCw,
-  AlertCircle,
-  Image
+  AlertCircle
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const FrigateStreamPlayer = ({ 
   cameraName,  // Nom de la caméra Frigate (ex: "Ouest")
-  streamName,  // Nom du stream go2rtc (ex: "Ouest_hq") 
+  streamName,  // Nom du stream go2rtc (ex: "Ouest_hq") - non utilisé actuellement
   displayName, // Nom affiché (ex: "Essai 1")
   onClose,
   className = ''
 }) => {
   const imgRef = useRef(null);
-  const intervalRef = useRef(null);
+  const containerRef = useRef(null);
   
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [frameCount, setFrameCount] = useState(0);
-  const [lastFrameTime, setLastFrameTime] = useState(null);
-  
-  const containerRef = useRef(null);
+  const [streamKey, setStreamKey] = useState(Date.now());
 
-  // Récupérer une frame depuis le backend (qui proxy vers Frigate avec auth)
-  const fetchFrame = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${API_URL}/api/cameras/frigate/snapshot/${cameraName}?quality=70&_t=${Date.now()}`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.snapshot && imgRef.current) {
-          imgRef.current.src = `data:image/jpeg;base64,${data.snapshot}`;
-          setStatus('connected');
-          setFrameCount(prev => prev + 1);
-          setLastFrameTime(Date.now());
-          setError(null);
-        }
-      } else {
-        throw new Error(`HTTP ${response.status}`);
-      }
-    } catch (err) {
-      console.error('[FrigatePlayer] Erreur frame:', err);
-      if (status !== 'error') {
-        setError(err.message);
-      }
-    }
-  }, [cameraName, status]);
+  // Construire l'URL du stream MJPEG avec le token d'authentification
+  const getStreamUrl = () => {
+    const token = localStorage.getItem('token');
+    // Note: Le token est passé via query param car les img tags ne supportent pas les headers
+    return `${API_URL}/api/cameras/frigate/stream/${cameraName}?token=${token}&_t=${streamKey}`;
+  };
 
-  // Démarrer le streaming (polling de frames)
-  const startStream = useCallback(() => {
+  // Démarrer le streaming
+  const startStream = () => {
     setStatus('connecting');
     setError(null);
-    setFrameCount(0);
-    
-    // Récupérer la première frame
-    fetchFrame();
-    
-    // Polling à 10 fps (100ms entre chaque frame)
-    intervalRef.current = setInterval(fetchFrame, 100);
-  }, [fetchFrame]);
+    setStreamKey(Date.now()); // Force le rechargement
+  };
 
   // Arrêter le streaming
-  const stopStream = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  const stopStream = () => {
+    if (imgRef.current) {
+      imgRef.current.src = '';
     }
     setStatus('idle');
-  }, []);
+  };
+
+  // Gestion des événements de l'image
+  const handleLoad = () => {
+    setStatus('connected');
+    setError(null);
+  };
+
+  const handleError = (e) => {
+    console.error('[FrigatePlayer] Erreur stream:', e);
+    setStatus('error');
+    setError('Impossible de charger le flux vidéo');
+  };
 
   // Toggle fullscreen
   const toggleFullscreen = () => {
@@ -112,25 +91,13 @@ const FrigateStreamPlayer = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Cleanup au démontage
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
-
-  // Démarrer automatiquement
+  // Démarrer automatiquement quand cameraName change
   useEffect(() => {
     if (cameraName) {
       startStream();
     }
     return () => stopStream();
   }, [cameraName]);
-
-  // Calculer FPS approximatif
-  const fps = frameCount > 10 ? Math.round(frameCount / ((Date.now() - (lastFrameTime - frameCount * 100)) / 1000)) : 0;
 
   return (
     <Card 
@@ -175,13 +142,17 @@ const FrigateStreamPlayer = ({
       
       <CardContent className="p-0 relative">
         <div className={`relative bg-gray-900 ${isFullscreen ? 'h-screen' : 'aspect-video'}`}>
-          {/* Image pour afficher les frames */}
-          <img
-            ref={imgRef}
-            alt={displayName || cameraName}
-            className="w-full h-full object-contain"
-            style={{ display: status === 'connected' ? 'block' : 'none' }}
-          />
+          {/* Stream MJPEG via img tag */}
+          {(status === 'connecting' || status === 'connected') && (
+            <img
+              ref={imgRef}
+              src={getStreamUrl()}
+              alt={displayName || cameraName}
+              className="w-full h-full object-contain"
+              onLoad={handleLoad}
+              onError={handleError}
+            />
+          )}
           
           {/* Overlay - idle */}
           {status === 'idle' && (
@@ -193,9 +164,9 @@ const FrigateStreamPlayer = ({
             </div>
           )}
           
-          {/* Overlay - connecting */}
+          {/* Overlay - connecting (temporaire pendant le chargement initial) */}
           {status === 'connecting' && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-800/80">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-800/60 pointer-events-none">
               <div className="text-center text-white">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
                 <p className="text-sm">Connexion à {displayName || cameraName}...</p>
@@ -220,9 +191,9 @@ const FrigateStreamPlayer = ({
           {/* Indicateur de streaming */}
           {status === 'connected' && (
             <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-white text-xs flex items-center gap-2">
-              <Image className="w-3 h-3" />
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               <span>{cameraName}</span>
-              {frameCount > 10 && <span className="text-green-400">~10 fps</span>}
+              <span className="text-green-400">MJPEG</span>
             </div>
           )}
         </div>
