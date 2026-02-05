@@ -82,6 +82,8 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
             api_port: data.api_port || 5000,
             go2rtc_port: data.go2rtc_port || 1984,
             use_https: data.use_https || false,
+            username: data.username || '',
+            password: '',  // Ne jamais pré-remplir le mot de passe
             stream_mapping: data.stream_mapping || {}
           });
           
