@@ -167,6 +167,13 @@ async def test_frigate_connection(
     username = request_data.get("username", "")
     password = request_data.get("password", "")
     
+    # Si pas de mot de passe fourni, utiliser celui sauvegardé en DB
+    if not password and username:
+        existing_settings = await db.camera_settings.find_one({"type": "frigate"})
+        if existing_settings:
+            password = existing_settings.get("password", "")
+            logger.info(f"[FRIGATE API] Utilisation du mot de passe sauvegardé (len={len(password)})")
+    
     logger.info(f"[FRIGATE API] Test connexion demandé: host={host}, api_port={api_port}, go2rtc_port={go2rtc_port}, https={use_https}, user={username}, pass_len={len(password)}")
     
     if not host:
