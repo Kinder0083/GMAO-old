@@ -2,7 +2,7 @@
 Routes API pour l'intégration Frigate NVR
 Ces routes doivent être enregistrées AVANT les routes dynamiques /{camera_id}
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
