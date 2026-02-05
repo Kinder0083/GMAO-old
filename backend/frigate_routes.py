@@ -339,15 +339,15 @@ async def get_frigate_stats(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/stream/{camera_name}")
+@router.get("/stream/{stream_name}")
 async def stream_frigate_mjpeg(
-    camera_name: str,
+    stream_name: str,
     token: str = Query(..., description="JWT token pour l'authentification")
 ):
     """
-    Stream MJPEG d'une caméra Frigate via proxy authentifié.
+    Stream MJPEG d'un flux Frigate via proxy authentifié.
+    stream_name: nom COMPLET du flux go2rtc (ex: "Ouest_hq", "Ouest_lq")
     Le backend récupère les frames depuis Frigate et les transmet au client.
-    Note: Le token est passé via query param car les balises img ne supportent pas les headers.
     """
     # Valider le token manuellement
     payload = decode_access_token(token)
@@ -362,10 +362,10 @@ async def stream_frigate_mjpeg(
         if not service:
             raise HTTPException(status_code=503, detail="Frigate non configuré")
         
-        logger.info(f"[FRIGATE] Démarrage stream MJPEG pour: {camera_name}")
+        logger.info(f"[FRIGATE] Démarrage stream MJPEG pour: {stream_name}")
         
         return StreamingResponse(
-            service.stream_mjpeg(camera_name),
+            service.stream_mjpeg(stream_name),
             media_type="multipart/x-mixed-replace; boundary=frame"
         )
     except HTTPException:
