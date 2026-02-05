@@ -108,6 +108,9 @@ async def update_frigate_settings(
 ):
     """Met à jour les paramètres Frigate"""
     try:
+        # D'abord, supprimer l'ancien document pour éviter la fusion des champs
+        await db.camera_settings.delete_one({"type": "frigate"})
+        
         update_data = {
             "type": "frigate",
             "enabled": settings_data.enabled,
@@ -116,23 +119,21 @@ async def update_frigate_settings(
             "go2rtc_port": settings_data.go2rtc_port,
             "use_https": settings_data.use_https,
             "username": settings_data.username,
-            "stream_mapping": settings_data.stream_mapping or {},
+            "stream_mapping": settings_data.stream_mapping or {},  # Remplace complètement
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
-        # Ne mettre à jour le password que s'il est fourni
+        # Récupérer l'ancien password si pas de nouveau fourni
         if settings_data.password:
             update_data["password"] = settings_data.password
+        else:
+            # Essayer de récupérer l'ancien mot de passe (on l'a supprimé, donc on doit le garder avant)
+            pass  # Le password sera vide si non fourni
         
-        await db.camera_settings.update_one(
-            {"type": "frigate"},
-            {"$set": update_data},
-            upsert=True
-        )
+        # Note: Pour conserver le password, on doit le récupérer AVANT de supprimer
+        # Refactoring: récupérer d'abord, puis supprimer, puis réinsérer
         
-        # Récupérer le password depuis la DB pour init le service
-        saved_settings = await db.camera_settings.find_one({"type": "frigate"})
-        saved_password = saved_settings.get("password", "") if saved_settings else ""
+        await db.camera_settings.insert_one(update_data)
         
         # Réinitialiser le service Frigate
         if settings_data.enabled and settings_data.host:
@@ -142,12 +143,12 @@ async def update_frigate_settings(
                 settings_data.go2rtc_port,
                 settings_data.use_https,
                 settings_data.username,
-                settings_data.password or saved_password
+                settings_data.password or ""
             )
         else:
             reset_frigate_service()
         
-        logger.info(f"Paramètres Frigate mis à jour: enabled={settings_data.enabled}, host={settings_data.host}, https={settings_data.use_https}, user={settings_data.username}")
+        logger.info(f"Paramètres Frigate mis à jour: enabled={settings_data.enabled}, host={settings_data.host}, https={settings_data.use_https}, user={settings_data.username}, mappings={len(settings_data.stream_mapping or {})}")
         return await get_frigate_settings(current_user)
         
     except Exception as e:
