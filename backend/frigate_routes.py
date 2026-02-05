@@ -332,6 +332,33 @@ async def get_frigate_stats(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/stream/{camera_name}")
+async def stream_frigate_mjpeg(
+    camera_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Stream MJPEG d'une caméra Frigate via proxy authentifié.
+    Le backend récupère les frames depuis Frigate et les transmet au client.
+    """
+    try:
+        service = get_frigate_service()
+        if not service:
+            raise HTTPException(status_code=503, detail="Frigate non configuré")
+        
+        logger.info(f"[FRIGATE] Démarrage stream MJPEG pour: {camera_name}")
+        
+        return StreamingResponse(
+            service.stream_mjpeg(camera_name),
+            media_type="multipart/x-mixed-replace; boundary=frame"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur streaming MJPEG Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/webrtc-info/{stream_name}")
 async def get_frigate_webrtc_info(
     stream_name: str,
