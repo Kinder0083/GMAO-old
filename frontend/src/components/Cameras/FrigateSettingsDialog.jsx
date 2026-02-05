@@ -364,7 +364,7 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
                     </div>
                     
                     <div>
-                      <Label htmlFor="frigate-go2rtc-port">Port WebRTC</Label>
+                      <Label htmlFor="frigate-go2rtc-port">Port go2rtc</Label>
                       <Input
                         id="frigate-go2rtc-port"
                         type="number"
@@ -374,7 +374,7 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
                         onChange={(e) => setSettings(prev => ({ ...prev, go2rtc_port: parseInt(e.target.value) }))}
                         className="mt-1"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Défaut: 8555</p>
+                      <p className="text-xs text-gray-500 mt-1">Défaut: 1984 (streaming)</p>
                     </div>
                   </div>
                   
