@@ -174,7 +174,7 @@ class FrigateService:
     async def get_cameras(self) -> List[Dict[str, Any]]:
         """Récupère la liste des caméras configurées dans Frigate"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
                 response = await client.get(f"{self.base_url}/api/config")
                 if response.status_code == 200:
                     config = response.json()
@@ -199,7 +199,7 @@ class FrigateService:
     async def get_go2rtc_streams(self) -> List[Dict[str, Any]]:
         """Récupère la liste des streams go2rtc disponibles"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
                 response = await client.get(f"{self.go2rtc_url}/api/streams")
                 if response.status_code == 200:
                     streams_data = response.json()
