@@ -149,13 +149,20 @@ class FrigateService:
                     "details": {"host": self.host, "api_port": self.api_port, "last_error": last_error}
                 }
             
-            # Tester go2rtc
+            # Tester go2rtc (intégré dans Frigate)
             go2rtc_ok = False
+            go2rtc_streams = []
             try:
-                go2rtc_resp = await client.get(f"{self.go2rtc_url}/api/streams")
-                go2rtc_ok = go2rtc_resp.status_code == 200
-            except:
-                pass
+                # go2rtc est accessible via /api/go2rtc/streams dans Frigate
+                go2rtc_resp = await client.get(f"{self.base_url}/api/go2rtc/streams")
+                logger.info(f"[FRIGATE] go2rtc test: {go2rtc_resp.status_code}")
+                if go2rtc_resp.status_code == 200:
+                    go2rtc_ok = True
+                    go2rtc_data = go2rtc_resp.json()
+                    go2rtc_streams = list(go2rtc_data.keys()) if isinstance(go2rtc_data, dict) else []
+                    logger.info(f"[FRIGATE] go2rtc streams disponibles: {go2rtc_streams}")
+            except Exception as e:
+                logger.warning(f"[FRIGATE] Erreur test go2rtc: {e}")
             
             await client.aclose()
             return {
