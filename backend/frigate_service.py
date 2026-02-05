@@ -362,9 +362,10 @@ class FrigateService:
     def get_mjpeg_url(self, camera_name: str) -> str:
         return f"{self.base_url}/api/{camera_name}"
     
-    async def stream_mjpeg(self, camera_name: str):
+    async def stream_mjpeg(self, stream_name: str):
         """
-        Génère un flux MJPEG en récupérant des frames depuis Frigate.
+        Génère un flux MJPEG en récupérant des frames depuis go2rtc/Frigate.
+        stream_name: nom COMPLET du flux (ex: "Ouest_hq", "Ouest_lq")
         Retourne un générateur async pour StreamingResponse.
         """
         client = None
@@ -376,15 +377,38 @@ class FrigateService:
                     await client.aclose()
                 return
             
-            # Streamer les frames en continu
+            # Extraire le nom de base de la caméra (sans _hq/_lq) pour les snapshots
+            # mais utiliser le stream_name complet pour go2rtc
+            base_camera_name = stream_name.replace('_hq', '').replace('_lq', '').replace('_sub', '')
+            
+            # Essayer d'abord le flux MJPEG de go2rtc (meilleure qualité pour HQ/LQ)
+            # go2rtc expose un endpoint MJPEG: /api/go2rtc/stream.mjpeg?src={stream_name}
+            go2rtc_mjpeg_url = f"{self.base_url}/api/go2rtc/stream.mjpeg?src={stream_name}"
+            
+            logger.info(f"[FRIGATE] Tentative stream go2rtc MJPEG: {go2rtc_mjpeg_url}")
+            
+            try:
+                # Tester si go2rtc MJPEG est disponible
+                async with client.stream("GET", go2rtc_mjpeg_url) as response:
+                    if response.status_code == 200:
+                        logger.info(f"[FRIGATE] Stream go2rtc MJPEG actif pour {stream_name}")
+                        async for chunk in response.aiter_bytes(chunk_size=65536):
+                            yield chunk
+                        return
+                    else:
+                        logger.warning(f"[FRIGATE] go2rtc MJPEG non disponible ({response.status_code}), fallback snapshots")
+            except Exception as e:
+                logger.warning(f"[FRIGATE] go2rtc MJPEG erreur: {e}, fallback snapshots")
+            
+            # Fallback: polling de snapshots (moins efficace mais fonctionne toujours)
+            logger.info(f"[FRIGATE] Fallback vers polling snapshots pour {base_camera_name}")
             while True:
                 try:
-                    url = f"{self.base_url}/api/{camera_name}/latest.jpg"
+                    url = f"{self.base_url}/api/{base_camera_name}/latest.jpg"
                     response = await client.get(url, params={"quality": 70})
                     
                     if response.status_code == 200:
                         frame = response.content
-                        # Format MJPEG: chaque frame est précédée d'un boundary
                         yield (
                             b"--frame\r\n"
                             b"Content-Type: image/jpeg\r\n"
