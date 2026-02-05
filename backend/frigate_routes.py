@@ -178,17 +178,10 @@ async def test_frigate_connection(
         logger.info(f"[FRIGATE API] Résultat test: success={result.get('success')}, message={result.get('message')}")
         
         if result.get("success"):
-            try:
-                streams = await service.get_go2rtc_streams()
-                cameras = await service.get_cameras()
-                result["streams"] = streams
-                result["cameras"] = cameras
-                logger.info(f"[FRIGATE API] Streams trouvés: {len(streams)}, Caméras: {len(cameras)}")
-            except Exception as e:
-                logger.warning(f"[FRIGATE API] Erreur récup streams/cameras: {e}")
-                result["streams"] = []
-                result["cameras"] = []
-                result["streams_error"] = str(e)
+            # Les streams et cameras sont déjà inclus dans le résultat de test_connection
+            streams = result.get("streams", [])
+            cameras = result.get("cameras", [])
+            logger.info(f"[FRIGATE API] Streams: {len(streams)}, Caméras: {len(cameras)}")
         
         return result
     except Exception as e:
