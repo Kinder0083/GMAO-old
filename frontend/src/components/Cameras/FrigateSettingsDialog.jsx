@@ -145,21 +145,26 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const params = new URLSearchParams({
+      
+      // Envoyer les données en JSON pour éviter les problèmes d'encodage URL
+      const requestData = {
         host: settings.host,
-        api_port: settings.api_port.toString(),
-        go2rtc_port: settings.go2rtc_port.toString(),
-        use_https: settings.use_https.toString(),
+        api_port: settings.api_port,
+        go2rtc_port: settings.go2rtc_port,
+        use_https: settings.use_https,
         username: settings.username || '',
         password: settings.password || ''
-      });
+      };
       
-      console.log('[FRIGATE] Test connexion:', settings.host, settings.api_port, settings.go2rtc_port, 'HTTPS:', settings.use_https, 'User:', settings.username);
-      console.log('[FRIGATE] URL:', `${API_URL}/api/cameras/frigate/test?${params}`);
+      console.log('[FRIGATE] Test connexion:', settings.host, settings.api_port, 'HTTPS:', settings.use_https, 'User:', settings.username);
       
-      const response = await fetch(`${API_URL}/api/cameras/frigate/test?${params}`, {
+      const response = await fetch(`${API_URL}/api/cameras/frigate/test`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
       });
       
       console.log('[FRIGATE] Response status:', response.status);
