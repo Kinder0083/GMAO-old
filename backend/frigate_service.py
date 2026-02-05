@@ -283,10 +283,17 @@ class FrigateService:
             return {}
     
     def get_webrtc_url(self, stream_name: str) -> str:
-        return f"ws://{self.host}:{self.go2rtc_port}/api/ws?src={stream_name}"
+        """URL WebSocket pour WebRTC (port 8555 par défaut)"""
+        protocol = "wss" if self.use_https else "ws"
+        return f"{protocol}://{self.host}:{self.webrtc_port}/api/ws?src={stream_name}"
     
     def get_webrtc_offer_url(self, stream_name: str) -> str:
-        return f"{self.go2rtc_url}/api/webrtc?src={stream_name}"
+        """URL HTTP pour l'offre WebRTC via Frigate"""
+        return f"{self.base_url}/api/go2rtc/webrtc?src={stream_name}"
+    
+    def get_mse_url(self, stream_name: str) -> str:
+        """URL MSE pour streaming via Frigate (alternative à WebRTC)"""
+        return f"{self.base_url}/api/go2rtc/stream.mp4?src={stream_name}"
     
     def get_mjpeg_url(self, camera_name: str) -> str:
         return f"{self.base_url}/api/{camera_name}"
