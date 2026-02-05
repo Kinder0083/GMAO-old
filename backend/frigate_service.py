@@ -230,7 +230,7 @@ class FrigateService:
             Bytes de l'image JPEG ou None
         """
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
                 # Endpoint Frigate pour le dernier snapshot
                 url = f"{self.base_url}/api/{camera_name}/latest.jpg"
                 params = {"quality": quality}
@@ -257,7 +257,7 @@ class FrigateService:
             Bytes de l'image ou None
         """
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
                 url = f"{self.base_url}/api/{camera_name}/latest.jpg"
                 params = {"h": height, "quality": 60}
                 
@@ -281,7 +281,7 @@ class FrigateService:
             Liste des événements
         """
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
                 url = f"{self.base_url}/api/events"
                 params = {"limit": limit}
                 if camera_name:
