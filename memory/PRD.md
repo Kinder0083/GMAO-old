@@ -1,145 +1,120 @@
-# GMAO Iris - Product Requirements Document
+# GMAO IRIS - PRD (Product Requirements Document)
 
-## Description du Projet
-Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec tableau de bord temps réel, gestion des ordres de travail, équipements, planning du personnel et chat en direct.
+## Original Problem Statement
+Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec intégration de caméras IP via Frigate NVR.
 
-## Stack Technique
-- **Frontend**: React + Tailwind CSS + Shadcn/UI
-- **Backend**: FastAPI (Python)
-- **Database**: MongoDB
-- **Real-time**: WebSockets via FastAPI
-- **AI Integration**: Google Gemini 2.5 Flash (Emergent LLM Key)
-- **Video Surveillance**: RTSP/ONVIF + OpenCV + FFmpeg + **Frigate NVR (WebRTC via go2rtc)**
+### User Persona
+- **Grèg** - Concepteur et utilisateur principal
+- **Équipe maintenance** - Techniciens et visualiseurs
 
-## Comptes de Test
-- **Admin**: buenogy@gmail.com / Admin2024!
-
-## Script d'Installation
-- **Version actuelle**: `gmao-iris-v1.1.8-install-auto.sh`
-- Compatible Proxmox 9.0 / Debian 12
-- Installation automatique de toutes les dépendances (MongoDB, FFmpeg, OpenCV, jsPDF, etc.)
+### Core Requirements
+1. Gestion des ordres de travail
+2. Gestion des équipements et actifs
+3. Gestion des équipes et utilisateurs
+4. Intégration caméras IP via Frigate NVR
+5. Alertes et notifications
+6. Rapports et analytics
 
 ---
 
-## Fonctionnalités Implémentées
+## Architecture
 
-### Session du 4 Février 2026
+### Backend (FastAPI + MongoDB)
+- `/app/backend/server.py` - Point d'entrée principal
+- `/app/backend/frigate_routes.py` - Routes API Frigate
+- `/app/backend/frigate_service.py` - Service connexion Frigate
+- `/app/backend/camera_routes.py` - Routes caméras legacy
 
-#### ✅ Feature: Intégration Frigate NVR (4 Fév 2026)
-**Implémentation complète** de l'intégration avec Frigate NVR pour le streaming vidéo temps réel :
-
-**Backend** (`/app/backend/`) :
-- `frigate_service.py` : Service de connexion à Frigate NVR
-  - Test de connexion avec version Frigate
-  - Récupération des caméras et streams go2rtc
-  - Proxy pour snapshots/thumbnails (évite CORS)
-  - Génération des URLs WebRTC
-- `camera_routes.py` : Nouvelles routes API Frigate
-  - `GET/PUT /api/cameras/frigate/settings` : Paramètres Frigate
-  - `POST /api/cameras/frigate/test` : Test connexion
-  - `GET /api/cameras/frigate/cameras` : Liste caméras
-  - `GET /api/cameras/frigate/streams` : Liste streams go2rtc
-  - `GET /api/cameras/frigate/snapshot/{camera}` : Proxy snapshot
-  - `GET /api/cameras/frigate/thumbnail/{camera}` : Proxy thumbnail
-  - `GET /api/cameras/frigate/webrtc-info/{stream}` : Infos WebRTC
-
-**Frontend** (`/app/frontend/src/components/Cameras/`) :
-- `FrigateSettingsDialog.jsx` : Dialog de configuration
-  - Paramètres connexion (IP, Port API 5000, Port go2rtc 1984)
-  - Test de connexion avec affichage version
-  - Onglet Streams : Mapping nom affiché → stream go2rtc
-- `FrigateWebRTCPlayer.jsx` : Player WebRTC temps réel
-  - Connexion directe à go2rtc via WebSocket
-  - Latence ultra-basse (<500ms)
-  - Contrôles : plein écran, mute, reconnexion
-- `FrigateLivePanel.jsx` : Panel live avec 3 slots
-  - Sélection des caméras/streams
-  - Affichage multi-stream simultané
-- `FrigateThumbnailGrid.jsx` : Grille de vignettes
-  - Rafraîchissement périodique (30s)
-  - Clic pour ouvrir en live
-- `CamerasPage.jsx` : Nouvel onglet "Frigate" ajouté
-
-**Paramètres configurables** (non figés dans le code) :
-- Adresse IP du serveur Frigate
-- Port API Frigate (défaut: 5000)
-- Port go2rtc WebRTC (défaut: 1984)
-- Mapping des streams (nom affiché → stream go2rtc)
+### Frontend (React)
+- `/app/frontend/src/pages/CamerasPage.jsx` - Page principale caméras
+- `/app/frontend/src/components/Cameras/FrigateSettingsDialog.jsx` - Configuration Frigate
+- `/app/frontend/src/components/Cameras/FrigateLivePanel.jsx` - Panel live streaming
+- `/app/frontend/src/components/Cameras/FrigateStreamPlayer.jsx` - Player MJPEG
+- `/app/frontend/src/components/Cameras/FrigateThumbnailGrid.jsx` - Grille vignettes
 
 ---
 
-### Fonctionnalités Précédentes
+## What's Been Implemented
 
-#### ✅ P3: Caméras RTSP/ONVIF
-- Ajout manuel de caméras RTSP
-- Découverte ONVIF (bloquée sur réseau multicast)
-- Snapshots avec rafraîchissement périodique
-- Système de cache de frames en mémoire (15 FPS)
-- Alertes caméras par email
+### Phase 1 - Core GMAO ✅
+- Authentification JWT
+- Gestion utilisateurs et rôles
+- Ordres de travail CRUD
+- Gestion équipements
+- Dashboard principal
 
-#### ✅ P2: Analytics Checklists
-- Dashboard d'analyse des contrôles
-- Graphiques de conformité (Recharts)
-- Export PDF (jsPDF + html2canvas)
+### Phase 2 - Team Management ✅
+- Gestion des équipes
+- Organisation des menus
+- Permissions par module
 
-#### ✅ P1-4: Organisation du Menu
-- Menu personnalisable par utilisateur
-- Sauvegarde des préférences
+### Phase 3 - Camera Integration 
+#### P3.1 - Custom RTSP (Abandonné)
+- Implémentation initiale avec polling RTSP
+- Problèmes de performance avec multiple caméras
+- Remplacé par intégration Frigate
 
-#### ✅ P1-3: Gestion de l'équipe et Pointage
-- Gestion des utilisateurs et rôles
-- Pointage horaire
-
----
-
-## Architecture des Fichiers Caméras
-
-```
-/app/backend/
-├── camera_routes.py        # Routes API caméras + Frigate
-├── camera_service.py       # Service capture RTSP local
-├── frigate_service.py      # Service connexion Frigate NVR
-└── camera_alert_service.py # Service alertes email
-
-/app/frontend/src/components/Cameras/
-├── CamerasPage.jsx         # Page principale + onglet Frigate
-├── CameraGrid.jsx          # Grille caméras locales
-├── LiveStreamPanel.jsx     # Live RTSP local (polling)
-├── FrigateSettingsDialog.jsx   # Config Frigate
-├── FrigateWebRTCPlayer.jsx     # Player WebRTC go2rtc
-├── FrigateLivePanel.jsx        # Panel 3 slots Frigate
-├── FrigateThumbnailGrid.jsx    # Vignettes Frigate
-├── CameraAlertsPanel.jsx       # Config alertes
-└── AddCameraDialog.jsx         # Ajout caméra
-```
+#### P3.2 - Frigate NVR Integration ✅ (2024-02-05)
+- **Connexion Frigate:** Authentification JWT, HTTPS support
+- **Settings Panel:** Configuration host/port/credentials
+- **API Endpoints:**
+  - `GET /api/cameras/frigate/settings` - Récupérer config
+  - `PUT /api/cameras/frigate/settings` - Sauvegarder config
+  - `POST /api/cameras/frigate/test` - Tester connexion
+  - `GET /api/cameras/frigate/cameras` - Liste caméras
+  - `GET /api/cameras/frigate/streams` - Liste streams go2rtc
+  - `GET /api/cameras/frigate/thumbnail/{camera}` - Vignette
+  - `GET /api/cameras/frigate/snapshot/{camera}` - Snapshot
+  - `GET /api/cameras/frigate/stream/{camera}` - **Stream MJPEG (NOUVEAU)**
 
 ---
 
-## Prochaines Tâches (Backlog)
+## Prioritized Backlog
 
-### P2 - Dashboard Plan de Surveillance
-- Dashboard dédié à la planification de surveillance
+### P0 - Critical (Current)
+- [x] Endpoint streaming MJPEG manquant - DONE (2024-02-05)
 
-### Améliorations Futures
-- Rapports PDF mensuels automatiques
-- Affichage événements détection Frigate (personnes, véhicules)
-- Détection de mouvement OpenCV
-- Pointage NFC
+### P1 - High Priority
+- [ ] Tester thumbnails et live sur Frigate réel
+
+### P2 - Medium Priority
+- [ ] Dashboard Plan de Surveillance
+- [ ] Intégration événements détection Frigate
+
+### P3 - Nice to Have
+- [ ] Rapports PDF mensuels automatiques
+- [ ] NFC time tracking
 
 ---
 
-## Configuration Frigate Requise
+## Known Issues & Workarounds
 
-Pour que l'intégration fonctionne, Frigate doit avoir go2rtc configuré :
+### WebSocket Real-time Updates
+- **Status:** BLOCKED (infrastructure externe)
+- **Workaround:** Polling périodique
 
-```yaml
-go2rtc:
-  streams:
-    Camera_hq: rtsp://user:pass@ip:554/stream1
-    Camera_lq: rtsp://user:pass@ip:554/stream2
+### ONVIF Discovery
+- **Status:** BLOCKED (réseau utilisateur)
+- **Workaround:** Ajout manuel des caméras / Frigate
+
+---
+
+## Deployment Notes
+
+### Proxmox Server
+```bash
+cd /opt/gmao-iris/backend
+source venv/bin/activate
+pip install -r requirements.txt
+
+cd /opt/gmao-iris/frontend
+yarn build
+
+sudo supervisorctl restart backend frontend
 ```
 
-Ports à exposer :
-- **5000** : API Frigate
-- **1984** : go2rtc (WebRTC)
-- **8554** : RTSP restream (optionnel)
+### Environment Variables
+- `MONGO_URL` - MongoDB connection string
+- `DB_NAME` - Database name (gmao_iris)
+- `SECRET_KEY` - JWT secret
+- `REACT_APP_BACKEND_URL` - API URL for frontend
