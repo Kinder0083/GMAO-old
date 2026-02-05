@@ -1,6 +1,6 @@
 /**
- * Panel de visualisation live Frigate avec 3 slots WebRTC
- * Utilise go2rtc pour un streaming ultra basse latence
+ * Panel de visualisation live Frigate avec 3 slots
+ * Utilise le streaming via proxy backend (pas de WebSocket direct)
  */
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -17,27 +17,25 @@ import {
   Video,
   VideoOff,
   Loader2,
-  Play,
-  Square,
   Server,
   Wifi,
   WifiOff,
   Settings,
   AlertTriangle
 } from 'lucide-react';
-import FrigateWebRTCPlayer from './FrigateWebRTCPlayer';
+import FrigateStreamPlayer from './FrigateStreamPlayer';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const FrigateLivePanel = ({ onOpenSettings }) => {
   const [frigateSettings, setFrigateSettings] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedStreams, setSelectedStreams] = useState([null, null, null]);
-  const [availableStreams, setAvailableStreams] = useState([]);
+  const [selectedCameras, setSelectedCameras] = useState([null, null, null]);
+  const [availableCameras, setAvailableCameras] = useState([]);
 
-  // Charger les paramètres Frigate
+  // Charger les paramètres et caméras Frigate
   useEffect(() => {
-    const loadSettings = async () => {
+    const loadData = async () => {
       try {
         const token = localStorage.getItem('token');
         const response = await fetch(`${API_URL}/api/cameras/frigate/settings`, {
@@ -48,39 +46,39 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
           const data = await response.json();
           setFrigateSettings(data);
           
-          // Charger les streams si connecté
+          // Charger les caméras si connecté
           if (data.enabled && data.connected) {
-            const streamsRes = await fetch(`${API_URL}/api/cameras/frigate/streams`, {
+            const camerasRes = await fetch(`${API_URL}/api/cameras/frigate/cameras`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (streamsRes.ok) {
-              const streamsData = await streamsRes.json();
-              setAvailableStreams(streamsData.streams || []);
+            if (camerasRes.ok) {
+              const camerasData = await camerasRes.json();
+              setAvailableCameras(camerasData.cameras || []);
             }
           }
         }
       } catch (error) {
-        console.error('Erreur chargement paramètres Frigate:', error);
+        console.error('Erreur chargement Frigate:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    loadSettings();
+    loadData();
   }, []);
 
-  // Sélectionner un stream pour un slot
-  const handleSelectStream = (slotIndex, streamName) => {
-    setSelectedStreams(prev => {
+  // Sélectionner une caméra pour un slot
+  const handleSelectCamera = (slotIndex, cameraName) => {
+    setSelectedCameras(prev => {
       const newSelection = [...prev];
-      newSelection[slotIndex] = streamName === '__none__' ? null : streamName;
+      newSelection[slotIndex] = cameraName === '__none__' ? null : cameraName;
       return newSelection;
     });
   };
 
-  // Désélectionner un stream
-  const handleDeselectStream = (slotIndex) => {
-    setSelectedStreams(prev => {
+  // Désélectionner une caméra
+  const handleDeselectCamera = (slotIndex) => {
+    setSelectedCameras(prev => {
       const newSelection = [...prev];
       newSelection[slotIndex] = null;
       return newSelection;
@@ -88,31 +86,17 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
   };
 
   // Obtenir le nom d'affichage depuis le mapping
-  const getDisplayName = (streamName) => {
-    if (!frigateSettings?.stream_mapping) return streamName;
+  const getDisplayName = (cameraName) => {
+    if (!frigateSettings?.stream_mapping) return cameraName;
     
-    // Chercher dans le mapping inversé
-    const entry = Object.entries(frigateSettings.stream_mapping).find(
-      ([_, stream]) => stream === streamName
-    );
-    
-    return entry ? entry[0] : streamName;
-  };
-
-  // Obtenir les streams du mapping ou tous les streams disponibles
-  const getStreamOptions = () => {
-    if (frigateSettings?.stream_mapping && Object.keys(frigateSettings.stream_mapping).length > 0) {
-      // Utiliser les streams du mapping
-      return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => ({
-        displayName,
-        streamName
-      }));
+    // Chercher dans le mapping
+    for (const [displayName, streamName] of Object.entries(frigateSettings.stream_mapping)) {
+      // Le streamName peut être "Ouest_hq" et la caméra "Ouest"
+      if (streamName.startsWith(cameraName) || streamName === cameraName) {
+        return displayName;
+      }
     }
-    // Utiliser tous les streams disponibles
-    return availableStreams.map(s => ({
-      displayName: s.name,
-      streamName: s.name
-    }));
+    return cameraName;
   };
 
   if (loading) {
@@ -135,7 +119,7 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
             Frigate non configuré
           </h3>
           <p className="text-gray-500 mb-4">
-            Configurez votre serveur Frigate pour utiliser le streaming WebRTC temps réel.
+            Configurez votre serveur Frigate pour utiliser le streaming.
           </p>
           <Button onClick={onOpenSettings}>
             <Settings className="w-4 h-4 mr-2" />
@@ -167,7 +151,22 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     );
   }
 
-  const streamOptions = getStreamOptions();
+  // Pas de caméras disponibles
+  if (availableCameras.length === 0) {
+    return (
+      <Card className="p-6">
+        <div className="text-center">
+          <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
+          <p className="text-gray-600 mb-3">
+            Aucune caméra détectée dans Frigate.
+          </p>
+          <Button variant="outline" size="sm" onClick={onOpenSettings}>
+            Vérifier la configuration
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -181,6 +180,9 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
           {frigateSettings.frigate_version && (
             <span className="text-sm text-gray-500">v{frigateSettings.frigate_version}</span>
           )}
+          <span className="text-sm text-gray-400">
+            ({availableCameras.length} caméra{availableCameras.length > 1 ? 's' : ''})
+          </span>
         </div>
         <Button variant="outline" size="sm" onClick={onOpenSettings}>
           <Settings className="w-4 h-4 mr-2" />
@@ -188,38 +190,21 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
         </Button>
       </div>
 
-      {/* Pas de streams configurés */}
-      {streamOptions.length === 0 && (
-        <Card className="p-6">
-          <div className="text-center">
-            <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
-            <p className="text-gray-600 mb-3">
-              Aucun stream go2rtc détecté ou configuré.
-            </p>
-            <Button variant="outline" size="sm" onClick={onOpenSettings}>
-              Configurer les streams
-            </Button>
-          </div>
-        </Card>
-      )}
-
       {/* Grille des 3 slots live */}
-      {streamOptions.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {[0, 1, 2].map((slotIndex) => (
-            <LiveSlot
-              key={slotIndex}
-              slotIndex={slotIndex}
-              selectedStream={selectedStreams[slotIndex]}
-              streamOptions={streamOptions}
-              frigateSettings={frigateSettings}
-              onSelectStream={handleSelectStream}
-              onDeselectStream={handleDeselectStream}
-              getDisplayName={getDisplayName}
-            />
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {[0, 1, 2].map((slotIndex) => (
+          <LiveSlot
+            key={slotIndex}
+            slotIndex={slotIndex}
+            selectedCamera={selectedCameras[slotIndex]}
+            availableCameras={availableCameras}
+            frigateSettings={frigateSettings}
+            onSelectCamera={handleSelectCamera}
+            onDeselectCamera={handleDeselectCamera}
+            getDisplayName={getDisplayName}
+          />
+        ))}
+      </div>
     </div>
   );
 };
@@ -227,22 +212,20 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
 // Composant pour un slot live
 const LiveSlot = ({
   slotIndex,
-  selectedStream,
-  streamOptions,
+  selectedCamera,
+  availableCameras,
   frigateSettings,
-  onSelectStream,
-  onDeselectStream,
+  onSelectCamera,
+  onDeselectCamera,
   getDisplayName
 }) => {
-  // Si un stream est sélectionné, afficher le player WebRTC
-  if (selectedStream) {
+  // Si une caméra est sélectionnée, afficher le player
+  if (selectedCamera) {
     return (
-      <FrigateWebRTCPlayer
-        streamName={selectedStream}
-        displayName={getDisplayName(selectedStream)}
-        frigateHost={frigateSettings.host}
-        go2rtcPort={frigateSettings.go2rtc_port}
-        onClose={() => onDeselectStream(slotIndex)}
+      <FrigateStreamPlayer
+        cameraName={selectedCamera}
+        displayName={getDisplayName(selectedCamera)}
+        onClose={() => onDeselectCamera(slotIndex)}
       />
     );
   }
@@ -260,17 +243,17 @@ const LiveSlot = ({
           <VideoOff className="w-8 h-8 text-gray-400 mb-3" />
           <Select
             value=""
-            onValueChange={(value) => onSelectStream(slotIndex, value)}
+            onValueChange={(value) => onSelectCamera(slotIndex, value)}
           >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Sélectionner une caméra" />
             </SelectTrigger>
             <SelectContent>
-              {streamOptions.map((option) => (
-                <SelectItem key={option.streamName} value={option.streamName}>
+              {availableCameras.map((camera) => (
+                <SelectItem key={camera.name} value={camera.name}>
                   <div className="flex items-center gap-2">
                     <Video className="w-4 h-4" />
-                    {option.displayName}
+                    {getDisplayName(camera.name)}
                   </div>
                 </SelectItem>
               ))}
