@@ -22,7 +22,7 @@ FRIGATE_TIMEOUT = 15.0
 class FrigateService:
     """Service de connexion à Frigate NVR"""
     
-    def __init__(self, host: str, api_port: int = 5000, go2rtc_port: int = 1984, use_https: bool = False):
+    def __init__(self, host: str, api_port: int = 5000, go2rtc_port: int = 1984, use_https: bool = False, username: str = "", password: str = ""):
         """
         Initialise le service Frigate
         
@@ -31,18 +31,27 @@ class FrigateService:
             api_port: Port de l'API Frigate (défaut: 5000)
             go2rtc_port: Port de go2rtc pour WebRTC (défaut: 1984)
             use_https: Utiliser HTTPS au lieu de HTTP (défaut: False)
+            username: Nom d'utilisateur pour Basic Auth (optionnel)
+            password: Mot de passe pour Basic Auth (optionnel)
         """
         self.host = host
         self.api_port = api_port
         self.go2rtc_port = go2rtc_port
         self.use_https = use_https
+        self.username = username
+        self.password = password
         
         # Protocole HTTP ou HTTPS
         protocol = "https" if use_https else "http"
         self.base_url = f"{protocol}://{host}:{api_port}"
         self.go2rtc_url = f"http://{host}:{go2rtc_port}"  # go2rtc est généralement en HTTP
         
-        logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}")
+        # Préparer l'authentification Basic si credentials fournis
+        self.auth = None
+        if username and password:
+            self.auth = httpx.BasicAuth(username, password)
+        
+        logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}, auth={'oui' if self.auth else 'non'}")
     
     async def test_connection(self) -> Dict[str, Any]:
         """Teste la connexion à Frigate"""
