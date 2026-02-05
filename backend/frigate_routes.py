@@ -43,7 +43,7 @@ class FrigateSettingsUpdate(BaseModel):
     enabled: bool = False
     host: str = ""
     api_port: int = Field(5000, ge=1, le=65535)
-    go2rtc_port: int = Field(8555, ge=1, le=65535)
+    go2rtc_port: int = Field(1984, ge=1, le=65535)  # Port go2rtc pour accès direct aux streams
     use_https: bool = False
     username: str = ""  # Auth Basic nginx
     password: str = ""  # Auth Basic nginx
