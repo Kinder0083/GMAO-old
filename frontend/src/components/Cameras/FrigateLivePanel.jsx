@@ -234,8 +234,6 @@ const LiveSlot = ({
       <FrigateStreamPlayer
         streamName={selectedStream.streamName}
         displayName={selectedStream.displayName}
-        go2rtcHost={frigateSettings.host}
-        go2rtcPort={frigateSettings.go2rtc_port || 1984}
         onClose={() => onDeselectStream(slotIndex)}
       />
     );
