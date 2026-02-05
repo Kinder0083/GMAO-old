@@ -336,14 +336,21 @@ async def get_frigate_stats(current_user: dict = Depends(get_current_user)):
 @router.get("/stream/{camera_name}")
 async def stream_frigate_mjpeg(
     camera_name: str,
-    token: str = Query(None, description="JWT token pour l'authentification"),
-    current_user: dict = Depends(get_current_user)
+    token: str = Query(..., description="JWT token pour l'authentification")
 ):
     """
     Stream MJPEG d'une caméra Frigate via proxy authentifié.
     Le backend récupère les frames depuis Frigate et les transmet au client.
-    Note: Le token peut être passé via query param pour les balises img.
+    Note: Le token est passé via query param car les balises img ne supportent pas les headers.
     """
+    # Valider le token manuellement
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalide ou expiré"
+        )
+    
     try:
         service = get_frigate_service()
         if not service:
