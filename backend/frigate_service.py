@@ -280,25 +280,32 @@ class FrigateService:
             return None
     
     async def get_camera_thumbnail(self, camera_name: str, height: int = 180) -> Optional[bytes]:
-        """Récupère une vignette"""
-        client = None
+        """Récupère une vignette via go2rtc (port 1984)"""
         try:
+            # Utiliser go2rtc directement pour les thumbnails
+            # Cela permet d'avoir le vrai flux HQ ou LQ
+            go2rtc_url = f"http://{self.host}:1984/api/frame.jpeg?src={camera_name}"
+            
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(go2rtc_url)
+                if response.status_code == 200:
+                    return response.content
+                    
+            # Fallback vers l'API Frigate authentifiée
             client, login_ok = await self._create_authenticated_client()
             if not login_ok:
                 if client:
                     await client.aclose()
                 return None
-            url = f"{self.base_url}/api/{camera_name}/latest.jpg"
+                
+            # Extraire le nom de base si c'est un stream HQ/LQ
+            base_name = camera_name.replace('_hq', '').replace('_lq', '').replace('_sub', '')
+            url = f"{self.base_url}/api/{base_name}/latest.jpg"
             response = await client.get(url, params={"h": height, "quality": 60})
             await client.aclose()
             return response.content if response.status_code == 200 else None
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur thumbnail: {e}")
-            if client:
-                try:
-                    await client.aclose()
-                except:
-                    pass
             return None
     
     async def get_camera_events(self, camera_name: str = None, limit: int = 20) -> List[Dict[str, Any]]:
