@@ -364,9 +364,11 @@ class FrigateService:
     
     async def stream_mjpeg(self, stream_name: str):
         """
-        Génère un flux MJPEG en récupérant des frames depuis go2rtc/Frigate.
+        Génère un flux MJPEG depuis go2rtc.
         stream_name: nom COMPLET du flux (ex: "Ouest_hq", "Ouest_lq")
-        Retourne un générateur async pour StreamingResponse.
+        
+        go2rtc expose: /api/stream.mjpeg?src={stream_name}
+        Dans Frigate, c'est préfixé: /api/go2rtc/stream.mjpeg?src={stream_name}
         """
         client = None
         try:
@@ -377,57 +379,33 @@ class FrigateService:
                     await client.aclose()
                 return
             
-            # Extraire le nom de base de la caméra (sans _hq/_lq) pour les snapshots
-            # mais utiliser le stream_name complet pour go2rtc
-            base_camera_name = stream_name.replace('_hq', '').replace('_lq', '').replace('_sub', '')
-            
-            # Essayer d'abord le flux MJPEG de go2rtc (meilleure qualité pour HQ/LQ)
-            # go2rtc expose un endpoint MJPEG: /api/go2rtc/stream.mjpeg?src={stream_name}
+            # Endpoint go2rtc MJPEG dans Frigate
+            # Format: /api/go2rtc/stream.mjpeg?src={stream_name}
             go2rtc_mjpeg_url = f"{self.base_url}/api/go2rtc/stream.mjpeg?src={stream_name}"
             
-            logger.info(f"[FRIGATE] Tentative stream go2rtc MJPEG: {go2rtc_mjpeg_url}")
+            logger.info(f"[FRIGATE] Connexion stream go2rtc MJPEG: {go2rtc_mjpeg_url}")
             
-            try:
-                # Tester si go2rtc MJPEG est disponible
-                async with client.stream("GET", go2rtc_mjpeg_url) as response:
-                    if response.status_code == 200:
-                        logger.info(f"[FRIGATE] Stream go2rtc MJPEG actif pour {stream_name}")
-                        async for chunk in response.aiter_bytes(chunk_size=65536):
-                            yield chunk
-                        return
-                    else:
-                        logger.warning(f"[FRIGATE] go2rtc MJPEG non disponible ({response.status_code}), fallback snapshots")
-            except Exception as e:
-                logger.warning(f"[FRIGATE] go2rtc MJPEG erreur: {e}, fallback snapshots")
-            
-            # Fallback: polling de snapshots (moins efficace mais fonctionne toujours)
-            logger.info(f"[FRIGATE] Fallback vers polling snapshots pour {base_camera_name}")
-            while True:
-                try:
-                    url = f"{self.base_url}/api/{base_camera_name}/latest.jpg"
-                    response = await client.get(url, params={"quality": 70})
+            # Utiliser httpx streaming pour proxy le flux MJPEG
+            async with client.stream("GET", go2rtc_mjpeg_url, timeout=None) as response:
+                logger.info(f"[FRIGATE] go2rtc response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    logger.info(f"[FRIGATE] Stream go2rtc MJPEG actif pour {stream_name}")
+                    # Proxy direct du flux MJPEG
+                    async for chunk in response.aiter_bytes(chunk_size=32768):
+                        yield chunk
+                else:
+                    error_text = await response.aread()
+                    logger.error(f"[FRIGATE] go2rtc MJPEG erreur {response.status_code}: {error_text[:200]}")
+                    # Pas de fallback - on veut le bon flux ou rien
+                    return
                     
-                    if response.status_code == 200:
-                        frame = response.content
-                        yield (
-                            b"--frame\r\n"
-                            b"Content-Type: image/jpeg\r\n"
-                            b"Content-Length: " + str(len(frame)).encode() + b"\r\n"
-                            b"\r\n" + frame + b"\r\n"
-                        )
-                    else:
-                        logger.warning(f"[FRIGATE] MJPEG frame erreur: {response.status_code}")
-                    
-                    # ~10 fps
-                    import asyncio
-                    await asyncio.sleep(0.1)
-                    
-                except Exception as e:
-                    logger.error(f"[FRIGATE] MJPEG stream erreur frame: {e}")
-                    break
-                    
+        except httpx.ReadTimeout:
+            logger.error(f"[FRIGATE] Timeout lecture stream {stream_name}")
         except Exception as e:
-            logger.error(f"[FRIGATE] MJPEG stream erreur: {e}")
+            logger.error(f"[FRIGATE] MJPEG stream erreur: {type(e).__name__}: {e}")
+            import traceback
+            logger.error(f"[FRIGATE] Traceback: {traceback.format_exc()}")
         finally:
             if client:
                 try:
