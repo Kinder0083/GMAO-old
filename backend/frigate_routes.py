@@ -62,7 +62,7 @@ async def get_frigate_settings(current_user: dict = Depends(get_current_user)):
                 "enabled": False,
                 "host": "",
                 "api_port": 5000,
-                "go2rtc_port": 1984,
+                "go2rtc_port": 8555,  # Port WebRTC par défaut
                 "use_https": False,
                 "username": "",
                 "password": "",
