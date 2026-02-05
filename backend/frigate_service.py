@@ -31,8 +31,8 @@ class FrigateService:
             api_port: Port de l'API Frigate (défaut: 5000)
             go2rtc_port: Port de go2rtc pour WebRTC (défaut: 1984)
             use_https: Utiliser HTTPS au lieu de HTTP (défaut: False)
-            username: Nom d'utilisateur pour Basic Auth (optionnel)
-            password: Mot de passe pour Basic Auth (optionnel)
+            username: Nom d'utilisateur Frigate (optionnel)
+            password: Mot de passe Frigate (optionnel)
         """
         self.host = host
         self.api_port = api_port
@@ -46,23 +46,103 @@ class FrigateService:
         self.base_url = f"{protocol}://{host}:{api_port}"
         self.go2rtc_url = f"http://{host}:{go2rtc_port}"  # go2rtc est généralement en HTTP
         
-        # Préparer l'authentification Basic si credentials fournis
-        self.auth = None
-        if username and password:
-            self.auth = httpx.BasicAuth(username, password)
-            logger.info(f"[FRIGATE] Auth configurée: user='{username}', pass_len={len(password)}")
-        else:
-            logger.info(f"[FRIGATE] Pas d'auth configurée (user='{username}', pass_len={len(password) if password else 0})")
+        # Token JWT (sera obtenu via login)
+        self.jwt_token = None
         
-        logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}, auth={'oui' if self.auth else 'non'}")
+        logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}, user={username}")
+    
+    async def _login(self, client: httpx.AsyncClient) -> bool:
+        """
+        Authentification auprès de Frigate pour obtenir un JWT token
+        
+        Returns:
+            True si login réussi, False sinon
+        """
+        if not self.username or not self.password:
+            logger.info("[FRIGATE] Pas de credentials, skip login")
+            return True  # Pas d'auth nécessaire
+        
+        try:
+            login_url = f"{self.base_url}/api/login"
+            logger.info(f"[FRIGATE] Tentative login: POST {login_url}")
+            
+            # Frigate attend les credentials en form-data ou JSON
+            login_data = {
+                "user": self.username,
+                "password": self.password
+            }
+            
+            response = await client.post(
+                login_url,
+                data=login_data,  # form-data
+                follow_redirects=True
+            )
+            
+            logger.info(f"[FRIGATE] Login response: status={response.status_code}")
+            
+            if response.status_code == 200:
+                # Le token peut être dans la réponse JSON ou dans les cookies
+                try:
+                    data = response.json()
+                    if "access_token" in data:
+                        self.jwt_token = data["access_token"]
+                        logger.info("[FRIGATE] JWT token obtenu depuis JSON")
+                        return True
+                except:
+                    pass
+                
+                # Vérifier les cookies
+                for cookie in response.cookies.jar:
+                    if cookie.name in ["frigate_token", "access_token", "token"]:
+                        self.jwt_token = cookie.value
+                        logger.info(f"[FRIGATE] JWT token obtenu depuis cookie: {cookie.name}")
+                        return True
+                
+                # Si pas de token explicite mais 200, l'auth a réussi (session cookie)
+                logger.info("[FRIGATE] Login OK (session cookie)")
+                return True
+            
+            elif response.status_code == 401:
+                logger.error(f"[FRIGATE] Login échoué: identifiants incorrects")
+                return False
+            else:
+                logger.error(f"[FRIGATE] Login échoué: HTTP {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[FRIGATE] Erreur login: {e}")
+            return False
+    
+    def _get_auth_headers(self) -> Dict[str, str]:
+        """Retourne les headers d'authentification si un token est disponible"""
+        if self.jwt_token:
+            return {"Authorization": f"Bearer {self.jwt_token}"}
+        return {}
     
     async def test_connection(self) -> Dict[str, Any]:
         """Teste la connexion à Frigate"""
-        logger.info(f"[FRIGATE] Test connexion vers {self.base_url} (auth: {'oui' if self.auth else 'non'})")
+        logger.info(f"[FRIGATE] Test connexion vers {self.base_url}")
         
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
-                # Tester l'API Frigate - essayer plusieurs endpoints
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, cookies=httpx.Cookies()) as client:
+                
+                # Étape 1: Login si credentials fournis
+                if self.username and self.password:
+                    login_success = await self._login(client)
+                    if not login_success:
+                        return {
+                            "success": False,
+                            "message": "Échec d'authentification - Vérifiez votre identifiant et mot de passe Frigate",
+                            "details": {
+                                "host": self.host,
+                                "api_port": self.api_port,
+                                "username": self.username,
+                                "error": "Login failed"
+                            }
+                        }
+                
+                # Étape 2: Tester l'API avec le token
+                headers = self._get_auth_headers()
                 test_urls = [
                     f"{self.base_url}/api/version",
                     f"{self.base_url}/api/stats",
@@ -76,7 +156,7 @@ class FrigateService:
                 for url in test_urls:
                     try:
                         logger.info(f"[FRIGATE] Tentative: GET {url}")
-                        response = await client.get(url)
+                        response = await client.get(url, headers=headers)
                         logger.info(f"[FRIGATE] Réponse {url}: status={response.status_code}")
                         
                         if response.status_code == 200:
@@ -89,7 +169,7 @@ class FrigateService:
                             logger.info(f"[FRIGATE] API OK! Version: {version}")
                             break
                         elif response.status_code == 401:
-                            last_error = f"Authentification requise (401) - Vérifiez vos identifiants"
+                            last_error = f"Authentification requise (401) - Session expirée ou identifiants incorrects"
                             logger.warning(f"[FRIGATE] {url}: {last_error}")
                         else:
                             last_error = f"HTTP {response.status_code}: {response.text[:200]}"
@@ -103,6 +183,76 @@ class FrigateService:
                     except Exception as e:
                         last_error = f"Exception sur {url}: {str(e)}"
                         logger.warning(f"[FRIGATE] {last_error}")
+                
+                if not api_success:
+                    error_msg = f"Impossible de se connecter à Frigate sur {self.host}:{self.api_port}. Dernière erreur: {last_error}"
+                    logger.error(f"[FRIGATE] {error_msg}")
+                    return {
+                        "success": False,
+                        "message": error_msg,
+                        "details": {
+                            "host": self.host,
+                            "api_port": self.api_port,
+                            "last_error": last_error
+                        }
+                    }
+                
+                # Tester go2rtc
+                go2rtc_ok = False
+                go2rtc_error = None
+                try:
+                    go2rtc_test_url = f"{self.go2rtc_url}/api/streams"
+                    logger.info(f"[FRIGATE] Test go2rtc: GET {go2rtc_test_url}")
+                    go2rtc_resp = await client.get(go2rtc_test_url)
+                    logger.info(f"[FRIGATE] go2rtc réponse: status={go2rtc_resp.status_code}")
+                    go2rtc_ok = go2rtc_resp.status_code == 200
+                    if not go2rtc_ok:
+                        go2rtc_error = f"HTTP {go2rtc_resp.status_code}"
+                except Exception as e:
+                    go2rtc_error = str(e)
+                    logger.warning(f"[FRIGATE] Erreur go2rtc: {go2rtc_error}")
+                
+                result = {
+                    "success": True,
+                    "version": version or "unknown",
+                    "go2rtc_available": go2rtc_ok,
+                    "message": f"Connecté à Frigate {version}" + (" (go2rtc OK)" if go2rtc_ok else f" (go2rtc: {go2rtc_error})"),
+                    "details": {
+                        "host": self.host,
+                        "api_port": self.api_port,
+                        "go2rtc_port": self.go2rtc_port,
+                        "go2rtc_error": go2rtc_error
+                    }
+                }
+                logger.info(f"[FRIGATE] Test réussi: {result}")
+                return result
+                
+        except httpx.ConnectError as e:
+            error_msg = f"Connexion refusée vers {self.host}:{self.api_port} - Vérifiez que Frigate est accessible"
+            logger.error(f"[FRIGATE] ConnectError: {e}")
+            logger.error(f"[FRIGATE] {error_msg}")
+            return {
+                "success": False,
+                "message": error_msg,
+                "details": {"error_type": "ConnectError", "raw_error": str(e)}
+            }
+        except httpx.TimeoutException as e:
+            error_msg = f"Timeout après {FRIGATE_TIMEOUT}s - Frigate ne répond pas sur {self.host}:{self.api_port}"
+            logger.error(f"[FRIGATE] TimeoutException: {e}")
+            return {
+                "success": False,
+                "message": error_msg,
+                "details": {"error_type": "Timeout", "timeout_seconds": FRIGATE_TIMEOUT}
+            }
+        except Exception as e:
+            error_msg = f"Erreur inattendue: {type(e).__name__}: {str(e)}"
+            logger.error(f"[FRIGATE] Exception: {e}")
+            logger.error(f"[FRIGATE] Traceback: {traceback.format_exc()}")
+            return {
+                "success": False,
+                "message": error_msg,
+                "details": {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
+            }
                 
                 if not api_success:
                     error_msg = f"Impossible de se connecter à Frigate sur {self.host}:{self.api_port}. Dernière erreur: {last_error}"
