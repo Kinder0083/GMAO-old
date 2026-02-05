@@ -373,12 +373,11 @@ class FrigateService:
         """
         Génère un flux MJPEG en récupérant des frames depuis go2rtc.
         Utilise l'endpoint /api/frame.jpeg?src={stream_name} sur le port 1984.
-        Cela permet d'obtenir le vrai flux HQ ou LQ selon le stream sélectionné.
+        Fonctionne pour tous les streams (H265 originaux et H264 transcodés).
         """
         import asyncio
         
         # URL go2rtc directe (port 1984, pas d'auth nécessaire)
-        # Format: http://{host}:1984/api/frame.jpeg?src={stream_name}
         go2rtc_base = f"http://{self.host}:1984"
         frame_url = f"{go2rtc_base}/api/frame.jpeg?src={stream_name}"
         
@@ -389,6 +388,8 @@ class FrigateService:
         
         try:
             frame_count = 0
+            error_count = 0
+            
             while True:
                 try:
                     response = await client.get(frame_url)
@@ -396,6 +397,7 @@ class FrigateService:
                     if response.status_code == 200:
                         frame = response.content
                         frame_count += 1
+                        error_count = 0  # Reset error count on success
                         
                         if frame_count == 1:
                             logger.info(f"[FRIGATE] Première frame reçue pour {stream_name} ({len(frame)} bytes)")
@@ -408,17 +410,24 @@ class FrigateService:
                             b"\r\n" + frame + b"\r\n"
                         )
                     else:
+                        error_count += 1
                         logger.warning(f"[FRIGATE] Frame erreur {response.status_code} pour {stream_name}")
+                        if error_count > 10:
+                            logger.error(f"[FRIGATE] Trop d'erreurs, arrêt du stream {stream_name}")
+                            break
                     
-                    # ~10 fps
-                    await asyncio.sleep(0.1)
+                    # ~15 fps pour plus de fluidité
+                    await asyncio.sleep(0.066)
                     
                 except httpx.ReadTimeout:
                     logger.warning(f"[FRIGATE] Timeout frame {stream_name}, retry...")
                     await asyncio.sleep(0.5)
                 except Exception as e:
+                    error_count += 1
                     logger.error(f"[FRIGATE] Erreur frame {stream_name}: {e}")
-                    break
+                    if error_count > 5:
+                        break
+                    await asyncio.sleep(0.5)
                     
         except Exception as e:
             logger.error(f"[FRIGATE] Stream erreur: {e}")
