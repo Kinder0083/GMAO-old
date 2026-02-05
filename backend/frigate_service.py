@@ -197,12 +197,20 @@ class FrigateService:
             return []
     
     async def get_go2rtc_streams(self) -> List[Dict[str, Any]]:
-        """Récupère la liste des streams go2rtc"""
+        """Récupère la liste des streams go2rtc (intégré dans Frigate)"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False) as client:
-                response = await client.get(f"{self.go2rtc_url}/api/streams")
+            client, login_ok = await self._create_authenticated_client()
+            async with client:
+                if not login_ok:
+                    return []
+                
+                # go2rtc est intégré dans Frigate, endpoint: /api/go2rtc/streams
+                response = await client.get(f"{self.base_url}/api/go2rtc/streams")
+                logger.info(f"[FRIGATE] go2rtc streams response: {response.status_code}")
+                
                 if response.status_code == 200:
                     data = response.json()
+                    logger.info(f"[FRIGATE] go2rtc streams data: {list(data.keys()) if isinstance(data, dict) else data}")
                     return [{"name": name, "active": len(producers) > 0 if isinstance(producers, list) else False}
                             for name, producers in data.items()]
                 return []
