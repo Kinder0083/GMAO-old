@@ -364,67 +364,60 @@ class FrigateService:
     
     async def stream_mjpeg(self, stream_name: str):
         """
-        Proxy le flux MJPEG depuis Frigate.
-        stream_name: nom du flux (ex: "Ouest_hq", "Ouest_lq")
-        
-        Frigate expose /api/{camera} pour MJPEG.
-        On utilise les paramètres h (height) et fps pour la qualité:
-        - _hq -> h=1080, fps=10 (haute qualité)
-        - _lq -> h=480, fps=5 (basse qualité)
+        Génère un flux MJPEG en récupérant des frames depuis go2rtc.
+        Utilise l'endpoint /api/frame.jpeg?src={stream_name} sur le port 1984.
+        Cela permet d'obtenir le vrai flux HQ ou LQ selon le stream sélectionné.
         """
-        client = None
+        import asyncio
+        
+        # URL go2rtc directe (port 1984, pas d'auth nécessaire)
+        # Format: http://{host}:1984/api/frame.jpeg?src={stream_name}
+        go2rtc_base = f"http://{self.host}:1984"
+        frame_url = f"{go2rtc_base}/api/frame.jpeg?src={stream_name}"
+        
+        logger.info(f"[FRIGATE] Démarrage stream MJPEG via go2rtc: {frame_url}")
+        
+        # Client HTTP sans auth pour go2rtc (port 1984 n'est pas protégé)
+        client = httpx.AsyncClient(timeout=10.0)
+        
         try:
-            client, login_ok = await self._create_authenticated_client()
-            if not login_ok:
-                logger.error("[FRIGATE] MJPEG stream: échec authentification")
-                if client:
-                    await client.aclose()
-                return
-            
-            # Extraire le nom de la caméra et déterminer la qualité
-            is_hq = '_hq' in stream_name.lower()
-            is_lq = '_lq' in stream_name.lower() or '_sub' in stream_name.lower()
-            
-            # Nom de base de la caméra (sans suffixe _hq/_lq)
-            camera_name = stream_name.replace('_hq', '').replace('_lq', '').replace('_sub', '').replace('_HQ', '').replace('_LQ', '')
-            
-            # Paramètres selon la qualité demandée
-            if is_hq:
-                params = {"h": 1080, "fps": 10}
-                logger.info(f"[FRIGATE] Stream HQ pour {camera_name}: h=1080, fps=10")
-            elif is_lq:
-                params = {"h": 480, "fps": 5}
-                logger.info(f"[FRIGATE] Stream LQ pour {camera_name}: h=480, fps=5")
-            else:
-                params = {"h": 720, "fps": 8}
-                logger.info(f"[FRIGATE] Stream default pour {camera_name}: h=720, fps=8")
-            
-            # Endpoint MJPEG natif de Frigate: /api/{camera_name}
-            mjpeg_url = f"{self.base_url}/api/{camera_name}"
-            logger.info(f"[FRIGATE] Connexion MJPEG: {mjpeg_url} avec params={params}")
-            
-            # Streamer le flux MJPEG
-            async with client.stream("GET", mjpeg_url, params=params, timeout=httpx.Timeout(10.0, read=None)) as response:
-                logger.info(f"[FRIGATE] Response: status={response.status_code}, content-type={response.headers.get('content-type', 'N/A')}")
-                
-                if response.status_code == 200:
-                    logger.info(f"[FRIGATE] Stream MJPEG actif pour {camera_name}")
-                    async for chunk in response.aiter_bytes(chunk_size=32768):
-                        yield chunk
-                else:
-                    body = await response.aread()
-                    logger.error(f"[FRIGATE] Erreur {response.status_code}: {body[:200]}")
+            frame_count = 0
+            while True:
+                try:
+                    response = await client.get(frame_url)
+                    
+                    if response.status_code == 200:
+                        frame = response.content
+                        frame_count += 1
+                        
+                        if frame_count == 1:
+                            logger.info(f"[FRIGATE] Première frame reçue pour {stream_name} ({len(frame)} bytes)")
+                        
+                        # Format MJPEG standard
+                        yield (
+                            b"--frame\r\n"
+                            b"Content-Type: image/jpeg\r\n"
+                            b"Content-Length: " + str(len(frame)).encode() + b"\r\n"
+                            b"\r\n" + frame + b"\r\n"
+                        )
+                    else:
+                        logger.warning(f"[FRIGATE] Frame erreur {response.status_code} pour {stream_name}")
+                    
+                    # ~10 fps
+                    await asyncio.sleep(0.1)
+                    
+                except httpx.ReadTimeout:
+                    logger.warning(f"[FRIGATE] Timeout frame {stream_name}, retry...")
+                    await asyncio.sleep(0.5)
+                except Exception as e:
+                    logger.error(f"[FRIGATE] Erreur frame {stream_name}: {e}")
+                    break
                     
         except Exception as e:
-            logger.error(f"[FRIGATE] MJPEG stream erreur: {type(e).__name__}: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"[FRIGATE] Stream erreur: {e}")
         finally:
-            if client:
-                try:
-                    await client.aclose()
-                except:
-                    pass
+            await client.aclose()
+            logger.info(f"[FRIGATE] Stream terminé pour {stream_name} ({frame_count} frames)")
 
 
 # Instance globale
