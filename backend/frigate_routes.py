@@ -113,9 +113,14 @@ async def update_frigate_settings(
             "api_port": settings_data.api_port,
             "go2rtc_port": settings_data.go2rtc_port,
             "use_https": settings_data.use_https,
+            "username": settings_data.username,
             "stream_mapping": settings_data.stream_mapping or {},
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
+        
+        # Ne mettre à jour le password que s'il est fourni
+        if settings_data.password:
+            update_data["password"] = settings_data.password
         
         await db.camera_settings.update_one(
             {"type": "frigate"},
@@ -123,18 +128,24 @@ async def update_frigate_settings(
             upsert=True
         )
         
+        # Récupérer le password depuis la DB pour init le service
+        saved_settings = await db.camera_settings.find_one({"type": "frigate"})
+        saved_password = saved_settings.get("password", "") if saved_settings else ""
+        
         # Réinitialiser le service Frigate
         if settings_data.enabled and settings_data.host:
             init_frigate_service(
                 settings_data.host,
                 settings_data.api_port,
                 settings_data.go2rtc_port,
-                settings_data.use_https
+                settings_data.use_https,
+                settings_data.username,
+                settings_data.password or saved_password
             )
         else:
             reset_frigate_service()
         
-        logger.info(f"Paramètres Frigate mis à jour: enabled={settings_data.enabled}, host={settings_data.host}, https={settings_data.use_https}")
+        logger.info(f"Paramètres Frigate mis à jour: enabled={settings_data.enabled}, host={settings_data.host}, https={settings_data.use_https}, user={settings_data.username}")
         return await get_frigate_settings(current_user)
         
     except Exception as e:
