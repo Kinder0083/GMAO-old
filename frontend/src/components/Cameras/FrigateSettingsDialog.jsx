@@ -392,6 +392,42 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
                     />
                   </div>
                   
+                  {/* Authentification */}
+                  <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span className="text-blue-600 text-xs font-bold">🔐</span>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Authentification (Basic Auth)</Label>
+                        <p className="text-xs text-gray-500">Si nginx protège Frigate</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="frigate-username" className="text-xs">Utilisateur</Label>
+                        <Input
+                          id="frigate-username"
+                          placeholder="admin"
+                          value={settings.username}
+                          onChange={(e) => setSettings(prev => ({ ...prev, username: e.target.value }))}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="frigate-password" className="text-xs">Mot de passe</Label>
+                        <Input
+                          id="frigate-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={settings.password}
+                          onChange={(e) => setSettings(prev => ({ ...prev, password: e.target.value }))}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
                   {/* Bouton Test */}
                   <Button
                     variant="outline"
