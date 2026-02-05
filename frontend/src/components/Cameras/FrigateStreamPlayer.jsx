@@ -1,6 +1,6 @@
 /**
  * Player de streaming Frigate via proxy backend MJPEG
- * Utilise une simple balise img pointant vers le stream MJPEG du backend
+ * Utilise le streamName complet (avec _hq/_lq) pour le bon flux
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
@@ -20,9 +20,8 @@ import {
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const FrigateStreamPlayer = ({ 
-  cameraName,  // Nom de la caméra Frigate (ex: "Ouest")
-  streamName,  // Nom du stream go2rtc (ex: "Ouest_hq") - non utilisé actuellement
-  displayName, // Nom affiché (ex: "Essai 1")
+  streamName,  // Nom COMPLET du stream go2rtc (ex: "Ouest_hq") - UTILISÉ pour le streaming
+  displayName, // Nom affiché (ex: "Entrée HQ")
   onClose,
   className = ''
 }) => {
@@ -35,17 +34,17 @@ const FrigateStreamPlayer = ({
   const [streamKey, setStreamKey] = useState(Date.now());
 
   // Construire l'URL du stream MJPEG avec le token d'authentification
+  // IMPORTANT: Utilise streamName complet pour obtenir le bon flux (HQ ou LQ)
   const getStreamUrl = () => {
     const token = localStorage.getItem('token');
-    // Note: Le token est passé via query param car les img tags ne supportent pas les headers
-    return `${API_URL}/api/cameras/frigate/stream/${cameraName}?token=${token}&_t=${streamKey}`;
+    return `${API_URL}/api/cameras/frigate/stream/${streamName}?token=${token}&_t=${streamKey}`;
   };
 
   // Démarrer le streaming
   const startStream = () => {
     setStatus('connecting');
     setError(null);
-    setStreamKey(Date.now()); // Force le rechargement
+    setStreamKey(Date.now());
   };
 
   // Arrêter le streaming
@@ -91,25 +90,25 @@ const FrigateStreamPlayer = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Démarrer automatiquement quand cameraName change
+  // Démarrer automatiquement quand streamName change
   useEffect(() => {
-    if (cameraName) {
+    if (streamName) {
       startStream();
     }
     return () => stopStream();
-  }, [cameraName]);
+  }, [streamName]);
 
   return (
     <Card 
       ref={containerRef}
       className={`overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''} ${className}`}
-      data-testid={`frigate-player-${cameraName}`}
+      data-testid={`frigate-player-${streamName}`}
     >
       <CardHeader className="p-2 pb-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <Video className="w-4 h-4 text-blue-500 flex-shrink-0" />
-            <span className="text-sm font-medium truncate">{displayName || cameraName}</span>
+            <span className="text-sm font-medium truncate">{displayName || streamName}</span>
             
             {status === 'connected' && (
               <Badge variant="default" className="bg-green-500 text-xs">Live</Badge>
@@ -147,7 +146,7 @@ const FrigateStreamPlayer = ({
             <img
               ref={imgRef}
               src={getStreamUrl()}
-              alt={displayName || cameraName}
+              alt={displayName || streamName}
               className="w-full h-full object-contain"
               onLoad={handleLoad}
               onError={handleError}
@@ -164,12 +163,12 @@ const FrigateStreamPlayer = ({
             </div>
           )}
           
-          {/* Overlay - connecting (temporaire pendant le chargement initial) */}
+          {/* Overlay - connecting */}
           {status === 'connecting' && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-800/60 pointer-events-none">
               <div className="text-center text-white">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                <p className="text-sm">Connexion à {displayName || cameraName}...</p>
+                <p className="text-sm">Connexion à {displayName || streamName}...</p>
               </div>
             </div>
           )}
@@ -192,8 +191,7 @@ const FrigateStreamPlayer = ({
           {status === 'connected' && (
             <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-white text-xs flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span>{cameraName}</span>
-              <span className="text-green-400">MJPEG</span>
+              <span>{streamName}</span>
             </div>
           )}
         </div>
