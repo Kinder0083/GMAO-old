@@ -1,6 +1,6 @@
 /**
  * Panel de visualisation live Frigate avec 3 slots
- * Utilise le streamName COMPLET (avec _hq/_lq) pour le streaming
+ * Utilise MSE (H264) pour les streams transcodés, fallback MJPEG pour les autres
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
@@ -21,7 +21,8 @@ import {
   Wifi,
   WifiOff,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 import FrigateStreamPlayer from './FrigateStreamPlayer';
 
@@ -30,7 +31,6 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 const FrigateLivePanel = ({ onOpenSettings }) => {
   const [frigateSettings, setFrigateSettings] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Stocke les sélections sous forme {displayName, streamName}
   const [selectedStreams, setSelectedStreams] = useState([null, null, null]);
 
   // Charger les paramètres Frigate
@@ -57,14 +57,17 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
   }, []);
 
   // Obtenir la liste des streams configurés depuis le stream_mapping
-  // Retourne: [{displayName: "Entrée HQ", streamName: "Entree_hq"}, ...]
   const getConfiguredStreams = useCallback(() => {
     if (!frigateSettings?.stream_mapping) return [];
     
-    return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => ({
-      displayName,
-      streamName  // Garder le nom COMPLET (avec _hq/_lq)
-    }));
+    return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => {
+      const isH264 = streamName.includes('_h264') || streamName.includes('_H264');
+      return {
+        displayName,
+        streamName,
+        isH264 // Indique si c'est un stream transcodé (fluide)
+      };
+    });
   }, [frigateSettings]);
 
   // Sélectionner un stream pour un slot
@@ -103,7 +106,6 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     );
   }
 
-  // Si Frigate non configuré
   if (!frigateSettings?.enabled) {
     return (
       <Card className="p-8">
@@ -124,7 +126,6 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     );
   }
 
-  // Si Frigate configuré mais non connecté
   if (!frigateSettings?.connected) {
     return (
       <Card className="p-8">
@@ -147,7 +148,6 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
 
   const configuredStreams = getConfiguredStreams();
 
-  // Pas de streams configurés dans le mapping
   if (configuredStreams.length === 0) {
     return (
       <Card className="p-6">
@@ -181,13 +181,25 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
             <span className="text-sm text-gray-500">v{frigateSettings.frigate_version}</span>
           )}
           <span className="text-sm text-gray-400">
-            ({configuredStreams.length} flux configuré{configuredStreams.length > 1 ? 's' : ''})
+            ({configuredStreams.length} flux)
           </span>
         </div>
         <Button variant="outline" size="sm" onClick={onOpenSettings}>
           <Settings className="w-4 h-4 mr-2" />
           Paramètres
         </Button>
+      </div>
+
+      {/* Info sur les types de streams */}
+      <div className="text-xs text-gray-500 flex items-center gap-4">
+        <span className="flex items-center gap-1">
+          <Zap className="w-3 h-3 text-green-500" />
+          <span>_h264 = Streaming fluide</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <Video className="w-3 h-3 text-blue-500" />
+          <span>Autres = Polling images</span>
+        </span>
       </div>
 
       {/* Grille des 3 slots live */}
@@ -198,6 +210,7 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
             slotIndex={slotIndex}
             selectedStream={selectedStreams[slotIndex]}
             configuredStreams={configuredStreams}
+            frigateSettings={frigateSettings}
             onSelectStream={handleSelectStream}
             onDeselectStream={handleDeselectStream}
           />
@@ -212,21 +225,22 @@ const LiveSlot = ({
   slotIndex,
   selectedStream,
   configuredStreams,
+  frigateSettings,
   onSelectStream,
   onDeselectStream
 }) => {
-  // Si un stream est sélectionné, afficher le player avec le streamName COMPLET
   if (selectedStream) {
     return (
       <FrigateStreamPlayer
-        streamName={selectedStream.streamName}  // Nom complet avec _hq/_lq
+        streamName={selectedStream.streamName}
         displayName={selectedStream.displayName}
+        go2rtcHost={frigateSettings.host}
+        go2rtcPort={frigateSettings.go2rtc_port || 1984}
         onClose={() => onDeselectStream(slotIndex)}
       />
     );
   }
 
-  // Sinon, afficher le sélecteur avec les streams configurés
   return (
     <Card className="overflow-hidden" data-testid={`frigate-slot-${slotIndex}`}>
       <CardHeader className="p-2 pb-1">
@@ -241,15 +255,22 @@ const LiveSlot = ({
             value=""
             onValueChange={(value) => onSelectStream(slotIndex, value)}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-52">
               <SelectValue placeholder="Sélectionner un flux" />
             </SelectTrigger>
             <SelectContent>
-              {configuredStreams.map(({ displayName, streamName }) => (
+              {configuredStreams.map(({ displayName, streamName, isH264 }) => (
                 <SelectItem key={streamName} value={streamName}>
                   <div className="flex items-center gap-2">
-                    <Video className="w-4 h-4" />
-                    {displayName}
+                    {isH264 ? (
+                      <Zap className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Video className="w-4 h-4 text-blue-500" />
+                    )}
+                    <span>{displayName}</span>
+                    {isH264 && (
+                      <span className="text-xs text-green-600">(fluide)</span>
+                    )}
                   </div>
                 </SelectItem>
               ))}
