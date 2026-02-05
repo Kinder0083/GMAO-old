@@ -1,9 +1,9 @@
 /**
  * Panel de visualisation live Frigate avec 3 slots
- * Affiche UNIQUEMENT les caméras configurées dans stream_mapping
+ * Utilise le streamName COMPLET (avec _hq/_lq) pour le streaming
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
@@ -30,7 +30,8 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 const FrigateLivePanel = ({ onOpenSettings }) => {
   const [frigateSettings, setFrigateSettings] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCameras, setSelectedCameras] = useState([null, null, null]);
+  // Stocke les sélections sous forme {displayName, streamName}
+  const [selectedStreams, setSelectedStreams] = useState([null, null, null]);
 
   // Charger les paramètres Frigate
   useEffect(() => {
@@ -55,45 +56,42 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     loadData();
   }, []);
 
-  // Obtenir la liste des caméras configurées depuis le stream_mapping
-  const getConfiguredCameras = useCallback(() => {
+  // Obtenir la liste des streams configurés depuis le stream_mapping
+  // Retourne: [{displayName: "Entrée HQ", streamName: "Entree_hq"}, ...]
+  const getConfiguredStreams = useCallback(() => {
     if (!frigateSettings?.stream_mapping) return [];
     
-    return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => {
-      // Extraire le nom de la caméra (avant _hq, _lq, etc.)
-      const cameraName = streamName.replace(/_hq$|_lq$|_sub$/, '');
-      return {
-        displayName,
-        streamName,
-        cameraName
-      };
-    });
+    return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => ({
+      displayName,
+      streamName  // Garder le nom COMPLET (avec _hq/_lq)
+    }));
   }, [frigateSettings]);
 
-  // Sélectionner une caméra pour un slot
-  const handleSelectCamera = (slotIndex, cameraName) => {
-    setSelectedCameras(prev => {
+  // Sélectionner un stream pour un slot
+  const handleSelectStream = (slotIndex, streamName) => {
+    if (streamName === '__none__') {
+      handleDeselectStream(slotIndex);
+      return;
+    }
+    
+    const streams = getConfiguredStreams();
+    const selected = streams.find(s => s.streamName === streamName);
+    
+    setSelectedStreams(prev => {
       const newSelection = [...prev];
-      newSelection[slotIndex] = cameraName === '__none__' ? null : cameraName;
+      newSelection[slotIndex] = selected || null;
       return newSelection;
     });
   };
 
-  // Désélectionner une caméra
-  const handleDeselectCamera = (slotIndex) => {
-    setSelectedCameras(prev => {
+  // Désélectionner un stream
+  const handleDeselectStream = (slotIndex) => {
+    setSelectedStreams(prev => {
       const newSelection = [...prev];
       newSelection[slotIndex] = null;
       return newSelection;
     });
   };
-
-  // Obtenir le displayName pour un cameraName
-  const getDisplayName = useCallback((cameraName) => {
-    const cameras = getConfiguredCameras();
-    const camera = cameras.find(c => c.cameraName === cameraName);
-    return camera?.displayName || cameraName;
-  }, [getConfiguredCameras]);
 
   if (loading) {
     return (
@@ -147,23 +145,23 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     );
   }
 
-  const configuredCameras = getConfiguredCameras();
+  const configuredStreams = getConfiguredStreams();
 
-  // Pas de caméras configurées dans le mapping
-  if (configuredCameras.length === 0) {
+  // Pas de streams configurés dans le mapping
+  if (configuredStreams.length === 0) {
     return (
       <Card className="p-6">
         <div className="text-center">
           <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
           <p className="text-gray-600 mb-2">
-            Aucune caméra configurée à afficher
+            Aucun flux configuré à afficher
           </p>
           <p className="text-sm text-gray-400 mb-4">
-            Ajoutez des caméras dans l'onglet "Streams" des paramètres Frigate
+            Ajoutez des flux dans l'onglet "Streams" des paramètres Frigate
           </p>
           <Button variant="outline" size="sm" onClick={onOpenSettings}>
             <Settings className="w-4 h-4 mr-2" />
-            Configurer les caméras
+            Configurer les flux
           </Button>
         </div>
       </Card>
@@ -183,7 +181,7 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
             <span className="text-sm text-gray-500">v{frigateSettings.frigate_version}</span>
           )}
           <span className="text-sm text-gray-400">
-            ({configuredCameras.length} caméra{configuredCameras.length > 1 ? 's' : ''} configurée{configuredCameras.length > 1 ? 's' : ''})
+            ({configuredStreams.length} flux configuré{configuredStreams.length > 1 ? 's' : ''})
           </span>
         </div>
         <Button variant="outline" size="sm" onClick={onOpenSettings}>
@@ -198,11 +196,10 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
           <LiveSlot
             key={slotIndex}
             slotIndex={slotIndex}
-            selectedCamera={selectedCameras[slotIndex]}
-            configuredCameras={configuredCameras}
-            onSelectCamera={handleSelectCamera}
-            onDeselectCamera={handleDeselectCamera}
-            getDisplayName={getDisplayName}
+            selectedStream={selectedStreams[slotIndex]}
+            configuredStreams={configuredStreams}
+            onSelectStream={handleSelectStream}
+            onDeselectStream={handleDeselectStream}
           />
         ))}
       </div>
@@ -213,24 +210,23 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
 // Composant pour un slot live
 const LiveSlot = ({
   slotIndex,
-  selectedCamera,
-  configuredCameras,
-  onSelectCamera,
-  onDeselectCamera,
-  getDisplayName
+  selectedStream,
+  configuredStreams,
+  onSelectStream,
+  onDeselectStream
 }) => {
-  // Si une caméra est sélectionnée, afficher le player
-  if (selectedCamera) {
+  // Si un stream est sélectionné, afficher le player avec le streamName COMPLET
+  if (selectedStream) {
     return (
       <FrigateStreamPlayer
-        cameraName={selectedCamera}
-        displayName={getDisplayName(selectedCamera)}
-        onClose={() => onDeselectCamera(slotIndex)}
+        streamName={selectedStream.streamName}  // Nom complet avec _hq/_lq
+        displayName={selectedStream.displayName}
+        onClose={() => onDeselectStream(slotIndex)}
       />
     );
   }
 
-  // Sinon, afficher le sélecteur avec les caméras configurées
+  // Sinon, afficher le sélecteur avec les streams configurés
   return (
     <Card className="overflow-hidden" data-testid={`frigate-slot-${slotIndex}`}>
       <CardHeader className="p-2 pb-1">
@@ -243,14 +239,14 @@ const LiveSlot = ({
           <VideoOff className="w-8 h-8 text-gray-400 mb-3" />
           <Select
             value=""
-            onValueChange={(value) => onSelectCamera(slotIndex, value)}
+            onValueChange={(value) => onSelectStream(slotIndex, value)}
           >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Sélectionner une caméra" />
+              <SelectValue placeholder="Sélectionner un flux" />
             </SelectTrigger>
             <SelectContent>
-              {configuredCameras.map(({ displayName, cameraName }) => (
-                <SelectItem key={cameraName} value={cameraName}>
+              {configuredStreams.map(({ displayName, streamName }) => (
+                <SelectItem key={streamName} value={streamName}>
                   <div className="flex items-center gap-2">
                     <Video className="w-4 h-4" />
                     {displayName}
