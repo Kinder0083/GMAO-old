@@ -1,6 +1,6 @@
 """
 Service d'intégration Frigate NVR
-- Connexion à l'API Frigate
+- Connexion à l'API Frigate avec authentification JWT
 - Proxy pour snapshots et streams
 - Configuration WebRTC via go2rtc
 """
@@ -11,29 +11,16 @@ import traceback
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 
-# Configurer le logging pour être plus verbeux
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Timeout pour les requêtes HTTP vers Frigate
 FRIGATE_TIMEOUT = 15.0
 
 
 class FrigateService:
-    """Service de connexion à Frigate NVR"""
+    """Service de connexion à Frigate NVR avec authentification JWT"""
     
     def __init__(self, host: str, api_port: int = 5000, go2rtc_port: int = 1984, use_https: bool = False, username: str = "", password: str = ""):
-        """
-        Initialise le service Frigate
-        
-        Args:
-            host: Adresse IP ou hostname de Frigate
-            api_port: Port de l'API Frigate (défaut: 5000)
-            go2rtc_port: Port de go2rtc pour WebRTC (défaut: 1984)
-            use_https: Utiliser HTTPS au lieu de HTTP (défaut: False)
-            username: Nom d'utilisateur Frigate (optionnel)
-            password: Mot de passe Frigate (optionnel)
-        """
         self.host = host
         self.api_port = api_port
         self.go2rtc_port = go2rtc_port
@@ -41,108 +28,61 @@ class FrigateService:
         self.username = username
         self.password = password
         
-        # Protocole HTTP ou HTTPS
         protocol = "https" if use_https else "http"
         self.base_url = f"{protocol}://{host}:{api_port}"
-        self.go2rtc_url = f"http://{host}:{go2rtc_port}"  # go2rtc est généralement en HTTP
-        
-        # Token JWT (sera obtenu via login)
-        self.jwt_token = None
+        self.go2rtc_url = f"http://{host}:{go2rtc_port}"
         
         logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}, user={username}")
     
-    async def _login(self, client: httpx.AsyncClient) -> bool:
+    async def _create_authenticated_client(self) -> tuple[httpx.AsyncClient, bool]:
         """
-        Authentification auprès de Frigate pour obtenir un JWT token
+        Crée un client HTTP authentifié auprès de Frigate
+        Returns: (client, login_success)
+        """
+        client = httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False)
         
-        Returns:
-            True si login réussi, False sinon
-        """
         if not self.username or not self.password:
-            logger.info("[FRIGATE] Pas de credentials, skip login")
-            return True  # Pas d'auth nécessaire
+            return client, True
         
         try:
             login_url = f"{self.base_url}/api/login"
-            logger.info(f"[FRIGATE] Tentative login: POST {login_url}")
-            
-            # Frigate attend les credentials en form-data ou JSON
-            login_data = {
-                "user": self.username,
-                "password": self.password
-            }
+            logger.info(f"[FRIGATE] Login: POST {login_url} (user={self.username})")
             
             response = await client.post(
                 login_url,
-                data=login_data,  # form-data
+                data={"user": self.username, "password": self.password},
                 follow_redirects=True
             )
             
-            logger.info(f"[FRIGATE] Login response: status={response.status_code}")
+            logger.info(f"[FRIGATE] Login response: {response.status_code}")
             
             if response.status_code == 200:
-                # Le token peut être dans la réponse JSON ou dans les cookies
-                try:
-                    data = response.json()
-                    if "access_token" in data:
-                        self.jwt_token = data["access_token"]
-                        logger.info("[FRIGATE] JWT token obtenu depuis JSON")
-                        return True
-                except:
-                    pass
-                
-                # Vérifier les cookies
-                for cookie in response.cookies.jar:
-                    if cookie.name in ["frigate_token", "access_token", "token"]:
-                        self.jwt_token = cookie.value
-                        logger.info(f"[FRIGATE] JWT token obtenu depuis cookie: {cookie.name}")
-                        return True
-                
-                # Si pas de token explicite mais 200, l'auth a réussi (session cookie)
-                logger.info("[FRIGATE] Login OK (session cookie)")
-                return True
-            
-            elif response.status_code == 401:
-                logger.error(f"[FRIGATE] Login échoué: identifiants incorrects")
-                return False
+                logger.info("[FRIGATE] Login réussi!")
+                return client, True
             else:
-                logger.error(f"[FRIGATE] Login échoué: HTTP {response.status_code}")
-                return False
+                logger.error(f"[FRIGATE] Login échoué: {response.status_code} - {response.text[:200]}")
+                return client, False
                 
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur login: {e}")
-            return False
-    
-    def _get_auth_headers(self) -> Dict[str, str]:
-        """Retourne les headers d'authentification si un token est disponible"""
-        if self.jwt_token:
-            return {"Authorization": f"Bearer {self.jwt_token}"}
-        return {}
+            return client, False
     
     async def test_connection(self) -> Dict[str, Any]:
         """Teste la connexion à Frigate"""
         logger.info(f"[FRIGATE] Test connexion vers {self.base_url}")
         
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, cookies=httpx.Cookies()) as client:
+            client, login_ok = await self._create_authenticated_client()
+            
+            async with client:
+                if not login_ok:
+                    return {
+                        "success": False,
+                        "message": "Échec d'authentification - Vérifiez votre identifiant et mot de passe Frigate",
+                        "details": {"host": self.host, "api_port": self.api_port, "username": self.username}
+                    }
                 
-                # Étape 1: Login si credentials fournis
-                if self.username and self.password:
-                    login_success = await self._login(client)
-                    if not login_success:
-                        return {
-                            "success": False,
-                            "message": "Échec d'authentification - Vérifiez votre identifiant et mot de passe Frigate",
-                            "details": {
-                                "host": self.host,
-                                "api_port": self.api_port,
-                                "username": self.username,
-                                "error": "Login failed"
-                            }
-                        }
-                
-                # Étape 2: Tester l'API avec le token
-                headers = self._get_auth_headers()
+                # Tester les endpoints API
                 test_urls = [
                     f"{self.base_url}/api/version",
                     f"{self.base_url}/api/stats",
@@ -155,365 +95,168 @@ class FrigateService:
                 
                 for url in test_urls:
                     try:
-                        logger.info(f"[FRIGATE] Tentative: GET {url}")
-                        response = await client.get(url, headers=headers)
-                        logger.info(f"[FRIGATE] Réponse {url}: status={response.status_code}")
+                        logger.info(f"[FRIGATE] GET {url}")
+                        response = await client.get(url)
+                        logger.info(f"[FRIGATE] Réponse: {response.status_code}")
                         
                         if response.status_code == 200:
                             api_success = True
                             if 'version' in url:
                                 version = response.text.strip().strip('"')
-                            elif 'stats' in url or 'config' in url:
+                            else:
                                 data = response.json()
-                                version = data.get('service', {}).get('version', 'unknown')
-                            logger.info(f"[FRIGATE] API OK! Version: {version}")
+                                version = data.get('service', {}).get('version', 'connected')
                             break
                         elif response.status_code == 401:
-                            last_error = f"Authentification requise (401) - Session expirée ou identifiants incorrects"
-                            logger.warning(f"[FRIGATE] {url}: {last_error}")
+                            last_error = "Session expirée ou authentification requise"
                         else:
-                            last_error = f"HTTP {response.status_code}: {response.text[:200]}"
-                            logger.warning(f"[FRIGATE] {url} retourné: {last_error}")
-                    except httpx.ConnectError as ce:
-                        last_error = f"ConnectError sur {url}: {str(ce)}"
-                        logger.warning(f"[FRIGATE] {last_error}")
-                    except httpx.TimeoutException as te:
-                        last_error = f"Timeout sur {url}: {str(te)}"
-                        logger.warning(f"[FRIGATE] {last_error}")
+                            last_error = f"HTTP {response.status_code}"
                     except Exception as e:
-                        last_error = f"Exception sur {url}: {str(e)}"
-                        logger.warning(f"[FRIGATE] {last_error}")
+                        last_error = str(e)
+                        logger.warning(f"[FRIGATE] Erreur {url}: {e}")
                 
                 if not api_success:
-                    error_msg = f"Impossible de se connecter à Frigate sur {self.host}:{self.api_port}. Dernière erreur: {last_error}"
-                    logger.error(f"[FRIGATE] {error_msg}")
                     return {
                         "success": False,
-                        "message": error_msg,
-                        "details": {
-                            "host": self.host,
-                            "api_port": self.api_port,
-                            "last_error": last_error
-                        }
+                        "message": f"Impossible de se connecter à Frigate. Erreur: {last_error}",
+                        "details": {"host": self.host, "api_port": self.api_port, "last_error": last_error}
                     }
                 
                 # Tester go2rtc
                 go2rtc_ok = False
-                go2rtc_error = None
                 try:
-                    go2rtc_test_url = f"{self.go2rtc_url}/api/streams"
-                    logger.info(f"[FRIGATE] Test go2rtc: GET {go2rtc_test_url}")
-                    go2rtc_resp = await client.get(go2rtc_test_url)
-                    logger.info(f"[FRIGATE] go2rtc réponse: status={go2rtc_resp.status_code}")
+                    go2rtc_resp = await client.get(f"{self.go2rtc_url}/api/streams")
                     go2rtc_ok = go2rtc_resp.status_code == 200
-                    if not go2rtc_ok:
-                        go2rtc_error = f"HTTP {go2rtc_resp.status_code}"
-                except Exception as e:
-                    go2rtc_error = str(e)
-                    logger.warning(f"[FRIGATE] Erreur go2rtc: {go2rtc_error}")
+                except:
+                    pass
                 
-                result = {
+                return {
                     "success": True,
-                    "version": version or "unknown",
+                    "version": version,
                     "go2rtc_available": go2rtc_ok,
-                    "message": f"Connecté à Frigate {version}" + (" (go2rtc OK)" if go2rtc_ok else f" (go2rtc: {go2rtc_error})"),
-                    "details": {
-                        "host": self.host,
-                        "api_port": self.api_port,
-                        "go2rtc_port": self.go2rtc_port,
-                        "go2rtc_error": go2rtc_error
-                    }
+                    "message": f"Connecté à Frigate {version}" + (" (go2rtc OK)" if go2rtc_ok else ""),
+                    "details": {"host": self.host, "api_port": self.api_port, "go2rtc_port": self.go2rtc_port}
                 }
-                logger.info(f"[FRIGATE] Test réussi: {result}")
-                return result
                 
         except httpx.ConnectError as e:
-            error_msg = f"Connexion refusée vers {self.host}:{self.api_port} - Vérifiez que Frigate est accessible"
-            logger.error(f"[FRIGATE] ConnectError: {e}")
-            logger.error(f"[FRIGATE] {error_msg}")
-            return {
-                "success": False,
-                "message": error_msg,
-                "details": {"error_type": "ConnectError", "raw_error": str(e)}
-            }
-        except httpx.TimeoutException as e:
-            error_msg = f"Timeout après {FRIGATE_TIMEOUT}s - Frigate ne répond pas sur {self.host}:{self.api_port}"
-            logger.error(f"[FRIGATE] TimeoutException: {e}")
-            return {
-                "success": False,
-                "message": error_msg,
-                "details": {"error_type": "Timeout", "timeout_seconds": FRIGATE_TIMEOUT}
-            }
+            return {"success": False, "message": f"Connexion refusée: {self.host}:{self.api_port}", "details": {"error": str(e)}}
+        except httpx.TimeoutException:
+            return {"success": False, "message": f"Timeout: Frigate ne répond pas", "details": {"host": self.host}}
         except Exception as e:
-            error_msg = f"Erreur inattendue: {type(e).__name__}: {str(e)}"
-            logger.error(f"[FRIGATE] Exception: {e}")
-            logger.error(f"[FRIGATE] Traceback: {traceback.format_exc()}")
-            return {
-                "success": False,
-                "message": error_msg,
-                "details": {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
-            }
-                
-                if not api_success:
-                    error_msg = f"Impossible de se connecter à Frigate sur {self.host}:{self.api_port}. Dernière erreur: {last_error}"
-                    logger.error(f"[FRIGATE] {error_msg}")
-                    return {
-                        "success": False,
-                        "message": error_msg,
-                        "details": {
-                            "host": self.host,
-                            "api_port": self.api_port,
-                            "last_error": last_error
-                        }
-                    }
-                
-                # Tester go2rtc
-                go2rtc_ok = False
-                go2rtc_error = None
-                try:
-                    go2rtc_test_url = f"{self.go2rtc_url}/api/streams"
-                    logger.info(f"[FRIGATE] Test go2rtc: GET {go2rtc_test_url}")
-                    go2rtc_resp = await client.get(go2rtc_test_url)
-                    logger.info(f"[FRIGATE] go2rtc réponse: status={go2rtc_resp.status_code}")
-                    go2rtc_ok = go2rtc_resp.status_code == 200
-                    if not go2rtc_ok:
-                        go2rtc_error = f"HTTP {go2rtc_resp.status_code}"
-                except Exception as e:
-                    go2rtc_error = str(e)
-                    logger.warning(f"[FRIGATE] Erreur go2rtc: {go2rtc_error}")
-                
-                result = {
-                    "success": True,
-                    "version": version or "unknown",
-                    "go2rtc_available": go2rtc_ok,
-                    "message": f"Connecté à Frigate {version}" + (" (go2rtc OK)" if go2rtc_ok else f" (go2rtc: {go2rtc_error})"),
-                    "details": {
-                        "host": self.host,
-                        "api_port": self.api_port,
-                        "go2rtc_port": self.go2rtc_port,
-                        "go2rtc_error": go2rtc_error
-                    }
-                }
-                logger.info(f"[FRIGATE] Test réussi: {result}")
-                return result
-                
-        except httpx.ConnectError as e:
-            error_msg = f"Connexion refusée vers {self.host}:{self.api_port} - Vérifiez que Frigate est accessible"
-            logger.error(f"[FRIGATE] ConnectError: {e}")
-            logger.error(f"[FRIGATE] {error_msg}")
-            return {
-                "success": False,
-                "message": error_msg,
-                "details": {"error_type": "ConnectError", "raw_error": str(e)}
-            }
-        except httpx.TimeoutException as e:
-            error_msg = f"Timeout après {FRIGATE_TIMEOUT}s - Frigate ne répond pas sur {self.host}:{self.api_port}"
-            logger.error(f"[FRIGATE] TimeoutException: {e}")
-            return {
-                "success": False,
-                "message": error_msg,
-                "details": {"error_type": "Timeout", "timeout_seconds": FRIGATE_TIMEOUT}
-            }
-        except Exception as e:
-            error_msg = f"Erreur inattendue: {type(e).__name__}: {str(e)}"
-            logger.error(f"[FRIGATE] Exception: {e}")
-            logger.error(f"[FRIGATE] Traceback: {traceback.format_exc()}")
-            return {
-                "success": False,
-                "message": error_msg,
-                "details": {"error_type": type(e).__name__, "traceback": traceback.format_exc()}
-            }
+            return {"success": False, "message": f"Erreur: {e}", "details": {"traceback": traceback.format_exc()}}
     
     async def get_cameras(self) -> List[Dict[str, Any]]:
-        """Récupère la liste des caméras configurées dans Frigate"""
+        """Récupère la liste des caméras Frigate"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
+            client, login_ok = await self._create_authenticated_client()
+            async with client:
+                if not login_ok:
+                    return []
                 response = await client.get(f"{self.base_url}/api/config")
                 if response.status_code == 200:
                     config = response.json()
-                    cameras = []
-                    
-                    for name, cam_config in config.get("cameras", {}).items():
-                        # Récupérer le dernier snapshot si disponible
-                        cameras.append({
-                            "name": name,
-                            "enabled": cam_config.get("enabled", True),
-                            "detect": cam_config.get("detect", {}),
-                            "record": cam_config.get("record", {}),
-                            "snapshots": cam_config.get("snapshots", {}),
-                        })
-                    
-                    return cameras
+                    return [{"name": name, "enabled": cfg.get("enabled", True)} 
+                            for name, cfg in config.get("cameras", {}).items()]
                 return []
         except Exception as e:
-            logger.error(f"Erreur récupération caméras Frigate: {e}")
+            logger.error(f"[FRIGATE] Erreur get_cameras: {e}")
             return []
     
     async def get_go2rtc_streams(self) -> List[Dict[str, Any]]:
-        """Récupère la liste des streams go2rtc disponibles"""
+        """Récupère la liste des streams go2rtc"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
+            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False) as client:
                 response = await client.get(f"{self.go2rtc_url}/api/streams")
                 if response.status_code == 200:
-                    streams_data = response.json()
-                    streams = []
-                    
-                    for name, producers in streams_data.items():
-                        streams.append({
-                            "name": name,
-                            "producers": len(producers) if isinstance(producers, list) else 0,
-                            "active": len(producers) > 0 if isinstance(producers, list) else False
-                        })
-                    
-                    return streams
+                    data = response.json()
+                    return [{"name": name, "active": len(producers) > 0 if isinstance(producers, list) else False}
+                            for name, producers in data.items()]
                 return []
         except Exception as e:
-            logger.error(f"Erreur récupération streams go2rtc: {e}")
+            logger.error(f"[FRIGATE] Erreur get_go2rtc_streams: {e}")
             return []
     
     async def get_camera_snapshot(self, camera_name: str, quality: int = 70) -> Optional[bytes]:
-        """
-        Récupère le dernier snapshot d'une caméra
-        
-        Args:
-            camera_name: Nom de la caméra dans Frigate
-            quality: Qualité JPEG (1-100)
-        
-        Returns:
-            Bytes de l'image JPEG ou None
-        """
+        """Récupère le snapshot d'une caméra"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
-                # Endpoint Frigate pour le dernier snapshot
+            client, login_ok = await self._create_authenticated_client()
+            async with client:
+                if not login_ok:
+                    return None
                 url = f"{self.base_url}/api/{camera_name}/latest.jpg"
-                params = {"quality": quality}
-                
-                response = await client.get(url, params=params)
-                if response.status_code == 200:
-                    return response.content
-                
-                logger.warning(f"Snapshot non disponible pour {camera_name}: {response.status_code}")
-                return None
+                response = await client.get(url, params={"quality": quality})
+                return response.content if response.status_code == 200 else None
         except Exception as e:
-            logger.error(f"Erreur récupération snapshot {camera_name}: {e}")
+            logger.error(f"[FRIGATE] Erreur snapshot: {e}")
             return None
     
     async def get_camera_thumbnail(self, camera_name: str, height: int = 180) -> Optional[bytes]:
-        """
-        Récupère une vignette de la caméra (plus légère que le snapshot)
-        
-        Args:
-            camera_name: Nom de la caméra
-            height: Hauteur de la vignette
-        
-        Returns:
-            Bytes de l'image ou None
-        """
+        """Récupère une vignette"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
+            client, login_ok = await self._create_authenticated_client()
+            async with client:
+                if not login_ok:
+                    return None
                 url = f"{self.base_url}/api/{camera_name}/latest.jpg"
-                params = {"h": height, "quality": 60}
-                
-                response = await client.get(url, params=params)
-                if response.status_code == 200:
-                    return response.content
-                return None
+                response = await client.get(url, params={"h": height, "quality": 60})
+                return response.content if response.status_code == 200 else None
         except Exception as e:
-            logger.error(f"Erreur récupération thumbnail {camera_name}: {e}")
+            logger.error(f"[FRIGATE] Erreur thumbnail: {e}")
             return None
     
     async def get_camera_events(self, camera_name: str = None, limit: int = 20) -> List[Dict[str, Any]]:
-        """
-        Récupère les événements de détection récents
-        
-        Args:
-            camera_name: Filtrer par caméra (optionnel)
-            limit: Nombre max d'événements
-        
-        Returns:
-            Liste des événements
-        """
+        """Récupère les événements de détection"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
-                url = f"{self.base_url}/api/events"
+            client, login_ok = await self._create_authenticated_client()
+            async with client:
+                if not login_ok:
+                    return []
                 params = {"limit": limit}
                 if camera_name:
                     params["camera"] = camera_name
-                
-                response = await client.get(url, params=params)
-                if response.status_code == 200:
-                    return response.json()
-                return []
+                response = await client.get(f"{self.base_url}/api/events", params=params)
+                return response.json() if response.status_code == 200 else []
         except Exception as e:
-            logger.error(f"Erreur récupération événements: {e}")
+            logger.error(f"[FRIGATE] Erreur events: {e}")
             return []
     
     async def get_stats(self) -> Dict[str, Any]:
-        """Récupère les statistiques de Frigate"""
+        """Récupère les statistiques Frigate"""
         try:
-            async with httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False, auth=self.auth) as client:
+            client, login_ok = await self._create_authenticated_client()
+            async with client:
+                if not login_ok:
+                    return {}
                 response = await client.get(f"{self.base_url}/api/stats")
-                if response.status_code == 200:
-                    return response.json()
-                return {}
+                return response.json() if response.status_code == 200 else {}
         except Exception as e:
-            logger.error(f"Erreur récupération stats Frigate: {e}")
+            logger.error(f"[FRIGATE] Erreur stats: {e}")
             return {}
     
     def get_webrtc_url(self, stream_name: str) -> str:
-        """
-        Retourne l'URL WebRTC pour un stream go2rtc
-        
-        Args:
-            stream_name: Nom du stream (ex: "Ouest_hq")
-        
-        Returns:
-            URL WebSocket pour la connexion WebRTC
-        """
         return f"ws://{self.host}:{self.go2rtc_port}/api/ws?src={stream_name}"
     
     def get_webrtc_offer_url(self, stream_name: str) -> str:
-        """
-        Retourne l'URL HTTP pour récupérer l'offer SDP WebRTC
-        
-        Args:
-            stream_name: Nom du stream
-        
-        Returns:
-            URL pour l'API WebRTC
-        """
         return f"{self.go2rtc_url}/api/webrtc?src={stream_name}"
     
     def get_mjpeg_url(self, camera_name: str) -> str:
-        """
-        Retourne l'URL du stream MJPEG pour une caméra
-        
-        Args:
-            camera_name: Nom de la caméra
-        
-        Returns:
-            URL du stream MJPEG
-        """
         return f"{self.base_url}/api/{camera_name}"
 
 
-# Instance globale (sera initialisée avec les paramètres de la DB)
+# Instance globale
 _frigate_service: Optional[FrigateService] = None
 
 
 def get_frigate_service() -> Optional[FrigateService]:
-    """Retourne l'instance du service Frigate"""
     return _frigate_service
 
 
 def init_frigate_service(host: str, api_port: int = 5000, go2rtc_port: int = 1984, use_https: bool = False, username: str = "", password: str = "") -> FrigateService:
-    """Initialise le service Frigate avec les paramètres donnés"""
     global _frigate_service
     _frigate_service = FrigateService(host, api_port, go2rtc_port, use_https, username, password)
     return _frigate_service
 
 
 def reset_frigate_service():
-    """Réinitialise le service Frigate"""
     global _frigate_service
     _frigate_service = None
