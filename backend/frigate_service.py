@@ -30,9 +30,15 @@ class FrigateService:
         
         protocol = "https" if use_https else "http"
         self.base_url = f"{protocol}://{host}:{api_port}"
-        self.go2rtc_url = f"http://{host}:{go2rtc_port}"
         
-        logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}, user={username}")
+        # go2rtc est intégré dans Frigate et accessible via le même port
+        # Les endpoints go2rtc sont sous /api/go2rtc/ dans Frigate
+        self.go2rtc_url = f"{protocol}://{host}:{api_port}/api/go2rtc"
+        
+        # Port WebRTC séparé (8555 par défaut)
+        self.webrtc_port = go2rtc_port if go2rtc_port != 1984 else 8555
+        
+        logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}, webrtc_port={self.webrtc_port}, user={username}")
     
     async def _create_authenticated_client(self) -> tuple[httpx.AsyncClient, bool]:
         """
