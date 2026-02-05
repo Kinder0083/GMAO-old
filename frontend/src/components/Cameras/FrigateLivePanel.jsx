@@ -1,8 +1,8 @@
 /**
  * Panel de visualisation live Frigate avec 3 slots
- * Utilise le streaming via proxy backend (pas de WebSocket direct)
+ * Affiche UNIQUEMENT les caméras configurées dans stream_mapping
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -31,9 +31,8 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
   const [frigateSettings, setFrigateSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCameras, setSelectedCameras] = useState([null, null, null]);
-  const [availableCameras, setAvailableCameras] = useState([]);
 
-  // Charger les paramètres et caméras Frigate
+  // Charger les paramètres Frigate
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -45,17 +44,6 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
         if (response.ok) {
           const data = await response.json();
           setFrigateSettings(data);
-          
-          // Charger les caméras si connecté
-          if (data.enabled && data.connected) {
-            const camerasRes = await fetch(`${API_URL}/api/cameras/frigate/cameras`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (camerasRes.ok) {
-              const camerasData = await camerasRes.json();
-              setAvailableCameras(camerasData.cameras || []);
-            }
-          }
         }
       } catch (error) {
         console.error('Erreur chargement Frigate:', error);
@@ -66,6 +54,21 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     
     loadData();
   }, []);
+
+  // Obtenir la liste des caméras configurées depuis le stream_mapping
+  const getConfiguredCameras = useCallback(() => {
+    if (!frigateSettings?.stream_mapping) return [];
+    
+    return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => {
+      // Extraire le nom de la caméra (avant _hq, _lq, etc.)
+      const cameraName = streamName.replace(/_hq$|_lq$|_sub$/, '');
+      return {
+        displayName,
+        streamName,
+        cameraName
+      };
+    });
+  }, [frigateSettings]);
 
   // Sélectionner une caméra pour un slot
   const handleSelectCamera = (slotIndex, cameraName) => {
@@ -85,19 +88,12 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     });
   };
 
-  // Obtenir le nom d'affichage depuis le mapping
-  const getDisplayName = (cameraName) => {
-    if (!frigateSettings?.stream_mapping) return cameraName;
-    
-    // Chercher dans le mapping
-    for (const [displayName, streamName] of Object.entries(frigateSettings.stream_mapping)) {
-      // Le streamName peut être "Ouest_hq" et la caméra "Ouest"
-      if (streamName.startsWith(cameraName) || streamName === cameraName) {
-        return displayName;
-      }
-    }
-    return cameraName;
-  };
+  // Obtenir le displayName pour un cameraName
+  const getDisplayName = useCallback((cameraName) => {
+    const cameras = getConfiguredCameras();
+    const camera = cameras.find(c => c.cameraName === cameraName);
+    return camera?.displayName || cameraName;
+  }, [getConfiguredCameras]);
 
   if (loading) {
     return (
@@ -151,17 +147,23 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
     );
   }
 
-  // Pas de caméras disponibles
-  if (availableCameras.length === 0) {
+  const configuredCameras = getConfiguredCameras();
+
+  // Pas de caméras configurées dans le mapping
+  if (configuredCameras.length === 0) {
     return (
       <Card className="p-6">
         <div className="text-center">
           <AlertTriangle className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
-          <p className="text-gray-600 mb-3">
-            Aucune caméra détectée dans Frigate.
+          <p className="text-gray-600 mb-2">
+            Aucune caméra configurée à afficher
+          </p>
+          <p className="text-sm text-gray-400 mb-4">
+            Ajoutez des caméras dans l'onglet "Streams" des paramètres Frigate
           </p>
           <Button variant="outline" size="sm" onClick={onOpenSettings}>
-            Vérifier la configuration
+            <Settings className="w-4 h-4 mr-2" />
+            Configurer les caméras
           </Button>
         </div>
       </Card>
@@ -181,7 +183,7 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
             <span className="text-sm text-gray-500">v{frigateSettings.frigate_version}</span>
           )}
           <span className="text-sm text-gray-400">
-            ({availableCameras.length} caméra{availableCameras.length > 1 ? 's' : ''})
+            ({configuredCameras.length} caméra{configuredCameras.length > 1 ? 's' : ''} configurée{configuredCameras.length > 1 ? 's' : ''})
           </span>
         </div>
         <Button variant="outline" size="sm" onClick={onOpenSettings}>
@@ -197,8 +199,7 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
             key={slotIndex}
             slotIndex={slotIndex}
             selectedCamera={selectedCameras[slotIndex]}
-            availableCameras={availableCameras}
-            frigateSettings={frigateSettings}
+            configuredCameras={configuredCameras}
             onSelectCamera={handleSelectCamera}
             onDeselectCamera={handleDeselectCamera}
             getDisplayName={getDisplayName}
@@ -213,8 +214,7 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
 const LiveSlot = ({
   slotIndex,
   selectedCamera,
-  availableCameras,
-  frigateSettings,
+  configuredCameras,
   onSelectCamera,
   onDeselectCamera,
   getDisplayName
@@ -230,7 +230,7 @@ const LiveSlot = ({
     );
   }
 
-  // Sinon, afficher le sélecteur
+  // Sinon, afficher le sélecteur avec les caméras configurées
   return (
     <Card className="overflow-hidden" data-testid={`frigate-slot-${slotIndex}`}>
       <CardHeader className="p-2 pb-1">
@@ -249,11 +249,11 @@ const LiveSlot = ({
               <SelectValue placeholder="Sélectionner une caméra" />
             </SelectTrigger>
             <SelectContent>
-              {availableCameras.map((camera) => (
-                <SelectItem key={camera.name} value={camera.name}>
+              {configuredCameras.map(({ displayName, cameraName }) => (
+                <SelectItem key={cameraName} value={cameraName}>
                   <div className="flex items-center gap-2">
                     <Video className="w-4 h-4" />
-                    {getDisplayName(camera.name)}
+                    {displayName}
                   </div>
                 </SelectItem>
               ))}
