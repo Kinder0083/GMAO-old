@@ -46,26 +46,42 @@ class FrigateService:
         
         try:
             login_url = f"{self.base_url}/api/login"
-            logger.info(f"[FRIGATE] Login: POST {login_url} (user={self.username})")
+            logger.info(f"[FRIGATE] Login: POST {login_url} (user={self.username}, pass_len={len(self.password)})")
+            
+            # IMPORTANT: Frigate attend du JSON, pas du form-data !
+            login_payload = {
+                "user": self.username,
+                "password": self.password
+            }
             
             response = await client.post(
                 login_url,
-                data={"user": self.username, "password": self.password},
+                json=login_payload,  # JSON, pas data=
+                headers={"Content-Type": "application/json"},
                 follow_redirects=True
             )
             
             logger.info(f"[FRIGATE] Login response: {response.status_code}")
+            logger.info(f"[FRIGATE] Login cookies: {list(response.cookies.keys())}")
             
             if response.status_code == 200:
                 logger.info("[FRIGATE] Login réussi!")
                 return client, True
+            elif response.status_code == 401:
+                logger.error(f"[FRIGATE] Login échoué: Identifiants incorrects")
+                await client.aclose()
+                return httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False), False
+            elif response.status_code == 422:
+                logger.error(f"[FRIGATE] Login échoué: Erreur de validation - {response.text}")
+                await client.aclose()
+                return httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False), False
             else:
-                logger.error(f"[FRIGATE] Login échoué: {response.status_code} - {response.text[:200]}")
+                logger.error(f"[FRIGATE] Login échoué: {response.status_code} - {response.text[:500]}")
                 await client.aclose()
                 return httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False), False
                 
         except Exception as e:
-            logger.error(f"[FRIGATE] Erreur login: {e}")
+            logger.error(f"[FRIGATE] Erreur login: {type(e).__name__}: {e}")
             await client.aclose()
             return httpx.AsyncClient(timeout=FRIGATE_TIMEOUT, verify=False), False
     
