@@ -50,6 +50,9 @@ class FrigateService:
         self.auth = None
         if username and password:
             self.auth = httpx.BasicAuth(username, password)
+            logger.info(f"[FRIGATE] Auth configurée: user='{username}', pass_len={len(password)}")
+        else:
+            logger.info(f"[FRIGATE] Pas d'auth configurée (user='{username}', pass_len={len(password) if password else 0})")
         
         logger.info(f"[FRIGATE] Service initialisé: API={self.base_url}, go2rtc={self.go2rtc_url}, auth={'oui' if self.auth else 'non'}")
     
