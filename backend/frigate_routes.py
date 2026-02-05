@@ -11,7 +11,8 @@ import logging
 import traceback
 import base64
 
-from dependencies import get_current_user
+from auth import decode_access_token
+from dependencies import get_current_user, get_database
 from frigate_service import (
     FrigateService,
     get_frigate_service,
