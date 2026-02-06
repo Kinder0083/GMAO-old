@@ -24,7 +24,7 @@ const FrigateStreamPlayer = ({
   streamName,
   displayName,
   go2rtcHost,
-  go2rtcPort = 1984,
+  go2rtcPort = 1984,  // Ignoré - on utilise toujours 1984 pour l'API go2rtc
   onClose,
   className = ''
 }) => {
@@ -34,6 +34,9 @@ const FrigateStreamPlayer = ({
   const pcRef = useRef(null);
   const wsRef = useRef(null);
   const pollingRef = useRef(null);
+  
+  // IMPORTANT: go2rtc API est TOUJOURS sur le port 1984
+  const GO2RTC_API_PORT = 1984;
   
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
