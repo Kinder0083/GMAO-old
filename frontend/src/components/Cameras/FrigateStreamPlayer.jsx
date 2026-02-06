@@ -1,6 +1,6 @@
 /**
- * Player de streaming Frigate via WebRTC (même méthode que Home Assistant)
- * Utilise HTTP POST vers /api/go2rtc/webrtc au lieu de WebSocket
+ * Player de streaming Frigate via WebRTC (proxy backend)
+ * Le backend fait le proxy vers go2rtc pour éviter les problèmes CORS/nginx
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
@@ -19,6 +19,8 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const FrigateStreamPlayer = ({ 
   streamName,
@@ -39,9 +41,6 @@ const FrigateStreamPlayer = ({
   const [connectionType, setConnectionType] = useState('');
 
   const isH264 = streamName?.includes('_h264') || streamName?.includes('_H264');
-  
-  // go2rtc API est sur le port 1984
-  const GO2RTC_PORT = 1984;
 
   // Cleanup
   const cleanup = useCallback(() => {
@@ -56,14 +55,14 @@ const FrigateStreamPlayer = ({
     }
   }, []);
 
-  // WebRTC via HTTP POST (méthode Home Assistant / Frigate)
+  // WebRTC via proxy backend (évite les problèmes CORS/nginx)
   const connectWebRTC = useCallback(async () => {
-    if (!go2rtcHost || !streamName) {
-      console.log('[WebRTC] Pas de host ou streamName');
+    if (!streamName) {
+      console.log('[WebRTC] Pas de streamName');
       return false;
     }
     
-    console.log('[WebRTC] 🔌 Connexion HTTP POST pour:', streamName);
+    console.log('[WebRTC] 🔌 Connexion via proxy backend pour:', streamName);
     
     try {
       // Créer la connexion RTCPeerConnection
@@ -103,23 +102,28 @@ const FrigateStreamPlayer = ({
         if (pc.iceGatheringState === 'complete') {
           resolve();
         } else {
-          pc.onicegatheringstatechange = () => {
+          const checkState = () => {
             if (pc.iceGatheringState === 'complete') {
               resolve();
             }
           };
+          pc.onicegatheringstatechange = checkState;
           // Timeout de sécurité
           setTimeout(resolve, 2000);
         }
       });
       
-      // Envoyer l'offre via HTTP POST (méthode Home Assistant)
-      const url = `http://${go2rtcHost}:${GO2RTC_PORT}/api/go2rtc/webrtc?src=${streamName}`;
-      console.log('[WebRTC] 📤 POST vers:', url);
+      // Envoyer l'offre via le PROXY BACKEND (pas directement à go2rtc)
+      const token = localStorage.getItem('token');
+      const url = `${API_URL}/api/cameras/frigate/webrtc/${streamName}/offer`;
+      console.log('[WebRTC] 📤 POST vers proxy:', url);
       
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           type: 'offer',
           sdp: pc.localDescription.sdp
@@ -127,12 +131,13 @@ const FrigateStreamPlayer = ({
       });
       
       if (!response.ok) {
-        console.log('[WebRTC] ❌ Erreur HTTP:', response.status);
+        const errorText = await response.text();
+        console.log('[WebRTC] ❌ Erreur HTTP:', response.status, errorText);
         return false;
       }
       
       const answer = await response.json();
-      console.log('[WebRTC] 📨 Answer reçue');
+      console.log('[WebRTC] 📨 Answer reçue, type:', answer.type);
       
       // Appliquer la réponse
       await pc.setRemoteDescription({
@@ -147,44 +152,7 @@ const FrigateStreamPlayer = ({
       console.error('[WebRTC] ❌ Erreur:', e);
       return false;
     }
-  }, [go2rtcHost, streamName]);
-
-  // Fallback: MSE via stream.mp4
-  const connectMSE = useCallback(async () => {
-    if (!go2rtcHost || !streamName || !videoRef.current) {
-      return false;
-    }
-    
-    console.log('[MSE] 🔌 Tentative MSE...');
-    
-    return new Promise((resolve) => {
-      const url = `http://${go2rtcHost}:${GO2RTC_PORT}/api/stream.mp4?src=${streamName}`;
-      console.log('[MSE] URL:', url);
-      
-      const video = videoRef.current;
-      const timeout = setTimeout(() => {
-        console.log('[MSE] ⏱️ Timeout');
-        resolve(false);
-      }, 5000);
-      
-      video.oncanplay = () => {
-        clearTimeout(timeout);
-        console.log('[MSE] ✅ CanPlay!');
-        setConnectionType('MSE');
-        setStatus('connected');
-        resolve(true);
-      };
-      
-      video.onerror = () => {
-        clearTimeout(timeout);
-        console.log('[MSE] ❌ Erreur');
-        resolve(false);
-      };
-      
-      video.src = url;
-      video.play().catch(() => {});
-    });
-  }, [go2rtcHost, streamName]);
+  }, [streamName]);
 
   // Démarrer le streaming
   const startStream = useCallback(async () => {
@@ -194,7 +162,7 @@ const FrigateStreamPlayer = ({
     
     console.log('[Stream] 🚀 Démarrage pour:', streamName);
     
-    // Essayer WebRTC d'abord (méthode Home Assistant)
+    // Essayer WebRTC via proxy backend
     const webrtcOk = await connectWebRTC();
     if (webrtcOk) {
       console.log('[Stream] ✅ WebRTC OK!');
@@ -205,17 +173,9 @@ const FrigateStreamPlayer = ({
       return;
     }
     
-    // Fallback MSE
-    console.log('[Stream] WebRTC échoué, essai MSE...');
-    const mseOk = await connectMSE();
-    if (mseOk) {
-      console.log('[Stream] ✅ MSE OK!');
-      return;
-    }
-    
-    setError('Impossible de se connecter au flux');
+    setError('Impossible de se connecter au flux WebRTC');
     setStatus('error');
-  }, [cleanup, streamName, connectWebRTC, connectMSE]);
+  }, [cleanup, streamName, connectWebRTC]);
 
   // Arrêter
   const stopStream = useCallback(() => {
@@ -309,7 +269,7 @@ const FrigateStreamPlayer = ({
       
       <CardContent className="p-0 relative">
         <div className={`relative bg-gray-900 ${isFullscreen ? 'h-screen' : 'aspect-video'}`}>
-          {/* Video pour WebRTC/MSE */}
+          {/* Video pour WebRTC */}
           <video
             ref={videoRef}
             autoPlay
