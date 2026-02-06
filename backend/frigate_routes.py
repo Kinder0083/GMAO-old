@@ -375,8 +375,8 @@ async def stream_frigate_mjpeg(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/webrtc-info/{stream_name}")
-async def get_frigate_webrtc_info(
+@router.get("/webrtc/{stream_name}")
+async def get_webrtc_info(
     stream_name: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -398,6 +398,65 @@ async def get_frigate_webrtc_info(
         raise
     except Exception as e:
         logger.error(f"Erreur récupération info WebRTC: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class WebRTCOfferRequest(BaseModel):
+    """Requête WebRTC offer"""
+    sdp: str
+    type: str = "offer"
+
+
+@router.post("/webrtc/{stream_name}/offer")
+async def proxy_webrtc_offer(
+    stream_name: str,
+    offer: WebRTCOfferRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Proxy WebRTC: reçoit l'offre SDP du frontend et la transmet à go2rtc.
+    Retourne la réponse SDP de go2rtc.
+    C'est la même méthode que Home Assistant utilise.
+    """
+    import httpx
+    
+    try:
+        service = get_frigate_service()
+        if not service:
+            raise HTTPException(status_code=503, detail="Frigate non configuré")
+        
+        # URL go2rtc WebRTC (port 1984)
+        go2rtc_url = f"http://{service.host}:1984/api/go2rtc/webrtc?src={stream_name}"
+        
+        logger.info(f"[WEBRTC PROXY] POST vers: {go2rtc_url}")
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                go2rtc_url,
+                json={"type": offer.type, "sdp": offer.sdp},
+                headers={"Content-Type": "application/json"}
+            )
+            
+            logger.info(f"[WEBRTC PROXY] Response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                answer = response.json()
+                logger.info(f"[WEBRTC PROXY] Answer reçue, type: {answer.get('type')}")
+                return answer
+            else:
+                logger.error(f"[WEBRTC PROXY] Erreur: {response.status_code} - {response.text}")
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"go2rtc error: {response.text}"
+                )
+                
+    except httpx.RequestError as e:
+        logger.error(f"[WEBRTC PROXY] Erreur connexion: {e}")
+        raise HTTPException(status_code=502, detail=f"Connexion go2rtc impossible: {e}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[WEBRTC PROXY] Erreur: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
