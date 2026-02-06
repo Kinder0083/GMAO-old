@@ -1,6 +1,6 @@
 /**
  * Player de streaming Frigate via WebRTC/MSE/MJPEG
- * Essaie dans l'ordre : WebRTC → MSE → MJPEG (polling)
+ * Avec polling MJPEG manuel qui fonctionne à coup sûr
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
@@ -20,8 +20,6 @@ import {
   VolumeX
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
-
 const FrigateStreamPlayer = ({ 
   streamName,
   displayName,
@@ -35,7 +33,7 @@ const FrigateStreamPlayer = ({
   const containerRef = useRef(null);
   const pcRef = useRef(null);
   const wsRef = useRef(null);
-  const mjpegIntervalRef = useRef(null);
+  const pollingRef = useRef(null);
   
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
@@ -48,6 +46,7 @@ const FrigateStreamPlayer = ({
 
   // Cleanup
   const cleanup = useCallback(() => {
+    console.log('[Cleanup] Nettoyage...');
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -56,9 +55,9 @@ const FrigateStreamPlayer = ({
       pcRef.current.close();
       pcRef.current = null;
     }
-    if (mjpegIntervalRef.current) {
-      clearInterval(mjpegIntervalRef.current);
-      mjpegIntervalRef.current = null;
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
@@ -70,39 +69,45 @@ const FrigateStreamPlayer = ({
   const connectWebRTC = useCallback(() => {
     return new Promise((resolve) => {
       if (!go2rtcHost || !streamName) {
+        console.log('[WebRTC] Pas de host ou streamName');
         resolve(false);
         return;
       }
       
       const timeout = setTimeout(() => {
-        console.log('[WebRTC] Timeout');
+        console.log('[WebRTC] ⏱️ Timeout après 5s');
         resolve(false);
       }, 5000);
       
       try {
         const wsUrl = `ws://${go2rtcHost}:${go2rtcPort}/api/ws?src=${streamName}`;
-        console.log('[WebRTC] Connexion:', wsUrl);
+        console.log('[WebRTC] 🔌 Connexion:', wsUrl);
         
         const pc = new RTCPeerConnection({
           iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         });
         pcRef.current = pc;
         
+        let resolved = false;
+        
         pc.ontrack = (event) => {
-          console.log('[WebRTC] Track reçu:', event.track.kind);
-          clearTimeout(timeout);
-          if (videoRef.current && event.streams[0]) {
+          console.log('[WebRTC] 📺 Track reçu:', event.track.kind);
+          if (!resolved && videoRef.current && event.streams[0]) {
+            resolved = true;
+            clearTimeout(timeout);
             videoRef.current.srcObject = event.streams[0];
-            videoRef.current.play().catch(e => console.log('[WebRTC] Play:', e));
+            videoRef.current.play().catch(e => console.log('[WebRTC] Play error:', e));
             setUseVideoElement(true);
             setConnectionType('WebRTC');
+            setStatus('connected');
             resolve(true);
           }
         };
         
         pc.oniceconnectionstatechange = () => {
-          console.log('[WebRTC] ICE:', pc.iceConnectionState);
-          if (pc.iceConnectionState === 'failed') {
+          console.log('[WebRTC] 🧊 ICE state:', pc.iceConnectionState);
+          if (!resolved && (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected')) {
+            resolved = true;
             clearTimeout(timeout);
             resolve(false);
           }
@@ -111,27 +116,47 @@ const FrigateStreamPlayer = ({
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
         
-        ws.onerror = () => {
-          clearTimeout(timeout);
-          resolve(false);
+        ws.onerror = (e) => {
+          console.log('[WebRTC] ❌ WS Error:', e);
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            resolve(false);
+          }
+        };
+        
+        ws.onclose = () => {
+          console.log('[WebRTC] 🔒 WS Fermé');
         };
         
         ws.onopen = async () => {
-          console.log('[WebRTC] WS ouvert');
-          pc.addTransceiver('video', { direction: 'recvonly' });
-          pc.addTransceiver('audio', { direction: 'recvonly' });
-          
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          ws.send(JSON.stringify({ type: 'webrtc/offer', value: offer.sdp }));
+          console.log('[WebRTC] ✅ WS Ouvert, envoi offer...');
+          try {
+            pc.addTransceiver('video', { direction: 'recvonly' });
+            pc.addTransceiver('audio', { direction: 'recvonly' });
+            
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            ws.send(JSON.stringify({ type: 'webrtc/offer', value: offer.sdp }));
+            console.log('[WebRTC] 📤 Offer envoyée');
+          } catch (e) {
+            console.log('[WebRTC] ❌ Erreur offer:', e);
+          }
         };
         
         ws.onmessage = async (event) => {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'webrtc/answer') {
-            await pc.setRemoteDescription({ type: 'answer', sdp: msg.value });
-          } else if (msg.type === 'webrtc/candidate' && msg.value) {
-            await pc.addIceCandidate({ candidate: msg.value, sdpMid: '0' });
+          try {
+            const msg = JSON.parse(event.data);
+            console.log('[WebRTC] 📨 Message:', msg.type);
+            
+            if (msg.type === 'webrtc/answer') {
+              await pc.setRemoteDescription({ type: 'answer', sdp: msg.value });
+              console.log('[WebRTC] ✅ Answer appliquée');
+            } else if (msg.type === 'webrtc/candidate' && msg.value) {
+              await pc.addIceCandidate({ candidate: msg.value, sdpMid: '0' });
+            }
+          } catch (e) {
+            console.log('[WebRTC] ❌ Erreur message:', e);
           }
         };
         
@@ -141,7 +166,7 @@ const FrigateStreamPlayer = ({
           }
         };
       } catch (e) {
-        console.error('[WebRTC] Erreur:', e);
+        console.error('[WebRTC] ❌ Erreur globale:', e);
         clearTimeout(timeout);
         resolve(false);
       }
@@ -152,64 +177,105 @@ const FrigateStreamPlayer = ({
   const connectMSE = useCallback(() => {
     return new Promise((resolve) => {
       if (!go2rtcHost || !streamName || !videoRef.current) {
+        console.log('[MSE] Pas de host, streamName ou videoRef');
         resolve(false);
         return;
       }
       
+      let resolved = false;
       const timeout = setTimeout(() => {
-        console.log('[MSE] Timeout');
-        resolve(false);
+        if (!resolved) {
+          console.log('[MSE] ⏱️ Timeout après 5s');
+          resolved = true;
+          resolve(false);
+        }
       }, 5000);
       
       try {
         const url = `http://${go2rtcHost}:${go2rtcPort}/api/stream.mp4?src=${streamName}`;
-        console.log('[MSE] Connexion:', url);
+        console.log('[MSE] 🔌 Connexion:', url);
         
         const video = videoRef.current;
         
-        video.oncanplay = () => {
-          clearTimeout(timeout);
-          setUseVideoElement(true);
-          setConnectionType('MSE');
-          resolve(true);
+        const onCanPlay = () => {
+          if (!resolved) {
+            console.log('[MSE] ✅ CanPlay!');
+            resolved = true;
+            clearTimeout(timeout);
+            video.removeEventListener('canplay', onCanPlay);
+            video.removeEventListener('error', onError);
+            setUseVideoElement(true);
+            setConnectionType('MSE');
+            setStatus('connected');
+            resolve(true);
+          }
         };
         
-        video.onerror = () => {
-          clearTimeout(timeout);
-          resolve(false);
+        const onError = (e) => {
+          if (!resolved) {
+            console.log('[MSE] ❌ Erreur:', e);
+            resolved = true;
+            clearTimeout(timeout);
+            video.removeEventListener('canplay', onCanPlay);
+            video.removeEventListener('error', onError);
+            resolve(false);
+          }
         };
+        
+        video.addEventListener('canplay', onCanPlay);
+        video.addEventListener('error', onError);
         
         video.src = url;
-        video.play().catch(() => {
-          clearTimeout(timeout);
-          resolve(false);
+        video.play().catch(e => {
+          console.log('[MSE] ❌ Play error:', e);
         });
       } catch (e) {
-        console.error('[MSE] Erreur:', e);
+        console.error('[MSE] ❌ Erreur globale:', e);
         clearTimeout(timeout);
         resolve(false);
       }
     });
   }, [go2rtcHost, go2rtcPort, streamName]);
 
-  // MJPEG polling via backend proxy (fallback ultime)
+  // MJPEG polling manuel via go2rtc frame.jpeg
   const connectMJPEG = useCallback(() => {
-    if (!streamName) return false;
+    if (!go2rtcHost || !streamName) {
+      console.log('[MJPEG] Pas de host ou streamName');
+      return false;
+    }
     
-    console.log('[MJPEG] Démarrage polling');
+    console.log('[MJPEG] 🔌 Démarrage polling pour:', streamName);
     setUseVideoElement(false);
     setConnectionType('MJPEG');
     
-    // Utiliser le proxy backend MJPEG
-    const token = localStorage.getItem('token');
-    const baseUrl = `${API_URL}/api/cameras/frigate/stream/${streamName}?token=${token}`;
+    // Fonction pour charger une frame
+    const loadFrame = () => {
+      if (!imgRef.current) return;
+      
+      const url = `http://${go2rtcHost}:${go2rtcPort}/api/frame.jpeg?src=${streamName}&_t=${Date.now()}`;
+      
+      // Créer une nouvelle image pour éviter le cache
+      const newImg = new Image();
+      newImg.onload = () => {
+        if (imgRef.current) {
+          imgRef.current.src = newImg.src;
+        }
+      };
+      newImg.onerror = () => {
+        console.log('[MJPEG] ❌ Erreur frame');
+      };
+      newImg.src = url;
+    };
     
-    if (imgRef.current) {
-      imgRef.current.src = `${baseUrl}&_t=${Date.now()}`;
-    }
+    // Charger la première frame immédiatement
+    loadFrame();
     
+    // Puis toutes les 100ms (~10fps)
+    pollingRef.current = setInterval(loadFrame, 100);
+    
+    setStatus('connected');
     return true;
-  }, [streamName]);
+  }, [go2rtcHost, go2rtcPort, streamName]);
 
   // Démarrer le streaming
   const startStream = useCallback(async () => {
@@ -217,34 +283,37 @@ const FrigateStreamPlayer = ({
     setStatus('connecting');
     setError(null);
     
+    console.log('[Stream] 🚀 Démarrage pour:', streamName, 'H264:', isH264);
+    
     // Pour les flux H264, essayer WebRTC puis MSE
     if (isH264) {
-      console.log('[Stream] Flux H264 détecté, essai WebRTC...');
+      console.log('[Stream] Essai WebRTC pour flux H264...');
       const webrtcOk = await connectWebRTC();
       if (webrtcOk) {
-        setStatus('connected');
+        console.log('[Stream] ✅ WebRTC OK!');
         return;
       }
       
       console.log('[Stream] WebRTC échoué, essai MSE...');
       const mseOk = await connectMSE();
       if (mseOk) {
-        setStatus('connected');
+        console.log('[Stream] ✅ MSE OK!');
         return;
       }
+      console.log('[Stream] MSE échoué aussi');
     }
     
-    // Fallback MJPEG pour tous les flux (H265 inclus)
+    // Fallback MJPEG pour tous
     console.log('[Stream] Fallback MJPEG...');
     const mjpegOk = connectMJPEG();
     if (mjpegOk) {
-      setStatus('connected');
+      console.log('[Stream] ✅ MJPEG OK!');
       return;
     }
     
-    setError('Impossible de se connecter au flux');
+    setError('Impossible de se connecter');
     setStatus('error');
-  }, [cleanup, isH264, connectWebRTC, connectMSE, connectMJPEG]);
+  }, [cleanup, isH264, streamName, connectWebRTC, connectMSE, connectMJPEG]);
 
   // Arrêter
   const stopStream = useCallback(() => {
@@ -348,18 +417,11 @@ const FrigateStreamPlayer = ({
             className={`w-full h-full object-contain ${useVideoElement ? '' : 'hidden'}`}
           />
           
-          {/* Image pour MJPEG fallback */}
+          {/* Image pour MJPEG polling */}
           <img
             ref={imgRef}
             alt={displayName || streamName}
             className={`w-full h-full object-contain ${useVideoElement ? 'hidden' : ''}`}
-            onLoad={() => setStatus('connected')}
-            onError={() => {
-              if (!useVideoElement) {
-                setError('Erreur chargement MJPEG');
-                setStatus('error');
-              }
-            }}
           />
           
           {/* Overlays */}
@@ -399,11 +461,13 @@ const FrigateStreamPlayer = ({
             <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-white text-xs flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               <span>{streamName}</span>
-              {connectionType && (
-                <span className={connectionType === 'WebRTC' ? 'text-green-400' : connectionType === 'MSE' ? 'text-blue-400' : 'text-yellow-400'}>
-                  {connectionType}
-                </span>
-              )}
+              <span className={
+                connectionType === 'WebRTC' ? 'text-green-400' : 
+                connectionType === 'MSE' ? 'text-blue-400' : 
+                'text-yellow-400'
+              }>
+                {connectionType}
+              </span>
             </div>
           )}
         </div>
