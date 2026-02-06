@@ -255,7 +255,7 @@ const FrigateStreamPlayer = ({
     const loadFrame = () => {
       if (!imgRef.current) return;
       
-      const url = `http://${go2rtcHost}:${go2rtcPort}/api/frame.jpeg?src=${streamName}&_t=${Date.now()}`;
+      const url = `http://${go2rtcHost}:${GO2RTC_API_PORT}/api/frame.jpeg?src=${streamName}&_t=${Date.now()}`;
       
       // Créer une nouvelle image pour éviter le cache
       const newImg = new Image();
