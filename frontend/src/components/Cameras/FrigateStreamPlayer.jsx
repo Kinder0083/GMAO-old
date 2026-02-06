@@ -83,7 +83,7 @@ const FrigateStreamPlayer = ({
       }, 5000);
       
       try {
-        const wsUrl = `ws://${go2rtcHost}:${go2rtcPort}/api/ws?src=${streamName}`;
+        const wsUrl = `ws://${go2rtcHost}:${GO2RTC_API_PORT}/api/ws?src=${streamName}`;
         console.log('[WebRTC] 🔌 Connexion:', wsUrl);
         
         const pc = new RTCPeerConnection({
