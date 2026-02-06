@@ -195,7 +195,7 @@ const FrigateStreamPlayer = ({
       }, 5000);
       
       try {
-        const url = `http://${go2rtcHost}:${go2rtcPort}/api/stream.mp4?src=${streamName}`;
+        const url = `http://${go2rtcHost}:${GO2RTC_API_PORT}/api/stream.mp4?src=${streamName}`;
         console.log('[MSE] 🔌 Connexion:', url);
         
         const video = videoRef.current;
