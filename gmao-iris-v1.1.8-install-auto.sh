@@ -793,6 +793,29 @@ echo "📦 Installation de jspdf pour l'export PDF..."
 yarn add jspdf --silent 2>/dev/null || echo "⚠️  Installation jspdf échouée, continuons..."
 
 yarn build 2>/dev/null
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPORTANT: Configuration du Git Hook post-merge pour les mises à jour automatiques
+# ═══════════════════════════════════════════════════════════════════════════════
+cd /opt/gmao-iris
+
+# Rendre le script post-update exécutable
+chmod +x backend/post-update.sh
+
+# Créer le git hook post-merge qui sera exécuté après chaque git pull
+mkdir -p .git/hooks
+cat > .git/hooks/post-merge << 'GITHOOK'
+#!/bin/bash
+# Git post-merge hook - Exécuté automatiquement après chaque git pull
+echo ""
+echo "🔄 Mise à jour détectée, exécution du post-update..."
+/opt/gmao-iris/backend/post-update.sh
+GITHOOK
+chmod +x .git/hooks/post-merge
+
+echo "✅ Git hook post-merge configuré pour les mises à jour automatiques"
+# ═══════════════════════════════════════════════════════════════════════════════
+
 APPEOF
 
 ok "Application installée"
