@@ -428,12 +428,17 @@ const FrigateStreamPlayer = ({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Démarrer le stream quand les props changent
   useEffect(() => {
+    console.log('[useEffect] streamName changed to:', streamName);
     if (streamName && go2rtcHost) {
       startStream();
     }
-    return () => cleanup();
-  }, [streamName, go2rtcHost]);
+    return () => {
+      console.log('[useEffect] Cleanup for:', streamName);
+      cleanup();
+    };
+  }, [streamName, go2rtcHost, go2rtcPort, startStream, cleanup]);
 
   const isWebRTC = connectionType === 'WebRTC';
   const isHLS = connectionType === 'HLS';
