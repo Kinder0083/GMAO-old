@@ -594,7 +594,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
         throw new Error('Non authentifié');
       }
       
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/voice/transcribe`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || ''}/api/ai/voice/transcribe`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -657,7 +657,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     try {
       setIsPlayingAudio(true);
       
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/voice/tts`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || ''}/api/ai/voice/tts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
