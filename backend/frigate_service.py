@@ -376,17 +376,20 @@ class FrigateService:
     
     async def stream_mjpeg(self, stream_name: str):
         """
-        Génère un flux MJPEG en récupérant des frames via l'API Frigate authentifiée.
-        Utilise l'endpoint /api/go2rtc/frame.jpeg?src={stream_name} à travers Frigate.
+        Génère un flux MJPEG CONTINU en se connectant au vrai endpoint MJPEG de Frigate.
+        Utilise l'endpoint /<camera_name> qui fournit un flux multipart continu.
         """
         import asyncio
         
-        # URL via l'API Frigate (authentifié, pas d'accès direct au port 1984)
-        frame_url = f"{self.base_url}/api/go2rtc/frame.jpeg?src={stream_name}"
+        # Extraire le nom de base de la caméra (sans _hq/_lq suffix)
+        camera_name = stream_name.split('_')[0] if '_' in stream_name else stream_name
         
-        logger.info(f"[FRIGATE] Démarrage stream MJPEG via API Frigate: {frame_url}")
+        # URL du flux MJPEG continu de Frigate (endpoint natif)
+        mjpeg_url = f"{self.base_url}/{camera_name}"
         
-        # Client authentifié pour passer par Frigate
+        logger.info(f"[FRIGATE] Connexion flux MJPEG continu: {mjpeg_url}")
+        
+        # Client authentifié
         client, login_ok = await self._create_authenticated_client()
         if not login_ok:
             logger.error(f"[FRIGATE] Authentification échouée pour stream MJPEG {stream_name}")
@@ -395,59 +398,55 @@ class FrigateService:
             return
         
         try:
-            frame_count = 0
-            error_count = 0
-            
-            while True:
-                try:
-                    response = await client.get(frame_url)
+            # Connexion streaming au flux MJPEG
+            async with client.stream('GET', mjpeg_url, timeout=None) as response:
+                if response.status_code != 200:
+                    logger.error(f"[FRIGATE] Erreur connexion MJPEG: {response.status_code}")
+                    return
+                
+                logger.info(f"[FRIGATE] Flux MJPEG connecté pour {camera_name}")
+                frame_count = 0
+                buffer = b""
+                
+                # Lire le stream en continu
+                async for chunk in response.aiter_bytes(chunk_size=8192):
+                    buffer += chunk
                     
-                    if response.status_code == 200:
-                        frame = response.content
+                    # Chercher les frames JPEG dans le buffer
+                    while True:
+                        # Chercher le début d'une frame JPEG (FFD8)
+                        start = buffer.find(b'\xff\xd8')
+                        if start == -1:
+                            break
+                        
+                        # Chercher la fin de la frame JPEG (FFD9)
+                        end = buffer.find(b'\xff\xd9', start + 2)
+                        if end == -1:
+                            break
+                        
+                        # Extraire la frame complète
+                        frame = buffer[start:end + 2]
+                        buffer = buffer[end + 2:]
+                        
                         frame_count += 1
-                        error_count = 0
-                        
                         if frame_count == 1:
-                            logger.info(f"[FRIGATE] Première frame reçue pour {stream_name} ({len(frame)} bytes)")
+                            logger.info(f"[FRIGATE] Première frame reçue ({len(frame)} bytes)")
                         
+                        # Envoyer la frame au client
                         yield (
                             b"--frame\r\n"
                             b"Content-Type: image/jpeg\r\n"
                             b"Content-Length: " + str(len(frame)).encode() + b"\r\n"
                             b"\r\n" + frame + b"\r\n"
                         )
-                    elif response.status_code == 401:
-                        # Session expirée, re-authentifier
-                        logger.warning(f"[FRIGATE] Session expirée, re-authentification...")
-                        await client.aclose()
-                        client, login_ok = await self._create_authenticated_client()
-                        if not login_ok:
-                            break
-                        error_count += 1
-                    else:
-                        error_count += 1
-                        logger.warning(f"[FRIGATE] Frame erreur {response.status_code} pour {stream_name}")
-                        if error_count > 10:
-                            logger.error(f"[FRIGATE] Trop d'erreurs, arrêt du stream {stream_name}")
-                            break
-                    
-                    await asyncio.sleep(0.066)
-                    
-                except httpx.ReadTimeout:
-                    logger.warning(f"[FRIGATE] Timeout frame {stream_name}, retry...")
-                    await asyncio.sleep(0.5)
-                except Exception as e:
-                    error_count += 1
-                    logger.error(f"[FRIGATE] Erreur frame {stream_name}: {e}")
-                    if error_count > 5:
-                        break
-                    await asyncio.sleep(0.5)
-                    
+                        
+        except httpx.ReadTimeout:
+            logger.warning(f"[FRIGATE] Timeout flux MJPEG {stream_name}")
         except Exception as e:
-            logger.error(f"[FRIGATE] Stream erreur: {e}")
+            logger.error(f"[FRIGATE] Erreur stream MJPEG: {type(e).__name__}: {e}")
         finally:
             await client.aclose()
-            logger.info(f"[FRIGATE] Stream terminé pour {stream_name} ({frame_count} frames)")
+            logger.info(f"[FRIGATE] Stream MJPEG terminé pour {stream_name}")
 
 
 # Instance globale
