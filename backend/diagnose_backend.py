@@ -50,7 +50,7 @@ critical_imports = [
     ('motor.motor_asyncio', 'AsyncIOMotorClient'),
     ('pydantic', 'BaseModel'),
     ('bcrypt', None),
-    ('python_jose', 'jwt'),
+    ('jose', 'jwt'),
     ('apscheduler.schedulers.asyncio', 'AsyncIOScheduler'),
     ('httpx', None),
     ('aiofiles', None),
