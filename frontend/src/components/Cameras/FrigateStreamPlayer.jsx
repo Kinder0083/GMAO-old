@@ -220,6 +220,40 @@ const FrigateStreamPlayer = ({
     return true;
   }, [streamName]);
 
+  // HLS Fallback via backend proxy
+  const connectHLS = useCallback(async () => {
+    if (!streamName || !go2rtcHost) return false;
+    
+    console.log('[HLS] Démarrage HLS pour:', streamName);
+    
+    try {
+      // URL HLS via Frigate (proxiée via backend si nécessaire)
+      const hlsUrl = `https://${go2rtcHost}:8971/api/go2rtc/api/stream.m3u8?src=${streamName}`;
+      console.log('[HLS] URL:', hlsUrl);
+      
+      if (videoRef.current) {
+        // Pour HLS natif (Safari) ou avec hls.js
+        if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+          // Safari supporte HLS nativement
+          videoRef.current.src = hlsUrl;
+          videoRef.current.play().catch(e => console.log('[HLS] Play error:', e));
+          setStatus('connected');
+          setConnectionType('HLS');
+          return true;
+        } else {
+          // Pour les autres navigateurs, on aurait besoin de hls.js
+          // Pour l'instant, fallback au polling
+          console.log('[HLS] Navigateur ne supporte pas HLS natif');
+          return false;
+        }
+      }
+      return false;
+    } catch (e) {
+      console.error('[HLS] Erreur:', e);
+      return false;
+    }
+  }, [streamName, go2rtcHost]);
+
   // Démarrer le streaming
   const startStream = useCallback(async () => {
     cleanup();
@@ -227,13 +261,33 @@ const FrigateStreamPlayer = ({
     setError(null);
     
     console.log('[Stream] Démarrage pour:', streamName);
+    console.log('[Stream] go2rtcHost:', go2rtcHost, 'go2rtcPort:', go2rtcPort);
     
-    // DÉSACTIVÉ: WebRTC ne fonctionne pas via proxy backend (ICE échoue)
-    // La connexion signaling fonctionne mais le flux média ne peut pas passer
-    // car il nécessite une connexion directe navigateur <-> go2rtc
+    // 1. Essayer WebRTC DIRECT vers go2rtc (meilleure qualité, basse latence)
+    if (go2rtcHost) {
+      console.log('[Stream] Tentative WebRTC direct...');
+      const webrtcOk = await connectWebRTC();
+      if (webrtcOk) {
+        console.log('[Stream] WebRTC OK!');
+        if (videoRef.current) {
+          videoRef.current.play().catch(e => console.log('[Stream] Play:', e));
+        }
+        return;
+      }
+      console.log('[Stream] WebRTC échoué');
+      
+      // 2. Fallback: HLS
+      console.log('[Stream] Tentative HLS...');
+      const hlsOk = await connectHLS();
+      if (hlsOk) {
+        console.log('[Stream] HLS OK!');
+        return;
+      }
+      console.log('[Stream] HLS échoué');
+    }
     
-    // Utiliser directement le polling de frames
-    console.log('[Stream] Utilisation du polling de frames (WebRTC désactivé)...');
+    // 3. Dernier recours: Polling de frames
+    console.log('[Stream] Fallback polling de frames...');
     const pollingOk = connectMJPEG();
     if (pollingOk) {
       console.log('[Stream] Polling OK!');
@@ -242,7 +296,7 @@ const FrigateStreamPlayer = ({
     
     setError('Impossible de se connecter au flux vidéo');
     setStatus('error');
-  }, [cleanup, streamName, connectMJPEG]);
+  }, [cleanup, streamName, go2rtcHost, go2rtcPort, connectWebRTC, connectHLS, connectMJPEG]);
 
   // Arrêter
   const stopStream = useCallback(() => {
