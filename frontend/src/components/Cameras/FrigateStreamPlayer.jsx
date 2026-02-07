@@ -149,38 +149,74 @@ const FrigateStreamPlayer = ({
     }
   }, [streamName]);
 
-  // MJPEG CONTINU via backend proxy (flux streaming réel, pas polling)
+  // POLLING DE FRAMES via backend proxy (snapshots rapides)
+  // Utilise /api/{camera}/latest.jpg qui fonctionne avec Frigate
   const connectMJPEG = useCallback(() => {
     if (!streamName) return false;
     
-    console.log('[MJPEG] Démarrage flux CONTINU via backend proxy pour:', streamName);
+    console.log('[MJPEG Polling] Démarrage pour:', streamName);
     
     const token = localStorage.getItem('token');
     if (!token) {
-      console.log('[MJPEG] Token non trouvé');
+      console.log('[MJPEG Polling] Token non trouvé');
       return false;
     }
     
-    // Utiliser l'endpoint /stream/ qui renvoie un flux MJPEG continu (multipart/x-mixed-replace)
-    // C'est un vrai stream, pas du polling d'images individuelles
-    const streamUrl = `${API_URL}/api/cameras/frigate/stream/${streamName}?token=${encodeURIComponent(token)}`;
-    console.log('[MJPEG] URL flux continu:', streamUrl);
-    
-    if (imgRef.current) {
-      imgRef.current.src = streamUrl;
-      imgRef.current.onerror = () => {
-        console.log('[MJPEG] Erreur flux - tentative reconnexion...');
-        // Tentative de reconnexion après 2 secondes
-        setTimeout(() => {
-          if (imgRef.current) {
-            imgRef.current.src = streamUrl + '&_retry=' + Date.now();
-          }
-        }, 2000);
-      };
+    // Extraire le nom de la caméra (sans _hq/_lq) pour l'API Frigate
+    // Ex: Salon_lq -> Salon, Tapo -> Salon_Tapo (mapping spécial)
+    let cameraName = streamName;
+    if (streamName.endsWith('_hq') || streamName.endsWith('_lq')) {
+      cameraName = streamName.replace(/_hq$|_lq$/, '');
+    }
+    // Mapping spécial pour Tapo
+    if (cameraName === 'Tapo') {
+      cameraName = 'Salon_Tapo';
     }
     
+    console.log('[MJPEG Polling] Camera name:', cameraName);
+    
+    let frameCount = 0;
+    let errorCount = 0;
+    
+    const fetchFrame = async () => {
+      try {
+        // Utiliser l'endpoint thumbnail avec le vrai nom de caméra
+        const frameUrl = `${API_URL}/api/cameras/frigate/thumbnail/${cameraName}?height=720&_t=${Date.now()}`;
+        
+        const response = await fetch(frameUrl, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.image && imgRef.current) {
+            imgRef.current.src = `data:image/jpeg;base64,${data.image}`;
+            frameCount++;
+            errorCount = 0;
+            if (frameCount === 1) {
+              console.log('[MJPEG Polling] Première frame reçue!');
+            }
+          }
+        } else {
+          errorCount++;
+          if (errorCount > 5) {
+            console.log('[MJPEG Polling] Trop d\'erreurs, arrêt');
+          }
+        }
+      } catch (err) {
+        errorCount++;
+        console.log('[MJPEG Polling] Erreur frame:', err.message);
+      }
+    };
+    
+    // Première frame immédiatement
+    fetchFrame();
+    
+    // Polling rapide (~10 fps pour du "live")
+    mjpegIntervalRef.current = setInterval(fetchFrame, 100);
+    
     setStatus('connected');
-    setConnectionType('MJPEG Live');
+    setConnectionType('Live (Polling)');
     return true;
   }, [streamName]);
 
