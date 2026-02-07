@@ -36,6 +36,7 @@ const FrigateStreamPlayer = ({
   const imgRef = useRef(null);
   const containerRef = useRef(null);
   const pcRef = useRef(null);
+  const hlsRef = useRef(null);
   const mjpegIntervalRef = useRef(null);
   
   const [status, setStatus] = useState('idle');
