@@ -376,16 +376,13 @@ class FrigateService:
     
     async def stream_mjpeg(self, stream_name: str):
         """
-        Génère un flux MJPEG CONTINU en se connectant au vrai endpoint MJPEG de Frigate.
-        Utilise l'endpoint /<camera_name> qui fournit un flux multipart continu.
+        Génère un flux MJPEG CONTINU en se connectant à go2rtc via l'API Frigate.
+        Utilise l'endpoint /api/go2rtc/api/stream.mjpeg?src={stream_name}
         """
         import asyncio
         
-        # Extraire le nom de base de la caméra (sans _hq/_lq suffix)
-        camera_name = stream_name.split('_')[0] if '_' in stream_name else stream_name
-        
-        # URL du flux MJPEG continu de Frigate (endpoint natif)
-        mjpeg_url = f"{self.base_url}/{camera_name}"
+        # URL du flux MJPEG continu via go2rtc (le bon endpoint !)
+        mjpeg_url = f"{self.base_url}/api/go2rtc/api/stream.mjpeg?src={stream_name}"
         
         logger.info(f"[FRIGATE] Connexion flux MJPEG continu: {mjpeg_url}")
         
@@ -398,18 +395,18 @@ class FrigateService:
             return
         
         try:
-            # Connexion streaming au flux MJPEG
-            async with client.stream('GET', mjpeg_url, timeout=None) as response:
+            # Connexion streaming au flux MJPEG - timeout très long pour stream continu
+            async with client.stream('GET', mjpeg_url, timeout=httpx.Timeout(connect=10.0, read=None, write=None, pool=None)) as response:
                 if response.status_code != 200:
                     logger.error(f"[FRIGATE] Erreur connexion MJPEG: {response.status_code}")
                     return
                 
-                logger.info(f"[FRIGATE] Flux MJPEG connecté pour {camera_name}")
+                logger.info(f"[FRIGATE] Flux MJPEG connecté pour {stream_name}")
                 frame_count = 0
                 buffer = b""
                 
                 # Lire le stream en continu
-                async for chunk in response.aiter_bytes(chunk_size=8192):
+                async for chunk in response.aiter_bytes(chunk_size=16384):
                     buffer += chunk
                     
                     # Chercher les frames JPEG dans le buffer
@@ -430,7 +427,9 @@ class FrigateService:
                         
                         frame_count += 1
                         if frame_count == 1:
-                            logger.info(f"[FRIGATE] Première frame reçue ({len(frame)} bytes)")
+                            logger.info(f"[FRIGATE] Première frame MJPEG reçue ({len(frame)} bytes)")
+                        elif frame_count % 100 == 0:
+                            logger.debug(f"[FRIGATE] {frame_count} frames envoyées pour {stream_name}")
                         
                         # Envoyer la frame au client
                         yield (
