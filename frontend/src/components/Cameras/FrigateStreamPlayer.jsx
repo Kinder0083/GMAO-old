@@ -64,11 +64,23 @@ const FrigateStreamPlayer = ({
     }
   }, []);
 
-  // WebRTC via proxy backend
+  // WebRTC DIRECT vers go2rtc (comme Home Assistant)
+  // Le navigateur se connecte directement à go2rtc, pas via le backend
   const connectWebRTC = useCallback(async () => {
     if (!streamName) return false;
     
-    console.log('[WebRTC] Connexion via proxy backend pour:', streamName);
+    // Construire l'URL go2rtc directe
+    // go2rtcHost vient des paramètres Frigate (ex: 192.168.1.120)
+    const go2rtcUrl = go2rtcHost 
+      ? `http://${go2rtcHost}:${go2rtcPort}/api/webrtc?src=${streamName}`
+      : null;
+    
+    if (!go2rtcUrl) {
+      console.log('[WebRTC] go2rtcHost non configuré, WebRTC direct impossible');
+      return false;
+    }
+    
+    console.log('[WebRTC] Connexion DIRECTE vers go2rtc:', go2rtcUrl);
     
     try {
       const pc = new RTCPeerConnection({
@@ -76,6 +88,7 @@ const FrigateStreamPlayer = ({
       });
       pcRef.current = pc;
       
+      // Recevoir les tracks média
       pc.ontrack = (event) => {
         console.log('[WebRTC] Track reçu:', event.track.kind);
         if (videoRef.current && event.streams[0]) {
@@ -87,42 +100,28 @@ const FrigateStreamPlayer = ({
       
       pc.oniceconnectionstatechange = () => {
         console.log('[WebRTC] ICE state:', pc.iceConnectionState);
-        if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-          setError('Connexion WebRTC perdue');
-          setStatus('error');
+        if (pc.iceConnectionState === 'connected') {
+          console.log('[WebRTC] Connexion média établie!');
+        }
+        if (pc.iceConnectionState === 'failed') {
+          console.log('[WebRTC] ICE failed - fallback nécessaire');
+          setError('Connexion WebRTC échouée');
         }
       };
       
-      pc.addTransceiver('video', { direction: 'recvonly' });
-      pc.addTransceiver('audio', { direction: 'recvonly' });
-      
-      const offer = await pc.createOffer();
+      // Créer l'offre SDP (exactement comme l'exemple)
+      const offer = await pc.createOffer({
+        offerToReceiveVideo: true,
+        offerToReceiveAudio: true
+      });
       await pc.setLocalDescription(offer);
       
-      // Attendre ICE candidates
-      await new Promise((resolve) => {
-        if (pc.iceGatheringState === 'complete') {
-          resolve();
-        } else {
-          pc.onicegatheringstatechange = () => {
-            if (pc.iceGatheringState === 'complete') resolve();
-          };
-          setTimeout(resolve, 2000);
-        }
-      });
-      
-      // Envoyer via PROXY BACKEND
-      const token = localStorage.getItem('token');
-      const url = `${API_URL}/api/cameras/frigate/webrtc/${streamName}/offer`;
-      console.log('[WebRTC] POST vers proxy:', url);
-      
-      const response = await fetch(url, {
+      // Envoyer directement à go2rtc (pas de proxy backend)
+      console.log('[WebRTC] POST direct vers go2rtc...');
+      const response = await fetch(go2rtcUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: 'offer', sdp: pc.localDescription.sdp })
+        body: JSON.stringify(offer),
+        headers: { 'Content-Type': 'application/json' }
       });
       
       if (!response.ok) {
@@ -132,11 +131,12 @@ const FrigateStreamPlayer = ({
         return false;
       }
       
+      // Recevoir la réponse SDP de go2rtc
       const answer = await response.json();
-      console.log('[WebRTC] Answer reçue, type:', answer.type);
+      console.log('[WebRTC] Answer reçue de go2rtc');
       
-      await pc.setRemoteDescription({ type: 'answer', sdp: answer.sdp });
-      console.log('[WebRTC] Connexion établie!');
+      await pc.setRemoteDescription(answer);
+      console.log('[WebRTC] Remote description set!');
       return true;
       
     } catch (e) {
@@ -147,7 +147,7 @@ const FrigateStreamPlayer = ({
       }
       return false;
     }
-  }, [streamName]);
+  }, [streamName, go2rtcHost, go2rtcPort]);
 
   // POLLING DE FRAMES via backend proxy (snapshots rapides)
   // Utilise /api/{camera}/latest.jpg qui fonctionne avec Frigate
