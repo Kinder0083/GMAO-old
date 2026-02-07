@@ -152,6 +152,11 @@ const FrigateStreamPlayer = ({
     console.log('[MJPEG] Démarrage polling via backend proxy pour:', streamName);
     
     const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('[MJPEG] Token non trouvé, impossible de charger les frames');
+      return false;
+    }
+    
     const fetchFrame = () => {
       const img = new Image();
       img.onload = () => {
@@ -162,8 +167,8 @@ const FrigateStreamPlayer = ({
       img.onerror = () => {
         console.log('[MJPEG] Erreur frame');
       };
-      // Toujours passer par le backend proxy, jamais directement vers go2rtc
-      img.src = `${API_URL}/api/cameras/frigate/thumbnail/${streamName}?height=480&_t=${Date.now()}`;
+      // Utiliser l'endpoint /frame/ avec token en query param pour l'auth
+      img.src = `${API_URL}/api/cameras/frigate/frame/${streamName}?height=480&token=${encodeURIComponent(token)}&_t=${Date.now()}`;
     };
     
     // Première frame
