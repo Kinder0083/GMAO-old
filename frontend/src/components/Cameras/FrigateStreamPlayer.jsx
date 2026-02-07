@@ -228,27 +228,21 @@ const FrigateStreamPlayer = ({
     
     console.log('[Stream] Démarrage pour:', streamName);
     
-    // Essayer WebRTC via proxy backend (pour tous les streams)
-    const webrtcOk = await connectWebRTC();
-    if (webrtcOk) {
-      console.log('[Stream] WebRTC OK!');
-      if (videoRef.current) {
-        videoRef.current.play().catch(e => console.log('[Stream] Play:', e));
-      }
-      return;
-    }
+    // DÉSACTIVÉ: WebRTC ne fonctionne pas via proxy backend (ICE échoue)
+    // La connexion signaling fonctionne mais le flux média ne peut pas passer
+    // car il nécessite une connexion directe navigateur <-> go2rtc
     
-    // Fallback: MJPEG via backend proxy
-    console.log('[Stream] WebRTC échoué, fallback MJPEG via backend...');
-    const mjpegOk = connectMJPEG();
-    if (mjpegOk) {
-      console.log('[Stream] MJPEG OK!');
+    // Utiliser directement le polling de frames
+    console.log('[Stream] Utilisation du polling de frames (WebRTC désactivé)...');
+    const pollingOk = connectMJPEG();
+    if (pollingOk) {
+      console.log('[Stream] Polling OK!');
       return;
     }
     
     setError('Impossible de se connecter au flux vidéo');
     setStatus('error');
-  }, [cleanup, streamName, connectWebRTC, connectMJPEG]);
+  }, [cleanup, streamName, connectMJPEG]);
 
   // Arrêter
   const stopStream = useCallback(() => {
