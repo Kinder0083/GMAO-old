@@ -372,52 +372,52 @@ const FrigateStreamPlayer = ({
     setStatus('connecting');
     setError(null);
     
+    console.log('[Stream] ====================================');
     console.log('[Stream] Démarrage pour:', streamName);
     console.log('[Stream] go2rtcHost:', go2rtcHost, 'go2rtcPort:', go2rtcPort);
     
     // Vérifier si go2rtc est accessible directement
     if (go2rtcHost) {
       // 1. Essayer WebRTC DIRECT vers go2rtc (meilleure qualité, basse latence)
-      console.log('[Stream] Tentative WebRTC direct...');
+      console.log('[Stream] 1️⃣ Tentative WebRTC direct...');
       const webrtcOk = await connectWebRTC();
       if (webrtcOk) {
-        console.log('[Stream] WebRTC connecté! Attente du flux...');
-        // Donner un peu de temps pour que les tracks arrivent
-        setTimeout(() => {
-          if (videoRef.current) {
-            videoRef.current.play().catch(e => console.log('[Stream] Play:', e));
-          }
-        }, 500);
+        console.log('[Stream] ✅ WebRTC connecté avec succès!');
+        if (videoRef.current) {
+          videoRef.current.play().catch(e => console.log('[Stream] Play:', e));
+        }
         return;
       }
-      console.log('[Stream] WebRTC échoué, passage au fallback...');
+      console.log('[Stream] ❌ WebRTC échoué, passage au fallback HLS...');
       
       // 2. Fallback: HLS (fluide, mais latence plus élevée)
-      console.log('[Stream] Tentative HLS...');
+      console.log('[Stream] 2️⃣ Tentative HLS...');
       const hlsOk = await connectHLS();
       if (hlsOk) {
-        console.log('[Stream] HLS OK!');
+        console.log('[Stream] ✅ HLS connecté!');
         return;
       }
-      console.log('[Stream] HLS échoué');
+      console.log('[Stream] ❌ HLS échoué, passage au MJPEG...');
       
       // 3. Fallback: MJPEG stream direct
-      console.log('[Stream] Tentative MJPEG direct...');
+      console.log('[Stream] 3️⃣ Tentative MJPEG direct...');
       const mjpegOk = connectMJPEG();
       if (mjpegOk) {
-        console.log('[Stream] MJPEG OK!');
+        console.log('[Stream] ✅ MJPEG connecté!');
         return;
       }
-    } else {
-      // Pas d'accès direct à go2rtc, utiliser le polling via backend
-      console.log('[Stream] Pas de go2rtcHost, fallback au polling...');
-      const pollingOk = fallbackToPolling();
-      if (pollingOk) {
-        console.log('[Stream] Polling OK!');
-        return;
-      }
+      console.log('[Stream] ❌ MJPEG échoué');
     }
     
+    // 4. Dernier recours: Polling via backend
+    console.log('[Stream] 4️⃣ Fallback au polling via backend...');
+    const pollingOk = fallbackToPolling();
+    if (pollingOk) {
+      console.log('[Stream] ✅ Polling démarré!');
+      return;
+    }
+    
+    console.log('[Stream] ❌ Tous les modes ont échoué');
     setError('Impossible de se connecter au flux vidéo');
     setStatus('error');
   }, [cleanup, streamName, go2rtcHost, go2rtcPort, connectWebRTC, connectHLS, connectMJPEG, fallbackToPolling]);
