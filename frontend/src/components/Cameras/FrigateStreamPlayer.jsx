@@ -488,7 +488,7 @@ const FrigateStreamPlayer = ({
       
       <CardContent className="p-0 relative">
         <div className={`relative bg-gray-900 ${isFullscreen ? 'h-screen' : 'aspect-video'}`}>
-          {/* Video pour WebRTC */}
+          {/* Video pour WebRTC et HLS */}
           <video
             ref={videoRef}
             autoPlay
@@ -497,7 +497,7 @@ const FrigateStreamPlayer = ({
             className={`w-full h-full object-contain ${isMJPEG ? 'hidden' : ''}`}
           />
           
-          {/* Image pour MJPEG fallback */}
+          {/* Image pour MJPEG et Polling fallback */}
           {isMJPEG && (
             <img
               ref={imgRef}
