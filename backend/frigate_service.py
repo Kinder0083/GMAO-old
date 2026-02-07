@@ -376,20 +376,23 @@ class FrigateService:
     
     async def stream_mjpeg(self, stream_name: str):
         """
-        Génère un flux MJPEG en récupérant des frames depuis go2rtc.
-        Utilise l'endpoint /api/frame.jpeg?src={stream_name} sur le port 1984.
-        Fonctionne pour tous les streams (H265 originaux et H264 transcodés).
+        Génère un flux MJPEG en récupérant des frames via l'API Frigate authentifiée.
+        Utilise l'endpoint /api/go2rtc/frame.jpeg?src={stream_name} à travers Frigate.
         """
         import asyncio
         
-        # URL go2rtc directe (port 1984, pas d'auth nécessaire)
-        go2rtc_base = f"http://{self.host}:1984"
-        frame_url = f"{go2rtc_base}/api/frame.jpeg?src={stream_name}"
+        # URL via l'API Frigate (authentifié, pas d'accès direct au port 1984)
+        frame_url = f"{self.base_url}/api/go2rtc/frame.jpeg?src={stream_name}"
         
-        logger.info(f"[FRIGATE] Démarrage stream MJPEG via go2rtc: {frame_url}")
+        logger.info(f"[FRIGATE] Démarrage stream MJPEG via API Frigate: {frame_url}")
         
-        # Client HTTP sans auth pour go2rtc (port 1984 n'est pas protégé)
-        client = httpx.AsyncClient(timeout=10.0)
+        # Client authentifié pour passer par Frigate
+        client, login_ok = await self._create_authenticated_client()
+        if not login_ok:
+            logger.error(f"[FRIGATE] Authentification échouée pour stream MJPEG {stream_name}")
+            if client:
+                await client.aclose()
+            return
         
         try:
             frame_count = 0
@@ -402,18 +405,25 @@ class FrigateService:
                     if response.status_code == 200:
                         frame = response.content
                         frame_count += 1
-                        error_count = 0  # Reset error count on success
+                        error_count = 0
                         
                         if frame_count == 1:
                             logger.info(f"[FRIGATE] Première frame reçue pour {stream_name} ({len(frame)} bytes)")
                         
-                        # Format MJPEG standard
                         yield (
                             b"--frame\r\n"
                             b"Content-Type: image/jpeg\r\n"
                             b"Content-Length: " + str(len(frame)).encode() + b"\r\n"
                             b"\r\n" + frame + b"\r\n"
                         )
+                    elif response.status_code == 401:
+                        # Session expirée, re-authentifier
+                        logger.warning(f"[FRIGATE] Session expirée, re-authentification...")
+                        await client.aclose()
+                        client, login_ok = await self._create_authenticated_client()
+                        if not login_ok:
+                            break
+                        error_count += 1
                     else:
                         error_count += 1
                         logger.warning(f"[FRIGATE] Frame erreur {response.status_code} pour {stream_name}")
@@ -421,7 +431,6 @@ class FrigateService:
                             logger.error(f"[FRIGATE] Trop d'erreurs, arrêt du stream {stream_name}")
                             break
                     
-                    # ~15 fps pour plus de fluidité
                     await asyncio.sleep(0.066)
                     
                 except httpx.ReadTimeout:
