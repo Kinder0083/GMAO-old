@@ -1,6 +1,7 @@
 /**
  * Player de streaming Frigate via WebRTC (proxy backend)
  * Le backend fait le proxy vers go2rtc pour éviter les problèmes CORS/nginx
+ * Fallback MJPEG via backend proxy si WebRTC échoue
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
@@ -31,16 +32,16 @@ const FrigateStreamPlayer = ({
   className = ''
 }) => {
   const videoRef = useRef(null);
+  const imgRef = useRef(null);
   const containerRef = useRef(null);
   const pcRef = useRef(null);
+  const mjpegIntervalRef = useRef(null);
   
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [connectionType, setConnectionType] = useState('');
-
-  const isH264 = streamName?.includes('_h264') || streamName?.includes('_H264');
 
   // Cleanup
   const cleanup = useCallback(() => {
@@ -49,31 +50,30 @@ const FrigateStreamPlayer = ({
       pcRef.current.close();
       pcRef.current = null;
     }
+    if (mjpegIntervalRef.current) {
+      clearInterval(mjpegIntervalRef.current);
+      mjpegIntervalRef.current = null;
+    }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
       videoRef.current.src = '';
     }
   }, []);
 
-  // WebRTC via proxy backend (évite les problèmes CORS/nginx)
+  // WebRTC via proxy backend
   const connectWebRTC = useCallback(async () => {
-    if (!streamName) {
-      console.log('[WebRTC] Pas de streamName');
-      return false;
-    }
+    if (!streamName) return false;
     
-    console.log('[WebRTC] 🔌 Connexion via proxy backend pour:', streamName);
+    console.log('[WebRTC] Connexion via proxy backend pour:', streamName);
     
     try {
-      // Créer la connexion RTCPeerConnection
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
       });
       pcRef.current = pc;
       
-      // Recevoir les tracks
       pc.ontrack = (event) => {
-        console.log('[WebRTC] 📺 Track reçu:', event.track.kind);
+        console.log('[WebRTC] Track reçu:', event.track.kind);
         if (videoRef.current && event.streams[0]) {
           videoRef.current.srcObject = event.streams[0];
           setStatus('connected');
@@ -82,41 +82,35 @@ const FrigateStreamPlayer = ({
       };
       
       pc.oniceconnectionstatechange = () => {
-        console.log('[WebRTC] 🧊 ICE state:', pc.iceConnectionState);
+        console.log('[WebRTC] ICE state:', pc.iceConnectionState);
         if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
           setError('Connexion WebRTC perdue');
           setStatus('error');
         }
       };
       
-      // Ajouter les transceivers pour recevoir audio et vidéo
       pc.addTransceiver('video', { direction: 'recvonly' });
       pc.addTransceiver('audio', { direction: 'recvonly' });
       
-      // Créer l'offre SDP
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
-      // Attendre que les ICE candidates soient collectés
+      // Attendre ICE candidates
       await new Promise((resolve) => {
         if (pc.iceGatheringState === 'complete') {
           resolve();
         } else {
-          const checkState = () => {
-            if (pc.iceGatheringState === 'complete') {
-              resolve();
-            }
+          pc.onicegatheringstatechange = () => {
+            if (pc.iceGatheringState === 'complete') resolve();
           };
-          pc.onicegatheringstatechange = checkState;
-          // Timeout de sécurité
           setTimeout(resolve, 2000);
         }
       });
       
-      // Envoyer l'offre via le PROXY BACKEND (pas directement à go2rtc)
+      // Envoyer via PROXY BACKEND
       const token = localStorage.getItem('token');
       const url = `${API_URL}/api/cameras/frigate/webrtc/${streamName}/offer`;
-      console.log('[WebRTC] 📤 POST vers proxy:', url);
+      console.log('[WebRTC] POST vers proxy:', url);
       
       const response = await fetch(url, {
         method: 'POST',
@@ -124,34 +118,62 @@ const FrigateStreamPlayer = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          type: 'offer',
-          sdp: pc.localDescription.sdp
-        })
+        body: JSON.stringify({ type: 'offer', sdp: pc.localDescription.sdp })
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.log('[WebRTC] ❌ Erreur HTTP:', response.status, errorText);
+        console.log('[WebRTC] Erreur HTTP:', response.status);
+        pc.close();
+        pcRef.current = null;
         return false;
       }
       
       const answer = await response.json();
-      console.log('[WebRTC] 📨 Answer reçue, type:', answer.type);
+      console.log('[WebRTC] Answer reçue, type:', answer.type);
       
-      // Appliquer la réponse
-      await pc.setRemoteDescription({
-        type: 'answer',
-        sdp: answer.sdp
-      });
-      
-      console.log('[WebRTC] ✅ Connexion établie!');
+      await pc.setRemoteDescription({ type: 'answer', sdp: answer.sdp });
+      console.log('[WebRTC] Connexion établie!');
       return true;
       
     } catch (e) {
-      console.error('[WebRTC] ❌ Erreur:', e);
+      console.error('[WebRTC] Erreur:', e);
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
       return false;
     }
+  }, [streamName]);
+
+  // MJPEG polling via backend proxy
+  const connectMJPEG = useCallback(() => {
+    if (!streamName) return false;
+    
+    console.log('[MJPEG] Démarrage polling via backend proxy pour:', streamName);
+    
+    const token = localStorage.getItem('token');
+    const fetchFrame = () => {
+      const img = new Image();
+      img.onload = () => {
+        if (imgRef.current) {
+          imgRef.current.src = img.src;
+        }
+      };
+      img.onerror = () => {
+        console.log('[MJPEG] Erreur frame');
+      };
+      // Toujours passer par le backend proxy, jamais directement vers go2rtc
+      img.src = `${API_URL}/api/cameras/frigate/thumbnail/${streamName}?height=480&_t=${Date.now()}`;
+    };
+    
+    // Première frame
+    fetchFrame();
+    // Polling à ~5 fps
+    mjpegIntervalRef.current = setInterval(fetchFrame, 200);
+    
+    setStatus('connected');
+    setConnectionType('MJPEG');
+    return true;
   }, [streamName]);
 
   // Démarrer le streaming
@@ -160,22 +182,29 @@ const FrigateStreamPlayer = ({
     setStatus('connecting');
     setError(null);
     
-    console.log('[Stream] 🚀 Démarrage pour:', streamName);
+    console.log('[Stream] Démarrage pour:', streamName);
     
-    // Essayer WebRTC via proxy backend
+    // Essayer WebRTC via proxy backend (pour tous les streams)
     const webrtcOk = await connectWebRTC();
     if (webrtcOk) {
-      console.log('[Stream] ✅ WebRTC OK!');
-      // Démarrer la lecture
+      console.log('[Stream] WebRTC OK!');
       if (videoRef.current) {
         videoRef.current.play().catch(e => console.log('[Stream] Play:', e));
       }
       return;
     }
     
-    setError('Impossible de se connecter au flux WebRTC');
+    // Fallback: MJPEG via backend proxy
+    console.log('[Stream] WebRTC échoué, fallback MJPEG via backend...');
+    const mjpegOk = connectMJPEG();
+    if (mjpegOk) {
+      console.log('[Stream] MJPEG OK!');
+      return;
+    }
+    
+    setError('Impossible de se connecter au flux vidéo');
     setStatus('error');
-  }, [cleanup, streamName, connectWebRTC]);
+  }, [cleanup, streamName, connectWebRTC, connectMJPEG]);
 
   // Arrêter
   const stopStream = useCallback(() => {
@@ -217,6 +246,9 @@ const FrigateStreamPlayer = ({
     return () => cleanup();
   }, [streamName, go2rtcHost]);
 
+  const isWebRTC = connectionType === 'WebRTC';
+  const isMJPEG = connectionType === 'MJPEG';
+
   return (
     <Card 
       ref={containerRef}
@@ -226,11 +258,7 @@ const FrigateStreamPlayer = ({
       <CardHeader className="p-2 pb-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            {isH264 ? (
-              <Zap className="w-4 h-4 text-green-500 flex-shrink-0" />
-            ) : (
-              <Video className="w-4 h-4 text-blue-500 flex-shrink-0" />
-            )}
+            <Video className="w-4 h-4 text-blue-500 flex-shrink-0" />
             <span className="text-sm font-medium truncate">{displayName || streamName}</span>
             
             {status === 'connected' && (
@@ -248,15 +276,15 @@ const FrigateStreamPlayer = ({
           </div>
           
           <div className="flex items-center gap-1">
+            {status === 'connected' && isWebRTC && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleMute}>
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </Button>
+            )}
             {status === 'connected' && (
-              <>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleMute}>
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleFullscreen}>
-                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-                </Button>
-              </>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleFullscreen}>
+                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              </Button>
             )}
             {onClose && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { stopStream(); onClose(); }}>
@@ -275,8 +303,17 @@ const FrigateStreamPlayer = ({
             autoPlay
             muted={isMuted}
             playsInline
-            className="w-full h-full object-contain"
+            className={`w-full h-full object-contain ${isMJPEG ? 'hidden' : ''}`}
           />
+          
+          {/* Image pour MJPEG fallback */}
+          {isMJPEG && (
+            <img
+              ref={imgRef}
+              alt={displayName || streamName}
+              className="w-full h-full object-contain"
+            />
+          )}
           
           {/* Overlays */}
           {status === 'idle' && (
@@ -292,7 +329,7 @@ const FrigateStreamPlayer = ({
             <div className="absolute inset-0 flex items-center justify-center bg-gray-800/60">
               <div className="text-center text-white">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                <p className="text-sm">Connexion WebRTC...</p>
+                <p className="text-sm">Connexion...</p>
               </div>
             </div>
           )}
