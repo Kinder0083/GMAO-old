@@ -33,7 +33,7 @@ import {
   Eye
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
   const { toast } = useToast();
