@@ -250,39 +250,67 @@ const FrigateStreamPlayer = ({
     return true;
   }, [streamName]);
 
-  // HLS Fallback via backend proxy
+  // HLS Fallback via go2rtc
   const connectHLS = useCallback(async () => {
     if (!streamName || !go2rtcHost) return false;
     
     console.log('[HLS] Démarrage HLS pour:', streamName);
     
     try {
-      // URL HLS via Frigate (proxiée via backend si nécessaire)
-      const hlsUrl = `https://${go2rtcHost}:8971/api/go2rtc/api/stream.m3u8?src=${streamName}`;
+      // URL HLS via go2rtc directement (port 1984)
+      const hlsUrl = `http://${go2rtcHost}:${go2rtcPort}/api/stream.m3u8?src=${streamName}`;
       console.log('[HLS] URL:', hlsUrl);
       
-      if (videoRef.current) {
-        // Pour HLS natif (Safari) ou avec hls.js
-        if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-          // Safari supporte HLS nativement
-          videoRef.current.src = hlsUrl;
+      if (!videoRef.current) return false;
+      
+      // Vérifier si HLS.js est supporté
+      if (Hls.isSupported()) {
+        console.log('[HLS] Utilisation de hls.js');
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 30
+        });
+        hlsRef.current = hls;
+        
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(videoRef.current);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log('[HLS] Manifest parsed, démarrage lecture');
           videoRef.current.play().catch(e => console.log('[HLS] Play error:', e));
           setStatus('connected');
           setConnectionType('HLS');
-          return true;
-        } else {
-          // Pour les autres navigateurs, on aurait besoin de hls.js
-          // Pour l'instant, fallback au polling
-          console.log('[HLS] Navigateur ne supporte pas HLS natif');
-          return false;
-        }
+        });
+        
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.log('[HLS] Erreur:', data.type, data.details);
+          if (data.fatal) {
+            console.log('[HLS] Erreur fatale, arrêt');
+            hls.destroy();
+            hlsRef.current = null;
+            return false;
+          }
+        });
+        
+        return true;
+      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari supporte HLS nativement
+        console.log('[HLS] Utilisation HLS natif (Safari)');
+        videoRef.current.src = hlsUrl;
+        videoRef.current.play().catch(e => console.log('[HLS] Play error:', e));
+        setStatus('connected');
+        setConnectionType('HLS');
+        return true;
+      } else {
+        console.log('[HLS] HLS non supporté par ce navigateur');
+        return false;
       }
-      return false;
     } catch (e) {
       console.error('[HLS] Erreur:', e);
       return false;
     }
-  }, [streamName, go2rtcHost]);
+  }, [streamName, go2rtcHost, go2rtcPort]);
 
   // Démarrer le streaming
   const startStream = useCallback(async () => {
