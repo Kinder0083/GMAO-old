@@ -795,12 +795,96 @@ yarn add jspdf --silent 2>/dev/null || echo "⚠️  Installation jspdf échoué
 yarn build 2>/dev/null
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# IMPORTANT: Configuration du Git Hook post-merge pour les mises à jour automatiques
+# IMPORTANT: Création du script post-update.sh pour les mises à jour automatiques
+# Ce script garantit que les dépendances sont réinstallées après chaque git pull
 # ═══════════════════════════════════════════════════════════════════════════════
 cd /opt/gmao-iris
 
-# Rendre le script post-update exécutable
+# Créer le script post-update.sh
+cat > backend/post-update.sh << 'POSTUPDATE'
+#!/bin/bash
+#===============================================================================
+# GMAO IRIS - Script de post-mise à jour
+# Ce script est exécuté automatiquement après chaque git pull
+# Il garantit que les dépendances sont correctement installées
+#===============================================================================
+
+set -e
+
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+APP_ROOT="\$(dirname "\$SCRIPT_DIR")"
+BACKEND_DIR="\$APP_ROOT/backend"
+FRONTEND_DIR="\$APP_ROOT/frontend"
+VENV_DIR="\$BACKEND_DIR/venv"
+
+echo "╔══════════════════════════════════════════════════════════════════╗"
+echo "║           GMAO IRIS - Post-Update Hook                           ║"
+echo "╚══════════════════════════════════════════════════════════════════╝"
+echo ""
+
+# 1. Vérifier/Créer l'environnement virtuel Python
+echo "📦 Étape 1: Environnement virtuel Python..."
+if [ ! -d "\$VENV_DIR" ]; then
+    echo "   Création de l'environnement virtuel..."
+    python3 -m venv "\$VENV_DIR"
+fi
+echo "   ✅ Environnement virtuel OK"
+
+# 2. Installer les dépendances backend
+echo "🐍 Étape 2: Dépendances Backend..."
+"\$VENV_DIR/bin/pip" install --upgrade pip wheel setuptools --quiet
+if [ -f "\$BACKEND_DIR/requirements.txt" ]; then
+    "\$VENV_DIR/bin/pip" install -r "\$BACKEND_DIR/requirements.txt" --quiet
+fi
+"\$VENV_DIR/bin/pip" install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ --quiet 2>/dev/null || true
+echo "   ✅ Dépendances backend installées"
+
+# 3. Compiler le frontend
+echo "⚛️  Étape 3: Frontend React..."
+if [ -f "\$FRONTEND_DIR/package.json" ]; then
+    cd "\$FRONTEND_DIR"
+    if command -v yarn &> /dev/null; then
+        yarn install --silent 2>/dev/null || yarn install
+        CI=false yarn build --silent 2>/dev/null || CI=false yarn build
+    else
+        npm install --silent 2>/dev/null || npm install
+        CI=false npm run build 2>/dev/null || CI=false npm run build
+    fi
+fi
+echo "   ✅ Frontend compilé"
+
+# 4. Redémarrer le backend
+echo "🔄 Étape 4: Redémarrage du backend..."
+if command -v supervisorctl &> /dev/null; then
+    supervisorctl restart gmao-iris-backend
+    sleep 3
+    supervisorctl status gmao-iris-backend
+fi
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════════╗"
+echo "║                    ✅ MISE À JOUR TERMINÉE                       ║"
+echo "╚══════════════════════════════════════════════════════════════════╝"
+POSTUPDATE
+
 chmod +x backend/post-update.sh
+echo "✅ Script post-update.sh créé"
+
+# Créer le script update.sh à la racine pour mise à jour manuelle facile
+cat > update.sh << 'UPDATESH'
+#!/bin/bash
+# GMAO IRIS - Mise à jour manuelle
+# Usage: ./update.sh
+cd /opt/gmao-iris
+echo "📥 Récupération des mises à jour..."
+git stash 2>/dev/null || true
+git pull origin main || git reset --hard origin/main
+git stash pop 2>/dev/null || true
+echo "🔄 Installation des dépendances..."
+bash backend/post-update.sh
+UPDATESH
+chmod +x update.sh
+echo "✅ Script update.sh créé"
 
 # Créer le git hook post-merge qui sera exécuté après chaque git pull
 mkdir -p .git/hooks
@@ -812,8 +896,14 @@ echo "🔄 Mise à jour détectée, exécution du post-update..."
 /opt/gmao-iris/backend/post-update.sh
 GITHOOK
 chmod +x .git/hooks/post-merge
+echo "✅ Git hook post-merge configuré"
 
-echo "✅ Git hook post-merge configuré pour les mises à jour automatiques"
+echo ""
+echo "═══════════════════════════════════════════════════════════════════"
+echo "  Les futures mises à jour installeront automatiquement les"
+echo "  dépendances grâce au git hook post-merge."
+echo "  Vous pouvez aussi lancer: ./update.sh"
+echo "═══════════════════════════════════════════════════════════════════"
 # ═══════════════════════════════════════════════════════════════════════════════
 
 APPEOF
