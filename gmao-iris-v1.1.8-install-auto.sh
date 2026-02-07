@@ -538,7 +538,7 @@ cd gmao-iris
 
 # Backend .env
 SECRET_KEY=\$(openssl rand -hex 32)
-CAMERA_ENCRYPTION_KEY=\$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+CAMERA_ENCRYPTION_KEY=\$(python3 -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())")
 cat > backend/.env <<BEOF
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=gmao_iris
