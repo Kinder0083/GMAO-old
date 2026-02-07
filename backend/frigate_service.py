@@ -280,32 +280,37 @@ class FrigateService:
             return None
     
     async def get_camera_thumbnail(self, camera_name: str, height: int = 180) -> Optional[bytes]:
-        """Récupère une vignette via go2rtc (port 1984)"""
+        """Récupère une vignette via l'API Frigate authentifiée"""
+        client = None
         try:
-            # Utiliser go2rtc directement pour les thumbnails
-            # Cela permet d'avoir le vrai flux HQ ou LQ
-            go2rtc_url = f"http://{self.host}:1984/api/frame.jpeg?src={camera_name}"
-            
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(go2rtc_url)
-                if response.status_code == 200:
-                    return response.content
-                    
-            # Fallback vers l'API Frigate authentifiée
             client, login_ok = await self._create_authenticated_client()
             if not login_ok:
                 if client:
                     await client.aclose()
                 return None
-                
-            # Extraire le nom de base si c'est un stream HQ/LQ
-            base_name = camera_name.replace('_hq', '').replace('_lq', '').replace('_sub', '')
+            
+            # Essayer go2rtc via l'API Frigate (pas de connexion directe au port 1984)
+            go2rtc_url = f"{self.base_url}/api/go2rtc/frame.jpeg?src={camera_name}"
+            logger.info(f"[FRIGATE] Thumbnail via go2rtc: {go2rtc_url}")
+            response = await client.get(go2rtc_url)
+            if response.status_code == 200:
+                await client.aclose()
+                return response.content
+            
+            # Fallback: snapshot Frigate classique
+            base_name = camera_name.replace('_hq', '').replace('_lq', '').replace('_sub', '').replace('_h264', '').replace('_H264', '')
             url = f"{self.base_url}/api/{base_name}/latest.jpg"
+            logger.info(f"[FRIGATE] Thumbnail fallback: {url}")
             response = await client.get(url, params={"h": height, "quality": 60})
             await client.aclose()
             return response.content if response.status_code == 200 else None
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur thumbnail: {e}")
+            if client:
+                try:
+                    await client.aclose()
+                except:
+                    pass
             return None
     
     async def get_camera_events(self, camera_name: str = None, limit: int = 20) -> List[Dict[str, Any]]:
