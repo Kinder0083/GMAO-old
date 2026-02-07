@@ -37,7 +37,7 @@ const PurchaseRequestsArchives = () => {
   // Récupérer l'utilisateur depuis localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isAdmin = user?.role === 'ADMIN';
-  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
 
   // Charger les demandes archivées - accessible à tous les utilisateurs
   const fetchArchivedRequests = async () => {

@@ -122,7 +122,7 @@ const PurchaseRequests = () => {
   // Vérifier la permission "achat" - edit permet de modifier les statuts
   const hasAchatPermission = isAdmin || user?.permissions?.achat?.edit === true;
   
-  const backendUrl = process.env.REACT_APP_BACKEND_URL;
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
 
   // Utiliser le hook temps réel
   const { 

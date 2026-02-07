@@ -121,7 +121,7 @@ export const useDemandesArret = (options = {}) => {
 
     try {
       // Construire l'URL WebSocket comme useRealtimeData
-      const backendUrl = process.env.REACT_APP_BACKEND_URL;
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
       let wsHost = 'localhost:8001';
       let wsProtocol = 'ws:';
       
