@@ -1208,7 +1208,7 @@ function PresquAccidentList() {
                   const isPdf = att.content_type === 'application/pdf' || 
                                 /\.pdf$/i.test(att.filename);
                   
-                  const fileUrl = `${process.env.REACT_APP_BACKEND_URL}/api/presqu-accident/items/${previewItem?.id}/attachments/${att.id}/download`;
+                  const fileUrl = `${process.env.REACT_APP_BACKEND_URL || ''}/api/presqu-accident/items/${previewItem?.id}/attachments/${att.id}/download`;
                   
                   if (isImage) {
                     return (

@@ -353,7 +353,7 @@ const MenuOrganizationSection = () => {
   const migrateMenus = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user-preferences/migrate-menus`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || ''}/api/user-preferences/migrate-menus`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
