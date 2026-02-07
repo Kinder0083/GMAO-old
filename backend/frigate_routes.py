@@ -493,7 +493,8 @@ async def proxy_webrtc_offer(
             
             logger.info(f"[WEBRTC PROXY] Response status: {response.status_code}, Content-Type: {response.headers.get('content-type', 'unknown')}")
             
-            if response.status_code == 200:
+            # go2rtc retourne 201 Created pour WebRTC (pas 200)
+            if response.status_code in (200, 201):
                 content_type = response.headers.get('content-type', '')
                 
                 if 'application/sdp' in content_type or 'text/plain' in content_type or not content_type.startswith('application/json'):
