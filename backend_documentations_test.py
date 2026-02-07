@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Use the correct backend URL from frontend .env
-BACKEND_URL = "https://frigate-webrtc-fix.preview.emergentagent.com/api"
+BACKEND_URL = "https://supervisor-crash.preview.emergentagent.com/api"
 
 # Test credentials - admin account as specified in the request
 ADMIN_EMAIL = "admin@gmao-iris.local"
