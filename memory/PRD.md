@@ -34,16 +34,22 @@ GMAO IRIS est une application de Gestion de Maintenance Assistée par Ordinateur
 
 ---
 
-## Pending Issues
+## Completed Issues (Feb 7, 2026)
 
-### P0 - Critique
-- **Backend crash sur Proxmox** - Le service `gmao-iris-backend` reste `STOPPED` sur l'installation Proxmox de l'utilisateur
-  - Root cause: Spécifique à l'environnement Proxmox (fonctionne sur Emergent preview)
-  - Next: L'utilisateur doit exécuter `diagnose_backend.py` pour identifier la cause exacte
+### P0 - Backend Proxmox - RÉSOLU ✅
+- **Cause:** Dépendances Python non installées dans le venv utilisé par Supervisor
+- **Solution:** Installation des packages via `/opt/gmao-iris/venv/bin/pip install -r requirements.txt`
+
+### Caméras Frigate - RÉSOLU ✅  
+- **Problème:** Endpoint `/thumbnail/` retournait 403 car les balises `<img>` ne peuvent pas envoyer de headers Authorization
+- **Solution:** Nouvel endpoint `/api/cameras/frigate/frame/{camera}` qui accepte le token en query param
+
+## Pending Issues
 
 ### P2 - Validation Utilisateur
 1. Script de mise à jour manuelle - En attente de test par l'utilisateur
 2. Fix script d'installation (`install.sh`) - En attente de validation
+3. Mise à jour code Frigate sur Proxmox - L'utilisateur doit faire `git pull` pour récupérer les fixes
 
 ---
 
