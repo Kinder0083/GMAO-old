@@ -65,12 +65,13 @@ const FrigateStreamPlayer = ({
   }, []);
 
   // WebRTC DIRECT vers go2rtc (comme Home Assistant)
-  // Le navigateur se connecte directement à go2rtc, pas via le backend
+  // Le navigateur se connecte directement à go2rtc sur le port 1984
   const connectWebRTC = useCallback(async () => {
     if (!streamName) return false;
     
     // Construire l'URL go2rtc directe
-    // go2rtcHost vient des paramètres Frigate (ex: 192.168.1.120)
+    // IMPORTANT: go2rtc standalone utilise /api/webrtc (pas /webrtc)
+    // Le port 1984 est le port API de go2rtc
     const go2rtcUrl = go2rtcHost 
       ? `http://${go2rtcHost}:${go2rtcPort}/api/webrtc?src=${streamName}`
       : null;
@@ -84,63 +85,86 @@ const FrigateStreamPlayer = ({
     
     try {
       const pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ],
+        iceCandidatePoolSize: 10
       });
       pcRef.current = pc;
       
       // Recevoir les tracks média
       pc.ontrack = (event) => {
-        console.log('[WebRTC] Track reçu:', event.track.kind);
+        console.log('[WebRTC] Track reçu:', event.track.kind, 'streams:', event.streams.length);
         if (videoRef.current && event.streams[0]) {
           videoRef.current.srcObject = event.streams[0];
           setStatus('connected');
           setConnectionType('WebRTC');
+          console.log('[WebRTC] Video stream attaché!');
         }
       };
       
       pc.oniceconnectionstatechange = () => {
         console.log('[WebRTC] ICE state:', pc.iceConnectionState);
-        if (pc.iceConnectionState === 'connected') {
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           console.log('[WebRTC] Connexion média établie!');
         }
         if (pc.iceConnectionState === 'failed') {
           console.log('[WebRTC] ICE failed - fallback nécessaire');
-          setError('Connexion WebRTC échouée');
+          setError('Connexion WebRTC échouée (ICE failed)');
+        }
+        if (pc.iceConnectionState === 'disconnected') {
+          console.log('[WebRTC] ICE disconnected - tentative de reconnexion...');
         }
       };
       
-      // Créer l'offre SDP (exactement comme l'exemple)
-      const offer = await pc.createOffer({
-        offerToReceiveVideo: true,
-        offerToReceiveAudio: true
-      });
+      pc.onconnectionstatechange = () => {
+        console.log('[WebRTC] Connection state:', pc.connectionState);
+      };
+      
+      // Ajouter les transceivers pour recevoir audio et vidéo
+      pc.addTransceiver('video', { direction: 'recvonly' });
+      pc.addTransceiver('audio', { direction: 'recvonly' });
+      
+      // Créer l'offre SDP
+      const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
-      // Envoyer directement à go2rtc (pas de proxy backend)
-      console.log('[WebRTC] POST direct vers go2rtc...');
+      console.log('[WebRTC] Offre SDP créée, envoi vers go2rtc...');
+      
+      // IMPORTANT: go2rtc attend le SDP en texte brut avec Content-Type: application/sdp
+      // Comme le fait le backend proxy (et Home Assistant)
       const response = await fetch(go2rtcUrl, {
         method: 'POST',
-        body: JSON.stringify(offer),
-        headers: { 'Content-Type': 'application/json' }
+        body: offer.sdp,
+        headers: { 'Content-Type': 'application/sdp' }
       });
       
+      console.log('[WebRTC] Réponse HTTP:', response.status, response.headers.get('content-type'));
+      
       if (!response.ok) {
-        console.log('[WebRTC] Erreur HTTP:', response.status);
+        const errorText = await response.text();
+        console.log('[WebRTC] Erreur HTTP:', response.status, errorText);
         pc.close();
         pcRef.current = null;
         return false;
       }
       
-      // Recevoir la réponse SDP de go2rtc
-      const answer = await response.json();
-      console.log('[WebRTC] Answer reçue de go2rtc');
+      // go2rtc retourne le SDP answer en texte brut
+      const answerSdp = await response.text();
+      console.log('[WebRTC] Answer SDP reçue de go2rtc (' + answerSdp.length + ' chars)');
       
-      await pc.setRemoteDescription(answer);
-      console.log('[WebRTC] Remote description set!');
+      // Créer l'objet RTCSessionDescription pour la réponse
+      await pc.setRemoteDescription({
+        type: 'answer',
+        sdp: answerSdp
+      });
+      
+      console.log('[WebRTC] Remote description set! Attente des tracks...');
       return true;
       
     } catch (e) {
-      console.error('[WebRTC] Erreur:', e);
+      console.error('[WebRTC] Erreur:', e.name, e.message);
       if (pcRef.current) {
         pcRef.current.close();
         pcRef.current = null;
