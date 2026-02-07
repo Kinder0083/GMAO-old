@@ -942,3 +942,14 @@ agent_communication:
 - ✅ Backend logs show "Event created émis pour improvement_requests" - Events emitted correctly
 - ✅ Backend logs show "Event updated émis pour improvement_requests" - Updates emitted correctly
 - ✅ Backend logs show "Event deleted émis pour improvement_requests" - Deletes emitted correctly
+  - task: "Frigate WebRTC Proxy Fix - All streaming via backend proxy"
+    implemented: true
+    working: "pending_user_verification"
+    file: "backend/frigate_routes.py, backend/frigate_service.py, frontend/src/components/Cameras/FrigateStreamPlayer.jsx"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "pending"
+        agent: "main"
+        comment: "Fixed 3 critical issues: 1) WebRTC proxy now routes through Frigate authenticated API (port 8971) instead of direct go2rtc port 1984 which was not accessible externally. 2) MJPEG streaming and thumbnails also routed through authenticated Frigate API. 3) Frontend never connects directly to go2rtc - always goes through backend proxy. WebRTC sends SDP as raw text (application/sdp) matching Home Assistant integration method. MJPEG fallback added when WebRTC fails. Cannot test end-to-end without user's Frigate server."
