@@ -58,6 +58,10 @@ const FrigateStreamPlayer = ({
       videoRef.current.srcObject = null;
       videoRef.current.src = '';
     }
+    // Arrêter le flux MJPEG en vidant le src de l'image
+    if (imgRef.current) {
+      imgRef.current.src = '';
+    }
   }, []);
 
   // WebRTC via proxy backend
