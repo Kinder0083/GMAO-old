@@ -76,8 +76,6 @@ const FrigateStreamPlayer = ({
     if (!streamName) return false;
     
     // Construire l'URL go2rtc directe
-    // IMPORTANT: go2rtc standalone utilise /api/webrtc (pas /webrtc)
-    // Le port 1984 est le port API de go2rtc
     const go2rtcUrl = go2rtcHost 
       ? `http://${go2rtcHost}:${go2rtcPort}/api/webrtc?src=${streamName}`
       : null;
@@ -89,94 +87,123 @@ const FrigateStreamPlayer = ({
     
     console.log('[WebRTC] Connexion DIRECTE vers go2rtc:', go2rtcUrl);
     
-    try {
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ],
-        iceCandidatePoolSize: 10
-      });
-      pcRef.current = pc;
+    return new Promise(async (resolve) => {
+      let resolved = false;
+      let iceTimeout = null;
       
-      // Recevoir les tracks média
-      pc.ontrack = (event) => {
-        console.log('[WebRTC] Track reçu:', event.track.kind, 'streams:', event.streams.length);
-        if (videoRef.current && event.streams[0]) {
-          videoRef.current.srcObject = event.streams[0];
-          setStatus('connected');
-          setConnectionType('WebRTC');
-          console.log('[WebRTC] Video stream attaché!');
+      const resolveOnce = (value, reason) => {
+        if (!resolved) {
+          resolved = true;
+          if (iceTimeout) clearTimeout(iceTimeout);
+          console.log('[WebRTC] Résolu avec:', value, reason);
+          resolve(value);
         }
       };
       
-      pc.oniceconnectionstatechange = () => {
-        console.log('[WebRTC] ICE state:', pc.iceConnectionState);
-        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-          console.log('[WebRTC] Connexion média établie!');
+      try {
+        const pc = new RTCPeerConnection({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ],
+          iceCandidatePoolSize: 10
+        });
+        pcRef.current = pc;
+        
+        // Recevoir les tracks média
+        pc.ontrack = (event) => {
+          console.log('[WebRTC] Track reçu:', event.track.kind, 'streams:', event.streams.length);
+          if (videoRef.current && event.streams[0]) {
+            videoRef.current.srcObject = event.streams[0];
+            console.log('[WebRTC] Video stream attaché!');
+          }
+        };
+        
+        pc.oniceconnectionstatechange = () => {
+          console.log('[WebRTC] ICE state:', pc.iceConnectionState);
+          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+            console.log('[WebRTC] ✅ Connexion média établie!');
+            setStatus('connected');
+            setConnectionType('WebRTC');
+            resolveOnce(true, 'ICE connected');
+          }
+          if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+            console.log('[WebRTC] ❌ ICE failed/disconnected - fallback nécessaire');
+            pc.close();
+            pcRef.current = null;
+            resolveOnce(false, 'ICE failed');
+          }
+        };
+        
+        pc.onconnectionstatechange = () => {
+          console.log('[WebRTC] Connection state:', pc.connectionState);
+          if (pc.connectionState === 'failed') {
+            pc.close();
+            pcRef.current = null;
+            resolveOnce(false, 'Connection failed');
+          }
+        };
+        
+        // Ajouter les transceivers pour recevoir audio et vidéo
+        pc.addTransceiver('video', { direction: 'recvonly' });
+        pc.addTransceiver('audio', { direction: 'recvonly' });
+        
+        // Créer l'offre SDP
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        console.log('[WebRTC] Offre SDP créée, envoi vers go2rtc...');
+        
+        // Envoyer l'offre à go2rtc
+        const response = await fetch(go2rtcUrl, {
+          method: 'POST',
+          body: offer.sdp,
+          headers: { 'Content-Type': 'application/sdp' }
+        });
+        
+        console.log('[WebRTC] Réponse HTTP:', response.status, response.headers.get('content-type'));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.log('[WebRTC] Erreur HTTP:', response.status, errorText);
+          pc.close();
+          pcRef.current = null;
+          resolveOnce(false, 'HTTP error');
+          return;
         }
-        if (pc.iceConnectionState === 'failed') {
-          console.log('[WebRTC] ICE failed - fallback nécessaire');
-          setError('Connexion WebRTC échouée (ICE failed)');
+        
+        // go2rtc retourne le SDP answer en texte brut
+        const answerSdp = await response.text();
+        console.log('[WebRTC] Answer SDP reçue de go2rtc (' + answerSdp.length + ' chars)');
+        
+        await pc.setRemoteDescription({
+          type: 'answer',
+          sdp: answerSdp
+        });
+        
+        console.log('[WebRTC] Remote description set! Attente ICE...');
+        
+        // Timeout de 8 secondes pour ICE
+        iceTimeout = setTimeout(() => {
+          if (!resolved) {
+            console.log('[WebRTC] ⏱️ Timeout ICE après 8s');
+            if (pcRef.current) {
+              pcRef.current.close();
+              pcRef.current = null;
+            }
+            resolveOnce(false, 'ICE timeout');
+          }
+        }, 8000);
+        
+      } catch (e) {
+        console.error('[WebRTC] Erreur:', e.name, e.message);
+        if (pcRef.current) {
+          pcRef.current.close();
+          pcRef.current = null;
         }
-        if (pc.iceConnectionState === 'disconnected') {
-          console.log('[WebRTC] ICE disconnected - tentative de reconnexion...');
-        }
-      };
-      
-      pc.onconnectionstatechange = () => {
-        console.log('[WebRTC] Connection state:', pc.connectionState);
-      };
-      
-      // Ajouter les transceivers pour recevoir audio et vidéo
-      pc.addTransceiver('video', { direction: 'recvonly' });
-      pc.addTransceiver('audio', { direction: 'recvonly' });
-      
-      // Créer l'offre SDP
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      
-      console.log('[WebRTC] Offre SDP créée, envoi vers go2rtc...');
-      
-      // IMPORTANT: go2rtc attend le SDP en texte brut avec Content-Type: application/sdp
-      // Comme le fait le backend proxy (et Home Assistant)
-      const response = await fetch(go2rtcUrl, {
-        method: 'POST',
-        body: offer.sdp,
-        headers: { 'Content-Type': 'application/sdp' }
-      });
-      
-      console.log('[WebRTC] Réponse HTTP:', response.status, response.headers.get('content-type'));
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('[WebRTC] Erreur HTTP:', response.status, errorText);
-        pc.close();
-        pcRef.current = null;
-        return false;
+        resolveOnce(false, 'Exception: ' + e.message);
       }
-      
-      // go2rtc retourne le SDP answer en texte brut
-      const answerSdp = await response.text();
-      console.log('[WebRTC] Answer SDP reçue de go2rtc (' + answerSdp.length + ' chars)');
-      
-      // Créer l'objet RTCSessionDescription pour la réponse
-      await pc.setRemoteDescription({
-        type: 'answer',
-        sdp: answerSdp
-      });
-      
-      console.log('[WebRTC] Remote description set! Attente des tracks...');
-      return true;
-      
-    } catch (e) {
-      console.error('[WebRTC] Erreur:', e.name, e.message);
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-      return false;
-    }
+    });
   }, [streamName, go2rtcHost, go2rtcPort]);
 
   // MJPEG Stream continu via go2rtc
