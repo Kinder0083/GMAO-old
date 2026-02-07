@@ -52,6 +52,10 @@ const FrigateStreamPlayer = ({
       pcRef.current.close();
       pcRef.current = null;
     }
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
     if (mjpegIntervalRef.current) {
       clearInterval(mjpegIntervalRef.current);
       mjpegIntervalRef.current = null;
