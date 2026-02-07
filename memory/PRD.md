@@ -49,10 +49,11 @@ GMAO IRIS est une application de Gestion de Maintenance Assistée par Ordinateur
 
 ## Pending Issues
 
-### P2 - Validation Utilisateur
-1. Script de mise à jour manuelle - En attente de test par l'utilisateur
-2. Fix script d'installation (`install.sh`) - En attente de validation
-3. Mise à jour code Frigate sur Proxmox - L'utilisateur doit faire `git pull` pour récupérer les fixes
+## Scripts de Mise à Jour - AJOUTÉS ✅
+- **`backend/post-update.sh`** - Script automatique post-mise à jour (venv, pip, yarn build, supervisor)
+- **`update.sh`** - Script de mise à jour manuelle simple
+- **Git hook `post-merge`** - Exécute automatiquement post-update.sh après chaque git pull
+- **Installation:** Le script d'installation crée maintenant le git hook automatiquement
 
 ---
 
