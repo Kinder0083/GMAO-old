@@ -193,12 +193,8 @@ const FrigateLivePanel = ({ onOpenSettings }) => {
       {/* Info sur les types de streams */}
       <div className="text-xs text-gray-500 flex items-center gap-4">
         <span className="flex items-center gap-1">
-          <Zap className="w-3 h-3 text-green-500" />
-          <span>_h264 = Streaming fluide</span>
-        </span>
-        <span className="flex items-center gap-1">
           <Video className="w-3 h-3 text-blue-500" />
-          <span>Autres = Polling images</span>
+          <span>WebRTC via proxy backend (fallback MJPEG)</span>
         </span>
       </div>
 
