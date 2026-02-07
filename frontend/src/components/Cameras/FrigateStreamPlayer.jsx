@@ -436,7 +436,9 @@ const FrigateStreamPlayer = ({
   }, [streamName, go2rtcHost]);
 
   const isWebRTC = connectionType === 'WebRTC';
-  const isMJPEG = connectionType === 'MJPEG';
+  const isHLS = connectionType === 'HLS';
+  const isMJPEG = connectionType === 'MJPEG' || connectionType === 'Polling';
+  const useVideoElement = isWebRTC || isHLS;
 
   return (
     <Card 
