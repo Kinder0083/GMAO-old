@@ -414,49 +414,63 @@ async def proxy_webrtc_offer(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Proxy WebRTC: reçoit l'offre SDP du frontend et la transmet à go2rtc.
+    Proxy WebRTC: reçoit l'offre SDP du frontend et la transmet à go2rtc via l'API Frigate.
     Retourne la réponse SDP de go2rtc.
     C'est la même méthode que Home Assistant utilise.
     """
-    import httpx
-    
     try:
         service = get_frigate_service()
         if not service:
             raise HTTPException(status_code=503, detail="Frigate non configuré")
         
-        # URL go2rtc WebRTC (port 1984)
-        go2rtc_url = f"http://{service.host}:1984/api/go2rtc/webrtc?src={stream_name}"
+        # URL go2rtc via l'API Frigate authentifiée (pas d'accès direct au port 1984)
+        go2rtc_url = f"{service.base_url}/api/go2rtc/webrtc?src={stream_name}"
         
         logger.info(f"[WEBRTC PROXY] POST vers: {go2rtc_url}")
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        # Utiliser le client authentifié du service Frigate
+        client, login_ok = await service._create_authenticated_client()
+        if not login_ok:
+            raise HTTPException(status_code=502, detail="Authentification Frigate échouée")
+        
+        try:
+            # Envoyer l'offre SDP en tant que texte brut (méthode Home Assistant)
             response = await client.post(
                 go2rtc_url,
-                json={"type": offer.type, "sdp": offer.sdp},
-                headers={"Content-Type": "application/json"}
+                content=offer.sdp,
+                headers={"Content-Type": "application/sdp"}
             )
             
-            logger.info(f"[WEBRTC PROXY] Response status: {response.status_code}")
+            logger.info(f"[WEBRTC PROXY] Response status: {response.status_code}, Content-Type: {response.headers.get('content-type', 'unknown')}")
             
             if response.status_code == 200:
-                answer = response.json()
-                logger.info(f"[WEBRTC PROXY] Answer reçue, type: {answer.get('type')}")
-                return answer
+                content_type = response.headers.get('content-type', '')
+                
+                if 'application/sdp' in content_type or 'text/plain' in content_type or not content_type.startswith('application/json'):
+                    # Réponse en texte brut (SDP answer)
+                    answer_sdp = response.text
+                    logger.info(f"[WEBRTC PROXY] Answer SDP reçue ({len(answer_sdp)} chars)")
+                    return {"type": "answer", "sdp": answer_sdp}
+                else:
+                    # Réponse JSON
+                    answer = response.json()
+                    logger.info(f"[WEBRTC PROXY] Answer JSON reçue, type: {answer.get('type')}")
+                    return answer
             else:
-                logger.error(f"[WEBRTC PROXY] Erreur: {response.status_code} - {response.text}")
+                error_text = response.text[:500]
+                logger.error(f"[WEBRTC PROXY] Erreur: {response.status_code} - {error_text}")
                 raise HTTPException(
                     status_code=response.status_code,
-                    detail=f"go2rtc error: {response.text}"
+                    detail=f"go2rtc error: {error_text}"
                 )
+        finally:
+            await client.aclose()
                 
-    except httpx.RequestError as e:
-        logger.error(f"[WEBRTC PROXY] Erreur connexion: {e}")
-        raise HTTPException(status_code=502, detail=f"Connexion go2rtc impossible: {e}")
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[WEBRTC PROXY] Erreur: {e}")
+        logger.error(f"[WEBRTC PROXY] Erreur: {type(e).__name__}: {e}")
+        logger.error(f"[WEBRTC PROXY] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
