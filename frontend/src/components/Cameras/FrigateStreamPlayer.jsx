@@ -4,6 +4,7 @@
  * Fallback MJPEG via backend proxy si WebRTC échoue
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Hls from 'hls.js';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
