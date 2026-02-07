@@ -228,6 +228,7 @@ const LiveSlot = ({
   if (selectedStream) {
     return (
       <FrigateStreamPlayer
+        key={`player-${slotIndex}-${selectedStream.streamName}`}
         streamName={selectedStream.streamName}
         displayName={selectedStream.displayName}
         go2rtcHost={frigateSettings.host}
