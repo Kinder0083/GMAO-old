@@ -1,120 +1,64 @@
-# GMAO IRIS - PRD (Product Requirements Document)
+# GMAO IRIS - Product Requirements Document
 
-## Original Problem Statement
-Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) avec intégration de caméras IP via Frigate NVR.
+## Application Overview
+GMAO IRIS est une application de Gestion de Maintenance Assistée par Ordinateur (GMAO) complète avec:
+- Gestion des équipements, ordres de travail, maintenance préventive
+- Intégration Frigate NVR pour la surveillance par caméras
+- Chat temps réel, MQTT, tableaux blancs collaboratifs
+- Rapports automatisés, gestion d'équipes, etc.
 
-### User Persona
-- **Grèg** - Concepteur et utilisateur principal
-- **Équipe maintenance** - Techniciens et visualiseurs
+## Tech Stack
+- **Backend:** FastAPI (Python), MongoDB, APScheduler
+- **Frontend:** React.js, TailwindCSS
+- **Infrastructure:** Supervisor, Nginx
+- **Intégrations:** Frigate NVR, MQTT
 
-### Core Requirements
-1. Gestion des ordres de travail
-2. Gestion des équipements et actifs
-3. Gestion des équipes et utilisateurs
-4. Intégration caméras IP via Frigate NVR
-5. Alertes et notifications
-6. Rapports et analytics
+## Current Version
+- Version: 1.5.0 "Rapport de Surveillance Avancé"
+- Release Date: 2025-01-18
 
 ---
 
-## Architecture
+## Completed Work (Feb 7, 2026)
 
-### Backend (FastAPI + MongoDB)
-- `/app/backend/server.py` - Point d'entrée principal
-- `/app/backend/frigate_routes.py` - Routes API Frigate
+### Frigate NVR Integration
+- ✅ Proxy backend pour WebRTC/MJPEG (évite l'exposition des ports internes)
+- ✅ Authentification JWT avec Frigate
+- ✅ Composants frontend: `FrigateStreamPlayer`, `FrigateLivePanel`, `FrigateSettingsDialog`
+
+### Installation & Updates
+- ✅ Correction bug `cryptography` dans `install.sh` (remplacé par `openssl`)
+- ✅ Fallbacks `REACT_APP_BACKEND_URL` ajoutés dans les composants frontend
+- ✅ Script mise à jour manuelle fourni à l'utilisateur
+- ✅ Script diagnostic `/app/backend/diagnose_backend.py` créé
+
+---
+
+## Pending Issues
+
+### P0 - Critique
+- **Backend crash sur Proxmox** - Le service `gmao-iris-backend` reste `STOPPED` sur l'installation Proxmox de l'utilisateur
+  - Root cause: Spécifique à l'environnement Proxmox (fonctionne sur Emergent preview)
+  - Next: L'utilisateur doit exécuter `diagnose_backend.py` pour identifier la cause exacte
+
+### P2 - Validation Utilisateur
+1. Script de mise à jour manuelle - En attente de test par l'utilisateur
+2. Fix script d'installation (`install.sh`) - En attente de validation
+
+---
+
+## Key Files
+- `/app/backend/server.py` - Point d'entrée backend FastAPI
+- `/app/backend/frigate_routes.py` - API Frigate
 - `/app/backend/frigate_service.py` - Service connexion Frigate
-- `/app/backend/camera_routes.py` - Routes caméras legacy
-
-### Frontend (React)
-- `/app/frontend/src/pages/CamerasPage.jsx` - Page principale caméras
-- `/app/frontend/src/components/Cameras/FrigateSettingsDialog.jsx` - Configuration Frigate
-- `/app/frontend/src/components/Cameras/FrigateLivePanel.jsx` - Panel live streaming
-- `/app/frontend/src/components/Cameras/FrigateStreamPlayer.jsx` - Player MJPEG
-- `/app/frontend/src/components/Cameras/FrigateThumbnailGrid.jsx` - Grille vignettes
+- `/app/backend/diagnose_backend.py` - Script diagnostic
+- `/app/frontend/src/components/cameras/` - Composants caméras frontend
+- `/app/install.sh` - Script installation Proxmox
 
 ---
 
-## What's Been Implemented
-
-### Phase 1 - Core GMAO ✅
-- Authentification JWT
-- Gestion utilisateurs et rôles
-- Ordres de travail CRUD
-- Gestion équipements
-- Dashboard principal
-
-### Phase 2 - Team Management ✅
-- Gestion des équipes
-- Organisation des menus
-- Permissions par module
-
-### Phase 3 - Camera Integration 
-#### P3.1 - Custom RTSP (Abandonné)
-- Implémentation initiale avec polling RTSP
-- Problèmes de performance avec multiple caméras
-- Remplacé par intégration Frigate
-
-#### P3.2 - Frigate NVR Integration ✅ (2024-02-05)
-- **Connexion Frigate:** Authentification JWT, HTTPS support
-- **Settings Panel:** Configuration host/port/credentials
-- **API Endpoints:**
-  - `GET /api/cameras/frigate/settings` - Récupérer config
-  - `PUT /api/cameras/frigate/settings` - Sauvegarder config
-  - `POST /api/cameras/frigate/test` - Tester connexion
-  - `GET /api/cameras/frigate/cameras` - Liste caméras
-  - `GET /api/cameras/frigate/streams` - Liste streams go2rtc
-  - `GET /api/cameras/frigate/thumbnail/{camera}` - Vignette
-  - `GET /api/cameras/frigate/snapshot/{camera}` - Snapshot
-  - `GET /api/cameras/frigate/stream/{camera}` - **Stream MJPEG (NOUVEAU)**
-
----
-
-## Prioritized Backlog
-
-### P0 - Critical (Current)
-- [x] Endpoint streaming MJPEG manquant - DONE (2024-02-05)
-
-### P1 - High Priority
-- [ ] Tester thumbnails et live sur Frigate réel
-
-### P2 - Medium Priority
-- [ ] Dashboard Plan de Surveillance
-- [ ] Intégration événements détection Frigate
-
-### P3 - Nice to Have
-- [ ] Rapports PDF mensuels automatiques
-- [ ] NFC time tracking
-
----
-
-## Known Issues & Workarounds
-
-### WebSocket Real-time Updates
-- **Status:** BLOCKED (infrastructure externe)
-- **Workaround:** Polling périodique
-
-### ONVIF Discovery
-- **Status:** BLOCKED (réseau utilisateur)
-- **Workaround:** Ajout manuel des caméras / Frigate
-
----
-
-## Deployment Notes
-
-### Proxmox Server
-```bash
-cd /opt/gmao-iris/backend
-source venv/bin/activate
-pip install -r requirements.txt
-
-cd /opt/gmao-iris/frontend
-yarn build
-
-sudo supervisorctl restart backend frontend
-```
-
-### Environment Variables
-- `MONGO_URL` - MongoDB connection string
-- `DB_NAME` - Database name (gmao_iris)
-- `SECRET_KEY` - JWT secret
-- `REACT_APP_BACKEND_URL` - API URL for frontend
+## API Endpoints Clés
+- `GET /api/version` - Version de l'application
+- `POST /api/cameras/frigate/test` - Test connexion Frigate
+- `GET /api/cameras/frigate/settings` - Paramètres Frigate
+- `GET /api/cameras/frigate/proxy/mjpeg/{camera}` - Proxy stream MJPEG
