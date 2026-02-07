@@ -179,21 +179,49 @@ const FrigateStreamPlayer = ({
     }
   }, [streamName, go2rtcHost, go2rtcPort]);
 
-  // POLLING DE FRAMES via backend proxy (snapshots rapides)
-  // Utilise /api/{camera}/latest.jpg qui fonctionne avec Frigate
+  // MJPEG Stream continu via go2rtc
+  // Utilise le vrai endpoint MJPEG qui stream en continu
   const connectMJPEG = useCallback(() => {
     if (!streamName) return false;
     
-    console.log('[MJPEG Polling] Démarrage pour:', streamName);
+    console.log('[MJPEG] Démarrage stream MJPEG pour:', streamName);
+    
+    // Si go2rtcHost est disponible, utiliser le stream MJPEG direct de go2rtc
+    if (go2rtcHost) {
+      const mjpegUrl = `http://${go2rtcHost}:${go2rtcPort}/api/stream.mjpeg?src=${streamName}`;
+      console.log('[MJPEG] URL directe go2rtc:', mjpegUrl);
+      
+      if (imgRef.current) {
+        imgRef.current.src = mjpegUrl;
+        imgRef.current.onload = () => {
+          console.log('[MJPEG] Première frame chargée!');
+        };
+        imgRef.current.onerror = (e) => {
+          console.log('[MJPEG] Erreur chargement:', e);
+          // Fallback au polling si le stream MJPEG direct échoue
+          fallbackToPolling();
+        };
+        setStatus('connected');
+        setConnectionType('MJPEG');
+        return true;
+      }
+    }
+    
+    // Sinon, fallback au polling via backend
+    return fallbackToPolling();
+  }, [streamName, go2rtcHost, go2rtcPort]);
+
+  // Polling de frames via backend (dernier recours)
+  const fallbackToPolling = useCallback(() => {
+    console.log('[Polling] Démarrage polling pour:', streamName);
     
     const token = localStorage.getItem('token');
     if (!token) {
-      console.log('[MJPEG Polling] Token non trouvé');
+      console.log('[Polling] Token non trouvé');
       return false;
     }
     
     // Extraire le nom de la caméra (sans _hq/_lq) pour l'API Frigate
-    // Ex: Salon_lq -> Salon, Tapo -> Salon_Tapo (mapping spécial)
     let cameraName = streamName;
     if (streamName.endsWith('_hq') || streamName.endsWith('_lq')) {
       cameraName = streamName.replace(/_hq$|_lq$/, '');
@@ -203,14 +231,13 @@ const FrigateStreamPlayer = ({
       cameraName = 'Salon_Tapo';
     }
     
-    console.log('[MJPEG Polling] Camera name:', cameraName);
+    console.log('[Polling] Camera name:', cameraName);
     
     let frameCount = 0;
     let errorCount = 0;
     
     const fetchFrame = async () => {
       try {
-        // Utiliser l'endpoint thumbnail avec le vrai nom de caméra
         const frameUrl = `${API_URL}/api/cameras/frigate/thumbnail/${cameraName}?height=720&_t=${Date.now()}`;
         
         const response = await fetch(frameUrl, {
@@ -219,34 +246,34 @@ const FrigateStreamPlayer = ({
         
         if (response.ok) {
           const data = await response.json();
-          if (data.image && imgRef.current) {
-            imgRef.current.src = `data:image/jpeg;base64,${data.image}`;
+          if (data.thumbnail && imgRef.current) {
+            imgRef.current.src = `data:image/jpeg;base64,${data.thumbnail}`;
             frameCount++;
             errorCount = 0;
             if (frameCount === 1) {
-              console.log('[MJPEG Polling] Première frame reçue!');
+              console.log('[Polling] Première frame reçue!');
             }
           }
         } else {
           errorCount++;
           if (errorCount > 5) {
-            console.log('[MJPEG Polling] Trop d\'erreurs, arrêt');
+            console.log('[Polling] Trop d\'erreurs, arrêt');
           }
         }
       } catch (err) {
         errorCount++;
-        console.log('[MJPEG Polling] Erreur frame:', err.message);
+        console.log('[Polling] Erreur frame:', err.message);
       }
     };
     
     // Première frame immédiatement
     fetchFrame();
     
-    // Polling rapide (~10 fps pour du "live")
-    mjpegIntervalRef.current = setInterval(fetchFrame, 100);
+    // Polling (~5 fps)
+    mjpegIntervalRef.current = setInterval(fetchFrame, 200);
     
     setStatus('connected');
-    setConnectionType('Live (Polling)');
+    setConnectionType('Polling');
     return true;
   }, [streamName]);
 
