@@ -305,6 +305,56 @@ async def get_frigate_thumbnail(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/frame/{camera_name}")
+async def get_frigate_frame_image(
+    camera_name: str,
+    height: int = Query(480, ge=60, le=720),
+    token: str = Query(None, description="JWT token pour l'authentification via URL")
+):
+    """
+    Récupère une image/frame d'une caméra Frigate et la retourne directement en binaire.
+    Permet l'authentification via query param pour utilisation dans des balises <img>.
+    """
+    try:
+        # Validation du token
+        if not token:
+            raise HTTPException(status_code=401, detail="Token manquant")
+        
+        try:
+            payload = decode_access_token(token)
+            if not payload:
+                raise HTTPException(status_code=401, detail="Token invalide")
+        except Exception as e:
+            logger.error(f"[FRAME] Erreur validation token: {e}")
+            raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+        
+        service = get_frigate_service()
+        if not service:
+            raise HTTPException(status_code=503, detail="Frigate non configuré")
+        
+        # Récupérer l'image
+        image_data = await service.get_camera_thumbnail(camera_name, height)
+        if image_data:
+            return Response(
+                content=image_data,
+                media_type="image/jpeg",
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0"
+                }
+            )
+        else:
+            # Image placeholder transparente 1x1 pixel
+            raise HTTPException(status_code=404, detail="Image non disponible")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération frame Frigate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/events")
 async def get_frigate_events(
     camera: str = Query(None),
