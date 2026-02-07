@@ -9,7 +9,7 @@ import requests
 import os
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://supervisor-crash.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://gmao-iris-webrtc.preview.emergentagent.com').rstrip('/')
 
 class TestDemandesArretAPI:
     """Test Demandes d'Arrêt API endpoints"""
