@@ -145,39 +145,38 @@ const FrigateStreamPlayer = ({
     }
   }, [streamName]);
 
-  // MJPEG polling via backend proxy
+  // MJPEG CONTINU via backend proxy (flux streaming réel, pas polling)
   const connectMJPEG = useCallback(() => {
     if (!streamName) return false;
     
-    console.log('[MJPEG] Démarrage polling via backend proxy pour:', streamName);
+    console.log('[MJPEG] Démarrage flux CONTINU via backend proxy pour:', streamName);
     
     const token = localStorage.getItem('token');
     if (!token) {
-      console.log('[MJPEG] Token non trouvé, impossible de charger les frames');
+      console.log('[MJPEG] Token non trouvé');
       return false;
     }
     
-    const fetchFrame = () => {
-      const img = new Image();
-      img.onload = () => {
-        if (imgRef.current) {
-          imgRef.current.src = img.src;
-        }
-      };
-      img.onerror = () => {
-        console.log('[MJPEG] Erreur frame');
-      };
-      // Utiliser l'endpoint /frame/ avec token en query param pour l'auth
-      img.src = `${API_URL}/api/cameras/frigate/frame/${streamName}?height=480&token=${encodeURIComponent(token)}&_t=${Date.now()}`;
-    };
+    // Utiliser l'endpoint /stream/ qui renvoie un flux MJPEG continu (multipart/x-mixed-replace)
+    // C'est un vrai stream, pas du polling d'images individuelles
+    const streamUrl = `${API_URL}/api/cameras/frigate/stream/${streamName}?token=${encodeURIComponent(token)}`;
+    console.log('[MJPEG] URL flux continu:', streamUrl);
     
-    // Première frame
-    fetchFrame();
-    // Polling à ~5 fps
-    mjpegIntervalRef.current = setInterval(fetchFrame, 200);
+    if (imgRef.current) {
+      imgRef.current.src = streamUrl;
+      imgRef.current.onerror = () => {
+        console.log('[MJPEG] Erreur flux - tentative reconnexion...');
+        // Tentative de reconnexion après 2 secondes
+        setTimeout(() => {
+          if (imgRef.current) {
+            imgRef.current.src = streamUrl + '&_retry=' + Date.now();
+          }
+        }, 2000);
+      };
+    }
     
     setStatus('connected');
-    setConnectionType('MJPEG');
+    setConnectionType('MJPEG Live');
     return true;
   }, [streamName]);
 
