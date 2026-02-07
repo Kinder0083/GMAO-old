@@ -40,9 +40,12 @@ GMAO IRIS est une application de Gestion de Maintenance Assistée par Ordinateur
 - **Cause:** Dépendances Python non installées dans le venv utilisé par Supervisor
 - **Solution:** Installation des packages via `/opt/gmao-iris/venv/bin/pip install -r requirements.txt`
 
-### Caméras Frigate - RÉSOLU ✅  
-- **Problème:** Endpoint `/thumbnail/` retournait 403 car les balises `<img>` ne peuvent pas envoyer de headers Authorization
-- **Solution:** Nouvel endpoint `/api/cameras/frigate/frame/{camera}` qui accepte le token en query param
+### Caméras Frigate - FLUX LIVE CORRIGÉ ✅  
+- **Problème:** Le flux live faisait du polling d'images (1 frame/200ms) au lieu d'un stream continu
+- **Solution:** 
+  - Backend: Connexion au vrai endpoint MJPEG de Frigate `/<camera_name>` qui stream en continu
+  - Frontend: L'image reçoit directement l'URL du flux stream (multipart/x-mixed-replace)
+- **Fichiers modifiés:** `frigate_service.py`, `FrigateStreamPlayer.jsx`
 
 ## Pending Issues
 
