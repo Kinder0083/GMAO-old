@@ -427,26 +427,21 @@ class UpdateService:
                 stdout, stderr = await asyncio.wait_for(dump_process.communicate(), timeout=120)
                 
                 if dump_process.returncode != 0:
-                    logger.error(f"❌ Échec du backup: {stderr.decode()}")
-                    update_history["logs"].append(f"Échec du backup: {stderr.decode()[:200]}")
+                    logger.warning(f"⚠️ Échec du backup (non bloquant): {stderr.decode()[:200]}")
+                    update_history["logs"].append(f"Backup échoué (non bloquant): {stderr.decode()[:200]}")
                     update_history["backup_created"] = False
-                    return {
-                        "success": False,
-                        "message": "Échec de la création du backup",
-                        "error": stderr.decode()
-                    }
-                    
-                logger.info(f"✅ Backup créé: {backup_path}")
-                update_history["logs"].append(f"Backup créé: {backup_path}")
-                update_history["backup_created"] = True
-                update_history["backup_path"] = str(backup_path)
+                else:
+                    logger.info(f"✅ Backup créé: {backup_path}")
+                    update_history["logs"].append(f"Backup créé: {backup_path}")
+                    update_history["backup_created"] = True
+                    update_history["backup_path"] = str(backup_path)
                 
             except asyncio.TimeoutError:
-                logger.error("❌ Timeout lors du backup")
-                return {
-                    "success": False,
-                    "message": "Timeout lors de la création du backup"
-                }
+                logger.warning("⚠️ Timeout lors du backup (non bloquant, on continue)")
+                update_history["backup_created"] = False
+            except FileNotFoundError:
+                logger.warning("⚠️ mongodump non installé (non bloquant, on continue)")
+                update_history["backup_created"] = False
             
             # 2. Exporter les données en Excel
             logger.info("📊 Étape 2/5: Export des données en Excel...")
@@ -555,9 +550,16 @@ class UpdateService:
             # Backend dependencies
             backend_req = self.backend_dir / "requirements.txt"
             if backend_req.exists():
-                # Chercher le venv Python
-                venv_pip = self.backend_dir / "venv" / "bin" / "pip"
-                pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
+                # Chercher le venv Python (backend/venv OU racine/venv)
+                venv_pip_backend = self.backend_dir / "venv" / "bin" / "pip"
+                venv_pip_root = self.app_root / "venv" / "bin" / "pip"
+                if venv_pip_backend.exists():
+                    venv_pip = venv_pip_backend
+                elif venv_pip_root.exists():
+                    venv_pip = venv_pip_root
+                else:
+                    venv_pip = None
+                pip_cmd = str(venv_pip) if venv_pip else "pip3"
                 
                 logger.info(f"🐍 Installation backend avec: {pip_cmd}")
                 
