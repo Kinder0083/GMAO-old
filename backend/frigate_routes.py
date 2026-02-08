@@ -277,6 +277,7 @@ async def get_frigate_snapshot(
 async def get_frigate_thumbnail(
     camera_name: str,
     height: int = Query(180, ge=60, le=480),
+    stream: str = Query(None, description="Nom du stream go2rtc (optionnel)"),
     current_user: dict = Depends(get_current_user)
 ):
     """Récupère une vignette d'une caméra Frigate"""
@@ -285,7 +286,7 @@ async def get_frigate_thumbnail(
         if not service:
             raise HTTPException(status_code=503, detail="Frigate non configuré")
         
-        thumbnail = await service.get_camera_thumbnail(camera_name, height)
+        thumbnail = await service.get_camera_thumbnail(camera_name, height, stream_name=stream)
         if thumbnail:
             thumbnail_b64 = base64.b64encode(thumbnail).decode('utf-8')
             return {
