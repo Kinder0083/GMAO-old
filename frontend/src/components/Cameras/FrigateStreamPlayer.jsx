@@ -310,60 +310,106 @@ const FrigateStreamPlayer = ({
     
     console.log('[HLS] Démarrage HLS pour:', streamName);
     
-    try {
-      // URL HLS via go2rtc directement (port 1984)
-      const hlsUrl = `http://${go2rtcHost}:${go2rtcPort}/api/stream.m3u8?src=${streamName}`;
-      console.log('[HLS] URL:', hlsUrl);
-      
-      if (!videoRef.current) return false;
-      
-      // Vérifier si HLS.js est supporté
-      if (Hls.isSupported()) {
-        console.log('[HLS] Utilisation de hls.js');
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 30
-        });
-        hlsRef.current = hls;
+    return new Promise((resolve) => {
+      try {
+        // URL HLS via go2rtc directement (port 1984)
+        const hlsUrl = `http://${go2rtcHost}:${go2rtcPort}/api/stream.m3u8?src=${streamName}`;
+        console.log('[HLS] URL:', hlsUrl);
         
-        hls.loadSource(hlsUrl);
-        hls.attachMedia(videoRef.current);
+        if (!videoRef.current) {
+          resolve(false);
+          return;
+        }
         
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('[HLS] Manifest parsed, démarrage lecture');
-          videoRef.current.play().catch(e => console.log('[HLS] Play error:', e));
-          setStatus('connected');
-          setConnectionType('HLS');
-        });
-        
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          console.log('[HLS] Erreur:', data.type, data.details);
-          if (data.fatal) {
-            console.log('[HLS] Erreur fatale, arrêt');
-            hls.destroy();
-            hlsRef.current = null;
-            return false;
-          }
-        });
-        
-        return true;
-      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-        // Safari supporte HLS nativement
-        console.log('[HLS] Utilisation HLS natif (Safari)');
-        videoRef.current.src = hlsUrl;
-        videoRef.current.play().catch(e => console.log('[HLS] Play error:', e));
-        setStatus('connected');
-        setConnectionType('HLS');
-        return true;
-      } else {
-        console.log('[HLS] HLS non supporté par ce navigateur');
-        return false;
+        // Vérifier si HLS.js est supporté
+        if (Hls.isSupported()) {
+          console.log('[HLS] Utilisation de hls.js');
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            backBufferLength: 30,
+            maxBufferLength: 10,
+            maxMaxBufferLength: 30
+          });
+          hlsRef.current = hls;
+          
+          let resolved = false;
+          const resolveOnce = (value, reason) => {
+            if (!resolved) {
+              resolved = true;
+              console.log('[HLS] Résolu avec:', value, reason);
+              resolve(value);
+            }
+          };
+          
+          // Timeout de 10 secondes
+          const timeout = setTimeout(() => {
+            resolveOnce(false, 'timeout');
+            if (hlsRef.current) {
+              hlsRef.current.destroy();
+              hlsRef.current = null;
+            }
+          }, 10000);
+          
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            console.log('[HLS] Manifest parsed, démarrage lecture');
+            videoRef.current.play().catch(e => console.log('[HLS] Play error:', e));
+          });
+          
+          hls.on(Hls.Events.FRAG_LOADED, () => {
+            // Premier fragment chargé = succès
+            clearTimeout(timeout);
+            setStatus('connected');
+            setConnectionType('HLS');
+            resolveOnce(true, 'fragment loaded');
+          });
+          
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            console.log('[HLS] Erreur:', data.type, data.details);
+            if (data.fatal) {
+              console.log('[HLS] Erreur fatale, arrêt');
+              clearTimeout(timeout);
+              hls.destroy();
+              hlsRef.current = null;
+              resolveOnce(false, 'fatal error: ' + data.details);
+            }
+          });
+          
+          hls.loadSource(hlsUrl);
+          hls.attachMedia(videoRef.current);
+          
+        } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+          // Safari supporte HLS nativement
+          console.log('[HLS] Utilisation HLS natif (Safari)');
+          const hlsUrl = `http://${go2rtcHost}:${go2rtcPort}/api/stream.m3u8?src=${streamName}`;
+          videoRef.current.src = hlsUrl;
+          
+          videoRef.current.oncanplay = () => {
+            setStatus('connected');
+            setConnectionType('HLS');
+            resolve(true);
+          };
+          
+          videoRef.current.onerror = () => {
+            resolve(false);
+          };
+          
+          videoRef.current.play().catch(e => {
+            console.log('[HLS] Play error:', e);
+            resolve(false);
+          });
+          
+          // Timeout
+          setTimeout(() => resolve(false), 10000);
+        } else {
+          console.log('[HLS] HLS non supporté par ce navigateur');
+          resolve(false);
+        }
+      } catch (e) {
+        console.error('[HLS] Erreur:', e);
+        resolve(false);
       }
-    } catch (e) {
-      console.error('[HLS] Erreur:', e);
-      return false;
-    }
+    });
   }, [streamName, go2rtcHost, go2rtcPort]);
 
   // Démarrer le streaming
