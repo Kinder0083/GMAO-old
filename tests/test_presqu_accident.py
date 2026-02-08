@@ -7,7 +7,7 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://live-camera-panel.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://gmao-repair.preview.emergentagent.com').rstrip('/')
 
 class TestPresquAccidentModule:
     """Test suite for Presqu'accident module refactoring"""
