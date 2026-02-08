@@ -659,7 +659,15 @@ SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 APP_ROOT="\$(dirname "\$SCRIPT_DIR")"
 BACKEND_DIR="\$APP_ROOT/backend"
 FRONTEND_DIR="\$APP_ROOT/frontend"
-VENV_DIR="\$BACKEND_DIR/venv"
+
+# Détecter le venv (backend/venv ou racine/venv)
+if [ -d "\$BACKEND_DIR/venv" ]; then
+    VENV_DIR="\$BACKEND_DIR/venv"
+elif [ -d "\$APP_ROOT/venv" ]; then
+    VENV_DIR="\$APP_ROOT/venv"
+else
+    VENV_DIR="\$BACKEND_DIR/venv"
+fi
 
 echo "╔══════════════════════════════════════════════════════════════════╗"
 echo "║           GMAO IRIS - Post-Update Hook                           ║"
