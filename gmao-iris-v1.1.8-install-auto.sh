@@ -925,27 +925,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Configuration SMTP (Envoi d'emails)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "Pour envoyer des invitations par email, vous devez configurer un serveur SMTP."
+echo "Pour envoyer des invitations par email, configurez le SMTP"
+echo "depuis l'interface: Paramètres > Configuration SMTP"
 echo ""
-read -p "Voulez-vous configurer le SMTP maintenant ? (y/n) : " configure_smtp
-
-if [[ "$configure_smtp" == "y" || "$configure_smtp" == "Y" ]]; then
-    echo ""
-    msg "Configuration SMTP dans le container..."
-    
-    # Exécuter le script setup-email.sh dans le container avec l'IP en paramètre
-    pct exec $CTID -- bash -c "cd /opt/gmao-iris && CONTAINER_IP=${CONTAINER_IP} bash setup-email.sh"
-    
-    echo ""
-    ok "Configuration SMTP terminée"
-else
-    echo ""
-    warn "Configuration SMTP ignorée"
-    echo "Vous pourrez la configurer plus tard avec :"
-    echo "  pct enter $CTID"
-    echo "  cd /opt/gmao-iris"
-    echo "  bash setup-email.sh"
-fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
