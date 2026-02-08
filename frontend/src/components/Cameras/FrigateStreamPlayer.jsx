@@ -452,10 +452,16 @@ const FrigateStreamPlayer = ({
       console.log('[Stream] 3️⃣ Tentative MJPEG direct...');
       const mjpegOk = connectMJPEG();
       if (mjpegOk) {
-        console.log('[Stream] ✅ MJPEG connecté!');
-        return;
+        console.log('[Stream] ✅ MJPEG démarré (attente première frame)');
+        // Attendre un peu pour voir si MJPEG fonctionne
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Si toujours en MJPEG mode, c'est bon
+        if (connectionType === 'MJPEG') {
+          console.log('[Stream] MJPEG semble fonctionner');
+          return;
+        }
       }
-      console.log('[Stream] ❌ MJPEG échoué');
+      console.log('[Stream] ❌ MJPEG échoué ou timeout');
     }
     
     // 4. Dernier recours: Polling via backend
@@ -469,7 +475,7 @@ const FrigateStreamPlayer = ({
     console.log('[Stream] ❌ Tous les modes ont échoué');
     setError('Impossible de se connecter au flux vidéo');
     setStatus('error');
-  }, [cleanup, streamName, go2rtcHost, go2rtcPort, connectWebRTC, connectHLS, connectMJPEG, fallbackToPolling]);
+  }, [cleanup, streamName, go2rtcHost, go2rtcPort, connectWebRTC, connectHLS, connectMJPEG, fallbackToPolling, connectionType]);
 
   // Arrêter
   const stopStream = useCallback(() => {
