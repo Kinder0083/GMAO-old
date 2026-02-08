@@ -310,7 +310,8 @@ async def get_frigate_thumbnail(
 async def get_frigate_frame_image(
     camera_name: str,
     height: int = Query(480, ge=60, le=720),
-    token: str = Query(None, description="JWT token pour l'authentification via URL")
+    token: str = Query(None, description="JWT token pour l'authentification via URL"),
+    stream: str = Query(None, description="Nom du stream go2rtc (optionnel)")
 ):
     """
     Récupère une image/frame d'une caméra Frigate et la retourne directement en binaire.
@@ -334,7 +335,7 @@ async def get_frigate_frame_image(
             raise HTTPException(status_code=503, detail="Frigate non configuré")
         
         # Récupérer l'image
-        image_data = await service.get_camera_thumbnail(camera_name, height)
+        image_data = await service.get_camera_thumbnail(camera_name, height, stream_name=stream)
         if image_data:
             return Response(
                 content=image_data,
@@ -346,7 +347,6 @@ async def get_frigate_frame_image(
                 }
             )
         else:
-            # Image placeholder transparente 1x1 pixel
             raise HTTPException(status_code=404, detail="Image non disponible")
             
     except HTTPException:
