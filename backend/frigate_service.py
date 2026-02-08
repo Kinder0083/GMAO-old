@@ -307,7 +307,6 @@ class FrigateService:
         except Exception as e:
             logger.error(f"[FRIGATE] Erreur thumbnail: {e}")
             return None
-            return None
     
     async def get_camera_events(self, camera_name: str = None, limit: int = 20) -> List[Dict[str, Any]]:
         """Récupère les événements de détection"""
