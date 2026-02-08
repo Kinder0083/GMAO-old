@@ -36,10 +36,10 @@ const FrigateThumbnailGrid = ({
     
     // Extraire les noms de caméras depuis le mapping
     // Le mapping est: { "Nom affiché": "stream_name" }
-    // Le nom de caméra Frigate est généralement la première partie du stream (avant _hq/_lq)
+    // Le nom de caméra Frigate est généralement la première partie du stream (avant _hq/_lq/_h264)
     return Object.entries(frigateSettings.stream_mapping).map(([displayName, streamName]) => {
-      // Extraire le nom de la caméra (avant _hq, _lq, etc.)
-      const cameraName = streamName.replace(/_hq$|_lq$|_sub$/, '');
+      // Extraire le nom de la caméra (avant _hq, _lq, _h264, etc.)
+      const cameraName = streamName.replace(/_hq$|_lq$|_sub$|_h264$|_H264$/i, '');
       return {
         displayName,
         streamName,
