@@ -756,11 +756,6 @@ deactivate
 cd ../frontend
 echo "Build du frontend (cela peut prendre 3-5 minutes)..."
 yarn install --silent 2>/dev/null
-
-# Installer jspdf pour l'export PDF des Analytics Checklists (v1.1.8)
-echo "📦 Installation de jspdf pour l'export PDF..."
-yarn add jspdf --silent 2>/dev/null || echo "⚠️  Installation jspdf échouée, continuons..."
-
 yarn build 2>/dev/null
 
 # ═══════════════════════════════════════════════════════════════════════════════
