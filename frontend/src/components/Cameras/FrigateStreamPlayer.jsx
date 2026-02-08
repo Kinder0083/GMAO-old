@@ -214,28 +214,31 @@ const FrigateStreamPlayer = ({
     console.log('[MJPEG] Démarrage stream MJPEG pour:', streamName);
     
     // Si go2rtcHost est disponible, utiliser le stream MJPEG direct de go2rtc
-    if (go2rtcHost) {
+    if (go2rtcHost && imgRef.current) {
       const mjpegUrl = `http://${go2rtcHost}:${go2rtcPort}/api/stream.mjpeg?src=${streamName}`;
       console.log('[MJPEG] URL directe go2rtc:', mjpegUrl);
       
-      if (imgRef.current) {
-        imgRef.current.src = mjpegUrl;
-        imgRef.current.onload = () => {
-          console.log('[MJPEG] Première frame chargée!');
-        };
-        imgRef.current.onerror = (e) => {
-          console.log('[MJPEG] Erreur chargement:', e);
-          // Fallback au polling si le stream MJPEG direct échoue
-          fallbackToPolling();
-        };
+      // Tester si l'URL est accessible
+      imgRef.current.onload = () => {
+        console.log('[MJPEG] ✅ Stream MJPEG connecté!');
         setStatus('connected');
         setConnectionType('MJPEG');
-        return true;
-      }
+      };
+      
+      imgRef.current.onerror = () => {
+        console.log('[MJPEG] ❌ Erreur stream MJPEG, fallback au polling');
+        // Ne pas faire le fallback ici, laisser startStream gérer
+      };
+      
+      imgRef.current.src = mjpegUrl;
+      
+      // Considérer comme succès immédiat, l'erreur sera gérée par onerror
+      setStatus('connected');
+      setConnectionType('MJPEG');
+      return true;
     }
     
-    // Sinon, fallback au polling via backend
-    return fallbackToPolling();
+    return false;
   }, [streamName, go2rtcHost, go2rtcPort]);
 
   // Polling de frames via backend (dernier recours)
