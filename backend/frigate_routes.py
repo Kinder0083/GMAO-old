@@ -162,7 +162,7 @@ async def test_frigate_connection(
     """Teste la connexion à Frigate"""
     host = request_data.get("host", "")
     api_port = request_data.get("api_port", 5000)
-    go2rtc_port = request_data.get("go2rtc_port", 8555)
+    go2rtc_port = request_data.get("go2rtc_port", 1984)
     use_https = request_data.get("use_https", False)
     username = request_data.get("username", "")
     password = request_data.get("password", "")
