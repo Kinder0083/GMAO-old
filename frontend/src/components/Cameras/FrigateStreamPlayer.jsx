@@ -70,52 +70,62 @@ const FrigateStreamPlayer = ({
     }
   }, []);
 
-  // WebRTC DIRECT vers go2rtc (comme Home Assistant)
-  // Le navigateur se connecte directement à go2rtc sur le port 1984
+  // WebRTC via WebSocket (comme stream.html de go2rtc)
+  // C'est la méthode qui fonctionne dans l'interface go2rtc
   const connectWebRTC = useCallback(async () => {
     if (!streamName) return false;
     
-    // Construire l'URL go2rtc directe
-    const go2rtcUrl = go2rtcHost 
-      ? `http://${go2rtcHost}:${go2rtcPort}/api/webrtc?src=${streamName}`
-      : null;
-    
-    if (!go2rtcUrl) {
-      console.log('[WebRTC] go2rtcHost non configuré, WebRTC direct impossible');
+    if (!go2rtcHost) {
+      console.log('[WebRTC] go2rtcHost non configuré');
       return false;
     }
     
-    console.log('[WebRTC] Connexion DIRECTE vers go2rtc:', go2rtcUrl);
+    const wsUrl = `ws://${go2rtcHost}:${go2rtcPort}/api/ws?src=${streamName}`;
+    console.log('[WebRTC] Connexion WebSocket vers go2rtc:', wsUrl);
     
-    return new Promise(async (resolve) => {
+    return new Promise((resolve) => {
       let resolved = false;
-      let iceTimeout = null;
+      let ws = null;
+      let pc = null;
+      let timeout = null;
       
       const resolveOnce = (value, reason) => {
         if (!resolved) {
           resolved = true;
-          if (iceTimeout) clearTimeout(iceTimeout);
+          if (timeout) clearTimeout(timeout);
           console.log('[WebRTC] Résolu avec:', value, reason);
+          if (!value && ws) {
+            ws.close();
+          }
           resolve(value);
         }
       };
       
+      // Timeout de 10 secondes
+      timeout = setTimeout(() => {
+        console.log('[WebRTC] ⏱️ Timeout après 10s');
+        if (pc) {
+          pc.close();
+          pcRef.current = null;
+        }
+        resolveOnce(false, 'timeout');
+      }, 10000);
+      
       try {
-        const pc = new RTCPeerConnection({
+        // Créer le PeerConnection
+        pc = new RTCPeerConnection({
           iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ],
-          iceCandidatePoolSize: 10
+            { urls: 'stun:stun.l.google.com:19302' }
+          ]
         });
         pcRef.current = pc;
         
         // Recevoir les tracks média
         pc.ontrack = (event) => {
-          console.log('[WebRTC] Track reçu:', event.track.kind, 'streams:', event.streams.length);
+          console.log('[WebRTC] Track reçu:', event.track.kind);
           if (videoRef.current && event.streams[0]) {
             videoRef.current.srcObject = event.streams[0];
-            console.log('[WebRTC] Video stream attaché!');
+            console.log('[WebRTC] ✅ Video stream attaché!');
           }
         };
         
@@ -127,81 +137,92 @@ const FrigateStreamPlayer = ({
             setConnectionType('WebRTC');
             resolveOnce(true, 'ICE connected');
           }
-          if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-            console.log('[WebRTC] ❌ ICE failed/disconnected - fallback nécessaire');
+          if (pc.iceConnectionState === 'failed') {
+            console.log('[WebRTC] ❌ ICE failed');
             pc.close();
             pcRef.current = null;
             resolveOnce(false, 'ICE failed');
           }
         };
         
-        pc.onconnectionstatechange = () => {
-          console.log('[WebRTC] Connection state:', pc.connectionState);
-          if (pc.connectionState === 'failed') {
-            pc.close();
-            pcRef.current = null;
-            resolveOnce(false, 'Connection failed');
+        // Envoyer les ICE candidates via WebSocket
+        pc.onicecandidate = (event) => {
+          if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+            console.log('[WebRTC] Envoi ICE candidate');
+            ws.send(JSON.stringify({
+              type: 'webrtc/candidate',
+              value: event.candidate.candidate
+            }));
           }
         };
         
-        // Ajouter les transceivers pour recevoir audio et vidéo
+        // Ajouter les transceivers
         pc.addTransceiver('video', { direction: 'recvonly' });
         pc.addTransceiver('audio', { direction: 'recvonly' });
         
-        // Créer l'offre SDP
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
+        // Connexion WebSocket
+        ws = new WebSocket(wsUrl);
         
-        console.log('[WebRTC] Offre SDP créée, envoi vers go2rtc...');
-        
-        // Envoyer l'offre à go2rtc
-        const response = await fetch(go2rtcUrl, {
-          method: 'POST',
-          body: offer.sdp,
-          headers: { 'Content-Type': 'application/sdp' }
-        });
-        
-        console.log('[WebRTC] Réponse HTTP:', response.status, response.headers.get('content-type'));
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.log('[WebRTC] Erreur HTTP:', response.status, errorText);
-          pc.close();
-          pcRef.current = null;
-          resolveOnce(false, 'HTTP error');
-          return;
-        }
-        
-        // go2rtc retourne le SDP answer en texte brut
-        const answerSdp = await response.text();
-        console.log('[WebRTC] Answer SDP reçue de go2rtc (' + answerSdp.length + ' chars)');
-        
-        await pc.setRemoteDescription({
-          type: 'answer',
-          sdp: answerSdp
-        });
-        
-        console.log('[WebRTC] Remote description set! Attente ICE...');
-        
-        // Timeout de 8 secondes pour ICE
-        iceTimeout = setTimeout(() => {
-          if (!resolved) {
-            console.log('[WebRTC] ⏱️ Timeout ICE après 8s');
-            if (pcRef.current) {
-              pcRef.current.close();
-              pcRef.current = null;
-            }
-            resolveOnce(false, 'ICE timeout');
+        ws.onopen = async () => {
+          console.log('[WebRTC] WebSocket connecté, création de l\'offre...');
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            
+            console.log('[WebRTC] Envoi de l\'offre SDP via WebSocket');
+            ws.send(JSON.stringify({
+              type: 'webrtc/offer',
+              value: offer.sdp
+            }));
+          } catch (e) {
+            console.error('[WebRTC] Erreur création offre:', e);
+            resolveOnce(false, 'offer error');
           }
-        }, 8000);
+        };
+        
+        ws.onmessage = async (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            console.log('[WebRTC] Message reçu:', msg.type);
+            
+            if (msg.type === 'webrtc/answer') {
+              console.log('[WebRTC] Answer SDP reçue');
+              await pc.setRemoteDescription({
+                type: 'answer',
+                sdp: msg.value
+              });
+              console.log('[WebRTC] Remote description set!');
+            } else if (msg.type === 'webrtc/candidate') {
+              if (msg.value) {
+                console.log('[WebRTC] ICE candidate reçu du serveur');
+                await pc.addIceCandidate({
+                  candidate: msg.value,
+                  sdpMid: '0'
+                });
+              }
+            }
+          } catch (e) {
+            console.error('[WebRTC] Erreur traitement message:', e);
+          }
+        };
+        
+        ws.onerror = (error) => {
+          console.error('[WebRTC] WebSocket erreur:', error);
+          resolveOnce(false, 'WebSocket error');
+        };
+        
+        ws.onclose = () => {
+          console.log('[WebRTC] WebSocket fermé');
+          // Ne pas résoudre ici car la connexion média peut continuer sans le WS
+        };
         
       } catch (e) {
-        console.error('[WebRTC] Erreur:', e.name, e.message);
-        if (pcRef.current) {
-          pcRef.current.close();
+        console.error('[WebRTC] Erreur:', e);
+        if (pc) {
+          pc.close();
           pcRef.current = null;
         }
-        resolveOnce(false, 'Exception: ' + e.message);
+        resolveOnce(false, 'exception');
       }
     });
   }, [streamName, go2rtcHost, go2rtcPort]);
