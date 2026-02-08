@@ -535,7 +535,7 @@ async def init_frigate_from_db():
             init_frigate_service(
                 settings.get("host"),
                 settings.get("api_port", 5000),
-                settings.get("go2rtc_port", 8555),
+                settings.get("go2rtc_port", 1984),
                 settings.get("use_https", False),
                 settings.get("username", ""),
                 settings.get("password", "")
