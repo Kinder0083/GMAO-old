@@ -34,9 +34,9 @@ const FrigateStreamPlayer = ({
   const [error, setError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // URL de stream.html de go2rtc
+  // URL de stream.html de go2rtc (sans paramètre mode)
   const streamUrl = go2rtcHost 
-    ? `http://${go2rtcHost}:${go2rtcPort}/stream.html?src=${streamName}&mode=webrtc`
+    ? `http://${go2rtcHost}:${go2rtcPort}/stream.html?src=${streamName}`
     : null;
 
   // Démarrer le stream
