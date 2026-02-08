@@ -1,48 +1,17 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# GMAO Iris v1.1.8 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
-# 
-# NOUVEAUTÉS v1.1.8:
-# - Analytics Checklists : Dashboard d'analyse des résultats des contrôles
-#   préventifs avec graphiques, tendances et export PDF
-# - Alertes Caméras : Notifications email automatiques quand une caméra 
-#   passe hors ligne (configurable par caméra avec délai personnalisé)
-# - Icône caméra dans le header avec dropdown des alertes actives
-# - Dépendance jspdf ajoutée pour l'export PDF
-# - Fusion automatique des nouveaux menus avec les préférences existantes
+# GMAO Iris v1.5.0 - Installation Auto-Détection (Proxmox 9.0 / Debian 12)
 #
-# NOUVEAUTÉS v1.1.7:
-# - CORRECTIF: Persistance des mots de passe caméras après redémarrage
-#   (Ajout clé de chiffrement CAMERA_ENCRYPTION_KEY dans .env)
-# - CORRECTIF: Le flux Live ne se coupe plus lors du rafraîchissement des vignettes
-# - Module Caméras RTSP/ONVIF (surveillance vidéo)
-# - Dépendances FFmpeg, OpenCV ajoutées automatiquement
-# - Module Gestion d'équipe et Pointage horaire
-# - Rapports hebdomadaires automatiques
+# Installation automatisée complète :
+# - Création container LXC Debian 12
+# - Installation MongoDB, Node.js, Python, Nginx, Supervisor
+# - Clonage du dépôt GitHub et build complet
+# - Configuration réseau (statique/DHCP/Tailscale)
+# - Création des comptes administrateurs
+# - Mise à jour automatique via UI intégrée
 #
-# NOUVEAUTÉS v1.1.5:
-# - Manuel utilisateur enrichi : 27 chapitres, 80+ sections
-# - Documentation des Ordres Type (Modèles d'OT)
-# - Documentation des Modèles de Formulaires personnalisés
-# - Documentation de la Gestion des Rôles et Permissions
-# - Documentation de l'Aide Contextuelle et Tooltips enrichis
-# - Appel au script init_manual_on_install.py unifié
-#
-# NOUVEAUTÉS v1.1.4:
-# - Fonctionnalité "Détail par Catégorie (Article + DM6)"
-# - Création automatique de category_mapping.py
-# - Vérification import dans server.py
-# - Rebuild frontend automatique après installation
-# - Post-installation hook intégré
-# 
-# CORRECTIFS v1.1.2:
-# - Auto-détection du template Debian disponible
-# - Auto-détection du storage (local-lvm, local, etc.)
-# - Choix du bridge réseau (vmbr0, vmbr1, etc.)
-# - Configuration automatique du DNS
-# - Gestion des erreurs améliorée
-# - Compatible Proxmox 9.0
+# Compatible Proxmox 9.0+
 ###############################################################################
 
 set -e
