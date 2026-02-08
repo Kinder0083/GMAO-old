@@ -64,10 +64,10 @@ const FrigateThumbnailGrid = ({
     
     // Charger les snapshots en parallèle
     await Promise.all(
-      camerasToDisplay.map(async ({ displayName, cameraName }) => {
+      camerasToDisplay.map(async ({ displayName, cameraName, streamName }) => {
         try {
           const response = await fetch(
-            `${API_URL}/api/cameras/frigate/thumbnail/${cameraName}?height=200`,
+            `${API_URL}/api/cameras/frigate/thumbnail/${encodeURIComponent(cameraName)}?height=200&stream=${encodeURIComponent(streamName)}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
           
