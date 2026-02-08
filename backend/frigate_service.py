@@ -280,8 +280,11 @@ class FrigateService:
             return None
     
     async def get_camera_thumbnail(self, camera_name: str, height: int = 180, stream_name: str = None) -> Optional[bytes]:
-        """Récupère une vignette via l'API Frigate authentifiée.
-        Essaie plusieurs stratégies : go2rtc frame, puis snapshot Frigate avec différents noms."""
+        """Récupère une vignette via plusieurs stratégies :
+        1. go2rtc frame via proxy Frigate (authentifié)
+        2. go2rtc frame direct (port 1984, sans auth)
+        3. Snapshot Frigate (authentifié)
+        """
         client = None
         try:
             client, login_ok = await self._create_authenticated_client()
@@ -290,49 +293,60 @@ class FrigateService:
                     await client.aclose()
                 return None
             
-            # Construire la liste de noms à essayer pour go2rtc
+            # Construire la liste de noms à essayer
             go2rtc_names = []
             if stream_name:
                 go2rtc_names.append(stream_name)
             go2rtc_names.append(camera_name)
-            # Essayer aussi avec suffixe _h264
             if not camera_name.endswith('_h264') and not camera_name.endswith('_H264'):
                 go2rtc_names.append(f"{camera_name}_h264")
-            # Dédupliquer en préservant l'ordre
             seen = set()
             go2rtc_names = [n for n in go2rtc_names if n and n not in seen and not seen.add(n)]
             
-            # Essayer go2rtc via l'API Frigate pour chaque nom
+            # 1. Essayer go2rtc via le proxy Frigate (authentifié)
             for name in go2rtc_names:
                 go2rtc_url = f"{self.base_url}/api/go2rtc/frame.jpeg?src={name}"
-                logger.info(f"[FRIGATE] Thumbnail go2rtc: {go2rtc_url}")
+                logger.info(f"[FRIGATE] Thumbnail go2rtc proxy: {go2rtc_url}")
                 try:
                     response = await client.get(go2rtc_url)
                     if response.status_code == 200 and len(response.content) > 100:
-                        logger.info(f"[FRIGATE] Thumbnail go2rtc OK avec: {name}")
+                        logger.info(f"[FRIGATE] Thumbnail go2rtc proxy OK: {name}")
                         await client.aclose()
                         return response.content
                 except Exception as e:
-                    logger.warning(f"[FRIGATE] Thumbnail go2rtc échec pour {name}: {e}")
+                    logger.warning(f"[FRIGATE] Thumbnail go2rtc proxy échec pour {name}: {e}")
             
-            # Construire la liste de noms à essayer pour Frigate snapshot
+            # 2. Essayer go2rtc DIRECT (port 1984, sans auth)
+            protocol = "https" if self.use_https else "http"
+            for name in go2rtc_names:
+                direct_url = f"{protocol}://{self.host}:{self.go2rtc_port}/api/frame.jpeg?src={name}"
+                logger.info(f"[FRIGATE] Thumbnail go2rtc direct: {direct_url}")
+                try:
+                    async with httpx.AsyncClient(timeout=10, verify=False) as direct_client:
+                        response = await direct_client.get(direct_url)
+                        if response.status_code == 200 and len(response.content) > 100:
+                            logger.info(f"[FRIGATE] Thumbnail go2rtc direct OK: {name}")
+                            await client.aclose()
+                            return response.content
+                except Exception as e:
+                    logger.warning(f"[FRIGATE] Thumbnail go2rtc direct échec pour {name}: {e}")
+            
+            # 3. Essayer Frigate snapshot (authentifié)
             base_names = set()
             for name in [camera_name, stream_name or camera_name]:
-                # Nettoyage progressif des suffixes
                 stripped = name
                 for suffix in ['_h264', '_H264', '_hq', '_lq', '_sub']:
                     stripped = stripped.replace(suffix, '')
                 base_names.add(stripped)
                 base_names.add(name)
             
-            # Essayer Frigate snapshot pour chaque nom de base
             for base_name in base_names:
                 url = f"{self.base_url}/api/{base_name}/latest.jpg"
-                logger.info(f"[FRIGATE] Thumbnail fallback: {url}")
+                logger.info(f"[FRIGATE] Thumbnail snapshot: {url}")
                 try:
                     response = await client.get(url, params={"h": height, "quality": 60})
                     if response.status_code == 200 and len(response.content) > 100:
-                        logger.info(f"[FRIGATE] Thumbnail snapshot OK avec: {base_name}")
+                        logger.info(f"[FRIGATE] Thumbnail snapshot OK: {base_name}")
                         await client.aclose()
                         return response.content
                 except Exception as e:
