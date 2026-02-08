@@ -88,6 +88,8 @@ const FrigateStreamPlayer = ({
       let ws = null;
       let pc = null;
       let timeout = null;
+      let remoteDescriptionSet = false;
+      const pendingCandidates = [];  // File d'attente pour les candidats ICE
       
       const resolveOnce = (value, reason) => {
         if (!resolved) {
@@ -98,6 +100,35 @@ const FrigateStreamPlayer = ({
             ws.close();
           }
           resolve(value);
+        }
+      };
+      
+      // Fonction pour ajouter un candidat ICE (attend que remote description soit set)
+      const addIceCandidate = async (candidateStr) => {
+        if (!pc) return;
+        
+        if (!remoteDescriptionSet) {
+          console.log('[WebRTC] Candidat en attente (remote desc pas encore set)');
+          pendingCandidates.push(candidateStr);
+          return;
+        }
+        
+        try {
+          if (candidateStr) {
+            await pc.addIceCandidate({ candidate: candidateStr, sdpMLineIndex: 0 });
+            console.log('[WebRTC] ICE candidate ajouté');
+          }
+        } catch (e) {
+          console.log('[WebRTC] Erreur ajout candidat:', e.message);
+        }
+      };
+      
+      // Fonction pour traiter les candidats en attente
+      const processPendingCandidates = async () => {
+        console.log('[WebRTC] Traitement de', pendingCandidates.length, 'candidats en attente');
+        while (pendingCandidates.length > 0) {
+          const candidate = pendingCandidates.shift();
+          await addIceCandidate(candidate);
         }
       };
       
@@ -125,7 +156,7 @@ const FrigateStreamPlayer = ({
           console.log('[WebRTC] Track reçu:', event.track.kind);
           if (videoRef.current && event.streams[0]) {
             videoRef.current.srcObject = event.streams[0];
-            console.log('[WebRTC] ✅ Video stream attaché!');
+            console.log('[WebRTC] ✅ Stream attaché à la vidéo!');
           }
         };
         
@@ -148,7 +179,6 @@ const FrigateStreamPlayer = ({
         // Envoyer les ICE candidates via WebSocket
         pc.onicecandidate = (event) => {
           if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
-            console.log('[WebRTC] Envoi ICE candidate');
             ws.send(JSON.stringify({
               type: 'webrtc/candidate',
               value: event.candidate.candidate
@@ -183,23 +213,22 @@ const FrigateStreamPlayer = ({
         ws.onmessage = async (event) => {
           try {
             const msg = JSON.parse(event.data);
-            console.log('[WebRTC] Message reçu:', msg.type);
             
             if (msg.type === 'webrtc/answer') {
-              console.log('[WebRTC] Answer SDP reçue');
+              console.log('[WebRTC] Answer SDP reçue, application...');
               await pc.setRemoteDescription({
                 type: 'answer',
                 sdp: msg.value
               });
-              console.log('[WebRTC] Remote description set!');
+              remoteDescriptionSet = true;
+              console.log('[WebRTC] ✅ Remote description set!');
+              
+              // Maintenant traiter les candidats en attente
+              await processPendingCandidates();
+              
             } else if (msg.type === 'webrtc/candidate') {
-              if (msg.value) {
-                console.log('[WebRTC] ICE candidate reçu du serveur');
-                await pc.addIceCandidate({
-                  candidate: msg.value,
-                  sdpMid: '0'
-                });
-              }
+              // Ajouter le candidat (sera mis en file d'attente si nécessaire)
+              await addIceCandidate(msg.value);
             }
           } catch (e) {
             console.error('[WebRTC] Erreur traitement message:', e);
@@ -207,13 +236,12 @@ const FrigateStreamPlayer = ({
         };
         
         ws.onerror = (error) => {
-          console.error('[WebRTC] WebSocket erreur:', error);
+          console.error('[WebRTC] WebSocket erreur');
           resolveOnce(false, 'WebSocket error');
         };
         
         ws.onclose = () => {
           console.log('[WebRTC] WebSocket fermé');
-          // Ne pas résoudre ici car la connexion média peut continuer sans le WS
         };
         
       } catch (e) {
