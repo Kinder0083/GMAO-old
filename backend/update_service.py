@@ -550,9 +550,16 @@ class UpdateService:
             # Backend dependencies
             backend_req = self.backend_dir / "requirements.txt"
             if backend_req.exists():
-                # Chercher le venv Python
-                venv_pip = self.backend_dir / "venv" / "bin" / "pip"
-                pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
+                # Chercher le venv Python (backend/venv OU racine/venv)
+                venv_pip_backend = self.backend_dir / "venv" / "bin" / "pip"
+                venv_pip_root = self.app_root / "venv" / "bin" / "pip"
+                if venv_pip_backend.exists():
+                    venv_pip = venv_pip_backend
+                elif venv_pip_root.exists():
+                    venv_pip = venv_pip_root
+                else:
+                    venv_pip = None
+                pip_cmd = str(venv_pip) if venv_pip else "pip3"
                 
                 logger.info(f"🐍 Installation backend avec: {pip_cmd}")
                 
