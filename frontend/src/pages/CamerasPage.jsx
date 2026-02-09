@@ -14,9 +14,6 @@ import {
   Settings,
   RefreshCw,
   Search,
-  Video,
-  VideoOff,
-  Grid3X3,
   Wifi,
   WifiOff,
   Loader2,
@@ -24,8 +21,6 @@ import {
   Server
 } from 'lucide-react';
 
-import CameraGrid from '../components/Cameras/CameraGrid';
-import LiveStreamPanel from '../components/Cameras/LiveStreamPanel';
 import CameraAlertsPanel from '../components/Cameras/CameraAlertsPanel';
 import AddCameraDialog from '../components/Cameras/AddCameraDialog';
 import OnvifDiscoveryDialog from '../components/Cameras/OnvifDiscoveryDialog';
@@ -43,7 +38,6 @@ const CamerasPage = () => {
   const [cameras, setCameras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, online: 0, offline: 0, active_streams: 0 });
-  const [selectedCameras, setSelectedCameras] = useState([null, null, null]); // 3 slots pour le live
   const [refreshKey, setRefreshKey] = useState(0);
   
   // Dialogs
@@ -127,7 +121,7 @@ const CamerasPage = () => {
   };
 
   // Rafraîchir les vignettes toutes les 30 secondes (uniquement si on est sur l'onglet grille)
-  const [activeTab, setActiveTab] = useState('grid');
+  const [activeTab, setActiveTab] = useState('frigate');
   
   useEffect(() => {
     // Ne rafraîchir automatiquement que si on est sur l'onglet vignettes
@@ -139,24 +133,6 @@ const CamerasPage = () => {
     
     return () => clearInterval(interval);
   }, [activeTab]);
-
-  // Sélectionner une caméra pour le live
-  const handleSelectForLive = (camera, slotIndex) => {
-    setSelectedCameras(prev => {
-      const newSelection = [...prev];
-      newSelection[slotIndex] = camera;
-      return newSelection;
-    });
-  };
-
-  // Désélectionner une caméra
-  const handleDeselectLive = (slotIndex) => {
-    setSelectedCameras(prev => {
-      const newSelection = [...prev];
-      newSelection[slotIndex] = null;
-      return newSelection;
-    });
-  };
 
   // Mettre à jour une caméra dans la liste (après modification des alertes)
   const handleCameraUpdate = (updatedCamera) => {
