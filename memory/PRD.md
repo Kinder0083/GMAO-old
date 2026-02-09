@@ -1,25 +1,23 @@
 # GMAO Iris - PRD
 
 ## Description
-Application GMAO (Gestion de la Maintenance Assistée par Ordinateur) full-stack avec backend Python/FastAPI et frontend React, déployée sur Proxmox VM.
-
-## Architecture
-- **Backend**: Python/FastAPI (`/app/backend/server.py` + services)
-- **Frontend**: React (`/app/frontend/`)
-- **Base de données**: MongoDB
-- **Déploiement**: Proxmox VM à `/opt/gmao-iris`, venv Python, nginx, supervisorctl
+Application GMAO full-stack (Python/FastAPI + React + MongoDB) déployée sur Proxmox VM.
 
 ## Travaux réalisés
 
 ### Session précédente
-- **Correction miniatures Tapo** (DONE)
+- Correction miniatures Tapo (go2rtc port 1984)
 
 ### 2026-02-08/09
-- **Correction processus de mise à jour** (DONE)
-- **Nettoyage du projet** (DONE) : ~110 fichiers supprimés
-- **Script d'installation unifié** (DONE) : Renommé `gmao-iris-install.sh`, mis à jour v1.5.0
-- **Préparation pour GitHub** (DONE) : .gitignore nettoyé
-- **Suppression onglets Caméras** (DONE) : Supprimé "Vignettes" et "Live", gardé "Frigate" et "Alertes"
+- Correction processus de mise à jour (backup non-bloquant, détection venv élargie)
+- Correction Bad Gateway lors mise à jour (restart détaché avec délai 3s)
+- Nettoyage projet (~110 fichiers supprimés)
+- Script installation unifié v1.5.0 (gmao-iris-install.sh)
+- Suppression onglets Caméras "Vignettes" et "Live"
+- Correction import Excel "undefined" :
+  - Frontend : lecture `response.data.stats` au lieu de `response.data` directement
+  - Backend : ajout mapping feuilles françaises (Sheet1, Tâches, Inventaire, Pieces, Fournisseurs, Demandeschat, User, Sensor)
+  - Testé avec fichier utilisateur : 168 éléments importés avec succès
 
 ## Tâches restantes
 Aucune tâche en attente.
