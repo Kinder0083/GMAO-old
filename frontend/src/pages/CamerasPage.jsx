@@ -199,7 +199,7 @@ const CamerasPage = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <Card className="p-8 text-center">
-          <VideoOff className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <Camera className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-700">Accès refusé</h2>
           <p className="text-gray-500 mt-2">Vous n'avez pas la permission de visualiser les caméras</p>
         </Card>
