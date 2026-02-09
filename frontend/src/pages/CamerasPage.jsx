@@ -122,17 +122,6 @@ const CamerasPage = () => {
 
   // Rafraîchir les vignettes toutes les 30 secondes (uniquement si on est sur l'onglet grille)
   const [activeTab, setActiveTab] = useState('frigate');
-  
-  useEffect(() => {
-    // Ne rafraîchir automatiquement que si on est sur l'onglet vignettes
-    if (activeTab !== 'grid') return;
-    
-    const interval = setInterval(() => {
-      setRefreshKey(k => k + 1);
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [activeTab]);
 
   // Mettre à jour une caméra dans la liste (après modification des alertes)
   const handleCameraUpdate = (updatedCamera) => {
