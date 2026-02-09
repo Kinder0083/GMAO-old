@@ -275,90 +275,142 @@ async def process_import_item(item: dict, module: str, collection_name: str, cur
     import json
     
     # Nettoyer les NaN
-    cleaned = {k: v for k, v in item.items() if pd.notna(v)}
+    cleaned = {k: v for k, v in item.items() if pd.notna(v) and v != "" and v is not None}
     
-    # Initialiser les champs liste
-    list_fields = ["comments", "attachments", "historique", "permissions", "parts_used"]
-    for field in list_fields:
-        if field in cleaned:
-            if isinstance(cleaned[field], str):
-                try:
-                    parsed = json.loads(cleaned[field])
-                    cleaned[field] = parsed if isinstance(parsed, list) else []
-                except:
-                    cleaned[field] = []
-            elif not isinstance(cleaned[field], list):
-                cleaned[field] = []
-        else:
-            cleaned[field] = []
-    
-    # Traitement spécifique par module
-    if module == "purchase-history":
-        # Convertir les champs numériques
-        for num_field in ["quantite", "montantLigneHT", "quantiteRetournee"]:
-            if num_field in cleaned:
-                try:
-                    value = cleaned[num_field]
-                    if isinstance(value, str):
-                        value = value.replace(',', '.').replace(' ', '')
-                    cleaned[num_field] = float(value)
-                except:
-                    cleaned[num_field] = 0.0
-        
-        # Convertir date
-        if "dateCreation" in cleaned:
-            cleaned["dateCreation"] = convert_date_field(cleaned["dateCreation"], "dateCreation")
-        
-        cleaned["dateEnregistrement"] = datetime.utcnow()
-        if "creationUser" not in cleaned or not cleaned["creationUser"]:
-            cleaned["creationUser"] = current_user.get("email", "import")
-    
+    # --- Restaurer l'_id original (ObjectId) pour préserver les références ---
+    item_id = cleaned.pop("id", None)
+    if item_id:
+        try:
+            cleaned["_id"] = ObjectId(str(item_id))
+        except Exception:
+            cleaned["_id"] = ObjectId()
     else:
-        # Traitement générique
-        date_fields = ["dateCreation", "dateDebut", "dateFin", "installDate", "dateEnregistrement"]
-        for date_field in date_fields:
-            if date_field in cleaned:
-                cleaned[date_field] = convert_date_field(cleaned[date_field], date_field)
-        
-        if "dateCreation" not in cleaned:
-            cleaned["dateCreation"] = datetime.utcnow()
-        
-        # Champs spécifiques work-orders et improvements
-        if module in ["work-orders", "improvements"]:
-            if "numero" not in cleaned:
-                last_item = await db[collection_name].find_one(sort=[("numero", -1)])
-                last_num = last_item.get("numero", 0) if last_item else 0
-                if isinstance(last_num, str):
-                    try:
-                        last_num = int(last_num.replace("N/A", "0"))
-                    except:
-                        last_num = 0
-                cleaned["numero"] = last_num + 1
-            
-            if "statut" not in cleaned:
-                cleaned["statut"] = "OUVERT"
-            if "priorite" not in cleaned:
-                cleaned["priorite"] = "AUCUNE"
-            if "categorie" not in cleaned:
-                cleaned["categorie"] = "TRAVAUX_DIVERS"
+        cleaned["_id"] = ObjectId()
     
-    # Générer/vérifier l'ID
-    item_id = cleaned.get("id")
+    # --- Convertir les champs *_id en ObjectId ---
+    id_fields = [
+        "equipement_id", "assigne_a_id", "emplacement_id", "createdBy",
+        "parent_id", "created_by", "demandeur_id", "destinataire_id",
+        "responsable_n1_id", "responsable_hierarchique_id",
+        "preventive_maintenance_id", "checklist_id", "inventory_item_id",
+        "user_id", "archived_by"
+    ]
+    for field in id_fields:
+        val = cleaned.get(field)
+        if val and isinstance(val, str) and len(val) == 24:
+            try:
+                cleaned[field] = ObjectId(val)
+            except Exception:
+                pass
     
-    if item_id and mode == "replace":
-        # Mode remplacement: mettre à jour si existe
-        existing = await db[collection_name].find_one({"id": item_id})
+    # --- Parser les champs JSON (listes/dicts stockés comme strings) ---
+    json_fields = [
+        "comments", "attachments", "historique", "permissions", "parts_used",
+        "time_entries", "history", "recipient_ids", "recipient_names",
+        "reactions", "attached_files", "equipment_ids"
+    ]
+    for field in json_fields:
+        if field in cleaned:
+            val = cleaned[field]
+            if isinstance(val, str):
+                try:
+                    parsed = json.loads(val)
+                    cleaned[field] = parsed
+                except Exception:
+                    if val in ("[]", ""):
+                        cleaned[field] = []
+                    elif val in ("{}", ""):
+                        cleaned[field] = {}
+            elif not isinstance(val, (list, dict)):
+                cleaned[field] = []
+        # Ne PAS forcer des listes vides si le champ n'existe pas
+    
+    # --- Convertir les champs numériques ---
+    num_fields = ["quantite", "seuil_alerte", "prix_unitaire", "prixUnitaire",
+                  "quantiteMin", "montantLigneHT", "quantiteRetournee",
+                  "tempsEstime", "tempsReel", "refresh_interval",
+                  "min_threshold", "max_threshold", "numero"]
+    for field in num_fields:
+        if field in cleaned:
+            try:
+                val = cleaned[field]
+                if isinstance(val, str):
+                    val = val.replace(',', '.').replace(' ', '')
+                cleaned[field] = float(val) if '.' in str(val) else int(val)
+            except Exception:
+                pass
+    
+    # --- Convertir les champs date ---
+    date_fields = [
+        "dateCreation", "dateDebut", "dateFin", "dateLimite", "dateTermine",
+        "dateAchat", "date_creation", "date_ajout", "derniere_modification",
+        "derniereModification", "derniereConnexion", "date_derniere_modification",
+        "date_validation_n1", "date_approbation_achat", "date_achat_effectue",
+        "date_reception", "date_distribution", "date_limite_desiree",
+        "converted_at", "statut_changed_at", "last_update",
+        "inventory_added_at", "archived_at", "deletable_until", "deleted_at",
+        "timestamp"
+    ]
+    for field in date_fields:
+        if field in cleaned:
+            cleaned[field] = convert_date_field(cleaned[field], field)
+    
+    # --- Traitement spécifique users ---
+    if module == "users":
+        if "statut" not in cleaned:
+            cleaned["statut"] = "actif"
+        # Assurer que actif est un bool
+        if "actif" in cleaned:
+            cleaned["actif"] = cleaned["actif"] in (True, "true", "True", 1, "actif")
+        else:
+            cleaned["actif"] = cleaned.get("statut", "actif") == "actif"
+        # S'assurer que hashed_password existe
+        if "hashed_password" not in cleaned:
+            import bcrypt
+            cleaned["hashed_password"] = bcrypt.hashpw("Changez-moi!".encode(), bcrypt.gensalt()).decode()
+        # Parser permissions si c'est un string JSON
+        if "permissions" in cleaned and isinstance(cleaned["permissions"], str):
+            try:
+                cleaned["permissions"] = json.loads(cleaned["permissions"])
+            except Exception:
+                pass
+        if "firstLogin" in cleaned and isinstance(cleaned["firstLogin"], str):
+            try:
+                parsed = json.loads(cleaned["firstLogin"])
+                if isinstance(parsed, dict) and "dashboard" in parsed:
+                    cleaned["permissions"] = parsed
+                    del cleaned["firstLogin"]
+            except Exception:
+                pass
+    
+    # --- Traitement spécifique work-orders ---
+    if module in ["work-orders", "intervention-requests"]:
+        if "statut" not in cleaned:
+            cleaned["statut"] = "OUVERT"
+        if "priorite" not in cleaned:
+            cleaned["priorite"] = "AUCUNE"
+        if "categorie" not in cleaned:
+            cleaned["categorie"] = "TRAVAUX_DIVERS"
+    
+    # --- Traitement spécifique equipments ---
+    if module == "equipments":
+        if "statut" not in cleaned:
+            cleaned["statut"] = "OPERATIONNEL"
+    
+    # --- Mode replace: vérifier si existe ---
+    if mode == "replace":
+        existing = await db[collection_name].find_one({"_id": cleaned["_id"]})
         if existing:
-            await db[collection_name].update_one({"id": item_id}, {"$set": cleaned})
-            return {"action": "updated", "id": item_id}
+            await db[collection_name].update_one({"_id": cleaned["_id"]}, {"$set": {k: v for k, v in cleaned.items() if k != "_id"}})
+            return {"action": "updated", "id": str(cleaned["_id"])}
     
-    # Générer un nouvel ID si nécessaire
-    if not item_id:
-        from uuid import uuid4
-        cleaned["id"] = str(uuid4())
+    # --- Mode add: vérifier si _id existe déjà ---
+    existing = await db[collection_name].find_one({"_id": cleaned["_id"]})
+    if existing:
+        return {"action": "skipped", "id": str(cleaned["_id"])}
     
     await db[collection_name].insert_one(cleaned)
-    return {"action": "inserted", "id": cleaned["id"]}
+    return {"action": "inserted", "id": str(cleaned["_id"])}
 
 
 # Fonction pour obtenir get_current_admin_user (sera définie depuis server.py)
