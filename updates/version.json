@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "2.0.0",
   "versionName": "Rapport de Surveillance Avancé",
   "releaseDate": "2025-01-18",
   "description": "Nouvelle page Rapport pour le Plan de Surveillance avec 3 modes d'affichage interactifs et statistiques avancées",
@@ -23,5 +23,5 @@
   "breaking": false,
   "downloadUrl": "https://github.com/Kinder0083/GMAO",
   "author": "Grèg",
-  "lastUpdate": "2026-02-09T22:18:47.602188+00:00"
+  "lastUpdate": "2026-02-09T22:30:16.866059+00:00"
 }
