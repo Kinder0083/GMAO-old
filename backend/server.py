@@ -1675,18 +1675,36 @@ async def get_equipments(current_user: dict = Depends(get_current_user)):
     for eq in equipments:
         eq["id"] = str(eq["_id"])
         del eq["_id"]
+        
+        # Convertir parent_id en string pour la cohérence
+        if eq.get("parent_id"):
+            eq["parent_id"] = str(eq["parent_id"])
+        
+        # Convertir emplacement_id en string
         if eq.get("emplacement_id"):
+            eq["emplacement_id"] = str(eq["emplacement_id"])
             eq["emplacement"] = await get_location_by_id(eq["emplacement_id"])
         
         # Ajouter les informations du parent si présent
         if eq.get("parent_id"):
             eq["parent"] = await get_equipment_by_id(eq["parent_id"])
         
-        # Vérifier si l'équipement a des enfants
-        children_count = await db.equipments.count_documents({"parent_id": eq["id"]})
+        # Vérifier si l'équipement a des enfants (chercher par string ET ObjectId)
+        children_count = await db.equipments.count_documents({
+            "$or": [
+                {"parent_id": eq["id"]},
+                {"parent_id": ObjectId(eq["id"])}
+            ]
+        })
         eq["hasChildren"] = children_count > 0
     
-    return [Equipment(**eq) for eq in equipments]
+    result = []
+    for eq in equipments:
+        try:
+            result.append(Equipment(**eq))
+        except Exception:
+            result.append(eq)
+    return result
 
 @api_router.post("/equipments", response_model=Equipment)
 async def create_equipment(eq_create: EquipmentCreate, current_user: dict = Depends(require_permission("assets", "edit"))):
