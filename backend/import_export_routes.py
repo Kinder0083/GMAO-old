@@ -185,7 +185,7 @@ SHEET_TO_MODULE = {
     "documentations": "documentations",
     # Noms français (export ancienne version)
     "fournisseurs": "vendors",
-    "inventaire": "inventory",
+    "inventaire": "equipments",
     "pieces": "chat-messages",
     "pièces": "chat-messages",
     "user": "users",
