@@ -673,121 +673,59 @@ class UpdateService:
             
             logger.info("✅ Dépendances installées et frontend compilé")
             
-            # 5. Redémarrer les services
-            logger.info("🔄 Étape 5/5: Redémarrage des services...")
+            # 5. Redémarrer les services via un script détaché
+            # CRITIQUE: On ne peut PAS restart le backend depuis le backend lui-même
+            # sinon la requête HTTP meurt et le frontend reçoit un 502 Bad Gateway.
+            # Solution: créer un script temporaire qui attend 3 secondes puis redémarre.
+            logger.info("🔄 Étape 5/5: Planification du redémarrage des services...")
             
             try:
-                # Déterminer la commande supervisorctl (avec ou sans sudo)
-                # Essayer différentes variantes
-                supervisorctl_commands = [
-                    ["/usr/bin/sudo", "supervisorctl", "restart", "all"],
-                    ["sudo", "supervisorctl", "restart", "all"],
-                    ["supervisorctl", "restart", "all"],
-                    ["/usr/bin/supervisorctl", "restart", "all"]
-                ]
+                import tempfile
                 
-                restart_success = False
-                last_error = None
+                restart_script = tempfile.NamedTemporaryFile(
+                    mode='w', suffix='.sh', prefix='gmao_restart_', delete=False
+                )
+                restart_script.write(f"""#!/bin/bash
+# Script de redémarrage post-mise-à-jour GMAO Iris
+# Attend que la réponse HTTP soit envoyée avant de redémarrer
+
+sleep 3
+
+# Redémarrer les services backend
+supervisorctl restart all 2>/dev/null || \\
+sudo supervisorctl restart all 2>/dev/null || \\
+/usr/bin/supervisorctl restart all 2>/dev/null || \\
+systemctl restart gmao-backend 2>/dev/null
+
+# Attendre que le backend redémarre
+sleep 8
+
+# Recharger nginx
+sudo nginx -s reload 2>/dev/null || \\
+sudo systemctl reload nginx 2>/dev/null || \\
+sudo service nginx reload 2>/dev/null
+
+# Nettoyage
+rm -f {restart_script.name}
+""")
+                restart_script.close()
+                os.chmod(restart_script.name, 0o755)
                 
-                for cmd in supervisorctl_commands:
-                    try:
-                        logger.info(f"🔄 Tentative de redémarrage avec: {' '.join(cmd)}")
-                        
-                        restart_process = await asyncio.create_subprocess_exec(
-                            *cmd,
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE
-                        )
-                        
-                        restart_stdout, restart_stderr = await asyncio.wait_for(
-                            restart_process.communicate(), 
-                            timeout=30
-                        )
-                        
-                        if restart_process.returncode == 0:
-                            logger.info(f"✅ Services redémarrés avec: {' '.join(cmd)}")
-                            restart_success = True
-                            break
-                        else:
-                            last_error = restart_stderr.decode()
-                            logger.warning(f"⚠️ Échec avec {' '.join(cmd)}: {last_error[:100]}")
-                            
-                    except FileNotFoundError:
-                        logger.debug(f"⚠️ Commande non trouvée: {' '.join(cmd)}")
-                        continue
-                    except Exception as e:
-                        logger.debug(f"⚠️ Erreur avec {' '.join(cmd)}: {str(e)}")
-                        continue
+                # Lancer le script en arrière-plan (détaché du processus courant)
+                import subprocess as sp
+                sp.Popen(
+                    ['/bin/bash', restart_script.name],
+                    stdout=sp.DEVNULL,
+                    stderr=sp.DEVNULL,
+                    start_new_session=True
+                )
                 
-                if not restart_success:
-                    logger.warning("⚠️ Impossible de redémarrer automatiquement les services")
-                    logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all")
-                    # Ne pas bloquer - la mise à jour est quand même installée
-                
-                # 🔥 CRITIQUE: Attendre que le backend soit prêt avant de toucher à nginx
-                logger.info("⏳ Attente du démarrage complet du backend (10 secondes)...")
-                await asyncio.sleep(10)
-                
-                # Vérifier que le backend répond
-                backend_ready = False
-                for attempt in range(5):
-                    try:
-                        async with aiohttp.ClientSession() as session:
-                            async with session.get('http://localhost:8001/api/health', timeout=aiohttp.ClientTimeout(total=5)) as response:
-                                if response.status == 200:
-                                    logger.info("✅ Backend prêt et répond correctement")
-                                    backend_ready = True
-                                    break
-                    except Exception as e:
-                        logger.info(f"⏳ Backend pas encore prêt (tentative {attempt + 1}/5)...")
-                        await asyncio.sleep(3)
-                
-                if not backend_ready:
-                    logger.warning("⚠️ Le backend ne répond pas après 25 secondes")
-                    logger.info("⏳ Attente supplémentaire de 10 secondes...")
-                    await asyncio.sleep(10)
-                
-                # 🔥 IMPORTANT: Recharger nginx (pas restart) pour appliquer les changements
-                logger.info("🔄 Rechargement de nginx...")
-                nginx_commands = [
-                    ["sudo", "nginx", "-s", "reload"],
-                    ["sudo", "systemctl", "reload", "nginx"],
-                    ["sudo", "service", "nginx", "reload"],
-                    # Fallback sur restart si reload ne fonctionne pas
-                    ["sudo", "systemctl", "restart", "nginx"],
-                    ["sudo", "service", "nginx", "restart"]
-                ]
-                
-                nginx_restarted = False
-                for nginx_cmd in nginx_commands:
-                    try:
-                        nginx_process = await asyncio.create_subprocess_exec(
-                            *nginx_cmd,
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE
-                        )
-                        nginx_stdout, nginx_stderr = await asyncio.wait_for(
-                            nginx_process.communicate(), 
-                            timeout=15
-                        )
-                        if nginx_process.returncode == 0:
-                            logger.info(f"✅ Nginx rechargé avec: {' '.join(nginx_cmd)}")
-                            nginx_restarted = True
-                            break
-                    except:
-                        continue
-                
-                if not nginx_restarted:
-                    logger.warning("⚠️ Impossible de recharger nginx automatiquement")
-                    logger.info("ℹ️ Veuillez recharger manuellement : sudo nginx -s reload")
-                
-                # Attendre que nginx soit stable
-                await asyncio.sleep(2)
+                logger.info(f"✅ Redémarrage planifié dans 3 secondes (script: {restart_script.name})")
+                logger.info("ℹ️ La réponse HTTP sera envoyée au frontend avant le redémarrage")
                     
-            except asyncio.TimeoutError:
-                logger.warning("⚠️ Timeout lors du redémarrage des services")
             except Exception as e:
-                logger.warning(f"⚠️ Erreur lors du redémarrage: {str(e)}")
+                logger.warning(f"⚠️ Impossible de planifier le redémarrage automatique: {str(e)}")
+                logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all && sudo nginx -s reload")
             
             # Mise à jour réussie
             logger.info(f"✨ Mise à jour vers {version} terminée avec succès")
