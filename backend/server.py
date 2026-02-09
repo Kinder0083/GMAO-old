@@ -1656,7 +1656,7 @@ async def delete_attachment(
         raise HTTPException(status_code=400, detail=str(e))
 
 # ==================== EQUIPMENTS ROUTES ====================
-@api_router.get("/equipments", response_model=List[Equipment])
+@api_router.get("/equipments")
 async def get_equipments(current_user: dict = Depends(get_current_user)):
     """Liste tous les équipements avec filtrage par service
     
@@ -1830,7 +1830,7 @@ async def get_equipment_detail(eq_id: str, current_user: dict = Depends(require_
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/equipments/{eq_id}/children", response_model=List[Equipment])
+@api_router.get("/equipments/{eq_id}/children")
 async def get_equipment_children(eq_id: str, current_user: dict = Depends(require_permission("assets", "view"))):
     """Récupérer tous les sous-équipements d'un équipement"""
     try:
@@ -3426,7 +3426,7 @@ async def get_checklist_history(
     return [serialize_doc(e) for e in executions]
 
 # ==================== USERS ROUTES ====================
-@api_router.get("/users", response_model=List[User])
+@api_router.get("/users")
 async def get_users(current_user: dict = Depends(get_current_user)):
     """Liste tous les utilisateurs"""
     # Vérifier les permissions - Admin a toujours accès, sinon vérifier permission people.view
