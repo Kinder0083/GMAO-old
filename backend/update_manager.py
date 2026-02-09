@@ -55,10 +55,6 @@ class UpdateManager:
         except:
             pass
         return None
-        
-    async def get_current_version(self) -> str:
-        """Récupère la version actuelle"""
-        return self.current_version
     
     async def check_github_version(self) -> Optional[Dict]:
         """Vérifie la dernière version disponible sur GitHub (dernier commit)"""
