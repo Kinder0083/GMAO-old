@@ -13,14 +13,30 @@ from pathlib import Path
 class UpdateManager:
     def __init__(self, db):
         self.db = db
-        self.current_version = "1.5.0"  # Version 1.5.0 - Rapport de Surveillance Avancé
         self.github_user = "Kinder0083"
         self.github_repo = "GMAO"
         self.github_branch = "main"
-        self.current_commit = None  # Sera chargé depuis git
+        self.current_commit = None
+        self._load_version()
+    
+    def _load_version(self):
+        """Charge la version depuis updates/version.json"""
+        try:
+            # Chercher version.json dans plusieurs emplacements
+            for base in [Path(__file__).parent.parent, Path("/opt/gmao-iris")]:
+                vf = base / "updates" / "version.json"
+                if vf.exists():
+                    with open(vf) as f:
+                        data = json.load(f)
+                    self.current_version = data.get("version", "1.5.0")
+                    return
+        except Exception:
+            pass
+        self.current_version = "1.5.0"
         
     async def get_current_version(self) -> str:
-        """Récupère la version actuelle"""
+        """Récupère la version actuelle depuis version.json"""
+        self._load_version()
         return self.current_version
     
     async def get_current_commit(self) -> Optional[str]:
