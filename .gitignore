@@ -38,3 +38,7 @@ node_modules/
 memory/
 test_reports/
 .emergent/
+-e 
+# Environment files
+*.env
+*.env.*
