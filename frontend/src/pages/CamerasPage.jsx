@@ -281,7 +281,7 @@ const CamerasPage = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -289,7 +289,7 @@ const CamerasPage = () => {
                 <p className="text-sm text-gray-500">Total</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <Grid3X3 className="w-8 h-8 text-blue-500" />
+              <Camera className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -314,18 +314,6 @@ const CamerasPage = () => {
                 <p className="text-2xl font-bold text-red-600">{stats.offline}</p>
               </div>
               <WifiOff className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Streams actifs</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.active_streams}/3</p>
-              </div>
-              <Video className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
