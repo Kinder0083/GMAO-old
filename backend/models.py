@@ -798,7 +798,7 @@ class AttachmentResponse(BaseModel):
 class EquipmentBase(BaseModel):
     nom: str
     categorie: Optional[str] = None
-    emplacement_id: str
+    emplacement_id: Optional[str] = None
     statut: EquipmentStatus = EquipmentStatus.OPERATIONNEL
     statut_changed_at: Optional[datetime] = None  # Date/heure du dernier changement de statut (arrondie à l'heure)
     dateAchat: Optional[datetime] = None
