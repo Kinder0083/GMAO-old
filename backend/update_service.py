@@ -491,6 +491,20 @@ class UpdateService:
             
             if git_available:
                 try:
+                    # CRITIQUE: Désactiver le git hook post-merge AVANT le pull
+                    # Sinon le hook exécute post-update.sh qui restart le backend
+                    # pendant que update_service.py est encore en train de tourner
+                    post_merge_hook = git_dir / ".git" / "hooks" / "post-merge"
+                    post_merge_disabled = git_dir / ".git" / "hooks" / "post-merge.disabled"
+                    hook_was_disabled = False
+                    if post_merge_hook.exists():
+                        try:
+                            os.rename(str(post_merge_hook), str(post_merge_disabled))
+                            hook_was_disabled = True
+                            logger.info("🔒 Git hook post-merge désactivé temporairement")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Impossible de désactiver le hook: {e}")
+                    
                     # Vérifier s'il y a des modifications locales
                     git_check = await asyncio.create_subprocess_exec(
                         "git", "status", "--porcelain",
