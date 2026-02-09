@@ -199,7 +199,7 @@ SHEET_TO_MODULE = {
     "ordres": "work-orders",
     "ordres de travail": "work-orders",
     "sheet1": "work-orders",
-    "demandeschat": "chat-messages",
+    "demandeschat": "purchase-requests",
     "demandes": "purchase-requests",
     "demandes d'achat": "purchase-requests",
     "améliorations": "improvements",
