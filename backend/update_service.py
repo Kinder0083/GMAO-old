@@ -19,14 +19,12 @@ logger = logging.getLogger(__name__)
 class UpdateService:
     def __init__(self, db):
         self.db = db
-        self.current_version = "1.5.0"
         self.github_user = "Kinder0083"
         self.github_repo = "GMAO"
         self.github_branch = "main"
         self.version_file_url = f"https://raw.githubusercontent.com/{self.github_user}/{self.github_repo}/{self.github_branch}/updates/version.json"
         
-        # 🔥 CORRECTION: Détection automatique du répertoire racine de l'application
-        # Obtenir le chemin absolu du répertoire backend (où se trouve ce fichier)
+        # Détection automatique du répertoire racine
         self.backend_dir = Path(__file__).parent.resolve()
         # Le répertoire racine est le parent du backend
         self.app_root = self.backend_dir.parent
