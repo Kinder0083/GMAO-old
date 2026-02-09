@@ -427,21 +427,26 @@ class UpdateService:
                 stdout, stderr = await asyncio.wait_for(dump_process.communicate(), timeout=120)
                 
                 if dump_process.returncode != 0:
-                    logger.warning(f"⚠️ Échec du backup (non bloquant): {stderr.decode()[:200]}")
-                    update_history["logs"].append(f"Backup échoué (non bloquant): {stderr.decode()[:200]}")
+                    logger.error(f"❌ Échec du backup: {stderr.decode()}")
+                    update_history["logs"].append(f"Échec du backup: {stderr.decode()[:200]}")
                     update_history["backup_created"] = False
-                else:
-                    logger.info(f"✅ Backup créé: {backup_path}")
-                    update_history["logs"].append(f"Backup créé: {backup_path}")
-                    update_history["backup_created"] = True
-                    update_history["backup_path"] = str(backup_path)
+                    return {
+                        "success": False,
+                        "message": "Échec de la création du backup",
+                        "error": stderr.decode()
+                    }
+                    
+                logger.info(f"✅ Backup créé: {backup_path}")
+                update_history["logs"].append(f"Backup créé: {backup_path}")
+                update_history["backup_created"] = True
+                update_history["backup_path"] = str(backup_path)
                 
             except asyncio.TimeoutError:
-                logger.warning("⚠️ Timeout lors du backup (non bloquant, on continue)")
-                update_history["backup_created"] = False
-            except FileNotFoundError:
-                logger.warning("⚠️ mongodump non installé (non bloquant, on continue)")
-                update_history["backup_created"] = False
+                logger.error("❌ Timeout lors du backup")
+                return {
+                    "success": False,
+                    "message": "Timeout lors de la création du backup"
+                }
             
             # 2. Exporter les données en Excel
             logger.info("📊 Étape 2/5: Export des données en Excel...")
@@ -550,16 +555,9 @@ class UpdateService:
             # Backend dependencies
             backend_req = self.backend_dir / "requirements.txt"
             if backend_req.exists():
-                # Chercher le venv Python (backend/venv OU racine/venv)
-                venv_pip_backend = self.backend_dir / "venv" / "bin" / "pip"
-                venv_pip_root = self.app_root / "venv" / "bin" / "pip"
-                if venv_pip_backend.exists():
-                    venv_pip = venv_pip_backend
-                elif venv_pip_root.exists():
-                    venv_pip = venv_pip_root
-                else:
-                    venv_pip = None
-                pip_cmd = str(venv_pip) if venv_pip else "pip3"
+                # Chercher le venv Python
+                venv_pip = self.backend_dir / "venv" / "bin" / "pip"
+                pip_cmd = str(venv_pip) if venv_pip.exists() else "pip3"
                 
                 logger.info(f"🐍 Installation backend avec: {pip_cmd}")
                 
@@ -578,51 +576,24 @@ class UpdateService:
             # Frontend dependencies
             frontend_package = self.frontend_dir / "package.json"
             if frontend_package.exists():
-                # Déterminer si yarn ou npm est disponible
-                use_yarn = True
-                try:
-                    yarn_check = await asyncio.create_subprocess_exec(
-                        "yarn", "--version",
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
-                    await yarn_check.communicate()
-                    use_yarn = (yarn_check.returncode == 0)
-                except FileNotFoundError:
-                    use_yarn = False
-                
-                pkg_manager = "yarn" if use_yarn else "npm"
-                logger.info(f"⚛️  Utilisation de {pkg_manager} pour le frontend...")
-                
-                # Installation des dépendances
-                logger.info(f"📦 Installation des dépendances frontend avec {pkg_manager}...")
-                if use_yarn:
-                    install_cmd = ["yarn", "install"]
-                else:
-                    install_cmd = ["npm", "install"]
-                
-                install_process = await asyncio.create_subprocess_exec(
-                    *install_cmd,
+                logger.info("⚛️  Installation des dépendances frontend...")
+                yarn_process = await asyncio.create_subprocess_exec(
+                    "yarn", "install",
                     cwd=self.frontend_dir,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
-                install_stdout, install_stderr = await asyncio.wait_for(install_process.communicate(), timeout=300)
+                yarn_stdout, yarn_stderr = await asyncio.wait_for(yarn_process.communicate(), timeout=300)
                 
-                if install_process.returncode != 0:
-                    logger.warning(f"⚠️ {pkg_manager} install a échoué: {install_stderr.decode()[:200]}")
+                if yarn_process.returncode != 0:
+                    logger.warning(f"⚠️ yarn install a échoué: {yarn_stderr.decode()[:200]}")
                 else:
-                    logger.info(f"✅ Dépendances frontend installées avec {pkg_manager}")
+                    logger.info("✅ Dépendances frontend installées")
                 
                 # 🔥 CRITIQUE: Recompiler le frontend React pour appliquer les modifications
-                logger.info(f"🔧 Compilation du frontend React ({pkg_manager} build)...")
-                if use_yarn:
-                    build_cmd = ["yarn", "build"]
-                else:
-                    build_cmd = ["npm", "run", "build"]
-                
+                logger.info("🔧 Compilation du frontend React (yarn build)...")
                 build_process = await asyncio.create_subprocess_exec(
-                    *build_cmd,
+                    "yarn", "build",
                     cwd=self.frontend_dir,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
@@ -637,95 +608,66 @@ class UpdateService:
                         "message": "Échec de la compilation du frontend",
                         "error": build_stderr.decode()[:500]
                     }
-                
-                # 🔥 VÉRIFICATION CRITIQUE: S'assurer que index.html existe après le build
-                index_html_path = self.frontend_dir / "build" / "index.html"
-                if not index_html_path.exists():
-                    logger.error(f"❌ ERREUR CRITIQUE: {index_html_path} n'existe pas après le build!")
-                    return {
-                        "success": False,
-                        "message": "La compilation du frontend n'a pas généré index.html",
-                        "error": "Le fichier build/index.html est manquant"
-                    }
-                
-                logger.info(f"✅ Frontend compilé avec succès (index.html vérifié)")
-                
-                # Corriger les permissions du dossier build
-                build_dir = self.frontend_dir / "build"
-                try:
-                    # Changer le propriétaire en www-data pour nginx
-                    chown_process = await asyncio.create_subprocess_exec(
-                        "sudo", "chown", "-R", "www-data:www-data", str(build_dir),
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
-                    await chown_process.communicate()
-                    
-                    chmod_process = await asyncio.create_subprocess_exec(
-                        "sudo", "chmod", "-R", "755", str(build_dir),
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
-                    await chmod_process.communicate()
-                    logger.info("✅ Permissions du dossier build corrigées")
-                except Exception as e:
-                    logger.warning(f"⚠️ Impossible de corriger les permissions: {str(e)}")
+                else:
+                    logger.info("✅ Frontend compilé avec succès")
             
             logger.info("✅ Dépendances installées et frontend compilé")
             
-            # 5. Redémarrer les services via un script détaché
-            # CRITIQUE: On ne peut PAS restart le backend depuis le backend lui-même
-            # sinon la requête HTTP meurt et le frontend reçoit un 502 Bad Gateway.
-            # Solution: créer un script temporaire qui attend 3 secondes puis redémarre.
-            logger.info("🔄 Étape 5/5: Planification du redémarrage des services...")
+            # 5. Redémarrer les services
+            logger.info("🔄 Étape 5/5: Redémarrage des services...")
             
             try:
-                import tempfile
+                # Déterminer la commande supervisorctl (avec ou sans sudo)
+                # Essayer différentes variantes
+                supervisorctl_commands = [
+                    ["/usr/bin/sudo", "supervisorctl", "restart", "all"],
+                    ["sudo", "supervisorctl", "restart", "all"],
+                    ["supervisorctl", "restart", "all"],
+                    ["/usr/bin/supervisorctl", "restart", "all"]
+                ]
                 
-                restart_script = tempfile.NamedTemporaryFile(
-                    mode='w', suffix='.sh', prefix='gmao_restart_', delete=False
-                )
-                restart_script.write(f"""#!/bin/bash
-# Script de redémarrage post-mise-à-jour GMAO Iris
-# Attend que la réponse HTTP soit envoyée avant de redémarrer
-
-sleep 3
-
-# Redémarrer les services backend
-supervisorctl restart all 2>/dev/null || \\
-sudo supervisorctl restart all 2>/dev/null || \\
-/usr/bin/supervisorctl restart all 2>/dev/null || \\
-systemctl restart gmao-backend 2>/dev/null
-
-# Attendre que le backend redémarre
-sleep 8
-
-# Recharger nginx
-sudo nginx -s reload 2>/dev/null || \\
-sudo systemctl reload nginx 2>/dev/null || \\
-sudo service nginx reload 2>/dev/null
-
-# Nettoyage
-rm -f {restart_script.name}
-""")
-                restart_script.close()
-                os.chmod(restart_script.name, 0o755)
+                restart_success = False
+                last_error = None
                 
-                # Lancer le script en arrière-plan (détaché du processus courant)
-                import subprocess as sp
-                sp.Popen(
-                    ['/bin/bash', restart_script.name],
-                    stdout=sp.DEVNULL,
-                    stderr=sp.DEVNULL,
-                    start_new_session=True
-                )
+                for cmd in supervisorctl_commands:
+                    try:
+                        logger.info(f"🔄 Tentative de redémarrage avec: {' '.join(cmd)}")
+                        
+                        restart_process = await asyncio.create_subprocess_exec(
+                            *cmd,
+                            stdout=asyncio.subprocess.PIPE,
+                            stderr=asyncio.subprocess.PIPE
+                        )
+                        
+                        restart_stdout, restart_stderr = await asyncio.wait_for(
+                            restart_process.communicate(), 
+                            timeout=30
+                        )
+                        
+                        if restart_process.returncode == 0:
+                            logger.info(f"✅ Services redémarrés avec: {' '.join(cmd)}")
+                            restart_success = True
+                            break
+                        else:
+                            last_error = restart_stderr.decode()
+                            logger.warning(f"⚠️ Échec avec {' '.join(cmd)}: {last_error[:100]}")
+                            
+                    except FileNotFoundError:
+                        logger.debug(f"⚠️ Commande non trouvée: {' '.join(cmd)}")
+                        continue
+                    except Exception as e:
+                        logger.debug(f"⚠️ Erreur avec {' '.join(cmd)}: {str(e)}")
+                        continue
                 
-                logger.info(f"✅ Redémarrage planifié dans 3 secondes (script: {restart_script.name})")
-                logger.info("ℹ️ La réponse HTTP sera envoyée au frontend avant le redémarrage")
+                if not restart_success:
+                    logger.warning("⚠️ Impossible de redémarrer automatiquement les services")
+                    logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all")
+                    # Ne pas bloquer - la mise à jour est quand même installée
                     
+            except asyncio.TimeoutError:
+                logger.warning("⚠️ Timeout lors du redémarrage des services")
             except Exception as e:
-                logger.warning(f"⚠️ Impossible de planifier le redémarrage automatique: {str(e)}")
-                logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all && sudo nginx -s reload")
+                logger.warning(f"⚠️ Erreur lors du redémarrage: {str(e)}")
             
             # Mise à jour réussie
             logger.info(f"✨ Mise à jour vers {version} terminée avec succès")
