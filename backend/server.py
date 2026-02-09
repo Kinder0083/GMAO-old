@@ -1806,13 +1806,25 @@ async def get_equipment_detail(eq_id: str, current_user: dict = Depends(require_
             eq["emplacement"] = await get_location_by_id(eq["emplacement_id"])
         
         if eq.get("parent_id"):
+            eq["parent_id"] = str(eq["parent_id"])
             eq["parent"] = await get_equipment_by_id(eq["parent_id"])
         
+        if eq.get("emplacement_id"):
+            eq["emplacement_id"] = str(eq["emplacement_id"])
+        
         # Vérifier si l'équipement a des enfants
-        children_count = await db.equipments.count_documents({"parent_id": eq["id"]})
+        children_count = await db.equipments.count_documents({
+            "$or": [
+                {"parent_id": eq["id"]},
+                {"parent_id": ObjectId(eq["id"])}
+            ]
+        })
         eq["hasChildren"] = children_count > 0
         
-        return Equipment(**eq)
+        try:
+            return Equipment(**eq)
+        except Exception:
+            return eq
     except HTTPException:
         raise
     except Exception as e:
