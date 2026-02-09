@@ -561,6 +561,14 @@ class UpdateService:
                         else:
                             logger.info("✅ Mise à jour téléchargée via Git")
                     
+                    # Réactiver le git hook post-merge
+                    if hook_was_disabled and post_merge_disabled.exists():
+                        try:
+                            os.rename(str(post_merge_disabled), str(post_merge_hook))
+                            logger.info("🔓 Git hook post-merge réactivé")
+                        except Exception:
+                            pass
+                    
                 except asyncio.TimeoutError:
                     logger.warning("⚠️ Timeout Git - CONTINUE sans Git")
                     git_available = False
