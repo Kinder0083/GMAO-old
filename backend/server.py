@@ -3442,11 +3442,20 @@ async def get_users(current_user: dict = Depends(get_current_user)):
     users = await db.users.find().to_list(1000)
     result = []
     for user in users:
-        try:
-            result.append(User(**serialize_doc(user)))
-        except Exception:
-            # Fallback: retourner le document brut sérialisé
-            result.append(serialize_doc(user))
+        doc = serialize_doc(user)
+        # Fix permissions: doit être un dict, pas une liste
+        if isinstance(doc.get("permissions"), list):
+            doc["permissions"] = {}
+        # Fix mqtt fields: convertir en string
+        for field in ["mqtt_action_ok", "mqtt_action_reception"]:
+            if field in doc and not isinstance(doc[field], str):
+                doc[field] = str(doc[field])
+        # Assurer les champs obligatoires
+        if "nom" not in doc:
+            doc["nom"] = doc.get("name", "Inconnu")
+        if "prenom" not in doc:
+            doc["prenom"] = ""
+        result.append(doc)
     return result
 
 @api_router.put("/users/{user_id}", response_model=User)
