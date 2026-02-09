@@ -327,14 +327,6 @@ const CamerasPage = () => {
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
-            <TabsTrigger value="grid" data-testid="tab-grid">
-              <Grid3X3 className="w-4 h-4 mr-2" />
-              Vignettes
-            </TabsTrigger>
-            <TabsTrigger value="live" data-testid="tab-live">
-              <Video className="w-4 h-4 mr-2" />
-              Live ({selectedCameras.filter(c => c).length}/3)
-            </TabsTrigger>
             <TabsTrigger value="frigate" data-testid="tab-frigate">
               <Server className="w-4 h-4 mr-2" />
               Frigate
@@ -349,30 +341,6 @@ const CamerasPage = () => {
               Alertes ({alertsConfiguredCount})
             </TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="grid" className="mt-4">
-            <CameraGrid
-              cameras={cameras}
-              refreshKey={refreshKey}
-              onSelectForLive={handleSelectForLive}
-              onEdit={canManage ? (camera) => {
-                setEditingCamera(camera);
-                setAddDialogOpen(true);
-              } : null}
-              onDelete={canManage ? handleDeleteCamera : null}
-              onTest={canManage ? handleTestCamera : null}
-              selectedCameras={selectedCameras}
-            />
-          </TabsContent>
-          
-          <TabsContent value="live" className="mt-4">
-            <LiveStreamPanel
-              cameras={cameras}
-              selectedCameras={selectedCameras}
-              onSelect={handleSelectForLive}
-              onDeselect={handleDeselectLive}
-            />
-          </TabsContent>
           
           <TabsContent value="frigate" className="mt-4 space-y-6">
             {/* Vignettes Frigate */}
