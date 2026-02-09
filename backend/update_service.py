@@ -615,12 +615,36 @@ class UpdateService:
             # Frontend dependencies
             frontend_package = self.frontend_dir / "package.json"
             if frontend_package.exists():
+                # SAUVEGARDER le build existant avant yarn build
+                # car react-scripts supprime build/ avant de recréer
+                build_dir = self.frontend_dir / "build"
+                build_backup = self.frontend_dir / "build_backup"
+                if build_dir.exists():
+                    try:
+                        if build_backup.exists():
+                            shutil.rmtree(str(build_backup))
+                        shutil.copytree(str(build_dir), str(build_backup))
+                        logger.info("📁 Backup du build frontend créé")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Impossible de backup build/: {e}")
+                
                 logger.info("⚛️  Installation des dépendances frontend...")
+                
+                # Construire l'environnement pour yarn (PATH complet + CI=false)
+                build_env = os.environ.copy()
+                build_env["CI"] = "false"
+                build_env["NODE_OPTIONS"] = "--max_old_space_size=1024"
+                # S'assurer que node/yarn sont dans le PATH
+                for extra_path in ["/usr/local/bin", "/usr/bin"]:
+                    if extra_path not in build_env.get("PATH", ""):
+                        build_env["PATH"] = extra_path + ":" + build_env.get("PATH", "")
+                
                 yarn_process = await asyncio.create_subprocess_exec(
                     "yarn", "install",
                     cwd=self.frontend_dir,
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
+                    env=build_env
                 )
                 yarn_stdout, yarn_stderr = await asyncio.wait_for(yarn_process.communicate(), timeout=300)
                 
@@ -629,26 +653,51 @@ class UpdateService:
                 else:
                     logger.info("✅ Dépendances frontend installées")
                 
-                # 🔥 CRITIQUE: Recompiler le frontend React pour appliquer les modifications
+                # Recompiler le frontend
                 logger.info("🔧 Compilation du frontend React (yarn build)...")
                 build_process = await asyncio.create_subprocess_exec(
                     "yarn", "build",
                     cwd=self.frontend_dir,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    env={**os.environ, "CI": "false"}  # Ignorer les warnings comme erreurs
+                    env=build_env
                 )
                 build_stdout, build_stderr = await asyncio.wait_for(build_process.communicate(), timeout=600)
                 
                 if build_process.returncode != 0:
                     logger.error(f"❌ Échec de la compilation frontend: {build_stderr.decode()[:500]}")
-                    return {
-                        "success": False,
-                        "message": "Échec de la compilation du frontend",
-                        "error": build_stderr.decode()[:500]
-                    }
+                    # RESTAURER le backup du build
+                    if build_backup.exists():
+                        try:
+                            if build_dir.exists():
+                                shutil.rmtree(str(build_dir))
+                            shutil.copytree(str(build_backup), str(build_dir))
+                            logger.info("📁 Build frontend restauré depuis le backup")
+                        except Exception as e:
+                            logger.error(f"❌ Impossible de restaurer le build: {e}")
+                    # Ne PAS bloquer la mise à jour — le code backend est déjà mis à jour
+                    logger.warning("⚠️ Le frontend n'a pas été recompilé, l'ancienne version est conservée")
                 else:
-                    logger.info("✅ Frontend compilé avec succès")
+                    # Vérifier que index.html existe
+                    index_html = build_dir / "index.html"
+                    if index_html.exists():
+                        logger.info("✅ Frontend compilé avec succès (index.html vérifié)")
+                    else:
+                        logger.error("❌ index.html manquant après le build!")
+                        # Restaurer le backup
+                        if build_backup.exists():
+                            try:
+                                shutil.copytree(str(build_backup), str(build_dir))
+                                logger.info("📁 Build restauré car index.html manquant")
+                            except Exception:
+                                pass
+                
+                # Nettoyer le backup
+                if build_backup.exists():
+                    try:
+                        shutil.rmtree(str(build_backup))
+                    except Exception:
+                        pass
             
             logger.info("✅ Dépendances installées et frontend compilé")
             
