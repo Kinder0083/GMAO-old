@@ -615,61 +615,77 @@ class UpdateService:
             
             logger.info("✅ Dépendances installées et frontend compilé")
             
-            # 5. Redémarrer les services
-            logger.info("🔄 Étape 5/5: Redémarrage des services...")
+            # 5. Mettre à jour version.json avec la nouvelle version
+            logger.info("📝 Étape 5/6: Mise à jour du fichier version.json...")
+            try:
+                version_file = self.app_root / "updates" / "version.json"
+                if version_file.exists():
+                    import json as json_mod
+                    with open(version_file, 'r') as f:
+                        version_data = json_mod.load(f)
+                    version_data["version"] = version
+                    version_data["lastUpdate"] = datetime.now(timezone.utc).isoformat()
+                    with open(version_file, 'w') as f:
+                        json_mod.dump(version_data, f, indent=2, ensure_ascii=False)
+                    self.current_version = version
+                    logger.info(f"✅ version.json mis à jour: {version}")
+            except Exception as e:
+                logger.warning(f"⚠️ Impossible de mettre à jour version.json: {str(e)}")
+            
+            # 6. Planifier le redémarrage des services (APRÈS l'envoi de la réponse HTTP)
+            # CRITIQUE: On ne doit PAS restart le backend de manière synchrone
+            # car ça tuerait le processus avant que la réponse HTTP ne soit envoyée.
+            # On utilise un script détaché qui attend 3 secondes.
+            logger.info("🔄 Étape 6/6: Planification du redémarrage des services...")
             
             try:
-                # Déterminer la commande supervisorctl (avec ou sans sudo)
-                # Essayer différentes variantes
-                supervisorctl_commands = [
-                    ["/usr/bin/sudo", "supervisorctl", "restart", "all"],
-                    ["sudo", "supervisorctl", "restart", "all"],
-                    ["supervisorctl", "restart", "all"],
-                    ["/usr/bin/supervisorctl", "restart", "all"]
-                ]
+                import tempfile
+                import subprocess as sp
                 
-                restart_success = False
-                last_error = None
+                restart_script = tempfile.NamedTemporaryFile(
+                    mode='w', suffix='.sh', prefix='gmao_restart_', dir='/tmp', delete=False
+                )
+                restart_script.write(f"""#!/bin/bash
+# Redémarrage post-mise-à-jour GMAO Iris
+# Attend que la réponse HTTP soit envoyée au frontend
+
+sleep 3
+
+# Redémarrer le backend uniquement (pas all, pour éviter de tuer nginx)
+supervisorctl restart gmao-iris-backend 2>/dev/null || \\
+/usr/bin/supervisorctl restart gmao-iris-backend 2>/dev/null || \\
+sudo supervisorctl restart gmao-iris-backend 2>/dev/null || \\
+supervisorctl restart all 2>/dev/null || \\
+sudo supervisorctl restart all 2>/dev/null
+
+# Attendre que le backend redémarre
+sleep 5
+
+# Recharger nginx pour servir les nouveaux fichiers frontend
+nginx -s reload 2>/dev/null || \\
+sudo nginx -s reload 2>/dev/null || \\
+sudo systemctl reload nginx 2>/dev/null || \\
+sudo service nginx reload 2>/dev/null
+
+# Nettoyage
+rm -f {restart_script.name}
+""")
+                restart_script.close()
+                os.chmod(restart_script.name, 0o755)
                 
-                for cmd in supervisorctl_commands:
-                    try:
-                        logger.info(f"🔄 Tentative de redémarrage avec: {' '.join(cmd)}")
-                        
-                        restart_process = await asyncio.create_subprocess_exec(
-                            *cmd,
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE
-                        )
-                        
-                        restart_stdout, restart_stderr = await asyncio.wait_for(
-                            restart_process.communicate(), 
-                            timeout=30
-                        )
-                        
-                        if restart_process.returncode == 0:
-                            logger.info(f"✅ Services redémarrés avec: {' '.join(cmd)}")
-                            restart_success = True
-                            break
-                        else:
-                            last_error = restart_stderr.decode()
-                            logger.warning(f"⚠️ Échec avec {' '.join(cmd)}: {last_error[:100]}")
-                            
-                    except FileNotFoundError:
-                        logger.debug(f"⚠️ Commande non trouvée: {' '.join(cmd)}")
-                        continue
-                    except Exception as e:
-                        logger.debug(f"⚠️ Erreur avec {' '.join(cmd)}: {str(e)}")
-                        continue
+                # Lancer le script en arrière-plan (détaché)
+                sp.Popen(
+                    ['/bin/bash', restart_script.name],
+                    stdout=sp.DEVNULL,
+                    stderr=sp.DEVNULL,
+                    start_new_session=True
+                )
                 
-                if not restart_success:
-                    logger.warning("⚠️ Impossible de redémarrer automatiquement les services")
-                    logger.info("ℹ️ Veuillez redémarrer manuellement : supervisorctl restart all")
-                    # Ne pas bloquer - la mise à jour est quand même installée
+                logger.info(f"✅ Redémarrage planifié dans 3 secondes")
                     
-            except asyncio.TimeoutError:
-                logger.warning("⚠️ Timeout lors du redémarrage des services")
             except Exception as e:
-                logger.warning(f"⚠️ Erreur lors du redémarrage: {str(e)}")
+                logger.warning(f"⚠️ Impossible de planifier le redémarrage: {str(e)}")
+                logger.info("ℹ️ Veuillez redémarrer manuellement: supervisorctl restart gmao-iris-backend && sudo nginx -s reload")
             
             # Mise à jour réussie
             logger.info(f"✨ Mise à jour vers {version} terminée avec succès")
