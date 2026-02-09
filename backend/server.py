@@ -1827,24 +1827,39 @@ async def get_equipment_children(eq_id: str, current_user: dict = Depends(requir
         if not parent:
             raise HTTPException(status_code=404, detail="Équipement parent non trouvé")
         
-        # Récupérer tous les enfants
-        children = await db.equipments.find({"parent_id": eq_id}).to_list(1000)
+        # Récupérer tous les enfants (parent_id peut être string ou ObjectId)
+        children = await db.equipments.find({
+            "$or": [
+                {"parent_id": eq_id},
+                {"parent_id": ObjectId(eq_id)}
+            ]
+        }).to_list(1000)
         
         result = []
         for child in children:
             child = serialize_doc(child)
             
             if child.get("emplacement_id"):
+                child["emplacement_id"] = str(child["emplacement_id"])
                 child["emplacement"] = await get_location_by_id(child["emplacement_id"])
             
             if child.get("parent_id"):
+                child["parent_id"] = str(child["parent_id"])
                 child["parent"] = await get_equipment_by_id(child["parent_id"])
             
             # Vérifier si cet enfant a lui-même des enfants
-            grandchildren_count = await db.equipments.count_documents({"parent_id": child["id"]})
+            grandchildren_count = await db.equipments.count_documents({
+                "$or": [
+                    {"parent_id": child["id"]},
+                    {"parent_id": ObjectId(child["id"])}
+                ]
+            })
             child["hasChildren"] = grandchildren_count > 0
             
-            result.append(Equipment(**child))
+            try:
+                result.append(Equipment(**child))
+            except Exception:
+                result.append(child)
         
         return result
     except HTTPException:
