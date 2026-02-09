@@ -1792,7 +1792,7 @@ async def get_equipment_status_history(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/equipments/{eq_id}", response_model=Equipment)
+@api_router.get("/equipments/{eq_id}")
 async def get_equipment_detail(eq_id: str, current_user: dict = Depends(require_permission("assets", "view"))):
     """Récupérer les détails d'un équipement"""
     try:
