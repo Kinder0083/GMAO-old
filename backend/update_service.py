@@ -427,26 +427,21 @@ class UpdateService:
                 stdout, stderr = await asyncio.wait_for(dump_process.communicate(), timeout=120)
                 
                 if dump_process.returncode != 0:
-                    logger.error(f"❌ Échec du backup: {stderr.decode()}")
-                    update_history["logs"].append(f"Échec du backup: {stderr.decode()[:200]}")
+                    logger.warning(f"⚠️ Échec du backup (non bloquant): {stderr.decode()[:200]}")
+                    update_history["logs"].append(f"Backup échoué (non bloquant): {stderr.decode()[:200]}")
                     update_history["backup_created"] = False
-                    return {
-                        "success": False,
-                        "message": "Échec de la création du backup",
-                        "error": stderr.decode()
-                    }
-                    
-                logger.info(f"✅ Backup créé: {backup_path}")
-                update_history["logs"].append(f"Backup créé: {backup_path}")
-                update_history["backup_created"] = True
-                update_history["backup_path"] = str(backup_path)
+                else:
+                    logger.info(f"✅ Backup créé: {backup_path}")
+                    update_history["logs"].append(f"Backup créé: {backup_path}")
+                    update_history["backup_created"] = True
+                    update_history["backup_path"] = str(backup_path)
                 
             except asyncio.TimeoutError:
-                logger.error("❌ Timeout lors du backup")
-                return {
-                    "success": False,
-                    "message": "Timeout lors de la création du backup"
-                }
+                logger.warning("⚠️ Timeout lors du backup (non bloquant, on continue)")
+                update_history["backup_created"] = False
+            except FileNotFoundError:
+                logger.warning("⚠️ mongodump non installé (non bloquant, on continue)")
+                update_history["backup_created"] = False
             
             # 2. Exporter les données en Excel
             logger.info("📊 Étape 2/5: Export des données en Excel...")
