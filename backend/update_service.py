@@ -39,6 +39,23 @@ class UpdateService:
         logger.info(f"   - Frontend: {self.frontend_dir}")
         logger.info(f"   - Backups: {self.backup_dir}")
         
+        # Charger la version depuis version.json
+        self._load_version()
+    
+    def _load_version(self):
+        """Charge la version depuis updates/version.json"""
+        try:
+            vf = self.app_root / "updates" / "version.json"
+            if vf.exists():
+                import json as json_mod
+                with open(vf) as f:
+                    data = json_mod.load(f)
+                self.current_version = data.get("version", "1.5.0")
+                return
+        except Exception:
+            pass
+        self.current_version = "1.5.0"
+        
     def parse_version(self, version_str: str) -> tuple:
         """Parse une version string en tuple (major, minor, patch)"""
         try:
