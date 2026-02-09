@@ -3395,7 +3395,14 @@ async def get_users(current_user: dict = Depends(get_current_user)):
             )
     
     users = await db.users.find().to_list(1000)
-    return [User(**serialize_doc(user)) for user in users]
+    result = []
+    for user in users:
+        try:
+            result.append(User(**serialize_doc(user)))
+        except Exception:
+            # Fallback: retourner le document brut sérialisé
+            result.append(serialize_doc(user))
+    return result
 
 @api_router.put("/users/{user_id}", response_model=User)
 async def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depends(get_current_admin_user)):
