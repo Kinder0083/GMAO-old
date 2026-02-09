@@ -131,12 +131,13 @@ const ImportExport = () => {
         }
       );
 
-      setImportResult(response.data);
+      setImportResult(response.data.stats || response.data);
+      const s = response.data.stats || response.data;
       setSelectedFile(null); // Réinitialiser le fichier sélectionné
 
       toast({
         title: 'Import terminé',
-        description: `${response.data.inserted} ajouté(s), ${response.data.updated} mis à jour, ${response.data.skipped} ignoré(s)`
+        description: `${s.inserted ?? 0} ajouté(s), ${s.updated ?? 0} mis à jour, ${s.skipped ?? 0} ignoré(s)`
       });
     } catch (error) {
       toast({
