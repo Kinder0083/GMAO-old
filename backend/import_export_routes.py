@@ -158,6 +158,7 @@ COLUMN_MAPPINGS = {
 
 # Mapping des noms de feuilles Excel vers les modules
 SHEET_TO_MODULE = {
+    # Noms techniques (export récent)
     "intervention-requests": "intervention-requests",
     "intervention_requests": "intervention-requests",
     "work-orders": "work-orders",
@@ -170,11 +171,45 @@ SHEET_TO_MODULE = {
     "inventory": "inventory",
     "purchase-history": "purchase-history",
     "purchase_history": "purchase-history",
+    "purchase-requests": "purchase-requests",
+    "purchase_requests": "purchase-requests",
     "meters": "meters",
     "users": "users",
     "people": "users",
     "vendors": "vendors",
-    "fournisseurs": "vendors"
+    "sensors": "sensors",
+    "chat-messages": "chat-messages",
+    "chat_messages": "chat-messages",
+    "preventive-maintenance": "preventive-maintenance",
+    "preventive_maintenance": "preventive-maintenance",
+    "documentations": "documentations",
+    # Noms français (export ancienne version)
+    "fournisseurs": "vendors",
+    "inventaire": "inventory",
+    "pieces": "inventory",
+    "pièces": "inventory",
+    "user": "users",
+    "utilisateurs": "users",
+    "utilisateur": "users",
+    "sensor": "sensors",
+    "capteurs": "sensors",
+    "capteur": "sensors",
+    "tâches": "work-orders",
+    "taches": "work-orders",
+    "ordres": "work-orders",
+    "ordres de travail": "work-orders",
+    "sheet1": "work-orders",
+    "demandeschat": "chat-messages",
+    "demandes": "purchase-requests",
+    "demandes d'achat": "purchase-requests",
+    "améliorations": "improvements",
+    "ameliorations": "improvements",
+    "zones": "locations",
+    "emplacements": "locations",
+    "équipements": "equipments",
+    "equipements": "equipments",
+    "maintenance préventive": "preventive-maintenance",
+    "maintenance preventive": "preventive-maintenance",
 }
 
 
