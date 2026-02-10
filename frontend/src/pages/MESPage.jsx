@@ -148,7 +148,23 @@ const MachineDashboard = ({ machineId, onBack }) => {
   const [editing, setEditing] = useState(false);
   const [pinging, setPinging] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
+  const [timezoneOffset, setTimezoneOffset] = useState(1); // Default GMT+1 (France)
   const { toast } = useToast();
+
+  // Load configured timezone offset from Special Settings
+  useEffect(() => {
+    const loadTimezone = async () => {
+      try {
+        const { data } = await axios.get(`${API}/api/timezone/offset`, { headers: getHeaders() });
+        if (data && typeof data.timezone_offset === 'number') {
+          setTimezoneOffset(data.timezone_offset);
+        }
+      } catch (err) {
+        console.warn('Erreur chargement timezone, utilisation defaut GMT+1:', err);
+      }
+    };
+    loadTimezone();
+  }, []);
 
   const loadMachine = useCallback(async () => {
     try {
