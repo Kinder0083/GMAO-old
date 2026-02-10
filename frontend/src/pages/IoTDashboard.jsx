@@ -126,9 +126,13 @@ const IoTDashboard = () => {
     if (!readings || readings.length === 0) return [];
     
     return readings.map(r => {
-      // Parser le timestamp et appliquer le décalage horaire configuré
-      const utcDate = new Date(r.timestamp);
-      // Appliquer le décalage horaire (timezoneOffset est en heures)
+      // Parser le timestamp en forçant UTC (ajout du Z si absent)
+      let ts = String(r.timestamp);
+      if (!ts.endsWith('Z') && !ts.includes('+') && !/\d{2}:\d{2}:\d{2}-/.test(ts)) {
+        ts += 'Z';
+      }
+      const utcDate = new Date(ts);
+      // Appliquer le décalage horaire configuré dans Paramètres Spéciaux
       const localDate = new Date(utcDate.getTime() + (timezoneOffset * 60 * 60 * 1000));
       
       return {
