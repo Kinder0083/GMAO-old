@@ -75,6 +75,7 @@ export const iconMap = {
   'UserCog': UserCog,
   'Clock': Clock,
   'Camera': Camera,
+  'Zap': Zap,
   'Menu': Menu,
   'X': X,
   'ChevronLeft': ChevronLeft,
