@@ -8868,6 +8868,82 @@ async def consignes_websocket(websocket: WebSocket, token: str):
     """WebSocket pour recevoir les consignes en temps réel"""
     await consignes_websocket_endpoint(websocket, token)
 
+
+# ==================== ADMIN RESET ROUTES ====================
+
+RESET_COLLECTIONS = {
+    "work_orders": "Ordres de travail",
+    "intervention_requests": "Demandes d'intervention",
+    "improvement_requests": "Demandes d'amélioration",
+    "improvements": "Améliorations",
+    "equipments": "Équipements",
+    "inventory": "Inventaire",
+    "locations": "Zones / Emplacements",
+    "preventive_maintenance": "Maintenance préventive",
+    "vendors": "Fournisseurs",
+    "purchase_history": "Historique d'achat",
+    "purchase_requests": "Demandes d'achat",
+    "sensors": "Capteurs MQTT",
+    "chat_messages": "Messages Chat Live",
+    "users": "Utilisateurs",
+}
+
+@api_router.delete("/admin/reset/{section}")
+async def reset_section(section: str, current_user: dict = Depends(get_current_admin)):
+    """Réinitialiser une section (admin uniquement)"""
+    if section not in RESET_COLLECTIONS:
+        raise HTTPException(status_code=400, detail=f"Section inconnue: {section}")
+    
+    query = {}
+    if section == "users":
+        query = {"_id": {"$ne": ObjectId(current_user["id"])}}
+    
+    result = await db[section].delete_many(query)
+    
+    # Log d'audit
+    audit = AuditService(db)
+    await audit.log(
+        action=f"RESET_{section.upper()}",
+        user_email=current_user["email"],
+        details=f"Réinitialisation de {RESET_COLLECTIONS[section]}: {result.deleted_count} éléments supprimés"
+    )
+    
+    return {
+        "success": True,
+        "section": RESET_COLLECTIONS[section],
+        "deleted_count": result.deleted_count
+    }
+
+@api_router.delete("/admin/reset-all")
+async def reset_all(current_user: dict = Depends(get_current_admin)):
+    """Réinitialiser toutes les données (admin uniquement)"""
+    details = {}
+    total = 0
+    
+    for section, label in RESET_COLLECTIONS.items():
+        query = {}
+        if section == "users":
+            query = {"_id": {"$ne": ObjectId(current_user["id"])}}
+        
+        result = await db[section].delete_many(query)
+        details[label] = result.deleted_count
+        total += result.deleted_count
+    
+    # Log d'audit
+    audit = AuditService(db)
+    await audit.log(
+        action="RESET_ALL",
+        user_email=current_user["email"],
+        details=f"Réinitialisation complète: {total} éléments supprimés"
+    )
+    
+    return {
+        "success": True,
+        "total_deleted": total,
+        "details": details
+    }
+
+
 # Include the router in the main app (MUST be after all endpoint definitions)
 app.include_router(api_router)
 
