@@ -47,6 +47,19 @@ const IoTDashboard = () => {
   const { toast } = useToast();
   const { sensors: realtimeSensors, loading: loadingSensors, refresh: refreshSensors } = useSensors();
 
+  // Formate un timestamp backend (UTC sans Z) en date locale selon le fuseau configuré
+  const formatLocalDate = useCallback((isoTimestamp, options = {}) => {
+    if (!isoTimestamp) return '-';
+    let ts = String(isoTimestamp);
+    if (!ts.endsWith('Z') && !ts.includes('+') && !/\d{2}:\d{2}:\d{2}-/.test(ts)) {
+      ts += 'Z';
+    }
+    const utcDate = new Date(ts);
+    const localDate = new Date(utcDate.getTime() + (timezoneOffset * 60 * 60 * 1000));
+    const defaultOpts = { timeZone: 'UTC', ...options };
+    return localDate.toLocaleString('fr-FR', defaultOpts);
+  }, [timezoneOffset]);
+
   // Charger le fuseau horaire configuré
   useEffect(() => {
     const loadTimezoneOffset = async () => {
