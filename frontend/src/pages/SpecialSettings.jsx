@@ -7,7 +7,8 @@ import {
   SmtpSettings,
   MqttSettings,
   LlmKeysSettings,
-  TimezoneSettings
+  TimezoneSettings,
+  DataResetSettings
 } from '../components/Settings';
 
 /**
@@ -61,6 +62,9 @@ const SpecialSettings = () => {
 
           {/* Fuseau horaire et NTP */}
           <TimezoneSettings />
+
+          {/* Réinitialisation des données */}
+          <DataResetSettings />
         </div>
       </div>
     </div>
