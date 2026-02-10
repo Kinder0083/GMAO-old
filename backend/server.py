@@ -8889,7 +8889,7 @@ RESET_COLLECTIONS = {
 }
 
 @api_router.delete("/admin/reset/{section}")
-async def reset_section(section: str, current_user: dict = Depends(get_current_admin)):
+async def reset_section(section: str, current_user: dict = Depends(get_current_admin_user)):
     """Réinitialiser une section (admin uniquement)"""
     if section not in RESET_COLLECTIONS:
         raise HTTPException(status_code=400, detail=f"Section inconnue: {section}")
@@ -8915,7 +8915,7 @@ async def reset_section(section: str, current_user: dict = Depends(get_current_a
     }
 
 @api_router.delete("/admin/reset-all")
-async def reset_all(current_user: dict = Depends(get_current_admin)):
+async def reset_all(current_user: dict = Depends(get_current_admin_user)):
     """Réinitialiser toutes les données (admin uniquement)"""
     details = {}
     total = 0
