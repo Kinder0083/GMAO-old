@@ -44,6 +44,8 @@ Application GMAO full-stack (Python/FastAPI + React + MongoDB) déployée sur Pr
   - Fix: Graphique cadence utilise le timezone offset configurable depuis Parametres Speciaux (NTP/Fuseau Horaire)
   - Fix: Timestamps alertes appliquent aussi l'offset timezone
   - Fix: Menu sidebar - ajout entree M.E.S. dans defaultMenuItems de MainLayout.jsx
+  - Fix: Callback MQTT incompatible (signature paho vs mqtt_manager) - les impulsions capteur n'etaient pas traitees
+  - Fix: Race condition souscription MQTT - topics en file d'attente si MQTT pas encore connecte, hook auto-resubscribe
   - Tests: 100% backend (15/15) + 100% frontend
 
 ## Tâches en attente
