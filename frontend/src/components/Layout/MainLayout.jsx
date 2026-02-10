@@ -267,7 +267,7 @@ const MainLayout = () => {
           if (impResponse.ok) {
             const improvements = await impResponse.json();
             const overdueImp = improvements.filter(imp => {
-              if (!imp.dateLimite || imp.statut === 'TERMINE' || imp.statut === 'ANNULE') return false;
+              if (!imp.dateLimite || imp.statut === 'TERMINE' || imp.statut === 'ANNULE' || imp.statut === 'REFUSE') return false;
               const dueDate = new Date(imp.dateLimite);
               return dueDate < today;
             });
@@ -296,7 +296,7 @@ const MainLayout = () => {
           if (irResponse.ok) {
             const interventionRequests = await irResponse.json();
             const overdueIR = interventionRequests.filter(ir => {
-              if (!ir.date_limite_desiree || ir.statut === 'TERMINE' || ir.statut === 'ANNULE') return false;
+              if (!ir.date_limite_desiree || ir.statut === 'TERMINE' || ir.statut === 'ANNULE' || ir.statut === 'REFUSE') return false;
               const dueDate = new Date(ir.date_limite_desiree);
               return dueDate < today;
             });
