@@ -22,6 +22,7 @@ import ManualButton from '../Common/ManualButton';
 import AlertNotifications from '../Common/AlertNotifications';
 import NotificationsDropdown from '../Common/NotificationsDropdown';
 import CameraAlertIcon from '../Common/CameraAlertIcon';
+import MESAlertIcon from './MESAlertIcon';
 
 const Header = ({
   sidebarOpen,
