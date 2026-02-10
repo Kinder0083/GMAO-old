@@ -286,7 +286,7 @@ const IoTDashboard = () => {
         <p className="text-sm font-medium mt-3 text-center">{sensor.nom}</p>
         {sensor.last_update && (
           <p className="text-xs text-gray-500">
-            {new Date(sensor.last_update).toLocaleTimeString('fr-FR')}
+            {formatLocalDate(sensor.last_update, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </p>
         )}
       </div>
