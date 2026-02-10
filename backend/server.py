@@ -8901,12 +8901,13 @@ async def reset_section(section: str, current_user: dict = Depends(get_current_a
     result = await db[section].delete_many(query)
     
     # Log d'audit
-    audit = AuditService(db)
-    await audit.log(
-        action=f"RESET_{section.upper()}",
-        user_email=current_user["email"],
-        details=f"Réinitialisation de {RESET_COLLECTIONS[section]}: {result.deleted_count} éléments supprimés"
-    )
+    await db.audit_logs.insert_one({
+        "action": f"RESET_{section.upper()}",
+        "user_email": current_user["email"],
+        "user_id": current_user["id"],
+        "details": f"Réinitialisation de {RESET_COLLECTIONS[section]}: {result.deleted_count} éléments supprimés",
+        "timestamp": datetime.utcnow()
+    })
     
     return {
         "success": True,
@@ -8930,12 +8931,13 @@ async def reset_all(current_user: dict = Depends(get_current_admin_user)):
         total += result.deleted_count
     
     # Log d'audit
-    audit = AuditService(db)
-    await audit.log(
-        action="RESET_ALL",
-        user_email=current_user["email"],
-        details=f"Réinitialisation complète: {total} éléments supprimés"
-    )
+    await db.audit_logs.insert_one({
+        "action": "RESET_ALL",
+        "user_email": current_user["email"],
+        "user_id": current_user["id"],
+        "details": f"Réinitialisation complète: {total} éléments supprimés",
+        "timestamp": datetime.utcnow()
+    })
     
     return {
         "success": True,
