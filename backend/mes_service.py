@@ -18,6 +18,16 @@ class MESService:
         self.db = db
         self.mqtt_manager = mqtt_manager
         self._subscribed_topics = set()
+        self._pending_topics = set()  # Topics en attente si MQTT pas connecté
+        
+        # Enregistrer un hook pour re-souscrire quand MQTT se (re)connecte
+        if mqtt_manager:
+            original_on_connect = mqtt_manager._on_connect
+            def _on_connect_hook(client, userdata, flags, rc):
+                original_on_connect(client, userdata, flags, rc)
+                if rc == 0:
+                    self._resubscribe_all()
+            mqtt_manager._on_connect = _on_connect_hook
 
     # ==================== MACHINES CRUD ====================
 
