@@ -437,12 +437,38 @@ class MESService:
 
     def _subscribe_machine(self, machine):
         topic = machine.get("mqtt_topic")
-        if not topic or not self.mqtt_manager or not self.mqtt_manager.is_connected:
+        if not topic or not self.mqtt_manager:
+            return
+        if not self.mqtt_manager.is_connected:
+            # MQTT pas encore connecté: mettre en file d'attente
+            self._pending_topics.add(topic)
+            logger.warning(f"[MES] MQTT non connecté, topic en attente: {topic}")
             return
         if topic not in self._subscribed_topics:
-            self.mqtt_manager.subscribe(topic, callback=self._on_mqtt_message)
-            self._subscribed_topics.add(topic)
-            logger.info(f"[MES] Abonné au topic: {topic}")
+            result = self.mqtt_manager.subscribe(topic, callback=self._on_mqtt_message)
+            if result:
+                self._subscribed_topics.add(topic)
+                self._pending_topics.discard(topic)
+                logger.info(f"[MES] Abonné au topic: {topic}")
+            else:
+                self._pending_topics.add(topic)
+                logger.error(f"[MES] Échec abonnement topic: {topic}")
+
+    def _resubscribe_all(self):
+        """Re-souscrire à tous les topics (appelé quand MQTT se reconnecte)"""
+        all_topics = self._subscribed_topics | self._pending_topics
+        self._subscribed_topics.clear()
+        self._pending_topics.clear()
+        for topic in all_topics:
+            if self.mqtt_manager and self.mqtt_manager.is_connected:
+                result = self.mqtt_manager.subscribe(topic, callback=self._on_mqtt_message)
+                if result:
+                    self._subscribed_topics.add(topic)
+                    logger.info(f"[MES] Re-abonné au topic: {topic}")
+                else:
+                    self._pending_topics.add(topic)
+            else:
+                self._pending_topics.add(topic)
 
     def _on_mqtt_message(self, topic, payload, qos):
         """Callback MQTT - reçoit les impulsions
