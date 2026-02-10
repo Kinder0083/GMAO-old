@@ -9077,6 +9077,28 @@ async def startup_scheduler():
         logger.info("   - Notifications PM: tous les jours à 07h00")
         logger.info("   - Rappels surveillance: tous les jours à 07h30")
         
+        # M.E.S - Calcul cadence chaque minute + abonnement MQTT
+        from mes_routes import mes_service as _mes_ref
+        if _mes_ref:
+            from apscheduler.triggers.interval import IntervalTrigger
+            scheduler.add_job(
+                _mes_ref.calculate_minute_cadence,
+                IntervalTrigger(minutes=1),
+                id='mes_cadence_calc',
+                name='M.E.S - Calcul cadence par minute',
+                replace_existing=True
+            )
+            scheduler.add_job(
+                _mes_ref.cleanup_old_data,
+                CronTrigger(hour=4, minute=0),
+                id='mes_cleanup',
+                name='M.E.S - Nettoyage données > 1 an',
+                replace_existing=True
+            )
+            logger.info("   - M.E.S cadence: chaque minute")
+            # Subscribe to MQTT topics
+            await _mes_ref.subscribe_all()
+        
         # Initialiser et démarrer les collecteurs MQTT
         await mqtt_meter_collector.initialize(db)
         await mqtt_meter_collector.start()
