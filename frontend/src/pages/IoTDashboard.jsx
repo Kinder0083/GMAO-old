@@ -643,7 +643,7 @@ const IoTDashboard = () => {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {sensor.last_update 
-                            ? new Date(sensor.last_update).toLocaleString('fr-FR')
+                            ? formatLocalDate(sensor.last_update)
                             : 'Jamais'}
                         </td>
                       </tr>
@@ -745,7 +745,7 @@ const IoTDashboard = () => {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {sensor.last_update 
-                            ? new Date(sensor.last_update).toLocaleString('fr-FR')
+                            ? formatLocalDate(sensor.last_update)
                             : 'Jamais'}
                         </td>
                       </tr>
