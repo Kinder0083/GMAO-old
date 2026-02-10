@@ -226,10 +226,13 @@ class MESService:
         total_downtime = 0
         prev_time = start
         for p in pulses:
-            gap = (p["timestamp"] - prev_time).total_seconds()
+            ts = p["timestamp"]
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            gap = (ts - prev_time).total_seconds()
             if gap > threshold:
                 total_downtime += gap
-            prev_time = p["timestamp"]
+            prev_time = ts
 
         # Gap after last pulse
         gap = (end - prev_time).total_seconds()
