@@ -548,7 +548,7 @@ const IoTDashboard = () => {
                       {stats?.min != null ? `Min: ${Number(stats.min).toFixed(1)} ${sensor.unite}` : ''}
                     </span>
                     <span>
-                      {sensor.last_update && new Date(sensor.last_update).toLocaleString('fr-FR')}
+                      {sensor.last_update && formatLocalDate(sensor.last_update)}
                     </span>
                     <span>
                       {stats?.max != null ? `Max: ${Number(stats.max).toFixed(1)} ${sensor.unite}` : ''}
