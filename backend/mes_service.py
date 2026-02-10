@@ -319,8 +319,11 @@ class MESService:
 
         # Check stopped
         stopped_min = alerts_config.get("stopped_minutes", 0)
-        if stopped_min > 0 and machine.get("last_pulse_at"):
-            elapsed = (now - machine["last_pulse_at"]).total_seconds() / 60
+        last_p = machine.get("last_pulse_at")
+        if last_p and last_p.tzinfo is None:
+            last_p = last_p.replace(tzinfo=timezone.utc)
+        if stopped_min > 0 and last_p:
+            elapsed = (now - last_p).total_seconds() / 60
             if elapsed >= stopped_min:
                 await self._create_alert(mid, "STOPPED",
                     f"Machine à l'arrêt depuis {int(elapsed)} min")
@@ -350,11 +353,11 @@ class MESService:
 
         # Check no signal
         no_signal_min = alerts_config.get("no_signal_minutes", 0)
-        if no_signal_min > 0 and machine.get("last_pulse_at"):
-            elapsed = (now - machine["last_pulse_at"]).total_seconds() / 60
-            if elapsed >= no_signal_min:
+        if no_signal_min > 0 and last_p:
+            elapsed_ns = (now - last_p).total_seconds() / 60
+            if elapsed_ns >= no_signal_min:
                 await self._create_alert(mid, "NO_SIGNAL",
-                    f"Pas de signal depuis {int(elapsed)} min")
+                    f"Pas de signal depuis {int(elapsed_ns)} min")
 
     async def _create_alert(self, machine_id, alert_type, message):
         # Don't create duplicate alerts within 5 minutes
