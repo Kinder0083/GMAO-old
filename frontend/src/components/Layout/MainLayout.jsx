@@ -325,7 +325,7 @@ const MainLayout = () => {
           if (imprResponse.ok) {
             const improvementRequests = await imprResponse.json();
             const overdueIMPR = improvementRequests.filter(impr => {
-              if (!impr.date_limite_desiree || impr.statut === 'TERMINE' || impr.statut === 'ANNULE' || impr.statut === 'REFUSE') return false;
+              if (!impr.date_limite_desiree || impr.statut === 'TERMINE' || impr.statut === 'ANNULE' || impr.statut === 'REFUSE' || impr.statut === 'REJETEE') return false;
               const dueDate = new Date(impr.date_limite_desiree);
               return dueDate < today;
             });
