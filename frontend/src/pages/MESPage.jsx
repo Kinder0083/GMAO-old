@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BACKEND_URL } from '../utils/config';
 import { useToast } from '../hooks/use-toast';
 import {
   Activity, Plus, Settings, Trash2, Play, Square, Clock, Target, Gauge,
-  AlertTriangle, Wifi, WifiOff, Loader2, ChevronLeft, RefreshCw, Zap,
-  BarChart3, TrendingUp, Timer, Package, ArrowLeft
+  AlertTriangle, Wifi, WifiOff, Loader2, RefreshCw, Zap, Bell, BellOff,
+  BarChart3, TrendingUp, Timer, Package, ArrowLeft, CheckCircle2, XCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import {
@@ -16,12 +15,24 @@ import {
 const API = BACKEND_URL;
 const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
+// ==================== COLOR MAP (static Tailwind classes) ====================
+const COLORS = {
+  indigo: { bg: 'bg-indigo-50', border: 'border-indigo-100', icon: 'text-indigo-500', value: 'text-indigo-700' },
+  blue:   { bg: 'bg-blue-50',   border: 'border-blue-100',   icon: 'text-blue-500',   value: 'text-blue-700' },
+  emerald:{ bg: 'bg-emerald-50',border: 'border-emerald-100',icon: 'text-emerald-500',value: 'text-emerald-700' },
+  teal:   { bg: 'bg-teal-50',   border: 'border-teal-100',   icon: 'text-teal-500',   value: 'text-teal-700' },
+  red:    { bg: 'bg-red-50',    border: 'border-red-100',    icon: 'text-red-500',    value: 'text-red-700' },
+  orange: { bg: 'bg-orange-50', border: 'border-orange-100', icon: 'text-orange-500', value: 'text-orange-700' },
+  purple: { bg: 'bg-purple-50', border: 'border-purple-100', icon: 'text-purple-500', value: 'text-purple-700' },
+  gray:   { bg: 'bg-gray-50',   border: 'border-gray-200',   icon: 'text-gray-500',   value: 'text-gray-700' },
+};
+
 // ==================== MACHINE LIST ====================
 const MachineList = ({ machines, onSelect, onCreate, onDelete, loading }) => (
   <div className="space-y-4">
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2" data-testid="mes-title">
           <Activity className="h-7 w-7 text-indigo-600" />
           M.E.S - Suivi de Production
         </h1>
@@ -66,7 +77,7 @@ const MachineCard = ({ machine, onSelect, onDelete }) => {
   }, [machine.id]);
 
   return (
-    <Card className="cursor-pointer hover:shadow-lg transition-shadow border-l-4"
+    <Card className="group relative cursor-pointer hover:shadow-lg transition-shadow border-l-4"
       style={{ borderLeftColor: metrics?.is_running ? '#10b981' : '#ef4444' }}
       data-testid={`mes-machine-card-${machine.id}`}
       onClick={() => onSelect(machine.id)}>
@@ -84,26 +95,27 @@ const MachineCard = ({ machine, onSelect, onDelete }) => {
         </div>
         {metrics && (
           <div className="grid grid-cols-2 gap-3 mt-4">
-            <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-center p-2 bg-indigo-50 rounded">
               <div className="text-lg font-bold text-indigo-600">{metrics.cadence_per_min}</div>
               <div className="text-[10px] text-gray-500">cp/min</div>
             </div>
-            <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-center p-2 bg-blue-50 rounded">
               <div className="text-lg font-bold text-blue-600">{metrics.cadence_per_hour}</div>
               <div className="text-[10px] text-gray-500">cp/h</div>
             </div>
-            <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-center p-2 bg-emerald-50 rounded">
               <div className="text-lg font-bold text-emerald-600">{metrics.production_today}</div>
               <div className="text-[10px] text-gray-500">Prod. jour</div>
             </div>
-            <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-center p-2 bg-amber-50 rounded">
               <div className="text-lg font-bold text-amber-600">{metrics.trs}%</div>
               <div className="text-[10px] text-gray-500">TRS</div>
             </div>
           </div>
         )}
         <button onClick={(e) => { e.stopPropagation(); onDelete(machine.id); }}
-          className="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+          data-testid={`mes-delete-machine-${machine.id}`}
+          className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-red-500 rounded-full hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
           <Trash2 className="h-4 w-4" />
         </button>
       </CardContent>
