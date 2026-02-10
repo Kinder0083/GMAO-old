@@ -41,6 +41,9 @@ Application GMAO full-stack (Python/FastAPI + React + MongoDB) déployée sur Pr
   - Bouton Simuler impulsion et Ping capteur
   - Fix: MetricCard utilise une map de couleurs statique (corrige le purge Tailwind)
   - Fix: MachineCard utilise `group` class pour le bouton supprimer
+  - Fix: Graphique cadence utilise le timezone offset configurable depuis Parametres Speciaux (NTP/Fuseau Horaire)
+  - Fix: Timestamps alertes appliquent aussi l'offset timezone
+  - Fix: Menu sidebar - ajout entree M.E.S. dans defaultMenuItems de MainLayout.jsx
   - Tests: 100% backend (15/15) + 100% frontend
 
 ## Tâches en attente
