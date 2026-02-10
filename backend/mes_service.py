@@ -434,20 +434,29 @@ class MESService:
             self._subscribed_topics.add(topic)
             logger.info(f"[MES] Abonné au topic: {topic}")
 
-    def _on_mqtt_message(self, client, userdata, message):
-        """Callback MQTT - reçoit les impulsions"""
+    def _on_mqtt_message(self, topic, payload, qos):
+        """Callback MQTT - reçoit les impulsions
+        Signature: (topic: str, payload: str, qos: int) depuis mqtt_manager._on_message
+        """
         try:
-            payload = message.payload.decode().strip()
-            value = int(float(payload))
-            topic = message.topic
+            value = int(float(str(payload).strip()))
+            logger.info(f"[MES] Pulse MQTT recu: topic={topic}, value={value}")
             import asyncio
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(self.record_pulse(topic, value))
-            else:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.ensure_future(self.record_pulse(topic, value))
+                else:
+                    loop.run_until_complete(self.record_pulse(topic, value))
+            except RuntimeError:
+                # No event loop in current thread - create one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
                 loop.run_until_complete(self.record_pulse(topic, value))
         except Exception as e:
             logger.error(f"[MES] Erreur traitement message MQTT: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     async def subscribe_all(self):
         """Subscribe to all active machine topics"""
