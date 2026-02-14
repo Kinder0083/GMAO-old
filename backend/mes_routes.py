@@ -80,6 +80,12 @@ async def mark_all_read(current_user: dict = Depends(get_current_user)):
     await mes_service.mark_all_alerts_read()
     return {"success": True}
 
+@router.delete("/alerts/all")
+async def delete_all_alerts(current_user: dict = Depends(get_current_user)):
+    """Supprimer toutes les alertes M.E.S."""
+    await mes_service.delete_all_alerts()
+    return {"success": True}
+
 
 # ==================== TOOLS ====================
 
