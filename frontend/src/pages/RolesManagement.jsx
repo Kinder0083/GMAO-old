@@ -72,7 +72,13 @@ const MODULES = [
   { key: 'achat', label: 'Gestion achats' },
   { key: 'timeTracking', label: 'Pointage horaire' },
   { key: 'cameras', label: 'Caméras' },
-  { key: 'analyticsChecklists', label: 'Analytics Checklists' }
+  { key: 'analyticsChecklists', label: 'Analytics Checklists' },
+  { key: 'mes', label: 'M.E.S. - Suivi de production' },
+  { key: 'mesReports', label: 'Rapports M.E.S.' },
+  { key: 'weeklyReports', label: 'Rapports Hebdomadaires' },
+  { key: 'demandesArret', label: 'Demandes d\'arrêt' },
+  { key: 'consignes', label: 'Consignes' },
+  { key: 'autorisationsParticulieres', label: 'Autorisations Particulières' }
 ];
 
 // Couleurs disponibles pour les badges
