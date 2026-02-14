@@ -497,6 +497,7 @@ const MainLayout = () => {
     { id: 'team-management', icon: 'UserCog', label: 'Gestion d\'équipe', path: '/team-management', module: 'timeTracking', visible: true, order: 16.5 },
     { id: 'cameras', icon: 'Camera', label: 'Caméras', path: '/cameras', module: 'cameras', visible: true, order: 16.6 },
     { id: 'mes', icon: 'Zap', label: 'M.E.S', path: '/mes', module: 'mes', visible: true, order: 16.65 },
+    { id: 'mes-reports', icon: 'FileBarChart', label: 'Rapports M.E.S.', path: '/mes-reports', module: 'mes', visible: true, order: 16.66 },
     { id: 'analytics-checklists', icon: 'BarChart3', label: 'Analytics Checklists', path: '/analytics/checklists', module: 'preventiveMaintenance', visible: true, order: 16.7 },
     { id: 'people', icon: 'Users', label: 'Utilisateurs', path: '/people', module: 'people', visible: true, order: 17 },
     { id: 'planning', icon: 'Calendar', label: 'Planning', path: '/planning', module: 'planning', visible: true, order: 18 },
