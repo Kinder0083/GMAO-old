@@ -277,9 +277,11 @@ def serialize_doc(doc):
         doc["id"] = str(doc["_id"])
         del doc["_id"]
     
-    # Supprimer le password si présent
-    if "password" in doc:
-        del doc["password"]
+    # Supprimer les champs sensibles si présents
+    sensitive_fields = ["password", "hashed_password", "reset_token", "reset_token_created"]
+    for field in sensitive_fields:
+        if field in doc:
+            del doc[field]
     
     # Convertir récursivement tous les ObjectId et types non sérialisables
     for key, value in list(doc.items()):
