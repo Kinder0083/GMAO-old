@@ -41,7 +41,8 @@ import {
   UserCog,
   Clock,
   Camera,
-  Zap
+  Zap,
+  FileBarChart
 } from 'lucide-react';
 
 // Mapping des noms d'icônes vers les composants
