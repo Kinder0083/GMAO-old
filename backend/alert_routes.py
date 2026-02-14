@@ -3,7 +3,7 @@ Routes API pour les alertes et notifications
 """
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
-from models import Alert, AlertCreate, AlertActionConfig
+from models import Alert, AlertCreate, AlertActionConfig, MessageResponse
 from dependencies import get_current_user, get_current_admin_user
 from datetime import datetime, timezone
 import logging
