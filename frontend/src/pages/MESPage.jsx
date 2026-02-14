@@ -734,6 +734,7 @@ const SettingsField = ({ label, field, type = 'number', unit = '', value, onChan
 
 // ==================== SETTINGS MODAL ====================
 const MachineSettingsModal = ({ machine, onClose }) => {
+  const schedule = machine.production_schedule || {};
   const [form, setForm] = useState({
     theoretical_cadence: machine.theoretical_cadence || 6,
     downtime_margin_pct: machine.downtime_margin_pct || 30,
@@ -744,6 +745,10 @@ const MachineSettingsModal = ({ machine, onClose }) => {
     alert_over_cadence: machine.alerts?.over_cadence || 0,
     alert_daily_target: machine.alerts?.daily_target || 0,
     alert_no_signal_minutes: machine.alerts?.no_signal_minutes || 10,
+    schedule_is_24h: schedule.is_24h !== undefined ? schedule.is_24h : true,
+    schedule_start_hour: schedule.start_hour ?? 6,
+    schedule_end_hour: schedule.end_hour ?? 22,
+    schedule_production_days: schedule.production_days ?? [0, 1, 2, 3, 4],
   });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
