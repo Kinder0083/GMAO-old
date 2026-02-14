@@ -1331,6 +1331,70 @@ class MESService:
             "details": [self._serialize(a) for a in alerts[:100]],  # Limit details
         }
 
+    # ==================== SCHEDULED REPORTS ====================
+
+    async def get_scheduled_reports(self) -> list:
+        """Get all scheduled M.E.S. reports"""
+        reports = await self.db.mes_scheduled_reports.find({"active": True}).sort("created_at", -1).to_list(100)
+        return [self._serialize(r) for r in reports]
+
+    async def get_scheduled_report(self, report_id: str) -> dict:
+        """Get a single scheduled report"""
+        report = await self.db.mes_scheduled_reports.find_one({"_id": ObjectId(report_id)})
+        return self._serialize(report) if report else None
+
+    async def create_scheduled_report(self, data: dict) -> dict:
+        """Create a new scheduled report"""
+        report = {
+            "name": data.get("name", "Rapport M.E.S."),
+            "machine_ids": data.get("machine_ids", ["all"]),
+            "report_type": data.get("report_type", "all"),
+            "frequency": data.get("frequency", "weekly"),  # daily, weekly, monthly
+            "day_of_week": data.get("day_of_week", 0),  # 0=Monday, 6=Sunday (for weekly)
+            "day_of_month": data.get("day_of_month", 1),  # 1-28 (for monthly)
+            "hour": data.get("hour", 8),  # 0-23
+            "minute": data.get("minute", 0),  # 0-59
+            "recipients": data.get("recipients", []),
+            "format": data.get("format", "pdf"),  # pdf, excel
+            "include_charts": data.get("include_charts", True),
+            "active": True,
+            "last_sent_at": None,
+            "created_at": datetime.now(timezone.utc),
+            "created_by": data.get("created_by", ""),
+        }
+        result = await self.db.mes_scheduled_reports.insert_one(report)
+        report["_id"] = result.inserted_id
+        return self._serialize(report)
+
+    async def update_scheduled_report(self, report_id: str, data: dict) -> dict:
+        """Update a scheduled report"""
+        update = {}
+        fields = ["name", "machine_ids", "report_type", "frequency", "day_of_week", 
+                  "day_of_month", "hour", "minute", "recipients", "format", 
+                  "include_charts", "active"]
+        for field in fields:
+            if field in data:
+                update[field] = data[field]
+        
+        if update:
+            await self.db.mes_scheduled_reports.update_one(
+                {"_id": ObjectId(report_id)}, {"$set": update}
+            )
+        
+        report = await self.db.mes_scheduled_reports.find_one({"_id": ObjectId(report_id)})
+        return self._serialize(report) if report else None
+
+    async def delete_scheduled_report(self, report_id: str):
+        """Delete a scheduled report"""
+        await self.db.mes_scheduled_reports.delete_one({"_id": ObjectId(report_id)})
+
+    async def mark_report_sent(self, report_id: str):
+        """Mark a scheduled report as sent"""
+        await self.db.mes_scheduled_reports.update_one(
+            {"_id": ObjectId(report_id)},
+            {"$set": {"last_sent_at": datetime.now(timezone.utc)}}
+        )
+
     # ==================== UTILS ====================
 
     def _serialize(self, doc):
