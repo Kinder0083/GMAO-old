@@ -1044,6 +1044,293 @@ class MESService:
         if r1.deleted_count or r2.deleted_count:
             logger.info(f"[MES] Nettoyage: {r1.deleted_count} pulses, {r2.deleted_count} cadences supprimés")
 
+    # ==================== REPORTING ====================
+
+    async def get_report_data(self, machine_ids: list, report_type: str, 
+                               date_from: str, date_to: str) -> dict:
+        """Get aggregated report data for one or more machines"""
+        start = datetime.fromisoformat(date_from.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(date_to.replace("Z", "+00:00"))
+        
+        # If no specific machines, get all
+        if not machine_ids or machine_ids == ["all"]:
+            machines = await self.db.mes_machines.find().to_list(500)
+            machine_ids = [str(m["_id"]) for m in machines]
+        else:
+            machines = []
+            for mid in machine_ids:
+                m = await self.db.mes_machines.find_one({"_id": ObjectId(mid)})
+                if m:
+                    machines.append(m)
+        
+        result = {
+            "period": {"from": date_from, "to": date_to},
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "machines": [],
+            "summary": {},
+        }
+        
+        total_production = 0
+        total_rejects = 0
+        total_downtime = 0
+        all_trs_values = []
+        
+        for machine in machines:
+            mid = machine["_id"]
+            eq = await self.db.equipments.find_one({"_id": machine.get("equipment_id")}, {"nom": 1})
+            machine_name = eq["nom"] if eq else "Inconnu"
+            
+            machine_data = {
+                "id": str(mid),
+                "name": machine_name,
+                "mqtt_topic": machine.get("mqtt_topic", ""),
+            }
+            
+            if report_type in ["trs", "all"]:
+                trs_data = await self._get_trs_report_data(mid, machine, start, end)
+                machine_data["trs"] = trs_data
+                if trs_data.get("trs_values"):
+                    all_trs_values.extend([v["trs"] for v in trs_data["trs_values"] if v.get("trs") is not None])
+            
+            if report_type in ["production", "all"]:
+                prod_data = await self._get_production_report_data(mid, start, end)
+                machine_data["production"] = prod_data
+                total_production += prod_data.get("total", 0)
+            
+            if report_type in ["stops", "all"]:
+                stops_data = await self._get_stops_report_data(mid, machine, start, end)
+                machine_data["stops"] = stops_data
+                total_downtime += stops_data.get("total_downtime_seconds", 0)
+            
+            if report_type in ["rejects", "all"]:
+                rejects_data = await self._get_rejects_report_data(mid, start, end)
+                machine_data["rejects"] = rejects_data
+                total_rejects += rejects_data.get("total", 0)
+            
+            if report_type in ["alerts", "all"]:
+                alerts_data = await self._get_alerts_report_data(mid, start, end)
+                machine_data["alerts"] = alerts_data
+            
+            result["machines"].append(machine_data)
+        
+        # Summary
+        result["summary"] = {
+            "total_machines": len(machines),
+            "total_production": total_production,
+            "total_rejects": total_rejects,
+            "total_downtime_hours": round(total_downtime / 3600, 2),
+            "average_trs": round(sum(all_trs_values) / len(all_trs_values), 1) if all_trs_values else 0,
+        }
+        
+        return result
+
+    async def _get_trs_report_data(self, machine_id, machine, start, end) -> dict:
+        """Get TRS data for reporting"""
+        theoretical = machine.get("theoretical_cadence", 6)
+        margin_pct = machine.get("downtime_margin_pct", 30)
+        schedule = machine.get("production_schedule", {})
+        is_24h = schedule.get("is_24h", True)
+        start_hour = schedule.get("start_hour", 6)
+        end_hour = schedule.get("end_hour", 22)
+        production_days = schedule.get("production_days", [0, 1, 2, 3, 4])
+        
+        trs_values = []
+        current = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        while current <= end:
+            day_start = current
+            day_end = current.replace(hour=23, minute=59, second=59)
+            if day_end > end:
+                day_end = end
+            
+            day_weekday = current.weekday()
+            if day_weekday not in production_days:
+                trs_values.append({
+                    "date": current.strftime("%Y-%m-%d"),
+                    "trs": None, "availability": None,
+                    "performance": None, "quality": None,
+                    "is_production_day": False,
+                })
+                current += timedelta(days=1)
+                continue
+            
+            # Calculate planned time
+            if is_24h:
+                planned = (day_end - day_start).total_seconds()
+            else:
+                prod_start = day_start.replace(hour=start_hour)
+                prod_end = day_start.replace(hour=end_hour)
+                if day_end < prod_end:
+                    prod_end = day_end
+                planned = max((prod_end - prod_start).total_seconds(), 0)
+            
+            count = await self.db.mes_pulses.count_documents({
+                "machine_id": machine_id, "timestamp": {"$gte": day_start, "$lte": day_end}
+            })
+            downtime = await self._calc_downtime(machine_id, day_start, day_end, theoretical, margin_pct)
+            rejects = await self.get_rejects_total(machine_id, day_start, day_end)
+            
+            if planned > 0:
+                operating = max(planned - downtime, 0)
+                availability = round(operating / planned * 100, 1)
+                if theoretical > 0 and operating > 0:
+                    theoretical_during_uptime = theoretical * (operating / 60)
+                    performance = round(min(count / theoretical_during_uptime * 100, 100), 1) if theoretical_during_uptime > 0 else 0
+                else:
+                    performance = 0
+                if count > 0:
+                    quality = round(max(count - rejects, 0) / count * 100, 1)
+                else:
+                    quality = 100
+                trs = round((availability / 100) * (performance / 100) * (quality / 100) * 100, 1)
+            else:
+                availability = performance = quality = trs = 0
+            
+            trs_values.append({
+                "date": current.strftime("%Y-%m-%d"),
+                "trs": trs, "availability": availability,
+                "performance": performance, "quality": quality,
+                "production": count, "rejects": rejects,
+                "is_production_day": True,
+            })
+            current += timedelta(days=1)
+        
+        # Averages
+        prod_days = [v for v in trs_values if v.get("is_production_day") and v.get("trs") is not None]
+        return {
+            "trs_values": trs_values,
+            "average_trs": round(sum(v["trs"] for v in prod_days) / len(prod_days), 1) if prod_days else 0,
+            "average_availability": round(sum(v["availability"] for v in prod_days) / len(prod_days), 1) if prod_days else 0,
+            "average_performance": round(sum(v["performance"] for v in prod_days) / len(prod_days), 1) if prod_days else 0,
+            "average_quality": round(sum(v["quality"] for v in prod_days) / len(prod_days), 1) if prod_days else 0,
+        }
+
+    async def _get_production_report_data(self, machine_id, start, end) -> dict:
+        """Get production data for reporting"""
+        # Daily production
+        pipeline = [
+            {"$match": {"machine_id": machine_id, "timestamp": {"$gte": start, "$lte": end}}},
+            {"$group": {
+                "_id": {
+                    "year": {"$year": "$timestamp"},
+                    "month": {"$month": "$timestamp"},
+                    "day": {"$dayOfMonth": "$timestamp"},
+                },
+                "count": {"$sum": 1},
+            }},
+            {"$sort": {"_id": 1}},
+        ]
+        daily = await self.db.mes_pulses.aggregate(pipeline).to_list(1000)
+        
+        daily_values = []
+        for d in daily:
+            date_str = f"{d['_id']['year']:04d}-{d['_id']['month']:02d}-{d['_id']['day']:02d}"
+            daily_values.append({"date": date_str, "production": d["count"]})
+        
+        total = await self.db.mes_pulses.count_documents({
+            "machine_id": machine_id, "timestamp": {"$gte": start, "$lte": end}
+        })
+        
+        return {
+            "total": total,
+            "daily_values": daily_values,
+            "average_daily": round(total / max(len(daily_values), 1), 1),
+        }
+
+    async def _get_stops_report_data(self, machine_id, machine, start, end) -> dict:
+        """Get stops/downtime data for reporting"""
+        theoretical = machine.get("theoretical_cadence", 6)
+        margin_pct = machine.get("downtime_margin_pct", 30)
+        
+        total_downtime = await self._calc_downtime(machine_id, start, end, theoretical, margin_pct)
+        
+        # Get stop events from alerts
+        stop_alerts = await self.db.mes_alerts.find({
+            "machine_id": machine_id,
+            "type": {"$in": ["STOPPED", "NO_SIGNAL"]},
+            "created_at": {"$gte": start, "$lte": end}
+        }).sort("created_at", -1).to_list(1000)
+        
+        stops = []
+        for alert in stop_alerts:
+            stops.append({
+                "timestamp": alert["created_at"].isoformat(),
+                "type": alert["type"],
+                "message": alert.get("message", ""),
+            })
+        
+        return {
+            "total_downtime_seconds": total_downtime,
+            "total_downtime_hours": round(total_downtime / 3600, 2),
+            "stop_events": stops,
+            "stop_count": len(stops),
+        }
+
+    async def _get_rejects_report_data(self, machine_id, start, end) -> dict:
+        """Get rejects data for reporting"""
+        rejects = await self.db.mes_rejects.find({
+            "machine_id": machine_id,
+            "timestamp": {"$gte": start, "$lte": end}
+        }).sort("timestamp", -1).to_list(10000)
+        
+        # Group by reason
+        by_reason = {}
+        for r in rejects:
+            reason = r.get("reason") or r.get("custom_reason") or "Sans motif"
+            if reason not in by_reason:
+                by_reason[reason] = 0
+            by_reason[reason] += r.get("quantity", 0)
+        
+        # Daily rejects
+        pipeline = [
+            {"$match": {"machine_id": machine_id, "timestamp": {"$gte": start, "$lte": end}}},
+            {"$group": {
+                "_id": {
+                    "year": {"$year": "$timestamp"},
+                    "month": {"$month": "$timestamp"},
+                    "day": {"$dayOfMonth": "$timestamp"},
+                },
+                "total": {"$sum": "$quantity"},
+            }},
+            {"$sort": {"_id": 1}},
+        ]
+        daily = await self.db.mes_rejects.aggregate(pipeline).to_list(1000)
+        
+        daily_values = []
+        for d in daily:
+            date_str = f"{d['_id']['year']:04d}-{d['_id']['month']:02d}-{d['_id']['day']:02d}"
+            daily_values.append({"date": date_str, "rejects": d["total"]})
+        
+        total = sum(r.get("quantity", 0) for r in rejects)
+        
+        return {
+            "total": total,
+            "by_reason": [{"reason": k, "quantity": v} for k, v in sorted(by_reason.items(), key=lambda x: -x[1])],
+            "daily_values": daily_values,
+            "details": [self._serialize(r) for r in rejects[:100]],  # Limit details
+        }
+
+    async def _get_alerts_report_data(self, machine_id, start, end) -> dict:
+        """Get alerts data for reporting"""
+        alerts = await self.db.mes_alerts.find({
+            "machine_id": machine_id,
+            "created_at": {"$gte": start, "$lte": end}
+        }).sort("created_at", -1).to_list(10000)
+        
+        # Group by type
+        by_type = {}
+        for a in alerts:
+            atype = a.get("type", "UNKNOWN")
+            if atype not in by_type:
+                by_type[atype] = 0
+            by_type[atype] += 1
+        
+        return {
+            "total": len(alerts),
+            "by_type": [{"type": k, "count": v} for k, v in sorted(by_type.items(), key=lambda x: -x[1])],
+            "details": [self._serialize(a) for a in alerts[:100]],  # Limit details
+        }
+
     # ==================== UTILS ====================
 
     def _serialize(self, doc):
