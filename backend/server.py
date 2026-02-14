@@ -1113,11 +1113,15 @@ async def get_service_manager_stats(current_user: dict = Depends(get_current_use
 
 
 # ==================== WORK ORDERS ROUTES ====================
-@api_router.get("/work-orders", response_model=List[WorkOrder], tags=["Ordres de Travail"])
+@api_router.get("/work-orders", response_model=List[WorkOrder], tags=["Ordres de Travail"],
+    summary="Lister les ordres de travail",
+    description="Retourne la liste des ordres de travail avec filtres optionnels par date. Supporte le filtrage par date de creation ou d'echeance.",
+    responses={**STANDARD_ERRORS}
+)
 async def get_work_orders(
     date_debut: str = None,
     date_fin: str = None,
-    date_type: str = "creation",  # "creation" ou "echeance"
+    date_type: str = "creation",
     current_user: dict = Depends(require_permission("workOrders", "view"))
 ):
     """Liste tous les ordres de travail avec filtrage par date et service"""
