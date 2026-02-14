@@ -189,6 +189,17 @@ class MQTTManager:
             # Restaurer automatiquement les abonnements sauvegardés
             if self._auto_restore:
                 self._restore_subscriptions_sync()
+            
+            # Notifier tous les listeners de connexion
+            logger.info(f"[MQTT] Notification de {len(self._on_connect_listeners)} listener(s) de connexion...")
+            for listener in self._on_connect_listeners:
+                try:
+                    logger.info(f"[MQTT] Appel du listener: {listener.__name__ if hasattr(listener, '__name__') else listener}")
+                    listener()
+                except Exception as e:
+                    logger.error(f"❌ [MQTT] Erreur listener connexion: {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
         else:
             self.is_connected = False
             logger.error(f"❌ [MQTT] Échec de connexion MQTT, code: {rc}")
