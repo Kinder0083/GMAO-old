@@ -401,7 +401,11 @@ async def get_equipment_by_id(equipment_id: str):
         return None
 
 # ==================== AUTH ROUTES ====================
-@api_router.post("/auth/register", response_model=User)
+@api_router.post("/auth/register", response_model=User, tags=["Authentification"],
+    summary="Inscrire un nouvel utilisateur",
+    description="Cree un compte utilisateur avec les permissions par defaut selon le role choisi.",
+    responses={**AUTH_ERRORS, 400: {"description": "Email deja utilise"}}
+)
 async def register(user_create: UserCreate):
     """Créer un nouveau compte utilisateur"""
     # Check if user already exists
@@ -464,7 +468,11 @@ async def register(user_create: UserCreate):
     
     return User(**serialize_doc(user_dict))
 
-@api_router.get("/version", response_model=VersionResponse)
+@api_router.get("/version", response_model=VersionResponse, tags=["Systeme"],
+    summary="Version de l'application",
+    description="Retourne la version actuelle, le nom de version et la date de publication.",
+    responses={200: {"description": "Version retournee avec succes", "content": {"application/json": {"example": {"version": "2.2.0", "versionName": "Documentation Enrichie", "releaseDate": "2025-01-18"}}}}}
+)
 async def get_version():
     """Obtenir la version actuelle de l'application (endpoint public)"""
     return {
@@ -473,7 +481,11 @@ async def get_version():
         "releaseDate": "2025-01-18"
     }
 
-@api_router.post("/auth/login", response_model=Token)
+@api_router.post("/auth/login", response_model=Token, tags=["Authentification"],
+    summary="Connexion utilisateur",
+    description="Authentifie un utilisateur et retourne un token JWT valide 7 jours. Le token doit etre inclus dans le header `Authorization: Bearer <token>` pour les requetes protegees.",
+    responses={401: {"description": "Identifiants invalides", "content": {"application/json": {"example": {"detail": "Identifiants invalides"}}}}}
+)
 async def login(login_request: LoginRequest):
     """Se connecter et obtenir un token JWT"""
     # Debug logging
@@ -549,7 +561,11 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     return User(**current_user)
 
 
-@api_router.post("/auth/forgot-password", response_model=MessageResponse)
+@api_router.post("/auth/forgot-password", response_model=MessageResponse, tags=["Authentification"],
+    summary="Mot de passe oublie",
+    description="Envoie un email avec un lien de reinitialisation du mot de passe. Le token est valable 1 heure.",
+    responses={200: {"description": "Email envoye (meme si l'adresse n'existe pas, pour des raisons de securite)"}}
+)
 async def forgot_password(request: ForgotPasswordRequest):
     """Demander une réinitialisation de mot de passe"""
     # Vérifier si l'utilisateur existe
@@ -590,7 +606,11 @@ async def forgot_password(request: ForgotPasswordRequest):
     # Toujours retourner succès pour ne pas révéler si l'email existe
     return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé"}
 
-@api_router.post("/auth/reset-password", response_model=MessageResponse)
+@api_router.post("/auth/reset-password", response_model=MessageResponse, tags=["Authentification"],
+    summary="Reinitialiser le mot de passe",
+    description="Reinitialise le mot de passe avec un token recu par email. Le token expire apres 1 heure.",
+    responses={400: {"description": "Token invalide ou expire"}}
+)
 async def reset_password(request: ResetPasswordRequest):
     """Réinitialiser le mot de passe avec un token"""
     try:
@@ -636,7 +656,11 @@ def generate_temp_password(length: int = 12) -> str:
     characters = string.ascii_letters + string.digits + "!@#$%"
     return ''.join(secrets.choice(characters) for _ in range(length))
 
-@api_router.post("/users/invite-member", response_model=InviteMemberResponse)
+@api_router.post("/users/invite-member", response_model=InviteMemberResponse, tags=["Utilisateurs"],
+    summary="Inviter un membre",
+    description="Cree un compte utilisateur et envoie un email d'invitation avec les identifiants. Necessite le role ADMIN.",
+    responses={**STANDARD_ERRORS, 400: {"description": "Email deja utilise"}}
+)
 async def invite_member(request: InviteMemberRequest, current_user: dict = Depends(get_current_admin_user)):
     """
     Envoyer une invitation par email (Admin uniquement)
@@ -755,7 +779,11 @@ async def create_member(request: CreateMemberRequest, current_user: dict = Depen
     
     return User(**serialize_doc(user_dict))
 
-@api_router.get("/auth/validate-invitation/{token}", response_model=ValidateInvitationResponse)
+@api_router.get("/auth/validate-invitation/{token}", response_model=ValidateInvitationResponse, tags=["Authentification"],
+    summary="Valider un token d'invitation",
+    description="Verifie la validite d'un token d'invitation. Utilise lors du processus d'acceptation d'invitation.",
+    responses={400: {"description": "Token invalide ou expire"}}
+)
 async def validate_invitation(token: str):
     """
     Valider un token d'invitation et retourner les informations
@@ -852,7 +880,11 @@ async def complete_registration(request: CompleteRegistrationRequest):
             detail="Erreur lors de l'inscription"
         )
 
-@api_router.post("/auth/change-password-first-login", response_model=MessageResponse)
+@api_router.post("/auth/change-password-first-login", response_model=MessageResponse, tags=["Authentification"],
+    summary="Changer le mot de passe (premiere connexion)",
+    description="Permet a un utilisateur invite de definir son mot de passe definitif lors de sa premiere connexion.",
+    responses={**AUTH_ERRORS}
+)
 async def change_password_first_login(request: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
     """
     Changer le mot de passe lors de la première connexion
@@ -901,7 +933,11 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
     return User(**serialize_doc(user))
 
 
-@api_router.put("/auth/me")
+@api_router.put("/auth/me", tags=["Authentification"],
+    summary="Mettre a jour le profil",
+    description="Met a jour les informations du profil de l'utilisateur connecte (nom, prenom, email, telephone, photo).",
+    responses={**STANDARD_ERRORS}
+)
 async def update_current_user_profile(user_update: UserProfileUpdate, current_user: dict = Depends(get_current_user)):
     """
     Mettre à jour le profil de l'utilisateur connecté
@@ -927,7 +963,11 @@ async def update_current_user_profile(user_update: UserProfileUpdate, current_us
     return {"message": "Profil mis à jour avec succès", "user": serialize_doc(user)}
 
 
-@api_router.post("/auth/change-password", response_model=MessageResponse)
+@api_router.post("/auth/change-password", response_model=MessageResponse, tags=["Authentification"],
+    summary="Changer le mot de passe",
+    description="Permet a l'utilisateur connecte de changer son mot de passe en fournissant l'ancien et le nouveau.",
+    responses={**AUTH_ERRORS, 400: {"description": "Ancien mot de passe incorrect"}}
+)
 async def change_password(request: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
     """
     Changer le mot de passe de l'utilisateur connecté
