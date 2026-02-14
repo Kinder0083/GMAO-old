@@ -115,6 +115,7 @@ export const getDefaultMenuItems = (isAdmin) => [
   { id: 'team-management', icon: 'UserCog', label: 'Gestion d\'équipe', path: '/team-management', module: 'timeTracking', visible: true, order: 17.5 },
   { id: 'cameras', icon: 'Camera', label: 'Caméras', path: '/cameras', module: 'cameras', visible: true, order: 17.6 },
   { id: 'mes', icon: 'Zap', label: 'M.E.S', path: '/mes', module: 'mes', visible: true, order: 17.7 },
+  { id: 'mes-reports', icon: 'FileBarChart', label: 'Rapports M.E.S.', path: '/mes-reports', module: 'mes', visible: true, order: 17.71 },
   { id: 'analytics-checklists', icon: 'BarChart3', label: 'Analytics Checklists', path: '/analytics/checklists', module: 'analyticsChecklists', visible: true, order: 17.7 },
   { id: 'presqu-accident', icon: 'AlertTriangle', label: 'Presqu\'accident', path: '/presqu-accident', module: 'presquaccident', visible: true, order: 13 },
   { id: 'presqu-accident-rapport', icon: 'FileText', label: 'Rapport P.accident', path: '/presqu-accident-rapport', module: 'presquaccidentRapport', visible: true, order: 14 },
