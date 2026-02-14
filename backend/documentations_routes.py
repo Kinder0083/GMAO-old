@@ -1235,3 +1235,217 @@ def generate_custom_form_html(form: dict, template: dict) -> str:
     """
     
     return html
+
+
+# ==================== DOSSIERS (Vue Explorateur) ====================
+
+@router.get("/poles/{pole_id}/folders")
+async def get_folders(
+    pole_id: str,
+    parent_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer les dossiers d'un pôle (optionnellement dans un parent)"""
+    try:
+        query = {"pole_id": pole_id, "parent_id": parent_id}
+        folders = await db.doc_folders.find(query, {"_id": 0}).to_list(length=None)
+        return folders
+    except Exception as e:
+        logger.error(f"Erreur récupération dossiers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/poles/{pole_id}/folders")
+async def create_folder(
+    pole_id: str,
+    folder_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Créer un nouveau dossier dans un pôle"""
+    try:
+        pole = await db.poles_service.find_one({"id": pole_id})
+        if not pole:
+            raise HTTPException(status_code=404, detail="Pôle non trouvé")
+
+        folder = {
+            "id": str(uuid.uuid4()),
+            "pole_id": pole_id,
+            "parent_id": folder_data.get("parent_id"),
+            "name": folder_data.get("name", "Nouveau dossier"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user.get("id"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+
+        await db.doc_folders.insert_one(folder)
+        folder.pop("_id", None)
+
+        if realtime_manager:
+            await realtime_manager.emit_event("documentations", "created", folder, user_id=current_user["id"])
+
+        return folder
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur création dossier: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/folders/{folder_id}")
+async def update_folder(
+    folder_id: str,
+    folder_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Renommer ou déplacer un dossier"""
+    try:
+        existing = await db.doc_folders.find_one({"id": folder_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Dossier non trouvé")
+
+        update_data = {}
+        if "name" in folder_data:
+            update_data["name"] = folder_data["name"]
+        if "parent_id" in folder_data:
+            update_data["parent_id"] = folder_data["parent_id"]
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+        await db.doc_folders.update_one({"id": folder_id}, {"$set": update_data})
+        updated = await db.doc_folders.find_one({"id": folder_id}, {"_id": 0})
+
+        if realtime_manager:
+            await realtime_manager.emit_event("documentations", "updated", updated, user_id=current_user["id"])
+
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur mise à jour dossier: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/folders/{folder_id}", response_model=SuccessResponse)
+async def delete_folder(
+    folder_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer un dossier et déplacer son contenu au parent"""
+    try:
+        folder = await db.doc_folders.find_one({"id": folder_id})
+        if not folder:
+            raise HTTPException(status_code=404, detail="Dossier non trouvé")
+
+        parent_id = folder.get("parent_id")
+
+        # Déplacer les sous-dossiers vers le parent
+        await db.doc_folders.update_many(
+            {"parent_id": folder_id},
+            {"$set": {"parent_id": parent_id}}
+        )
+        # Déplacer les documents vers le parent
+        await db.documents.update_many(
+            {"folder_id": folder_id},
+            {"$set": {"folder_id": parent_id}}
+        )
+
+        await db.doc_folders.delete_one({"id": folder_id})
+
+        if realtime_manager:
+            await realtime_manager.emit_event("documentations", "deleted", {"id": folder_id}, user_id=current_user["id"])
+
+        return {"success": True, "message": "Dossier supprimé"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur suppression dossier: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/documents/{document_id}/move")
+async def move_document(
+    document_id: str,
+    move_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Déplacer un document vers un dossier ou un autre pôle"""
+    try:
+        doc = await db.documents.find_one({"id": document_id})
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document non trouvé")
+
+        update = {"updated_at": datetime.now(timezone.utc).isoformat()}
+        if "folder_id" in move_data:
+            update["folder_id"] = move_data["folder_id"]
+        if "pole_id" in move_data:
+            update["pole_id"] = move_data["pole_id"]
+
+        await db.documents.update_one({"id": document_id}, {"$set": update})
+        updated = await db.documents.find_one({"id": document_id}, {"_id": 0})
+
+        if realtime_manager:
+            await realtime_manager.emit_event("documentations", "updated", updated, user_id=current_user["id"])
+
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur déplacement document: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/poles/{pole_id}/explorer")
+async def get_explorer_contents(
+    pole_id: str,
+    folder_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer le contenu d'un dossier pour la vue explorateur"""
+    try:
+        pole = await db.poles_service.find_one({"id": pole_id})
+        if not pole:
+            raise HTTPException(status_code=404, detail="Pôle non trouvé")
+        if "_id" in pole:
+            del pole["_id"]
+
+        # Sous-dossiers
+        folders = await db.doc_folders.find(
+            {"pole_id": pole_id, "parent_id": folder_id}, {"_id": 0}
+        ).to_list(length=None)
+
+        # Documents dans ce dossier
+        documents = await db.documents.find(
+            {"pole_id": pole_id, "folder_id": folder_id}, {"_id": 0}
+        ).to_list(length=None)
+
+        # Bons de travail (uniquement à la racine du pôle, sans folder_id)
+        bons_travail = []
+        if folder_id is None:
+            bons_travail = await db.bons_travail.find(
+                {"pole_id": pole_id}, {"_id": 0}
+            ).to_list(length=None)
+
+        # Breadcrumb
+        breadcrumb = [{"id": pole_id, "name": pole.get("nom", ""), "type": "pole"}]
+        if folder_id:
+            current_folder_id = folder_id
+            while current_folder_id:
+                f = await db.doc_folders.find_one({"id": current_folder_id}, {"_id": 0})
+                if f:
+                    breadcrumb.insert(1, {"id": f["id"], "name": f["name"], "type": "folder"})
+                    current_folder_id = f.get("parent_id")
+                else:
+                    break
+
+        return {
+            "pole": pole,
+            "folders": folders,
+            "documents": documents,
+            "bons_travail": bons_travail,
+            "breadcrumb": breadcrumb,
+            "current_folder_id": folder_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération contenu explorateur: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
