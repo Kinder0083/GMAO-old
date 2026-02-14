@@ -474,6 +474,7 @@ class EntityType(str, Enum):
     SETTINGS = "SETTINGS"
     DEMANDE_ARRET = "DEMANDE_ARRET"
     WHITEBOARD = "WHITEBOARD"
+    MES_PRODUCT_REFERENCE = "MES_PRODUCT_REFERENCE"
 
 # Audit Log Models
 class AuditLog(BaseModel):
