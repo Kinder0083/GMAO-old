@@ -125,6 +125,11 @@ const MachineCard = ({ machine, onSelect, onDelete }) => {
             <div className="text-center p-2 bg-amber-50 rounded">
               <div className="text-lg font-bold text-amber-600">{metrics.trs}%</div>
               <div className="text-[10px] text-gray-500">TRS</div>
+              <div className="flex justify-center gap-1 mt-1">
+                <span className="text-[8px] px-1 py-0.5 bg-sky-100 text-sky-700 rounded">D:{metrics.trs_availability ?? 0}%</span>
+                <span className="text-[8px] px-1 py-0.5 bg-violet-100 text-violet-700 rounded">P:{metrics.trs_performance ?? 0}%</span>
+                <span className="text-[8px] px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded">Q:{metrics.trs_quality ?? 0}%</span>
+              </div>
             </div>
           </div>
         )}
