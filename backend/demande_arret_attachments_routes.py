@@ -13,6 +13,7 @@ from pathlib import Path
 
 from dependencies import get_current_user
 from demande_arret_utils import db, serialize_doc, UPLOAD_DIR, MAX_FILE_SIZE
+from models import MessageResponse
 
 logger = logging.getLogger(__name__)
 
