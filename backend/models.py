@@ -470,7 +470,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             chatLive=ModulePermission(view=True, edit=False, delete=False),
             cameras=ModulePermission(view=True, edit=False, delete=False),  # Visualiseur peut voir les caméras
-            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False)  # Visualiseur peut voir les analytics
+            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False),  # Visualiseur peut voir les analytics
+            mes=ModulePermission(view=True, edit=False, delete=False),
+            mesReports=ModulePermission(view=True, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=True, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=True, edit=False, delete=False),
+            demandesArret=ModulePermission(view=True, edit=False, delete=False),
+            consignes=ModulePermission(view=True, edit=False, delete=False),
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # Par défaut : permissions minimales
