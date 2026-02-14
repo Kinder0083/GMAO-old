@@ -488,7 +488,7 @@ const MachineDashboard = ({ machineId, onBack }) => {
     } catch {}
   }, [machineId]);
 
-  useEffect(() => { loadMachine(); loadAlerts(); }, [loadMachine, loadAlerts]);
+  useEffect(() => { loadMachine(); loadAlerts(); loadTrsHistory(); }, [loadMachine, loadAlerts, loadTrsHistory]);
   useEffect(() => { loadMetrics(); const i = setInterval(loadMetrics, 5000); return () => clearInterval(i); }, [loadMetrics]);
   useEffect(() => { loadHistory(); const i = setInterval(loadHistory, 60000); return () => clearInterval(i); }, [loadHistory]);
 
