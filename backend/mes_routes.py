@@ -627,3 +627,59 @@ async def export_pdf_report(data: dict, current_user: dict = Depends(get_current
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+# ==================== SCHEDULED REPORTS ====================
+
+@router.get("/scheduled-reports")
+async def list_scheduled_reports(current_user: dict = Depends(get_current_user)):
+    """List all scheduled M.E.S. reports"""
+    return await mes_service.get_scheduled_reports()
+
+@router.get("/scheduled-reports/{report_id}")
+async def get_scheduled_report(report_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific scheduled report"""
+    report = await mes_service.get_scheduled_report(report_id)
+    if not report:
+        raise HTTPException(404, "Rapport planifie non trouve")
+    return report
+
+@router.post("/scheduled-reports")
+async def create_scheduled_report(data: dict, current_user: dict = Depends(get_current_user)):
+    """Create a new scheduled report"""
+    if not data.get("name"):
+        raise HTTPException(400, "Le nom du rapport est requis")
+    if not data.get("recipients"):
+        raise HTTPException(400, "Au moins un destinataire est requis")
+    data["created_by"] = current_user.get("email", "")
+    return await mes_service.create_scheduled_report(data)
+
+@router.put("/scheduled-reports/{report_id}")
+async def update_scheduled_report(report_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    """Update a scheduled report"""
+    report = await mes_service.update_scheduled_report(report_id, data)
+    if not report:
+        raise HTTPException(404, "Rapport planifie non trouve")
+    return report
+
+@router.delete("/scheduled-reports/{report_id}")
+async def delete_scheduled_report(report_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a scheduled report"""
+    await mes_service.delete_scheduled_report(report_id)
+    return {"success": True}
+
+@router.post("/scheduled-reports/{report_id}/send-now")
+async def send_scheduled_report_now(report_id: str, current_user: dict = Depends(get_current_user)):
+    """Manually trigger sending a scheduled report"""
+    report = await mes_service.get_scheduled_report(report_id)
+    if not report:
+        raise HTTPException(404, "Rapport planifie non trouve")
+    
+    # Get the scheduler and trigger report
+    from mes_report_scheduler import mes_report_scheduler
+    if mes_report_scheduler:
+        await mes_report_scheduler.send_report(report_id)
+        return {"success": True, "message": "Rapport envoye"}
+    else:
+        raise HTTPException(500, "Scheduler non disponible")
+
