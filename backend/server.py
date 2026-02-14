@@ -9116,14 +9116,14 @@ async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: 
             return
         
         # Connecter l'utilisateur
-        await chat_manager.connect(websocket, user_id, user_name)
+        await chat_manager.connect(websocket, ws_user_id, user_name)
         
         # Marquer l'utilisateur comme en ligne
         await db.user_chat_activity.update_one(
-            {"user_id": user_id},
+            {"user_id": ws_user_id},
             {
                 "$set": {
-                    "user_id": user_id,
+                    "user_id": ws_user_id,
                     "is_online": True,
                     "last_activity": datetime.now(timezone.utc).isoformat()
                 }
@@ -9139,7 +9139,7 @@ async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: 
                 
                 if message_type == "heartbeat":
                     await db.user_chat_activity.update_one(
-                        {"user_id": user_id},
+                        {"user_id": ws_user_id},
                         {"$set": {"last_activity": datetime.now(timezone.utc).isoformat()}}
                     )
                     await websocket.send_json({"type": "heartbeat_ack"})
@@ -9151,7 +9151,7 @@ async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: 
                     
                     chat_message = {
                         "id": str(uuid.uuid4()),
-                        "user_id": user_id,
+                        "user_id": ws_user_id,
                         "user_name": user_name,
                         "user_role": user_data.get("role", ""),
                         "message": message_content,
@@ -9189,16 +9189,16 @@ async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: 
                     }
                     
                     if recipient_ids:
-                        await chat_manager.send_to_users(broadcast_data, recipient_ids + [user_id])
+                        await chat_manager.send_to_users(broadcast_data, recipient_ids + [ws_user_id])
                     else:
                         await chat_manager.broadcast(broadcast_data)
                 
                 elif message_type == "typing":
                     await chat_manager.broadcast({
                         "type": "user_typing",
-                        "user_id": user_id,
+                        "user_id": ws_user_id,
                         "user_name": user_name
-                    }, exclude_user_id=user_id)
+                    }, exclude_user_id=ws_user_id)
         
         except WebSocketDisconnect:
             logger.info(f"Chat WebSocket déconnecté: {user_name}")
@@ -9207,13 +9207,13 @@ async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: 
         logger.error(f"Erreur Chat WebSocket: {e}")
     
     finally:
-        if user_id:
-            chat_manager.disconnect(user_id, user_name)
+        if ws_user_id:
+            chat_manager.disconnect(ws_user_id, user_name)
             await db.user_chat_activity.update_one(
-                {"user_id": user_id},
+                {"user_id": ws_user_id},
                 {"$set": {"is_online": False, "last_activity": datetime.now(timezone.utc).isoformat()}}
             )
-            await chat_manager.broadcast_user_status(user_id, user_name, "offline")
+            await chat_manager.broadcast_user_status(ws_user_id, user_name, "offline")
 
 # WebSocket pour les consignes (notifications temps réel)
 @app.websocket("/api/ws/consignes")
