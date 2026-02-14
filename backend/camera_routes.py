@@ -13,6 +13,7 @@ import asyncio
 from pathlib import Path
 
 from dependencies import get_current_user
+from models import SuccessResponse
 from camera_service import (
     discover_onvif_cameras,
     get_onvif_camera_info,
@@ -521,7 +522,7 @@ async def update_camera(camera_id: str, camera_data: CameraUpdate, current_user:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{camera_id}")
+@router.delete("/{camera_id}", response_model=SuccessResponse)
 async def delete_camera(camera_id: str, current_user: dict = Depends(get_current_user)):
     """Supprime une caméra"""
     try:
