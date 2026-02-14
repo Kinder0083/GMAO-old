@@ -733,7 +733,7 @@ const MachineDashboard = ({ machineId, onBack }) => {
       </Card>
 
       {/* Settings Modal */}
-      {editing && <MachineSettingsModal machine={machine} onClose={() => { setEditing(false); loadMachine(); }} />}
+      {editing && <MachineSettingsModal machine={machine} onClose={() => { setEditing(false); loadMachine(); loadMetrics(); }} />}
     </div>
   );
 };
