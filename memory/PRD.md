@@ -30,6 +30,12 @@ Application CMMS/GMAO complète (Gestion de Maintenance Assistée par Ordinateur
 - [x] Correction bug écran blanc (données de menu incohérentes)
 - [x] Réorganisation sidebar: "Logs MQTT" déplacé sous "P/L MQTT" (14 fév 2026)
 - [x] Réorganisation sidebar: "Import / Export" déplacé sous "Paramètres Spéciaux" (14 fév 2026)
+- [x] Vue en fenêtre (Explorateur Windows) dans la section Documentations (14 fév 2026)
+  - Navigation par dossiers/sous-dossiers avec breadcrumb
+  - Création, renommage, suppression de dossiers
+  - Menu contextuel (clic droit) pour toutes les actions
+  - Drag & drop pour déplacer documents/dossiers
+  - 3 vues disponibles : Carte, Liste, Fenêtre
 
 ## Pending / Backlog
 - [ ] **P1** Bug import Excel (données pas correctement liées) - l'utilisateur dit ne pas avoir ce problème, en attente de confirmation
