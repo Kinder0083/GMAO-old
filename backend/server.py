@@ -8708,6 +8708,88 @@ async def get_update_history_list(
         return {"data": [], "total": 0}
 
 
+@api_router.get("/changelog")
+async def get_changelog(current_user: dict = Depends(get_current_user)):
+    """Récupère le changelog des mises à jour pour l'utilisateur"""
+    try:
+        user_id = current_user.get("id")
+        
+        # Récupérer les entrées de changelog récentes
+        entries = await db.system_update_history.find(
+            {},
+            {"_id": 0}
+        ).sort("started_at", -1).limit(20).to_list(20)
+        
+        # Récupérer les versions lues par cet utilisateur
+        user_seen = await db.changelog_seen.find_one({"user_id": user_id}, {"_id": 0})
+        seen_versions = set(user_seen.get("versions", [])) if user_seen else set()
+        
+        for entry in entries:
+            entry["seen"] = entry.get("version", "") in seen_versions
+        
+        return {"entries": entries, "unseen_count": sum(1 for e in entries if not e.get("seen"))}
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération changelog: {str(e)}")
+        return {"entries": [], "unseen_count": 0}
+
+
+@api_router.post("/changelog/mark-seen")
+async def mark_changelog_seen(current_user: dict = Depends(get_current_user)):
+    """Marque toutes les entrées du changelog comme lues"""
+    try:
+        user_id = current_user.get("id")
+        
+        entries = await db.system_update_history.find({}, {"_id": 0, "version": 1}).to_list(None)
+        all_versions = [e.get("version", "") for e in entries if e.get("version")]
+        
+        await db.changelog_seen.update_one(
+            {"user_id": user_id},
+            {"$set": {"user_id": user_id, "versions": all_versions, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"❌ Erreur marquage changelog: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/menu-badges")
+async def get_menu_badges(current_user: dict = Depends(get_current_user)):
+    """Récupère les badges 'Nouveau' pour les menus récemment ajoutés"""
+    try:
+        user_id = current_user.get("id")
+        
+        # Récupérer la date de dernière consultation des badges
+        user_badge = await db.menu_badge_seen.find_one({"user_id": user_id}, {"_id": 0})
+        last_seen = user_badge.get("last_seen_at") if user_badge else None
+        
+        # Menus ajoutés récemment (depuis le dernier check ou depuis 7 jours)
+        new_menu_ids = []
+        if not last_seen:
+            # Première connexion ou pas encore de données - montrer les menus les plus récents
+            new_menu_ids = ["mes", "mes-reports", "analytics-checklists", "service-dashboard", "cameras", "weekly-reports"]
+        
+        return {"new_menu_ids": new_menu_ids}
+    except Exception as e:
+        return {"new_menu_ids": []}
+
+
+@api_router.post("/menu-badges/dismiss")
+async def dismiss_menu_badges(current_user: dict = Depends(get_current_user)):
+    """Marque les badges de menus comme vus"""
+    try:
+        user_id = current_user.get("id")
+        await db.menu_badge_seen.update_one(
+            {"user_id": user_id},
+            {"$set": {"user_id": user_id, "last_seen_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        return {"success": True}
+    except Exception as e:
+        return {"success": False}
+
+
 # Import surveillance routes
 from surveillance_routes import router as surveillance_router, init_surveillance_routes
 from realtime_manager import realtime_manager
