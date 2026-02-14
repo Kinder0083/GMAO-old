@@ -873,6 +873,8 @@ const CreateMachineModal = ({ onClose, onCreated }) => {
     equipment_id: '', mqtt_topic: '', sensor_ip: '', theoretical_cadence: 6,
     downtime_margin_pct: 30, alert_stopped_minutes: 5, alert_no_signal_minutes: 10,
     alert_under_cadence: 0, alert_over_cadence: 0, alert_daily_target: 0,
+    schedule_is_24h: true, schedule_start_hour: 6, schedule_end_hour: 22,
+    schedule_production_days: [0, 1, 2, 3, 4],
   });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
