@@ -2,7 +2,7 @@
 
 ## Derniere mise a jour
 **Date**: 2026-02-14
-**Version**: 1.9.0
+**Version**: 2.0.0
 
 ## Problem Statement
 Application GMAO complete avec module M.E.S. (Manufacturing Execution System) pour le monitoring de production en temps reel.
@@ -49,22 +49,36 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 - [x] Export PDF (reportlab) avec mise en page professionnelle
 - [x] Rapports par machine individuelle OU consolides toutes machines
 
+### Planification Rapports Automatiques (NEW) - COMPLET (2026-02-14)
+- [x] Backend: APScheduler pour planification des envois
+- [x] CRUD rapports planifies: creation, modification, suppression
+- [x] Frequences: Quotidien, Hebdomadaire (jour choisi), Mensuel (jour du mois)
+- [x] Choix heure/minute d'envoi
+- [x] Choix format: PDF ou Excel
+- [x] Multiple destinataires par email
+- [x] Frontend: Onglet "Rapports planifies" avec liste et formulaire
+- [x] Bouton "Envoyer maintenant" pour test immediat
+- [x] Service d'envoi email avec piece jointe
+- [x] Email HTML avec resume des metriques
+
 ## Architecture
 
 ### Backend (FastAPI + MongoDB)
-- `mes_service.py`: TRS avance, rebuts, references, alertes email, planning, historique TRS, **reporting**
-- `mes_routes.py`: Toutes les routes M.E.S. + product-references + trs-history + **reports/data, reports/export/excel, reports/export/pdf**
+- `mes_service.py`: TRS avance, rebuts, references, alertes email, planning, historique TRS, **reporting, scheduled reports CRUD**
+- `mes_routes.py`: Toutes les routes M.E.S. + **reports/data, reports/export/excel, reports/export/pdf, scheduled-reports CRUD**
+- `mes_report_scheduler.py`: **NEW** Service APScheduler pour envoi automatique des rapports
 - `mqtt_manager.py`: Gestionnaire MQTT
 - `email_service.py`: Service SMTP Gmail
 
 ### Frontend (React)
 - `MESPage.jsx`: Page principale M.E.S.
-- `MESReportsPage.jsx`: **NEW** Page reporting avec graphiques et exports
+- `MESReportsPage.jsx`: Page reporting avec graphiques, exports et gestion rapports planifies
 
 ### Collections MongoDB (M.E.S.)
 - `mes_machines`, `mes_pulses`, `mes_cadence_history`, `mes_alerts`
 - `mes_reject_reasons`, `mes_rejects`
 - `mes_product_references`
+- `mes_scheduled_reports` **(NEW)**
 
 ## Key API Endpoints
 - Machines CRUD: GET/POST/PUT/DELETE /api/mes/machines
@@ -76,6 +90,7 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 - TRS history: GET /api/mes/machines/{id}/trs-history?days=7
 - Alerts: GET /api/mes/alerts, DELETE /api/mes/alerts/all
 - **Reports**: POST /api/mes/reports/data (JSON), /api/mes/reports/export/excel, /api/mes/reports/export/pdf
+- **Scheduled Reports**: GET/POST/PUT/DELETE /api/mes/scheduled-reports, POST /api/mes/scheduled-reports/{id}/send-now
 
 ## Prioritized Backlog
 
@@ -85,6 +100,7 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 
 ### P2 (Nice to have)
 - [x] ~~Reporting historique M.E.S. avance (exports)~~ DONE
+- [x] ~~Planification envoi automatique rapports~~ DONE
 - [ ] Refactoring response_model API
 
 ## Test Reports
