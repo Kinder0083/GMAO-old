@@ -106,6 +106,19 @@ class MESService:
         if "schedule_production_days" in data:
             update["production_schedule.production_days"] = [int(d) for d in data["schedule_production_days"]]
 
+        # Email notification fields
+        email_fields = {
+            "email_enabled": ("email_notifications.enabled", bool),
+            "email_delay_minutes": ("email_notifications.delay_minutes", int),
+        }
+        for key, (path, cast) in email_fields.items():
+            if key in data:
+                update[path] = cast(data[key])
+        if "email_recipients" in data:
+            update["email_notifications.recipients"] = [str(r).strip() for r in data["email_recipients"] if str(r).strip()]
+        if "email_alert_types" in data:
+            update["email_notifications.alert_types"] = list(data["email_alert_types"])
+
         if "equipment_id" in data:
             update["equipment_id"] = ObjectId(data["equipment_id"])
 
