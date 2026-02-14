@@ -478,18 +478,24 @@ class MESService:
     def _resubscribe_all(self):
         """Re-souscrire à tous les topics (appelé quand MQTT se reconnecte)"""
         all_topics = self._subscribed_topics | self._pending_topics
+        logger.info(f"[MES] Re-souscription à {len(all_topics)} topic(s): {list(all_topics)}")
+        
         self._subscribed_topics.clear()
         self._pending_topics.clear()
+        
         for topic in all_topics:
             if self.mqtt_manager and self.mqtt_manager.is_connected:
+                logger.info(f"[MES] Tentative de re-souscription à: {topic}")
                 result = self.mqtt_manager.subscribe(topic, callback=self._on_mqtt_message)
                 if result:
                     self._subscribed_topics.add(topic)
-                    logger.info(f"[MES] Re-abonné au topic: {topic}")
+                    logger.info(f"[MES] ✅ Re-abonné au topic: {topic}")
                 else:
                     self._pending_topics.add(topic)
+                    logger.error(f"[MES] ❌ Échec re-abonnement topic: {topic}")
             else:
                 self._pending_topics.add(topic)
+                logger.warning(f"[MES] MQTT non connecté, topic remis en attente: {topic}")
 
     def _on_mqtt_message(self, topic, payload, qos):
         """Callback MQTT - reçoit les impulsions
