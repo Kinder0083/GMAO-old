@@ -583,6 +583,78 @@ class MESService:
             self._subscribe_machine(m)
         logger.info(f"[MES] {len(machines)} machines abonnées MQTT")
 
+    # ==================== REJECT REASONS (Admin) ====================
+
+    async def get_reject_reasons(self) -> list:
+        reasons = await self.db.mes_reject_reasons.find({"active": True}).sort("label", 1).to_list(500)
+        return [self._serialize(r) for r in reasons]
+
+    async def create_reject_reason(self, data: dict) -> dict:
+        reason = {
+            "label": data["label"].strip(),
+            "active": True,
+            "created_at": datetime.now(timezone.utc),
+        }
+        result = await self.db.mes_reject_reasons.insert_one(reason)
+        reason["_id"] = result.inserted_id
+        return self._serialize(reason)
+
+    async def update_reject_reason(self, reason_id: str, data: dict) -> dict:
+        update = {}
+        if "label" in data:
+            update["label"] = data["label"].strip()
+        if "active" in data:
+            update["active"] = bool(data["active"])
+        if update:
+            await self.db.mes_reject_reasons.update_one({"_id": ObjectId(reason_id)}, {"$set": update})
+        doc = await self.db.mes_reject_reasons.find_one({"_id": ObjectId(reason_id)})
+        return self._serialize(doc) if doc else None
+
+    async def delete_reject_reason(self, reason_id: str):
+        await self.db.mes_reject_reasons.delete_one({"_id": ObjectId(reason_id)})
+
+    # ==================== REJECTS (Operator) ====================
+
+    async def declare_reject(self, machine_id: str, data: dict) -> dict:
+        reject = {
+            "machine_id": ObjectId(machine_id),
+            "quantity": int(data["quantity"]),
+            "reason": data.get("reason", ""),
+            "custom_reason": data.get("custom_reason", ""),
+            "operator": data.get("operator", ""),
+            "timestamp": datetime.now(timezone.utc),
+        }
+        result = await self.db.mes_rejects.insert_one(reject)
+        reject["_id"] = result.inserted_id
+        return self._serialize(reject)
+
+    async def get_rejects(self, machine_id: str, date_from: str = None, date_to: str = None) -> list:
+        mid = ObjectId(machine_id)
+        now = datetime.now(timezone.utc)
+        if date_from and date_to:
+            start = datetime.fromisoformat(date_from.replace("Z", "+00:00"))
+            end = datetime.fromisoformat(date_to.replace("Z", "+00:00"))
+        else:
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now
+        rejects = await self.db.mes_rejects.find({
+            "machine_id": mid,
+            "timestamp": {"$gte": start, "$lte": end}
+        }).sort("timestamp", -1).to_list(10000)
+        return [self._serialize(r) for r in rejects]
+
+    async def get_rejects_total(self, machine_id, start, end) -> int:
+        """Get total reject quantity for a machine between start and end"""
+        pipeline = [
+            {"$match": {"machine_id": machine_id, "timestamp": {"$gte": start, "$lte": end}}},
+            {"$group": {"_id": None, "total": {"$sum": "$quantity"}}},
+        ]
+        result = await self.db.mes_rejects.aggregate(pipeline).to_list(1)
+        return result[0]["total"] if result else 0
+
+    async def delete_reject(self, reject_id: str):
+        await self.db.mes_rejects.delete_one({"_id": ObjectId(reject_id)})
+
     # ==================== DATA CLEANUP ====================
 
     async def cleanup_old_data(self):
