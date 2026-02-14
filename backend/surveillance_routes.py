@@ -15,7 +15,8 @@ from models import (
     SurveillanceItemStatus,
     SurveillanceResponsible,
     ActionType,
-    EntityType
+    EntityType,
+    SuccessResponse
 )
 from dependencies import get_current_user, get_current_admin_user
 from audit_service import AuditService
@@ -209,7 +210,7 @@ async def update_surveillance_item(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/items/{item_id}")
+@router.delete("/items/{item_id}", response_model=SuccessResponse)
 async def delete_surveillance_item(
     item_id: str,
     current_user: dict = Depends(get_current_admin_user)
