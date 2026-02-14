@@ -7,20 +7,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ConnectionManager:
-    """Gestionnaire de connexions WebSocket pour le chat"""
+    """Gestionnaire de connexions WebSocket pour le chat (multi-connexions par utilisateur)"""
     
     def __init__(self):
-        # Connexions actives : {user_id: WebSocket}
-        self.active_connections: Dict[str, WebSocket] = {}
+        # Connexions actives : {user_id: [WebSocket, ...]}
+        self.active_connections: Dict[str, List[WebSocket]] = {}
         # Historique des connexions pour debug
         self.connection_history: List[Dict] = []
     
     async def connect(self, websocket: WebSocket, user_id: str, user_name: str):
         """Accepter une nouvelle connexion WebSocket"""
         await websocket.accept()
-        self.active_connections[user_id] = websocket
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = []
+        self.active_connections[user_id].append(websocket)
         
-        # Logger la connexion
         connection_info = {
             "user_id": user_id,
             "user_name": user_name,
@@ -28,57 +29,82 @@ class ConnectionManager:
             "action": "connected"
         }
         self.connection_history.append(connection_info)
-        logger.info(f"✅ WebSocket connecté: {user_name} (ID: {user_id})")
+        logger.info(f"WebSocket connecté: {user_name} (ID: {user_id}, total: {len(self.active_connections[user_id])})")
         
-        # Notifier tous les autres utilisateurs
-        await self.broadcast_user_status(user_id, user_name, "online")
+        # Notifier tous les autres utilisateurs (uniquement si c'est la première connexion)
+        if len(self.active_connections[user_id]) == 1:
+            await self.broadcast_user_status(user_id, user_name, "online")
     
-    def disconnect(self, user_id: str, user_name: str = "Unknown"):
-        """Déconnecter un utilisateur"""
-        if user_id in self.active_connections:
+    def disconnect(self, user_id: str, user_name: str = "Unknown", websocket: WebSocket = None):
+        """Déconnecter un utilisateur (une connexion spécifique ou toutes)"""
+        if user_id not in self.active_connections:
+            return
+        
+        if websocket:
+            # Retirer uniquement cette connexion
+            self.active_connections[user_id] = [
+                ws for ws in self.active_connections[user_id] if ws != websocket
+            ]
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+        else:
+            # Retirer toutes les connexions
             del self.active_connections[user_id]
-            
-            # Logger la déconnexion
-            disconnection_info = {
-                "user_id": user_id,
-                "user_name": user_name,
-                "disconnected_at": datetime.now(timezone.utc).isoformat(),
-                "action": "disconnected"
-            }
-            self.connection_history.append(disconnection_info)
-            logger.info(f"❌ WebSocket déconnecté: {user_name} (ID: {user_id})")
+        
+        disconnection_info = {
+            "user_id": user_id,
+            "user_name": user_name,
+            "disconnected_at": datetime.now(timezone.utc).isoformat(),
+            "action": "disconnected"
+        }
+        self.connection_history.append(disconnection_info)
+        logger.info(f"WebSocket déconnecté: {user_name} (ID: {user_id})")
     
     async def send_personal_message(self, message: dict, user_id: str):
-        """Envoyer un message à un utilisateur spécifique"""
-        if user_id in self.active_connections:
+        """Envoyer un message à toutes les connexions d'un utilisateur"""
+        if user_id not in self.active_connections:
+            return
+        dead = []
+        for ws in self.active_connections[user_id]:
             try:
-                websocket = self.active_connections[user_id]
-                await websocket.send_json(message)
+                await ws.send_json(message)
             except Exception as e:
-                logger.error(f"Erreur envoi message personnel à {user_id}: {e}")
-                # Si erreur, déconnecter l'utilisateur
-                self.disconnect(user_id)
+                logger.error(f"Erreur envoi message à {user_id}: {e}")
+                dead.append(ws)
+        for ws in dead:
+            self.active_connections[user_id] = [
+                w for w in self.active_connections.get(user_id, []) if w != ws
+            ]
+        if user_id in self.active_connections and not self.active_connections[user_id]:
+            del self.active_connections[user_id]
     
     async def broadcast(self, message: dict, exclude_user_id: str = None):
-        """Diffuser un message à tous les utilisateurs connectés (sauf exclude_user_id)"""
+        """Diffuser un message à tous les utilisateurs connectés"""
         disconnected_users = []
         
-        for user_id, websocket in self.active_connections.items():
+        for user_id, websockets in list(self.active_connections.items()):
             if user_id == exclude_user_id:
                 continue
-            
-            try:
-                await websocket.send_json(message)
-            except Exception as e:
-                logger.error(f"Erreur broadcast à {user_id}: {e}")
+            dead = []
+            for ws in websockets:
+                try:
+                    await ws.send_json(message)
+                except Exception as e:
+                    logger.error(f"Erreur broadcast à {user_id}: {e}")
+                    dead.append(ws)
+            for ws in dead:
+                self.active_connections[user_id] = [
+                    w for w in self.active_connections.get(user_id, []) if w != ws
+                ]
+            if user_id in self.active_connections and not self.active_connections[user_id]:
                 disconnected_users.append(user_id)
         
-        # Nettoyer les connexions mortes
         for user_id in disconnected_users:
-            self.disconnect(user_id)
+            if user_id in self.active_connections:
+                del self.active_connections[user_id]
     
     async def send_to_users(self, message: dict, user_ids: List[str]):
-        """Envoyer un message à une liste d'utilisateurs spécifiques (messages privés)"""
+        """Envoyer un message à une liste d'utilisateurs spécifiques"""
         for user_id in user_ids:
             await self.send_personal_message(message, user_id)
     
