@@ -9364,7 +9364,7 @@ async def startup_scheduler():
         
         # Migrer les permissions des rôles (ajouter les modules manquants)
         from roles_routes import get_default_permissions_by_role
-        NEW_PERMISSION_KEYS = ["mes", "mesReports", "serviceDashboard", "weeklyReports", "demandesArret", "consignes", "autorisationsParticulieres"]
+        NEW_PERMISSION_KEYS = ["mes", "mesReports", "serviceDashboard", "weeklyReports", "demandesArret", "consignes", "autorisationsParticulieres", "timeTracking", "cameras", "analyticsChecklists"]
         roles = await db.roles.find({}).to_list(length=None)
         perm_updated = 0
         for role in roles:
