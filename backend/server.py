@@ -1005,7 +1005,11 @@ async def change_password(request: ChangePasswordRequest, current_user: dict = D
 
 # ==================== SERVICE MANAGER ROUTES ====================
 
-@api_router.get("/service-manager/status")
+@api_router.get("/service-manager/status", tags=["Service Manager"],
+    summary="Statut du service",
+    description="Retourne le statut operationnel du service : equipements en maintenance, ordres de travail en cours, alertes actives.",
+    responses={**STANDARD_ERRORS}
+)
 async def get_service_manager_status(current_user: dict = Depends(get_current_user)):
     """Vérifie si l'utilisateur est un responsable de service et retourne ses services"""
     from service_filter import is_service_manager, get_user_managed_services, get_user_service_filter
@@ -1023,7 +1027,11 @@ async def get_service_manager_status(current_user: dict = Depends(get_current_us
     }
 
 
-@api_router.get("/service-manager/team")
+@api_router.get("/service-manager/team", tags=["Service Manager"],
+    summary="Equipe du service",
+    description="Retourne la liste des membres de l'equipe du service avec leur activite recente.",
+    responses={**STANDARD_ERRORS}
+)
 async def get_service_team(current_user: dict = Depends(get_current_user)):
     """Récupère les membres de l'équipe du responsable de service"""
     from service_filter import is_service_manager, get_service_team_members
@@ -1045,7 +1053,11 @@ async def get_service_team(current_user: dict = Depends(get_current_user)):
     }
 
 
-@api_router.get("/service-manager/stats")
+@api_router.get("/service-manager/stats", tags=["Service Manager"],
+    summary="Statistiques du service",
+    description="Retourne les KPIs du service : nombre d'OT, temps moyen de resolution, taux de completion.",
+    responses={**STANDARD_ERRORS}
+)
 async def get_service_manager_stats(current_user: dict = Depends(get_current_user)):
     """Statistiques du service pour le responsable"""
     from service_filter import is_service_manager, get_user_service_filter
