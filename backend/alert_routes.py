@@ -62,7 +62,7 @@ async def get_unread_count(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{alert_id}/read")
+@router.post("/{alert_id}/read", response_model=MessageResponse)
 async def mark_alert_read(
     alert_id: str,
     current_user: dict = Depends(get_current_user)
@@ -87,7 +87,7 @@ async def mark_alert_read(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/mark-all-read")
+@router.post("/mark-all-read", response_model=MessageResponse)
 async def mark_all_read(
     current_user: dict = Depends(get_current_user)
 ):
@@ -111,7 +111,7 @@ async def mark_all_read(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{alert_id}")
+@router.delete("/{alert_id}", response_model=MessageResponse)
 async def delete_alert(
     alert_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -130,7 +130,7 @@ async def delete_alert(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("")
+@router.delete("", response_model=MessageResponse)
 async def clear_all_alerts(
     current_user: dict = Depends(get_current_admin_user)
 ):
