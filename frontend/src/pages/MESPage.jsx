@@ -481,6 +481,13 @@ const MachineDashboard = ({ machineId, onBack }) => {
     } catch {}
   }, []);
 
+  const loadTrsHistory = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/api/mes/machines/${machineId}/trs-history?days=7`, { headers: getHeaders() });
+      setTrsHistory(data);
+    } catch {}
+  }, [machineId]);
+
   useEffect(() => { loadMachine(); loadAlerts(); }, [loadMachine, loadAlerts]);
   useEffect(() => { loadMetrics(); const i = setInterval(loadMetrics, 5000); return () => clearInterval(i); }, [loadMetrics]);
   useEffect(() => { loadHistory(); const i = setInterval(loadHistory, 60000); return () => clearInterval(i); }, [loadHistory]);
