@@ -205,6 +205,8 @@ async def delete_product_reference(ref_id: str, current_user: dict = Depends(get
         details="Suppression reference produite"
     )
     return {"success": True, "message": "Référence produite supprimée"}
+
+@router.post("/machines/{machine_id}/select-reference")
 async def select_reference(machine_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     ref_id = data.get("reference_id")
     if not ref_id:
