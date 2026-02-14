@@ -258,6 +258,7 @@ function Documentations() {
                 size="icon"
                 onClick={() => setViewMode('cards')}
                 title="Vue en cartes"
+                data-testid="view-mode-cards"
               >
                 <Grid3x3 className="h-4 w-4" />
               </Button>
@@ -266,8 +267,18 @@ function Documentations() {
                 size="icon"
                 onClick={() => setViewMode('list')}
                 title="Vue en liste"
+                data-testid="view-mode-list"
               >
                 <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'explorer' ? 'default' : 'outline'}
+                size="icon"
+                onClick={() => setViewMode('explorer')}
+                title="Vue en fenêtre"
+                data-testid="view-mode-explorer"
+              >
+                <Monitor className="h-4 w-4" />
               </Button>
             </div>
           </div>
