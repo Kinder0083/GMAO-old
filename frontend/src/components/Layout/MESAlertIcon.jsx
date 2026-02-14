@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../../utils/config';
-import { Activity, AlertTriangle, Check, CheckCheck } from 'lucide-react';
+import { Activity, AlertTriangle, Check, CheckCheck, Trash2 } from 'lucide-react';
 
 const API = BACKEND_URL;
 const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
@@ -12,15 +12,16 @@ const MESAlertIcon = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
+  const loadCount = async () => {
+    try {
+      const { data } = await axios.get(`${API}/api/mes/alerts/count`, { headers: getHeaders() });
+      setCount(data.count || 0);
+    } catch {}
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const { data } = await axios.get(`${API}/api/mes/alerts/count`, { headers: getHeaders() });
-        setCount(data.count || 0);
-      } catch {}
-    };
-    load();
-    const i = setInterval(load, 15000);
+    loadCount();
+    const i = setInterval(loadCount, 15000);
     return () => clearInterval(i);
   }, []);
 
@@ -50,6 +51,15 @@ const MESAlertIcon = () => {
     setCount(0);
   };
 
+  const deleteAllAlerts = async () => {
+    if (!window.confirm('Supprimer toutes les alertes M.E.S. ?')) return;
+    try {
+      await axios.delete(`${API}/api/mes/alerts/all`, { headers: getHeaders() });
+      setAlerts([]);
+      setCount(0);
+    } catch {}
+  };
+
   const typeIcons = {
     STOPPED: '🔴', UNDER_CADENCE: '⬇️', OVER_CADENCE: '⬆️',
     TARGET_REACHED: '🎯', NO_SIGNAL: '📡',
@@ -73,11 +83,20 @@ const MESAlertIcon = () => {
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border z-50 max-h-96 overflow-y-auto">
           <div className="px-4 py-3 border-b flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-700">Alertes M.E.S</span>
-            {count > 0 && (
-              <button onClick={markAllRead} className="text-xs text-indigo-600 hover:underline flex items-center gap-1">
-                <CheckCheck className="h-3 w-3" /> Tout lire
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {count > 0 && (
+                <button onClick={markAllRead} className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
+                  title="Marquer tout comme lu">
+                  <CheckCheck className="h-3 w-3" /> Tout lire
+                </button>
+              )}
+              {alerts.length > 0 && (
+                <button onClick={deleteAllAlerts} className="text-xs text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                  title="Supprimer toutes les alertes" data-testid="mes-delete-all-alerts">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
           {alerts.length === 0 ? (
             <div className="px-4 py-8 text-center text-gray-400 text-sm">Aucune alerte</div>
