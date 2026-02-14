@@ -14,20 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 class MESService:
+    # Dictionnaire de stockage des équipements par topic pour lookup rapide
+    mes_equipments_by_topic: Dict[str, ObjectId] = {}
+    
     def __init__(self, db, mqtt_manager=None):
         self.db = db
         self.mqtt_manager = mqtt_manager
         self._subscribed_topics = set()
         self._pending_topics = set()  # Topics en attente si MQTT pas connecté
         
-        # Enregistrer un hook pour re-souscrire quand MQTT se (re)connecte
+        # Enregistrer ce service comme listener de reconnexion MQTT
         if mqtt_manager:
-            original_on_connect = mqtt_manager._on_connect
-            def _on_connect_hook(client, userdata, flags, rc):
-                original_on_connect(client, userdata, flags, rc)
-                if rc == 0:
-                    self._resubscribe_all()
-            mqtt_manager._on_connect = _on_connect_hook
+            # Stocker une référence pour le callback de reconnexion
+            self._setup_mqtt_reconnect_hook()
 
     # ==================== MACHINES CRUD ====================
 
