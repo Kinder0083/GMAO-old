@@ -66,10 +66,10 @@ const ChangelogPopup = () => {
             Nouveautés de la mise à jour
           </DialogTitle>
           <DialogDescription>
-            {latestEntry.version_name || `Version ${latestEntry.version}`} - 
-            {latestEntry.started_at ? new Date(latestEntry.started_at).toLocaleDateString('fr-FR', {
+            {latestEntry.version_name || `Version ${latestEntry.version || ''}`}
+            {latestEntry.started_at ? ` - ${new Date(latestEntry.started_at).toLocaleDateString('fr-FR', {
               day: 'numeric', month: 'long', year: 'numeric'
-            }) : 'Date inconnue'}
+            })}` : ''}
           </DialogDescription>
         </DialogHeader>
 
