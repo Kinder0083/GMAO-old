@@ -232,16 +232,19 @@ async def initialize_default_manual(current_user: dict):
         # Créer la version initiale
         version = {
             "id": str(uuid.uuid4()),
-            "version": "1.0",
+            "version": "1.5",
             "release_date": now.isoformat(),
-            "changes": ["Création initiale du manuel"],
+            "changes": ["Création initiale du manuel", "Ajout du module M.E.S."],
             "author_id": current_user.get("id", "system"),
             "author_name": current_user.get("nom", "Système") + " " + current_user.get("prenom", ""),
             "is_current": True
         }
         await db.manual_versions.insert_one(version)
         
-        # Créer le premier chapitre
+        all_chapters = []
+        all_sections = []
+        
+        # ==================== CHAPITRE 1: GUIDE DE DÉMARRAGE ====================
         chapter1 = {
             "id": "ch-001",
             "title": "🚀 Guide de Démarrage",
@@ -254,11 +257,11 @@ async def initialize_default_manual(current_user: dict):
             "created_at": now.isoformat(),
             "updated_at": now.isoformat()
         }
-        await db.manual_chapters.insert_one(chapter1)
+        all_chapters.append(chapter1)
         
-        # Créer les sections du chapitre 1
-        section1 = {
+        section1_1 = {
             "id": "sec-001-01",
+            "chapter_id": "ch-001",
             "title": "Bienvenue dans GMAO Iris",
             "content": """GMAO Iris est votre solution complète de gestion de maintenance assistée par ordinateur.
 
@@ -299,10 +302,11 @@ Une GMAO (Gestion de Maintenance Assistée par Ordinateur) est un logiciel qui p
             "created_at": now.isoformat(),
             "updated_at": now.isoformat()
         }
-        await db.manual_sections.insert_one(section1)
+        all_sections.append(section1_1)
         
-        section2 = {
+        section1_2 = {
             "id": "sec-001-02",
+            "chapter_id": "ch-001",
             "title": "Connexion et Navigation",
             "content": """📱 **Se Connecter à GMAO Iris**
 
@@ -339,6 +343,7 @@ Une GMAO (Gestion de Maintenance Assistée par Ordinateur) est un logiciel qui p
 • Badge BLEU : Maintenances bientôt dues
 • Badge ORANGE : Ordres de travail en retard
 • Badge VERT : Alertes stock faible
+• Icône M.E.S. : Alertes de production
 
 Cliquez sur un badge pour voir les détails.""",
             "order": 2,
@@ -352,15 +357,218 @@ Cliquez sur un badge pour voir les détails.""",
             "created_at": now.isoformat(),
             "updated_at": now.isoformat()
         }
-        await db.manual_sections.insert_one(section2)
+        all_sections.append(section1_2)
         
-        logger.info("✅ Manuel initialisé avec succès")
+        # ==================== CHAPITRE M.E.S. ====================
+        chapter_mes = {
+            "id": "ch-mes",
+            "title": "🏭 M.E.S. - Suivi de Production",
+            "description": "Manufacturing Execution System - Monitoring temps réel de la production",
+            "icon": "Factory",
+            "order": 10,
+            "sections": ["sec-mes-01", "sec-mes-02", "sec-mes-03", "sec-mes-04"],
+            "target_roles": [],
+            "target_modules": ["mes"],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        all_chapters.append(chapter_mes)
+        
+        section_mes_1 = {
+            "id": "sec-mes-01",
+            "chapter_id": "ch-mes",
+            "title": "Présentation du module M.E.S.",
+            "content": """🏭 **Qu'est-ce que le M.E.S. ?**
+
+Le M.E.S. (Manufacturing Execution System) est un module de suivi de production en temps réel. Il permet de :
+
+• **Comptabiliser** les coups/impulsions des machines de production
+• **Calculer** la cadence réelle (coups/minute, coups/heure)
+• **Suivre** la production journalière et sur 24h glissantes
+• **Détecter** les arrêts machine automatiquement
+• **Alerter** en cas d'anomalie (sous-cadence, sur-cadence, arrêt prolongé)
+• **Analyser** les performances avec le TRS (Taux de Rendement Synthétique)
+
+📡 **Comment ça fonctionne ?**
+
+1. Un capteur (contact sec) est installé sur la machine
+2. Chaque impulsion (1/0) = 1 coup = 1 produit fabriqué
+3. Le capteur envoie les données via MQTT
+4. GMAO Iris reçoit et analyse les données en temps réel
+5. Les métriques et alertes sont mises à jour automatiquement
+
+📊 **Indicateurs disponibles**
+
+• **Cadence/min** : Nombre de coups dans la dernière minute
+• **Cadence/heure** : Nombre de coups dans la dernière heure
+• **Production jour** : Total depuis minuit
+• **Production 24h** : Total sur les 24 dernières heures
+• **Temps d'arrêt** : Temps cumulé d'arrêt aujourd'hui
+• **TRS** : Ratio production réelle / production théorique""",
+            "order": 1,
+            "parent_id": None,
+            "target_roles": [],
+            "target_modules": ["mes"],
+            "level": "beginner",
+            "images": [],
+            "video_url": None,
+            "keywords": ["mes", "production", "cadence", "manufacturing", "trs"],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        all_sections.append(section_mes_1)
+        
+        section_mes_2 = {
+            "id": "sec-mes-02",
+            "chapter_id": "ch-mes",
+            "title": "Configuration d'une machine M.E.S.",
+            "content": """⚙️ **Ajouter une machine M.E.S.**
+
+1. Accédez à la page **M.E.S.** depuis la sidebar
+2. Cliquez sur **"+ Ajouter"** en haut à droite
+3. Sélectionnez l'équipement lié dans la liste
+4. La machine apparaît dans la liste
+
+🔧 **Configurer les paramètres**
+
+Cliquez sur l'icône **engrenage** (⚙️) à côté de la machine pour ouvrir les paramètres :
+
+**Section Production :**
+• **Cadence théorique** (cp/min) : La cadence nominale de la machine. Exemple : 6 coups/minute = 1 coup toutes les 10 secondes
+• **Marge d'arrêt** (%) : Tolérance avant de considérer la machine à l'arrêt. Exemple : 30% signifie que si le temps entre 2 impulsions dépasse 13 secondes (10s + 30%), la machine est considérée à l'arrêt
+
+**Section Capteur :**
+• **Topic MQTT** : Le topic sur lequel le capteur publie ses impulsions. Exemple : `factory/machine1/pulse`
+• **Adresse IP capteur** : L'IP du capteur pour vérifier sa connectivité via ping
+
+**Section Alertes :**
+• **Arrêt machine** (min) : Déclenche une alerte si la machine est arrêtée depuis X minutes
+• **Perte signal** (min) : Alerte si aucun signal reçu (différent d'un arrêt normal)
+• **Sous-cadence** (cp/min) : Alerte si cadence inférieure au seuil (0 = désactivé)
+• **Sur-cadence** (cp/min) : Alerte si cadence supérieure au seuil (0 = désactivé)
+• **Objectif journalier** (coups) : Notification quand l'objectif est atteint
+
+💾 Cliquez sur **"Sauvegarder"** pour appliquer les paramètres.""",
+            "order": 2,
+            "parent_id": None,
+            "target_roles": [],
+            "target_modules": ["mes"],
+            "level": "beginner",
+            "images": [],
+            "video_url": None,
+            "keywords": ["configuration", "parametres", "mqtt", "cadence", "alertes"],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        all_sections.append(section_mes_2)
+        
+        section_mes_3 = {
+            "id": "sec-mes-03",
+            "chapter_id": "ch-mes",
+            "title": "Lecture du graphique de production",
+            "content": """📈 **Le graphique de cadence**
+
+Le graphique affiche l'évolution de la cadence dans le temps, similaire à une courbe de température :
+
+• **Axe X (horizontal)** : Le temps
+• **Axe Y (vertical)** : La cadence (coups/minute)
+• **Ligne bleue** : Cadence réelle mesurée
+• **Ligne pointillée** : Cadence théorique (si configurée)
+
+🕐 **Périodes d'affichage**
+
+Utilisez les boutons pour changer la période :
+
+• **6h** (par défaut) : Affichage minute par minute des 6 dernières heures
+• **12h** : Affichage minute par minute des 12 dernières heures
+• **24h** : Affichage minute par minute des 24 dernières heures
+• **7j** : Affichage de la **moyenne horaire** des 7 derniers jours
+• **Personnalisé** : Choisissez vos dates de début et fin
+
+⚠️ **Note importante** : Pour les périodes de 7 jours ou plus, l'affichage passe automatiquement en moyenne horaire pour une meilleure lisibilité.
+
+🔄 **Mise à jour automatique**
+
+Le graphique se met à jour automatiquement toutes les minutes. La nouvelle donnée apparaît à droite et le graphique défile naturellement vers la gauche.
+
+💡 **Astuce** : Survolez un point du graphique pour voir les détails (heure exacte et valeur de cadence).""",
+            "order": 3,
+            "parent_id": None,
+            "target_roles": [],
+            "target_modules": ["mes"],
+            "level": "beginner",
+            "images": [],
+            "video_url": None,
+            "keywords": ["graphique", "courbe", "historique", "cadence", "periode"],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        all_sections.append(section_mes_3)
+        
+        section_mes_4 = {
+            "id": "sec-mes-04",
+            "chapter_id": "ch-mes",
+            "title": "Alertes M.E.S. et notifications",
+            "content": """🔔 **Système d'alertes M.E.S.**
+
+Les alertes M.E.S. apparaissent dans l'icône dédiée en haut de l'écran (à côté des autres notifications).
+
+**Types d'alertes :**
+
+🔴 **Machine à l'arrêt** : La machine n'a pas produit depuis X minutes (configurable)
+
+⬇️ **Sous-cadence** : La cadence est inférieure au seuil défini
+
+⬆️ **Sur-cadence** : La cadence dépasse le seuil défini (risque de surchauffe/usure)
+
+🎯 **Objectif atteint** : L'objectif de production journalier est atteint
+
+📡 **Perte de signal** : Aucun signal reçu du capteur (problème de connectivité)
+
+**Gestion des alertes**
+
+• Cliquez sur l'icône M.E.S. pour voir la liste des alertes
+• Cliquez sur ✓ pour marquer une alerte comme lue
+• Cliquez sur **"Tout lire"** pour marquer toutes les alertes comme lues
+• Cliquez sur l'icône **corbeille** 🗑️ pour **supprimer toutes les alertes**
+
+⚠️ **Attention** : La suppression des alertes est définitive et immédiate.
+
+🔧 **Vérifier la connectivité du capteur**
+
+Si vous recevez des alertes "Perte de signal" :
+
+1. Ouvrez les paramètres de la machine (⚙️)
+2. Vérifiez que l'adresse IP du capteur est renseignée
+3. Cliquez sur le bouton **"Ping"** pour tester la connectivité
+4. Si le ping échoue, vérifiez le réseau et l'alimentation du capteur""",
+            "order": 4,
+            "parent_id": None,
+            "target_roles": [],
+            "target_modules": ["mes"],
+            "level": "beginner",
+            "images": [],
+            "video_url": None,
+            "keywords": ["alertes", "notifications", "arret", "signal", "ping", "supprimer"],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        all_sections.append(section_mes_4)
+        
+        # Insérer tous les chapitres et sections
+        for chapter in all_chapters:
+            await db.manual_chapters.insert_one(chapter)
+        
+        for section in all_sections:
+            await db.manual_sections.insert_one(section)
+        
+        logger.info("✅ Manuel initialisé avec succès (incluant M.E.S.)")
         
         # Retourner le contenu
         return {
-            "version": "1.0",
-            "chapters": [chapter1],
-            "sections": [section1, section2],
+            "version": "1.5",
+            "chapters": all_chapters,
+            "sections": all_sections,
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
         
