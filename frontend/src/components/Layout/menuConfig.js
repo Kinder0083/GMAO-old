@@ -77,6 +77,7 @@ export const iconMap = {
   'Clock': Clock,
   'Camera': Camera,
   'Zap': Zap,
+  'FileBarChart': FileBarChart,
   'Menu': Menu,
   'X': X,
   'ChevronLeft': ChevronLeft,
