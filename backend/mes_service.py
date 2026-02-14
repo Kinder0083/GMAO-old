@@ -28,6 +28,28 @@ class MESService:
             # Stocker une référence pour le callback de reconnexion
             self._setup_mqtt_reconnect_hook()
 
+    def _setup_mqtt_reconnect_hook(self):
+        """Configure le hook pour re-souscrire quand MQTT se (re)connecte"""
+        if not self.mqtt_manager:
+            return
+            
+        # Sauvegarder le callback original
+        original_on_connect = self.mqtt_manager._on_connect
+        
+        # Référence au service pour la closure
+        mes_service_ref = self
+        
+        def _on_connect_with_mes_hook(client, userdata, flags, rc):
+            # Appeler le callback original d'abord
+            original_on_connect(client, userdata, flags, rc)
+            # Si connexion réussie, re-souscrire aux topics M.E.S.
+            if rc == 0:
+                logger.info("[MES] MQTT connecté, re-souscription aux topics...")
+                mes_service_ref._resubscribe_all()
+        
+        self.mqtt_manager._on_connect = _on_connect_with_mes_hook
+        logger.info("[MES] Hook de reconnexion MQTT configuré")
+
     # ==================== MACHINES CRUD ====================
 
     async def create_machine(self, data: dict) -> dict:
