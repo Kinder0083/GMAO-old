@@ -12,7 +12,8 @@ from models import (
     WeeklyReportTemplate, WeeklyReportTemplateCreate, WeeklyReportTemplateUpdate,
     WeeklyReportHistory, WeeklyReportHistoryCreate,
     WeeklyReportSettings, WeeklyReportSettingsUpdate,
-    ReportFrequency, ReportSendStatus
+    ReportFrequency, ReportSendStatus,
+    MessageResponse
 )
 from dependencies import get_current_user
 
@@ -204,7 +205,7 @@ async def update_template(
     return WeeklyReportTemplate(**serialize_doc(template))
 
 
-@router.delete("/templates/{template_id}")
+@router.delete("/templates/{template_id}", response_model=MessageResponse)
 async def delete_template(
     template_id: str,
     current_user: dict = Depends(get_current_user)
