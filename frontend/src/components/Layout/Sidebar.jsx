@@ -14,7 +14,8 @@ import {
   FileText,
   Terminal,
   Palette,
-  Folder
+  Folder,
+  Database
 } from 'lucide-react';
 import { iconMap } from './menuConfig';
 import api from '../../services/api';
