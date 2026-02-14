@@ -452,6 +452,17 @@ const MachineDashboard = ({ machineId, onBack }) => {
   );
 };
 
+// ==================== SETTINGS FIELD (outside component to prevent re-render) ====================
+const SettingsField = ({ label, field, type = 'number', unit = '', value, onChange }) => (
+  <div>
+    <label className="text-xs font-medium text-gray-600">{label} {unit && <span className="text-gray-400">({unit})</span>}</label>
+    <input type={type} value={value}
+      onChange={onChange}
+      className="w-full mt-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+      data-testid={`mes-setting-${field}`} />
+  </div>
+);
+
 // ==================== SETTINGS MODAL ====================
 const MachineSettingsModal = ({ machine, onClose }) => {
   const [form, setForm] = useState({
@@ -478,15 +489,10 @@ const MachineSettingsModal = ({ machine, onClose }) => {
     setSaving(false);
   };
 
-  const Field = ({ label, field, type = 'number', unit = '' }) => (
-    <div>
-      <label className="text-xs font-medium text-gray-600">{label} {unit && <span className="text-gray-400">({unit})</span>}</label>
-      <input type={type} value={form[field]}
-        onChange={e => setForm({ ...form, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value })}
-        className="w-full mt-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        data-testid={`mes-setting-${field}`} />
-    </div>
-  );
+  const handleChange = (field, type) => (e) => {
+    const val = type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
+    setForm(prev => ({ ...prev, [field]: val }));
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" data-testid="mes-settings-modal">
@@ -499,25 +505,34 @@ const MachineSettingsModal = ({ machine, onClose }) => {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Production</h4>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Cadence theorique" field="theoretical_cadence" unit="cp/min" />
-              <Field label="Marge arret" field="downtime_margin_pct" unit="%" />
+              <SettingsField label="Cadence theorique" field="theoretical_cadence" unit="cp/min" 
+                value={form.theoretical_cadence} onChange={handleChange('theoretical_cadence', 'number')} />
+              <SettingsField label="Marge arret" field="downtime_margin_pct" unit="%" 
+                value={form.downtime_margin_pct} onChange={handleChange('downtime_margin_pct', 'number')} />
             </div>
           </div>
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Capteur</h4>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Topic MQTT" field="mqtt_topic" type="text" />
-              <Field label="Adresse IP capteur" field="sensor_ip" type="text" />
+              <SettingsField label="Topic MQTT" field="mqtt_topic" type="text" 
+                value={form.mqtt_topic} onChange={handleChange('mqtt_topic', 'text')} />
+              <SettingsField label="Adresse IP capteur" field="sensor_ip" type="text" 
+                value={form.sensor_ip} onChange={handleChange('sensor_ip', 'text')} />
             </div>
           </div>
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Alertes</h4>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Arret machine" field="alert_stopped_minutes" unit="min" />
-              <Field label="Perte signal" field="alert_no_signal_minutes" unit="min" />
-              <Field label="Sous-cadence" field="alert_under_cadence" unit="cp/min" />
-              <Field label="Sur-cadence" field="alert_over_cadence" unit="cp/min" />
-              <Field label="Objectif journalier" field="alert_daily_target" unit="coups" />
+              <SettingsField label="Arret machine" field="alert_stopped_minutes" unit="min" 
+                value={form.alert_stopped_minutes} onChange={handleChange('alert_stopped_minutes', 'number')} />
+              <SettingsField label="Perte signal" field="alert_no_signal_minutes" unit="min" 
+                value={form.alert_no_signal_minutes} onChange={handleChange('alert_no_signal_minutes', 'number')} />
+              <SettingsField label="Sous-cadence" field="alert_under_cadence" unit="cp/min" 
+                value={form.alert_under_cadence} onChange={handleChange('alert_under_cadence', 'number')} />
+              <SettingsField label="Sur-cadence" field="alert_over_cadence" unit="cp/min" 
+                value={form.alert_over_cadence} onChange={handleChange('alert_over_cadence', 'number')} />
+              <SettingsField label="Objectif journalier" field="alert_daily_target" unit="coups" 
+                value={form.alert_daily_target} onChange={handleChange('alert_daily_target', 'number')} />
             </div>
           </div>
         </div>
