@@ -8580,6 +8580,64 @@ async def dismiss_update(version: str, current_user: dict = Depends(get_current_
         logger.error(f"❌ Erreur dismiss notification: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/updates/broadcast-warning")
+async def broadcast_update_warning(
+    version: str = "",
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """
+    Diffuse un avertissement de mise à jour à TOUS les utilisateurs connectés via WebSocket.
+    Après 30 secondes, les utilisateurs seront automatiquement déconnectés côté frontend.
+    """
+    try:
+        admin_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        connected_count = len(chat_manager.active_connections)
+        
+        logger.info(f"📢 Diffusion avertissement MAJ par {admin_name} - {connected_count} utilisateur(s) connecté(s)")
+        
+        # Broadcast via le WebSocket du chat (tous les utilisateurs connectés)
+        await chat_manager.broadcast({
+            "type": "update_warning",
+            "message": "Une mise à jour va être effectuée. Vous serez déconnecté dans 30 secondes. Vous pourrez vous reconnecter dans 5 minutes.",
+            "admin_name": admin_name,
+            "version": version,
+            "countdown_seconds": 30,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Broadcast via les WebSocket consignes aussi
+        from consignes_routes import consigne_connections
+        for uid, ws in list(consigne_connections.items()):
+            try:
+                await ws.send_json({
+                    "type": "update_warning",
+                    "message": "Une mise à jour va être effectuée. Vous serez déconnecté dans 30 secondes.",
+                    "countdown_seconds": 30
+                })
+            except Exception:
+                pass
+        
+        # Log dans l'audit
+        await audit_service.log_action(
+            user_id=current_user.get("id"),
+            user_name=admin_name,
+            user_email=current_user.get("email"),
+            action=ActionType.UPDATE,
+            entity_type=EntityType.SETTINGS,
+            entity_id="update_warning_broadcast",
+            entity_name=f"Avertissement MAJ diffusé ({connected_count} utilisateurs)"
+        )
+        
+        return {
+            "success": True,
+            "connected_users": connected_count,
+            "message": f"Avertissement envoyé à {connected_count} utilisateur(s)"
+        }
+    except Exception as e:
+        logger.error(f"❌ Erreur broadcast avertissement MAJ: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/updates/apply")
 async def apply_update(
     version: str,
