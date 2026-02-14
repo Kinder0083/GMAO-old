@@ -77,6 +77,7 @@ class MESService:
         fields_map = {
             "mqtt_topic": str, "sensor_ip": str,
             "theoretical_cadence": float, "downtime_margin_pct": float, "active": bool,
+            "trs_target": float,
         }
         for field, cast in fields_map.items():
             if field in data:
