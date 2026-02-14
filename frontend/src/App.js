@@ -74,6 +74,7 @@ import WeeklyReportsPage from "./pages/WeeklyReportsPage";
 import TeamManagementPage from "./pages/TeamManagementPage";
 import CamerasPage from "./pages/CamerasPage";
 import MESPage from "./pages/MESPage";
+import MESReportsPage from "./pages/MESReportsPage";
 import AnalyticsChecklistsPage from "./pages/AnalyticsChecklistsPage";
 
 // Protected Route Component with Token Validation
