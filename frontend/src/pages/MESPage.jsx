@@ -317,6 +317,47 @@ const RejectReasonsAdmin = ({ reasons, onUpdate, onClose }) => {
   );
 };
 
+// ==================== TRS WEEKLY CHART ====================
+const TRSWeeklyChart = ({ data, trsTarget }) => {
+  if (!data || data.length === 0) return null;
+
+  const chartData = data.filter(d => d.is_production_day).map(d => ({
+    date: new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+    trs: d.trs ?? 0,
+    disponibilite: d.availability ?? 0,
+    performance: d.performance ?? 0,
+    qualite: d.quality ?? 0,
+    production: d.production,
+  }));
+
+  if (chartData.length === 0) return null;
+
+  return (
+    <Card data-testid="trs-weekly-chart">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-indigo-500" /> TRS Hebdomadaire
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
+            <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v) => `${v}%`} />
+            <ReferenceLine y={trsTarget} stroke="#ef4444" strokeDasharray="6 3" label={{ value: `Obj: ${trsTarget}%`, position: 'right', fontSize: 10, fill: '#ef4444' }} />
+            <Line type="monotone" dataKey="trs" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 4 }} name="TRS" />
+            <Line type="monotone" dataKey="disponibilite" stroke="#0ea5e9" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Disponibilite" />
+            <Line type="monotone" dataKey="performance" stroke="#8b5cf6" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Performance" />
+            <Line type="monotone" dataKey="qualite" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Qualite" />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+};
+
 // ==================== MACHINE LIST ====================
 const MachineList = ({ machines, onSelect, onCreate, onDelete, loading }) => (
   <div className="space-y-4">
