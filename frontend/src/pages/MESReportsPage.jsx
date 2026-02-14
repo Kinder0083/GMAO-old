@@ -1198,6 +1198,8 @@ const MESReportsPage = () => {
               </CardContent>
             </Card>
           )}
+        </>
+      )}
 
       {/* Empty State (in manual tab) */}
       {!reportData && !loading && (
