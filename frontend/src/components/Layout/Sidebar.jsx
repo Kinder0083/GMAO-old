@@ -60,13 +60,13 @@ const Sidebar = ({
     navigate(item.path);
   };
 
-  // Grouper les menus par catégorie
+  // Grouper les menus par catégorie (exclure mqtt-logs car il est dans la section admin)
   const getMenusByCategory = (categoryId) => {
-    return menuItems.filter(item => item.category_id === categoryId);
+    return menuItems.filter(item => item.category_id === categoryId && item.id !== 'mqtt-logs');
   };
 
-  // Menus sans catégorie
-  const uncategorizedMenus = menuItems.filter(item => !item.category_id);
+  // Menus sans catégorie (exclure mqtt-logs car il est dans la section admin)
+  const uncategorizedMenus = menuItems.filter(item => !item.category_id && item.id !== 'mqtt-logs');
 
   // Vérifier si une catégorie contient le menu actif
   const categoryHasActiveMenu = (categoryId) => {
