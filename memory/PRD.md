@@ -2,7 +2,7 @@
 
 ## Derniere mise a jour
 **Date**: 2026-02-14
-**Version**: 2.0.0
+**Version**: 2.1.0
 
 ## Problem Statement
 Application GMAO complete avec module M.E.S. (Manufacturing Execution System) pour le monitoring de production en temps reel.
@@ -61,14 +61,22 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 - [x] Service d'envoi email avec piece jointe
 - [x] Email HTML avec resume des metriques
 
+### Refactoring response_model API (P2) - COMPLET (2026-02-14)
+- [x] Creation de 11 modeles de reponse generiques (MessageResponse, SuccessResponse, VersionResponse, etc.)
+- [x] ~40+ endpoints annotes avec response_model dans server.py
+- [x] Routeurs externes annotes (roles_routes, surveillance_routes, presqu_accident_routes)
+- [x] Correction securite: serialize_doc() supprime hashed_password, reset_token
+- [x] Tests: 18/18 passes (100%), frontend OK
+
 ## Architecture
 
 ### Backend (FastAPI + MongoDB)
-- `mes_service.py`: TRS avance, rebuts, references, alertes email, planning, historique TRS, **reporting, scheduled reports CRUD**
-- `mes_routes.py`: Toutes les routes M.E.S. + **reports/data, reports/export/excel, reports/export/pdf, scheduled-reports CRUD**
-- `mes_report_scheduler.py`: **NEW** Service APScheduler pour envoi automatique des rapports
+- `mes_service.py`: TRS avance, rebuts, references, alertes email, planning, historique TRS, reporting, scheduled reports CRUD
+- `mes_routes.py`: Toutes les routes M.E.S. + reports/data, reports/export/excel, reports/export/pdf, scheduled-reports CRUD
+- `mes_report_scheduler.py`: Service APScheduler pour envoi automatique des rapports
 - `mqtt_manager.py`: Gestionnaire MQTT
 - `email_service.py`: Service SMTP Gmail
+- `models.py`: Modeles Pydantic + 11 modeles de reponse generiques
 
 ### Frontend (React)
 - `MESPage.jsx`: Page principale M.E.S.
@@ -78,7 +86,7 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 - `mes_machines`, `mes_pulses`, `mes_cadence_history`, `mes_alerts`
 - `mes_reject_reasons`, `mes_rejects`
 - `mes_product_references`
-- `mes_scheduled_reports` **(NEW)**
+- `mes_scheduled_reports`
 
 ## Key API Endpoints
 - Machines CRUD: GET/POST/PUT/DELETE /api/mes/machines
@@ -89,8 +97,8 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 - Select ref: POST /api/mes/machines/{id}/select-reference
 - TRS history: GET /api/mes/machines/{id}/trs-history?days=7
 - Alerts: GET /api/mes/alerts, DELETE /api/mes/alerts/all
-- **Reports**: POST /api/mes/reports/data (JSON), /api/mes/reports/export/excel, /api/mes/reports/export/pdf
-- **Scheduled Reports**: GET/POST/PUT/DELETE /api/mes/scheduled-reports, POST /api/mes/scheduled-reports/{id}/send-now
+- Reports: POST /api/mes/reports/data (JSON), /api/mes/reports/export/excel, /api/mes/reports/export/pdf
+- Scheduled Reports: GET/POST/PUT/DELETE /api/mes/scheduled-reports, POST /api/mes/scheduled-reports/{id}/send-now
 
 ## Prioritized Backlog
 
@@ -101,13 +109,13 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 ### P2 (Nice to have)
 - [x] ~~Reporting historique M.E.S. avance (exports)~~ DONE
 - [x] ~~Planification envoi automatique rapports~~ DONE
-- [ ] Refactoring response_model API
+- [x] ~~Refactoring response_model API~~ DONE
 
 ## Test Reports
 - iteration_2.json - TRS Avance base (33/33)
 - iteration_3.json - TRS Target + Email (15/15)
 - iteration_4.json - Product refs + TRS weekly (17/17)
-- iteration_5.json - References + TRS chart tests
+- iteration_5.json - Response model refactoring (18/18) + Security fix
 
 ## Credentials
 - admin@test.com / Admin123!
