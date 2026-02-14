@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { BACKEND_URL } from '../utils/config';
 import { useToast } from '../hooks/use-toast';
+import { applyTimezoneOffset, formatChartTime } from '../utils/dateUtils';
 import {
   Activity, Plus, Settings, Trash2, Play, Square, Clock, Target, Gauge,
   AlertTriangle, Wifi, WifiOff, Loader2, RefreshCw, Zap, Bell,
