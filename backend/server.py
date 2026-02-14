@@ -8997,7 +8997,7 @@ api_router.include_router(analytics_router)
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 
-@app.websocket("/ws/whiteboard/{board_id}")
+@app.websocket("/api/ws/whiteboard/{board_id}")
 async def whiteboard_websocket(websocket: WebSocket, board_id: str):
     """WebSocket pour la synchronisation temps réel du tableau d'affichage"""
     # Récupérer les paramètres de l'utilisateur depuis la query string
@@ -9030,7 +9030,7 @@ async def whiteboard_websocket(websocket: WebSocket, board_id: str):
 from realtime_manager import realtime_manager
 from realtime_events import EntityType as RealtimeEntityType
 
-@app.websocket("/ws/realtime/{entity_type}")
+@app.websocket("/api/ws/realtime/{entity_type}")
 async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: str = None):
     """
     WebSocket centralisé pour la synchronisation temps réel de toutes les entités
@@ -9082,7 +9082,7 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
 # WebSocket pour le Chat Live
 from websocket_manager import manager as chat_manager
 
-@app.websocket("/ws/chat/{token}")
+@app.websocket("/api/ws/chat/{token}")
 async def chat_live_websocket(websocket: WebSocket, token: str):
     """WebSocket pour le chat en temps réel"""
     user_id = None
@@ -9211,7 +9211,7 @@ async def chat_live_websocket(websocket: WebSocket, token: str):
             await chat_manager.broadcast_user_status(user_id, user_name, "offline")
 
 # WebSocket pour les consignes (notifications temps réel)
-@app.websocket("/ws/consignes/{token}")
+@app.websocket("/api/ws/consignes/{token}")
 async def consignes_websocket(websocket: WebSocket, token: str):
     """WebSocket pour recevoir les consignes en temps réel"""
     await consignes_websocket_endpoint(websocket, token)
