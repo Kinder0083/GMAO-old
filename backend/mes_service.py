@@ -23,32 +23,15 @@ class MESService:
         self._subscribed_topics = set()
         self._pending_topics = set()  # Topics en attente si MQTT pas connecté
         
-        # Enregistrer ce service comme listener de reconnexion MQTT
+        # Enregistrer ce service comme listener de connexion MQTT
         if mqtt_manager:
-            # Stocker une référence pour le callback de reconnexion
-            self._setup_mqtt_reconnect_hook()
-
-    def _setup_mqtt_reconnect_hook(self):
-        """Configure le hook pour re-souscrire quand MQTT se (re)connecte"""
-        if not self.mqtt_manager:
-            return
-            
-        # Sauvegarder le callback original
-        original_on_connect = self.mqtt_manager._on_connect
-        
-        # Référence au service pour la closure
-        mes_service_ref = self
-        
-        def _on_connect_with_mes_hook(client, userdata, flags, rc):
-            # Appeler le callback original d'abord
-            original_on_connect(client, userdata, flags, rc)
-            # Si connexion réussie, re-souscrire aux topics M.E.S.
-            if rc == 0:
-                logger.info("[MES] MQTT connecté, re-souscription aux topics...")
-                mes_service_ref._resubscribe_all()
-        
-        self.mqtt_manager._on_connect = _on_connect_with_mes_hook
-        logger.info("[MES] Hook de reconnexion MQTT configuré")
+            mqtt_manager.add_on_connect_listener(self._on_mqtt_connected)
+            logger.info("[MES] Service enregistré comme listener de connexion MQTT")
+    
+    def _on_mqtt_connected(self):
+        """Appelé quand MQTT se (re)connecte - re-souscrire aux topics"""
+        logger.info("[MES] 🔌 MQTT connecté, re-souscription aux topics M.E.S....")
+        self._resubscribe_all()
 
     # ==================== MACHINES CRUD ====================
 
