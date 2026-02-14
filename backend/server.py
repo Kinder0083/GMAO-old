@@ -9217,11 +9217,27 @@ async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: 
 
 # WebSocket pour les consignes (notifications temps réel)
 @app.websocket("/api/ws/consignes")
-async def consignes_websocket(websocket: WebSocket, token: str = None):
+async def consignes_websocket(websocket: WebSocket, token: str = None, user_id: str = None):
     """WebSocket pour recevoir les consignes en temps réel"""
-    if not token:
-        token = websocket.query_params.get("token", "")
-    await consignes_websocket_endpoint(websocket, token)
+    if user_id:
+        # Connexion par user_id (compatible proxy)
+        try:
+            user_data = await db.users.find_one({"_id": ObjectId(user_id)})
+            if not user_data:
+                await websocket.close(code=1008, reason="User not found")
+                return
+            await websocket.accept()
+            try:
+                while True:
+                    data = await websocket.receive_text()
+            except WebSocketDisconnect:
+                pass
+        except Exception as e:
+            logger.error(f"Erreur consignes WS: {e}")
+    elif token:
+        await consignes_websocket_endpoint(websocket, token)
+    else:
+        await websocket.close(code=1008, reason="user_id or token required")
 
 
 # ==================== ADMIN RESET ROUTES ====================
