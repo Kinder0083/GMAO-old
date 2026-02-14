@@ -111,7 +111,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             achat=ModulePermission(view=True, edit=True, delete=True),  # Permission Achat complète pour Admin
             timeTracking=ModulePermission(view=True, edit=True, delete=True),  # Admin peut voir tous les utilisateurs
             cameras=ModulePermission(view=True, edit=True, delete=True),  # Admin peut gérer et voir les caméras
-            analyticsChecklists=ModulePermission(view=True, edit=True, delete=True)  # Admin peut voir les analytics
+            analyticsChecklists=ModulePermission(view=True, edit=True, delete=True),  # Admin peut voir les analytics
+            mes=ModulePermission(view=True, edit=True, delete=True),
+            mesReports=ModulePermission(view=True, edit=True, delete=True),
+            serviceDashboard=ModulePermission(view=True, edit=True, delete=True),
+            weeklyReports=ModulePermission(view=True, edit=True, delete=True),
+            demandesArret=ModulePermission(view=True, edit=True, delete=True),
+            consignes=ModulePermission(view=True, edit=True, delete=True),
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=True)
         )
     
     # Rôle spécial AFFICHAGE : Uniquement accès au tableau d'affichage
