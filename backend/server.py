@@ -555,7 +555,11 @@ async def login(login_request: LoginRequest):
         user=User(**serialize_doc(user))
     )
 
-@api_router.get("/auth/me", response_model=User)
+@api_router.get("/auth/me", response_model=User, tags=["Authentification"],
+    summary="Profil utilisateur connecte",
+    description="Retourne les informations completes de l'utilisateur actuellement authentifie.",
+    responses={**STANDARD_ERRORS}
+)
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Obtenir l'utilisateur connecté"""
     return User(**current_user)
