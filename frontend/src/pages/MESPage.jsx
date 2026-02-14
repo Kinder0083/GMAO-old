@@ -797,6 +797,8 @@ const MachineSettingsModal = ({ machine, onClose }) => {
                 value={form.theoretical_cadence} onChange={handleChange('theoretical_cadence', 'number')} />
               <SettingsField label="Marge arret" field="downtime_margin_pct" unit="%" 
                 value={form.downtime_margin_pct} onChange={handleChange('downtime_margin_pct', 'number')} />
+              <SettingsField label="Objectif TRS" field="trs_target" unit="%" 
+                value={form.trs_target} onChange={handleChange('trs_target', 'number')} />
             </div>
           </div>
           <div className="space-y-3">
