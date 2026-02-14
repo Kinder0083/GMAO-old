@@ -29,6 +29,7 @@ Application CMMS/GMAO complète (Gestion de Maintenance Assistée par Ordinateur
 - [x] Documentation API protégée (admin/atlas2024)
 - [x] Correction bug écran blanc (données de menu incohérentes)
 - [x] Réorganisation sidebar: "Logs MQTT" déplacé sous "P/L MQTT" (14 fév 2026)
+- [x] Réorganisation sidebar: "Import / Export" déplacé sous "Paramètres Spéciaux" (14 fév 2026)
 
 ## Pending / Backlog
 - [ ] **P1** Bug import Excel (données pas correctement liées) - l'utilisateur dit ne pas avoir ce problème, en attente de confirmation
