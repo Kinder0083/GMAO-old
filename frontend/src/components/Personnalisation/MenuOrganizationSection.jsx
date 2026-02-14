@@ -77,6 +77,10 @@ const AVAILABLE_ICONS = [
   { id: 'MessageSquare', icon: MessageSquare, label: 'Messages' },
   { id: 'UserCog', icon: UserCog, label: 'Gestion Équipe' },
   { id: 'Clock', icon: Clock, label: 'Pointage' },
+  { id: 'Camera', icon: Camera, label: 'Caméras' },
+  { id: 'Zap', icon: Zap, label: 'M.E.S.' },
+  { id: 'Presentation', icon: Presentation, label: 'Dashboard Service' },
+  { id: 'FileBarChart', icon: FileBarChart, label: 'Rapports M.E.S.' },
 ];
 
 const DEFAULT_MENU_ITEMS = [
