@@ -43,10 +43,10 @@ async def update_machine(machine_id: str, data: dict, current_user: dict = Depen
         raise HTTPException(404, "Machine non trouvée")
     return m
 
-@router.delete("/machines/{machine_id}")
+@router.delete("/machines/{machine_id}", response_model=SuccessResponse)
 async def delete_machine(machine_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.delete_machine(machine_id)
-    return {"success": True}
+    return {"success": True, "message": "Machine supprimée"}
 
 
 # ==================== METRICS ====================
@@ -74,21 +74,21 @@ async def alert_count(current_user: dict = Depends(get_current_user)):
     count = await mes_service.get_unread_alert_count()
     return {"count": count}
 
-@router.put("/alerts/{alert_id}/read")
+@router.put("/alerts/{alert_id}/read", response_model=SuccessResponse)
 async def mark_read(alert_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.mark_alert_read(alert_id)
-    return {"success": True}
+    return {"success": True, "message": "Alerte marquée comme lue"}
 
-@router.put("/alerts/read-all")
+@router.put("/alerts/read-all", response_model=SuccessResponse)
 async def mark_all_read(current_user: dict = Depends(get_current_user)):
     await mes_service.mark_all_alerts_read()
-    return {"success": True}
+    return {"success": True, "message": "Toutes les alertes marquées comme lues"}
 
-@router.delete("/alerts/all")
+@router.delete("/alerts/all", response_model=SuccessResponse)
 async def delete_all_alerts(current_user: dict = Depends(get_current_user)):
     """Supprimer toutes les alertes M.E.S."""
     await mes_service.delete_all_alerts()
-    return {"success": True}
+    return {"success": True, "message": "Toutes les alertes supprimées"}
 
 
 # ==================== TOOLS ====================
@@ -97,7 +97,7 @@ async def delete_all_alerts(current_user: dict = Depends(get_current_user)):
 async def ping_sensor(machine_id: str, current_user: dict = Depends(get_current_user)):
     return await mes_service.ping_sensor(machine_id)
 
-@router.post("/machines/{machine_id}/simulate-pulse")
+@router.post("/machines/{machine_id}/simulate-pulse", response_model=SuccessResponse)
 async def simulate_pulse(machine_id: str, current_user: dict = Depends(get_current_user)):
     """Simuler une impulsion pour tester"""
     await mes_service.record_pulse(machine_id, 1)
@@ -123,10 +123,10 @@ async def update_reject_reason(reason_id: str, data: dict, current_user: dict = 
         raise HTTPException(404, "Motif non trouvé")
     return result
 
-@router.delete("/reject-reasons/{reason_id}")
+@router.delete("/reject-reasons/{reason_id}", response_model=SuccessResponse)
 async def delete_reject_reason(reason_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.delete_reject_reason(reason_id)
-    return {"success": True}
+    return {"success": True, "message": "Motif de rebut supprimé"}
 
 
 # ==================== REJECTS (Operator) ====================
@@ -143,10 +143,10 @@ async def list_rejects(machine_id: str, date_from: str = None, date_to: str = No
                        current_user: dict = Depends(get_current_user)):
     return await mes_service.get_rejects(machine_id, date_from, date_to)
 
-@router.delete("/rejects/{reject_id}")
+@router.delete("/rejects/{reject_id}", response_model=SuccessResponse)
 async def delete_reject(reject_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.delete_reject(reject_id)
-    return {"success": True}
+    return {"success": True, "message": "Rebut supprimé"}
 
 
 # ==================== PRODUCT REFERENCES ====================
@@ -191,7 +191,7 @@ async def update_product_reference(ref_id: str, data: dict, current_user: dict =
     )
     return result
 
-@router.delete("/product-references/{ref_id}")
+@router.delete("/product-references/{ref_id}", response_model=SuccessResponse)
 async def delete_product_reference(ref_id: str, current_user: dict = Depends(get_current_admin_user)):
     await mes_service.delete_product_reference(ref_id)
     from models import ActionType, EntityType
