@@ -7,7 +7,7 @@ import {
   Activity, Plus, Settings, Trash2, Play, Square, Clock, Target, Gauge,
   AlertTriangle, Wifi, WifiOff, Loader2, RefreshCw, Zap, Bell,
   BarChart3, TrendingUp, Timer, Package, ArrowLeft, CheckCircle2, XCircle,
-  ShieldAlert, CircleSlash, ListPlus, Calendar
+  ShieldAlert, CircleSlash, ListPlus, Calendar, Mail, X
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import {
