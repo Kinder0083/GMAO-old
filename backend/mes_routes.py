@@ -766,28 +766,34 @@ async def create_scheduled_report(data: dict, current_user: dict = Depends(get_c
     data["created_by"] = current_user.get("email", "")
     return await mes_service.create_scheduled_report(data)
 
-@router.put("/scheduled-reports/{report_id}")
+@router.put("/scheduled-reports/{report_id}",
+    summary="Modifier un rapport planifie",
+    description="Met a jour la configuration d'un rapport planifie (frequence, destinataires, format).",
+    responses={**CRUD_ERRORS}
+)
 async def update_scheduled_report(report_id: str, data: dict, current_user: dict = Depends(get_current_user)):
-    """Update a scheduled report"""
     report = await mes_service.update_scheduled_report(report_id, data)
     if not report:
         raise HTTPException(404, "Rapport planifie non trouve")
     return report
 
-@router.delete("/scheduled-reports/{report_id}", response_model=SuccessResponse)
+@router.delete("/scheduled-reports/{report_id}", response_model=SuccessResponse,
+    summary="Supprimer un rapport planifie",
+    responses={**CRUD_ERRORS}
+)
 async def delete_scheduled_report(report_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a scheduled report"""
     await mes_service.delete_scheduled_report(report_id)
     return {"success": True, "message": "Rapport planifié supprimé"}
 
-@router.post("/scheduled-reports/{report_id}/send-now", response_model=SuccessResponse)
+@router.post("/scheduled-reports/{report_id}/send-now", response_model=SuccessResponse,
+    summary="Envoyer un rapport immediatement",
+    description="Declenche l'envoi immediat d'un rapport planifie aux destinataires configures. Utile pour tester la configuration.",
+    responses={**CRUD_ERRORS, 500: {"description": "Scheduler non disponible"}}
+)
 async def send_scheduled_report_now(report_id: str, current_user: dict = Depends(get_current_user)):
-    """Manually trigger sending a scheduled report"""
     report = await mes_service.get_scheduled_report(report_id)
     if not report:
         raise HTTPException(404, "Rapport planifie non trouve")
-    
-    # Get the scheduler and trigger report
     from mes_report_scheduler import mes_report_scheduler
     if mes_report_scheduler:
         await mes_report_scheduler.send_report(report_id)
