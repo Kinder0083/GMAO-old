@@ -10,6 +10,7 @@ import uuid
 import logging
 
 from dependencies import get_current_user, db
+from models import MessageResponse
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +220,7 @@ async def update_template(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{template_id}")
+@router.delete("/{template_id}", response_model=MessageResponse)
 async def delete_template(template_id: str, current_user: dict = Depends(get_current_user)):
     """
     Supprimer un ordre type (Admin ou Responsable de service uniquement)
