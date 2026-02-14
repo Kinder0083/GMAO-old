@@ -9077,7 +9077,7 @@ async def startup_scheduler():
         logger.info("   - Notifications PM: tous les jours à 07h00")
         logger.info("   - Rappels surveillance: tous les jours à 07h30")
         
-        # M.E.S - Calcul cadence chaque minute + abonnement MQTT
+        # M.E.S - Calcul cadence chaque minute (abonnement MQTT sera fait APRÈS connexion)
         from mes_routes import mes_service as _mes_ref
         if _mes_ref:
             from apscheduler.triggers.interval import IntervalTrigger
@@ -9096,19 +9096,9 @@ async def startup_scheduler():
                 replace_existing=True
             )
             logger.info("   - M.E.S cadence: chaque minute")
-            # Subscribe to MQTT topics
-            await _mes_ref.subscribe_all()
         
-        # Initialiser et démarrer les collecteurs MQTT
-        await mqtt_meter_collector.initialize(db)
-        await mqtt_meter_collector.start()
-        logger.info("✅ Collecteur MQTT compteurs démarré")
-        
-        await mqtt_sensor_collector.initialize(db)
-        await mqtt_sensor_collector.start()
-        logger.info("✅ Collecteur MQTT capteurs démarré")
-        
-        # Auto-connexion MQTT si configuré (pour la page P/L MQTT)
+        # Auto-connexion MQTT si configuré (DOIT être fait AVANT les abonnements M.E.S.)
+        mqtt_connected = False
         try:
             mqtt_config = await db.mqtt_config.find_one({"id": "default"})
             if mqtt_config and mqtt_config.get("host"):
@@ -9124,13 +9114,41 @@ async def startup_scheduler():
                 )
                 success = mqtt_manager.connect()
                 if success:
-                    logger.info("✅ Connexion MQTT automatique initiée (abonnements restaurés dans on_connect)")
+                    # Attendre que la connexion soit vraiment établie
+                    import time
+                    max_wait = 5  # secondes
+                    waited = 0
+                    while not mqtt_manager.is_connected and waited < max_wait:
+                        await asyncio.sleep(0.1)
+                        waited += 0.1
+                    mqtt_connected = mqtt_manager.is_connected
+                    if mqtt_connected:
+                        logger.info("✅ Connexion MQTT automatique établie")
+                    else:
+                        logger.warning("⚠️ Connexion MQTT initiée mais pas encore établie")
                 else:
                     logger.warning("⚠️ Échec de la connexion MQTT automatique")
             else:
                 logger.info("ℹ️ Aucune configuration MQTT trouvée, connexion manuelle requise")
         except Exception as mqtt_err:
             logger.error(f"❌ Erreur lors de l'auto-connexion MQTT: {mqtt_err}")
+        
+        # M.E.S - Abonnement MQTT (APRÈS connexion MQTT)
+        if _mes_ref:
+            await _mes_ref.subscribe_all()
+            if mqtt_connected:
+                logger.info("✅ M.E.S. abonné aux topics MQTT")
+            else:
+                logger.info("ℹ️ M.E.S. topics en attente (MQTT non connecté)")
+        
+        # Initialiser et démarrer les collecteurs MQTT
+        await mqtt_meter_collector.initialize(db)
+        await mqtt_meter_collector.start()
+        logger.info("✅ Collecteur MQTT compteurs démarré")
+        
+        await mqtt_sensor_collector.initialize(db)
+        await mqtt_sensor_collector.start()
+        logger.info("✅ Collecteur MQTT capteurs démarré")
         
         # Initialiser le service d'alertes
         await alert_service.initialize(db)
