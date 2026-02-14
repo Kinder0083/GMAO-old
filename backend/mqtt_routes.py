@@ -60,7 +60,7 @@ async def get_mqtt_config(
         raise HTTPException(status_code=500, detail="Erreur récupération configuration MQTT")
 
 
-@router.post("/config")
+@router.post("/config", response_model=SuccessResponse)
 async def save_mqtt_config(
     config: MQTTConfig,
     current_user: dict = Depends(get_current_admin_user)
@@ -105,7 +105,7 @@ async def save_mqtt_config(
         raise HTTPException(status_code=500, detail="Erreur sauvegarde configuration MQTT")
 
 
-@router.post("/connect")
+@router.post("/connect", response_model=SuccessResponse)
 async def connect_mqtt(
     current_user: dict = Depends(get_current_admin_user)
 ):
@@ -142,7 +142,7 @@ async def connect_mqtt(
         raise HTTPException(status_code=500, detail=f"Erreur connexion MQTT: {str(e)}")
 
 
-@router.post("/disconnect")
+@router.post("/disconnect", response_model=SuccessResponse)
 async def disconnect_mqtt(
     current_user: dict = Depends(get_current_admin_user)
 ):
@@ -172,7 +172,7 @@ async def get_mqtt_status(
 # Publication MQTT
 # =======================
 
-@router.post("/publish")
+@router.post("/publish", response_model=SuccessResponse)
 async def publish_mqtt(
     data: MQTTPublish,
     current_user: dict = Depends(get_current_admin_user)
@@ -286,7 +286,7 @@ async def subscribe_mqtt(
         raise HTTPException(status_code=500, detail=f"Erreur abonnement MQTT: {str(e)}")
 
 
-@router.delete("/unsubscribe")
+@router.delete("/unsubscribe", response_model=SuccessResponse)
 async def unsubscribe_mqtt(
     topic: str,
     current_user: dict = Depends(get_current_admin_user)
