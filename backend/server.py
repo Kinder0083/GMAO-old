@@ -4379,7 +4379,7 @@ class SimpleSupportRequest(BaseModel):
     message: str
 
 
-@api_router.post("/support/request")
+@api_router.post("/support/request", response_model=SuccessResponse)
 async def submit_support_request(
     request: SimpleSupportRequest,
     current_user: dict = Depends(get_current_user)
@@ -8174,7 +8174,7 @@ async def update_improvement(
     
     return Improvement(**updated_imp)
 
-@api_router.delete("/improvements/{imp_id}")
+@api_router.delete("/improvements/{imp_id}", response_model=MessageResponse)
 async def delete_improvement(imp_id: str, current_user: dict = Depends(require_permission("improvements", "delete"))):
     """Supprimer une amélioration"""
     imp = await db.improvements.find_one({"id": imp_id})
