@@ -9082,9 +9082,12 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
 # WebSocket pour le Chat Live
 from websocket_manager import manager as chat_manager
 
-@app.websocket("/api/ws/chat/{token}")
-async def chat_live_websocket(websocket: WebSocket, token: str):
+@app.websocket("/api/ws/chat")
+async def chat_live_websocket(websocket: WebSocket, token: str = None):
     """WebSocket pour le chat en temps réel"""
+    # Support token via query param
+    if not token:
+        token = websocket.query_params.get("token", "")
     user_id = None
     user_name = "Unknown"
     
@@ -9211,9 +9214,11 @@ async def chat_live_websocket(websocket: WebSocket, token: str):
             await chat_manager.broadcast_user_status(user_id, user_name, "offline")
 
 # WebSocket pour les consignes (notifications temps réel)
-@app.websocket("/api/ws/consignes/{token}")
-async def consignes_websocket(websocket: WebSocket, token: str):
+@app.websocket("/api/ws/consignes")
+async def consignes_websocket(websocket: WebSocket, token: str = None):
     """WebSocket pour recevoir les consignes en temps réel"""
+    if not token:
+        token = websocket.query_params.get("token", "")
     await consignes_websocket_endpoint(websocket, token)
 
 
