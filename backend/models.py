@@ -154,7 +154,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             iotDashboard=ModulePermission(view=False, edit=False, delete=False),
             mqttLogs=ModulePermission(view=False, edit=False, delete=False),
             purchaseRequests=ModulePermission(view=False, edit=False, delete=False),
-            whiteboard=ModulePermission(view=True, edit=True, delete=False)
+            whiteboard=ModulePermission(view=True, edit=True, delete=False),
+            mes=ModulePermission(view=False, edit=False, delete=False),
+            mesReports=ModulePermission(view=False, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=False, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=False, edit=False, delete=False),
+            demandesArret=ModulePermission(view=False, edit=False, delete=False),
+            consignes=ModulePermission(view=False, edit=False, delete=False),
+            autorisationsParticulieres=ModulePermission(view=False, edit=False, delete=False)
         )
     
     # DIRECTEUR : Demande d'inter./Demandes d'amél. en visualisation et modification
@@ -188,7 +195,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             personalization=ModulePermission(view=True, edit=True, delete=False),
             chatLive=ModulePermission(view=True, edit=True, delete=False),
             cameras=ModulePermission(view=True, edit=False, delete=False),  # Directeur peut voir les caméras
-            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False)  # Directeur peut voir les analytics
+            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False),  # Directeur peut voir les analytics
+            mes=ModulePermission(view=True, edit=False, delete=False),
+            mesReports=ModulePermission(view=True, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=True, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=True, edit=False, delete=False),
+            demandesArret=ModulePermission(view=True, edit=True, delete=False),
+            consignes=ModulePermission(view=True, edit=False, delete=False),
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False)
         )
     
     # QHSE : Demande d'inter./Demandes d'amél. en visualisation et modification
