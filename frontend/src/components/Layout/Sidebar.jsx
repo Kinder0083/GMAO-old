@@ -264,6 +264,18 @@ const Sidebar = ({
                 {sidebarOpen && <span className="text-sm font-medium">P/L MQTT</span>}
               </button>
               <button
+                onClick={() => navigate('/mqtt-logs')}
+                data-testid="sidebar-mqtt-logs"
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${!sidebarOpen ? 'justify-center px-2' : ''}`}
+                style={getSidebarButtonStyle(location.pathname === '/mqtt-logs')}
+                onMouseEnter={(e) => handleSidebarButtonHover(e, location.pathname === '/mqtt-logs')}
+                onMouseLeave={(e) => handleSidebarButtonLeave(e, location.pathname === '/mqtt-logs')}
+                title={!sidebarOpen ? 'Logs MQTT' : ''}
+              >
+                <Terminal size={20} className="flex-shrink-0" />
+                {sidebarOpen && <span className="text-sm font-medium">Logs MQTT</span>}
+              </button>
+              <button
                 onClick={() => navigate('/updates')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${!sidebarOpen ? 'justify-center px-2' : ''}`}
                 style={getSidebarButtonStyle(location.pathname === '/updates')}
