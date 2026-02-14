@@ -42,6 +42,7 @@ class MESService:
             "sensor_ip": data.get("sensor_ip", ""),
             "theoretical_cadence": float(data.get("theoretical_cadence", 6)),  # cp/min
             "downtime_margin_pct": float(data.get("downtime_margin_pct", 30)),  # %
+            "trs_target": float(data.get("trs_target", 85)),  # % objectif TRS
             "production_schedule": {
                 "is_24h": bool(data.get("schedule_is_24h", True)),
                 "start_hour": int(data.get("schedule_start_hour", 6)),
@@ -54,6 +55,12 @@ class MESService:
                 "over_cadence": float(data.get("alert_over_cadence", 0)),
                 "daily_target": int(data.get("alert_daily_target", 0)),
                 "no_signal_minutes": int(data.get("alert_no_signal_minutes", 10)),
+            },
+            "email_notifications": {
+                "enabled": bool(data.get("email_enabled", False)),
+                "recipients": data.get("email_recipients", []),
+                "alert_types": data.get("email_alert_types", []),
+                "delay_minutes": int(data.get("email_delay_minutes", 5)),
             },
             "active": True,
             "created_at": datetime.now(timezone.utc),
