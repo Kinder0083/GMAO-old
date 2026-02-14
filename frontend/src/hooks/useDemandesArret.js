@@ -142,7 +142,7 @@ export const useDemandesArret = (options = {}) => {
       
       // Utiliser un user_id générique pour le planning
       const userId = 'planning-viewer-' + Date.now();
-      const wsUrl = `${wsProtocol}//${wsHost}/ws/realtime/demandes_arret?user_id=${userId}`;
+      const wsUrl = `${wsProtocol}//${wsHost}/api/ws/realtime/demandes_arret?user_id=${userId}`;
       
       console.log('[useDemandesArret] Connexion WebSocket:', wsUrl);
       

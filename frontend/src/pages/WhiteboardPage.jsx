@@ -422,7 +422,7 @@ const WhiteboardPage = () => {
       wsRef.current.close();
     }
     
-    const wsUrl = `${WS_URL}/ws/whiteboard/${boardId}?user_id=${user.id}&user_name=${encodeURIComponent(`${user.prenom || ''} ${user.nom || ''}`.trim() || user.email)}`;
+    const wsUrl = `${WS_URL}/api/ws/whiteboard/${boardId}?user_id=${user.id}&user_name=${encodeURIComponent(`${user.prenom || ''} ${user.nom || ''}`.trim() || user.email)}`;
     console.log(`[WS ${boardId}] Connexion à:`, wsUrl);
     
     const ws = new WebSocket(wsUrl);

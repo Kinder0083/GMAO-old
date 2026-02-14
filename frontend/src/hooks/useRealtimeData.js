@@ -181,7 +181,7 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
         wsHost = window.location.host;
       }
 
-      const wsUrl = `${wsProtocol}//${wsHost}/ws/realtime/${entityType}?user_id=${userIdRef.current}`;
+      const wsUrl = `${wsProtocol}//${wsHost}/api/ws/realtime/${entityType}?user_id=${userIdRef.current}`;
       console.log(`[Realtime ${entityType}] Connexion WebSocket...`);
 
       try {
