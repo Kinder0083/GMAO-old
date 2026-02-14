@@ -4,6 +4,7 @@ Routes API M.E.S (Manufacturing Execution System)
 from fastapi import APIRouter, Depends, HTTPException
 from dependencies import get_current_user, get_current_admin_user, get_database
 from models import SuccessResponse, MessageResponse
+from openapi_config import CRUD_ERRORS, STANDARD_ERRORS
 
 router = APIRouter(prefix="/mes", tags=["MES"])
 
@@ -21,29 +22,49 @@ def init_mes_routes(db, mqtt_manager=None):
 
 # ==================== MACHINES ====================
 
-@router.get("/machines")
+@router.get("/machines",
+    summary="Lister les machines M.E.S.",
+    description="Retourne la liste de toutes les machines configurees dans le module M.E.S. avec leurs parametres de production.",
+    responses={**STANDARD_ERRORS}
+)
 async def list_machines(current_user: dict = Depends(get_current_user)):
     return await mes_service.get_machines()
 
-@router.get("/machines/{machine_id}")
+@router.get("/machines/{machine_id}",
+    summary="Detail d'une machine",
+    description="Retourne les informations detaillees d'une machine M.E.S. incluant sa configuration, ses parametres de production et sa reference produit active.",
+    responses={**CRUD_ERRORS}
+)
 async def get_machine(machine_id: str, current_user: dict = Depends(get_current_user)):
     m = await mes_service.get_machine(machine_id)
     if not m:
         raise HTTPException(404, "Machine non trouvée")
     return m
 
-@router.post("/machines")
+@router.post("/machines",
+    summary="Creer une machine",
+    description="Ajoute une nouvelle machine au suivi M.E.S. avec sa configuration initiale (cadence objectif, seuils d'alerte, planning de production).",
+    responses={**STANDARD_ERRORS}
+)
 async def create_machine(data: dict, current_user: dict = Depends(get_current_user)):
     return await mes_service.create_machine(data)
 
-@router.put("/machines/{machine_id}")
+@router.put("/machines/{machine_id}",
+    summary="Modifier une machine",
+    description="Met a jour la configuration d'une machine M.E.S. (parametres de production, seuils, planning, objectif TRS).",
+    responses={**CRUD_ERRORS}
+)
 async def update_machine(machine_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     m = await mes_service.update_machine(machine_id, data)
     if not m:
         raise HTTPException(404, "Machine non trouvée")
     return m
 
-@router.delete("/machines/{machine_id}", response_model=SuccessResponse)
+@router.delete("/machines/{machine_id}", response_model=SuccessResponse,
+    summary="Supprimer une machine",
+    description="Supprime definitivement une machine et toutes ses donnees associees (metriques, alertes, rebuts).",
+    responses={**CRUD_ERRORS}
+)
 async def delete_machine(machine_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.delete_machine(machine_id)
     return {"success": True, "message": "Machine supprimée"}
