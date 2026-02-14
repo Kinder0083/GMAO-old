@@ -1196,7 +1196,8 @@ async def get_work_orders(
     
     return [WorkOrder(**wo) for wo in work_orders]
 
-@api_router.get("/work-orders/{wo_id}", response_model=WorkOrder, tags=["Ordres de Travail"])
+@api_router.get("/work-orders/{wo_id}",
+    summary="Detail d'un ordre de travail", response_model=WorkOrder, tags=["Ordres de Travail"])
 async def get_work_order(wo_id: str, current_user: dict = Depends(require_permission("workOrders", "view"))):
     """Détails d'un ordre de travail"""
     try:
@@ -1246,7 +1247,8 @@ async def get_work_order(wo_id: str, current_user: dict = Depends(require_permis
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.post("/work-orders", response_model=WorkOrder, tags=["Ordres de Travail"])
+@api_router.post("/work-orders", response_model=WorkOrder,
+    summary="Creer un ordre de travail", tags=["Ordres de Travail"])
 async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Depends(require_permission("workOrders", "edit"))):
     """Créer un nouvel ordre de travail"""
     # Generate numero
@@ -1299,7 +1301,8 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
     
     return WorkOrder(**wo)
 
-@api_router.put("/work-orders/{wo_id}", response_model=WorkOrder, tags=["Ordres de Travail"])
+@api_router.put("/work-orders/{wo_id}",
+    summary="Modifier un ordre de travail", response_model=WorkOrder, tags=["Ordres de Travail"])
 async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user: dict = Depends(require_permission("workOrders", "edit"))):
     """Modifier un ordre de travail"""
     from dependencies import can_edit_work_order_status
@@ -1454,7 +1457,8 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.post("/work-orders/{wo_id}/add-time", response_model=WorkOrder, tags=["Ordres de Travail"])
+@api_router.post("/work-orders/{wo_id}/add-time",
+    summary="Ajouter du temps passe", response_model=WorkOrder, tags=["Ordres de Travail"])
 async def add_time_to_work_order(wo_id: str, time_data: AddTimeSpent, current_user: dict = Depends(require_permission("workOrders", "edit"))):
     """Ajouter du temps passé à un ordre de travail"""
     try:
@@ -1521,7 +1525,8 @@ async def add_time_to_work_order(wo_id: str, time_data: AddTimeSpent, current_us
         logger.error(f"Erreur lors de l'ajout de temps : {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/work-orders/{wo_id}", response_model=MessageResponse, tags=["Ordres de Travail"])
+@api_router.delete("/work-orders/{wo_id}", response_model=MessageResponse,
+    summary="Supprimer un ordre de travail", tags=["Ordres de Travail"])
 async def delete_work_order(wo_id: str, current_user: dict = Depends(require_permission("workOrders", "delete"))):
     """Supprimer un ordre de travail"""
     try:
@@ -1565,7 +1570,8 @@ UPLOAD_DIR = Path("/app/backend/uploads/work-orders")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE = 25 * 1024 * 1024  # 25MB
 
-@api_router.post("/work-orders/{wo_id}/attachments", response_model=AttachmentResponse, tags=["Ordres de Travail"])
+@api_router.post("/work-orders/{wo_id}/attachments",
+    summary="Uploader une piece jointe", response_model=AttachmentResponse, tags=["Ordres de Travail"])
 async def upload_attachment(
     wo_id: str,
     file: UploadFile = File(...),
@@ -1624,7 +1630,8 @@ async def upload_attachment(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/work-orders/{wo_id}/attachments", response_model=List[AttachmentResponse], tags=["Ordres de Travail"])
+@api_router.get("/work-orders/{wo_id}/attachments",
+    summary="Lister les pieces jointes", response_model=List[AttachmentResponse], tags=["Ordres de Travail"])
 async def get_attachments(wo_id: str, current_user: dict = Depends(require_permission("workOrders", "view"))):
     """Lister les pièces jointes d'un ordre de travail"""
     try:
@@ -1660,7 +1667,8 @@ async def get_attachments(wo_id: str, current_user: dict = Depends(require_permi
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/work-orders/{wo_id}/attachments/{attachment_id}", tags=["Ordres de Travail"])
+@api_router.get("/work-orders/{wo_id}/attachments/{attachment_id}",
+    summary="Telecharger une piece jointe", tags=["Ordres de Travail"])
 async def download_attachment(
     wo_id: str,
     attachment_id: str,
@@ -1708,7 +1716,8 @@ async def download_attachment(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/work-orders/{wo_id}/attachments/{attachment_id}", response_model=MessageResponse, tags=["Ordres de Travail"])
+@api_router.delete("/work-orders/{wo_id}/attachments/{attachment_id}",
+    summary="Supprimer une piece jointe", response_model=MessageResponse, tags=["Ordres de Travail"])
 async def delete_attachment(
     wo_id: str,
     attachment_id: str,
@@ -1768,7 +1777,8 @@ async def delete_attachment(
         raise HTTPException(status_code=400, detail=str(e))
 
 # ==================== EQUIPMENTS ROUTES ====================
-@api_router.get("/equipments", tags=["Equipements"])
+@api_router.get("/equipments",
+    summary="Lister les equipements", tags=["Equipements"])
 async def get_equipments(current_user: dict = Depends(get_current_user)):
     """Liste tous les équipements avec filtrage par service
     
@@ -1818,7 +1828,8 @@ async def get_equipments(current_user: dict = Depends(get_current_user)):
     
     return result
 
-@api_router.post("/equipments", response_model=Equipment, tags=["Equipements"])
+@api_router.post("/equipments",
+    summary="Creer un equipement", response_model=Equipment, tags=["Equipements"])
 async def create_equipment(eq_create: EquipmentCreate, current_user: dict = Depends(require_permission("assets", "edit"))):
     """Créer un nouvel équipement"""
     eq_dict = eq_create.model_dump()
@@ -1863,7 +1874,8 @@ async def create_equipment(eq_create: EquipmentCreate, current_user: dict = Depe
     
     return Equipment(**eq)
 
-@api_router.get("/equipments/status-history", tags=["Equipements"])
+@api_router.get("/equipments/status-history",
+    summary="Historique des statuts", tags=["Equipements"])
 async def get_equipment_status_history(
     equipment_ids: Optional[str] = None,
     date_debut: Optional[str] = None,
@@ -1904,7 +1916,8 @@ async def get_equipment_status_history(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/equipments/{eq_id}", tags=["Equipements"])
+@api_router.get("/equipments/{eq_id}",
+    summary="Detail d'un equipement", tags=["Equipements"])
 async def get_equipment_detail(eq_id: str, current_user: dict = Depends(require_permission("assets", "view"))):
     """Récupérer les détails d'un équipement"""
     try:
@@ -1942,7 +1955,8 @@ async def get_equipment_detail(eq_id: str, current_user: dict = Depends(require_
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/equipments/{eq_id}/children", tags=["Equipements"])
+@api_router.get("/equipments/{eq_id}/children",
+    summary="Sous-equipements", tags=["Equipements"])
 async def get_equipment_children(eq_id: str, current_user: dict = Depends(require_permission("assets", "view"))):
     """Récupérer tous les sous-équipements d'un équipement"""
     try:
@@ -1991,7 +2005,8 @@ async def get_equipment_children(eq_id: str, current_user: dict = Depends(requir
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/equipments/{eq_id}/hierarchy", tags=["Equipements"])
+@api_router.get("/equipments/{eq_id}/hierarchy",
+    summary="Hierarchie complete", tags=["Equipements"])
 async def get_equipment_hierarchy(eq_id: str, current_user: dict = Depends(require_permission("assets", "view"))):
     """Récupérer toute la hiérarchie d'un équipement (récursif)"""
     try:
@@ -2028,7 +2043,8 @@ async def get_equipment_hierarchy(eq_id: str, current_user: dict = Depends(requi
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.put("/equipments/{eq_id}", response_model=Equipment, tags=["Equipements"])
+@api_router.put("/equipments/{eq_id}",
+    summary="Modifier un equipement", response_model=Equipment, tags=["Equipements"])
 async def update_equipment(eq_id: str, eq_update: EquipmentUpdate, current_user: dict = Depends(require_permission("assets", "edit"))):
     """Modifier un équipement"""
     from dependencies import can_edit_resource
@@ -2165,7 +2181,8 @@ async def update_parent_alert_status(parent_id: str):
                     {"$set": {"statut": "OPERATIONNEL"}}
                 )
 
-@api_router.patch("/equipments/{eq_id}/status", tags=["Equipements"])
+@api_router.patch("/equipments/{eq_id}/status",
+    summary="Changer le statut", tags=["Equipements"])
 async def update_equipment_status(
     eq_id: str, 
     statut: EquipmentStatus, 
@@ -2325,7 +2342,8 @@ async def update_equipment_status(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/equipments/{eq_id}", response_model=MessageResponse, tags=["Equipements"])
+@api_router.delete("/equipments/{eq_id}", response_model=MessageResponse,
+    summary="Supprimer un equipement", tags=["Equipements"])
 async def delete_equipment(eq_id: str, current_user: dict = Depends(require_permission("assets", "delete"))):
     """Supprimer un équipement"""
     try:
@@ -2352,7 +2370,8 @@ async def delete_equipment(eq_id: str, current_user: dict = Depends(require_perm
         raise HTTPException(status_code=400, detail=str(e))
 
 # ==================== AVAILABILITY ROUTES ====================
-@api_router.get("/availabilities", tags=["Disponibilites"])
+@api_router.get("/availabilities",
+    summary="Lister les disponibilites", tags=["Disponibilites"])
 async def get_availabilities(
     start_date: str = None,
     end_date: str = None,
@@ -2381,7 +2400,8 @@ async def get_availabilities(
     
     return availabilities
 
-@api_router.post("/availabilities", tags=["Disponibilites"])
+@api_router.post("/availabilities",
+    summary="Creer une disponibilite", tags=["Disponibilites"])
 async def create_availability(
     availability: UserAvailabilityCreate,
     current_user: dict = Depends(get_current_admin_user)
@@ -2410,7 +2430,8 @@ async def create_availability(
     
     return avail
 
-@api_router.put("/availabilities/{avail_id}", tags=["Disponibilites"])
+@api_router.put("/availabilities/{avail_id}",
+    summary="Modifier une disponibilite", tags=["Disponibilites"])
 async def update_availability(
     avail_id: str,
     availability_update: UserAvailabilityUpdate,
@@ -2456,7 +2477,8 @@ async def update_availability(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/availabilities/{avail_id}", response_model=MessageResponse, tags=["Disponibilites"])
+@api_router.delete("/availabilities/{avail_id}", response_model=MessageResponse,
+    summary="Supprimer une disponibilite", tags=["Disponibilites"])
 async def delete_availability(
     avail_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -2486,7 +2508,8 @@ async def delete_availability(
         raise HTTPException(status_code=400, detail=str(e))
 
 # ==================== LOCATIONS ROUTES ====================
-@api_router.get("/locations", response_model=List[Location], tags=["Emplacements"])
+@api_router.get("/locations",
+    summary="Lister les emplacements", response_model=List[Location], tags=["Emplacements"])
 async def get_locations(current_user: dict = Depends(require_permission("locations", "view"))):
     """Liste toutes les zones avec hiérarchie"""
     locations = await db.locations.find().to_list(1000)
@@ -2537,7 +2560,8 @@ async def get_location_children(loc_id: str, current_user: dict = Depends(requir
         result.append(Location(**child_data))
     return result
 
-@api_router.post("/locations", response_model=Location, tags=["Emplacements"])
+@api_router.post("/locations",
+    summary="Creer un emplacement", response_model=Location, tags=["Emplacements"])
 async def create_location(loc_create: LocationCreate, current_user: dict = Depends(require_permission("locations", "edit"))):
     """Créer une nouvelle zone"""
     loc_dict = loc_create.model_dump()
@@ -2581,7 +2605,8 @@ async def create_location(loc_create: LocationCreate, current_user: dict = Depen
     
     return Location(**loc_data)
 
-@api_router.put("/locations/{loc_id}", response_model=Location, tags=["Emplacements"])
+@api_router.put("/locations/{loc_id}",
+    summary="Modifier un emplacement", response_model=Location, tags=["Emplacements"])
 async def update_location(loc_id: str, loc_update: LocationUpdate, current_user: dict = Depends(require_permission("locations", "edit"))):
     """Modifier une zone"""
     try:
@@ -2647,7 +2672,8 @@ async def update_location(loc_id: str, loc_update: LocationUpdate, current_user:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/locations/{loc_id}", response_model=MessageResponse, tags=["Emplacements"])
+@api_router.delete("/locations/{loc_id}", response_model=MessageResponse,
+    summary="Supprimer un emplacement", tags=["Emplacements"])
 async def delete_location(loc_id: str, current_user: dict = Depends(require_permission("locations", "delete"))):
     """Supprimer une zone et ses sous-zones"""
     try:
@@ -2686,7 +2712,8 @@ async def delete_location(loc_id: str, current_user: dict = Depends(require_perm
         raise HTTPException(status_code=400, detail=str(e))
 
 # ==================== INVENTORY ROUTES ====================
-@api_router.get("/inventory", tags=["Inventaire"])
+@api_router.get("/inventory",
+    summary="Lister l'inventaire", tags=["Inventaire"])
 async def get_inventory(current_user: dict = Depends(get_current_user)):
     """Liste tous les articles de l'inventaire
     
@@ -2697,7 +2724,8 @@ async def get_inventory(current_user: dict = Depends(get_current_user)):
     # Sérialiser chaque document pour convertir _id en id
     return [serialize_doc(item) for item in inventory]
 
-@api_router.post("/inventory", response_model=Inventory, tags=["Inventaire"])
+@api_router.post("/inventory",
+    summary="Ajouter un article", response_model=Inventory, tags=["Inventaire"])
 async def create_inventory_item(inv_create: InventoryCreate, current_user: dict = Depends(require_permission("inventory", "edit"))):
     """Créer un nouvel article dans l'inventaire"""
     inv_dict = inv_create.model_dump()
@@ -2719,7 +2747,8 @@ async def create_inventory_item(inv_create: InventoryCreate, current_user: dict 
     
     return Inventory(**inv_data)
 
-@api_router.put("/inventory/{inv_id}", response_model=Inventory, tags=["Inventaire"])
+@api_router.put("/inventory/{inv_id}",
+    summary="Modifier un article", response_model=Inventory, tags=["Inventaire"])
 async def update_inventory_item(inv_id: str, inv_update: InventoryUpdate, current_user: dict = Depends(require_permission("inventory", "edit"))):
     """Modifier un article de l'inventaire"""
     try:
@@ -2826,7 +2855,8 @@ async def create_auto_purchase_request(inventory_item: dict, current_user: dict)
         logger.error(traceback.format_exc())
 
 
-@api_router.delete("/inventory/{inv_id}", response_model=MessageResponse, tags=["Inventaire"])
+@api_router.delete("/inventory/{inv_id}", response_model=MessageResponse,
+    summary="Supprimer un article", tags=["Inventaire"])
 async def delete_inventory_item(inv_id: str, current_user: dict = Depends(require_permission("inventory", "delete"))):
     """Supprimer un article de l'inventaire"""
     try:
@@ -2853,7 +2883,8 @@ async def delete_inventory_item(inv_id: str, current_user: dict = Depends(requir
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.patch("/inventory/{inv_id}/toggle-monitoring", response_model=ToggleMonitoringResponse, tags=["Inventaire"])
+@api_router.patch("/inventory/{inv_id}/toggle-monitoring",
+    summary="Activer/desactiver la surveillance", response_model=ToggleMonitoringResponse, tags=["Inventaire"])
 async def toggle_inventory_monitoring(inv_id: str, current_user: dict = Depends(require_permission("inventory", "edit"))):
     """Active/Désactive la surveillance du stock d'un article"""
     try:
@@ -2890,7 +2921,8 @@ async def toggle_inventory_monitoring(inv_id: str, current_user: dict = Depends(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.get("/inventory/stats", response_model=InventoryStatsResponse, tags=["Inventaire"])
+@api_router.get("/inventory/stats",
+    summary="Statistiques inventaire", response_model=InventoryStatsResponse, tags=["Inventaire"])
 async def get_inventory_stats(current_user: dict = Depends(require_permission("inventory", "view"))):
     """Récupère les statistiques de l'inventaire (rupture et niveau bas)"""
     try:
@@ -2922,7 +2954,8 @@ async def get_inventory_stats(current_user: dict = Depends(require_permission("i
 
 
 # ==================== PREVENTIVE MAINTENANCE ROUTES ====================
-@api_router.get("/preventive-maintenance", response_model=List[PreventiveMaintenance], tags=["Maintenance Preventive"])
+@api_router.get("/preventive-maintenance",
+    summary="Lister les maintenances preventives", response_model=List[PreventiveMaintenance], tags=["Maintenance Preventive"])
 async def get_preventive_maintenance(current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))):
     """Liste toutes les maintenances préventives avec filtrage par service"""
     from service_filter import apply_service_filter
@@ -2944,7 +2977,8 @@ async def get_preventive_maintenance(current_user: dict = Depends(require_permis
     
     return [PreventiveMaintenance(**pm) for pm in pm_list]
 
-@api_router.post("/preventive-maintenance", response_model=PreventiveMaintenance, tags=["Maintenance Preventive"])
+@api_router.post("/preventive-maintenance",
+    summary="Creer une maintenance preventive", response_model=PreventiveMaintenance, tags=["Maintenance Preventive"])
 async def create_preventive_maintenance(pm_create: PreventiveMaintenanceCreate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
     """Créer une nouvelle maintenance préventive"""
     pm_dict = pm_create.model_dump()
@@ -2970,7 +3004,8 @@ async def create_preventive_maintenance(pm_create: PreventiveMaintenanceCreate, 
     
     return PreventiveMaintenance(**pm)
 
-@api_router.put("/preventive-maintenance/{pm_id}", response_model=PreventiveMaintenance, tags=["Maintenance Preventive"])
+@api_router.put("/preventive-maintenance/{pm_id}",
+    summary="Modifier une maintenance preventive", response_model=PreventiveMaintenance, tags=["Maintenance Preventive"])
 async def update_preventive_maintenance(pm_id: str, pm_update: PreventiveMaintenanceUpdate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
     """Modifier une maintenance préventive"""
     try:
@@ -3001,7 +3036,8 @@ async def update_preventive_maintenance(pm_id: str, pm_update: PreventiveMainten
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/preventive-maintenance/{pm_id}", response_model=MessageResponse, tags=["Maintenance Preventive"])
+@api_router.delete("/preventive-maintenance/{pm_id}", response_model=MessageResponse,
+    summary="Supprimer une maintenance preventive", tags=["Maintenance Preventive"])
 async def delete_preventive_maintenance(pm_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "delete"))):
     """Supprimer une maintenance préventive"""
     try:
@@ -3307,13 +3343,15 @@ async def check_and_execute_due_maintenances_old(current_user: dict = Depends(ge
 
 # ==================== CHECKLIST ROUTES ====================
 
-@api_router.get("/checklists/templates", response_model=List[ChecklistTemplate], tags=["Checklists"])
+@api_router.get("/checklists/templates",
+    summary="Lister les modeles de checklist", response_model=List[ChecklistTemplate], tags=["Checklists"])
 async def get_checklist_templates(current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))):
     """Liste tous les modèles de checklists"""
     templates = await db.checklist_templates.find().to_list(1000)
     return [ChecklistTemplate(**serialize_doc(t)) for t in templates]
 
-@api_router.get("/checklists/templates/{template_id}", response_model=ChecklistTemplate, tags=["Checklists"])
+@api_router.get("/checklists/templates/{template_id}",
+    summary="Detail d'un modele", response_model=ChecklistTemplate, tags=["Checklists"])
 async def get_checklist_template(template_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))):
     """Récupère un modèle de checklist par ID"""
     try:
@@ -3327,7 +3365,8 @@ async def get_checklist_template(template_id: str, current_user: dict = Depends(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.post("/checklists/templates", response_model=ChecklistTemplate, tags=["Checklists"])
+@api_router.post("/checklists/templates",
+    summary="Creer un modele", response_model=ChecklistTemplate, tags=["Checklists"])
 async def create_checklist_template(template_create: ChecklistTemplateCreate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
     """Créer un nouveau modèle de checklist"""
     try:
@@ -3343,7 +3382,8 @@ async def create_checklist_template(template_create: ChecklistTemplateCreate, cu
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.put("/checklists/templates/{template_id}", response_model=ChecklistTemplate, tags=["Checklists"])
+@api_router.put("/checklists/templates/{template_id}",
+    summary="Modifier un modele", response_model=ChecklistTemplate, tags=["Checklists"])
 async def update_checklist_template(template_id: str, template_update: ChecklistTemplateUpdate, current_user: dict = Depends(require_permission("preventiveMaintenance", "edit"))):
     """Mettre à jour un modèle de checklist"""
     try:
@@ -3373,7 +3413,8 @@ async def update_checklist_template(template_id: str, template_update: Checklist
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/checklists/templates/{template_id}", response_model=MessageResponse, tags=["Checklists"])
+@api_router.delete("/checklists/templates/{template_id}", response_model=MessageResponse,
+    summary="Supprimer un modele", tags=["Checklists"])
 async def delete_checklist_template(template_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "delete"))):
     """Supprimer un modèle de checklist"""
     try:
@@ -3520,7 +3561,8 @@ async def update_checklist_execution(execution_id: str, execution_update: Checkl
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.get("/checklists/history", tags=["Checklists"])
+@api_router.get("/checklists/history",
+    summary="Historique des checklists executees", tags=["Checklists"])
 async def get_checklist_history(
     equipment_id: Optional[str] = None,
     template_id: Optional[str] = None,
@@ -3538,7 +3580,8 @@ async def get_checklist_history(
     return [serialize_doc(e) for e in executions]
 
 # ==================== USERS ROUTES ====================
-@api_router.get("/users", tags=["Utilisateurs"])
+@api_router.get("/users",
+    summary="Lister les utilisateurs", tags=["Utilisateurs"])
 async def get_users(current_user: dict = Depends(get_current_user)):
     """Liste tous les utilisateurs"""
     # Vérifier les permissions - Admin a toujours accès, sinon vérifier permission people.view
@@ -3570,7 +3613,8 @@ async def get_users(current_user: dict = Depends(get_current_user)):
         result.append(doc)
     return result
 
-@api_router.put("/users/{user_id}", response_model=User, tags=["Utilisateurs"])
+@api_router.put("/users/{user_id}",
+    summary="Modifier un utilisateur", response_model=User, tags=["Utilisateurs"])
 async def update_user(user_id: str, user_update: UserUpdate, current_user: dict = Depends(get_current_admin_user)):
     """Modifier un utilisateur (admin uniquement)"""
     try:
@@ -3601,7 +3645,8 @@ async def update_user(user_id: str, user_update: UserUpdate, current_user: dict 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/users/{user_id}", response_model=MessageResponse, tags=["Utilisateurs"])
+@api_router.delete("/users/{user_id}", response_model=MessageResponse,
+    summary="Supprimer un utilisateur", tags=["Utilisateurs"])
 async def delete_user(user_id: str, current_user: dict = Depends(get_current_admin_user)):
     """Supprimer un utilisateur (admin uniquement)"""
     try:
@@ -3694,7 +3739,8 @@ async def get_user_permissions(user_id: str, current_user: dict = Depends(get_cu
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.get("/users/default-permissions/{role}", tags=["Utilisateurs"])
+@api_router.get("/users/default-permissions/{role}",
+    summary="Permissions par defaut d'un role", tags=["Utilisateurs"])
 async def get_default_permissions_for_role(
     role: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -3707,7 +3753,8 @@ async def get_default_permissions_for_role(
         raise HTTPException(status_code=400, detail=f"Erreur lors de la récupération des permissions: {str(e)}")
 
 
-@api_router.get("/users/service-manager/{service}", tags=["Utilisateurs"])
+@api_router.get("/users/service-manager/{service}",
+    summary="Responsable d'un service", tags=["Utilisateurs"])
 async def get_service_manager_for_user(
     service: str,
     current_user: dict = Depends(get_current_user)
@@ -3846,7 +3893,8 @@ async def init_cameras_permissions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/users/{user_id}/set-password-permanent", response_model=SuccessResponse, tags=["Utilisateurs"])
+@api_router.post("/users/{user_id}/set-password-permanent",
+    summary="Definir un mot de passe permanent", response_model=SuccessResponse, tags=["Utilisateurs"])
 async def set_password_permanent(
     user_id: str,
     current_user: dict = Depends(get_current_user)
@@ -3901,7 +3949,8 @@ async def set_password_permanent(
 
 
 
-@api_router.post("/users/{user_id}/reset-password-admin", response_model=ResetPasswordAdminResponse, tags=["Utilisateurs"])
+@api_router.post("/users/{user_id}/reset-password-admin",
+    summary="Reinitialiser le mot de passe (admin)", response_model=ResetPasswordAdminResponse, tags=["Utilisateurs"])
 async def reset_password_admin(
     user_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -3973,7 +4022,8 @@ async def reset_password_admin(
 
 
 # ==================== SETTINGS ROUTES ====================
-@api_router.get("/settings", response_model=SystemSettings, tags=["Parametres"])
+@api_router.get("/settings",
+    summary="Configuration systeme", response_model=SystemSettings, tags=["Parametres"])
 async def get_system_settings(current_user: dict = Depends(get_current_admin_user)):
     """Récupérer les paramètres système"""
     try:
@@ -3992,7 +4042,8 @@ async def get_system_settings(current_user: dict = Depends(get_current_admin_use
         logger.error(f"Erreur lors de la récupération des paramètres : {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
-@api_router.put("/settings", response_model=SystemSettings, tags=["Parametres"])
+@api_router.put("/settings",
+    summary="Modifier la configuration", response_model=SystemSettings, tags=["Parametres"])
 async def update_system_settings(
     settings_update: SystemSettingsUpdate,
     current_user: dict = Depends(get_current_admin_user)
@@ -4358,7 +4409,8 @@ async def migrate_menu_preferences(current_user: dict = Depends(get_current_user
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 # ==================== SMTP CONFIGURATION ROUTES ====================
-@api_router.get("/smtp/config", response_model=SMTPConfig, tags=["Parametres"])
+@api_router.get("/smtp/config",
+    summary="Configuration SMTP", response_model=SMTPConfig, tags=["Parametres"])
 async def get_smtp_config(current_user: dict = Depends(get_current_admin_user)):
     """Récupérer la configuration SMTP actuelle (Admin uniquement)"""
     try:
@@ -4379,7 +4431,8 @@ async def get_smtp_config(current_user: dict = Depends(get_current_admin_user)):
         logger.error(f"Erreur lors de la récupération de la config SMTP: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.put("/smtp/config", response_model=SuccessResponse, tags=["Parametres"])
+@api_router.put("/smtp/config",
+    summary="Modifier la config SMTP", response_model=SuccessResponse, tags=["Parametres"])
 async def update_smtp_config(
     smtp_update: SMTPConfigUpdate,
     current_user: dict = Depends(get_current_admin_user)
@@ -4447,7 +4500,8 @@ async def update_smtp_config(
         logger.error(f"Erreur lors de la mise à jour de la config SMTP: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/smtp/test", response_model=SuccessResponse, tags=["Parametres"])
+@api_router.post("/smtp/test",
+    summary="Tester la config SMTP", response_model=SuccessResponse, tags=["Parametres"])
 async def test_smtp_config(
     test_request: SMTPTestRequest,
     current_user: dict = Depends(get_current_admin_user)
@@ -4491,7 +4545,8 @@ class SimpleSupportRequest(BaseModel):
     message: str
 
 
-@api_router.post("/support/request", response_model=SuccessResponse, tags=["Support"])
+@api_router.post("/support/request",
+    summary="Soumettre une demande de support", response_model=SuccessResponse, tags=["Support"])
 async def submit_support_request(
     request: SimpleSupportRequest,
     current_user: dict = Depends(get_current_user)
@@ -4829,13 +4884,15 @@ async def request_help(
 
 
 # ==================== VENDORS ROUTES ====================
-@api_router.get("/vendors", response_model=List[Vendor], tags=["Fournisseurs"])
+@api_router.get("/vendors",
+    summary="Lister les fournisseurs", response_model=List[Vendor], tags=["Fournisseurs"])
 async def get_vendors(current_user: dict = Depends(require_permission("vendors", "view"))):
     """Liste tous les fournisseurs"""
     vendors = await db.vendors.find().to_list(1000)
     return [Vendor(**serialize_doc(vendor)) for vendor in vendors]
 
-@api_router.post("/vendors", response_model=Vendor, tags=["Fournisseurs"])
+@api_router.post("/vendors",
+    summary="Creer un fournisseur", response_model=Vendor, tags=["Fournisseurs"])
 async def create_vendor(vendor_create: VendorCreate, current_user: dict = Depends(require_permission("vendors", "edit"))):
     """Créer un nouveau fournisseur"""
     vendor_dict = vendor_create.model_dump()
@@ -4856,7 +4913,8 @@ async def create_vendor(vendor_create: VendorCreate, current_user: dict = Depend
     
     return Vendor(**vendor_data)
 
-@api_router.put("/vendors/{vendor_id}", response_model=Vendor, tags=["Fournisseurs"])
+@api_router.put("/vendors/{vendor_id}",
+    summary="Modifier un fournisseur", response_model=Vendor, tags=["Fournisseurs"])
 async def update_vendor(vendor_id: str, vendor_update: VendorUpdate, current_user: dict = Depends(require_permission("vendors", "edit"))):
     """Modifier un fournisseur"""
     try:
@@ -4882,7 +4940,8 @@ async def update_vendor(vendor_id: str, vendor_update: VendorUpdate, current_use
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/vendors/{vendor_id}", response_model=MessageResponse, tags=["Fournisseurs"])
+@api_router.delete("/vendors/{vendor_id}", response_model=MessageResponse,
+    summary="Supprimer un fournisseur", tags=["Fournisseurs"])
 async def delete_vendor(vendor_id: str, current_user: dict = Depends(require_permission("vendors", "delete"))):
     """Supprimer un fournisseur"""
     try:
@@ -5826,7 +5885,8 @@ async def rollback_to_git_commit(
         )
 
 # ==================== AUDIT LOG ROUTES (JOURNAL) ====================
-@api_router.get("/audit-logs", tags=["Audit"])
+@api_router.get("/audit-logs",
+    summary="Journal d'audit", tags=["Audit"])
 async def get_audit_logs(
     skip: int = 0,
     limit: int = 100,
@@ -5905,7 +5965,8 @@ async def get_entity_audit_history(
             detail="Erreur lors de la récupération de l'historique"
         )
 
-@api_router.get("/audit-logs/export", tags=["Audit"])
+@api_router.get("/audit-logs/export",
+    summary="Exporter le journal d'audit", tags=["Audit"])
 async def export_audit_logs(
     format: str = "csv",
     user_id: Optional[str] = None,
@@ -6199,7 +6260,8 @@ async def get_work_order_comments(
 
 # ==================== METERS (COMPTEURS) ENDPOINTS ====================
 
-@api_router.post("/meters", response_model=Meter, status_code=201, tags=["Compteurs"])
+@api_router.post("/meters",
+    summary="Creer un compteur", response_model=Meter, status_code=201, tags=["Compteurs"])
 async def create_meter(meter: MeterCreate, current_user: dict = Depends(require_permission("meters", "edit"))):
     """Créer un nouveau compteur"""
     try:
@@ -6245,7 +6307,8 @@ async def create_meter(meter: MeterCreate, current_user: dict = Depends(require_
         logger.error(f"Erreur création compteur: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/meters", response_model=List[Meter], tags=["Compteurs"])
+@api_router.get("/meters",
+    summary="Lister les compteurs", response_model=List[Meter], tags=["Compteurs"])
 async def get_all_meters(current_user: dict = Depends(require_permission("meters", "view"))):
     """Récupérer tous les compteurs"""
     try:
@@ -6257,7 +6320,8 @@ async def get_all_meters(current_user: dict = Depends(require_permission("meters
         logger.error(f"Erreur récupération compteurs: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/meters/{meter_id}", response_model=Meter, tags=["Compteurs"])
+@api_router.get("/meters/{meter_id}",
+    summary="Detail d'un compteur", response_model=Meter, tags=["Compteurs"])
 async def get_meter(meter_id: str, current_user: dict = Depends(require_permission("meters", "view"))):
     """Récupérer un compteur spécifique"""
     meter = await db.meters.find_one({"id": meter_id})
@@ -6265,7 +6329,8 @@ async def get_meter(meter_id: str, current_user: dict = Depends(require_permissi
         raise HTTPException(status_code=404, detail="Compteur non trouvé")
     return Meter(**meter)
 
-@api_router.put("/meters/{meter_id}", response_model=Meter, tags=["Compteurs"])
+@api_router.put("/meters/{meter_id}",
+    summary="Modifier un compteur", response_model=Meter, tags=["Compteurs"])
 async def update_meter(
     meter_id: str,
     meter_update: MeterUpdate,
@@ -6317,7 +6382,8 @@ async def update_meter(
     
     return Meter(**updated_meter)
 
-@api_router.delete("/meters/{meter_id}", response_model=MessageResponse, tags=["Compteurs"])
+@api_router.delete("/meters/{meter_id}", response_model=MessageResponse,
+    summary="Supprimer un compteur", tags=["Compteurs"])
 async def delete_meter(meter_id: str, current_user: dict = Depends(require_permission("meters", "delete"))):
     """Supprimer un compteur (soft delete)"""
     meter = await db.meters.find_one({"id": meter_id})
@@ -7766,7 +7832,8 @@ async def get_improvement_comments(imp_id: str, current_user: dict = Depends(req
 
 # ==================== NOTIFICATIONS ENDPOINTS ====================
 
-@api_router.get("/notifications", tags=["Notifications"])
+@api_router.get("/notifications",
+    summary="Lister les notifications", tags=["Notifications"])
 async def get_notifications(
     current_user: dict = Depends(get_current_user),
     unread_only: bool = False,
@@ -7790,7 +7857,8 @@ async def get_notifications(
         logger.error(f"Erreur récupération notifications: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/notifications/count", response_model=NotificationCountResponse, tags=["Notifications"])
+@api_router.get("/notifications/count",
+    summary="Compteur de notifications non lues", response_model=NotificationCountResponse, tags=["Notifications"])
 async def get_notifications_count(current_user: dict = Depends(get_current_user)):
     """Compte les notifications non lues"""
     try:
@@ -9018,7 +9086,8 @@ RESET_COLLECTIONS = {
     "users": "Utilisateurs",
 }
 
-@api_router.delete("/admin/reset/{section}", response_model=ResetSectionResponse, tags=["Administration"])
+@api_router.delete("/admin/reset/{section}",
+    summary="Reinitialiser une section", response_model=ResetSectionResponse, tags=["Administration"])
 async def reset_section(section: str, current_user: dict = Depends(get_current_admin_user)):
     """Réinitialiser une section (admin uniquement)"""
     if section not in RESET_COLLECTIONS:
@@ -9045,7 +9114,8 @@ async def reset_section(section: str, current_user: dict = Depends(get_current_a
         "deleted_count": result.deleted_count
     }
 
-@api_router.delete("/admin/reset-all", response_model=ResetAllResponse, tags=["Administration"])
+@api_router.delete("/admin/reset-all",
+    summary="Reinitialiser toutes les donnees", response_model=ResetAllResponse, tags=["Administration"])
 async def reset_all(current_user: dict = Depends(get_current_admin_user)):
     """Réinitialiser toutes les données (admin uniquement)"""
     details = {}
