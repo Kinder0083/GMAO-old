@@ -259,6 +259,104 @@ const MESReportsPage = () => {
       ? machines.find(m => m.id === selectedMachines[0])?.equipment_name || '1 machine'
       : `${selectedMachines.length} machines`;
 
+  // Scheduled reports functions
+  const openScheduleModal = (schedule = null) => {
+    if (schedule) {
+      setEditingSchedule(schedule);
+      setScheduleForm({
+        name: schedule.name || '',
+        machine_ids: schedule.machine_ids || ['all'],
+        report_type: schedule.report_type || 'all',
+        frequency: schedule.frequency || 'weekly',
+        day_of_week: schedule.day_of_week || 0,
+        day_of_month: schedule.day_of_month || 1,
+        hour: schedule.hour || 8,
+        minute: schedule.minute || 0,
+        recipients: (schedule.recipients || []).join(', '),
+        format: schedule.format || 'pdf',
+      });
+    } else {
+      setEditingSchedule(null);
+      setScheduleForm({
+        name: '',
+        machine_ids: ['all'],
+        report_type: 'all',
+        frequency: 'weekly',
+        day_of_week: 0,
+        day_of_month: 1,
+        hour: 8,
+        minute: 0,
+        recipients: '',
+        format: 'pdf',
+      });
+    }
+    setShowScheduleModal(true);
+  };
+
+  const saveSchedule = async () => {
+    if (!scheduleForm.name.trim()) {
+      toast({ title: 'Le nom est requis', variant: 'destructive' });
+      return;
+    }
+    const emails = scheduleForm.recipients.split(',').map(e => e.trim()).filter(e => e);
+    if (emails.length === 0) {
+      toast({ title: 'Au moins un email est requis', variant: 'destructive' });
+      return;
+    }
+
+    const payload = {
+      ...scheduleForm,
+      recipients: emails,
+    };
+
+    try {
+      if (editingSchedule) {
+        await axios.put(`${API}/api/mes/scheduled-reports/${editingSchedule.id}`, payload, { headers: getHeaders() });
+        toast({ title: 'Rapport planifie mis a jour' });
+      } else {
+        await axios.post(`${API}/api/mes/scheduled-reports`, payload, { headers: getHeaders() });
+        toast({ title: 'Rapport planifie cree' });
+      }
+      setShowScheduleModal(false);
+      loadScheduledReports();
+    } catch (err) {
+      toast({ title: 'Erreur sauvegarde', variant: 'destructive' });
+    }
+  };
+
+  const deleteSchedule = async (id) => {
+    if (!window.confirm('Supprimer ce rapport planifie ?')) return;
+    try {
+      await axios.delete(`${API}/api/mes/scheduled-reports/${id}`, { headers: getHeaders() });
+      toast({ title: 'Rapport planifie supprime' });
+      loadScheduledReports();
+    } catch (err) {
+      toast({ title: 'Erreur suppression', variant: 'destructive' });
+    }
+  };
+
+  const sendScheduleNow = async (id) => {
+    try {
+      await axios.post(`${API}/api/mes/scheduled-reports/${id}/send-now`, {}, { headers: getHeaders() });
+      toast({ title: 'Rapport envoye' });
+      loadScheduledReports();
+    } catch (err) {
+      toast({ title: 'Erreur envoi', variant: 'destructive' });
+    }
+  };
+
+  const getFrequencyLabel = (schedule) => {
+    const freq = FREQUENCIES.find(f => f.id === schedule.frequency);
+    let label = freq?.label || schedule.frequency;
+    if (schedule.frequency === 'weekly') {
+      const day = DAYS_OF_WEEK.find(d => d.id === schedule.day_of_week);
+      label += ` (${day?.label || ''})`;
+    } else if (schedule.frequency === 'monthly') {
+      label += ` (jour ${schedule.day_of_month})`;
+    }
+    return `${label} a ${String(schedule.hour).padStart(2, '0')}:${String(schedule.minute).padStart(2, '0')}`;
+  };
+
   return (
     <div className="p-6 space-y-6" data-testid="mes-reports-page">
       {/* Header */}
@@ -272,6 +370,287 @@ const MESReportsPage = () => {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 border-b">
+        <button
+          onClick={() => setActiveTab('manual')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === 'manual' 
+              ? 'text-indigo-600 border-indigo-600' 
+              : 'text-gray-500 border-transparent hover:text-gray-700'
+          }`}
+          data-testid="tab-manual"
+        >
+          <FileText className="h-4 w-4 inline mr-2" />
+          Rapport manuel
+        </button>
+        <button
+          onClick={() => setActiveTab('scheduled')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === 'scheduled' 
+              ? 'text-indigo-600 border-indigo-600' 
+              : 'text-gray-500 border-transparent hover:text-gray-700'
+          }`}
+          data-testid="tab-scheduled"
+        >
+          <Bell className="h-4 w-4 inline mr-2" />
+          Rapports planifies ({scheduledReports.length})
+        </button>
+      </div>
+
+      {/* SCHEDULED REPORTS TAB */}
+      {activeTab === 'scheduled' && (
+        <div className="space-y-4">
+          {/* Add new scheduled report */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => openScheduleModal()}
+              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+              data-testid="add-scheduled-report-btn"
+            >
+              <Plus className="h-4 w-4" /> Nouveau rapport planifie
+            </button>
+          </div>
+
+          {/* List of scheduled reports */}
+          {scheduledReports.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Mail className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-600 mb-2">Aucun rapport planifie</h3>
+                <p className="text-sm text-gray-400">Creez un rapport planifie pour recevoir automatiquement les donnees M.E.S. par email</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {scheduledReports.map(schedule => (
+                <Card key={schedule.id} data-testid={`scheduled-report-${schedule.id}`}>
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{schedule.name}</h3>
+                        <div className="text-sm text-gray-500 mt-1 space-y-1">
+                          <p className="flex items-center gap-2">
+                            <Clock className="h-3.5 w-3.5" />
+                            {getFrequencyLabel(schedule)}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5" />
+                            {(schedule.recipients || []).join(', ')}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <FileText className="h-3.5 w-3.5" />
+                            {REPORT_TYPES.find(r => r.id === schedule.report_type)?.label || schedule.report_type} - {schedule.format.toUpperCase()}
+                          </p>
+                          {schedule.last_sent_at && (
+                            <p className="text-xs text-gray-400">
+                              Dernier envoi: {new Date(schedule.last_sent_at).toLocaleString('fr-FR')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => sendScheduleNow(schedule.id)}
+                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                          title="Envoyer maintenant"
+                          data-testid={`send-now-${schedule.id}`}
+                        >
+                          <Play className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => openScheduleModal(schedule)}
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                          title="Modifier"
+                          data-testid={`edit-schedule-${schedule.id}`}
+                        >
+                          <Settings className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteSchedule(schedule.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                          title="Supprimer"
+                          data-testid={`delete-schedule-${schedule.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Schedule Modal */}
+          {showScheduleModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <h2 className="text-lg font-semibold mb-4">
+                  {editingSchedule ? 'Modifier le rapport planifie' : 'Nouveau rapport planifie'}
+                </h2>
+                
+                <div className="space-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Nom du rapport</label>
+                    <input
+                      type="text"
+                      value={scheduleForm.name}
+                      onChange={(e) => setScheduleForm({...scheduleForm, name: e.target.value})}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                      placeholder="Ex: Rapport hebdomadaire production"
+                      data-testid="schedule-name-input"
+                    />
+                  </div>
+
+                  {/* Report Type */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Type de rapport</label>
+                    <select
+                      value={scheduleForm.report_type}
+                      onChange={(e) => setScheduleForm({...scheduleForm, report_type: e.target.value})}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                      data-testid="schedule-report-type"
+                    >
+                      {REPORT_TYPES.map(rt => (
+                        <option key={rt.id} value={rt.id}>{rt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Frequency */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Frequence</label>
+                    <select
+                      value={scheduleForm.frequency}
+                      onChange={(e) => setScheduleForm({...scheduleForm, frequency: e.target.value})}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                      data-testid="schedule-frequency"
+                    >
+                      {FREQUENCIES.map(f => (
+                        <option key={f.id} value={f.id}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Day of week (for weekly) */}
+                  {scheduleForm.frequency === 'weekly' && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Jour de la semaine</label>
+                      <select
+                        value={scheduleForm.day_of_week}
+                        onChange={(e) => setScheduleForm({...scheduleForm, day_of_week: parseInt(e.target.value)})}
+                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                        data-testid="schedule-day-of-week"
+                      >
+                        {DAYS_OF_WEEK.map(d => (
+                          <option key={d.id} value={d.id}>{d.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Day of month (for monthly) */}
+                  {scheduleForm.frequency === 'monthly' && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Jour du mois</label>
+                      <select
+                        value={scheduleForm.day_of_month}
+                        onChange={(e) => setScheduleForm({...scheduleForm, day_of_month: parseInt(e.target.value)})}
+                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                        data-testid="schedule-day-of-month"
+                      >
+                        {Array.from({length: 28}, (_, i) => i + 1).map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Time */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Heure</label>
+                      <select
+                        value={scheduleForm.hour}
+                        onChange={(e) => setScheduleForm({...scheduleForm, hour: parseInt(e.target.value)})}
+                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                        data-testid="schedule-hour"
+                      >
+                        {Array.from({length: 24}, (_, i) => i).map(h => (
+                          <option key={h} value={h}>{String(h).padStart(2, '0')}h</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Minute</label>
+                      <select
+                        value={scheduleForm.minute}
+                        onChange={(e) => setScheduleForm({...scheduleForm, minute: parseInt(e.target.value)})}
+                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                        data-testid="schedule-minute"
+                      >
+                        {[0, 15, 30, 45].map(m => (
+                          <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Format */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Format</label>
+                    <select
+                      value={scheduleForm.format}
+                      onChange={(e) => setScheduleForm({...scheduleForm, format: e.target.value})}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                      data-testid="schedule-format"
+                    >
+                      <option value="pdf">PDF</option>
+                      <option value="excel">Excel</option>
+                    </select>
+                  </div>
+
+                  {/* Recipients */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Destinataires (emails separes par virgule)</label>
+                    <textarea
+                      value={scheduleForm.recipients}
+                      onChange={(e) => setScheduleForm({...scheduleForm, recipients: e.target.value})}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm"
+                      rows={2}
+                      placeholder="email1@example.com, email2@example.com"
+                      data-testid="schedule-recipients"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => setShowScheduleModal(false)}
+                    className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                    data-testid="cancel-schedule-btn"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={saveSchedule}
+                    className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    data-testid="save-schedule-btn"
+                  >
+                    {editingSchedule ? 'Mettre a jour' : 'Creer'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MANUAL REPORTS TAB */}
+      {activeTab === 'manual' && (
+        <>
       {/* Filters */}
       <Card data-testid="mes-reports-filters">
         <CardHeader className="pb-3">
