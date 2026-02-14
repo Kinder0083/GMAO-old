@@ -682,6 +682,9 @@ const MachineDashboard = ({ machineId, onBack }) => {
       {/* Rejects Panel */}
       <RejectsPanel machineId={machineId} onRejectChange={loadMetrics} timezoneOffset={timezoneOffset} />
 
+      {/* TRS Weekly Chart */}
+      <TRSWeeklyChart data={trsHistory} trsTarget={metrics?.trs_target ?? 85} />
+
       {/* Chart */}
       <Card>
         <CardHeader className="pb-2">
