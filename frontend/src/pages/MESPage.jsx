@@ -869,6 +869,93 @@ const MachineSettingsModal = ({ machine, onClose }) => {
                 value={form.alert_daily_target} onChange={handleChange('alert_daily_target', 'number')} />
             </div>
           </div>
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-700 border-b pb-1 flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Notifications email
+            </h4>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.email_enabled}
+                onChange={e => setForm(prev => ({ ...prev, email_enabled: e.target.checked }))}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                data-testid="mes-setting-email-enabled" />
+              <span className="text-xs text-gray-700">Activer les notifications email</span>
+            </label>
+            {form.email_enabled && (
+              <>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Destinataires</label>
+                  <div className="flex gap-2 mb-1">
+                    <input type="email" value={newEmail} placeholder="email@exemple.com"
+                      onChange={e => setNewEmail(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && newEmail.trim()) {
+                          e.preventDefault();
+                          setForm(prev => ({ ...prev, email_recipients: [...prev.email_recipients, newEmail.trim()] }));
+                          setNewEmail('');
+                        }
+                      }}
+                      className="flex-1 px-2 py-1 text-xs border rounded-lg"
+                      data-testid="mes-email-recipient-input" />
+                    <button type="button" onClick={() => {
+                      if (newEmail.trim()) {
+                        setForm(prev => ({ ...prev, email_recipients: [...prev.email_recipients, newEmail.trim()] }));
+                        setNewEmail('');
+                      }
+                    }} className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                      data-testid="mes-add-email-btn">
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {form.email_recipients.map((email, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full"
+                        data-testid={`mes-email-chip-${idx}`}>
+                        {email}
+                        <button type="button" onClick={() => setForm(prev => ({
+                          ...prev, email_recipients: prev.email_recipients.filter((_, i) => i !== idx)
+                        }))} className="text-indigo-400 hover:text-red-500">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Types d'alertes a notifier</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { key: 'STOPPED', label: 'Arret machine' },
+                      { key: 'UNDER_CADENCE', label: 'Sous-cadence' },
+                      { key: 'OVER_CADENCE', label: 'Sur-cadence' },
+                      { key: 'NO_SIGNAL', label: 'Perte signal' },
+                      { key: 'TARGET_REACHED', label: 'Objectif atteint' },
+                      { key: 'TRS_BELOW_TARGET', label: 'TRS sous objectif' },
+                    ].map(at => (
+                      <button key={at.key} type="button"
+                        className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
+                          form.email_alert_types.includes(at.key)
+                            ? 'bg-red-600 text-white border-red-600'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-red-300'
+                        }`}
+                        data-testid={`mes-email-alert-${at.key}`}
+                        onClick={() => {
+                          setForm(prev => ({
+                            ...prev,
+                            email_alert_types: prev.email_alert_types.includes(at.key)
+                              ? prev.email_alert_types.filter(t => t !== at.key)
+                              : [...prev.email_alert_types, at.key]
+                          }));
+                        }}>
+                        {at.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <SettingsField label="Delai entre alertes email" field="email_delay_minutes" unit="min"
+                  value={form.email_delay_minutes} onChange={handleChange('email_delay_minutes', 'number')} />
+              </>
+            )}
+          </div>
         </div>
         <div className="px-6 py-4 border-t flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Annuler</button>
