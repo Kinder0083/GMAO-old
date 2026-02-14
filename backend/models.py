@@ -3392,3 +3392,67 @@ class OvertimeBalance(BaseModel):
     class Config:
         from_attributes = True
 
+
+
+
+# ==================== GENERIC API RESPONSE MODELS ====================
+
+class MessageResponse(BaseModel):
+    """Réponse générique avec message"""
+    message: str
+
+class SuccessResponse(BaseModel):
+    """Réponse générique avec succès et message"""
+    success: bool
+    message: str
+
+class VersionResponse(BaseModel):
+    """Réponse version de l'application"""
+    version: str
+    versionName: str
+    releaseDate: str
+
+class InviteMemberResponse(BaseModel):
+    """Réponse après invitation d'un membre"""
+    message: str
+    email: str
+    role: str
+
+class ValidateInvitationResponse(BaseModel):
+    """Réponse de validation d'invitation"""
+    valid: bool
+    email: str
+    role: Optional[str] = None
+
+class InventoryStatsResponse(BaseModel):
+    """Statistiques inventaire"""
+    rupture: int
+    niveau_bas: int
+
+class ToggleMonitoringResponse(BaseModel):
+    """Réponse toggle surveillance stock"""
+    message: str
+    stock_monitoring_enabled: bool
+
+class NotificationCountResponse(BaseModel):
+    """Compteur de notifications non lues"""
+    unread_count: int
+
+class ResetPasswordAdminResponse(BaseModel):
+    """Réponse réinitialisation mot de passe admin"""
+    success: bool
+    message: str
+    tempPassword: str
+    emailSent: bool
+
+class ResetSectionResponse(BaseModel):
+    """Réponse réinitialisation section"""
+    success: bool
+    section: str
+    deleted_count: int
+
+class ResetAllResponse(BaseModel):
+    """Réponse réinitialisation complète"""
+    success: bool
+    total_deleted: int
+    details: Dict[str, int]
