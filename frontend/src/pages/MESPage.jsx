@@ -341,17 +341,17 @@ const TRSWeeklyChart = ({ data, trsTarget }) => {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+          <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
             <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
-            <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v) => `${v}%`} />
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: '8px' }} formatter={(v) => `${v}%`} />
             <ReferenceLine y={trsTarget} stroke="#ef4444" strokeDasharray="6 3" label={{ value: `Obj: ${trsTarget}%`, position: 'right', fontSize: 10, fill: '#ef4444' }} />
-            <Line type="monotone" dataKey="trs" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 4 }} name="TRS" />
-            <Line type="monotone" dataKey="disponibilite" stroke="#0ea5e9" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Disponibilite" />
-            <Line type="monotone" dataKey="performance" stroke="#8b5cf6" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Performance" />
-            <Line type="monotone" dataKey="qualite" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Qualite" />
-          </LineChart>
+            <Bar dataKey="trs" fill="#7c3aed" radius={[4, 4, 0, 0]} name="TRS" />
+            <Bar dataKey="disponibilite" fill="#0ea5e9" radius={[4, 4, 0, 0]} name="Disponibilite" />
+            <Bar dataKey="performance" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Performance" />
+            <Bar dataKey="qualite" fill="#10b981" radius={[4, 4, 0, 0]} name="Qualite" />
+          </BarChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
