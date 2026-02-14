@@ -496,6 +496,7 @@ class MESService:
     def _on_mqtt_message(self, topic, payload, qos):
         """Callback MQTT - reçoit les impulsions
         Signature: (topic: str, payload: str, qos: int) depuis mqtt_manager._on_message
+        Note: Ce callback est appelé depuis le thread paho-mqtt, pas le thread principal asyncio
         """
         logger.info(f"[MES] 📥 Message MQTT reçu: topic={topic}, payload={payload}, qos={qos}")
         
@@ -504,26 +505,70 @@ class MESService:
             value = int(float(str(payload).strip()))
             logger.info(f"[MES] ✅ Pulse MQTT parsé: topic={topic}, value={value}")
             
-            # Exécuter record_pulse de manière asynchrone
-            import asyncio
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    logger.info(f"[MES] Enregistrement pulse via ensure_future...")
-                    asyncio.ensure_future(self.record_pulse(topic, value))
-                else:
-                    logger.info(f"[MES] Enregistrement pulse via run_until_complete...")
-                    loop.run_until_complete(self.record_pulse(topic, value))
-            except RuntimeError as re:
-                # No event loop in current thread - create one
-                logger.info(f"[MES] Création d'un nouveau event loop pour record_pulse: {re}")
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(self.record_pulse(topic, value))
+            # Utiliser pymongo synchrone car on est dans un thread séparé
+            self._record_pulse_sync(topic, value)
+            
         except ValueError as ve:
             logger.warning(f"[MES] ⚠️ Payload non numérique: {payload} -> {ve}")
         except Exception as e:
             logger.error(f"[MES] ❌ Erreur traitement message MQTT: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+    
+    def _record_pulse_sync(self, machine_id_or_topic: str, value: int = 1):
+        """Version synchrone de record_pulse pour le callback MQTT (thread séparé)"""
+        from pymongo import MongoClient
+        
+        logger.info(f"[MES] record_pulse_sync appelé: topic={machine_id_or_topic}, value={value}")
+        
+        try:
+            mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+            db_name = os.environ.get('DB_NAME', 'gmao_iris')
+            
+            mongo_client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+            db_sync = mongo_client[db_name]
+            
+            # Trouver la machine par topic
+            if ObjectId.is_valid(machine_id_or_topic):
+                machine = db_sync.mes_machines.find_one({"_id": ObjectId(machine_id_or_topic)})
+                logger.info(f"[MES] Recherche par ObjectId: {machine_id_or_topic} -> trouvé: {machine is not None}")
+            else:
+                machine = db_sync.mes_machines.find_one({"mqtt_topic": machine_id_or_topic, "active": True})
+                logger.info(f"[MES] Recherche par topic: {machine_id_or_topic} -> trouvé: {machine is not None}")
+            
+            if not machine:
+                logger.warning(f"[MES] ⚠️ Aucune machine trouvée pour: {machine_id_or_topic}")
+                mongo_client.close()
+                return
+            
+            if value != 1:
+                logger.info(f"[MES] Valeur ignorée (!=1): {value}")
+                mongo_client.close()
+                return
+            
+            now = datetime.now(timezone.utc)
+            mid = machine["_id"]
+            
+            logger.info(f"[MES] 📝 Enregistrement pulse pour machine {mid}...")
+            
+            # Store pulse
+            db_sync.mes_pulses.insert_one({
+                "machine_id": mid,
+                "timestamp": now,
+            })
+            logger.info(f"[MES] ✅ Pulse enregistré dans mes_pulses")
+            
+            # Update machine state
+            db_sync.mes_machines.update_one(
+                {"_id": mid},
+                {"$set": {"last_pulse_at": now, "is_running": True}}
+            )
+            logger.info(f"[MES] ✅ État machine mis à jour (is_running=True)")
+            
+            mongo_client.close()
+            
+        except Exception as e:
+            logger.error(f"[MES] ❌ Erreur record_pulse_sync: {e}")
             import traceback
             logger.error(traceback.format_exc())
 
