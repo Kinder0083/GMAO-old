@@ -2,7 +2,7 @@
  * Composant Sidebar pour la navigation principale
  * Extrait de MainLayout.jsx pour une meilleure modularité
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronDown,
@@ -17,6 +17,7 @@ import {
   Folder
 } from 'lucide-react';
 import { iconMap } from './menuConfig';
+import api from '../../services/api';
 
 const Sidebar = ({
   sidebarOpen,
@@ -33,6 +34,31 @@ const Sidebar = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [newMenuIds, setNewMenuIds] = useState([]);
+
+  // Charger les badges "Nouveau"
+  useEffect(() => {
+    const loadBadges = async () => {
+      try {
+        const response = await api.get('/menu-badges');
+        setNewMenuIds(response.data.new_menu_ids || []);
+      } catch (e) {
+        // Silently fail
+      }
+    };
+    loadBadges();
+  }, []);
+
+  // Dismiss badge quand on clique sur un menu "Nouveau"
+  const handleMenuClick = (item) => {
+    if (newMenuIds.includes(item.id)) {
+      setNewMenuIds(prev => prev.filter(id => id !== item.id));
+      if (newMenuIds.length <= 1) {
+        api.post('/menu-badges/dismiss').catch(() => {});
+      }
+    }
+    navigate(item.path);
+  };
 
   // Grouper les menus par catégorie
   const getMenusByCategory = (categoryId) => {
