@@ -742,9 +742,11 @@ const SettingsField = ({ label, field, type = 'number', unit = '', value, onChan
 // ==================== SETTINGS MODAL ====================
 const MachineSettingsModal = ({ machine, onClose }) => {
   const schedule = machine.production_schedule || {};
+  const emailNotif = machine.email_notifications || {};
   const [form, setForm] = useState({
     theoretical_cadence: machine.theoretical_cadence || 6,
     downtime_margin_pct: machine.downtime_margin_pct || 30,
+    trs_target: machine.trs_target ?? 85,
     sensor_ip: machine.sensor_ip || '',
     mqtt_topic: machine.mqtt_topic || '',
     alert_stopped_minutes: machine.alerts?.stopped_minutes || 5,
@@ -756,7 +758,12 @@ const MachineSettingsModal = ({ machine, onClose }) => {
     schedule_start_hour: schedule.start_hour ?? 6,
     schedule_end_hour: schedule.end_hour ?? 22,
     schedule_production_days: schedule.production_days ?? [0, 1, 2, 3, 4],
+    email_enabled: emailNotif.enabled || false,
+    email_recipients: emailNotif.recipients || [],
+    email_alert_types: emailNotif.alert_types || [],
+    email_delay_minutes: emailNotif.delay_minutes ?? 5,
   });
+  const [newEmail, setNewEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
