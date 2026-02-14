@@ -60,8 +60,9 @@ const TRSBar = ({ label, value, color }) => (
 const TRSBreakdown = ({ metrics }) => {
   if (!metrics) return null;
   const trs = metrics.trs ?? 0;
-  const trsColor = trs >= 85 ? 'text-emerald-600' : trs >= 60 ? 'text-amber-600' : 'text-red-600';
-  const trsBg = trs >= 85 ? 'bg-emerald-50 border-emerald-200' : trs >= 60 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+  const trsTarget = metrics.trs_target ?? 85;
+  const trsColor = trs >= trsTarget ? 'text-emerald-600' : trs >= trsTarget * 0.7 ? 'text-amber-600' : 'text-red-600';
+  const trsBg = trs >= trsTarget ? 'bg-emerald-50 border-emerald-200' : trs >= trsTarget * 0.7 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
 
   return (
     <Card data-testid="trs-breakdown-card">
@@ -73,6 +74,12 @@ const TRSBreakdown = ({ metrics }) => {
             <span className="text-[10px] text-gray-400 mt-1">
               {metrics.good_parts_today ?? 0} conformes / {metrics.rejects_today ?? 0} rebuts
             </span>
+            {trsTarget > 0 && (
+              <span className={`text-[10px] mt-1 font-medium ${trs >= trsTarget ? 'text-emerald-500' : 'text-red-500'}`}
+                data-testid="trs-target-indicator">
+                <Target className="h-3 w-3 inline mr-0.5" />Objectif: {trsTarget}%
+              </span>
+            )}
           </div>
           <div className="flex-1 w-full space-y-3">
             <TRSBar label="Disponibilite" value={metrics.trs_availability ?? 0} color="text-sky-600" />
