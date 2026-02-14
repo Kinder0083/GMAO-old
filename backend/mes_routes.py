@@ -2,17 +2,20 @@
 Routes API M.E.S (Manufacturing Execution System)
 """
 from fastapi import APIRouter, Depends, HTTPException
-from dependencies import get_current_user
+from dependencies import get_current_user, get_current_admin_user, get_database
 
 router = APIRouter(prefix="/mes", tags=["MES"])
 
 # Service will be initialized from server.py
 mes_service = None
+audit_service_ref = None
 
 def init_mes_routes(db, mqtt_manager=None):
-    global mes_service
+    global mes_service, audit_service_ref
     from mes_service import MESService
+    from audit_service import AuditService
     mes_service = MESService(db, mqtt_manager)
+    audit_service_ref = AuditService(db)
 
 
 # ==================== MACHINES ====================
