@@ -25,7 +25,7 @@ const UpdateWarningOverlay = () => {
     let wsUrl = backendUrl
       .replace('https://', 'wss://')
       .replace('http://', 'ws://');
-    wsUrl = `${wsUrl}/api/ws/chat/${token}`;
+    wsUrl = `${wsUrl}/api/ws/chat?token=${token}`;
 
     const connectWs = () => {
       const ws = new WebSocket(wsUrl);

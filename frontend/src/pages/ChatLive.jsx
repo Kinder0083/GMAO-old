@@ -80,7 +80,7 @@ const ChatLive = () => {
       .replace('http://', 'ws://');
     
     // Ajouter le chemin WebSocket (directement sur l'app, pas via /api)
-    wsUrl = `${wsUrl}/api/ws/chat/${token}`;
+    wsUrl = `${wsUrl}/api/ws/chat?token=${token}`;
     
     console.log('🔌 Tentative connexion WebSocket:', wsUrl);
     
