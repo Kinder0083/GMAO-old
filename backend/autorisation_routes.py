@@ -10,7 +10,7 @@ import uuid
 import logging
 from bson import ObjectId
 
-from models import AutorisationParticuliere, AutorisationParticuliereCreate, AutorisationParticuliereUpdate
+from models import AutorisationParticuliere, AutorisationParticuliereCreate, AutorisationParticuliereUpdate, SuccessResponse
 from dependencies import get_current_user, get_current_user_optional
 from auth import decode_access_token
 from autorisation_template import generate_autorisation_html
@@ -180,7 +180,7 @@ async def update_autorisation(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{autorisation_id}")
+@router.delete("/{autorisation_id}", response_model=SuccessResponse)
 async def delete_autorisation(
     autorisation_id: str,
     current_user: dict = Depends(get_current_user)
