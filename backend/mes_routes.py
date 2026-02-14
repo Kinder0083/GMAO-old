@@ -221,11 +221,19 @@ async def delete_reject(reject_id: str, current_user: dict = Depends(get_current
 
 # ==================== PRODUCT REFERENCES ====================
 
-@router.get("/product-references")
+@router.get("/product-references",
+    summary="Lister les references produit",
+    description="Retourne toutes les references produit configurees. Une reference contient les parametres de production pre-configures (cadence, seuils, objectif TRS) applicables a une machine.",
+    responses={**STANDARD_ERRORS}
+)
 async def list_product_references(current_user: dict = Depends(get_current_user)):
     return await mes_service.get_product_references()
 
-@router.post("/product-references")
+@router.post("/product-references",
+    summary="Creer une reference produit",
+    description="Cree un nouveau template de parametres de production. Accessible uniquement aux administrateurs. L'action est tracee dans le journal d'audit.",
+    responses={**STANDARD_ERRORS, 400: {"description": "Nom requis"}}
+)
 async def create_product_reference(data: dict, current_user: dict = Depends(get_current_admin_user)):
     if not data.get("name"):
         raise HTTPException(400, "Le nom de la reference est requis")
@@ -243,7 +251,11 @@ async def create_product_reference(data: dict, current_user: dict = Depends(get_
     )
     return ref
 
-@router.put("/product-references/{ref_id}")
+@router.put("/product-references/{ref_id}",
+    summary="Modifier une reference produit",
+    description="Met a jour les parametres d'une reference produit existante. Admin uniquement. Tracee dans l'audit.",
+    responses={**CRUD_ERRORS}
+)
 async def update_product_reference(ref_id: str, data: dict, current_user: dict = Depends(get_current_admin_user)):
     result = await mes_service.update_product_reference(ref_id, data)
     if not result:
@@ -261,7 +273,11 @@ async def update_product_reference(ref_id: str, data: dict, current_user: dict =
     )
     return result
 
-@router.delete("/product-references/{ref_id}", response_model=SuccessResponse)
+@router.delete("/product-references/{ref_id}", response_model=SuccessResponse,
+    summary="Supprimer une reference produit",
+    description="Supprime definitivement une reference produit. Admin uniquement. Les machines utilisant cette reference ne sont pas affectees.",
+    responses={**CRUD_ERRORS}
+)
 async def delete_product_reference(ref_id: str, current_user: dict = Depends(get_current_admin_user)):
     await mes_service.delete_product_reference(ref_id)
     from models import ActionType, EntityType
@@ -276,7 +292,11 @@ async def delete_product_reference(ref_id: str, current_user: dict = Depends(get
     )
     return {"success": True, "message": "Référence produite supprimée"}
 
-@router.post("/machines/{machine_id}/select-reference")
+@router.post("/machines/{machine_id}/select-reference",
+    summary="Selectionner une reference produit pour une machine",
+    description="Applique les parametres d'une reference produit a une machine. Met a jour automatiquement la cadence objectif, les seuils et le planning de la machine.",
+    responses={**CRUD_ERRORS, 400: {"description": "reference_id requis"}}
+)
 async def select_reference(machine_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     ref_id = data.get("reference_id")
     if not ref_id:
@@ -300,7 +320,11 @@ async def select_reference(machine_id: str, data: dict, current_user: dict = Dep
 
 # ==================== TRS HISTORY ====================
 
-@router.get("/machines/{machine_id}/trs-history")
+@router.get("/machines/{machine_id}/trs-history",
+    summary="Historique TRS quotidien",
+    description="Retourne l'historique du TRS jour par jour pour une machine sur les N derniers jours. Inclut Disponibilite, Performance et Qualite.",
+    responses={**CRUD_ERRORS}
+)
 async def get_trs_history(machine_id: str, days: int = 7,
                           current_user: dict = Depends(get_current_user)):
     return await mes_service.get_trs_daily_history(machine_id, days)
@@ -308,7 +332,11 @@ async def get_trs_history(machine_id: str, days: int = 7,
 
 # ==================== REPORTING ====================
 
-@router.post("/reports/data")
+@router.post("/reports/data",
+    summary="Donnees de rapport M.E.S.",
+    description="Genere les donnees agregees pour les rapports M.E.S. Supporte plusieurs types : TRS, production, arrets, rebuts, alertes ou rapport complet. Filtrable par machine(s) et periode.",
+    responses={**STANDARD_ERRORS, 400: {"description": "Dates requises"}}
+)
 async def get_report_data(data: dict, current_user: dict = Depends(get_current_user)):
     """Get report data for specified machines and period"""
     machine_ids = data.get("machine_ids", ["all"])
@@ -322,7 +350,11 @@ async def get_report_data(data: dict, current_user: dict = Depends(get_current_u
     return await mes_service.get_report_data(machine_ids, report_type, date_from, date_to)
 
 
-@router.post("/reports/export/excel")
+@router.post("/reports/export/excel",
+    summary="Exporter rapport M.E.S. en Excel",
+    description="Genere et telecharge un fichier Excel multi-feuilles avec les donnees M.E.S. agregees (TRS, production, arrets, rebuts).",
+    responses={**STANDARD_ERRORS, 200: {"description": "Fichier Excel genere", "content": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}}}}
+)
 async def export_excel_report(data: dict, current_user: dict = Depends(get_current_user)):
     """Export report data to Excel file"""
     from fastapi.responses import StreamingResponse
