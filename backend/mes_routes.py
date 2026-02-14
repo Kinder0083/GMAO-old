@@ -297,7 +297,7 @@ async def export_excel_report(data: dict, current_user: dict = Depends(get_curre
                 try:
                     if len(str(cell.value)) > max_length:
                         max_length = len(str(cell.value))
-                except:
+                except Exception:
                     pass
             ws.column_dimensions[column].width = min(max_length + 2, 50)
     
