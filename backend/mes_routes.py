@@ -98,3 +98,48 @@ async def simulate_pulse(machine_id: str, current_user: dict = Depends(get_curre
     """Simuler une impulsion pour tester"""
     await mes_service.record_pulse(machine_id, 1)
     return {"success": True, "message": "Impulsion simulée"}
+
+
+# ==================== REJECT REASONS (Admin) ====================
+
+@router.get("/reject-reasons")
+async def list_reject_reasons(current_user: dict = Depends(get_current_user)):
+    return await mes_service.get_reject_reasons()
+
+@router.post("/reject-reasons")
+async def create_reject_reason(data: dict, current_user: dict = Depends(get_current_user)):
+    if not data.get("label"):
+        raise HTTPException(400, "Le libellé est requis")
+    return await mes_service.create_reject_reason(data)
+
+@router.put("/reject-reasons/{reason_id}")
+async def update_reject_reason(reason_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    result = await mes_service.update_reject_reason(reason_id, data)
+    if not result:
+        raise HTTPException(404, "Motif non trouvé")
+    return result
+
+@router.delete("/reject-reasons/{reason_id}")
+async def delete_reject_reason(reason_id: str, current_user: dict = Depends(get_current_user)):
+    await mes_service.delete_reject_reason(reason_id)
+    return {"success": True}
+
+
+# ==================== REJECTS (Operator) ====================
+
+@router.post("/machines/{machine_id}/rejects")
+async def declare_reject(machine_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    if not data.get("quantity") or int(data["quantity"]) <= 0:
+        raise HTTPException(400, "La quantité doit être supérieure à 0")
+    data["operator"] = current_user.get("name", current_user.get("email", ""))
+    return await mes_service.declare_reject(machine_id, data)
+
+@router.get("/machines/{machine_id}/rejects")
+async def list_rejects(machine_id: str, date_from: str = None, date_to: str = None,
+                       current_user: dict = Depends(get_current_user)):
+    return await mes_service.get_rejects(machine_id, date_from, date_to)
+
+@router.delete("/rejects/{reject_id}")
+async def delete_reject(reject_id: str, current_user: dict = Depends(get_current_user)):
+    await mes_service.delete_reject(reject_id)
+    return {"success": True}
