@@ -11,71 +11,53 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 
 ### M.E.S. Module (P0) - COMPLET
 - [x] Backend service + API routes + Frontend UI
-- [x] MQTT real-time data processing (fixed race condition)
-- [x] Delete all alerts, manual M.E.S. chapter
+- [x] MQTT real-time data processing
+- [x] TRS Avance Niveau 3 (Disponibilite x Performance x Qualite)
+- [x] Planning production configurable
+- [x] Rebuts: declaration, motifs, historique
+- [x] Objectif TRS + Alertes Email
+- [x] References Produites (CRUD admin + selecteur)
+- [x] TRS Hebdomadaire (histogramme)
 
-### TRS Avance Niveau 3 (P0) - COMPLET
-- [x] TRS = Disponibilite x Performance x Qualite
-- [x] Planning production configurable (24h ou horaires, jours)
-- [x] Rebuts: declaration, motifs predefinis/libres, historique
-
-### Objectif TRS + Alertes Email (P0) - COMPLET
-- [x] trs_target par machine + alerte TRS_BELOW_TARGET
-- [x] Notifications email configurables par machine
-- [x] Respect planning production
-
-### References Produites (P0) - COMPLET
-- [x] CRUD admin + selecteur reference + application automatique
-- [x] Lecture seule pour non-admins + journal audit
-
-### TRS Hebdomadaire (P0) - COMPLET
-- [x] Graphique histogramme evolution TRS sur 7 jours
-
-### Reporting Historique M.E.S. (P2) - COMPLET
+### Reporting Historique M.E.S. - COMPLET
 - [x] Page dediee /mes-reports avec filtres, graphiques, tableaux
-- [x] Export Excel/PDF professionnels
+- [x] Export Excel/PDF + Rapports planifies automatiques (APScheduler)
 
-### Planification Rapports Automatiques - COMPLET
-- [x] APScheduler + CRUD rapports planifies + envoi email
+### Refactoring response_model API - COMPLET
+**Phase 1 (server.py):** 103 endpoints annotes + 11 modeles de reponse + correction securite serialize_doc
+**Phase 2 (routeurs externes):** 90 endpoints annotes dans 15 fichiers
+**Total: 193 endpoints avec response_model**
+- Tests Phase 1: 18/18 (100%) | Phase 2: 32/32 (100%)
 
-### Refactoring response_model API - COMPLET (2026-02-14)
-**Phase 1 - server.py:**
-- [x] 11 modeles de reponse generiques (MessageResponse, SuccessResponse, VersionResponse, InviteMemberResponse, ValidateInvitationResponse, InventoryStatsResponse, ToggleMonitoringResponse, NotificationCountResponse, ResetPasswordAdminResponse, ResetSectionResponse, ResetAllResponse)
-- [x] 103 endpoints annotes dans server.py
-- [x] Correction securite: serialize_doc() supprime hashed_password, reset_token
-- [x] Tests Phase 1: 18/18 passes (100%)
-
-**Phase 2 - Routeurs externes:**
-- [x] mes_routes.py: 10 endpoints (deletes + actions MES)
-- [x] mqtt_routes.py: 5 endpoints (config/connect/disconnect/publish/unsubscribe)
-- [x] alert_routes.py: 6 endpoints (mark read/delete/config)
-- [x] sensor_routes.py: 2 endpoints (delete sensor/readings)
-- [x] camera_routes.py: 1 endpoint (delete camera)
-- [x] documentations_routes.py: 5 endpoints (delete poles/documents/bons/templates/forms)
-- [x] chat_routes.py: 1 endpoint (delete message)
-- [x] weekly_report_routes.py: 1 endpoint (delete template)
-- [x] purchase_request_routes.py: 1 endpoint (delete request)
-- [x] work_order_templates_routes.py: 1 endpoint (delete template)
-- [x] time_tracking_routes.py: 1 endpoint (delete absence)
-- [x] autorisation_routes.py: 1 endpoint (delete autorisation)
-- [x] presqu_accident_routes.py: 2 endpoints (delete item/attachment)
-- [x] surveillance_routes.py: 1 endpoint (delete item)
-- [x] demande_arret_attachments_routes.py: 1 endpoint (delete attachment)
-- [x] Tests Phase 2: 32/32 passes (100%)
-
-**Total: 193 endpoints avec response_model** (103 server.py + 90 routeurs externes)
+### Documentation Swagger/OpenAPI Enrichie - COMPLET (2026-02-14)
+- [x] Configuration FastAPI enrichie (titre, description, version 2.2.0, contact, licence)
+- [x] 55 tags avec descriptions en francais couvrant tous les modules
+- [x] 571 endpoints avec summaries et descriptions
+- [x] Codes d'erreur documentes (401, 403, 404, 422, 500) avec exemples
+- [x] Templates d'erreurs reutilisables (STANDARD_ERRORS, CRUD_ERRORS, AUTH_ERRORS)
+- [x] Protection Swagger UI et ReDoc par HTTP Basic Auth (admin/atlas2024)
+- [x] Schema OpenAPI public a /api/openapi.json
+- [x] Fichier openapi_config.py: description API, tags ordonnes, templates erreurs
+- [x] MES routes: descriptions detaillees + exemples pour chaque endpoint
+- [x] Tests: 18/18 passes (100%), aucune regression
 
 ## Architecture
 
 ### Backend (FastAPI + MongoDB)
-- `server.py`: Routes principales + 103 response_model
+- `server.py`: Routes principales + 103 response_model + tags + summaries
+- `openapi_config.py`: Configuration OpenAPI (description, 55 tags, templates erreurs)
 - `mes_service.py`: Service M.E.S. complet
-- `mes_routes.py`: Routes M.E.S. + 10 response_model
+- `mes_routes.py`: Routes M.E.S. enrichies avec descriptions
 - `models.py`: Modeles Pydantic + 11 modeles de reponse generiques
 
 ### Frontend (React)
 - `MESPage.jsx`: Page principale M.E.S.
 - `MESReportsPage.jsx`: Reporting historique + rapports planifies
+
+### Acces Documentation
+- Swagger UI: `/api/docs` (HTTP Basic Auth: admin/atlas2024)
+- ReDoc: `/api/redoc` (HTTP Basic Auth: admin/atlas2024)
+- OpenAPI JSON: `/api/openapi.json` (public)
 
 ## Prioritized Backlog
 
@@ -83,18 +65,15 @@ Application GMAO complete avec module M.E.S. (Manufacturing Execution System) po
 - [ ] Fix import Excel (donnees importees non fonctionnelles)
 - [ ] Documentation page users (lie au bug Excel)
 
-### P2 (Nice to have)
-- [x] ~~Reporting historique M.E.S.~~ DONE
-- [x] ~~Planification rapports~~ DONE
-- [x] ~~Refactoring response_model~~ DONE (Phase 1 + 2)
-
 ## Test Reports
-- iteration_2.json - TRS Avance base (33/33)
+- iteration_2.json - TRS Avance (33/33)
 - iteration_3.json - TRS Target + Email (15/15)
 - iteration_4.json - Product refs + TRS weekly (17/17)
 - iteration_5.json - Response model Phase 1 (18/18) + Security fix
 - iteration_6.json - Response model Phase 2 (32/32)
+- iteration_7.json - Swagger/OpenAPI documentation (18/18)
 
 ## Credentials
-- admin@test.com / Admin123!
-- buenogy@gmail.com / Admin2024!
+- API: admin@test.com / Admin123!
+- API: buenogy@gmail.com / Admin2024!
+- Swagger Docs: admin / atlas2024
