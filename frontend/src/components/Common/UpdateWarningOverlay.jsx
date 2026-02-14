@@ -19,13 +19,23 @@ const UpdateWarningOverlay = () => {
   // Écouter les messages WebSocket du chat pour l'avertissement de MAJ
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    const userStr = localStorage.getItem('user');
+    if (!token || !userStr) return;
+
+    let userId;
+    try {
+      const userData = JSON.parse(userStr);
+      userId = userData.id;
+    } catch (e) {
+      return;
+    }
+    if (!userId) return;
 
     const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
     let wsUrl = backendUrl
       .replace('https://', 'wss://')
       .replace('http://', 'ws://');
-    wsUrl = `${wsUrl}/api/ws/chat?token=${token}`;
+    wsUrl = `${wsUrl}/api/ws/chat?user_id=${userId}`;
 
     const connectWs = () => {
       const ws = new WebSocket(wsUrl);
