@@ -724,7 +724,7 @@ async def update_sensor(
     return Sensor(**updated_sensor)
 
 
-@router.delete("/{sensor_id}")
+@router.delete("/{sensor_id}", response_model=MessageResponse)
 async def delete_sensor(
     sensor_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -868,7 +868,7 @@ async def get_sensor_statistics(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{sensor_id}/readings")
+@router.delete("/{sensor_id}/readings", response_model=MessageResponse)
 async def clear_sensor_readings(
     sensor_id: str,
     current_user: dict = Depends(get_current_admin_user)
