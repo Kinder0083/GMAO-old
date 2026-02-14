@@ -431,6 +431,7 @@ const MachineDashboard = ({ machineId, onBack }) => {
   const [pinging, setPinging] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
   const [timezoneOffset, setTimezoneOffset] = useState(1); // Default GMT+1 (France)
+  const [trsHistory, setTrsHistory] = useState([]);
   const { toast } = useToast();
 
   // Load configured timezone offset from Special Settings
