@@ -783,12 +783,12 @@ const MachineDashboard = ({ machineId, onBack }) => {
 };
 
 // ==================== SETTINGS FIELD (outside component to prevent re-render) ====================
-const SettingsField = ({ label, field, type = 'number', unit = '', value, onChange }) => (
+const SettingsField = ({ label, field, type = 'number', unit = '', value, onChange, readOnly = false }) => (
   <div>
     <label className="text-xs font-medium text-gray-600">{label} {unit && <span className="text-gray-400">({unit})</span>}</label>
     <input type={type} value={value}
-      onChange={onChange}
-      className="w-full mt-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+      onChange={onChange} readOnly={readOnly} disabled={readOnly}
+      className={`w-full mt-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${readOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}`}
       data-testid={`mes-setting-${field}`} />
   </div>
 );
