@@ -9208,12 +9208,14 @@ async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: 
     
     finally:
         if ws_user_id:
-            chat_manager.disconnect(ws_user_id, user_name)
-            await db.user_chat_activity.update_one(
-                {"user_id": ws_user_id},
-                {"$set": {"is_online": False, "last_activity": datetime.now(timezone.utc).isoformat()}}
-            )
-            await chat_manager.broadcast_user_status(ws_user_id, user_name, "offline")
+            chat_manager.disconnect(ws_user_id, user_name, websocket=websocket)
+            # Vérifier s'il reste des connexions pour cet utilisateur
+            if not chat_manager.is_user_online(ws_user_id):
+                await db.user_chat_activity.update_one(
+                    {"user_id": ws_user_id},
+                    {"$set": {"is_online": False, "last_activity": datetime.now(timezone.utc).isoformat()}}
+                )
+                await chat_manager.broadcast_user_status(ws_user_id, user_name, "offline")
 
 # WebSocket pour les consignes (notifications temps réel)
 @app.websocket("/api/ws/consignes")
