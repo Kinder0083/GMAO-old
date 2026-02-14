@@ -48,7 +48,7 @@ const ConsignePopup = () => {
     let wsUrl = backendUrl
       .replace('https://', 'wss://')
       .replace('http://', 'ws://');
-    wsUrl = `${wsUrl}/ws/consignes/${token}`;
+    wsUrl = `${wsUrl}/api/ws/consignes/${token}`;
 
     console.log('🔔 Connexion WebSocket consignes:', wsUrl);
     
