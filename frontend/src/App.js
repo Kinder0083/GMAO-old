@@ -203,6 +203,7 @@ function App() {
             <Route path="team-management" element={<TeamManagementPage />} />
             <Route path="cameras" element={<CamerasPage />} />
             <Route path="mes" element={<MESPage />} />
+            <Route path="mes-reports" element={<MESReportsPage />} />
             <Route path="analytics/checklists" element={<AnalyticsChecklistsPage />} />
           </Route>
         </Routes>
