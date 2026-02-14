@@ -663,13 +663,13 @@ async def update_scheduled_report(report_id: str, data: dict, current_user: dict
         raise HTTPException(404, "Rapport planifie non trouve")
     return report
 
-@router.delete("/scheduled-reports/{report_id}")
+@router.delete("/scheduled-reports/{report_id}", response_model=SuccessResponse)
 async def delete_scheduled_report(report_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a scheduled report"""
     await mes_service.delete_scheduled_report(report_id)
-    return {"success": True}
+    return {"success": True, "message": "Rapport planifié supprimé"}
 
-@router.post("/scheduled-reports/{report_id}/send-now")
+@router.post("/scheduled-reports/{report_id}/send-now", response_model=SuccessResponse)
 async def send_scheduled_report_now(report_id: str, current_user: dict = Depends(get_current_user)):
     """Manually trigger sending a scheduled report"""
     report = await mes_service.get_scheduled_report(report_id)
