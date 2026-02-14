@@ -142,28 +142,41 @@ class MESService:
 
     async def record_pulse(self, machine_id_or_topic: str, value: int = 1):
         """Enregistrer une impulsion (appelé par le callback MQTT)"""
+        logger.info(f"[MES] record_pulse appelé: machine_id_or_topic={machine_id_or_topic}, value={value}")
+        
         if ObjectId.is_valid(machine_id_or_topic):
             machine = await self.db.mes_machines.find_one({"_id": ObjectId(machine_id_or_topic)})
+            logger.info(f"[MES] Recherche par ObjectId: {machine_id_or_topic} -> trouvé: {machine is not None}")
         else:
             machine = await self.db.mes_machines.find_one({"mqtt_topic": machine_id_or_topic, "active": True})
+            logger.info(f"[MES] Recherche par topic: {machine_id_or_topic} -> trouvé: {machine is not None}")
 
-        if not machine or value != 1:
+        if not machine:
+            logger.warning(f"[MES] ⚠️ Aucune machine trouvée pour: {machine_id_or_topic}")
+            return
+            
+        if value != 1:
+            logger.info(f"[MES] Valeur ignorée (!=1): {value}")
             return
 
         now = datetime.now(timezone.utc)
         mid = machine["_id"]
+        
+        logger.info(f"[MES] 📝 Enregistrement pulse pour machine {mid}...")
 
         # Store pulse
         await self.db.mes_pulses.insert_one({
             "machine_id": mid,
             "timestamp": now,
         })
+        logger.info(f"[MES] ✅ Pulse enregistré dans mes_pulses")
 
         # Update machine state
         await self.db.mes_machines.update_one(
             {"_id": mid},
             {"$set": {"last_pulse_at": now, "is_running": True}}
         )
+        logger.info(f"[MES] ✅ État machine mis à jour (is_running=True)")
 
     # ==================== METRICS ====================
 
