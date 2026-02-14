@@ -183,7 +183,7 @@ async def get_alert_config(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/config")
+@router.post("/config", response_model=MessageResponse)
 async def save_alert_config(
     config: AlertActionConfig,
     current_user: dict = Depends(get_current_admin_user)
