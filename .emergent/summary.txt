@@ -1,163 +1,173 @@
-<analysis>An analysis of the user's request and the agent's progress follows.
+<analysis>**original_problem_statement:**
+The user's objective is to enhance a M.E.S. (Manufacturing Execution System) page within their existing CMMS/GMAO application. The work began by fixing critical bugs and has since evolved into a series of feature additions to build out a comprehensive production monitoring tool.
 
-**original_problem_statement**: The user wants to build a M.E.S. (Manufacturing Execution System) page for production monitoring. While the initial backend and frontend were built, several critical bugs were found and are being worked on.
-
-**PRODUCT REQUIREMENTS:**
-1.  **Fix M.E.S. MQTT Data Processing (P0):** The M.E.S. module is not processing incoming MQTT messages, even though the topic is receiving data and the sensor is configured correctly. This is the highest priority blocker.
-2.  **Complete M.E.S. Page (P0):** Build a fully functional M.E.S. page, including real-time metrics, historical graphs, and alert configuration. The UI is mostly built but is blocked by the data processing bug.
-3.  **Fix Timezone Issues (P1):** Ensure all graphs and timestamps across the application (M.E.S., IoT Dashboard) correctly handle the user-configured timezone offset. (Partially addressed, but needs verification).
-4.  **Fix Excel Import (P1):** Data imported from an Excel file from an older version is not appearing or linking correctly. This affects work orders, improvements, sub-equipments, and user selection on various pages.
-5.  **UI Bugfix - Documentation Page (P2):** Users imported from Excel cannot be selected on the Documentation page.
+**PRODUCT REQUIREMENTS (current):**
+1.  **Correct Chart Display (P0 - COMPLETED):** The TRS Hebdomadaire (Weekly TRS) chart was successfully changed to a bar chart.
+2.  **Implement Product References (P0 - COMPLETED):** A system for managing machine parameter templates (references) was implemented with role-based access.
+3.  **Implement Weekly TRS Dashboard (P0 - COMPLETED):** A chart displaying weekly TRS history was added.
+4.  **Develop M.E.S. Historical Reporting (P2 - COMPLETED):** A dedicated historical reporting page was developed with aggregated data, charts, and export options (PDF/Excel).
+5.  **Develop Scheduled M.E.S. Reports (Enhancement - COMPLETED):** Functionality to schedule and automatically email reports was implemented.
+6.  **Refactor API s (P1 - IN PROGRESS):** Add  annotations to older API endpoints to improve stability and prevent data leaks.
+7.  **Fix Excel Import (P1 - PENDING):** Data imported from an Excel file is not appearing or linking correctly. This is a high-priority bug carried over from a previous session.
 
 **User's preferred language**: French. The next agent MUST respond in French.
 
 **what currently exists?**
-The application is a CMMS/GMAO system with a FastAPI backend, React frontend, and MongoDB database. A new M.E.S. page has been added, with a complete backend service (), API (), and a fully-built (but buggy) frontend UI component (). An MQTT manager handles real-time data from sensors. Timezone handling has been a recurring problem and has been addressed in both the M.E.S. and IoT dashboard pages.
+The application is a full-stack CMMS/GMAO with a FastAPI backend, React frontend, and MongoDB. The M.E.S. module now includes:
+*   **Advanced TRS Calculation:** Real-time calculation of Availability, Performance, and Quality.
+*   **Production & Alert Configuration:** Configurable production schedules, TRS goals, and email alerts.
+*   **Product References:** A system for creating and applying pre-configured sets of production parameters.
+*   **Dashboards & Reporting:** The M.E.S. page displays real-time metrics. A new dedicated Rapports M.E.S. page provides historical data analysis with charts, data tables, and PDF/Excel export capabilities.
+*   **Scheduled Reports:** A background scheduler () manages the creation and emailing of M.E.S. reports on a daily, weekly, or monthly basis.
 
 **Last working item**:
-*   **Last item agent was working:** The agent was debugging a critical bug where the M.E.S. feature is not processing MQTT messages. The user confirmed that the MQTT topic is receiving data, but the application does not register any machine activity (cadence remains at zero). The agent's last action was to start investigating the server's startup logs to check the initialization order of the MQTT and M.E.S. services.
-*   **Status:** IN PROGRESS
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** backend testing agent. The agent should write a test to simulate MQTT messages on a specific topic and then verify through an API call () or direct database query ( collection) that the pulse was recorded.
-*   **User Testing Done:** N
+-   **Last item agent was working:** The agent started refactoring older API endpoints to add  annotations for better data validation and to prevent serialization issues. The user initiated this task after the successful implementation of the M.E.S. reporting features.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** backend testing agent. This is a backend-only refactoring task. A full regression test is required to ensure that changing the response models does not break any existing frontend functionality.
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: M.E.S. module does not process MQTT messages (P0)**
-    *   **Description:** Despite a correct MQTT topic configuration and verified data transmission, the M.E.S. backend fails to process the messages. The machine status remains stopped and no cadence is calculated.
-    *   **Attempted fixes:** The agent previously fixed two related bugs: 1) An incompatible callback signature in . 2) A race condition on startup where subscriptions happened before the MQTT client was connected. These fixes were insufficient as the problem persists.
-    *   **Next debug checklist:**
-        1.  Analyze the server startup logs at  to confirm the initialization sequence of  and .
-        2.  Add extensive logging to the  callback in . Log the received , the  (after ), and whether a machine was found for that topic ().
-        3.  Check for any data type mismatches. The payload is  but the application logic might expect a string or integer. Ensure  is used and the result is handled correctly.
-        4.  Verify the logic in  and the  queue in  is correctly handling reconnection and subscription events.
-    *   **Why fix this issue and what will be achieved with the fix?** This is the core functionality of the P0 M.E.S. feature. Without it, the entire production monitoring page is unusable.
-    *   **Status:** IN PROGRESS
-    *   **Is recurring issue?** Y
-    *   **Should Test frontend/backend/both after fix?** Backend.
-    - **Blocked on other issue:** None.
+-   **Issue 1: Refactor  on older API routes (P1)**
+    -   **Description:** Many older API endpoints in routers like , , etc., lack explicit  annotations. This can lead to inconsistent API responses and potential data leakage (e.g., MongoDB  fields being sent to the frontend).
+    -   **Attempted fixes:** The agent started by listing the router files to be inspected. No code has been modified yet.
+    -   **Next debug checklist:**
+        1.  Systematically go through each router file (, , , etc.).
+        2.  For each endpoint (especially GET and PUT/POST that return data), identify if a  is missing.
+        3.  Define appropriate Pydantic models in  for the response structures if they don't already exist.
+        4.  Add the  parameter to the FastAPI route decorator (e.g., ).
+        5.  After refactoring a router, run targeted tests to ensure no regressions have been introduced.
+    -   **Why fix this issue and what will be achieved with the fix?** To enforce a strict API contract, improve security by preventing data leaks, and make the backend more robust and predictable.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Backend
+    -   **Blocked on other issue:** None
 
-*   **Issue 2: Imported data from Excel is not fully functional (P1)**
-    *   **Description:** Data imported via an Excel file is not correctly linked or displayed. This impacts work orders, improvements, sub-equipments, and user selection on the Documentation page.
-    *   **Attempted fixes:** (From previous session) The import logic () was rewritten to handle  relationships, but the user confirmed problems remain.
-    *   **Next debug checklist:**
-        1.  Examine the frontend code and API calls for the pages where data is missing.
-        2.  Check the browser's developer console for errors on these pages.
-        3.  Verify that the backend's serialization logic correctly converts all necessary fields for the frontend.
-    *   **Why fix this issue and what will be achieved with the fix?** Critical for user data migration.
-    *   **Status:** NOT STARTED
-    *   **Is recurring issue?** Y
-    *   **Should Test frontend/backend/both after fix?** Both.
-    *   **Blocked on other issue:** None.
+-   **Issue 2: Imported data from Excel is not fully functional (P1)**
+    -   **Description:** Data imported via an Excel file is not correctly linked or displayed, affecting multiple parts of the application (work orders, user selection dropdowns, etc.).
+    -   **Attempted fixes:** None in recent sessions. This is a known, long-standing bug.
+    -   **Next debug checklist:**
+        1.  Examine a page where the issue is visible (e.g., Documentation page user selection).
+        2.  Check the browser's network tab for API calls related to fetching this data and look for errors.
+        3.  Trace the failing API calls to the backend, likely involving .
+        4.  Investigate how s are handled during the import process and subsequent data retrieval. The issue is very likely related to incorrect data linkage or serialization of s.
+    -   **Why fix this issue and what will be achieved with the fix?** This is critical for data migration and overall application usability.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Blocked on other issue:** None
 
 **In progress Task List**:
-*   **Task 1: Complete the M.E.S. Page Implementation (P0)**
-    *   **Where to resume:** The task is currently blocked by the MQTT processing bug (Issue #1). Once the bug is fixed, the agent must perform end-to-end testing of the M.E.S. page.
-    *   **What will be achieved with this?** A fully functional M.E.S. page that meets all user requirements.
-    *   **Status:** BLOCKED
-    *   **Should Test frontend/backend/both after fix?** Both.
-    *   **Blocked on something:** Issue 1: M.E.S. module does not process MQTT messages.
+-   **Task 1: Refactor API endpoints with  (P1)**
+    -   **Where to resume:** The agent has listed the router files. The next step is to select the first file (e.g., ), analyze its endpoints, and begin adding the  annotations.
+    -   **What will be achieved with this?** A more stable, secure, and well-documented backend API.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Backend
+    -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
-*   **Upcoming Tasks:**
-    *   (P1) Fix the Excel import functionality (Issue #2).
-*   **Future Tasks:**
-    *   (P2) Refine the TRS (Overall Equipment Effectiveness) calculation.
-    *   (P2) Develop a dedicated historical reporting and analysis section for M.E.S. data.
+-   **Upcoming Tasks:**
+    -   **(P1)** Fix the Excel import functionality (Pending Issue #2).
+
+-   **Future Tasks:**
+    -   None.
 
 **Completed work in this session**
-- **M.E.S. Frontend UI Implementation:** Fully built the frontend for the M.E.S. page (), including KPI cards, a Recharts graph, an alerts panel, and machine selection.
-- **Bugfix - M.E.S. Sidebar Link:** Added the missing M.E.S. link to the main sidebar navigation in .
-- **Bugfix - Timezone Offset on Graphs:**
-    - Corrected a recurring -1h time offset on M.E.S. and IoT Dashboard graphs by ensuring the backend () sends timestamps in full ISO format (with a 'Z' UTC indicator).
-    - Updated  and  to correctly parse UTC timestamps and apply the user's configured timezone offset.
-- **Bugfix Attempt - MQTT Data Processing:** Attempted to fix the MQTT processing bug by correcting a callback signature and handling a startup race condition in . The fix was not successful.
+-   **Chart Type Correction (P0):** Changed the TRS Hebdomadaire chart from a line chart to a bar chart in .
+-   **M.E.S. Historical Reporting (P2):**
+    -   **Backend:** Created new API endpoints for aggregated report data () and exports (). Implemented service logic in  to generate this data.
+    -   **Frontend:** Built a new dedicated page at  with filters, summary cards, and multiple charts (Recharts) and tables to display historical M.E.S. data. Added a Rapports M.E.S. link to the main navigation.
+-   **Scheduled M.E.S. Reports (Enhancement):**
+    -   **Backend:** Integrated  to run background jobs. Created a new  and API endpoints () for CRUD operations on scheduled reports. Emails are sent with PDF/Excel attachments.
+    -   **Frontend:** Added a Rapports planifiés tab to the reporting page with a UI to create, view, and manage scheduled reports.
 
 **Earlier issues found/mentioned but not fixed**
-*   **Issue 1: Documentation page - users not loading**
-    *   **Debug checklist:** This was mentioned in the previous session's handoff. The agent should navigate to the Documentation page after fixing the main import bug (Pending Issue #2) to confirm if this is resolved.
-    *   **Why to solve this issue and what will be achieved with this?** Ensures data import is fully functional across the app.
-    *   **Should Test frontend/backend/both after fix:** Frontend.
-    *   **Is recurring issue?** N.
+-   **Issue 1: Documentation page - users not loading.** This is a known symptom of the larger Excel Import bug (Pending Issue #2) and will be resolved when that is fixed.
 
 **Known issue recurrence from previous fork**
-*   **Issue recurrence in this session:** The M.E.S. not processing MQTT data bug is highly recurrent. It has been reported three times, and two attempted fixes have failed. The root cause is still unknown.
+-   **Issue recurrence in previous fork:** M.E.S. not processing MQTT data.
+-   **Recurrence count:** 3+
+-   **Status:** RESOLVED (in a previous job).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-*   **Backend:** Python 3, FastAPI, Pydantic, Motor (async MongoDB), APScheduler.
-*   **Frontend:** React (with hooks), Vite, Mantine UI, Recharts, Axios.
-*   **Database:** MongoDB.
-*   **Timezone Handling:** The critical importance of the backend providing explicit UTC timestamps (ISO string with 'Z' suffix) to prevent browser-local time interpretation issues.
+-   **Recharts Library:** Used for frontend data visualization (, ).
+-   **APScheduler:** Python library used for scheduling and running background jobs (sending reports).
+-   **FastAPI :** Used to define and enforce the data structure of API responses, preventing serialization errors.
+-   **PDF/Excel Generation:** Backend libraries (, ) are used to create downloadable report files.
 
 **key DB schema**
-- No changes were made to the database schema in this session.
+-   **mes_scheduled_reports**: (New) Stores configuration for scheduled reports, including frequency, recipients, and report type. .
 
 **changes in tech stack**
-- None.
+-   : Added for background job scheduling.
+-   : Added for PDF generation.
+-   : Added for Excel generation.
+-   : Added for form data handling.
 
 **All files of reference**
-*   **Heavily Updated:**
-    -   : Rewritten from a placeholder to a complete UI.
-    -   : Refactored to fix timezone bugs and add a utility function.
-    -   : Modified multiple times to fix (unsuccessfully) the MQTT processing bug.
-    -   : Modified to add 'Z' suffix to timestamps to fix timezone bug.
-*   **Important Supporting Files:**
-    -   : Minor change to fix the missing sidebar link.
-    -   : Works in tandem with  and is a key file for debugging the current P0 issue.
+-   **New Files:**
+    -   : The entire UI for M.E.S. reporting and scheduling.
+    -   : Business logic for the report scheduling service.
+-   **Heavily Modified:**
+    -   : Added complex data aggregation logic for all report types.
+    -   : Added numerous new endpoints for reports and scheduling.
+-   **Supporting Files:**
+    -   : Integrated the scheduler.
+    -   : Added the new report page route.
+    -   , : Added the new page to the navigation menu.
 
 **Areas that need refactoring**:
-*   The timezone-aware date formatting function  was created inside . It should be extracted to a common  file and imported by both  and  to avoid code duplication.
-*   The technical debt from the previous session (removed  from some API endpoints) still exists and should be addressed eventually.
+-   The current task is to refactor older API endpoints by adding  annotations. This is a significant piece of technical debt being addressed.
 
 **key api endpoints**
-*   : Source of the pending P1 data import bug.
-*   : Used to fetch real-time M.E.S. data for the UI.
-*   : Fetches historical data for the graph; its response was modified to fix the timezone bug.
+-   : Fetches aggregated data for the M.E.S. reports page.
+-   : Triggers a download of the M.E.S. report in Excel format.
+-   : Triggers a download of the M.E.S. report in PDF format.
+-   : Full CRUD endpoints for managing scheduled reports.
 
 **Critical Info for New Agent**
-*   The absolute top priority is the **MQTT processing bug (Issue #1)**. The user is blocked, and the M.E.S. feature is non-functional. Start by adding detailed logging in  to trace the message flow from the MQTT callback. Do not assume the previous fixes were correct.
-*   The user is technical and provides precise feedback. Trust their reports. When they say a feature is still broken after a fix, it is.
-*   Timezone bugs have been a recurring theme. The established pattern is: backend MUST send timestamps as ISO strings with a  suffix. Any new endpoint returning a  object must follow this rule.
+-   **You must communicate with the user in French.**
+-   Your immediate task is to continue the refactoring of older API endpoints by adding  annotations, starting with  or another core router.
+-   This refactoring is a backend-only task. Ensure thorough backend testing to prevent regressions on the frontend.
+-   After completing the refactoring, the next major priority is the P1 bug related to the broken Excel data import.
 
 **documents and test reports created in this job**
-*   : Test report from the testing agent for the M.E.S. frontend.
-*   : Has been updated with the completion of the M.E.S. UI and timezone fixes.
+-    (updated with new features)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Reports the M.E.S. MQTT processing is still not working with a different topic, confirming the previous fix was insufficient. **(This is the current, active problem)**
-2.  **Agent:** Acknowledges the persistent bug and starts a new investigation.
-3.  **User:** Reports the MQTT bug with screenshots showing data flow but no processing.
-4.  **Agent:** Fixes the MQTT callback signature and a race condition.
-5.  **User:** Gives the final  command for the previous task.
-6.  **Agent:** Confirms the timezone fix on the IoT dashboard is complete.
-7.  **User:** Confirms the M.E.S. graph time is now correct and asks for the same fix to be applied to the Dashboard IoT page.
-8.  **Agent:** Applies the timezone fix to the M.E.S. page graph.
-9.  **User:** Reports that even with the timezone set to GMT+0, there is still a one-hour offset on the graph.
-10. **Agent:** Acknowledges the timezone bug and starts investigation.
+1.  **User:** Requests the  refactoring task.
+2.  **Agent:** Acknowledges and starts working on the refactoring.
+3.  **User:** Asks agent to add automatic report scheduler as a potential improvement.
+4.  **Agent:** Finishes the M.E.S. reporting feature and suggests the scheduler enhancement.
+5.  **User:** Approves the scheduler implementation.
+6.  **Agent:** Implements the full-stack scheduler feature (backend services, API, frontend UI).
+7.  **User:** Approves the M.E.S. reporting plan.
+8.  **Agent:** Proposes a detailed plan for the M.E.S. historical reporting module after the user provided detailed requirements.
+9.  **User:** Provides detailed requirements for the M.E.S. reporting feature via multiple-choice questions.
+10. **Agent:** Confirms the chart fix is complete and asks for direction on the P2 reporting task.
 
 **Project Health Check:**
-*   **Broken:**
-    *   The core data processing of the P0 M.E.S. feature is non-functional due to the MQTT bug.
-    *   The P1 data import feature remains broken from the previous session.
-
-*   **Mocked:** N/A
+-   **Broken:**
+    -   The Excel data import feature remains non-functional and is a high-priority (P1) bug.
+-   **Mocked:** N/A
 
 **3rd Party Integrations**
-*   **MQTT:** Used for real-time sensor data. The interaction between the custom  and  is the likely source of the current P0 bug.
-*   **GitHub:** Used for the application's self-update mechanism.
+-   **MQTT (paho-mqtt):** Core integration for sensor data.
+-   **Recharts:** Frontend charting library.
+-   **APScheduler:** For scheduling background jobs (newly added).
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES (For the M.E.S. frontend UI).
-*   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** None.
-*   **Known regressions:** The removal of  from certain Pydantic routes (technical debt from a previous session) has not been addressed.
+-   **Testing agent used after significant changes:** NO. The agent did not run the testing agent after completing the large M.E.S. reporting and scheduling features. It relied on manual  and  tests. This is a significant gap.
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:** None.
+-   **Known regressions:** The Excel import bug is a known regression from a much earlier session.
 
 **Credentials to test flow:**
-*    / 
-*    / 
+-    / 
+-    / 
 
 **What agent forgot to execute**
-*   The agent has not addressed the pending P1 Excel Import bug or the related Documentation page user loading issue from the previous session's handoff.
-*   The agent did not refactor the duplicated  function into a shared utility file.</analysis>
+-   The agent did not use the  after implementing the large M.E.S. reporting and scheduling modules. A feature of this size requires a full regression test, which was skipped in favor of manual checks. The next agent should consider running a full test cycle after the current refactoring task.</analysis>
