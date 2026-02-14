@@ -521,7 +521,15 @@ export const documentationsAPI = {
   
   // Actions
   generatePDF: (id) => api.post(`/documentations/bons-travail/${id}/pdf`).then(res => res.data),
-  sendEmail: (id, email) => api.post(`/documentations/bons-travail/${id}/email`, { email_to: email }).then(res => res.data)
+  sendEmail: (id, email) => api.post(`/documentations/bons-travail/${id}/email`, { email_to: email }).then(res => res.data),
+
+  // Dossiers (Vue Explorateur)
+  getFolders: (poleId, parentId) => api.get(`/documentations/poles/${poleId}/folders`, { params: { parent_id: parentId || null } }).then(res => res.data),
+  createFolder: (poleId, data) => api.post(`/documentations/poles/${poleId}/folders`, data).then(res => res.data),
+  updateFolder: (folderId, data) => api.put(`/documentations/folders/${folderId}`, data).then(res => res.data),
+  deleteFolder: (folderId) => api.delete(`/documentations/folders/${folderId}`).then(res => res.data),
+  moveDocument: (docId, data) => api.put(`/documentations/documents/${docId}/move`, data).then(res => res.data),
+  getExplorerContents: (poleId, folderId) => api.get(`/documentations/poles/${poleId}/explorer`, { params: { folder_id: folderId || null } }).then(res => res.data)
 };
 
 // ==================== AUTORISATIONS PARTICULIÈRES ====================
