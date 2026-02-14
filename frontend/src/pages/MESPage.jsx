@@ -795,6 +795,50 @@ const MachineSettingsModal = ({ machine, onClose }) => {
             </div>
           </div>
           <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Planning de production</h4>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.schedule_is_24h}
+                  onChange={e => setForm(prev => ({ ...prev, schedule_is_24h: e.target.checked }))}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  data-testid="mes-setting-schedule-24h" />
+                <span className="text-xs text-gray-700">Production 24h/24</span>
+              </label>
+            </div>
+            {!form.schedule_is_24h && (
+              <div className="grid grid-cols-2 gap-3">
+                <SettingsField label="Debut production" field="schedule_start_hour" unit="h (0-23)"
+                  value={form.schedule_start_hour} onChange={handleChange('schedule_start_hour', 'number')} />
+                <SettingsField label="Fin production" field="schedule_end_hour" unit="h (0-23)"
+                  value={form.schedule_end_hour} onChange={handleChange('schedule_end_hour', 'number')} />
+              </div>
+            )}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Jours de production</label>
+              <div className="flex flex-wrap gap-1.5">
+                {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, idx) => (
+                  <button key={idx} type="button"
+                    className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${
+                      form.schedule_production_days.includes(idx)
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'
+                    }`}
+                    data-testid={`mes-setting-day-${idx}`}
+                    onClick={() => {
+                      setForm(prev => ({
+                        ...prev,
+                        schedule_production_days: prev.schedule_production_days.includes(idx)
+                          ? prev.schedule_production_days.filter(d => d !== idx)
+                          : [...prev.schedule_production_days, idx].sort()
+                      }));
+                    }}>
+                    {day}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Alertes</h4>
             <div className="grid grid-cols-2 gap-3">
               <SettingsField label="Arret machine" field="alert_stopped_minutes" unit="min" 
