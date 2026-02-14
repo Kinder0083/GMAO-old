@@ -13,7 +13,8 @@ from pathlib import Path
 
 from models import (
     PurchaseRequest, PurchaseRequestCreate, PurchaseRequestUpdate,
-    PurchaseRequestStatusUpdate, PurchaseRequestStatus, PurchaseRequestHistoryEntry
+    PurchaseRequestStatusUpdate, PurchaseRequestStatus, PurchaseRequestHistoryEntry,
+    MessageResponse
 )
 from dependencies import get_current_user, get_database
 from purchase_request_service import PurchaseRequestService
@@ -328,7 +329,7 @@ async def update_purchase_request(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{request_id}", response_model=dict)
+@router.delete("/{request_id}", response_model=MessageResponse)
 async def delete_purchase_request(
     request_id: str,
     current_user: dict = Depends(get_current_user),
