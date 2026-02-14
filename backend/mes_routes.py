@@ -146,3 +146,90 @@ async def list_rejects(machine_id: str, date_from: str = None, date_to: str = No
 async def delete_reject(reject_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.delete_reject(reject_id)
     return {"success": True}
+
+
+# ==================== PRODUCT REFERENCES ====================
+
+@router.get("/product-references")
+async def list_product_references(current_user: dict = Depends(get_current_user)):
+    return await mes_service.get_product_references()
+
+@router.post("/product-references")
+async def create_product_reference(data: dict, current_user: dict = Depends(get_current_admin_user)):
+    if not data.get("name"):
+        raise HTTPException(400, "Le nom de la reference est requis")
+    ref = await mes_service.create_product_reference(data)
+    from models import ActionType, EntityType
+    await audit_service_ref.log_action(
+        user_id=str(current_user.get("id", "")),
+        user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+        user_email=current_user.get("email", ""),
+        action=ActionType.CREATE,
+        entity_type=EntityType.MES_PRODUCT_REFERENCE,
+        entity_id=ref.get("id"),
+        entity_name=ref.get("name"),
+        details=f"Creation reference produite: {ref.get('name')}"
+    )
+    return ref
+
+@router.put("/product-references/{ref_id}")
+async def update_product_reference(ref_id: str, data: dict, current_user: dict = Depends(get_current_admin_user)):
+    result = await mes_service.update_product_reference(ref_id, data)
+    if not result:
+        raise HTTPException(404, "Reference non trouvee")
+    from models import ActionType, EntityType
+    await audit_service_ref.log_action(
+        user_id=str(current_user.get("id", "")),
+        user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+        user_email=current_user.get("email", ""),
+        action=ActionType.UPDATE,
+        entity_type=EntityType.MES_PRODUCT_REFERENCE,
+        entity_id=ref_id,
+        entity_name=result.get("name"),
+        details=f"Modification reference produite: {result.get('name')}"
+    )
+    return result
+
+@router.delete("/product-references/{ref_id}")
+async def delete_product_reference(ref_id: str, current_user: dict = Depends(get_current_admin_user)):
+    await mes_service.delete_product_reference(ref_id)
+    from models import ActionType, EntityType
+    await audit_service_ref.log_action(
+        user_id=str(current_user.get("id", "")),
+        user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+        user_email=current_user.get("email", ""),
+        action=ActionType.DELETE,
+        entity_type=EntityType.MES_PRODUCT_REFERENCE,
+        entity_id=ref_id,
+        details=f"Suppression reference produite"
+    )
+    return {"success": True}
+
+@router.post("/machines/{machine_id}/select-reference")
+async def select_reference(machine_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    ref_id = data.get("reference_id")
+    if not ref_id:
+        raise HTTPException(400, "reference_id requis")
+    result = await mes_service.select_reference_for_machine(machine_id, ref_id)
+    if not result:
+        raise HTTPException(404, "Reference non trouvee")
+    from models import ActionType, EntityType
+    await audit_service_ref.log_action(
+        user_id=str(current_user.get("id", "")),
+        user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}",
+        user_email=current_user.get("email", ""),
+        action=ActionType.UPDATE,
+        entity_type=EntityType.MES_PRODUCT_REFERENCE,
+        entity_id=ref_id,
+        entity_name=result.get("equipment_name"),
+        details=f"Changement reference produite sur machine {result.get('equipment_name')}"
+    )
+    return result
+
+
+# ==================== TRS HISTORY ====================
+
+@router.get("/machines/{machine_id}/trs-history")
+async def get_trs_history(machine_id: str, days: int = 7,
+                          current_user: dict = Depends(get_current_user)):
+    return await mes_service.get_trs_daily_history(machine_id, days)
