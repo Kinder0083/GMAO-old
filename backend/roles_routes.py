@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from models import (
     Role, RoleCreate, RoleUpdate, UserPermissions,
     ServiceResponsable, ServiceResponsableCreate, ServiceResponsableUpdate,
-    get_default_permissions_by_role
+    get_default_permissions_by_role,
+    SuccessResponse
 )
 from dependencies import get_current_user
 from bson import ObjectId
@@ -275,7 +276,7 @@ async def update_role(role_id: str, role_data: RoleUpdate, current_user: dict = 
     return updated
 
 
-@router.delete("/{role_id}")
+@router.delete("/{role_id}", response_model=SuccessResponse)
 async def delete_role(role_id: str, current_user: dict = Depends(get_current_user)):
     """Supprimer un rôle (uniquement les rôles non-système)"""
     # Vérifier que l'utilisateur est admin
@@ -381,7 +382,7 @@ async def set_service_responsable(data: ServiceResponsableCreate, current_user: 
     return responsable_data
 
 
-@router.delete("/service-responsables/{service}")
+@router.delete("/service-responsables/{service}", response_model=SuccessResponse)
 async def remove_service_responsable(service: str, current_user: dict = Depends(get_current_user)):
     """Supprimer le responsable d'un service"""
     # Vérifier que l'utilisateur est admin
