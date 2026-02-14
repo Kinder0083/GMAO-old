@@ -3041,7 +3041,7 @@ async def download_pm_attachment(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.delete("/preventive-maintenance/{pm_id}/attachments/{attachment_id}")
+@api_router.delete("/preventive-maintenance/{pm_id}/attachments/{attachment_id}", response_model=SuccessResponse)
 async def delete_pm_attachment(
     pm_id: str,
     attachment_id: str,
@@ -3108,7 +3108,7 @@ def calculate_next_maintenance_date(current_date: datetime, frequency: str) -> d
         # Par défaut, mensuelle
         return current_date + timedelta(days=30)
 
-@api_router.post("/preventive-maintenance/check-and-execute")
+@api_router.post("/preventive-maintenance/check-and-execute", response_model=SuccessResponse)
 async def check_and_execute_due_maintenances(current_user: dict = Depends(get_current_admin_user)):
     """Vérifie et exécute MANUELLEMENT les maintenances échues (admin uniquement)"""
     try:
