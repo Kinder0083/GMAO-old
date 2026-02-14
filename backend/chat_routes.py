@@ -6,7 +6,8 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from models import (
     ChatMessage, ChatMessageCreate, ChatReactionAdd, ChatFileTransfer,
-    ChatEmailTransfer, ChatAttachment, ChatReaction, UserChatActivity
+    ChatEmailTransfer, ChatAttachment, ChatReaction, UserChatActivity,
+    SuccessResponse
 )
 from dependencies import get_current_user, require_permission
 from websocket_manager import manager
@@ -368,7 +369,7 @@ async def create_message(
     return {"success": True, "message": response_message}
 
 
-@router.delete("/messages/{message_id}")
+@router.delete("/messages/{message_id}", response_model=SuccessResponse)
 async def delete_message(
     message_id: str,
     current_user: dict = Depends(get_current_user),
