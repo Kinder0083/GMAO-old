@@ -62,6 +62,13 @@ class UserPermissions(BaseModel):
     timeTracking: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Pointage horaire - Permet de voir les données des autres utilisateurs
     cameras: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Caméras RTSP/ONVIF - Visualisation et gestion des caméras
     analyticsChecklists: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Analytics Checklists - Dashboard d'analyse des résultats des contrôles
+    mes: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # M.E.S. - Suivi de production temps réel
+    mesReports: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Rapports M.E.S. - Historiques et exports production
+    serviceDashboard: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Dashboard Service - Tableau de bord par service
+    weeklyReports: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Rapports Hebdomadaires - Rapports de service planifiés
+    demandesArret: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Demandes d'arrêt - Gestion des demandes d'arrêt machine
+    consignes: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Consignes - Gestion des consignes de sécurité
+    autorisationsParticulieres: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Autorisations Particulières - Gestion des autorisations spéciales
 
 # Fonction helper pour obtenir les permissions par défaut selon le rôle
 def get_default_permissions_by_role(role: str) -> UserPermissions:
