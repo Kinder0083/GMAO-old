@@ -849,7 +849,7 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
     return User(**serialize_doc(user))
 
 
-@api_router.put("/auth/me", response_model=MessageResponse)
+@api_router.put("/auth/me")
 async def update_current_user_profile(user_update: UserProfileUpdate, current_user: dict = Depends(get_current_user)):
     """
     Mettre à jour le profil de l'utilisateur connecté
