@@ -201,7 +201,7 @@ async def delete_product_reference(ref_id: str, current_user: dict = Depends(get
         action=ActionType.DELETE,
         entity_type=EntityType.MES_PRODUCT_REFERENCE,
         entity_id=ref_id,
-        details=f"Suppression reference produite"
+        details="Suppression reference produite"
     )
     return {"success": True}
 
