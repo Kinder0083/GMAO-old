@@ -501,31 +501,95 @@ class MESService:
                 await self._create_alert(machine, "TRS_BELOW_TARGET",
                     f"TRS sous objectif: {current_trs}% (objectif: {trs_target}%)")
 
-    async def _create_alert(self, machine_id, alert_type, message):
-        # Don't create duplicate alerts within 5 minutes
+    async def _create_alert(self, machine, alert_type, message):
+        """Create an alert and optionally send email notification.
+        machine: full machine document (dict)
+        """
+        machine_id = machine["_id"]
+        email_config = machine.get("email_notifications", {})
+        delay_minutes = email_config.get("delay_minutes", 5)
+
+        # Don't create duplicate alerts within delay_minutes
         recent = await self.db.mes_alerts.find_one({
             "machine_id": machine_id,
             "type": alert_type,
-            "created_at": {"$gte": datetime.now(timezone.utc) - timedelta(minutes=5)},
+            "created_at": {"$gte": datetime.now(timezone.utc) - timedelta(minutes=max(delay_minutes, 5))},
         })
         if recent:
             return
 
         eq_name = "Inconnu"
-        machine = await self.db.mes_machines.find_one({"_id": machine_id})
-        if machine:
-            eq = await self.db.equipments.find_one({"_id": machine.get("equipment_id")}, {"nom": 1})
-            if eq:
-                eq_name = eq["nom"]
+        eq = await self.db.equipments.find_one({"_id": machine.get("equipment_id")}, {"nom": 1})
+        if eq:
+            eq_name = eq["nom"]
 
-        await self.db.mes_alerts.insert_one({
+        alert_doc = {
             "machine_id": machine_id,
             "type": alert_type,
             "message": message,
             "equipment_name": eq_name,
             "read": False,
+            "email_sent": False,
             "created_at": datetime.now(timezone.utc),
-        })
+        }
+        await self.db.mes_alerts.insert_one(alert_doc)
+
+        # Send email notification if configured
+        if (email_config.get("enabled") and
+            email_config.get("recipients") and
+            alert_type in email_config.get("alert_types", [])):
+            try:
+                self._send_alert_email(email_config["recipients"], eq_name, alert_type, message)
+                await self.db.mes_alerts.update_one(
+                    {"_id": alert_doc["_id"]},
+                    {"$set": {"email_sent": True}}
+                )
+            except Exception as e:
+                logger.error(f"[MES] Erreur envoi email alerte: {e}")
+
+    def _send_alert_email(self, recipients, equipment_name, alert_type, message):
+        """Send alert email using the existing email service"""
+        from email_service import send_email
+
+        alert_labels = {
+            "STOPPED": "Arret machine",
+            "UNDER_CADENCE": "Sous-cadence",
+            "OVER_CADENCE": "Sur-cadence",
+            "NO_SIGNAL": "Perte de signal",
+            "TARGET_REACHED": "Objectif atteint",
+            "TRS_BELOW_TARGET": "TRS sous objectif",
+        }
+        alert_label = alert_labels.get(alert_type, alert_type)
+        now_str = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
+
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#1e293b;color:white;padding:16px 24px;border-radius:8px 8px 0 0;">
+                <h2 style="margin:0;font-size:18px;">Alerte M.E.S. - {alert_label}</h2>
+            </div>
+            <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr><td style="padding:8px 0;color:#64748b;width:140px;">Machine</td>
+                        <td style="padding:8px 0;font-weight:600;">{equipment_name}</td></tr>
+                    <tr><td style="padding:8px 0;color:#64748b;">Type</td>
+                        <td style="padding:8px 0;"><span style="background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:13px;">{alert_label}</span></td></tr>
+                    <tr><td style="padding:8px 0;color:#64748b;">Detail</td>
+                        <td style="padding:8px 0;">{message}</td></tr>
+                    <tr><td style="padding:8px 0;color:#64748b;">Date</td>
+                        <td style="padding:8px 0;">{now_str}</td></tr>
+                </table>
+            </div>
+            <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">GMAO Iris - Systeme M.E.S.</p>
+        </div>
+        """
+        subject = f"[M.E.S.] {alert_label} - {equipment_name}"
+
+        for recipient in recipients:
+            try:
+                send_email(recipient.strip(), subject, html)
+                logger.info(f"[MES] Email alerte envoye a {recipient}")
+            except Exception as e:
+                logger.error(f"[MES] Erreur envoi email a {recipient}: {e}")
 
     async def get_alerts(self, unread_only=False, limit=50) -> list:
         query = {"read": False} if unread_only else {}
