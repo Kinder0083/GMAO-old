@@ -246,20 +246,8 @@ const MachineDashboard = ({ machineId, onBack }) => {
     return `${s}s`;
   };
 
-  // Apply timezone offset to UTC timestamps for display
-  // Backend timestamps may lack 'Z' suffix, so we force UTC parsing
-  const applyTzOffset = (isoTimestamp) => {
-    let ts = String(isoTimestamp);
-    // Force UTC parsing: append Z if no timezone indicator present
-    if (!ts.endsWith('Z') && !ts.includes('+') && !/\d{2}:\d{2}:\d{2}-/.test(ts)) {
-      ts += 'Z';
-    }
-    const utcDate = new Date(ts);
-    return new Date(utcDate.getTime() + (timezoneOffset * 60 * 60 * 1000));
-  };
-
   const chartData = history.map(h => ({
-    time: applyTzOffset(h.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }),
+    time: formatChartTime(h.timestamp, timezoneOffset),
     cadence: h.cadence,
     theoretical: h.theoretical,
   }));
