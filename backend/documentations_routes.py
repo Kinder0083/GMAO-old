@@ -219,7 +219,7 @@ async def update_pole(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/poles/{pole_id}")
+@router.delete("/poles/{pole_id}", response_model=SuccessResponse)
 async def delete_pole(
     pole_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -426,7 +426,7 @@ async def update_document(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/documents/{document_id}")
+@router.delete("/documents/{document_id}", response_model=SuccessResponse)
 async def delete_document(
     document_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -734,7 +734,7 @@ async def update_bon_travail(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/bons-travail/{bon_id}")
+@router.delete("/bons-travail/{bon_id}", response_model=SuccessResponse)
 async def delete_bon_travail(
     bon_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -935,7 +935,7 @@ async def update_form_template(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/form-templates/{template_id}")
+@router.delete("/form-templates/{template_id}", response_model=SuccessResponse)
 async def delete_form_template(
     template_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -1077,7 +1077,7 @@ async def update_custom_form(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/custom-forms/{form_id}")
+@router.delete("/custom-forms/{form_id}", response_model=SuccessResponse)
 async def delete_custom_form(
     form_id: str,
     current_user: dict = Depends(get_current_user)
