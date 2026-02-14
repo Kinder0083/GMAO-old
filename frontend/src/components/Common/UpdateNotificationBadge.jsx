@@ -87,51 +87,75 @@ const UpdateNotificationBadge = () => {
       description: 
         `Vous allez installer la version ${updateInfo.new_version || updateInfo.version}.\n\n` +
         `Cette opération va:\n` +
+        `• Envoyer un avertissement à TOUS les utilisateurs connectés\n` +
+        `• Déconnecter automatiquement tous les utilisateurs après 30 secondes\n` +
         `• Créer une sauvegarde complète de la base de données\n` +
-        `• Exporter toutes les données en Excel\n` +
         `• Télécharger la mise à jour depuis GitHub\n` +
         `• Redémarrer tous les services\n\n` +
-        `L'application sera indisponible pendant quelques minutes.\n\n` +
+        `L'application sera indisponible pendant environ 5 minutes.\n\n` +
         `Voulez-vous continuer ?`,
-      confirmText: 'Installer',
+      confirmText: 'Envoyer l\'avertissement et installer',
       cancelText: 'Annuler',
       variant: 'default',
       onConfirm: async () => {
         setIsApplying(true);
 
         try {
-      const token = localStorage.getItem('token');
-      const version = updateInfo.new_version || updateInfo.version;
-      
-      const response = await axios.post(
-        `${BACKEND_URL}/api/updates/apply`,
-        null,
-        {
-          params: { version },
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 300000 // 5 minutes
+          const token = localStorage.getItem('token');
+          const version = updateInfo.new_version || updateInfo.version;
+          
+          // Étape 1 : Broadcaster l'avertissement à tous les utilisateurs
+          toast({
+            title: '📢 Envoi de l\'avertissement...',
+            description: 'Notification envoyée à tous les utilisateurs connectés',
+          });
+
+          await axios.post(
+            `${BACKEND_URL}/api/updates/broadcast-warning`,
+            null,
+            {
+              params: { version },
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+
+          // Étape 2 : Attendre 32 secondes (30s countdown + 2s marge) puis appliquer la MAJ
+          toast({
+            title: '⏳ Avertissement envoyé',
+            description: 'La mise à jour sera appliquée dans 30 secondes après la déconnexion des utilisateurs...',
+          });
+
+          setTimeout(async () => {
+            try {
+              const response = await axios.post(
+                `${BACKEND_URL}/api/updates/apply`,
+                null,
+                {
+                  params: { version },
+                  headers: { Authorization: `Bearer ${token}` },
+                  timeout: 300000
+                }
+              );
+
+              if (response.data.success) {
+                toast({
+                  title: 'Mise à jour en cours',
+                  description: 'Les services redémarrent. Veuillez patienter...',
+                });
+              }
+            } catch (applyError) {
+              console.error('Erreur application MAJ:', applyError);
+            }
+          }, 32000);
+
+        } catch (error) {
+          toast({
+            title: 'Erreur',
+            description: formatErrorMessage(error, 'Erreur lors de l\'envoi de l\'avertissement'),
+            variant: 'destructive'
+          });
+          setIsApplying(false);
         }
-      );
-
-      if (response.data.success) {
-        toast({
-          title: '✅ Mise à jour en cours',
-          description: 'Les services redémarrent. Veuillez patienter...',
-        });
-
-        // Attendre 10 secondes puis recharger la page
-        setTimeout(() => {
-          window.location.reload();
-        }, 10000);
-      }
-    } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: formatErrorMessage(error, 'Erreur lors de la mise à jour'),
-        variant: 'destructive'
-      });
-      setIsApplying(false);
-    }
       }
     });
   };
