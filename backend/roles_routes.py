@@ -414,3 +414,39 @@ SERVICES = [
 async def get_services_list(current_user: dict = Depends(get_current_user)):
     """Récupérer la liste des services disponibles"""
     return SERVICES
+
+
+
+@router.post("/migrate-permissions")
+async def migrate_role_permissions(current_user: dict = Depends(get_current_user)):
+    """Migrer les permissions des rôles existants pour ajouter les modules manquants"""
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent migrer les permissions")
+    
+    NEW_PERMISSION_KEYS = [
+        "mes", "mesReports", "serviceDashboard", "weeklyReports",
+        "demandesArret", "consignes", "autorisationsParticulieres"
+    ]
+    
+    roles = await db.roles.find({}).to_list(length=None)
+    updated_count = 0
+    
+    for role in roles:
+        perms = role.get("permissions", {})
+        needs_update = False
+        
+        for key in NEW_PERMISSION_KEYS:
+            if key not in perms:
+                needs_update = True
+                default_perms = get_default_permissions_by_role(role.get("code", ""))
+                default_dict = default_perms.model_dump()
+                perms[key] = default_dict.get(key, {"view": False, "edit": False, "delete": False})
+        
+        if needs_update:
+            await db.roles.update_one(
+                {"id": role["id"]},
+                {"$set": {"permissions": perms}}
+            )
+            updated_count += 1
+    
+    return {"success": True, "message": f"{updated_count} rôle(s) mis à jour avec les nouvelles permissions", "updated_count": updated_count}
