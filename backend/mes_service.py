@@ -759,6 +759,199 @@ class MESService:
             self._subscribe_machine(m)
         logger.info(f"[MES] {len(machines)} machines abonnées MQTT")
 
+    # ==================== PRODUCT REFERENCES ====================
+
+    async def get_product_references(self) -> list:
+        refs = await self.db.mes_product_references.find().sort("name", 1).to_list(500)
+        return [self._serialize(r) for r in refs]
+
+    async def create_product_reference(self, data: dict) -> dict:
+        ref = {
+            "name": data["name"].strip(),
+            "theoretical_cadence": float(data.get("theoretical_cadence", 6)),
+            "downtime_margin_pct": float(data.get("downtime_margin_pct", 30)),
+            "trs_target": float(data.get("trs_target", 85)),
+            "production_schedule": {
+                "is_24h": bool(data.get("schedule_is_24h", True)),
+                "start_hour": int(data.get("schedule_start_hour", 6)),
+                "end_hour": int(data.get("schedule_end_hour", 22)),
+                "production_days": data.get("schedule_production_days", [0, 1, 2, 3, 4]),
+            },
+            "alerts": {
+                "stopped_minutes": int(data.get("alert_stopped_minutes", 5)),
+                "under_cadence": float(data.get("alert_under_cadence", 0)),
+                "over_cadence": float(data.get("alert_over_cadence", 0)),
+                "daily_target": int(data.get("alert_daily_target", 0)),
+                "no_signal_minutes": int(data.get("alert_no_signal_minutes", 10)),
+            },
+            "email_notifications": {
+                "enabled": bool(data.get("email_enabled", False)),
+                "recipients": data.get("email_recipients", []),
+                "alert_types": data.get("email_alert_types", []),
+                "delay_minutes": int(data.get("email_delay_minutes", 5)),
+            },
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+        result = await self.db.mes_product_references.insert_one(ref)
+        ref["_id"] = result.inserted_id
+        return self._serialize(ref)
+
+    async def update_product_reference(self, ref_id: str, data: dict) -> dict:
+        update = {"updated_at": datetime.now(timezone.utc)}
+        simple_fields = {
+            "name": str, "theoretical_cadence": float,
+            "downtime_margin_pct": float, "trs_target": float,
+        }
+        for field, cast in simple_fields.items():
+            if field in data:
+                update[field] = cast(data[field])
+
+        alert_fields = {
+            "alert_stopped_minutes": ("alerts.stopped_minutes", int),
+            "alert_under_cadence": ("alerts.under_cadence", float),
+            "alert_over_cadence": ("alerts.over_cadence", float),
+            "alert_daily_target": ("alerts.daily_target", int),
+            "alert_no_signal_minutes": ("alerts.no_signal_minutes", int),
+        }
+        for key, (path, cast) in alert_fields.items():
+            if key in data:
+                update[path] = cast(data[key])
+
+        schedule_fields = {
+            "schedule_is_24h": ("production_schedule.is_24h", bool),
+            "schedule_start_hour": ("production_schedule.start_hour", int),
+            "schedule_end_hour": ("production_schedule.end_hour", int),
+        }
+        for key, (path, cast) in schedule_fields.items():
+            if key in data:
+                update[path] = cast(data[key])
+        if "schedule_production_days" in data:
+            update["production_schedule.production_days"] = [int(d) for d in data["schedule_production_days"]]
+
+        email_fields = {
+            "email_enabled": ("email_notifications.enabled", bool),
+            "email_delay_minutes": ("email_notifications.delay_minutes", int),
+        }
+        for key, (path, cast) in email_fields.items():
+            if key in data:
+                update[path] = cast(data[key])
+        if "email_recipients" in data:
+            update["email_notifications.recipients"] = [str(r).strip() for r in data["email_recipients"] if str(r).strip()]
+        if "email_alert_types" in data:
+            update["email_notifications.alert_types"] = list(data["email_alert_types"])
+
+        await self.db.mes_product_references.update_one({"_id": ObjectId(ref_id)}, {"$set": update})
+        doc = await self.db.mes_product_references.find_one({"_id": ObjectId(ref_id)})
+        return self._serialize(doc) if doc else None
+
+    async def delete_product_reference(self, ref_id: str):
+        # Unlink from any machines using this reference
+        await self.db.mes_machines.update_many(
+            {"active_reference_id": ObjectId(ref_id)},
+            {"$unset": {"active_reference_id": ""}}
+        )
+        await self.db.mes_product_references.delete_one({"_id": ObjectId(ref_id)})
+
+    async def select_reference_for_machine(self, machine_id: str, ref_id: str) -> dict:
+        """Apply a product reference's params to a machine"""
+        ref = await self.db.mes_product_references.find_one({"_id": ObjectId(ref_id)})
+        if not ref:
+            return None
+
+        update = {
+            "active_reference_id": ObjectId(ref_id),
+            "theoretical_cadence": ref.get("theoretical_cadence", 6),
+            "downtime_margin_pct": ref.get("downtime_margin_pct", 30),
+            "trs_target": ref.get("trs_target", 85),
+            "production_schedule": ref.get("production_schedule", {}),
+            "alerts": ref.get("alerts", {}),
+            "email_notifications": ref.get("email_notifications", {}),
+        }
+        await self.db.mes_machines.update_one({"_id": ObjectId(machine_id)}, {"$set": update})
+        return await self.get_machine(machine_id)
+
+    # ==================== TRS HISTORY (Weekly) ====================
+
+    async def get_trs_daily_history(self, machine_id: str, days: int = 7) -> list:
+        """Get daily TRS values for the last N days"""
+        mid = ObjectId(machine_id)
+        machine = await self.db.mes_machines.find_one({"_id": mid})
+        if not machine:
+            return []
+
+        now = datetime.now(timezone.utc)
+        theoretical = machine.get("theoretical_cadence", 6)
+        margin_pct = machine.get("downtime_margin_pct", 30)
+        schedule = machine.get("production_schedule", {})
+        is_24h = schedule.get("is_24h", True)
+        start_hour = schedule.get("start_hour", 6)
+        end_hour = schedule.get("end_hour", 22)
+        production_days = schedule.get("production_days", [0, 1, 2, 3, 4])
+
+        results = []
+        for i in range(days - 1, -1, -1):
+            day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+            day_end = day_start.replace(hour=23, minute=59, second=59)
+            if i == 0:
+                day_end = now
+
+            day_weekday = day_start.weekday()
+            if day_weekday not in production_days:
+                results.append({
+                    "date": day_start.strftime("%Y-%m-%d"),
+                    "trs": None, "availability": None,
+                    "performance": None, "quality": None,
+                    "production": 0, "rejects": 0,
+                    "is_production_day": False,
+                })
+                continue
+
+            # Planned time for this day
+            if is_24h:
+                planned = (day_end - day_start).total_seconds()
+            else:
+                prod_start = day_start.replace(hour=start_hour)
+                prod_end = day_start.replace(hour=end_hour)
+                if i == 0 and now < prod_end:
+                    prod_end = now
+                if i == 0 and now < prod_start:
+                    planned = 0
+                else:
+                    planned = max((prod_end - prod_start).total_seconds(), 0)
+
+            count = await self.db.mes_pulses.count_documents({
+                "machine_id": mid, "timestamp": {"$gte": day_start, "$lte": day_end}
+            })
+            downtime = await self._calc_downtime(mid, day_start, day_end, theoretical, margin_pct)
+            rejects = await self.get_rejects_total(mid, day_start, day_end)
+
+            if planned > 0:
+                operating = max(planned - downtime, 0)
+                availability = round(operating / planned * 100, 1)
+                if theoretical > 0 and operating > 0:
+                    theoretical_during_uptime = theoretical * (operating / 60)
+                    performance = round(min(count / theoretical_during_uptime * 100, 100), 1) if theoretical_during_uptime > 0 else 0
+                else:
+                    performance = 0
+                if count > 0:
+                    quality = round(max(count - rejects, 0) / count * 100, 1)
+                else:
+                    quality = 100
+                trs = round((availability / 100) * (performance / 100) * (quality / 100) * 100, 1)
+            else:
+                availability = performance = quality = trs = 0
+
+            results.append({
+                "date": day_start.strftime("%Y-%m-%d"),
+                "trs": trs, "availability": availability,
+                "performance": performance, "quality": quality,
+                "production": count, "rejects": rejects,
+                "is_production_day": True,
+            })
+
+        return results
+
     # ==================== REJECT REASONS (Admin) ====================
 
     async def get_reject_reasons(self) -> list:
