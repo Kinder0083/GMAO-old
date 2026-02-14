@@ -542,6 +542,7 @@ const MachineDashboard = ({ machineId, onBack }) => {
       OVER_CADENCE: <TrendingUp className="h-4 w-4 text-yellow-500" />,
       NO_SIGNAL: <WifiOff className="h-4 w-4 text-gray-500" />,
       TARGET_REACHED: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+      TRS_BELOW_TARGET: <Target className="h-4 w-4 text-red-500" />,
     };
     return map[type] || <AlertTriangle className="h-4 w-4 text-orange-500" />;
   };
@@ -553,6 +554,7 @@ const MachineDashboard = ({ machineId, onBack }) => {
       OVER_CADENCE: 'border-l-yellow-500 bg-yellow-50',
       NO_SIGNAL: 'border-l-gray-500 bg-gray-100',
       TARGET_REACHED: 'border-l-green-500 bg-green-50',
+      TRS_BELOW_TARGET: 'border-l-red-500 bg-red-50',
     };
     return map[type] || 'border-l-orange-500 bg-orange-50';
   };
