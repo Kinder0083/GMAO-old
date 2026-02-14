@@ -36,6 +36,10 @@ Application CMMS/GMAO complète (Gestion de Maintenance Assistée par Ordinateur
   - Menu contextuel (clic droit) pour toutes les actions
   - Drag & drop pour déplacer documents/dossiers
   - 3 vues disponibles : Carte, Liste, Fenêtre
+- [x] Fix WebSocket broadcast mise à jour (14 fév 2026)
+  - Routes WS migrées de /ws/ à /api/ws/ pour routing K8s
+  - Token JWT remplacé par user_id pour compatibilité proxy
+  - chat_manager mis à jour pour connexions multiples par utilisateur
 
 ## Pending / Backlog
 - [ ] **P1** Bug import Excel (données pas correctement liées) - l'utilisateur dit ne pas avoir ce problème, en attente de confirmation
