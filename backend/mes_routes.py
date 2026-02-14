@@ -72,11 +72,19 @@ async def delete_machine(machine_id: str, current_user: dict = Depends(get_curre
 
 # ==================== METRICS ====================
 
-@router.get("/machines/{machine_id}/metrics")
+@router.get("/machines/{machine_id}/metrics",
+    summary="Metriques temps reel d'une machine",
+    description="Retourne les metriques de production en temps reel : pieces produites, cadence instantanee, TRS actuel (Disponibilite x Performance x Qualite), temps d'arret et statut de production.",
+    responses={**CRUD_ERRORS}
+)
 async def get_metrics(machine_id: str, current_user: dict = Depends(get_current_user)):
     return await mes_service.get_realtime_metrics(machine_id)
 
-@router.get("/machines/{machine_id}/history")
+@router.get("/machines/{machine_id}/history",
+    summary="Historique de cadence",
+    description="Retourne l'historique de la cadence de production sur une periode donnee (6h, 12h, 24h, 7d ou dates personnalisees).",
+    responses={**CRUD_ERRORS}
+)
 async def get_history(machine_id: str, period: str = "6h",
                       date_from: str = None, date_to: str = None,
                       current_user: dict = Depends(get_current_user)):
