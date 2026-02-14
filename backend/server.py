@@ -9362,6 +9362,72 @@ async def startup_scheduler():
         await init_system_roles()
         logger.info("✅ Rôles système initialisés")
         
+        # Migrer les permissions des rôles (ajouter les modules manquants)
+        from roles_routes import get_default_permissions_by_role
+        NEW_PERMISSION_KEYS = ["mes", "mesReports", "serviceDashboard", "weeklyReports", "demandesArret", "consignes", "autorisationsParticulieres"]
+        roles = await db.roles.find({}).to_list(length=None)
+        perm_updated = 0
+        for role in roles:
+            perms = role.get("permissions", {})
+            needs_update = False
+            for key in NEW_PERMISSION_KEYS:
+                if key not in perms:
+                    needs_update = True
+                    default_perms = get_default_permissions_by_role(role.get("code", ""))
+                    default_dict = default_perms.model_dump()
+                    perms[key] = default_dict.get(key, {"view": False, "edit": False, "delete": False})
+            if needs_update:
+                await db.roles.update_one({"id": role["id"]}, {"$set": {"permissions": perms}})
+                perm_updated += 1
+        if perm_updated > 0:
+            logger.info(f"✅ Permissions migrées pour {perm_updated} rôle(s)")
+        
+        # Migrer le manuel utilisateur (ajouter chapitres manquants)
+        from manual_migration_add_chapters import NEW_CHAPTERS, NEW_SECTIONS
+        manual_added = 0
+        now_utc = datetime.now(timezone.utc)
+        for chapter in NEW_CHAPTERS:
+            existing = await db.manual_chapters.find_one({"id": chapter["id"]})
+            if not existing:
+                ch = {**chapter, "created_at": now_utc.isoformat(), "updated_at": now_utc.isoformat()}
+                await db.manual_chapters.insert_one(ch)
+                manual_added += 1
+        for section in NEW_SECTIONS:
+            existing = await db.manual_sections.find_one({"id": section["id"]})
+            if not existing:
+                sec = {**section, "parent_id": None, "target_roles": [], "target_modules": [], "images": [], "video_url": None, "created_at": now_utc.isoformat(), "updated_at": now_utc.isoformat()}
+                if "keywords" not in sec:
+                    sec["keywords"] = []
+                await db.manual_sections.insert_one(sec)
+        if manual_added > 0:
+            logger.info(f"✅ Manuel utilisateur: {manual_added} chapitre(s) ajouté(s)")
+        
+        # Migrer les menus utilisateurs (ajouter menus manquants)
+        complete_menu_ids = [
+            "dashboard", "service-dashboard", "chat-live", "intervention-requests",
+            "work-orders", "improvement-requests", "improvements", "preventive-maintenance",
+            "planning-mprev", "assets", "inventory", "purchase-requests", "locations",
+            "meters", "surveillance-plan", "surveillance-rapport", "weekly-reports",
+            "presqu-accident", "presqu-accident-rapport", "documentations", "reports",
+            "team-management", "cameras", "mes", "mes-reports", "analytics-checklists",
+            "people", "planning", "vendors", "purchase-history", "import-export",
+            "sensors", "iot-dashboard", "mqtt-logs", "whiteboard"
+        ]
+        user_prefs = await db.user_preferences.find({}).to_list(length=None)
+        menus_migrated = 0
+        for pref in user_prefs:
+            menu_items = pref.get("menu_items", [])
+            existing_ids = {item.get("id") for item in menu_items}
+            missing_ids = [mid for mid in complete_menu_ids if mid not in existing_ids]
+            if missing_ids:
+                max_order = max((item.get("order", 0) for item in menu_items), default=0)
+                for i, mid in enumerate(missing_ids):
+                    menu_items.append({"id": mid, "visible": True, "favorite": False, "order": max_order + 1 + i, "category_id": None})
+                await db.user_preferences.update_one({"_id": pref["_id"]}, {"$set": {"menu_items": menu_items}})
+                menus_migrated += 1
+        if menus_migrated > 0:
+            logger.info(f"✅ Menus migrés pour {menus_migrated} utilisateur(s)")
+        
         # Initialiser le scheduler des rapports hebdomadaires
         from weekly_report_scheduler import init_report_scheduler, load_all_report_schedules
         init_report_scheduler(scheduler, db)
