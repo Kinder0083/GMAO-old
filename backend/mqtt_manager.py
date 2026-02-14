@@ -22,6 +22,13 @@ class MQTTManager:
         self.connection_lock = threading.Lock()
         self.db = None  # Référence à la base de données pour restaurer les abonnements
         self._auto_restore = True  # Activer la restauration automatique des abonnements
+        self._on_connect_listeners: list = []  # Listeners appelés quand MQTT se connecte
+    
+    def add_on_connect_listener(self, callback: Callable):
+        """Ajouter un listener qui sera appelé quand MQTT se connecte"""
+        if callback not in self._on_connect_listeners:
+            self._on_connect_listeners.append(callback)
+            logger.info(f"[MQTT] Listener de connexion ajouté: {callback.__name__ if hasattr(callback, '__name__') else callback}")
         
     def set_database(self, database):
         """Définir la référence à la base de données pour restaurer les abonnements"""
