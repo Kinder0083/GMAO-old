@@ -2889,7 +2889,7 @@ async def update_preventive_maintenance(pm_id: str, pm_update: PreventiveMainten
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/preventive-maintenance/{pm_id}")
+@api_router.delete("/preventive-maintenance/{pm_id}", response_model=MessageResponse)
 async def delete_preventive_maintenance(pm_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "delete"))):
     """Supprimer une maintenance préventive"""
     try:
@@ -3261,7 +3261,7 @@ async def update_checklist_template(template_id: str, template_update: Checklist
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/checklists/templates/{template_id}")
+@api_router.delete("/checklists/templates/{template_id}", response_model=MessageResponse)
 async def delete_checklist_template(template_id: str, current_user: dict = Depends(require_permission("preventiveMaintenance", "delete"))):
     """Supprimer un modèle de checklist"""
     try:
@@ -3489,7 +3489,7 @@ async def update_user(user_id: str, user_update: UserUpdate, current_user: dict 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/users/{user_id}")
+@api_router.delete("/users/{user_id}", response_model=MessageResponse)
 async def delete_user(user_id: str, current_user: dict = Depends(get_current_admin_user)):
     """Supprimer un utilisateur (admin uniquement)"""
     try:
@@ -3734,7 +3734,7 @@ async def init_cameras_permissions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/users/{user_id}/set-password-permanent")
+@api_router.post("/users/{user_id}/set-password-permanent", response_model=SuccessResponse)
 async def set_password_permanent(
     user_id: str,
     current_user: dict = Depends(get_current_user)
@@ -3789,7 +3789,7 @@ async def set_password_permanent(
 
 
 
-@api_router.post("/users/{user_id}/reset-password-admin")
+@api_router.post("/users/{user_id}/reset-password-admin", response_model=ResetPasswordAdminResponse)
 async def reset_password_admin(
     user_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -3861,7 +3861,7 @@ async def reset_password_admin(
 
 
 # ==================== SETTINGS ROUTES ====================
-@api_router.get("/settings")
+@api_router.get("/settings", response_model=SystemSettings)
 async def get_system_settings(current_user: dict = Depends(get_current_admin_user)):
     """Récupérer les paramètres système"""
     try:
@@ -3880,7 +3880,7 @@ async def get_system_settings(current_user: dict = Depends(get_current_admin_use
         logger.error(f"Erreur lors de la récupération des paramètres : {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
-@api_router.put("/settings")
+@api_router.put("/settings", response_model=SystemSettings)
 async def update_system_settings(
     settings_update: SystemSettingsUpdate,
     current_user: dict = Depends(get_current_admin_user)
@@ -4246,7 +4246,7 @@ async def migrate_menu_preferences(current_user: dict = Depends(get_current_user
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 # ==================== SMTP CONFIGURATION ROUTES ====================
-@api_router.get("/smtp/config")
+@api_router.get("/smtp/config", response_model=SMTPConfig)
 async def get_smtp_config(current_user: dict = Depends(get_current_admin_user)):
     """Récupérer la configuration SMTP actuelle (Admin uniquement)"""
     try:
@@ -4267,7 +4267,7 @@ async def get_smtp_config(current_user: dict = Depends(get_current_admin_user)):
         logger.error(f"Erreur lors de la récupération de la config SMTP: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.put("/smtp/config")
+@api_router.put("/smtp/config", response_model=SuccessResponse)
 async def update_smtp_config(
     smtp_update: SMTPConfigUpdate,
     current_user: dict = Depends(get_current_admin_user)
@@ -4335,7 +4335,7 @@ async def update_smtp_config(
         logger.error(f"Erreur lors de la mise à jour de la config SMTP: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/smtp/test")
+@api_router.post("/smtp/test", response_model=SuccessResponse)
 async def test_smtp_config(
     test_request: SMTPTestRequest,
     current_user: dict = Depends(get_current_admin_user)
