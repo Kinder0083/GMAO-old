@@ -52,7 +52,11 @@ import {
   ArrowUp,
   ArrowDown,
   UserCog,
-  Clock
+  Clock,
+  Camera,
+  Zap,
+  FileBarChart,
+  Presentation
 } from 'lucide-react';
 
 // Liste des icônes disponibles pour les catégories
