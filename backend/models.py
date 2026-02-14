@@ -309,7 +309,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             chatLive=ModulePermission(view=True, edit=True, delete=False),
             cameras=ModulePermission(view=False, edit=False, delete=False),
-            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False)
+            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False),
+            mes=ModulePermission(view=True, edit=True, delete=False),
+            mesReports=ModulePermission(view=True, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=True, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=True, edit=False, delete=False),
+            demandesArret=ModulePermission(view=True, edit=True, delete=False),
+            consignes=ModulePermission(view=True, edit=False, delete=False),
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # INDUS : Demande d'inter./Demandes d'amél./Ordres de travail/Améliorations/Equipement en visualisation et modification
@@ -343,7 +350,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             chatLive=ModulePermission(view=True, edit=True, delete=False),
             cameras=ModulePermission(view=False, edit=False, delete=False),
-            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False)
+            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False),
+            mes=ModulePermission(view=True, edit=False, delete=False),
+            mesReports=ModulePermission(view=True, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=False, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=True, edit=False, delete=False),
+            demandesArret=ModulePermission(view=True, edit=True, delete=False),
+            consignes=ModulePermission(view=True, edit=False, delete=False),
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # LOGISTIQUE : Même que PROD mais peut-être avec accès Fournisseurs
