@@ -1198,10 +1198,8 @@ const MESReportsPage = () => {
               </CardContent>
             </Card>
           )}
-        </>
-      )}
 
-      {/* Empty State */}
+      {/* Empty State (in manual tab) */}
       {!reportData && !loading && (
         <Card className="text-center py-16">
           <CardContent>
@@ -1210,6 +1208,8 @@ const MESReportsPage = () => {
             <p className="text-sm text-gray-400">Selectionnez vos criteres et cliquez sur "Generer" pour visualiser les donnees</p>
           </CardContent>
         </Card>
+      )}
+        </>
       )}
     </div>
   );
