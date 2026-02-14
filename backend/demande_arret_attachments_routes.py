@@ -144,7 +144,7 @@ async def download_attachment(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{demande_id}/attachments/{attachment_id}")
+@router.delete("/{demande_id}/attachments/{attachment_id}", response_model=MessageResponse)
 async def delete_attachment(
     demande_id: str,
     attachment_id: str,
