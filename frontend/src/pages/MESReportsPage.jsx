@@ -67,6 +67,24 @@ const MESReportsPage = () => {
   const [showMachineDropdown, setShowMachineDropdown] = useState(false);
   const { toast } = useToast();
 
+  // Scheduled reports state
+  const [activeTab, setActiveTab] = useState('manual'); // 'manual' or 'scheduled'
+  const [scheduledReports, setScheduledReports] = useState([]);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [scheduleForm, setScheduleForm] = useState({
+    name: '',
+    machine_ids: ['all'],
+    report_type: 'all',
+    frequency: 'weekly',
+    day_of_week: 0,
+    day_of_month: 1,
+    hour: 8,
+    minute: 0,
+    recipients: '',
+    format: 'pdf',
+  });
+
   // Load machines
   useEffect(() => {
     const loadMachines = async () => {
@@ -87,6 +105,20 @@ const MESReportsPage = () => {
     };
     loadMachines();
   }, []);
+
+  // Load scheduled reports
+  const loadScheduledReports = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/api/mes/scheduled-reports`, { headers: getHeaders() });
+      setScheduledReports(data);
+    } catch (err) {
+      console.error('Erreur chargement rapports planifies:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadScheduledReports();
+  }, [loadScheduledReports]);
 
   // Calculate date range from period
   const getDateRange = useCallback(() => {
