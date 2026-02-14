@@ -390,7 +390,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             chatLive=ModulePermission(view=True, edit=True, delete=False),
             cameras=ModulePermission(view=True, edit=False, delete=False),  # Logistique peut voir les caméras
-            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False)
+            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False),
+            mes=ModulePermission(view=False, edit=False, delete=False),
+            mesReports=ModulePermission(view=False, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=True, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=True, edit=False, delete=False),
+            demandesArret=ModulePermission(view=True, edit=True, delete=False),
+            consignes=ModulePermission(view=True, edit=False, delete=False),
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # TECHNICIEN : Permissions complètes sur les modules opérationnels
@@ -423,7 +430,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             chatLive=ModulePermission(view=True, edit=True, delete=False),
             cameras=ModulePermission(view=True, edit=True, delete=True),  # Technicien peut gérer les caméras
-            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False)  # Technicien peut voir les analytics
+            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False),  # Technicien peut voir les analytics
+            mes=ModulePermission(view=True, edit=True, delete=False),
+            mesReports=ModulePermission(view=True, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=True, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=True, edit=True, delete=False),
+            demandesArret=ModulePermission(view=True, edit=True, delete=True),
+            consignes=ModulePermission(view=True, edit=True, delete=False),
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False)
         )
     
     # VISUALISEUR : Visualisation uniquement sur tout
