@@ -190,7 +190,7 @@ const Sidebar = ({
             return (
               <button
                 key={`uncategorized-${index}`}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleMenuClick(item)}
                 data-testid={`sidebar-${item.id}`}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   !sidebarOpen ? 'justify-center px-2' : ''
@@ -212,7 +212,16 @@ const Sidebar = ({
                 title={!sidebarOpen ? item.label : ''}
               >
                 <Icon size={20} className="flex-shrink-0" />
-                {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+                {sidebarOpen && (
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    {item.label}
+                    {newMenuIds.includes(item.id) && (
+                      <span className="bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none animate-pulse">
+                        NEW
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
             );
           })}
