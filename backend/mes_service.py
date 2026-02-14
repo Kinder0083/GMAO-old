@@ -429,6 +429,10 @@ class MESService:
     async def mark_all_alerts_read(self):
         await self.db.mes_alerts.update_many({"read": False}, {"$set": {"read": True}})
 
+    async def delete_all_alerts(self):
+        """Supprimer toutes les alertes M.E.S."""
+        await self.db.mes_alerts.delete_many({})
+
     # ==================== PING ====================
 
     async def ping_sensor(self, machine_id: str) -> dict:
