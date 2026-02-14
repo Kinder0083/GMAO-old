@@ -42,6 +42,12 @@ class MESService:
             "sensor_ip": data.get("sensor_ip", ""),
             "theoretical_cadence": float(data.get("theoretical_cadence", 6)),  # cp/min
             "downtime_margin_pct": float(data.get("downtime_margin_pct", 30)),  # %
+            "production_schedule": {
+                "is_24h": bool(data.get("schedule_is_24h", True)),
+                "start_hour": int(data.get("schedule_start_hour", 6)),
+                "end_hour": int(data.get("schedule_end_hour", 22)),
+                "production_days": data.get("schedule_production_days", [0, 1, 2, 3, 4]),  # Mon-Fri
+            },
             "alerts": {
                 "stopped_minutes": int(data.get("alert_stopped_minutes", 5)),
                 "under_cadence": float(data.get("alert_under_cadence", 0)),
