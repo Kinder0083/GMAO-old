@@ -234,14 +234,55 @@ class MESService:
         # Downtime today (sum of gaps > threshold)
         downtime_today = await self._calc_downtime(mid, today_start, now, theoretical, margin_pct)
 
-        # TRS
-        if theoretical > 0:
-            # Theoretical production today
-            hours_since_start = (now - today_start).total_seconds() / 3600
-            theoretical_today = theoretical * 60 * hours_since_start
-            trs = round((count_today / theoretical_today * 100) if theoretical_today > 0 else 0, 1)
+        # ==================== ADVANCED TRS (Level 3) ====================
+        schedule = machine.get("production_schedule", {})
+        is_24h = schedule.get("is_24h", True)
+        start_hour = schedule.get("start_hour", 6)
+        end_hour = schedule.get("end_hour", 22)
+        production_days = schedule.get("production_days", [0, 1, 2, 3, 4])
+
+        # Calculate planned production time today (seconds)
+        today_weekday = now.weekday()  # 0=Monday
+        if today_weekday not in production_days:
+            planned_seconds = 0
+        elif is_24h:
+            planned_seconds = (now - today_start).total_seconds()
         else:
-            trs = 0
+            prod_start = today_start.replace(hour=start_hour)
+            prod_end = today_start.replace(hour=end_hour)
+            if now < prod_start:
+                planned_seconds = 0
+            elif now > prod_end:
+                planned_seconds = (prod_end - prod_start).total_seconds()
+            else:
+                planned_seconds = (now - prod_start).total_seconds()
+
+        # Availability = (Planned - Downtime) / Planned
+        if planned_seconds > 0:
+            operating_seconds = max(planned_seconds - downtime_today, 0)
+            availability = round(operating_seconds / planned_seconds * 100, 1)
+        else:
+            operating_seconds = 0
+            availability = 0
+
+        # Performance = (Actual count / Theoretical count during operating time)
+        if theoretical > 0 and operating_seconds > 0:
+            theoretical_during_uptime = theoretical * (operating_seconds / 60)
+            performance = round(count_today / theoretical_during_uptime * 100, 1) if theoretical_during_uptime > 0 else 0
+            performance = min(performance, 100)  # Cap at 100%
+        else:
+            performance = 0
+
+        # Quality = (Total - Rejects) / Total
+        rejects_total = await self.get_rejects_total(mid, today_start, now)
+        if count_today > 0:
+            good_parts = max(count_today - rejects_total, 0)
+            quality = round(good_parts / count_today * 100, 1)
+        else:
+            quality = 100  # No production = no quality issues
+
+        # TRS = Availability × Performance × Quality (as percentages)
+        trs = round((availability / 100) * (performance / 100) * (quality / 100) * 100, 1)
 
         return {
             "cadence_per_min": count_1min,
@@ -252,7 +293,14 @@ class MESService:
             "downtime_current_seconds": round(downtime_seconds),
             "downtime_today_seconds": round(downtime_today),
             "trs": trs,
+            "trs_availability": availability,
+            "trs_performance": performance,
+            "trs_quality": quality,
+            "rejects_today": rejects_total,
+            "good_parts_today": max(count_today - rejects_total, 0),
             "theoretical_cadence": theoretical,
+            "planned_seconds": round(planned_seconds),
+            "operating_seconds": round(operating_seconds),
             "last_pulse_at": last_pulse.isoformat() if last_pulse else None,
         }
 
