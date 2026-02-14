@@ -432,8 +432,22 @@ class MESService:
     async def _check_alerts(self, machine, current_cadence, now):
         mid = machine["_id"]
         alerts_config = machine.get("alerts", {})
-        theoretical = machine.get("theoretical_cadence", 0)
-        margin_pct = machine.get("downtime_margin_pct", 30)
+
+        # Check if we are within production hours
+        schedule = machine.get("production_schedule", {})
+        is_24h = schedule.get("is_24h", True)
+        start_hour = schedule.get("start_hour", 6)
+        end_hour = schedule.get("end_hour", 22)
+        production_days = schedule.get("production_days", [0, 1, 2, 3, 4])
+
+        today_weekday = now.weekday()
+        if today_weekday not in production_days:
+            return  # Not a production day, skip alerts
+
+        if not is_24h:
+            current_hour = now.hour
+            if current_hour < start_hour or current_hour >= end_hour:
+                return  # Outside production hours, skip alerts
 
         # Check stopped
         stopped_min = alerts_config.get("stopped_minutes", 0)
@@ -443,19 +457,19 @@ class MESService:
         if stopped_min > 0 and last_p:
             elapsed = (now - last_p).total_seconds() / 60
             if elapsed >= stopped_min:
-                await self._create_alert(mid, "STOPPED",
+                await self._create_alert(machine, "STOPPED",
                     f"Machine à l'arrêt depuis {int(elapsed)} min")
 
         # Check under cadence
         under = alerts_config.get("under_cadence", 0)
         if under > 0 and current_cadence < under and current_cadence > 0:
-            await self._create_alert(mid, "UNDER_CADENCE",
+            await self._create_alert(machine, "UNDER_CADENCE",
                 f"Sous-cadence: {current_cadence} cp/min (seuil: {under})")
 
         # Check over cadence
         over = alerts_config.get("over_cadence", 0)
         if over > 0 and current_cadence > over:
-            await self._create_alert(mid, "OVER_CADENCE",
+            await self._create_alert(machine, "OVER_CADENCE",
                 f"Sur-cadence: {current_cadence} cp/min (seuil: {over})")
 
         # Check daily target
@@ -466,7 +480,7 @@ class MESService:
                 "machine_id": mid, "timestamp": {"$gte": today_start}
             })
             if count_today >= target:
-                await self._create_alert(mid, "TARGET_REACHED",
+                await self._create_alert(machine, "TARGET_REACHED",
                     f"Objectif journalier atteint: {count_today}/{target}")
 
         # Check no signal
@@ -474,8 +488,18 @@ class MESService:
         if no_signal_min > 0 and last_p:
             elapsed_ns = (now - last_p).total_seconds() / 60
             if elapsed_ns >= no_signal_min:
-                await self._create_alert(mid, "NO_SIGNAL",
+                await self._create_alert(machine, "NO_SIGNAL",
                     f"Pas de signal depuis {int(elapsed_ns)} min")
+
+        # Check TRS below target
+        trs_target = machine.get("trs_target", 0)
+        if trs_target > 0:
+            metrics = await self.get_realtime_metrics(str(mid))
+            current_trs = metrics.get("trs", 0)
+            # Only alert if there is actual planned production (avoid false alerts)
+            if metrics.get("planned_seconds", 0) > 300 and current_trs < trs_target:
+                await self._create_alert(machine, "TRS_BELOW_TARGET",
+                    f"TRS sous objectif: {current_trs}% (objectif: {trs_target}%)")
 
     async def _create_alert(self, machine_id, alert_type, message):
         # Don't create duplicate alerts within 5 minutes
