@@ -97,7 +97,6 @@ class MESService:
                 update[path] = cast(data[key])
         if "schedule_production_days" in data:
             update["production_schedule.production_days"] = [int(d) for d in data["schedule_production_days"]]
-                update[path] = cast(data[key])
 
         if "equipment_id" in data:
             update["equipment_id"] = ObjectId(data["equipment_id"])
