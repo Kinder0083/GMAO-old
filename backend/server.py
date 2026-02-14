@@ -9383,24 +9383,41 @@ async def startup_scheduler():
             logger.info(f"✅ Permissions migrées pour {perm_updated} rôle(s)")
         
         # Migrer le manuel utilisateur (ajouter chapitres manquants)
-        from manual_migration_add_chapters import NEW_CHAPTERS, NEW_SECTIONS
-        manual_added = 0
-        now_utc = datetime.now(timezone.utc)
-        for chapter in NEW_CHAPTERS:
-            existing = await db.manual_chapters.find_one({"id": chapter["id"]})
-            if not existing:
-                ch = {**chapter, "created_at": now_utc.isoformat(), "updated_at": now_utc.isoformat()}
-                await db.manual_chapters.insert_one(ch)
-                manual_added += 1
-        for section in NEW_SECTIONS:
-            existing = await db.manual_sections.find_one({"id": section["id"]})
-            if not existing:
-                sec = {**section, "parent_id": None, "target_roles": [], "target_modules": [], "images": [], "video_url": None, "created_at": now_utc.isoformat(), "updated_at": now_utc.isoformat()}
-                if "keywords" not in sec:
-                    sec["keywords"] = []
-                await db.manual_sections.insert_one(sec)
-        if manual_added > 0:
-            logger.info(f"✅ Manuel utilisateur: {manual_added} chapitre(s) ajouté(s)")
+        import json as json_lib
+        manual_json_path = os.path.join(os.path.dirname(__file__), "manual_default_content.json")
+        if os.path.exists(manual_json_path):
+            with open(manual_json_path, "r", encoding="utf-8") as f:
+                manual_data = json_lib.load(f)
+            now_utc = datetime.now(timezone.utc)
+            manual_ch_added = 0
+            manual_sec_added = 0
+            for chapter in manual_data.get("chapters", []):
+                existing = await db.manual_chapters.find_one({"id": chapter["id"]})
+                if not existing:
+                    chapter.setdefault("created_at", now_utc.isoformat())
+                    chapter.setdefault("updated_at", now_utc.isoformat())
+                    await db.manual_chapters.insert_one(chapter)
+                    manual_ch_added += 1
+            for section in manual_data.get("sections", []):
+                existing = await db.manual_sections.find_one({"id": section["id"]})
+                if not existing:
+                    section.setdefault("created_at", now_utc.isoformat())
+                    section.setdefault("updated_at", now_utc.isoformat())
+                    await db.manual_sections.insert_one(section)
+                    manual_sec_added += 1
+            if manual_ch_added > 0 or manual_sec_added > 0:
+                existing_version = await db.manual_versions.find_one({"is_current": True})
+                if not existing_version:
+                    await db.manual_versions.insert_one({
+                        "id": f"init-{now_utc.strftime('%Y%m%d%H%M%S')}",
+                        "version": "2.3",
+                        "release_date": now_utc.isoformat(),
+                        "changes": ["Initialisation complete du manuel utilisateur"],
+                        "author_id": "system",
+                        "author_name": "Initialisation systeme",
+                        "is_current": True
+                    })
+                logger.info(f"✅ Manuel utilisateur: {manual_ch_added} chapitre(s) et {manual_sec_added} section(s) ajouté(s)")
         
         # Migrer les menus utilisateurs (ajouter menus manquants)
         complete_menu_ids = [
