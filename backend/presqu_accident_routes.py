@@ -270,7 +270,7 @@ async def update_presqu_accident_item(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/items/{item_id}")
+@router.delete("/items/{item_id}", response_model=SuccessResponse)
 async def delete_presqu_accident_item(
     item_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -716,7 +716,7 @@ async def download_attachment(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/items/{item_id}/attachments/{attachment_id}")
+@router.delete("/items/{item_id}/attachments/{attachment_id}", response_model=SuccessResponse)
 async def delete_attachment(
     item_id: str,
     attachment_id: str,
