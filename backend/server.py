@@ -9420,26 +9420,64 @@ async def startup_scheduler():
                 logger.info(f"✅ Manuel utilisateur: {manual_ch_added} chapitre(s) et {manual_sec_added} section(s) ajouté(s)")
         
         # Migrer les menus utilisateurs (ajouter menus manquants)
-        complete_menu_ids = [
-            "dashboard", "service-dashboard", "chat-live", "intervention-requests",
-            "work-orders", "improvement-requests", "improvements", "preventive-maintenance",
-            "planning-mprev", "assets", "inventory", "purchase-requests", "locations",
-            "meters", "surveillance-plan", "surveillance-rapport", "weekly-reports",
-            "presqu-accident", "presqu-accident-rapport", "documentations", "reports",
-            "team-management", "cameras", "mes", "mes-reports", "analytics-checklists",
-            "people", "planning", "vendors", "purchase-history", "import-export",
-            "sensors", "iot-dashboard", "mqtt-logs", "whiteboard"
-        ]
+        complete_menu_ref = {
+            "dashboard": {"label": "Tableau de bord", "path": "/dashboard", "icon": "LayoutDashboard", "module": "dashboard"},
+            "service-dashboard": {"label": "Dashboard Service", "path": "/service-dashboard", "icon": "Presentation", "module": "serviceDashboard"},
+            "chat-live": {"label": "Chat Live", "path": "/chat-live", "icon": "Mail", "module": "chatLive"},
+            "intervention-requests": {"label": "Demandes d'inter.", "path": "/intervention-requests", "icon": "MessageSquare", "module": "interventionRequests"},
+            "work-orders": {"label": "Ordres de travail", "path": "/work-orders", "icon": "ClipboardList", "module": "workOrders"},
+            "improvement-requests": {"label": "Demandes d'amél.", "path": "/improvement-requests", "icon": "Lightbulb", "module": "improvementRequests"},
+            "improvements": {"label": "Améliorations", "path": "/improvements", "icon": "Sparkles", "module": "improvements"},
+            "preventive-maintenance": {"label": "Maintenance prev.", "path": "/preventive-maintenance", "icon": "Calendar", "module": "preventiveMaintenance"},
+            "planning-mprev": {"label": "Planning M.Prev.", "path": "/planning-mprev", "icon": "Calendar", "module": "planningMprev"},
+            "assets": {"label": "Équipements", "path": "/assets", "icon": "Wrench", "module": "assets"},
+            "inventory": {"label": "Inventaire", "path": "/inventory", "icon": "Package", "module": "inventory"},
+            "purchase-requests": {"label": "Demandes d'Achat", "path": "/purchase-requests", "icon": "ShoppingCart", "module": "purchaseRequests"},
+            "locations": {"label": "Zones", "path": "/locations", "icon": "MapPin", "module": "locations"},
+            "meters": {"label": "Compteurs", "path": "/meters", "icon": "Gauge", "module": "meters"},
+            "surveillance-plan": {"label": "Plan de Surveillance", "path": "/surveillance-plan", "icon": "Eye", "module": "surveillance"},
+            "surveillance-rapport": {"label": "Rapport Surveillance", "path": "/surveillance-rapport", "icon": "FileText", "module": "surveillanceRapport"},
+            "weekly-reports": {"label": "Rapports Hebdo.", "path": "/weekly-reports", "icon": "FileText", "module": "weeklyReports"},
+            "presqu-accident": {"label": "Presqu'accident", "path": "/presqu-accident", "icon": "AlertTriangle", "module": "presquaccident"},
+            "presqu-accident-rapport": {"label": "Rapport P.accident", "path": "/presqu-accident-rapport", "icon": "FileText", "module": "presquaccidentRapport"},
+            "documentations": {"label": "Documentations", "path": "/documentations", "icon": "FolderOpen", "module": "documentations"},
+            "reports": {"label": "Rapports", "path": "/reports", "icon": "BarChart3", "module": "reports"},
+            "team-management": {"label": "Gestion d'équipe", "path": "/team-management", "icon": "UserCog", "module": "timeTracking"},
+            "cameras": {"label": "Caméras", "path": "/cameras", "icon": "Camera", "module": "cameras"},
+            "mes": {"label": "M.E.S.", "path": "/mes", "icon": "Zap", "module": "mes"},
+            "mes-reports": {"label": "Rapports M.E.S.", "path": "/mes-reports", "icon": "FileBarChart", "module": "mesReports"},
+            "analytics-checklists": {"label": "Analytics Checklists", "path": "/analytics/checklists", "icon": "BarChart3", "module": "analyticsChecklists"},
+            "people": {"label": "Utilisateurs", "path": "/people", "icon": "Users", "module": "people"},
+            "planning": {"label": "Planning", "path": "/planning", "icon": "Calendar", "module": "planning"},
+            "vendors": {"label": "Fournisseurs", "path": "/vendors", "icon": "ShoppingCart", "module": "vendors"},
+            "purchase-history": {"label": "Historique Achat", "path": "/purchase-history", "icon": "ShoppingBag", "module": "purchaseHistory"},
+            "import-export": {"label": "Import / Export", "path": "/import-export", "icon": "Database", "module": "importExport"},
+            "sensors": {"label": "Capteurs MQTT", "path": "/sensors", "icon": "Activity", "module": "sensors"},
+            "iot-dashboard": {"label": "Dashboard IoT", "path": "/iot-dashboard", "icon": "BarChart3", "module": "iotDashboard"},
+            "mqtt-logs": {"label": "Logs MQTT", "path": "/mqtt-logs", "icon": "Terminal", "module": "mqttLogs"},
+            "whiteboard": {"label": "Tableau d'affichage", "path": "/whiteboard", "icon": "Presentation", "module": "whiteboard"},
+        }
         user_prefs = await db.user_preferences.find({}).to_list(length=None)
         menus_migrated = 0
         for pref in user_prefs:
             menu_items = pref.get("menu_items", [])
             existing_ids = {item.get("id") for item in menu_items}
-            missing_ids = [mid for mid in complete_menu_ids if mid not in existing_ids]
-            if missing_ids:
-                max_order = max((item.get("order", 0) for item in menu_items), default=0)
-                for i, mid in enumerate(missing_ids):
-                    menu_items.append({"id": mid, "visible": True, "favorite": False, "order": max_order + 1 + i, "category_id": None})
+            needs_update = False
+            # Fix existing items that are missing required fields
+            for item in menu_items:
+                ref = complete_menu_ref.get(item.get("id"))
+                if ref:
+                    for field in ["label", "path", "icon", "module"]:
+                        if field not in item or not item[field]:
+                            item[field] = ref[field]
+                            needs_update = True
+            # Add missing menu items
+            max_order = max((item.get("order", 0) for item in menu_items), default=0)
+            for i, (mid, ref) in enumerate(complete_menu_ref.items()):
+                if mid not in existing_ids:
+                    menu_items.append({"id": mid, "label": ref["label"], "path": ref["path"], "icon": ref["icon"], "module": ref["module"], "visible": True, "favorite": False, "order": max_order + 1 + i, "category_id": None})
+                    needs_update = True
+            if needs_update:
                 await db.user_preferences.update_one({"_id": pref["_id"]}, {"$set": {"menu_items": menu_items}})
                 menus_migrated += 1
         if menus_migrated > 0:
