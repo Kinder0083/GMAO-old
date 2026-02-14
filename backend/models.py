@@ -237,7 +237,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             chatLive=ModulePermission(view=True, edit=True, delete=False),
             cameras=ModulePermission(view=True, edit=False, delete=False),  # QHSE peut voir les caméras
-            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False)  # QHSE peut voir les analytics
+            analyticsChecklists=ModulePermission(view=True, edit=False, delete=False),  # QHSE peut voir les analytics
+            mes=ModulePermission(view=True, edit=False, delete=False),
+            mesReports=ModulePermission(view=True, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=False, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=True, edit=False, delete=False),
+            demandesArret=ModulePermission(view=True, edit=True, delete=False),
+            consignes=ModulePermission(view=True, edit=True, delete=False),
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False)
         )
     
     # LABO et ADV : Demande d'inter. en visualisation et modification
@@ -266,7 +273,14 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             journal=ModulePermission(view=False, edit=False, delete=False),
             chatLive=ModulePermission(view=True, edit=True, delete=False),
             cameras=ModulePermission(view=False, edit=False, delete=False),
-            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False)
+            analyticsChecklists=ModulePermission(view=False, edit=False, delete=False),
+            mes=ModulePermission(view=False, edit=False, delete=False),
+            mesReports=ModulePermission(view=False, edit=False, delete=False),
+            serviceDashboard=ModulePermission(view=False, edit=False, delete=False),
+            weeklyReports=ModulePermission(view=False, edit=False, delete=False),
+            demandesArret=ModulePermission(view=False, edit=False, delete=False),
+            consignes=ModulePermission(view=True, edit=False, delete=False),
+            autorisationsParticulieres=ModulePermission(view=False, edit=False, delete=False)
         )
     
     # PROD (RSP_PROD et PROD) : Demande d'inter./Demandes d'amél./Ordres de travail/Améliorations/Equipement en visualisation et modification
