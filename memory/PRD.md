@@ -1,56 +1,87 @@
-# GMAO Iris - PRD
+# PRD - GMAO Atlas / M.E.S. System
 
-## Description
-Application GMAO full-stack (Python/FastAPI + React + MongoDB) déployée sur Proxmox VM.
+## Dernière mise à jour
+**Date**: 2026-02-14
+**Version**: 1.5.1
+
+## Problem Statement
+Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète avec module M.E.S. (Manufacturing Execution System) pour le monitoring de production en temps réel.
+
+## Core Requirements
+
+### M.E.S. Module (P0)
+- [x] Backend service complet (`mes_service.py`)
+- [x] API routes (`mes_routes.py`)
+- [x] Frontend UI (`MESPage.jsx`)
+- [x] Correction bug MQTT - race condition (2026-02-14)
+- [ ] **En attente test utilisateur** : Configuration MQTT requise
+
+### Issues en cours
+1. **Import Excel (P1)** : Données importées non liées correctement
+2. **Documentation page (P2)** : Utilisateurs importés non sélectionnables
 
 ## Architecture
-- **Backend**: Python/FastAPI, Supervisor (`gmao-iris-backend`), port 8001
-- **Frontend**: React, servi par nginx (fichiers statiques `frontend/build/`)
-- **Base de données**: MongoDB
-- **Déploiement**: Proxmox VM à `/opt/gmao-iris`, venv dans `backend/venv`
 
-## Travaux réalisés
+### Backend (FastAPI + MongoDB)
+```
+/app/backend/
+├── server.py              # App principale + startup events
+├── mes_service.py         # Service M.E.S. (modifié 2026-02-14)
+├── mes_routes.py          # API M.E.S.
+├── mqtt_manager.py        # Gestionnaire MQTT
+└── ...autres modules
+```
 
-### 2026-02-08/09
-- Correction miniatures Tapo (go2rtc port 1984)
-- Correction processus de mise à jour :
-  - Restart détaché (script bash avec délai 3s + nginx reload)
-  - `version.json` mis à jour dynamiquement (plus de version hardcodée)
-  - `update_manager.py` et `update_service.py` lisent la version depuis `version.json`
-  - `waitForBackendReady` simplifié (détecte disponibilité, pas version)
-  - Backup MongoDB non-bloquant
-  - Détection venv élargie (backend/venv + racine/venv)
-- Nettoyage projet (~110 fichiers supprimés)
-- Script d'installation v1.5.0
-- Suppression onglets Caméras "Vignettes"/"Live"
-- Correction import Excel "undefined" (mapping feuilles françaises)
+### Frontend (React + Mantine UI)
+```
+/app/frontend/src/
+├── pages/
+│   ├── MESPage/MESPage.jsx    # Page M.E.S. complète
+│   └── IoTDashboard/          # Dashboard IoT (timezone corrigé)
+└── components/
+```
 
-## Causes racines du Bad Gateway
-1. `supervisorctl restart all` tuait le backend AVANT l'envoi de la réponse HTTP → 502
-2. Version hardcodée `"1.5.0"` vs version GitHub `"latest-xxx"` → `waitForBackendReady` bouclait 40x sans match → timeout
-3. `nginx -s reload` jamais exécuté après `yarn build` → anciens assets JS servis → erreurs
+### Collections MongoDB (M.E.S.)
+- `mes_machines`: Configuration machines
+- `mes_pulses`: Impulsions reçues
+- `mes_cadence_history`: Historique cadence/minute
+- `mes_alerts`: Alertes générées
+- `mqtt_config`: Configuration broker MQTT
 
-### 2026-02-10
-- **Page M.E.S. - Frontend complet** :
-  - Liste de machines avec cartes KPI temps réel (cadence, production, TRS)
-  - Dashboard machine avec 8 métriques (cp/min, cp/h, prod jour, prod 24h, arrêt actuel, arrêt jour, TRS, cadence théorique)
-  - Graphique historique de cadence (Recharts LineChart) avec sélecteur de période (6h/12h/24h/7d/personnalisé)
-  - Panneau d'alertes avec couleurs par type, badge compteur, marquer comme lu
-  - Modal de configuration (Production, Capteur, Alertes)
-  - Modal de création de machine avec sélection d'équipement GMAO
-  - Bouton Simuler impulsion et Ping capteur
-  - Fix: MetricCard utilise une map de couleurs statique (corrige le purge Tailwind)
-  - Fix: MachineCard utilise `group` class pour le bouton supprimer
-  - Fix: Graphique cadence utilise le timezone offset configurable depuis Parametres Speciaux (NTP/Fuseau Horaire)
-  - Fix: Timestamps alertes appliquent aussi l'offset timezone
-  - Fix: Menu sidebar - ajout entree M.E.S. dans defaultMenuItems de MainLayout.jsx
-  - Fix: Callback MQTT incompatible (signature paho vs mqtt_manager) - les impulsions capteur n'etaient pas traitees
-  - Fix: Race condition souscription MQTT - topics en file d'attente si MQTT pas encore connecte, hook auto-resubscribe
-  - Tests: 100% backend (15/15) + 100% frontend
+## What's Been Implemented
 
-## Tâches en attente
-- (P1) Bug import Excel - données importées non affichées correctement
-- (P2) Page Documentation - vérifier chargement utilisateurs importés
-- (P2) Refactoring response_model Pydantic retirés temporairement
-- (P2) TRS avancé
-- (P2) Rapports/analyses historiques M.E.S.
+### 2026-02-14 - Fix MQTT Race Condition
+- Réorganisation ordre démarrage : MQTT connect AVANT subscribe M.E.S.
+- Hook reconnexion robuste `_setup_mqtt_reconnect_hook()`
+- Logging détaillé pour debug
+- Test validé via simulation de pulses
+
+### 2026-02-13 - M.E.S. Frontend Complete
+- Interface complète avec KPI cards, graphique Recharts
+- Panel alertes et sélection machines
+- Correction timezone sur graphiques
+
+## Prioritized Backlog
+
+### P0 (Bloquant)
+- [ ] Test utilisateur MQTT M.E.S.
+
+### P1 (Important)
+- [ ] Fix import Excel
+- [ ] Documentation page users
+
+### P2 (Nice to have)
+- [ ] Refactoring `formatLocalDate` → utils
+- [ ] Amélioration calcul TRS
+- [ ] Reporting historique M.E.S.
+
+## Credentials de test
+- `admin@test.com` / `Admin123!`
+- `buenogy@gmail.com` / `Admin2024!`
+
+## Key API Endpoints
+- `POST /api/mes/machines` - Créer machine
+- `GET /api/mes/machines/{id}/metrics` - Métriques temps réel
+- `POST /api/mes/machines/{id}/simulate-pulse` - Test simulation
+- `POST /api/mqtt/config` - Config MQTT
+- `POST /api/mqtt/connect` - Connexion broker
