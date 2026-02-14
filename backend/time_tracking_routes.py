@@ -746,7 +746,7 @@ async def get_absences(
     return [serialize_doc(a) for a in absences]
 
 
-@router.delete("/absences/{absence_id}")
+@router.delete("/absences/{absence_id}", response_model=MessageResponse)
 async def delete_absence(
     absence_id: str,
     current_user: dict = Depends(get_current_user)
