@@ -8569,6 +8569,18 @@ from mes_routes import router as mes_router, init_mes_routes, mes_service as _me
 init_mes_routes(db, mqtt_manager)
 api_router.include_router(mes_router)
 
+# M.E.S Report Scheduler (envoi automatique des rapports)
+from mes_report_scheduler import init_mes_report_scheduler
+import email_service as email_service_module
+
+@app.on_event("startup")
+async def start_mes_report_scheduler():
+    try:
+        await init_mes_report_scheduler(db, _mes_svc_ref, email_service_module)
+        logger.info("Scheduler rapports M.E.S. demarre")
+    except Exception as e:
+        logger.warning(f"Erreur demarrage scheduler rapports M.E.S.: {e}")
+
 
 # AI Chatbot routes
 from ai_chat_routes import router as ai_router, init_ai_routes
