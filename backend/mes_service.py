@@ -501,23 +501,33 @@ class MESService:
         """Callback MQTT - reçoit les impulsions
         Signature: (topic: str, payload: str, qos: int) depuis mqtt_manager._on_message
         """
+        logger.info(f"[MES] 📥 Message MQTT reçu: topic={topic}, payload={payload}, qos={qos}")
+        
         try:
+            # Convertir le payload en entier
             value = int(float(str(payload).strip()))
-            logger.info(f"[MES] Pulse MQTT recu: topic={topic}, value={value}")
+            logger.info(f"[MES] ✅ Pulse MQTT parsé: topic={topic}, value={value}")
+            
+            # Exécuter record_pulse de manière asynchrone
             import asyncio
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
+                    logger.info(f"[MES] Enregistrement pulse via ensure_future...")
                     asyncio.ensure_future(self.record_pulse(topic, value))
                 else:
+                    logger.info(f"[MES] Enregistrement pulse via run_until_complete...")
                     loop.run_until_complete(self.record_pulse(topic, value))
-            except RuntimeError:
+            except RuntimeError as re:
                 # No event loop in current thread - create one
+                logger.info(f"[MES] Création d'un nouveau event loop pour record_pulse: {re}")
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 loop.run_until_complete(self.record_pulse(topic, value))
+        except ValueError as ve:
+            logger.warning(f"[MES] ⚠️ Payload non numérique: {payload} -> {ve}")
         except Exception as e:
-            logger.error(f"[MES] Erreur traitement message MQTT: {e}")
+            logger.error(f"[MES] ❌ Erreur traitement message MQTT: {e}")
             import traceback
             logger.error(traceback.format_exc())
 
