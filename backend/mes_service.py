@@ -313,6 +313,7 @@ class MESService:
             "downtime_current_seconds": round(downtime_seconds),
             "downtime_today_seconds": round(downtime_today),
             "trs": trs,
+            "trs_target": machine.get("trs_target", 85),
             "trs_availability": availability,
             "trs_performance": performance,
             "trs_quality": quality,
