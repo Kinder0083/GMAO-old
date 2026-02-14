@@ -3,7 +3,7 @@ Routes API pour la gestion MQTT
 """
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
-from models import MQTTConfig, MQTTPublish, MQTTSubscribe
+from models import MQTTConfig, MQTTPublish, MQTTSubscribe, SuccessResponse
 from dependencies import get_current_user, get_current_admin_user
 from mqtt_manager import mqtt_manager
 import logging
