@@ -5,7 +5,8 @@ import { useToast } from '../hooks/use-toast';
 import {
   FileText, Download, Calendar, Filter, BarChart3, TrendingUp,
   Package, AlertTriangle, ShieldAlert, Loader2, RefreshCw,
-  ChevronDown, CheckCircle2, XCircle, Clock, Target, Gauge
+  ChevronDown, CheckCircle2, XCircle, Clock, Target, Gauge,
+  Mail, Plus, Trash2, Play, Settings, Bell
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import {
@@ -33,6 +34,22 @@ const PERIODS = [
   { id: 'month', label: 'Ce mois' },
   { id: 'last_month', label: 'Mois dernier' },
   { id: 'custom', label: 'Personnalise' },
+];
+
+const FREQUENCIES = [
+  { id: 'daily', label: 'Quotidien' },
+  { id: 'weekly', label: 'Hebdomadaire' },
+  { id: 'monthly', label: 'Mensuel' },
+];
+
+const DAYS_OF_WEEK = [
+  { id: 0, label: 'Lundi' },
+  { id: 1, label: 'Mardi' },
+  { id: 2, label: 'Mercredi' },
+  { id: 3, label: 'Jeudi' },
+  { id: 4, label: 'Vendredi' },
+  { id: 5, label: 'Samedi' },
+  { id: 6, label: 'Dimanche' },
 ];
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
