@@ -793,33 +793,138 @@ const SettingsField = ({ label, field, type = 'number', unit = '', value, onChan
   </div>
 );
 
-// ==================== SETTINGS MODAL ====================
+// ==================== SETTINGS MODAL (with Product References) ====================
 const MachineSettingsModal = ({ machine, onClose }) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user.role === 'ADMIN';
   const schedule = machine.production_schedule || {};
   const emailNotif = machine.email_notifications || {};
-  const [form, setForm] = useState({
-    theoretical_cadence: machine.theoretical_cadence || 6,
-    downtime_margin_pct: machine.downtime_margin_pct || 30,
-    trs_target: machine.trs_target ?? 85,
+
+  const buildFormFromSource = (src) => ({
+    theoretical_cadence: src.theoretical_cadence || 6,
+    downtime_margin_pct: src.downtime_margin_pct || 30,
+    trs_target: src.trs_target ?? 85,
     sensor_ip: machine.sensor_ip || '',
     mqtt_topic: machine.mqtt_topic || '',
-    alert_stopped_minutes: machine.alerts?.stopped_minutes || 5,
-    alert_under_cadence: machine.alerts?.under_cadence || 0,
-    alert_over_cadence: machine.alerts?.over_cadence || 0,
-    alert_daily_target: machine.alerts?.daily_target || 0,
-    alert_no_signal_minutes: machine.alerts?.no_signal_minutes || 10,
-    schedule_is_24h: schedule.is_24h !== undefined ? schedule.is_24h : true,
-    schedule_start_hour: schedule.start_hour ?? 6,
-    schedule_end_hour: schedule.end_hour ?? 22,
-    schedule_production_days: schedule.production_days ?? [0, 1, 2, 3, 4],
-    email_enabled: emailNotif.enabled || false,
-    email_recipients: emailNotif.recipients || [],
-    email_alert_types: emailNotif.alert_types || [],
-    email_delay_minutes: emailNotif.delay_minutes ?? 5,
+    alert_stopped_minutes: (src.alerts || src)?.alert_stopped_minutes ?? src.alerts?.stopped_minutes ?? 5,
+    alert_under_cadence: (src.alerts || src)?.alert_under_cadence ?? src.alerts?.under_cadence ?? 0,
+    alert_over_cadence: (src.alerts || src)?.alert_over_cadence ?? src.alerts?.over_cadence ?? 0,
+    alert_daily_target: (src.alerts || src)?.alert_daily_target ?? src.alerts?.daily_target ?? 0,
+    alert_no_signal_minutes: (src.alerts || src)?.alert_no_signal_minutes ?? src.alerts?.no_signal_minutes ?? 10,
+    schedule_is_24h: (src.production_schedule || src)?.schedule_is_24h ?? (src.production_schedule || schedule)?.is_24h ?? true,
+    schedule_start_hour: (src.production_schedule || src)?.schedule_start_hour ?? (src.production_schedule || schedule)?.start_hour ?? 6,
+    schedule_end_hour: (src.production_schedule || src)?.schedule_end_hour ?? (src.production_schedule || schedule)?.end_hour ?? 22,
+    schedule_production_days: (src.production_schedule || schedule)?.production_days ?? [0, 1, 2, 3, 4],
+    email_enabled: (src.email_notifications || emailNotif)?.enabled ?? false,
+    email_recipients: (src.email_notifications || emailNotif)?.recipients ?? [],
+    email_alert_types: (src.email_notifications || emailNotif)?.alert_types ?? [],
+    email_delay_minutes: (src.email_notifications || emailNotif)?.delay_minutes ?? 5,
   });
+
+  const [form, setForm] = useState(buildFormFromSource(machine));
   const [newEmail, setNewEmail] = useState('');
   const [saving, setSaving] = useState(false);
+  const [references, setReferences] = useState([]);
+  const [selectedRefId, setSelectedRefId] = useState(machine.active_reference_id || '');
+  const [confirmDialog, setConfirmDialog] = useState(null); // {type, title, message, onConfirm}
+  const [refNameInput, setRefNameInput] = useState('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    axios.get(`${API}/api/mes/product-references`, { headers: getHeaders() })
+      .then(r => setReferences(r.data))
+      .catch(() => {});
+  }, []);
+
+  const handleRefSelect = async (refId) => {
+    if (!refId) return;
+    setSelectedRefId(refId);
+    try {
+      const { data } = await axios.post(`${API}/api/mes/machines/${machine.id}/select-reference`,
+        { reference_id: refId }, { headers: getHeaders() });
+      const ref = references.find(r => r.id === refId);
+      if (ref) {
+        setForm(prev => ({
+          ...prev,
+          theoretical_cadence: ref.theoretical_cadence || prev.theoretical_cadence,
+          downtime_margin_pct: ref.downtime_margin_pct || prev.downtime_margin_pct,
+          trs_target: ref.trs_target ?? prev.trs_target,
+          alert_stopped_minutes: ref.alerts?.stopped_minutes ?? prev.alert_stopped_minutes,
+          alert_under_cadence: ref.alerts?.under_cadence ?? prev.alert_under_cadence,
+          alert_over_cadence: ref.alerts?.over_cadence ?? prev.alert_over_cadence,
+          alert_daily_target: ref.alerts?.daily_target ?? prev.alert_daily_target,
+          alert_no_signal_minutes: ref.alerts?.no_signal_minutes ?? prev.alert_no_signal_minutes,
+          schedule_is_24h: ref.production_schedule?.is_24h ?? prev.schedule_is_24h,
+          schedule_start_hour: ref.production_schedule?.start_hour ?? prev.schedule_start_hour,
+          schedule_end_hour: ref.production_schedule?.end_hour ?? prev.schedule_end_hour,
+          schedule_production_days: ref.production_schedule?.production_days ?? prev.schedule_production_days,
+          email_enabled: ref.email_notifications?.enabled ?? prev.email_enabled,
+          email_recipients: ref.email_notifications?.recipients ?? prev.email_recipients,
+          email_alert_types: ref.email_notifications?.alert_types ?? prev.email_alert_types,
+          email_delay_minutes: ref.email_notifications?.delay_minutes ?? prev.email_delay_minutes,
+        }));
+      }
+      toast({ title: 'Reference appliquee' });
+    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+  };
+
+  const saveAsNewRef = () => {
+    setRefNameInput('');
+    setConfirmDialog({
+      type: 'create',
+      title: 'Nouvelle reference produite',
+      message: 'Entrez le nom de la nouvelle reference. Les parametres actuels seront sauvegardes.',
+      onConfirm: async (name) => {
+        try {
+          const payload = { name, ...form };
+          const { data } = await axios.post(`${API}/api/mes/product-references`, payload, { headers: getHeaders() });
+          setReferences(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+          setSelectedRefId(data.id);
+          await axios.post(`${API}/api/mes/machines/${machine.id}/select-reference`,
+            { reference_id: data.id }, { headers: getHeaders() });
+          toast({ title: 'Reference creee et appliquee' });
+        } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+        setConfirmDialog(null);
+      }
+    });
+  };
+
+  const updateCurrentRef = () => {
+    if (!selectedRefId) return;
+    const ref = references.find(r => r.id === selectedRefId);
+    setConfirmDialog({
+      type: 'confirm',
+      title: 'Modifier la reference',
+      message: `Voulez-vous mettre a jour la reference "${ref?.name}" avec les parametres actuels ? Cela affectera toutes les machines utilisant cette reference.`,
+      onConfirm: async () => {
+        try {
+          const { data } = await axios.put(`${API}/api/mes/product-references/${selectedRefId}`, form, { headers: getHeaders() });
+          setReferences(prev => prev.map(r => r.id === selectedRefId ? data : r));
+          toast({ title: 'Reference mise a jour' });
+        } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+        setConfirmDialog(null);
+      }
+    });
+  };
+
+  const deleteCurrentRef = () => {
+    if (!selectedRefId) return;
+    const ref = references.find(r => r.id === selectedRefId);
+    setConfirmDialog({
+      type: 'confirm',
+      title: 'Supprimer la reference',
+      message: `Etes-vous sur de vouloir supprimer la reference "${ref?.name}" ? Les machines utilisant cette reference seront deliees.`,
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API}/api/mes/product-references/${selectedRefId}`, { headers: getHeaders() });
+          setReferences(prev => prev.filter(r => r.id !== selectedRefId));
+          setSelectedRefId('');
+          toast({ title: 'Reference supprimee' });
+        } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+        setConfirmDialog(null);
+      }
+    });
+  };
 
   const save = async () => {
     setSaving(true);
@@ -827,7 +932,7 @@ const MachineSettingsModal = ({ machine, onClose }) => {
       await axios.put(`${API}/api/mes/machines/${machine.id}`, form, { headers: getHeaders() });
       toast({ title: 'Parametres sauvegardes' });
       onClose();
-    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+    } catch (err) { toast({ title: err.response?.data?.detail || 'Erreur', variant: 'destructive' }); }
     setSaving(false);
   };
 
@@ -835,6 +940,8 @@ const MachineSettingsModal = ({ machine, onClose }) => {
     const val = type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
     setForm(prev => ({ ...prev, [field]: val }));
   };
+
+  const readOnly = !isAdmin;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" data-testid="mes-settings-modal">
@@ -844,57 +951,93 @@ const MachineSettingsModal = ({ machine, onClose }) => {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
         </div>
         <div className="px-6 py-4 space-y-4">
+          {/* Reference Selector */}
+          <div className="space-y-2 p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg" data-testid="reference-selector-section">
+            <label className="text-xs font-semibold text-gray-700">Reference Produite</label>
+            <select value={selectedRefId}
+              onChange={e => handleRefSelect(e.target.value)}
+              className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500"
+              data-testid="reference-select">
+              <option value="">-- Aucune reference --</option>
+              {references.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            {isAdmin && (
+              <div className="flex gap-2 mt-1">
+                <button onClick={saveAsNewRef} data-testid="new-reference-btn"
+                  className="px-2.5 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1">
+                  <Plus className="h-3 w-3" /> Nouvelle
+                </button>
+                {selectedRefId && (
+                  <>
+                    <button onClick={updateCurrentRef} data-testid="update-reference-btn"
+                      className="px-2.5 py-1 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1">
+                      <Settings className="h-3 w-3" /> Modifier
+                    </button>
+                    <button onClick={deleteCurrentRef} data-testid="delete-reference-btn"
+                      className="px-2.5 py-1 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-1">
+                      <Trash2 className="h-3 w-3" /> Supprimer
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Production */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Production</h4>
             <div className="grid grid-cols-2 gap-3">
-              <SettingsField label="Cadence theorique" field="theoretical_cadence" unit="cp/min" 
-                value={form.theoretical_cadence} onChange={handleChange('theoretical_cadence', 'number')} />
-              <SettingsField label="Marge arret" field="downtime_margin_pct" unit="%" 
-                value={form.downtime_margin_pct} onChange={handleChange('downtime_margin_pct', 'number')} />
-              <SettingsField label="Objectif TRS" field="trs_target" unit="%" 
-                value={form.trs_target} onChange={handleChange('trs_target', 'number')} />
+              <SettingsField label="Cadence theorique" field="theoretical_cadence" unit="cp/min"
+                value={form.theoretical_cadence} onChange={handleChange('theoretical_cadence', 'number')} readOnly={readOnly} />
+              <SettingsField label="Marge arret" field="downtime_margin_pct" unit="%"
+                value={form.downtime_margin_pct} onChange={handleChange('downtime_margin_pct', 'number')} readOnly={readOnly} />
+              <SettingsField label="Objectif TRS" field="trs_target" unit="%"
+                value={form.trs_target} onChange={handleChange('trs_target', 'number')} readOnly={readOnly} />
             </div>
           </div>
+
+          {/* Capteur */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Capteur</h4>
             <div className="grid grid-cols-2 gap-3">
-              <SettingsField label="Topic MQTT" field="mqtt_topic" type="text" 
-                value={form.mqtt_topic} onChange={handleChange('mqtt_topic', 'text')} />
-              <SettingsField label="Adresse IP capteur" field="sensor_ip" type="text" 
-                value={form.sensor_ip} onChange={handleChange('sensor_ip', 'text')} />
+              <SettingsField label="Topic MQTT" field="mqtt_topic" type="text"
+                value={form.mqtt_topic} onChange={handleChange('mqtt_topic', 'text')} readOnly={readOnly} />
+              <SettingsField label="Adresse IP capteur" field="sensor_ip" type="text"
+                value={form.sensor_ip} onChange={handleChange('sensor_ip', 'text')} readOnly={readOnly} />
             </div>
           </div>
+
+          {/* Planning */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Planning de production</h4>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.schedule_is_24h}
-                  onChange={e => setForm(prev => ({ ...prev, schedule_is_24h: e.target.checked }))}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  data-testid="mes-setting-schedule-24h" />
-                <span className="text-xs text-gray-700">Production 24h/24</span>
-              </label>
-            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.schedule_is_24h} disabled={readOnly}
+                onChange={e => setForm(prev => ({ ...prev, schedule_is_24h: e.target.checked }))}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                data-testid="mes-setting-schedule-24h" />
+              <span className="text-xs text-gray-700">Production 24h/24</span>
+            </label>
             {!form.schedule_is_24h && (
               <div className="grid grid-cols-2 gap-3">
                 <SettingsField label="Debut production" field="schedule_start_hour" unit="h (0-23)"
-                  value={form.schedule_start_hour} onChange={handleChange('schedule_start_hour', 'number')} />
+                  value={form.schedule_start_hour} onChange={handleChange('schedule_start_hour', 'number')} readOnly={readOnly} />
                 <SettingsField label="Fin production" field="schedule_end_hour" unit="h (0-23)"
-                  value={form.schedule_end_hour} onChange={handleChange('schedule_end_hour', 'number')} />
+                  value={form.schedule_end_hour} onChange={handleChange('schedule_end_hour', 'number')} readOnly={readOnly} />
               </div>
             )}
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">Jours de production</label>
               <div className="flex flex-wrap gap-1.5">
                 {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day, idx) => (
-                  <button key={idx} type="button"
+                  <button key={idx} type="button" disabled={readOnly}
                     className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${
                       form.schedule_production_days.includes(idx)
                         ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'
-                    }`}
+                    } ${readOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                     data-testid={`mes-setting-day-${idx}`}
                     onClick={() => {
+                      if (readOnly) return;
                       setForm(prev => ({
                         ...prev,
                         schedule_production_days: prev.schedule_production_days.includes(idx)
@@ -908,27 +1051,31 @@ const MachineSettingsModal = ({ machine, onClose }) => {
               </div>
             </div>
           </div>
+
+          {/* Alertes */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1">Alertes</h4>
             <div className="grid grid-cols-2 gap-3">
-              <SettingsField label="Arret machine" field="alert_stopped_minutes" unit="min" 
-                value={form.alert_stopped_minutes} onChange={handleChange('alert_stopped_minutes', 'number')} />
-              <SettingsField label="Perte signal" field="alert_no_signal_minutes" unit="min" 
-                value={form.alert_no_signal_minutes} onChange={handleChange('alert_no_signal_minutes', 'number')} />
-              <SettingsField label="Sous-cadence" field="alert_under_cadence" unit="cp/min" 
-                value={form.alert_under_cadence} onChange={handleChange('alert_under_cadence', 'number')} />
-              <SettingsField label="Sur-cadence" field="alert_over_cadence" unit="cp/min" 
-                value={form.alert_over_cadence} onChange={handleChange('alert_over_cadence', 'number')} />
-              <SettingsField label="Objectif journalier" field="alert_daily_target" unit="coups" 
-                value={form.alert_daily_target} onChange={handleChange('alert_daily_target', 'number')} />
+              <SettingsField label="Arret machine" field="alert_stopped_minutes" unit="min"
+                value={form.alert_stopped_minutes} onChange={handleChange('alert_stopped_minutes', 'number')} readOnly={readOnly} />
+              <SettingsField label="Perte signal" field="alert_no_signal_minutes" unit="min"
+                value={form.alert_no_signal_minutes} onChange={handleChange('alert_no_signal_minutes', 'number')} readOnly={readOnly} />
+              <SettingsField label="Sous-cadence" field="alert_under_cadence" unit="cp/min"
+                value={form.alert_under_cadence} onChange={handleChange('alert_under_cadence', 'number')} readOnly={readOnly} />
+              <SettingsField label="Sur-cadence" field="alert_over_cadence" unit="cp/min"
+                value={form.alert_over_cadence} onChange={handleChange('alert_over_cadence', 'number')} readOnly={readOnly} />
+              <SettingsField label="Objectif journalier" field="alert_daily_target" unit="coups"
+                value={form.alert_daily_target} onChange={handleChange('alert_daily_target', 'number')} readOnly={readOnly} />
             </div>
           </div>
+
+          {/* Email notifications */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-gray-700 border-b pb-1 flex items-center gap-2">
               <Mail className="h-4 w-4" /> Notifications email
             </h4>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.email_enabled}
+              <input type="checkbox" checked={form.email_enabled} disabled={readOnly}
                 onChange={e => setForm(prev => ({ ...prev, email_enabled: e.target.checked }))}
                 className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 data-testid="mes-setting-email-enabled" />
@@ -938,38 +1085,42 @@ const MachineSettingsModal = ({ machine, onClose }) => {
               <>
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">Destinataires</label>
-                  <div className="flex gap-2 mb-1">
-                    <input type="email" value={newEmail} placeholder="email@exemple.com"
-                      onChange={e => setNewEmail(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && newEmail.trim()) {
-                          e.preventDefault();
+                  {isAdmin && (
+                    <div className="flex gap-2 mb-1">
+                      <input type="email" value={newEmail} placeholder="email@exemple.com"
+                        onChange={e => setNewEmail(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && newEmail.trim()) {
+                            e.preventDefault();
+                            setForm(prev => ({ ...prev, email_recipients: [...prev.email_recipients, newEmail.trim()] }));
+                            setNewEmail('');
+                          }
+                        }}
+                        className="flex-1 px-2 py-1 text-xs border rounded-lg"
+                        data-testid="mes-email-recipient-input" />
+                      <button type="button" onClick={() => {
+                        if (newEmail.trim()) {
                           setForm(prev => ({ ...prev, email_recipients: [...prev.email_recipients, newEmail.trim()] }));
                           setNewEmail('');
                         }
-                      }}
-                      className="flex-1 px-2 py-1 text-xs border rounded-lg"
-                      data-testid="mes-email-recipient-input" />
-                    <button type="button" onClick={() => {
-                      if (newEmail.trim()) {
-                        setForm(prev => ({ ...prev, email_recipients: [...prev.email_recipients, newEmail.trim()] }));
-                        setNewEmail('');
-                      }
-                    }} className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                      data-testid="mes-add-email-btn">
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
+                      }} className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                        data-testid="mes-add-email-btn">
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-1">
                     {form.email_recipients.map((email, idx) => (
                       <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded-full"
                         data-testid={`mes-email-chip-${idx}`}>
                         {email}
-                        <button type="button" onClick={() => setForm(prev => ({
-                          ...prev, email_recipients: prev.email_recipients.filter((_, i) => i !== idx)
-                        }))} className="text-indigo-400 hover:text-red-500">
-                          <X className="h-3 w-3" />
-                        </button>
+                        {isAdmin && (
+                          <button type="button" onClick={() => setForm(prev => ({
+                            ...prev, email_recipients: prev.email_recipients.filter((_, i) => i !== idx)
+                          }))} className="text-indigo-400 hover:text-red-500">
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
                       </span>
                     ))}
                   </div>
@@ -985,14 +1136,15 @@ const MachineSettingsModal = ({ machine, onClose }) => {
                       { key: 'TARGET_REACHED', label: 'Objectif atteint' },
                       { key: 'TRS_BELOW_TARGET', label: 'TRS sous objectif' },
                     ].map(at => (
-                      <button key={at.key} type="button"
+                      <button key={at.key} type="button" disabled={readOnly}
                         className={`px-2 py-1 text-xs rounded-lg border transition-colors ${
                           form.email_alert_types.includes(at.key)
                             ? 'bg-red-600 text-white border-red-600'
                             : 'bg-white text-gray-500 border-gray-200 hover:border-red-300'
-                        }`}
+                        } ${readOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
                         data-testid={`mes-email-alert-${at.key}`}
                         onClick={() => {
+                          if (readOnly) return;
                           setForm(prev => ({
                             ...prev,
                             email_alert_types: prev.email_alert_types.includes(at.key)
@@ -1006,19 +1158,53 @@ const MachineSettingsModal = ({ machine, onClose }) => {
                   </div>
                 </div>
                 <SettingsField label="Delai entre alertes email" field="email_delay_minutes" unit="min"
-                  value={form.email_delay_minutes} onChange={handleChange('email_delay_minutes', 'number')} />
+                  value={form.email_delay_minutes} onChange={handleChange('email_delay_minutes', 'number')} readOnly={readOnly} />
               </>
             )}
           </div>
         </div>
         <div className="px-6 py-4 border-t flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Annuler</button>
-          <button onClick={save} disabled={saving} data-testid="mes-save-settings"
-            className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />} Sauvegarder
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+            {readOnly ? 'Fermer' : 'Annuler'}
           </button>
+          {isAdmin && (
+            <button onClick={save} disabled={saving} data-testid="mes-save-settings"
+              className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />} Sauvegarder
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full mx-4 p-6" data-testid="confirm-dialog">
+            <h4 className="text-base font-semibold mb-2">{confirmDialog.title}</h4>
+            <p className="text-sm text-gray-600 mb-4">{confirmDialog.message}</p>
+            {confirmDialog.type === 'create' && (
+              <input type="text" value={refNameInput} placeholder="Nom de la reference..."
+                onChange={e => setRefNameInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && refNameInput.trim() && confirmDialog.onConfirm(refNameInput.trim())}
+                className="w-full px-3 py-2 text-sm border rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500"
+                data-testid="ref-name-input" autoFocus />
+            )}
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setConfirmDialog(null)}
+                className="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">Annuler</button>
+              <button onClick={() => {
+                  if (confirmDialog.type === 'create') {
+                    if (refNameInput.trim()) confirmDialog.onConfirm(refNameInput.trim());
+                  } else {
+                    confirmDialog.onConfirm();
+                  }
+                }}
+                className="px-3 py-1.5 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                data-testid="confirm-dialog-ok">Confirmer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
