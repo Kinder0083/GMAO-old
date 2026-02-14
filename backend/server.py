@@ -4770,7 +4770,7 @@ async def update_vendor(vendor_id: str, vendor_update: VendorUpdate, current_use
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/vendors/{vendor_id}")
+@api_router.delete("/vendors/{vendor_id}", response_model=MessageResponse)
 async def delete_vendor(vendor_id: str, current_user: dict = Depends(require_permission("vendors", "delete"))):
     """Supprimer un fournisseur"""
     try:
@@ -6205,7 +6205,7 @@ async def update_meter(
     
     return Meter(**updated_meter)
 
-@api_router.delete("/meters/{meter_id}")
+@api_router.delete("/meters/{meter_id}", response_model=MessageResponse)
 async def delete_meter(meter_id: str, current_user: dict = Depends(require_permission("meters", "delete"))):
     """Supprimer un compteur (soft delete)"""
     meter = await db.meters.find_one({"id": meter_id})
@@ -6413,7 +6413,7 @@ async def get_meter_statistics(
         logger.error(f"Erreur calcul statistiques: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.delete("/readings/{reading_id}")
+@api_router.delete("/readings/{reading_id}", response_model=MessageResponse)
 async def delete_reading(reading_id: str, current_user: dict = Depends(require_permission("meters", "delete"))):
     """Supprimer un relevé"""
     reading = await db.meter_readings.find_one({"id": reading_id})
@@ -6568,7 +6568,7 @@ async def update_intervention_request(
     
     return InterventionRequest(**updated_req)
 
-@api_router.delete("/intervention-requests/{request_id}")
+@api_router.delete("/intervention-requests/{request_id}", response_model=MessageResponse)
 async def delete_intervention_request(request_id: str, current_user: dict = Depends(require_permission("interventionRequests", "delete"))):
     """Supprimer une demande d'intervention"""
     req = await db.intervention_requests.find_one({"id": request_id})
@@ -6979,7 +6979,7 @@ async def update_improvement_request(
     
     return ImprovementRequest(**updated_req)
 
-@api_router.delete("/improvement-requests/{request_id}")
+@api_router.delete("/improvement-requests/{request_id}", response_model=MessageResponse)
 async def delete_improvement_request(request_id: str, current_user: dict = Depends(require_permission("improvementRequests", "delete"))):
     """Supprimer une demande d'amélioration"""
     # Essayer d'abord avec le champ 'id' (pour les nouveaux documents avec UUID)
@@ -7678,7 +7678,7 @@ async def get_notifications(
         logger.error(f"Erreur récupération notifications: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/notifications/count")
+@api_router.get("/notifications/count", response_model=NotificationCountResponse)
 async def get_notifications_count(current_user: dict = Depends(get_current_user)):
     """Compte les notifications non lues"""
     try:
@@ -8906,7 +8906,7 @@ RESET_COLLECTIONS = {
     "users": "Utilisateurs",
 }
 
-@api_router.delete("/admin/reset/{section}")
+@api_router.delete("/admin/reset/{section}", response_model=ResetSectionResponse)
 async def reset_section(section: str, current_user: dict = Depends(get_current_admin_user)):
     """Réinitialiser une section (admin uniquement)"""
     if section not in RESET_COLLECTIONS:
@@ -8933,7 +8933,7 @@ async def reset_section(section: str, current_user: dict = Depends(get_current_a
         "deleted_count": result.deleted_count
     }
 
-@api_router.delete("/admin/reset-all")
+@api_router.delete("/admin/reset-all", response_model=ResetAllResponse)
 async def reset_all(current_user: dict = Depends(get_current_admin_user)):
     """Réinitialiser toutes les données (admin uniquement)"""
     details = {}
