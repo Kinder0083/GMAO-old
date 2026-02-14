@@ -51,8 +51,54 @@ dependencies.set_database(db)
 # Initialize audit service
 audit_service = AuditService(db)
 
-# Create the main app
-app = FastAPI(title="GMAO Atlas API", version="1.0.0")
+# Create the main app (docs desactivees par defaut, servies manuellement avec auth)
+app = FastAPI(
+    title="GMAO Atlas API",
+    description=API_DESCRIPTION,
+    version="2.2.0",
+    openapi_tags=OPENAPI_TAGS,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url="/api/openapi.json",
+    contact={
+        "name": "GMAO Atlas Support",
+        "email": "support@gmao-atlas.fr"
+    },
+    license_info={
+        "name": "Proprietary",
+    }
+)
+
+# --- Protection docs Swagger par HTTP Basic Auth ---
+docs_security = HTTPBasic()
+
+def verify_docs_credentials(credentials: HTTPBasicCredentials = Depends(docs_security)):
+    """Verifie les identifiants pour acceder a la documentation API"""
+    correct_user = secrets.compare_digest(credentials.username, os.environ.get("DOCS_USER", "admin"))
+    correct_pass = secrets.compare_digest(credentials.password, os.environ.get("DOCS_PASS", "atlas2024"))
+    if not (correct_user and correct_pass):
+        raise HTTPException(
+            status_code=401,
+            detail="Identifiants incorrects",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials
+
+@app.get("/api/docs", include_in_schema=False)
+async def custom_swagger_ui(credentials: HTTPBasicCredentials = Depends(verify_docs_credentials)):
+    return get_swagger_ui_html(
+        openapi_url="/api/openapi.json",
+        title="GMAO Atlas - Documentation API",
+        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
+    )
+
+@app.get("/api/redoc", include_in_schema=False)
+async def custom_redoc(credentials: HTTPBasicCredentials = Depends(verify_docs_credentials)):
+    return get_redoc_html(
+        openapi_url="/api/openapi.json",
+        title="GMAO Atlas - Documentation API (ReDoc)",
+        redoc_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
+    )
 
 # Gestionnaire d'erreur pour les erreurs de validation Pydantic
 @app.exception_handler(RequestValidationError)
