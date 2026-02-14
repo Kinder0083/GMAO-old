@@ -42,6 +42,274 @@ const MetricCard = ({ icon: Icon, label, value, color }) => {
   );
 };
 
+// ==================== TRS BREAKDOWN ====================
+const TRSBar = ({ label, value, color }) => (
+  <div className="flex-1" data-testid={`trs-bar-${label.toLowerCase()}`}>
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-xs font-medium text-gray-600">{label}</span>
+      <span className={`text-sm font-bold ${color}`}>{value}%</span>
+    </div>
+    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+      <div className={`h-full rounded-full transition-all duration-700 ${
+        value >= 85 ? 'bg-emerald-500' : value >= 60 ? 'bg-amber-500' : 'bg-red-500'
+      }`} style={{ width: `${Math.min(value, 100)}%` }} />
+    </div>
+  </div>
+);
+
+const TRSBreakdown = ({ metrics }) => {
+  if (!metrics) return null;
+  const trs = metrics.trs ?? 0;
+  const trsColor = trs >= 85 ? 'text-emerald-600' : trs >= 60 ? 'text-amber-600' : 'text-red-600';
+  const trsBg = trs >= 85 ? 'bg-emerald-50 border-emerald-200' : trs >= 60 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+
+  return (
+    <Card data-testid="trs-breakdown-card">
+      <CardContent className="pt-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className={`flex flex-col items-center justify-center p-4 rounded-xl border ${trsBg} min-w-[120px]`}>
+            <span className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">TRS Global</span>
+            <span className={`text-3xl font-black ${trsColor}`}>{trs}%</span>
+            <span className="text-[10px] text-gray-400 mt-1">
+              {metrics.good_parts_today ?? 0} conformes / {metrics.rejects_today ?? 0} rebuts
+            </span>
+          </div>
+          <div className="flex-1 w-full space-y-3">
+            <TRSBar label="Disponibilite" value={metrics.trs_availability ?? 0} color="text-sky-600" />
+            <TRSBar label="Performance" value={metrics.trs_performance ?? 0} color="text-violet-600" />
+            <TRSBar label="Qualite" value={metrics.trs_quality ?? 0} color="text-emerald-600" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ==================== REJECTS PANEL ====================
+const RejectsPanel = ({ machineId, onRejectChange, timezoneOffset }) => {
+  const [rejects, setRejects] = useState([]);
+  const [reasons, setReasons] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ quantity: 1, reason: '', custom_reason: '' });
+  const [saving, setSaving] = useState(false);
+  const [showReasonsAdmin, setShowReasonsAdmin] = useState(false);
+  const { toast } = useToast();
+
+  const loadRejects = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/api/mes/machines/${machineId}/rejects`, { headers: getHeaders() });
+      setRejects(data);
+    } catch {}
+  }, [machineId]);
+
+  const loadReasons = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/api/mes/reject-reasons`, { headers: getHeaders() });
+      setReasons(data);
+    } catch {}
+  }, []);
+
+  useEffect(() => { loadRejects(); loadReasons(); }, [loadRejects, loadReasons]);
+
+  const submitReject = async () => {
+    if (form.quantity <= 0) {
+      toast({ title: 'La quantite doit etre > 0', variant: 'destructive' });
+      return;
+    }
+    if (!form.reason && !form.custom_reason) {
+      toast({ title: 'Veuillez indiquer un motif', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    try {
+      await axios.post(`${API}/api/mes/machines/${machineId}/rejects`, form, { headers: getHeaders() });
+      toast({ title: 'Rebut declare' });
+      setForm({ quantity: 1, reason: '', custom_reason: '' });
+      setShowForm(false);
+      loadRejects();
+      onRejectChange();
+    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+    setSaving(false);
+  };
+
+  const deleteReject = async (id) => {
+    try {
+      await axios.delete(`${API}/api/mes/rejects/${id}`, { headers: getHeaders() });
+      loadRejects();
+      onRejectChange();
+    } catch {}
+  };
+
+  const totalRejects = rejects.reduce((sum, r) => sum + (r.quantity || 0), 0);
+
+  return (
+    <Card data-testid="rejects-panel">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-red-500" /> Rebuts du jour
+            {totalRejects > 0 && (
+              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">{totalRejects}</span>
+            )}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowReasonsAdmin(!showReasonsAdmin)}
+              className="text-xs text-gray-500 hover:text-indigo-600 px-2 py-1 rounded hover:bg-gray-50"
+              data-testid="manage-reject-reasons-btn">
+              <Settings className="h-3 w-3 inline mr-1" />Motifs
+            </button>
+            <button onClick={() => setShowForm(!showForm)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+              data-testid="declare-reject-btn">
+              <ListPlus className="h-3 w-3" /> Declarer
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {showReasonsAdmin && <RejectReasonsAdmin reasons={reasons} onUpdate={loadReasons} onClose={() => setShowReasonsAdmin(false)} />}
+
+        {showForm && (
+          <div className="mb-4 p-3 bg-red-50/50 border border-red-100 rounded-lg space-y-3" data-testid="reject-form">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Quantite *</label>
+                <input type="number" min="1" value={form.quantity}
+                  onChange={e => setForm(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                  className="w-full mt-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-red-300"
+                  data-testid="reject-quantity-input" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Motif predefini</label>
+                <select value={form.reason}
+                  onChange={e => setForm(prev => ({ ...prev, reason: e.target.value }))}
+                  className="w-full mt-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-red-300"
+                  data-testid="reject-reason-select">
+                  <option value="">-- Selectionner --</option>
+                  {reasons.map(r => <option key={r.id} value={r.label}>{r.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Motif libre</label>
+                <input type="text" value={form.custom_reason} placeholder="Autre motif..."
+                  onChange={e => setForm(prev => ({ ...prev, custom_reason: e.target.value }))}
+                  className="w-full mt-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-red-300"
+                  data-testid="reject-custom-reason-input" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowForm(false)} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-lg">Annuler</button>
+              <button onClick={submitReject} disabled={saving} data-testid="reject-submit-btn"
+                className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1">
+                {saving && <Loader2 className="h-3 w-3 animate-spin" />} Valider
+              </button>
+            </div>
+          </div>
+        )}
+
+        {rejects.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Aucun rebut declare aujourd'hui</p>
+        ) : (
+          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            {rejects.map(r => (
+              <div key={r.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm"
+                data-testid={`reject-item-${r.id}`}>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-red-600 min-w-[32px] text-center">{r.quantity}</span>
+                  <div>
+                    <span className="text-gray-800">{r.reason || r.custom_reason || 'Sans motif'}</span>
+                    {r.reason && r.custom_reason && <span className="text-gray-400 ml-1">({r.custom_reason})</span>}
+                    <span className="text-[10px] text-gray-400 ml-2">
+                      {r.operator && `par ${r.operator} - `}
+                      {applyTimezoneOffset(r.timestamp, timezoneOffset).toLocaleString('fr-FR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+                <button onClick={() => deleteReject(r.id)} className="p-1 text-gray-300 hover:text-red-500"
+                  data-testid={`delete-reject-${r.id}`}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// ==================== REJECT REASONS ADMIN ====================
+const RejectReasonsAdmin = ({ reasons, onUpdate, onClose }) => {
+  const [newLabel, setNewLabel] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editLabel, setEditLabel] = useState('');
+  const { toast } = useToast();
+
+  const addReason = async () => {
+    if (!newLabel.trim()) return;
+    try {
+      await axios.post(`${API}/api/mes/reject-reasons`, { label: newLabel.trim() }, { headers: getHeaders() });
+      setNewLabel('');
+      onUpdate();
+    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+  };
+
+  const updateReason = async (id) => {
+    if (!editLabel.trim()) return;
+    try {
+      await axios.put(`${API}/api/mes/reject-reasons/${id}`, { label: editLabel.trim() }, { headers: getHeaders() });
+      setEditingId(null);
+      onUpdate();
+    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+  };
+
+  const deleteReason = async (id) => {
+    try {
+      await axios.delete(`${API}/api/mes/reject-reasons/${id}`, { headers: getHeaders() });
+      onUpdate();
+    } catch {}
+  };
+
+  return (
+    <div className="mb-4 p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg" data-testid="reject-reasons-admin">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-gray-700">Gestion des motifs de rebut</span>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><XCircle className="h-4 w-4" /></button>
+      </div>
+      <div className="flex gap-2 mb-2">
+        <input type="text" value={newLabel} placeholder="Nouveau motif..."
+          onChange={e => setNewLabel(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addReason()}
+          className="flex-1 px-2 py-1 text-xs border rounded-lg"
+          data-testid="new-reject-reason-input" />
+        <button onClick={addReason} className="px-2 py-1 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          data-testid="add-reject-reason-btn">
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+      <div className="space-y-1 max-h-32 overflow-y-auto">
+        {reasons.map(r => (
+          <div key={r.id} className="flex items-center justify-between p-1.5 bg-white rounded text-xs">
+            {editingId === r.id ? (
+              <input type="text" value={editLabel} onChange={e => setEditLabel(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && updateReason(r.id)}
+                onBlur={() => updateReason(r.id)}
+                className="flex-1 px-2 py-0.5 border rounded text-xs mr-2" autoFocus />
+            ) : (
+              <span className="text-gray-700 cursor-pointer hover:text-indigo-600"
+                onClick={() => { setEditingId(r.id); setEditLabel(r.label); }}>{r.label}</span>
+            )}
+            <button onClick={() => deleteReason(r.id)} className="p-0.5 text-gray-300 hover:text-red-500">
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+        {reasons.length === 0 && <p className="text-[10px] text-gray-400 text-center py-1">Aucun motif predefini</p>}
+      </div>
+    </div>
+  );
+};
+
 // ==================== MACHINE LIST ====================
 const MachineList = ({ machines, onSelect, onCreate, onDelete, loading }) => (
   <div className="space-y-4">
