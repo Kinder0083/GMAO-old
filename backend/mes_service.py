@@ -148,6 +148,11 @@ class MESService:
             serialized = self._serialize(m)
             eq = await self.db.equipments.find_one({"_id": m.get("equipment_id")}, {"nom": 1})
             serialized["equipment_name"] = eq["nom"] if eq else "Inconnu"
+            # Include reference info
+            ref_id = m.get("active_reference_id")
+            if ref_id:
+                ref = await self.db.mes_product_references.find_one({"_id": ref_id}, {"name": 1})
+                serialized["active_reference_name"] = ref["name"] if ref else None
             result.append(serialized)
         return result
 
@@ -158,6 +163,11 @@ class MESService:
         serialized = self._serialize(m)
         eq = await self.db.equipments.find_one({"_id": m.get("equipment_id")}, {"nom": 1})
         serialized["equipment_name"] = eq["nom"] if eq else "Inconnu"
+        # Include reference info
+        ref_id = m.get("active_reference_id")
+        if ref_id:
+            ref = await self.db.mes_product_references.find_one({"_id": ref_id}, {"name": 1})
+            serialized["active_reference_name"] = ref["name"] if ref else None
         return serialized
 
     # ==================== PULSE HANDLING ====================
