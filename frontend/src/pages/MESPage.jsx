@@ -355,7 +355,7 @@ const MachineDashboard = ({ machineId, onBack }) => {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-800 truncate">{alert.message}</p>
                         <p className="text-[10px] text-gray-500">
-                          {alert.equipment_name} - {applyTzOffset(alert.created_at).toLocaleString('fr-FR', { timeZone: 'UTC' })}
+                          {alert.equipment_name} - {applyTimezoneOffset(alert.created_at, timezoneOffset).toLocaleString('fr-FR', { timeZone: 'UTC' })}
                         </p>
                       </div>
                     </div>
