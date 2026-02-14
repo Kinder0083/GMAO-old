@@ -1342,7 +1342,7 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.post("/work-orders/{wo_id}/add-time")
+@api_router.post("/work-orders/{wo_id}/add-time", response_model=WorkOrder)
 async def add_time_to_work_order(wo_id: str, time_data: AddTimeSpent, current_user: dict = Depends(require_permission("workOrders", "edit"))):
     """Ajouter du temps passé à un ordre de travail"""
     try:
@@ -1409,7 +1409,7 @@ async def add_time_to_work_order(wo_id: str, time_data: AddTimeSpent, current_us
         logger.error(f"Erreur lors de l'ajout de temps : {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/work-orders/{wo_id}")
+@api_router.delete("/work-orders/{wo_id}", response_model=MessageResponse)
 async def delete_work_order(wo_id: str, current_user: dict = Depends(require_permission("workOrders", "delete"))):
     """Supprimer un ordre de travail"""
     try:
@@ -1453,7 +1453,7 @@ UPLOAD_DIR = Path("/app/backend/uploads/work-orders")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 MAX_FILE_SIZE = 25 * 1024 * 1024  # 25MB
 
-@api_router.post("/work-orders/{wo_id}/attachments")
+@api_router.post("/work-orders/{wo_id}/attachments", response_model=AttachmentResponse)
 async def upload_attachment(
     wo_id: str,
     file: UploadFile = File(...),
@@ -1512,7 +1512,7 @@ async def upload_attachment(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/work-orders/{wo_id}/attachments")
+@api_router.get("/work-orders/{wo_id}/attachments", response_model=List[AttachmentResponse])
 async def get_attachments(wo_id: str, current_user: dict = Depends(require_permission("workOrders", "view"))):
     """Lister les pièces jointes d'un ordre de travail"""
     try:
@@ -1596,7 +1596,7 @@ async def download_attachment(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/work-orders/{wo_id}/attachments/{attachment_id}")
+@api_router.delete("/work-orders/{wo_id}/attachments/{attachment_id}", response_model=MessageResponse)
 async def delete_attachment(
     wo_id: str,
     attachment_id: str,
@@ -2213,7 +2213,7 @@ async def update_equipment_status(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/equipments/{eq_id}")
+@api_router.delete("/equipments/{eq_id}", response_model=MessageResponse)
 async def delete_equipment(eq_id: str, current_user: dict = Depends(require_permission("assets", "delete"))):
     """Supprimer un équipement"""
     try:
@@ -2344,7 +2344,7 @@ async def update_availability(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/availabilities/{avail_id}")
+@api_router.delete("/availabilities/{avail_id}", response_model=MessageResponse)
 async def delete_availability(
     avail_id: str,
     current_user: dict = Depends(get_current_admin_user)
@@ -2535,7 +2535,7 @@ async def update_location(loc_id: str, loc_update: LocationUpdate, current_user:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@api_router.delete("/locations/{loc_id}")
+@api_router.delete("/locations/{loc_id}", response_model=MessageResponse)
 async def delete_location(loc_id: str, current_user: dict = Depends(require_permission("locations", "delete"))):
     """Supprimer une zone et ses sous-zones"""
     try:
@@ -2714,7 +2714,7 @@ async def create_auto_purchase_request(inventory_item: dict, current_user: dict)
         logger.error(traceback.format_exc())
 
 
-@api_router.delete("/inventory/{inv_id}")
+@api_router.delete("/inventory/{inv_id}", response_model=MessageResponse)
 async def delete_inventory_item(inv_id: str, current_user: dict = Depends(require_permission("inventory", "delete"))):
     """Supprimer un article de l'inventaire"""
     try:
@@ -2741,7 +2741,7 @@ async def delete_inventory_item(inv_id: str, current_user: dict = Depends(requir
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.patch("/inventory/{inv_id}/toggle-monitoring")
+@api_router.patch("/inventory/{inv_id}/toggle-monitoring", response_model=ToggleMonitoringResponse)
 async def toggle_inventory_monitoring(inv_id: str, current_user: dict = Depends(require_permission("inventory", "edit"))):
     """Active/Désactive la surveillance du stock d'un article"""
     try:
@@ -2778,7 +2778,7 @@ async def toggle_inventory_monitoring(inv_id: str, current_user: dict = Depends(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.get("/inventory/stats")
+@api_router.get("/inventory/stats", response_model=InventoryStatsResponse)
 async def get_inventory_stats(current_user: dict = Depends(require_permission("inventory", "view"))):
     """Récupère les statistiques de l'inventaire (rupture et niveau bas)"""
     try:
