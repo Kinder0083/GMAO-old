@@ -984,3 +984,179 @@ async def delete_manual_section(
         logger.error(f"Erreur lors de la suppression de la section: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+
+@router.post("/upgrade-mes")
+async def upgrade_manual_with_mes(
+    current_user: dict = Depends(require_permission("admin", "edit"))
+):
+    """Ajouter le chapitre M.E.S. au manuel existant (pour les installations existantes)"""
+    try:
+        now = datetime.now(timezone.utc)
+        
+        # Vérifier si le chapitre M.E.S. existe déjà
+        existing_mes = await db.manual_chapters.find_one({"id": "ch-mes"})
+        if existing_mes:
+            return {"success": False, "message": "Le chapitre M.E.S. existe déjà dans le manuel"}
+        
+        # Créer le chapitre M.E.S.
+        chapter_mes = {
+            "id": "ch-mes",
+            "title": "🏭 M.E.S. - Suivi de Production",
+            "description": "Manufacturing Execution System - Monitoring temps réel de la production",
+            "icon": "Factory",
+            "order": 10,
+            "sections": ["sec-mes-01", "sec-mes-02", "sec-mes-03", "sec-mes-04"],
+            "target_roles": [],
+            "target_modules": ["mes"],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        await db.manual_chapters.insert_one(chapter_mes)
+        
+        # Sections M.E.S.
+        mes_sections = [
+            {
+                "id": "sec-mes-01",
+                "chapter_id": "ch-mes",
+                "title": "Présentation du module M.E.S.",
+                "content": """🏭 **Qu'est-ce que le M.E.S. ?**
+
+Le M.E.S. (Manufacturing Execution System) est un module de suivi de production en temps réel. Il permet de :
+
+• **Comptabiliser** les coups/impulsions des machines de production
+• **Calculer** la cadence réelle (coups/minute, coups/heure)
+• **Suivre** la production journalière et sur 24h glissantes
+• **Détecter** les arrêts machine automatiquement
+• **Alerter** en cas d'anomalie (sous-cadence, sur-cadence, arrêt prolongé)
+• **Analyser** les performances avec le TRS (Taux de Rendement Synthétique)
+
+📡 **Comment ça fonctionne ?**
+
+1. Un capteur (contact sec) est installé sur la machine
+2. Chaque impulsion (1/0) = 1 coup = 1 produit fabriqué
+3. Le capteur envoie les données via MQTT
+4. GMAO Iris reçoit et analyse les données en temps réel
+5. Les métriques et alertes sont mises à jour automatiquement""",
+                "order": 1,
+                "level": "beginner",
+                "keywords": ["mes", "production", "cadence", "manufacturing", "trs"],
+            },
+            {
+                "id": "sec-mes-02",
+                "chapter_id": "ch-mes",
+                "title": "Configuration d'une machine M.E.S.",
+                "content": """⚙️ **Ajouter une machine M.E.S.**
+
+1. Accédez à la page **M.E.S.** depuis la sidebar
+2. Cliquez sur **"+ Ajouter"** en haut à droite
+3. Sélectionnez l'équipement lié dans la liste
+4. La machine apparaît dans la liste
+
+🔧 **Configurer les paramètres**
+
+Cliquez sur l'icône **engrenage** (⚙️) à côté de la machine pour ouvrir les paramètres :
+
+**Section Production :**
+• **Cadence théorique** (cp/min) : La cadence nominale de la machine
+• **Marge d'arrêt** (%) : Tolérance avant de considérer la machine à l'arrêt
+
+**Section Capteur :**
+• **Topic MQTT** : Le topic sur lequel le capteur publie ses impulsions
+• **Adresse IP capteur** : L'IP du capteur pour vérifier sa connectivité via ping
+
+**Section Alertes :**
+• **Arrêt machine** (min) : Alerte si la machine est arrêtée depuis X minutes
+• **Perte signal** (min) : Alerte si aucun signal reçu
+• **Sous-cadence** / **Sur-cadence** (cp/min) : Alertes de cadence
+• **Objectif journalier** (coups) : Notification quand l'objectif est atteint""",
+                "order": 2,
+                "level": "beginner",
+                "keywords": ["configuration", "parametres", "mqtt", "cadence", "alertes"],
+            },
+            {
+                "id": "sec-mes-03",
+                "chapter_id": "ch-mes",
+                "title": "Lecture du graphique de production",
+                "content": """📈 **Le graphique de cadence**
+
+Le graphique affiche l'évolution de la cadence dans le temps :
+
+• **Axe X** : Le temps
+• **Axe Y** : La cadence (coups/minute)
+
+🕐 **Périodes d'affichage**
+
+• **6h** (par défaut) : Minute par minute
+• **12h / 24h** : Minute par minute
+• **7j** : Moyenne horaire
+• **Personnalisé** : Choisissez vos dates
+
+⚠️ Pour les périodes de 7 jours ou plus, l'affichage passe en moyenne horaire.
+
+🔄 Le graphique se met à jour automatiquement toutes les minutes.""",
+                "order": 3,
+                "level": "beginner",
+                "keywords": ["graphique", "courbe", "historique", "cadence", "periode"],
+            },
+            {
+                "id": "sec-mes-04",
+                "chapter_id": "ch-mes",
+                "title": "Alertes M.E.S. et notifications",
+                "content": """🔔 **Système d'alertes M.E.S.**
+
+Les alertes apparaissent dans l'icône M.E.S. en haut de l'écran.
+
+**Types d'alertes :**
+🔴 Machine à l'arrêt | ⬇️ Sous-cadence | ⬆️ Sur-cadence | 🎯 Objectif atteint | 📡 Perte de signal
+
+**Gestion des alertes**
+• Cliquez sur ✓ pour marquer une alerte comme lue
+• Cliquez sur **"Tout lire"** pour tout marquer comme lu
+• Cliquez sur l'icône **corbeille** 🗑️ pour **supprimer toutes les alertes**
+
+⚠️ La suppression est définitive et immédiate.
+
+🔧 **Vérifier la connectivité du capteur**
+Ouvrez les paramètres (⚙️) et cliquez sur **"Ping"** pour tester la connectivité.""",
+                "order": 4,
+                "level": "beginner",
+                "keywords": ["alertes", "notifications", "arret", "signal", "ping", "supprimer"],
+            }
+        ]
+        
+        for section in mes_sections:
+            section["parent_id"] = None
+            section["target_roles"] = []
+            section["target_modules"] = ["mes"]
+            section["images"] = []
+            section["video_url"] = None
+            section["created_at"] = now.isoformat()
+            section["updated_at"] = now.isoformat()
+            await db.manual_sections.insert_one(section)
+        
+        # Mettre à jour la version du manuel
+        await db.manual_versions.update_many(
+            {"is_current": True},
+            {"$set": {"is_current": False}}
+        )
+        
+        new_version = {
+            "id": str(uuid.uuid4()),
+            "version": "1.5",
+            "release_date": now.isoformat(),
+            "changes": ["Ajout du chapitre M.E.S. (Manufacturing Execution System)"],
+            "author_id": current_user.get("id", "system"),
+            "author_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+            "is_current": True
+        }
+        await db.manual_versions.insert_one(new_version)
+        
+        logger.info(f"📚 Manuel mis à jour avec M.E.S. par {current_user.get('email')}")
+        
+        return {"success": True, "message": "Chapitre M.E.S. ajouté au manuel avec succès", "version": "1.5"}
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de l'upgrade du manuel: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
