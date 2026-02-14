@@ -391,6 +391,12 @@ const MachineDashboard = ({ machineId, onBack }) => {
         <MetricCard icon={Target} label="Cadence theo." value={`${metrics?.theoretical_cadence ?? 0}`} color="gray" />
       </div>
 
+      {/* TRS Advanced Breakdown */}
+      <TRSBreakdown metrics={metrics} />
+
+      {/* Rejects Panel */}
+      <RejectsPanel machineId={machineId} onRejectChange={loadMetrics} timezoneOffset={timezoneOffset} />
+
       {/* Chart */}
       <Card>
         <CardHeader className="pb-2">
