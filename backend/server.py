@@ -9083,35 +9083,37 @@ async def realtime_websocket(websocket: WebSocket, entity_type: str, user_id: st
 from websocket_manager import manager as chat_manager
 
 @app.websocket("/api/ws/chat")
-async def chat_live_websocket(websocket: WebSocket, token: str = None):
+async def chat_live_websocket(websocket: WebSocket, token: str = None, user_id: str = None):
     """WebSocket pour le chat en temps réel"""
-    # Support token via query param
-    if not token:
-        token = websocket.query_params.get("token", "")
-    user_id = None
+    ws_user_id = None
     user_name = "Unknown"
     
     try:
-        # Valider le token JWT
-        payload = decode_access_token(token)
-        
-        if not payload:
-            await websocket.close(code=1008, reason="Invalid token")
+        # Support: user_id direct (préféré pour la compatibilité proxy) ou token JWT
+        if user_id:
+            ws_user_id = user_id
+            user_data = await db.users.find_one({"_id": ObjectId(ws_user_id)})
+            if not user_data:
+                await websocket.close(code=1008, reason="User not found")
+                return
+            user_name = f"{user_data.get('prenom', '')} {user_data.get('nom', '')}".strip()
+        elif token:
+            payload = decode_access_token(token)
+            if not payload:
+                await websocket.close(code=1008, reason="Invalid token")
+                return
+            ws_user_id = payload.get("sub")
+            if not ws_user_id:
+                await websocket.close(code=1008, reason="Invalid token - no user_id")
+                return
+            user_data = await db.users.find_one({"_id": ObjectId(ws_user_id)})
+            if not user_data:
+                await websocket.close(code=1008, reason="User not found")
+                return
+            user_name = f"{user_data.get('prenom', '')} {user_data.get('nom', '')}".strip()
+        else:
+            await websocket.close(code=1008, reason="user_id or token required")
             return
-        
-        user_id = payload.get("sub")
-        
-        if not user_id:
-            await websocket.close(code=1008, reason="Invalid token - no user_id")
-            return
-        
-        # Récupérer les infos utilisateur
-        user_data = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user_data:
-            await websocket.close(code=1008, reason="User not found")
-            return
-        
-        user_name = f"{user_data.get('prenom', '')} {user_data.get('nom', '')}".strip()
         
         # Connecter l'utilisateur
         await chat_manager.connect(websocket, user_id, user_name)
