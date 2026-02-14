@@ -734,20 +734,29 @@ async def export_pdf_report(data: dict, current_user: dict = Depends(get_current
 
 # ==================== SCHEDULED REPORTS ====================
 
-@router.get("/scheduled-reports")
+@router.get("/scheduled-reports",
+    summary="Lister les rapports planifies",
+    description="Retourne tous les rapports M.E.S. planifies avec leur frequence, destinataires et prochaine execution.",
+    responses={**STANDARD_ERRORS}
+)
 async def list_scheduled_reports(current_user: dict = Depends(get_current_user)):
-    """List all scheduled M.E.S. reports"""
     return await mes_service.get_scheduled_reports()
 
-@router.get("/scheduled-reports/{report_id}")
+@router.get("/scheduled-reports/{report_id}",
+    summary="Detail d'un rapport planifie",
+    responses={**CRUD_ERRORS}
+)
 async def get_scheduled_report(report_id: str, current_user: dict = Depends(get_current_user)):
-    """Get a specific scheduled report"""
     report = await mes_service.get_scheduled_report(report_id)
     if not report:
         raise HTTPException(404, "Rapport planifie non trouve")
     return report
 
-@router.post("/scheduled-reports")
+@router.post("/scheduled-reports",
+    summary="Creer un rapport planifie",
+    description="Configure un nouveau rapport automatique. Supporte les frequences quotidienne, hebdomadaire (jour choisi) et mensuelle (jour du mois). Les rapports sont envoyes par email en PDF ou Excel.",
+    responses={**STANDARD_ERRORS, 400: {"description": "Nom ou destinataire(s) manquant(s)"}}
+)
 async def create_scheduled_report(data: dict, current_user: dict = Depends(get_current_user)):
     """Create a new scheduled report"""
     if not data.get("name"):
