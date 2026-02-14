@@ -1412,10 +1412,15 @@ async def get_explorer_contents(
             {"pole_id": pole_id, "parent_id": folder_id}, {"_id": 0}
         ).to_list(length=None)
 
-        # Documents dans ce dossier
-        documents = await db.documents.find(
-            {"pole_id": pole_id, "folder_id": folder_id}, {"_id": 0}
-        ).to_list(length=None)
+        # Documents dans ce dossier (folder_id null ou absent = racine)
+        if folder_id is None:
+            documents = await db.documents.find(
+                {"pole_id": pole_id, "$or": [{"folder_id": None}, {"folder_id": {"$exists": False}}]}, {"_id": 0}
+            ).to_list(length=None)
+        else:
+            documents = await db.documents.find(
+                {"pole_id": pole_id, "folder_id": folder_id}, {"_id": 0}
+            ).to_list(length=None)
 
         # Bons de travail (uniquement à la racine du pôle, sans folder_id)
         bons_travail = []
