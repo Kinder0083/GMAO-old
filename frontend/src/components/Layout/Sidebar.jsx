@@ -253,6 +253,18 @@ const Sidebar = ({
                 {sidebarOpen && <span className="text-sm font-medium">Paramètres Spéciaux</span>}
               </button>
               <button
+                onClick={() => navigate('/import-export')}
+                data-testid="sidebar-import-export"
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${!sidebarOpen ? 'justify-center px-2' : ''}`}
+                style={getSidebarButtonStyle(location.pathname === '/import-export')}
+                onMouseEnter={(e) => handleSidebarButtonHover(e, location.pathname === '/import-export')}
+                onMouseLeave={(e) => handleSidebarButtonLeave(e, location.pathname === '/import-export')}
+                title={!sidebarOpen ? 'Import / Export' : ''}
+              >
+                <Database size={20} className="flex-shrink-0" />
+                {sidebarOpen && <span className="text-sm font-medium">Import / Export</span>}
+              </button>
+              <button
                 onClick={() => navigate('/mqtt-pubsub')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${!sidebarOpen ? 'justify-center px-2' : ''}`}
                 style={getSidebarButtonStyle(location.pathname === '/mqtt-pubsub')}
