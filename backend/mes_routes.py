@@ -85,66 +85,104 @@ async def get_history(machine_id: str, period: str = "6h",
 
 # ==================== ALERTS ====================
 
-@router.get("/alerts")
+@router.get("/alerts",
+    summary="Lister les alertes M.E.S.",
+    description="Retourne les alertes de production (arret machine, TRS bas, panne capteur). Filtrable par statut lu/non-lu.",
+    responses={**STANDARD_ERRORS}
+)
 async def list_alerts(unread_only: bool = False, limit: int = 50,
                       current_user: dict = Depends(get_current_user)):
     return await mes_service.get_alerts(unread_only, limit)
 
-@router.get("/alerts/count")
+@router.get("/alerts/count",
+    summary="Compteur d'alertes non lues",
+    description="Retourne le nombre d'alertes M.E.S. non lues pour affichage dans les badges de notification.",
+    responses={**STANDARD_ERRORS}
+)
 async def alert_count(current_user: dict = Depends(get_current_user)):
     count = await mes_service.get_unread_alert_count()
     return {"count": count}
 
-@router.put("/alerts/{alert_id}/read", response_model=SuccessResponse)
+@router.put("/alerts/{alert_id}/read", response_model=SuccessResponse,
+    summary="Marquer une alerte comme lue",
+    responses={**CRUD_ERRORS}
+)
 async def mark_read(alert_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.mark_alert_read(alert_id)
     return {"success": True, "message": "Alerte marquée comme lue"}
 
-@router.put("/alerts/read-all", response_model=SuccessResponse)
+@router.put("/alerts/read-all", response_model=SuccessResponse,
+    summary="Marquer toutes les alertes comme lues",
+    responses={**STANDARD_ERRORS}
+)
 async def mark_all_read(current_user: dict = Depends(get_current_user)):
     await mes_service.mark_all_alerts_read()
     return {"success": True, "message": "Toutes les alertes marquées comme lues"}
 
-@router.delete("/alerts/all", response_model=SuccessResponse)
+@router.delete("/alerts/all", response_model=SuccessResponse,
+    summary="Supprimer toutes les alertes",
+    description="Supprime definitivement toutes les alertes M.E.S. Cette action est irreversible.",
+    responses={**STANDARD_ERRORS}
+)
 async def delete_all_alerts(current_user: dict = Depends(get_current_user)):
-    """Supprimer toutes les alertes M.E.S."""
     await mes_service.delete_all_alerts()
     return {"success": True, "message": "Toutes les alertes supprimées"}
 
 
 # ==================== TOOLS ====================
 
-@router.post("/machines/{machine_id}/ping")
+@router.post("/machines/{machine_id}/ping",
+    summary="Ping capteur machine",
+    description="Envoie un ping au capteur MQTT de la machine pour verifier la connectivite.",
+    responses={**CRUD_ERRORS}
+)
 async def ping_sensor(machine_id: str, current_user: dict = Depends(get_current_user)):
     return await mes_service.ping_sensor(machine_id)
 
-@router.post("/machines/{machine_id}/simulate-pulse", response_model=SuccessResponse)
+@router.post("/machines/{machine_id}/simulate-pulse", response_model=SuccessResponse,
+    summary="Simuler une impulsion",
+    description="Simule une impulsion de production pour tester la configuration de la machine (increment du compteur de pieces).",
+    responses={**CRUD_ERRORS}
+)
 async def simulate_pulse(machine_id: str, current_user: dict = Depends(get_current_user)):
-    """Simuler une impulsion pour tester"""
     await mes_service.record_pulse(machine_id, 1)
     return {"success": True, "message": "Impulsion simulée"}
 
 
 # ==================== REJECT REASONS (Admin) ====================
 
-@router.get("/reject-reasons")
+@router.get("/reject-reasons",
+    summary="Lister les motifs de rebut",
+    description="Retourne la liste des motifs de rebut predefinis utilisables lors de la declaration des pieces defectueuses.",
+    responses={**STANDARD_ERRORS}
+)
 async def list_reject_reasons(current_user: dict = Depends(get_current_user)):
     return await mes_service.get_reject_reasons()
 
-@router.post("/reject-reasons")
+@router.post("/reject-reasons",
+    summary="Creer un motif de rebut",
+    description="Ajoute un nouveau motif de rebut a la liste des motifs predefinis (ex: defaut visuel, casse, hors tolerance).",
+    responses={**STANDARD_ERRORS, 400: {"description": "Libelle requis"}}
+)
 async def create_reject_reason(data: dict, current_user: dict = Depends(get_current_user)):
     if not data.get("label"):
         raise HTTPException(400, "Le libellé est requis")
     return await mes_service.create_reject_reason(data)
 
-@router.put("/reject-reasons/{reason_id}")
+@router.put("/reject-reasons/{reason_id}",
+    summary="Modifier un motif de rebut",
+    responses={**CRUD_ERRORS}
+)
 async def update_reject_reason(reason_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     result = await mes_service.update_reject_reason(reason_id, data)
     if not result:
         raise HTTPException(404, "Motif non trouvé")
     return result
 
-@router.delete("/reject-reasons/{reason_id}", response_model=SuccessResponse)
+@router.delete("/reject-reasons/{reason_id}", response_model=SuccessResponse,
+    summary="Supprimer un motif de rebut",
+    responses={**CRUD_ERRORS}
+)
 async def delete_reject_reason(reason_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.delete_reject_reason(reason_id)
     return {"success": True, "message": "Motif de rebut supprimé"}
@@ -152,19 +190,30 @@ async def delete_reject_reason(reason_id: str, current_user: dict = Depends(get_
 
 # ==================== REJECTS (Operator) ====================
 
-@router.post("/machines/{machine_id}/rejects")
+@router.post("/machines/{machine_id}/rejects",
+    summary="Declarer un rebut",
+    description="Declare des pieces defectueuses sur une machine avec quantite, motif et commentaire optionnel. Impacte le calcul du TRS Qualite.",
+    responses={**CRUD_ERRORS, 400: {"description": "Quantite invalide"}}
+)
 async def declare_reject(machine_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     if not data.get("quantity") or int(data["quantity"]) <= 0:
         raise HTTPException(400, "La quantité doit être supérieure à 0")
     data["operator"] = current_user.get("name", current_user.get("email", ""))
     return await mes_service.declare_reject(machine_id, data)
 
-@router.get("/machines/{machine_id}/rejects")
+@router.get("/machines/{machine_id}/rejects",
+    summary="Historique des rebuts d'une machine",
+    description="Retourne l'historique des rebuts declares sur une machine avec filtres de date optionnels.",
+    responses={**CRUD_ERRORS}
+)
 async def list_rejects(machine_id: str, date_from: str = None, date_to: str = None,
                        current_user: dict = Depends(get_current_user)):
     return await mes_service.get_rejects(machine_id, date_from, date_to)
 
-@router.delete("/rejects/{reject_id}", response_model=SuccessResponse)
+@router.delete("/rejects/{reject_id}", response_model=SuccessResponse,
+    summary="Supprimer un rebut",
+    responses={**CRUD_ERRORS}
+)
 async def delete_reject(reject_id: str, current_user: dict = Depends(get_current_user)):
     await mes_service.delete_reject(reject_id)
     return {"success": True, "message": "Rebut supprimé"}
