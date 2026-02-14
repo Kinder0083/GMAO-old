@@ -624,8 +624,10 @@ const MainLayout = () => {
       />
       
       <RecentUpdatePopup />
+      <ChangelogPopup />
       <TokenValidator />
       <InactivityHandler />
+      <UpdateWarningOverlay />
       <ContextualHelpButton />
       <ConsignePopup />
     </div>
