@@ -9584,6 +9584,16 @@ async def startup_scheduler():
                     chapter.setdefault("updated_at", now_utc.isoformat())
                     await db.manual_chapters.insert_one(chapter)
                     manual_ch_added += 1
+                else:
+                    json_sections = chapter.get("sections", [])
+                    db_sections = existing.get("sections", [])
+                    new_secs = [s for s in json_sections if s not in db_sections]
+                    if new_secs:
+                        await db.manual_chapters.update_one(
+                            {"id": chapter["id"]},
+                            {"$addToSet": {"sections": {"$each": new_secs}}}
+                        )
+                        manual_ch_added += 1
             for section in manual_data.get("sections", []):
                 existing = await db.manual_sections.find_one({"id": section["id"]})
                 if not existing:
