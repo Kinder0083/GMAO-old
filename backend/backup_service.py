@@ -245,12 +245,25 @@ async def _upload_to_gdrive(file_bytes: bytes, filename: str, schedule: dict) ->
 
     folder_id = schedule.get("google_drive_folder_id")
 
+    # Si pas de dossier spécifié, utiliser/créer le dossier "Backup GMAO"
+    if not folder_id:
+        folder_name = "Backup GMAO"
+        query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        results = service.files().list(q=query, spaces='drive', fields='files(id)').execute()
+        existing = results.get('files', [])
+        if existing:
+            folder_id = existing[0]['id']
+        else:
+            folder_meta = {'name': folder_name, 'mimeType': 'application/vnd.google-apps.folder'}
+            folder = service.files().create(body=folder_meta, fields='id').execute()
+            folder_id = folder.get('id')
+            logger.info(f"[Backup] Dossier Google Drive créé: {folder_name} (ID: {folder_id})")
+
     file_metadata = {
         'name': filename,
-        'mimeType': 'application/zip'
+        'mimeType': 'application/zip',
+        'parents': [folder_id]
     }
-    if folder_id:
-        file_metadata['parents'] = [folder_id]
 
     media = MediaInMemoryUpload(file_bytes, mimetype='application/zip')
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
