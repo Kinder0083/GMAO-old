@@ -677,10 +677,37 @@ async def import_data(
         
         content = await file.read()
         data_sheets = {}
+        restored_files = 0
         
         # Lire le fichier selon son format
         try:
-            if file.filename.endswith('.csv'):
+            if file.filename.endswith('.zip'):
+                # Import depuis un ZIP (données + fichiers)
+                with zipfile.ZipFile(io.BytesIO(content), 'r') as zf:
+                    # 1. Extraire et lire le fichier Excel
+                    if 'data.xlsx' in zf.namelist():
+                        xlsx_bytes = zf.read('data.xlsx')
+                        all_sheets = pd.read_excel(io.BytesIO(xlsx_bytes), sheet_name=None, engine='openpyxl')
+                        logger.info(f"[Import ZIP] data.xlsx: {len(all_sheets)} feuilles")
+
+                        for sheet_name, df in all_sheets.items():
+                            module_name = SHEET_TO_MODULE.get(sheet_name.lower())
+                            if module_name and module_name in modules_to_import:
+                                data_sheets[module_name] = df
+                                logger.info(f"[Import ZIP] Feuille '{sheet_name}' -> '{module_name}': {len(df)} lignes")
+
+                    # 2. Restaurer les fichiers uploadés
+                    upload_entries = [n for n in zf.namelist() if n.startswith('uploads/') and not n.endswith('/')]
+                    for entry in upload_entries:
+                        target = UPLOADS_DIR / entry.replace('uploads/', '', 1)
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        with open(target, 'wb') as f:
+                            f.write(zf.read(entry))
+                        restored_files += 1
+
+                    logger.info(f"[Import ZIP] {restored_files} fichier(s) restauré(s)")
+
+            elif file.filename.endswith('.csv'):
                 separator = detect_csv_separator(content)
                 logger.info(f"📋 Séparateur détecté: '{separator}'")
                 df = pd.read_csv(io.BytesIO(content), sep=separator, encoding='utf-8')
