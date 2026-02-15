@@ -417,7 +417,10 @@
       "icon": "Database",
       "order": 23,
       "sections": [
-        "sec-023-01"
+        "sec-023-01",
+        "sec-023-02",
+        "sec-023-03",
+        "sec-023-04"
       ],
       "target_roles": [],
       "target_modules": [
