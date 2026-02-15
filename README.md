@@ -367,6 +367,7 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | POST | `/api/import/{module}` | Import donnees (admin) |
 | GET | `/api/backup/schedules` | Planifications de sauvegarde |
 | POST | `/api/backup/run` | Sauvegarde manuelle |
+| POST | `/api/backup/drive/upload/{id}` | Upload manuel d'un backup vers Google Drive |
 | GET | `/api/backup/drive/connect` | Connexion OAuth Google Drive |
 | GET | `/api/backup/drive/status` | Statut connexion Google Drive |
 | GET | `/api/version` | Version de l'application |
