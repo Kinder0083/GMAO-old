@@ -124,6 +124,8 @@ const ImportExport = () => {
       ))}
     </>
   );
+
+  const handleExport = async () => {
     try {
       setExporting(true);
       const backend_url = getBackendURL();
