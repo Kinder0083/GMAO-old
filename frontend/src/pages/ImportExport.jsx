@@ -184,6 +184,131 @@ const ImportExport = () => {
     </>
   );
 
+  // --- Backup Management Functions ---
+
+  const handleSaveSchedule = async () => {
+    try {
+      const payload = {
+        ...scheduleForm,
+        email_recipient: scheduleForm.email_recipient || null
+      };
+
+      if (editingSchedule) {
+        await axios.put(`${backend_url}/api/backup/schedules/${editingSchedule.id}`, payload, { headers: authHeaders });
+        toast({ title: 'Planification mise à jour' });
+      } else {
+        await axios.post(`${backend_url}/api/backup/schedules`, payload, { headers: authHeaders });
+        toast({ title: 'Planification créée' });
+      }
+
+      setShowScheduleForm(false);
+      setEditingSchedule(null);
+      resetScheduleForm();
+      loadBackupData();
+    } catch (error) {
+      toast({ title: 'Erreur', description: formatErrorMessage(error, 'Impossible de sauvegarder'), variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteSchedule = async (id) => {
+    if (!window.confirm('Supprimer cette planification ?')) return;
+    try {
+      await axios.delete(`${backend_url}/api/backup/schedules/${id}`, { headers: authHeaders });
+      toast({ title: 'Planification supprimée' });
+      loadBackupData();
+    } catch (error) {
+      toast({ title: 'Erreur', description: formatErrorMessage(error, 'Impossible de supprimer'), variant: 'destructive' });
+    }
+  };
+
+  const handleToggleSchedule = async (schedule) => {
+    try {
+      await axios.put(`${backend_url}/api/backup/schedules/${schedule.id}`, { enabled: !schedule.enabled }, { headers: authHeaders });
+      loadBackupData();
+    } catch (error) {
+      toast({ title: 'Erreur', description: formatErrorMessage(error), variant: 'destructive' });
+    }
+  };
+
+  const handleRunBackupNow = async () => {
+    try {
+      setRunningBackup(true);
+      await axios.post(`${backend_url}/api/backup/run`, {}, { headers: authHeaders });
+      toast({ title: 'Sauvegarde terminée' });
+      loadBackupData();
+    } catch (error) {
+      toast({ title: 'Erreur', description: formatErrorMessage(error, 'Erreur de sauvegarde'), variant: 'destructive' });
+    } finally {
+      setRunningBackup(false);
+    }
+  };
+
+  const handleConnectDrive = async () => {
+    try {
+      const res = await axios.get(`${backend_url}/api/backup/drive/connect`, { headers: authHeaders });
+      window.location.href = res.data.authorization_url;
+    } catch (error) {
+      toast({ title: 'Erreur', description: formatErrorMessage(error, 'Impossible de connecter Google Drive'), variant: 'destructive' });
+    }
+  };
+
+  const handleDisconnectDrive = async () => {
+    if (!window.confirm('Déconnecter Google Drive ?')) return;
+    try {
+      await axios.delete(`${backend_url}/api/backup/drive/disconnect`, { headers: authHeaders });
+      setDriveStatus({ connected: false });
+      toast({ title: 'Google Drive déconnecté' });
+    } catch (error) {
+      toast({ title: 'Erreur', description: formatErrorMessage(error), variant: 'destructive' });
+    }
+  };
+
+  const handleDownloadBackup = async (historyId) => {
+    try {
+      const res = await axios.get(`${backend_url}/api/backup/download/${historyId}`, {
+        headers: authHeaders, responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'backup.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({ title: 'Erreur', description: formatErrorMessage(error, 'Fichier non disponible'), variant: 'destructive' });
+    }
+  };
+
+  const startEditSchedule = (schedule) => {
+    setEditingSchedule(schedule);
+    setScheduleForm({
+      frequency: schedule.frequency || 'daily',
+      day_of_week: schedule.day_of_week ?? 0,
+      day_of_month: schedule.day_of_month ?? 1,
+      hour: schedule.hour ?? 2,
+      minute: schedule.minute ?? 0,
+      destination: schedule.destination || 'local',
+      retention_count: schedule.retention_count ?? 3,
+      email_recipient: schedule.email_recipient || '',
+      enabled: schedule.enabled ?? true
+    });
+    setShowScheduleForm(true);
+  };
+
+  const resetScheduleForm = () => {
+    setScheduleForm({
+      frequency: 'daily', day_of_week: 0, day_of_month: 1,
+      hour: 2, minute: 0, destination: 'local',
+      retention_count: 3, email_recipient: '', enabled: true
+    });
+  };
+
+  const freqLabels = { daily: 'Quotidienne', weekly: 'Hebdomadaire', monthly: 'Mensuelle' };
+  const destLabels = { local: 'Local', gdrive: 'Google Drive', local_gdrive: 'Local + Google Drive' };
+  const dowLabels = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
   const handleExport = async () => {
     try {
       setExporting(true);
