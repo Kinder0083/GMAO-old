@@ -339,7 +339,7 @@ def set_scheduler(scheduler):
 
 
 async def _reload_scheduler():
-    """Recharger les jobs de backup dans APScheduler"""
+    """Recharger les jobs de backup dans APScheduler en utilisant le fuseau horaire configuré"""
     if not _scheduler:
         return
 
@@ -348,6 +348,13 @@ async def _reload_scheduler():
     for job in existing_jobs:
         if job.id.startswith("backup_"):
             _scheduler.remove_job(job.id)
+
+    # Récupérer le fuseau horaire configuré dans les paramètres système
+    from datetime import timezone as tz, timedelta
+    settings = await db.system_settings.find_one({"_id": "default"})
+    offset_hours = settings.get("timezone_offset", 1) if settings else 1
+    user_tz = tz(timedelta(hours=offset_hours))
+    logger.info(f"[Backup] Fuseau horaire configuré: GMT{'+' if offset_hours >= 0 else ''}{offset_hours}")
 
     # Ajouter les nouveaux
     schedules = await db.backup_schedules.find({"enabled": True}).to_list(50)
@@ -358,35 +365,39 @@ async def _reload_scheduler():
         hour = schedule.get("hour", 2)
         minute = schedule.get("minute", 0)
 
+        trigger_kwargs = {"hour": hour, "minute": minute, "timezone": user_tz}
+
         if freq == "daily":
             _scheduler.add_job(
                 _run_scheduled_backup, 'cron',
-                hour=hour, minute=minute,
                 id=f"backup_{sid}",
                 name=f"Backup auto ({freq})",
                 args=[sid],
-                replace_existing=True
+                replace_existing=True,
+                **trigger_kwargs
             )
         elif freq == "weekly":
             dow = schedule.get("day_of_week", 0)
             dow_map = {0: 'mon', 1: 'tue', 2: 'wed', 3: 'thu', 4: 'fri', 5: 'sat', 6: 'sun'}
+            trigger_kwargs["day_of_week"] = dow_map.get(dow, 'mon')
             _scheduler.add_job(
                 _run_scheduled_backup, 'cron',
-                day_of_week=dow_map.get(dow, 'mon'), hour=hour, minute=minute,
                 id=f"backup_{sid}",
                 name=f"Backup auto ({freq})",
                 args=[sid],
-                replace_existing=True
+                replace_existing=True,
+                **trigger_kwargs
             )
         elif freq == "monthly":
             dom = schedule.get("day_of_month", 1)
+            trigger_kwargs["day"] = dom
             _scheduler.add_job(
                 _run_scheduled_backup, 'cron',
-                day=dom, hour=hour, minute=minute,
                 id=f"backup_{sid}",
                 name=f"Backup auto ({freq})",
                 args=[sid],
-                replace_existing=True
+                replace_existing=True,
+                **trigger_kwargs
             )
 
     logger.info(f"[Backup] Scheduler rechargé: {len(schedules)} planification(s) active(s)")
