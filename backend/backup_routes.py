@@ -188,9 +188,10 @@ async def download_backup(history_id: str, current_user: dict = Depends(get_curr
         raise HTTPException(status_code=404, detail="Fichier de backup non disponible localement")
 
     filename = os.path.basename(entry["file_path"])
+    media_type = "application/zip" if filename.endswith(".zip") else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return FileResponse(
         entry["file_path"],
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        media_type=media_type,
         filename=filename
     )
 
