@@ -2796,6 +2796,82 @@
       "video_url": null
     },
     {
+      "id": "sec-023-02",
+      "chapter_id": "ch-023",
+      "title": "Sauvegardes Automatiques",
+      "content": "**Sauvegardes Automatiques**\n\nLe module de sauvegardes automatiques permet de planifier des backups reguliers de votre base de donnees GMAO Iris.\n\n**Acceder aux sauvegardes :**\n1. Menu lateral > **Import / Export**\n2. Onglet **Sauvegardes Automatiques**\n\n**Planifier une sauvegarde :**\n1. Cliquez sur **\"+ Nouvelle planification\"**\n2. Configurez :\n   - **Frequence** : Quotidien, Hebdomadaire ou Mensuel\n   - **Heure** : Heure de declenchement\n   - **Jour** : Jour de la semaine (hebdo) ou du mois (mensuel)\n   - **Destination** : Local, Google Drive, ou les deux\n   - **Retention** : Nombre de backups a conserver (1 a 5)\n   - **Email de notification** : Adresse pour recevoir les resultats\n3. Cliquez sur **\"Sauvegarder\"**\n\n**Fuseau horaire :**\nLes heures de planification utilisent le fuseau horaire configure dans **Parametres > Fuseau Horaire**. Si vous modifiez le fuseau horaire, redemarrez le backend pour que le scheduler prenne en compte le changement.\n\nExemple : si votre fuseau est GMT+1 (Europe/Paris) et que vous planifiez un backup a 02:00, il se declenchera bien a 02:00 heure de Paris.\n\n**Icone de statut dans le header :**\nUne icone disquette est visible dans la barre de navigation :\n- **Vert** : Le dernier backup a reussi recemment\n- **Rouge** : Le dernier backup a echoue\n- **Gris** : Aucun backup recent ou pas encore de backup\n\n**Sauvegarde manuelle :**\nCliquez sur le bouton **\"Lancer un backup maintenant\"** pour declencher une sauvegarde immediate sans attendre la planification.",
+      "order": 67,
+      "level": "advanced",
+      "target_roles": [],
+      "target_modules": [
+        "importExport"
+      ],
+      "keywords": [
+        "sauvegarde",
+        "backup",
+        "automatique",
+        "planification",
+        "fuseau horaire",
+        "retention"
+      ],
+      "created_at": "2026-02-20T10:00:00.000000+00:00",
+      "updated_at": "2026-02-20T10:00:00.000000+00:00",
+      "images": [],
+      "parent_id": null,
+      "video_url": null
+    },
+    {
+      "id": "sec-023-03",
+      "chapter_id": "ch-023",
+      "title": "Upload Manuel vers Google Drive",
+      "content": "**Upload Manuel d'un Backup vers Google Drive**\n\nEn plus des sauvegardes automatiques vers Google Drive, vous pouvez envoyer manuellement un backup existant.\n\n**Pre-requis :**\n- Google Drive doit etre connecte (voir section \"Configuration Google Drive\")\n- Au moins un backup doit exister dans l'historique\n\n**Comment faire :**\n1. Allez dans **Import / Export > Sauvegardes Automatiques**\n2. Dans la liste **Historique des sauvegardes**, reperer le backup souhaite\n3. Cliquez sur l'icone **upload** (fleche vers le haut) a cote du backup\n4. L'upload demarre et une notification confirme le succes ou l'echec\n\n**Ou sont stockes les fichiers ?**\nTous les backups uploades sont places dans un dossier **\"Backup GMAO\"** sur votre Google Drive. Ce dossier est cree automatiquement s'il n'existe pas.\n\n**En cas d'erreur :**\n- **\"Google Drive non connecte\"** : Connectez-vous d'abord via le bouton \"Connecter Google Drive\"\n- **\"Erreur 403 - accessNotConfigured\"** : L'API Google Drive n'est pas activee dans votre projet Google Cloud (voir section suivante)\n- **\"Fichier introuvable\"** : Le fichier backup a peut-etre ete supprime du serveur (retention depassee)",
+      "order": 68,
+      "level": "advanced",
+      "target_roles": [],
+      "target_modules": [
+        "importExport"
+      ],
+      "keywords": [
+        "upload",
+        "google drive",
+        "manuel",
+        "backup",
+        "envoyer",
+        "cloud"
+      ],
+      "created_at": "2026-02-20T10:00:00.000000+00:00",
+      "updated_at": "2026-02-20T10:00:00.000000+00:00",
+      "images": [],
+      "parent_id": null,
+      "video_url": null
+    },
+    {
+      "id": "sec-023-04",
+      "chapter_id": "ch-023",
+      "title": "Configuration Google Drive",
+      "content": "**Guide Complet : Configurer Google Drive pour les Sauvegardes**\n\nCe guide detaille toutes les etapes pour connecter Google Drive a GMAO Iris.\n\n**Etape 1 : Creer un projet Google Cloud**\n1. Allez sur https://console.cloud.google.com\n2. Creez un nouveau projet (ou selectionnez un projet existant)\n3. Notez le **numero du projet** (visible dans les parametres du projet)\n\n**Etape 2 : Activer l'API Google Drive (OBLIGATOIRE)**\n1. Dans le menu lateral, allez dans **APIs & Services > Bibliotheque**\n2. Recherchez **\"Google Drive API\"**\n3. Cliquez dessus puis cliquez sur **\"Activer\"** (Enable)\n4. Attendez 1-2 minutes pour que l'activation se propage\n\nSans cette etape, vous obtiendrez une erreur **\"HttpError 403 - accessNotConfigured\"** lors de l'upload vers Google Drive.\n\nLien direct pour activer l'API :\nhttps://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=VOTRE_NUMERO_PROJET\n\n**Etape 3 : Configurer l'ecran de consentement OAuth**\n1. Allez dans **APIs & Services > Ecran de consentement OAuth**\n2. Choisissez **\"Externe\"** comme type d'utilisateur\n3. Remplissez les champs obligatoires (nom de l'application, email de contact)\n4. Dans les **Scopes**, ajoutez : https://www.googleapis.com/auth/drive.file\n5. Dans **Utilisateurs test**, ajoutez votre adresse email Google\n6. Publiez ou gardez en mode test (suffisant pour usage interne)\n\n**Etape 4 : Creer les identifiants OAuth 2.0**\n1. Allez dans **APIs & Services > Identifiants**\n2. Cliquez sur **\"Creer des identifiants\" > \"ID client OAuth\"**\n3. Type d'application : **Application Web**\n4. Nom : GMAO Iris (ou autre)\n5. **URI de redirection autorisee** : ajoutez exactement :\n   https://votre-domaine.com/api/backup/drive/callback\n6. Copiez le **Client ID** et le **Client Secret** generes\n\n**Etape 5 : Configurer le backend**\n1. Renseignez les variables dans backend/.env :\n   - GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com\n   - GOOGLE_CLIENT_SECRET=GOCSPX-xxxx\n   - GOOGLE_DRIVE_REDIRECT_URI=https://votre-domaine.com/api/backup/drive/callback\n2. Redemarrez le backend : supervisorctl restart gmao-iris-backend\n\n**Etape 6 : Connecter depuis l'application**\n1. Dans GMAO Iris : **Import/Export > Sauvegardes Automatiques**\n2. Cliquez sur **\"Connecter Google Drive\"**\n3. Autorisez l'acces dans la fenetre Google\n4. Le statut passe a **\"Connecte\"** en vert\n\n**Checklist rapide :**\n- API Google Drive activee dans Google Cloud Console\n- Ecran de consentement OAuth configure\n- Identifiants OAuth crees avec la bonne URI de redirection\n- Variables .env renseignees (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_DRIVE_REDIRECT_URI)\n- Backend redemarre apres modification du .env\n- Connexion effectuee depuis l'interface de l'application\n\n**Depannage :**\n- **redirect_uri_mismatch** : L'URI dans Google Cloud ne correspond pas a GOOGLE_DRIVE_REDIRECT_URI dans le .env\n- **invalid_grant** : Le code d'autorisation a expire, reessayez la connexion\n- **HttpError 403 - accessNotConfigured** : L'API Google Drive n'est pas activee (voir Etape 2)\n- **Packages manquants** : Verifiez que google-auth-oauthlib est installe (pip list | grep google)",
+      "order": 69,
+      "level": "advanced",
+      "target_roles": [],
+      "target_modules": [
+        "importExport"
+      ],
+      "keywords": [
+        "google drive",
+        "configuration",
+        "oauth",
+        "api",
+        "credentials",
+        "setup",
+        "cloud"
+      ],
+      "created_at": "2026-02-20T10:00:00.000000+00:00",
+      "updated_at": "2026-02-20T10:00:00.000000+00:00",
+      "images": [],
+      "parent_id": null,
+      "video_url": null
+    },
+    {
       "id": "sec-024-01",
       "content": "🤖 **Votre Assistant IA Personnalisé**\n\nGMAO Iris intègre un assistant IA intelligent qui vous aide à utiliser l'application efficacement.\n\n📌 **Qu'est-ce que l'Assistant IA ?**\n\nL'assistant IA (nommé \"Adria\" par défaut) est un chatbot intelligent qui peut :\n\n• Répondre à vos questions sur l'utilisation de GMAO Iris\n• Vous guider dans la création d'ordres de travail, équipements, etc.\n• Naviguer automatiquement vers les pages demandées\n• Analyser vos données et statistiques\n• Vous aider à résoudre des problèmes courants\n\n🎯 **Comment accéder à l'Assistant IA ?**\n\n1. **Bouton dans la barre de navigation**\n   • Cliquez sur le bouton robot (ex: \"Adria\") en haut à droite\n   • À côté des boutons \"Manuel\" et \"Aide\"\n\n2. **Menu contextuel (clic droit)**\n   • Faites un clic droit n'importe où dans l'application\n   • Sélectionnez \"Discuter avec Adria\"\n   • L'assistant connaîtra le contexte de la page où vous êtes\n\n💬 **Fonctionnalités du Chat**\n\n• **Actions rapides** : Boutons pour créer un OT, ajouter un équipement, etc.\n• **Navigation automatique** : L'IA peut vous diriger vers les pages demandées\n• **Historique** : Vos conversations sont sauvegardées\n• **Multilingue** : Répond dans la langue de votre interface\n\n💡 **Astuce** : Posez vos questions en langage naturel, l'assistant comprend le contexte !",
       "created_at": "2025-12-21T08:27:31.951539+00:00",
