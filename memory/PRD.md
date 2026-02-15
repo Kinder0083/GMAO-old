@@ -60,5 +60,15 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète et 
 - **Fichiers modifiés** : `frontend/src/components/Layout/MainLayout.jsx`
 - **Fichiers créés** : `frontend/src/hooks/useWorkOrdersCount.js`, `useSurveillanceBadge.js`, `useInventoryStats.js`, `useChatUnreadCount.js`
 
+### WebSocket temps réel pour les badges header (15 Fév 2026)
+- **Implémentation** : Toutes les icônes du header sont maintenant mises à jour en temps réel via WebSocket
+- **Architecture** :
+  - Backend : `realtime_manager.py` auto-broadcast vers la room `header_badges` quand une entité pertinente change
+  - Frontend : `useHeaderWebSocket.js` ouvre 1 seule connexion WS et dispatche des window events
+  - 5 hooks individuels écoutent ces events + polling 5min en fallback
+- **Entités couvertes** : work_orders, improvements, intervention_requests, improvement_requests, preventive_maintenance, inventory, surveillance_plans, chat
+- **Fichiers créés** : `useHeaderWebSocket.js`
+- **Fichiers modifiés** : `realtime_manager.py`, `realtime_events.py`, `chat_routes.py`, tous les hooks header
+
 ## Backlog
 Aucune tâche en attente.
