@@ -245,64 +245,83 @@ const Updates = () => {
   const proceedWithUpdate = async () => {
     confirm({
       title: '⚠️ ATTENTION - Mise à jour système',
-      description: 'Une sauvegarde automatique de la base de données sera créée avant la mise à jour.\n\nL\'application sera indisponible pendant quelques minutes.\n\nVoulez-vous continuer ?',
-      confirmText: 'Mettre à jour',
+      description: 'Cette opération va :\n\n• Envoyer un avertissement à TOUS les utilisateurs connectés\n• Déconnecter automatiquement tous les utilisateurs après 30 secondes\n• Créer une sauvegarde complète de la base de données\n• Télécharger et installer la mise à jour\n• Redémarrer tous les services\n\nL\'application sera indisponible pendant environ 5 minutes.\n\nVoulez-vous continuer ?',
+      confirmText: 'Envoyer l\'avertissement et installer',
       cancelText: 'Annuler',
       variant: 'default',
       onConfirm: async () => {
         try {
           setUpdating(true);
-      setUpdateLogs(['🚀 Démarrage de la mise à jour...']);
-      
-      const token = localStorage.getItem('token');
-      
-      // Simuler les logs en temps réel
-      const logMessages = [
-        '📦 Création du backup de la base de données...',
-        '✅ Backup créé avec succès',
-        '📥 Téléchargement des dernières modifications...',
-        '🐍 Mise à jour du backend Python...',
-        '⚛️  Mise à jour du frontend React...',
-        '🔧 Compilation du frontend...',
-        '🔄 Redémarrage des services...'
-      ];
+          const token = localStorage.getItem('token');
+          const version = latestVersion?.version || '';
 
-      // Afficher les logs progressivement
-      for (let i = 0; i < logMessages.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setUpdateLogs(prev => [...prev, logMessages[i]]);
-      }
+          // Étape 1: Broadcaster l'avertissement à tous les utilisateurs connectés
+          setUpdateLogs(['📢 Envoi de l\'avertissement aux utilisateurs connectés...']);
 
-      // Appliquer la mise à jour
-      const response = await axios.post(
-        `${BACKEND_URL}/api/updates/apply`,
-        {},
-        {
-          params: { version: latestVersion.version },
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+          try {
+            const warningRes = await axios.post(
+              `${BACKEND_URL}/api/updates/broadcast-warning`,
+              null,
+              {
+                params: { version },
+                headers: { Authorization: `Bearer ${token}` }
+              }
+            );
+            const connectedCount = warningRes.data?.connected_users || 0;
+            setUpdateLogs(prev => [...prev, `✅ Avertissement envoyé à ${connectedCount} utilisateur(s)`]);
+          } catch (warningError) {
+            setUpdateLogs(prev => [...prev, '⚠️ Impossible d\'envoyer l\'avertissement (non bloquant)']);
+          }
 
-      if (response.data.success) {
-        setUpdateLogs(prev => [...prev, '✅ Mise à jour terminée avec succès !']);
-        setUpdateLogs(prev => [...prev, '⏳ Attente du redémarrage des services...']);
-        
-        // Attendre que le backend soit à nouveau disponible avec la nouvelle version
-        await waitForBackendReady(token, latestVersion.version);
-      }
+          // Étape 2: Attendre 32 secondes pour que les utilisateurs soient déconnectés
+          setUpdateLogs(prev => [...prev, '⏳ Attente de 30 secondes pour la déconnexion des utilisateurs...']);
+          for (let i = 30; i > 0; i -= 5) {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            if (i > 5) {
+              setUpdateLogs(prev => [...prev, `⏳ ${i - 5} secondes restantes...`]);
+            }
+          }
+          setUpdateLogs(prev => [...prev, '✅ Tous les utilisateurs ont été déconnectés']);
+
+          // Étape 3: Appliquer la mise à jour
+          const logMessages = [
+            '📦 Création du backup de la base de données...',
+            '📥 Téléchargement des dernières modifications...',
+            '🐍 Mise à jour du backend Python...',
+            '⚛️  Mise à jour du frontend React...',
+            '🔧 Compilation du frontend...',
+            '🔄 Redémarrage des services...'
+          ];
+
+          for (let i = 0; i < logMessages.length; i++) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setUpdateLogs(prev => [...prev, logMessages[i]]);
+          }
+
+          const response = await axios.post(
+            `${BACKEND_URL}/api/updates/apply`,
+            {},
+            {
+              params: { version },
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 300000
+            }
+          );
+
+          if (response.data.success) {
+            setUpdateLogs(prev => [...prev, '✅ Mise à jour terminée avec succès !']);
+            setUpdateLogs(prev => [...prev, '⏳ Attente du redémarrage des services...']);
+            await waitForBackendReady(token, version);
+          }
         } catch (error) {
-          // Si erreur réseau/gateway, le backend est probablement en train de redémarrer
           if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || 
               error.response?.status === 502 || error.response?.status === 503) {
             setUpdateLogs(prev => [...prev, '🔄 Services en cours de redémarrage...']);
             setUpdateLogs(prev => [...prev, '⏳ Attente de la disponibilité du backend...']);
-            
-            // Attendre que le backend soit à nouveau disponible avec la nouvelle version
             const token = localStorage.getItem('token');
-            await waitForBackendReady(token, latestVersion.version);
+            await waitForBackendReady(token, latestVersion?.version);
           } else {
             setUpdateLogs(prev => [...prev, `❌ Erreur: ${error.response?.data?.detail || error.message}`]);
-            
             toast({
               title: 'Erreur',
               description: formatErrorMessage(error, 'Échec de la mise à jour'),

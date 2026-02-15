@@ -105,6 +105,20 @@ async def execute_backup(schedule: dict) -> dict:
         file_bytes = zip_output.getvalue()
         file_size = len(file_bytes)
 
+        # Vérification d'intégrité du ZIP
+        try:
+            verify_buf = io.BytesIO(file_bytes)
+            with zipfile.ZipFile(verify_buf, 'r') as zf_verify:
+                bad_file = zf_verify.testzip()
+                if bad_file is not None:
+                    raise Exception(f"Fichier corrompu dans le ZIP: {bad_file}")
+                names = zf_verify.namelist()
+                if "data.xlsx" not in names:
+                    raise Exception("data.xlsx manquant dans le ZIP")
+            logger.info(f"[Backup] Intégrité ZIP vérifiée: {len(names)} entrée(s), aucune corruption")
+        except zipfile.BadZipFile as e:
+            raise Exception(f"Archive ZIP invalide: {e}")
+
         timestamp = started_at.strftime('%Y%m%d_%H%M%S')
         filename = f"backup_gmao_{timestamp}.zip"
         destination = schedule.get("destination", "local")
