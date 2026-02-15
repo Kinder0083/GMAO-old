@@ -94,51 +94,6 @@ const MainLayout = () => {
         if (parsedUser.firstLogin === true) {
           setFirstLoginDialogOpen(true);
         }
-
-        loadWorkOrdersCount(parsedUser.id);
-        loadSurveillanceBadgeStats();
-        loadInventoryStats();
-        
-        const intervalId = setInterval(() => {
-          loadWorkOrdersCount(parsedUser.id);
-          loadSurveillanceBadgeStats();
-          loadInventoryStats();
-        }, 60000);
-        
-        const handleWorkOrderChange = () => {
-          loadWorkOrdersCount(parsedUser.id);
-        };
-        
-        const handleSurveillanceChange = () => {
-          loadSurveillanceBadgeStats();
-        };
-        
-        const handleInventoryChange = () => {
-          loadInventoryStats();
-        };
-        
-        window.addEventListener('workOrderCreated', handleWorkOrderChange);
-        window.addEventListener('workOrderUpdated', handleWorkOrderChange);
-        window.addEventListener('workOrderDeleted', handleWorkOrderChange);
-        window.addEventListener('surveillanceItemCreated', handleSurveillanceChange);
-        window.addEventListener('surveillanceItemUpdated', handleSurveillanceChange);
-        window.addEventListener('surveillanceItemDeleted', handleSurveillanceChange);
-        window.addEventListener('inventoryItemCreated', handleInventoryChange);
-        window.addEventListener('inventoryItemUpdated', handleInventoryChange);
-        window.addEventListener('inventoryItemDeleted', handleInventoryChange);
-        
-        return () => {
-          clearInterval(intervalId);
-          window.removeEventListener('workOrderCreated', handleWorkOrderChange);
-          window.removeEventListener('workOrderUpdated', handleWorkOrderChange);
-          window.removeEventListener('workOrderDeleted', handleWorkOrderChange);
-          window.removeEventListener('surveillanceItemCreated', handleSurveillanceChange);
-          window.removeEventListener('surveillanceItemUpdated', handleSurveillanceChange);
-          window.removeEventListener('surveillanceItemDeleted', handleSurveillanceChange);
-          window.removeEventListener('inventoryItemCreated', handleInventoryChange);
-          window.removeEventListener('inventoryItemUpdated', handleInventoryChange);
-          window.removeEventListener('inventoryItemDeleted', handleInventoryChange);
-        };
       } catch (error) {
         console.error('Erreur lors du parsing des infos utilisateur:', error);
       }
