@@ -3,8 +3,12 @@ Routes pour l'import/export de données GMAO Iris
 Module séparé pour une meilleure organisation du code
 """
 import io
+import os
+import zipfile
 import logging
+import shutil
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from fastapi.responses import StreamingResponse
@@ -18,6 +22,9 @@ router = APIRouter(tags=["Import/Export"])
 
 # Variable globale pour la DB (sera injectée depuis server.py)
 db = None
+
+# Répertoire des uploads
+UPLOADS_DIR = Path("/app/backend/uploads")
 
 def init_db(database):
     """Initialiser la référence à la base de données"""
