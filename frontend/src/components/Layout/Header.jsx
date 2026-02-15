@@ -17,6 +17,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
 import HelpButton from '../Common/HelpButton';
+import HeaderClock from '../Common/HeaderClock';
 import AIButton from '../Common/AIButton';
 import ManualButton from '../Common/ManualButton';
 import AlertNotifications from '../Common/AlertNotifications';
