@@ -196,6 +196,107 @@ async def download_backup(history_id: str, current_user: dict = Depends(get_curr
     )
 
 
+# --- Upload manuel vers Google Drive ---
+
+GDRIVE_FOLDER_NAME = "Backup GMAO"
+
+
+async def _get_drive_service():
+    """Obtenir un service Google Drive authentifié"""
+    from googleapiclient.discovery import build
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request as GoogleRequest
+
+    creds_doc = await db.drive_credentials.find_one({"key": "admin"})
+    if not creds_doc:
+        raise HTTPException(status_code=400, detail="Google Drive non connecté. Veuillez d'abord connecter votre compte.")
+
+    creds = Credentials(
+        token=creds_doc["access_token"],
+        refresh_token=creds_doc.get("refresh_token"),
+        token_uri=creds_doc["token_uri"],
+        client_id=creds_doc["client_id"],
+        client_secret=creds_doc["client_secret"],
+        scopes=creds_doc.get("scopes")
+    )
+
+    if creds.expired and creds.refresh_token:
+        creds.refresh(GoogleRequest())
+        await db.drive_credentials.update_one(
+            {"key": "admin"},
+            {"$set": {
+                "access_token": creds.token,
+                "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+
+    return build('drive', 'v3', credentials=creds)
+
+
+async def _get_or_create_gdrive_folder(service, folder_name: str) -> str:
+    """Trouver ou créer un dossier sur Google Drive, retourne son ID"""
+    query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    results = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+    files = results.get('files', [])
+    if files:
+        return files[0]['id']
+
+    file_metadata = {
+        'name': folder_name,
+        'mimeType': 'application/vnd.google-apps.folder'
+    }
+    folder = service.files().create(body=file_metadata, fields='id').execute()
+    logger.info(f"[Backup] Dossier Google Drive créé: {folder_name} (ID: {folder.get('id')})")
+    return folder.get('id')
+
+
+@router.post("/drive/upload/{history_id}")
+async def upload_backup_to_drive(history_id: str, current_user: dict = Depends(get_current_admin_user)):
+    """Uploader manuellement un backup existant vers Google Drive dans le dossier 'Backup GMAO'"""
+    from googleapiclient.http import MediaFileUpload
+
+    entry = await db.backup_history.find_one({"_id": ObjectId(history_id)})
+    if not entry:
+        raise HTTPException(status_code=404, detail="Backup non trouvé dans l'historique")
+
+    file_path = entry.get("file_path")
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Fichier de backup non disponible localement")
+
+    if entry.get("google_drive_file_id"):
+        raise HTTPException(status_code=400, detail="Ce backup est déjà uploadé sur Google Drive")
+
+    try:
+        service = await _get_drive_service()
+        folder_id = await _get_or_create_gdrive_folder(service, GDRIVE_FOLDER_NAME)
+
+        filename = os.path.basename(file_path)
+        file_metadata = {
+            'name': filename,
+            'parents': [folder_id],
+            'mimeType': 'application/zip'
+        }
+        media = MediaFileUpload(file_path, mimetype='application/zip', resumable=True)
+        uploaded_file = service.files().create(body=file_metadata, media_body=media, fields='id,name').execute()
+        gdrive_file_id = uploaded_file.get('id')
+
+        await db.backup_history.update_one(
+            {"_id": ObjectId(history_id)},
+            {"$set": {"google_drive_file_id": gdrive_file_id}}
+        )
+
+        logger.info(f"[Backup] Upload manuel vers Google Drive réussi: {filename} -> {gdrive_file_id}")
+        return {"success": True, "google_drive_file_id": gdrive_file_id, "message": f"Backup uploadé dans le dossier '{GDRIVE_FOLDER_NAME}'"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Backup] Erreur upload manuel Google Drive: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'upload: {str(e)}")
+
+
+
 # --- Google Drive OAuth ---
 
 @router.get("/drive/status")
