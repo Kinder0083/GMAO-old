@@ -42,6 +42,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import { iconMap } from './menuConfig';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useOverdueItems } from '../../hooks/useOverdueItems';
 import { getBackendURL } from '../../utils/config';
 import { usePreferences } from '../../contexts/PreferencesContext';
 
