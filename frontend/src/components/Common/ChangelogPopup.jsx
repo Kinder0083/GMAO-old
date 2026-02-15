@@ -30,8 +30,9 @@ const ChangelogPopup = () => {
         setUnseenCount(unseen_count || 0);
         
         // Afficher le popup seulement s'il y a des entrées non lues
-        const dismissedVersion = localStorage.getItem('changelog_dismissed');
-        if (unseen_count > 0 && entries[0]?.version !== dismissedVersion) {
+        const dismissedKey = localStorage.getItem('changelog_dismissed');
+        const latestKey = entries[0]?.version || entries[0]?.started_at || '';
+        if (unseen_count > 0 && latestKey && latestKey !== dismissedKey) {
           setShowPopup(true);
         }
       }
@@ -44,7 +45,8 @@ const ChangelogPopup = () => {
     try {
       await api.post('/changelog/mark-seen');
       if (changelog.length > 0) {
-        localStorage.setItem('changelog_dismissed', changelog[0].version);
+        const latestKey = changelog[0].version || changelog[0].started_at || '';
+        localStorage.setItem('changelog_dismissed', latestKey);
       }
     } catch (e) {
       // Silently fail
