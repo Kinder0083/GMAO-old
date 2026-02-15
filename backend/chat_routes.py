@@ -187,6 +187,18 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     else:
                         # Message de groupe : broadcast à tous
                         await manager.broadcast(broadcast_data)
+                    
+                    # Notifier les badges du header (messages non lus)
+                    try:
+                        from realtime_manager import realtime_manager
+                        await realtime_manager.broadcast("header_badges", {
+                            "type": "header_refresh",
+                            "source": "chat",
+                            "event": "new_message",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+                    except Exception:
+                        pass
                 
                 elif message_type == "typing":
                     # Notification "utilisateur est en train d'écrire"
