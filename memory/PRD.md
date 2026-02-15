@@ -43,6 +43,13 @@ Application GMAO (Gestion de Maintenance Assistee par Ordinateur) complete pour 
 ### Configuration serveur Proxmox (TERMINE)
 - Nginx SSL, Let's Encrypt, redirection HTTP->HTTPS, WebSocket proxy
 
+### Google Drive OAuth - Bug "Bad Gateway" (CORRIGE - 2026-02-16)
+- Le callback `/api/backup/drive/callback` n'avait aucun try/except
+- `scopes=None` dans le callback (au lieu de `['drive.file']`)
+- Toute erreur (code invalide, URI mismatch, réseau) crashait le backend → 502 Nginx
+- Fix : error handling complet, logging, scopes corrigés, redirection avec message d'erreur
+- Frontend affiche maintenant le message d'erreur Google Drive via `drive_error` query param
+
 ### Script post-installation SSL + Google Drive (TERMINE - 2026-02-16)
 - Script interactif `gmao-ssl-gdrive-setup.sh` (579 lignes)
 - Fonctionnalites :
