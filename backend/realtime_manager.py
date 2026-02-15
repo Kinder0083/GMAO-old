@@ -11,6 +11,13 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
+# Entités dont les changements doivent notifier les badges du header
+HEADER_RELEVANT_ENTITIES = {
+    "work_orders", "improvements", "intervention_requests",
+    "improvement_requests", "preventive_maintenance",
+    "inventory", "surveillance_plans", "notification"
+}
+
 
 class RealtimeManager:
     """
