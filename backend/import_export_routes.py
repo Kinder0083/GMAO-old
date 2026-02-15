@@ -788,8 +788,9 @@ async def import_data(
         
         return {
             "success": True,
-            "message": f"Import réussi: {stats['inserted']} insérés, {stats['updated']} mis à jour",
-            "stats": stats
+            "message": f"Import réussi: {stats['inserted']} insérés, {stats['updated']} mis à jour" + (f", {restored_files} fichiers restaurés" if restored_files > 0 else ""),
+            "stats": stats,
+            "restored_files": restored_files
         }
         
     except HTTPException:
