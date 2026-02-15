@@ -64,6 +64,7 @@ class EntityType(str, Enum):
     USERS = "users"
     AVAILABILITIES = "availabilities"
     DEMANDES_ARRET = "demandes_arret"  # Demandes d'arrêt pour maintenance
+    HEADER_BADGES = "header_badges"  # Room agrégée pour les badges du header
 
 
 def create_event(event_type: EventType, entity_type: EntityType, data: Any, user_id: str = None) -> Dict:
