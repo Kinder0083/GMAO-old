@@ -422,11 +422,31 @@ const BackupTab = () => {
                       <td className="py-2.5 text-gray-500">{h.module_count || '-'}</td>
                       <td className="py-2.5 text-gray-500">{h.file_count || '-'}</td>
                       <td className="py-2.5">
-                        {h.status === 'success' && h.file_path && (
-                          <Button size="sm" variant="ghost" onClick={() => handleDownloadBackup(h.id)} data-testid={`download-backup-${h.id}`}>
-                            <Download size={14} />
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {h.status === 'success' && h.file_path && (
+                            <Button size="sm" variant="ghost" onClick={() => handleDownloadBackup(h.id)} title="Télécharger" data-testid={`download-backup-${h.id}`}>
+                              <Download size={14} />
+                            </Button>
+                          )}
+                          {h.status === 'success' && h.file_path && driveStatus.connected && !h.google_drive_file_id && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleUploadToDrive(h.id)}
+                              disabled={uploadingToDrive === h.id}
+                              title="Uploader vers Google Drive"
+                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                              data-testid={`upload-drive-${h.id}`}
+                            >
+                              {uploadingToDrive === h.id ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
+                            </Button>
+                          )}
+                          {h.google_drive_file_id && (
+                            <span className="text-emerald-500 ml-1" title="Uploadé sur Google Drive" data-testid={`drive-uploaded-${h.id}`}>
+                              <Cloud size={14} />
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
