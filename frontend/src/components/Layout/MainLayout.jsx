@@ -115,20 +115,17 @@ const MainLayout = () => {
         }
 
         loadWorkOrdersCount(parsedUser.id);
-        loadOverdueCount();
         loadSurveillanceBadgeStats();
         loadInventoryStats();
         
         const intervalId = setInterval(() => {
           loadWorkOrdersCount(parsedUser.id);
-          loadOverdueCount();
           loadSurveillanceBadgeStats();
           loadInventoryStats();
         }, 60000);
         
         const handleWorkOrderChange = () => {
           loadWorkOrdersCount(parsedUser.id);
-          loadOverdueCount();
         };
         
         const handleSurveillanceChange = () => {
@@ -142,9 +139,6 @@ const MainLayout = () => {
         window.addEventListener('workOrderCreated', handleWorkOrderChange);
         window.addEventListener('workOrderUpdated', handleWorkOrderChange);
         window.addEventListener('workOrderDeleted', handleWorkOrderChange);
-        window.addEventListener('improvementCreated', handleWorkOrderChange);
-        window.addEventListener('improvementUpdated', handleWorkOrderChange);
-        window.addEventListener('improvementDeleted', handleWorkOrderChange);
         window.addEventListener('surveillanceItemCreated', handleSurveillanceChange);
         window.addEventListener('surveillanceItemUpdated', handleSurveillanceChange);
         window.addEventListener('surveillanceItemDeleted', handleSurveillanceChange);
@@ -157,9 +151,6 @@ const MainLayout = () => {
           window.removeEventListener('workOrderCreated', handleWorkOrderChange);
           window.removeEventListener('workOrderUpdated', handleWorkOrderChange);
           window.removeEventListener('workOrderDeleted', handleWorkOrderChange);
-          window.removeEventListener('improvementCreated', handleWorkOrderChange);
-          window.removeEventListener('improvementUpdated', handleWorkOrderChange);
-          window.removeEventListener('improvementDeleted', handleWorkOrderChange);
           window.removeEventListener('surveillanceItemCreated', handleSurveillanceChange);
           window.removeEventListener('surveillanceItemUpdated', handleSurveillanceChange);
           window.removeEventListener('surveillanceItemDeleted', handleSurveillanceChange);
