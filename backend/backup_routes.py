@@ -91,7 +91,7 @@ async def create_schedule(data: BackupScheduleCreate, current_user: dict = Depen
     await _reload_scheduler()
 
     schedule["id"] = str(result.inserted_id)
-    del schedule["_id"] if "_id" in schedule else None
+    schedule.pop("_id", None)
     return schedule
 
 
