@@ -50,6 +50,9 @@ const MainLayout = () => {
   const { inventoryStats } = useInventoryStats();
   const { chatUnreadCount } = useChatUnreadCount(canView('chatLive'));
 
+  // WebSocket centralisé pour les badges du header (temps réel)
+  useHeaderWebSocket();
+
   // Gérer le comportement auto-collapse de la sidebar
   useEffect(() => {
     if (preferences?.sidebar_behavior === 'auto_collapse') {
