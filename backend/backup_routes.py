@@ -1,0 +1,375 @@
+"""
+Routes API pour la gestion des sauvegardes automatiques
+"""
+import os
+import logging
+from datetime import datetime, timezone
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse, FileResponse
+from pydantic import BaseModel
+from typing import Optional
+from bson import ObjectId
+
+from dependencies import get_current_admin_user
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/backup", tags=["Backup"])
+
+db = None
+
+def init_db(database):
+    global db
+    db = database
+
+
+# --- Pydantic Models ---
+
+class BackupScheduleCreate(BaseModel):
+    frequency: str  # "daily", "weekly", "monthly"
+    day_of_week: Optional[int] = None  # 0=lundi pour weekly
+    day_of_month: Optional[int] = None  # 1-28 pour monthly
+    hour: int = 2
+    minute: int = 0
+    destination: str = "local"  # "local", "gdrive", "local_gdrive"
+    retention_count: int = 3
+    email_recipient: Optional[str] = None
+    google_drive_folder_id: Optional[str] = None
+    enabled: bool = True
+
+
+class BackupScheduleUpdate(BaseModel):
+    frequency: Optional[str] = None
+    day_of_week: Optional[int] = None
+    day_of_month: Optional[int] = None
+    hour: Optional[int] = None
+    minute: Optional[int] = None
+    destination: Optional[str] = None
+    retention_count: Optional[int] = None
+    email_recipient: Optional[str] = None
+    google_drive_folder_id: Optional[str] = None
+    enabled: Optional[bool] = None
+
+
+# --- Schedule CRUD ---
+
+@router.get("/schedules")
+async def get_schedules(current_user: dict = Depends(get_current_admin_user)):
+    """Récupérer toutes les planifications de sauvegarde"""
+    schedules = await db.backup_schedules.find({}, {"_id": 0, "id": {"$toString": "$_id"}}).to_list(50)
+    # Manual projection since $toString doesn't work in find projection
+    schedules = await db.backup_schedules.find().to_list(50)
+    result = []
+    for s in schedules:
+        s["id"] = str(s.pop("_id"))
+        result.append(s)
+    return result
+
+
+@router.post("/schedules")
+async def create_schedule(data: BackupScheduleCreate, current_user: dict = Depends(get_current_admin_user)):
+    """Créer une planification de sauvegarde"""
+    if data.retention_count < 1 or data.retention_count > 5:
+        raise HTTPException(status_code=400, detail="Le nombre de sauvegardes à garder doit être entre 1 et 5")
+
+    if data.destination in ("gdrive", "local_gdrive"):
+        creds = await db.drive_credentials.find_one({"key": "admin"})
+        if not creds:
+            raise HTTPException(status_code=400, detail="Google Drive non connecté. Veuillez d'abord connecter votre compte.")
+
+    schedule = {
+        **data.model_dump(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    result = await db.backup_schedules.insert_one(schedule)
+
+    # Recharger le scheduler
+    await _reload_scheduler()
+
+    schedule["id"] = str(result.inserted_id)
+    del schedule["_id"] if "_id" in schedule else None
+    return schedule
+
+
+@router.put("/schedules/{schedule_id}")
+async def update_schedule(schedule_id: str, data: BackupScheduleUpdate, current_user: dict = Depends(get_current_admin_user)):
+    """Mettre à jour une planification"""
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+
+    if "retention_count" in updates and (updates["retention_count"] < 1 or updates["retention_count"] > 5):
+        raise HTTPException(status_code=400, detail="Le nombre de sauvegardes à garder doit être entre 1 et 5")
+
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    result = await db.backup_schedules.update_one(
+        {"_id": ObjectId(schedule_id)},
+        {"$set": updates}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Planification non trouvée")
+
+    await _reload_scheduler()
+
+    updated = await db.backup_schedules.find_one({"_id": ObjectId(schedule_id)})
+    updated["id"] = str(updated.pop("_id"))
+    return updated
+
+
+@router.delete("/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str, current_user: dict = Depends(get_current_admin_user)):
+    """Supprimer une planification"""
+    result = await db.backup_schedules.delete_one({"_id": ObjectId(schedule_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Planification non trouvée")
+
+    await _reload_scheduler()
+    return {"message": "Planification supprimée"}
+
+
+# --- Backup Execution ---
+
+@router.post("/run")
+async def run_backup_now(current_user: dict = Depends(get_current_admin_user)):
+    """Déclencher une sauvegarde manuelle immédiate"""
+    import backup_service
+
+    # Utiliser la première planification active ou une config par défaut
+    schedule = await db.backup_schedules.find_one({"enabled": True})
+    if not schedule:
+        schedule = {
+            "_id": "manual",
+            "destination": "local",
+            "retention_count": 3,
+            "email_recipient": None
+        }
+
+    result = await backup_service.execute_backup(schedule)
+    return result
+
+
+# --- Backup History ---
+
+@router.get("/history")
+async def get_history(
+    limit: int = Query(default=20, le=100),
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Récupérer l'historique des sauvegardes"""
+    history = await db.backup_history.find().sort("started_at", -1).to_list(limit)
+    result = []
+    for h in history:
+        h["id"] = str(h.pop("_id"))
+        result.append(h)
+    return result
+
+
+@router.get("/status")
+async def get_backup_status(current_user: dict = Depends(get_current_admin_user)):
+    """Récupérer le statut de la dernière sauvegarde (pour l'icône)"""
+    status = await db.backup_status.find_one({"key": "last_backup"}, {"_id": 0})
+    if not status:
+        return {"status": "none", "timestamp": None}
+    return status
+
+
+@router.get("/download/{history_id}")
+async def download_backup(history_id: str, current_user: dict = Depends(get_current_admin_user)):
+    """Télécharger un fichier de backup local"""
+    entry = await db.backup_history.find_one({"_id": ObjectId(history_id)})
+    if not entry:
+        raise HTTPException(status_code=404, detail="Backup non trouvé")
+
+    if not entry.get("file_path") or not os.path.exists(entry["file_path"]):
+        raise HTTPException(status_code=404, detail="Fichier de backup non disponible localement")
+
+    filename = os.path.basename(entry["file_path"])
+    return FileResponse(
+        entry["file_path"],
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=filename
+    )
+
+
+# --- Google Drive OAuth ---
+
+@router.get("/drive/status")
+async def get_drive_status(current_user: dict = Depends(get_current_admin_user)):
+    """Vérifier si Google Drive est connecté"""
+    creds = await db.drive_credentials.find_one({"key": "admin"}, {"_id": 0, "access_token": 0, "refresh_token": 0, "client_secret": 0})
+    if not creds:
+        return {"connected": False}
+    return {"connected": True, "updated_at": creds.get("updated_at")}
+
+
+@router.get("/drive/connect")
+async def connect_drive(current_user: dict = Depends(get_current_admin_user)):
+    """Initier le flux OAuth Google Drive"""
+    from google_auth_oauthlib.flow import Flow
+
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    redirect_uri = os.environ.get("GOOGLE_DRIVE_REDIRECT_URI")
+
+    if not client_id or not client_secret:
+        raise HTTPException(
+            status_code=400,
+            detail="Google Drive non configuré. Ajoutez GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET dans les variables d'environnement."
+        )
+
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [redirect_uri]
+            }
+        },
+        scopes=['https://www.googleapis.com/auth/drive.file'],
+        redirect_uri=redirect_uri
+    )
+
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        include_granted_scopes='true',
+        prompt='consent'
+    )
+
+    return {"authorization_url": authorization_url}
+
+
+@router.get("/drive/callback")
+async def drive_callback(code: str = Query(...), state: str = Query(default="")):
+    """Callback OAuth Google Drive"""
+    from google_auth_oauthlib.flow import Flow
+
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    redirect_uri = os.environ.get("GOOGLE_DRIVE_REDIRECT_URI")
+    frontend_url = os.environ.get("FRONTEND_URL")
+
+    flow = Flow.from_client_config(
+        {
+            "web": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [redirect_uri]
+            }
+        },
+        scopes=None,
+        redirect_uri=redirect_uri
+    )
+
+    flow.fetch_token(code=code)
+    credentials = flow.credentials
+
+    await db.drive_credentials.update_one(
+        {"key": "admin"},
+        {"$set": {
+            "key": "admin",
+            "access_token": credentials.token,
+            "refresh_token": credentials.refresh_token,
+            "token_uri": credentials.token_uri,
+            "client_id": credentials.client_id,
+            "client_secret": credentials.client_secret,
+            "scopes": list(credentials.scopes) if credentials.scopes else [],
+            "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+
+    return RedirectResponse(url=f"{frontend_url}/import-export?drive_connected=true")
+
+
+@router.delete("/drive/disconnect")
+async def disconnect_drive(current_user: dict = Depends(get_current_admin_user)):
+    """Déconnecter Google Drive"""
+    await db.drive_credentials.delete_one({"key": "admin"})
+    return {"message": "Google Drive déconnecté"}
+
+
+# --- Scheduler Integration ---
+
+_scheduler = None
+
+def set_scheduler(scheduler):
+    global _scheduler
+    _scheduler = scheduler
+
+
+async def _reload_scheduler():
+    """Recharger les jobs de backup dans APScheduler"""
+    if not _scheduler:
+        return
+
+    # Supprimer les anciens jobs de backup
+    existing_jobs = _scheduler.get_jobs()
+    for job in existing_jobs:
+        if job.id.startswith("backup_"):
+            _scheduler.remove_job(job.id)
+
+    # Ajouter les nouveaux
+    schedules = await db.backup_schedules.find({"enabled": True}).to_list(50)
+
+    for schedule in schedules:
+        sid = str(schedule["_id"])
+        freq = schedule.get("frequency", "daily")
+        hour = schedule.get("hour", 2)
+        minute = schedule.get("minute", 0)
+
+        if freq == "daily":
+            _scheduler.add_job(
+                _run_scheduled_backup, 'cron',
+                hour=hour, minute=minute,
+                id=f"backup_{sid}",
+                name=f"Backup auto ({freq})",
+                args=[sid],
+                replace_existing=True
+            )
+        elif freq == "weekly":
+            dow = schedule.get("day_of_week", 0)
+            dow_map = {0: 'mon', 1: 'tue', 2: 'wed', 3: 'thu', 4: 'fri', 5: 'sat', 6: 'sun'}
+            _scheduler.add_job(
+                _run_scheduled_backup, 'cron',
+                day_of_week=dow_map.get(dow, 'mon'), hour=hour, minute=minute,
+                id=f"backup_{sid}",
+                name=f"Backup auto ({freq})",
+                args=[sid],
+                replace_existing=True
+            )
+        elif freq == "monthly":
+            dom = schedule.get("day_of_month", 1)
+            _scheduler.add_job(
+                _run_scheduled_backup, 'cron',
+                day=dom, hour=hour, minute=minute,
+                id=f"backup_{sid}",
+                name=f"Backup auto ({freq})",
+                args=[sid],
+                replace_existing=True
+            )
+
+    logger.info(f"[Backup] Scheduler rechargé: {len(schedules)} planification(s) active(s)")
+
+
+async def _run_scheduled_backup(schedule_id: str):
+    """Exécuter un backup planifié"""
+    import backup_service
+
+    schedule = await db.backup_schedules.find_one({"_id": ObjectId(schedule_id)})
+    if not schedule:
+        logger.warning(f"[Backup] Planification {schedule_id} non trouvée")
+        return
+
+    if not schedule.get("enabled", True):
+        return
+
+    await backup_service.execute_backup(schedule)
