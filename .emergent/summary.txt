@@ -1,61 +1,68 @@
 <analysis>**original_problem_statement:**
-The user initially reported that scheduled backups were not running at the correct time. They also requested a new feature to manually upload existing backup files to Google Drive. During testing, the user encountered a  error from Google, which prevented the upload. After fixing these issues, the user requested that the  file and the in-app user manual be updated with comprehensive instructions for the new features and the Google Drive setup process, to ensure this information is available for future installations.
+The user initially requested fixes for a backup scheduler and a manual backup upload feature for Google Drive. After those were completed, the agent updated the application's documentation.
+
+In the current session, the agent first completed the documentation update for the in-app user manual. Then, the user requested a new feature to allow restoring the application's data from a backup ZIP file, which the agent successfully implemented and tested.
+
+Just as the agent was about to finalize the work, the user reported a new bug: The calendar icon in the header displays a badge with a count of overdue improvement requests. This count is incorrect because it includes requests that have been refused. The count should only include requests that are accepted and have a due date in the past. The agent has just begun investigating this bug.
 
 **PRODUCT REQUIREMENTS:**
 - Fix the scheduled backup functionality (DONE).
-- Add a UI element to manually trigger the upload of an existing backup to Google Drive (DONE).
-- Diagnose and resolve Google Drive upload errors (DONE).
-- Update the  with full setup and feature documentation (DONE).
-- Update the in-app user manual with the new features and ensure it's included in fresh installations (IN PROGRESS).
+- Add a manual Google Drive backup upload feature (DONE).
+- Update  and in-app user manual with all new features (DONE).
+- Implement a feature to restore the application from a backup ZIP file (DONE).
+- **Fix the overdue improvement request count in the header badge (IN PROGRESS).**
 
 **User's preferred language**: French. The next agent MUST respond in French.
 
 **what currently exists?**
-The application is a full-stack CMMS/GMAO. The main bug with scheduled backups (a timezone issue with ) has been fixed, and the scheduler now correctly uses the server's configured timezone. A new feature for manually uploading backups to a specific Backup GMAO folder in Google Drive has been fully implemented on both the backend and frontend. An issue related to the Google Drive API not being enabled in the user's Google Cloud project was diagnosed, and user-friendly error messages were added to guide the user to the solution. The  has been extensively updated with detailed setup guides and troubleshooting steps. The agent has identified that the in-app user manual content is sourced from  and loaded into the database by the backend on startup.
+The application is a full-stack CMMS/GMAO. It has a comprehensive backup and restore system (scheduled, manual Google Drive upload, restore from ZIP). The in-app documentation is up-to-date with these features.
+
+A bug has been identified in the main header. The calendar icon shows a badge indicating the number of overdue improvement requests. This count is currently incorrect as it includes 'refused' requests. The agent has started debugging this and has identified the relevant frontend component () and the backend API endpoint () that supplies this data. The next step is to correct the backend query.
 
 **Last working item**:
--   **Last item agent was working:** Fulfilling the user's request to update the in-app user manual with all the recent changes (manual Google Drive upload, timezone fix, detailed GDrive setup) and ensuring this updated manual is part of any new installation. The agent has investigated the mechanism and located the source JSON file.
+-   **Last item agent was working:** Fixing a bug where the calendar icon badge for overdue improvement requests incorrectly includes 'refused' items. The goal is to modify the backend logic to only count 'accepted' requests whose due date has passed.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Manual testing. The agent needs to:
-    1.  Update the  file.
-    2.  Restart the backend service (backend: stopped
-backend: started) to trigger the function that loads the JSON content into the database.
-    3.  Use the screenshot tool to view the Manuel Utilisateur page in the application and verify the new content is displayed correctly.
+-   **Which testing method agent to use?** Both.
+    1.  **Backend:** Modify the database query in . Test the fix by calling the  endpoint with  to verify the  count is accurate.
+    2.  **Frontend:** After the backend fix is confirmed, use the screenshot tool to visually verify that the badge on the calendar icon in the header displays the correct number.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   There are no pending bugs or issues. The current focus is on a documentation task.
+-   **Issue 1: Incorrect Overdue Improvement Request Count (P0)**
+    -   **Description:** The badge on the header's calendar icon is counting all overdue improvement requests, regardless of their status. It should only count requests with a status of 'accepted'.
+    -   **Status:** IN PROGRESS
+
+**Issues Detail:**
+-   **Issue 1: Incorrect Overdue Improvement Request Count**
+    -   **Attempted fixes:** The agent has identified the relevant files ( and the endpoint ) but has not yet attempted a code change.
+    -   **Next debug checklist:**
+        1.  Examine  to find the function responsible for the  endpoint.
+        2.  Locate the MongoDB query that calculates the  count.
+        3.  Modify the query to add a filter that includes only documents where the  field is .
+        4.  Test the API endpoint directly via  to confirm the logic is correct.
+        5.  Take a screenshot of the UI to confirm the visual badge count is correct.
+    -   **Why fix this issue and what will be achieved with the fix?** To provide an accurate, at-a-glance count of actionable overdue tasks, improving the user's workflow and preventing confusion from irrelevant notifications.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1: Update the in-app User Manual (P0)**
-    -   **Description:** The user wants the in-app manual to be updated with the latest features and setup instructions.
-    -   **Status:** IN PROGRESS
-
-**Task Detail:**
--   **Task 1: Update the in-app User Manual**
-    -   **Where to resume:** Edit the file .
-    -   **What to add:**
-        -   A section detailing the manual upload of backups to Google Drive.
-        -   An explanation that scheduled backups now respect the server's timezone settings.
-        -   The comprehensive guide for setting up Google Drive credentials, including the critical step of **activating the Google Drive API** in the Google Cloud console.
-    -   **What will be achieved with this?** The in-app manual will be a reliable, up-to-date source of information for all users, and this knowledge will be automatically included in all new installations of the application.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Frontend (via screenshot) after a backend restart.
-    -   **Blocked on something:** Nothing.
+-   None.
 
 **Upcoming and Future Tasks**
 -   None have been requested.
 
 **Completed work in this session**
--   **Scheduled Backup Timezone Bug (DONE):** Fixed the backup scheduler in  to use the system's configured timezone instead of defaulting to UTC.
--   **Manual Google Drive Upload Feature (DONE):**
-    -   Created a new endpoint  in .
-    -   Implemented logic in  to find or create a Backup GMAO folder in Google Drive for uploads.
-    -   Added a Google Drive upload button to the UI in .
--   **Google Drive API Error Handling (DONE):** Improved error messages in  and  to be more user-friendly and explicitly state the need to activate the Google Drive API, resolving a .
--   **Backup Status Icon Verification (DONE):** Confirmed the diskette icon in the header correctly changes color based on the last backup status by inspecting  and its corresponding API .
--   ** Documentation (DONE):** Performed a major update to , adding a detailed 6-step guide for Google Drive setup, troubleshooting tips, and documentation for all new backup features.
+-   **In-app User Manual Update (DONE):**
+    -   Updated  with comprehensive documentation for all backup and restore features.
+    -   Modified  startup logic to correctly update existing manual content in the database.
+-   **Backup Restoration Feature (DONE):**
+    -   Created a new backend endpoint  in .
+    -   Implemented the core logic in  to process ZIP files and restore MongoDB collections.
+    -   Created a new Restauration tab and component () for the UI.
+    -   Successfully tested the end-to-end flow using the testing agent.
 
 **Earlier issues found/mentioned but not fixed**
 -   None.
@@ -67,58 +74,59 @@ backend: started) to trigger the function that loads the JSON content into the d
 
 
 **Key Technical Concepts**
--   **APScheduler Timezone:** Fixed a bug by setting the scheduler's timezone explicitly, preventing mismatches between user-configured times and UTC execution times.
--   **Google Drive API Client:** Used the  library to programmatically search for folders (), create folders (), and upload files.
--   **Application Data Seeding:** Understood the startup process where  reads a JSON file () to populate the  collection in MongoDB, effectively creating default content for the in-app manual.
+-   **Data Seeding/Migration:** The backend startup script was improved to use  with  and  to robustly load and update default data (like the user manual) into MongoDB.
+-   **File Upload & In-Memory Processing:** The restore feature uses  and  to extract and process backup files from a ZIP archive entirely in memory without writing to disk.
+-   **MongoDB Aggregation:** The current bug will require modifying a MongoDB query, likely an aggregation pipeline in , to add a  stage for filtering by status.
 
 **key DB schema**
--   **manual_chapters:** Stores the content for the in-app user manual. It is populated/updated from  on backend startup.
+-   **improvement_requests:** The collection central to the current bug. It contains fields like  and  (values can be 'accepted', 'refused', etc.).
 
 **All files of reference**
--   : **The primary file to be modified next.**
--   : Contains the logic for loading the manual content.
--   : The recently updated documentation file.
--   : Contains the new upload endpoint.
--   : Contains the new upload button.
+-   : **The primary file to investigate and modify** for the current bug fix.
+-   : The frontend component that displays the bug.
+-   : Contains the recently added restore endpoint.
+-   : The recently added restore UI.
+-   : Contains the data seeding logic for the manual.
 
 **key api endpoints**
--   : (NEW) Triggers the manual upload of a specific backup file to Google Drive.
+-   : Provides stats for the header, but its  count is currently bugged.
+-   : (NEW) Restores the application state from an uploaded backup ZIP file.
 
 **Critical Info for New Agent**
 -   You MUST respond in **French**.
--   The immediate task is to update the in-app user manual. Edit the content within .
--   The manual must include details on the manual Google Drive upload, the scheduled backup timezone behavior, and the full Google Drive API setup process (especially enabling the API in the Google Cloud Console).
--   After editing the JSON file, restart the backend (backend: stopped
-backend: started) to apply the changes to the application, then verify the result on the frontend.
+-   Your immediate priority is to fix the bug with the overdue improvement request count displayed in the header.
+-   The root cause is in the backend. You need to modify the database query for the  endpoint, which is likely located in .
+-   The fix involves filtering the  collection to only count documents where  before checking the .
+-   Once the backend logic is corrected, you must verify the change is reflected correctly in the frontend UI.
 
 **documents and test reports created in this job**
 -    (Updated)
 -   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  ****: User states that the suggestion to add a notification is unnecessary because the floppy disk icon in the header already indicates success (green) or failure (red) and asks the agent to verify this behavior.
-2.  ****: User reports an error with a screenshot when uploading a backup to Google Drive.
-3.  ****: Agent identifies the error () is due to the Google Drive API not being enabled in the user's Google Cloud project and states it will improve the error messages in the app.
-4.  ****: User confirms that enabling the API fixed the issue and asks the agent to add all the setup instructions to the  file to avoid this problem in the future.
-5.  ****: User requests that all the newly added functions and setup guides also be added to the in-app user manual, and that this updated manual should be part of every new, fresh installation on their Proxmox server.
+1.  ****: User requested a feature to restore data from a backup ZIP file.
+2.  ****: Agent confirmed understanding of the request.
+3.  ****: User confirmed the agent's plan and specified the new UI should be in a separate Restauration tab.
+4.  ****: Agent began implementation.
+5.  ****: Agent reported that all tests for the new restore feature passed with 100% success.
+6.  ****: **PENDING**: User reported the bug with the calendar icon badge, explaining that it should only count *accepted* overdue improvement requests.
 
 **Project Health Check:**
--   **Broken:** None.
+-   **Broken:** The header badge for overdue improvement requests is functionally broken as it displays an incorrect count.
 -   **Mocked:** N/A.
 
 **3rd Party Integrations**
--   **Google Drive API:** Fully configured and functional for authentication, scheduled backups, and manual uploads.
--   **Tailscale Funnel:** Previously configured for remote access. Not modified in this session.
+-   Google Drive API
+-   Tailscale Funnel
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. The agent successfully ran backend and frontend tests using  after implementing the primary features, with a 100% pass rate.
+-   **Testing agent used after significant changes:** YES. The backup restoration feature was fully validated by , which reported a 100% pass rate.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None in this session.
+-   **Test files created:** None.
 -   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **Application:**  / 
--   **Google Drive:** Handled via OAuth; credentials are in .
 
 **What agent forgot to execute**
--   Nothing. The agent is actively working on the user's latest request to update the in-app user manual.</analysis>
+-   Nothing. The agent was actively working and was correctly interrupted by a new high-priority bug report from the user.</analysis>
