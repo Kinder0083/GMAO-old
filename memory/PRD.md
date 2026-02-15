@@ -12,32 +12,29 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 
 ## Fonctionnalités implémentées
 
+### Export/Import avec fichiers (P0 - TERMINÉ - 2026-02-15)
+- **Export "Toutes les données"** génère un **ZIP** contenant :
+  - `data.xlsx` : 63 modules de données MongoDB
+  - `uploads/` : Tous les fichiers uploadés (pièces jointes OT, documents, photos, etc.)
+- **Export individuel** reste en XLSX simple
+- **Import** accepte les fichiers ZIP pour restaurer données + fichiers
+- ZIP total ~28 Mo (données + 50 fichiers uploadés)
+- Tests: 11/11 backend + UI validée (100%)
+
 ### Sauvegardes Automatiques (P0 - TERMINÉ - 2026-02-15)
-- **Planification**: Quotidienne, hebdomadaire ou mensuelle avec heure personnalisable
-- **Destinations**: Local, Google Drive, ou les deux (Google Drive nécessite OAuth)
-- **Nettoyage automatique**: Garder les X dernières sauvegardes (max 5)
-- **Icône header**: Disquette verte pendant 24h après backup réussi, grise sinon
-- **Notifications email**: Email de confirmation ou d'alerte d'échec
-- **Backup manuel**: Bouton "Sauvegarder maintenant" pour backup immédiat
-- **Historique**: Table avec date, statut, destination, taille, nombre de modules
-- **Téléchargement**: Possibilité de télécharger les backups locaux
-- **CRUD planifications**: Créer, modifier, activer/désactiver, supprimer
-- Tests: 24/24 backend + UI validé (100%)
+- Planification (quotidienne/hebdo/mensuelle), destinations (local/Google Drive/les deux)
+- Nettoyage automatique (garder 1-5 backups max)
+- Backups en format ZIP (données + fichiers)
+- Icône disquette dans le header : verte 24h après backup réussi
+- Notifications email, backup manuel, historique avec téléchargement
+- Tests: 24/24 backend + UI frontend (100%)
 
-### Import/Export des nouveaux modules (P0 - TERMINÉ - 2026-02-15)
-- Export de 63 modules en XLSX ou CSV
+### Import/Export des 63 modules (P0 - TERMINÉ - 2026-02-15)
 - Sélecteur groupé par 12 catégories
-- Import avec modes "Ajouter" et "Écraser"
-- Tests: 18/18 backend + UI validé (100%)
+- Tests: 18/18 (100%)
 
-### Sidebar (TERMINÉ)
-- Menu réorganisé
-
-### Vue Explorateur Documentations (TERMINÉ)
-- Vue fichier/dossier style Windows Explorer
-
-### WebSocket Notifications (TERMINÉ)
-- Broadcast de mises à jour avec countdown
+### Sidebar, Vue Explorateur, WebSocket (TERMINÉS)
+- Menu réorganisé, Vue Explorateur Documentations, Broadcast mises à jour
 
 ## Google Drive - Configuration requise
 Pour utiliser la destination Google Drive:
@@ -56,12 +53,12 @@ Pour utiliser la destination Google Drive:
 - Confirmer avec l'utilisateur si le bug d'importation Excel persiste encore
 
 ### P2
-- Animation du logo sur la page de connexion (reporté par l'utilisateur)
+- Animation du logo page de connexion (reporté par l'utilisateur)
 
 ## Collections MongoDB ajoutées
 - `backup_schedules` - Planifications de sauvegarde
 - `backup_history` - Historique des exécutions
-- `backup_status` - Statut de la dernière sauvegarde (pour l'icône)
+- `backup_status` - Statut dernière sauvegarde (pour l'icône)
 - `drive_credentials` - Tokens OAuth Google Drive
 
 ## Credentials
