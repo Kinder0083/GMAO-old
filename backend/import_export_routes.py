@@ -25,6 +25,7 @@ def init_db(database):
 
 # Mapping des modules vers les collections MongoDB
 EXPORT_MODULES = {
+    # --- Modules existants ---
     "intervention-requests": "intervention_requests",
     "work-orders": "work_orders",
     "improvement-requests": "improvement_requests",
@@ -45,9 +46,67 @@ EXPORT_MODULES = {
     "preventive-checklist-templates": "preventive_checklist_templates",
     "preventive-checklist-executions": "preventive_checklist_executions",
     "sensors": "sensors",
-    "documentations": "documentations",
+    "documentations": "poles_service",
+    "documents": "documents",
+    "bons-travail": "bons_travail",
+    "doc-folders": "doc_folders",
     "mqtt-logs": "mqtt_logs",
-    "chat-messages": "chat_messages"
+    "chat-messages": "chat_messages",
+    # --- M.E.S. ---
+    "mes-machines": "mes_machines",
+    "mes-product-references": "mes_product_references",
+    "mes-rejects": "mes_rejects",
+    "mes-reject-reasons": "mes_reject_reasons",
+    "mes-cadence-history": "mes_cadence_history",
+    "mes-alerts": "mes_alerts",
+    "mes-scheduled-reports": "mes_scheduled_reports",
+    "mes-pulses": "mes_pulses",
+    # --- Caméras ---
+    "cameras": "cameras",
+    "camera-settings": "camera_settings",
+    "camera-alerts": "camera_alerts",
+    # --- Rapports ---
+    "reports-historique": "reports_historique",
+    "weekly-report-history": "weekly_report_history",
+    "weekly-report-settings": "weekly_report_settings",
+    "weekly-report-templates": "weekly_report_templates",
+    # --- Consignes ---
+    "consignes": "consignes",
+    # --- Tableaux blancs ---
+    "whiteboards": "whiteboards",
+    "whiteboard-objects": "whiteboard_objects",
+    # --- Demandes d'arrêt ---
+    "demandes-arret": "demandes_arret",
+    # --- Planning ---
+    "planning-equipement": "planning_equipement",
+    # --- Rôles ---
+    "roles": "roles",
+    # --- Formulaires ---
+    "custom-forms": "custom_forms",
+    "form-templates": "form_templates",
+    # --- Surveillance complémentaire ---
+    "surveillance-plan": "surveillance_plan",
+    "surveillance-controls": "surveillance_controls",
+    # --- Presqu'accident rapport ---
+    "presqu-accident": "presqu_accident",
+    # --- Configuration système ---
+    "global-settings": "global_settings",
+    "mqtt-config": "mqtt_config",
+    "mqtt-subscriptions": "mqtt_subscriptions",
+    # --- Absences / Équipe ---
+    "absences": "absences",
+    "team-members": "team_members",
+    "work-rhythms": "work_rhythms",
+    # --- Templates OT ---
+    "work-order-templates": "work_order_templates",
+    # --- Notifications ---
+    "notifications": "notifications",
+    # --- Préférences utilisateur ---
+    "user-preferences": "user_preferences",
+    # --- Audit ---
+    "audit-logs": "audit_logs",
+    # --- Dashboard service ---
+    "service-dashboard-configs": "service_dashboard_configs",
 }
 
 # Mappings de colonnes pour l'import (noms français/anglais vers noms internes)
