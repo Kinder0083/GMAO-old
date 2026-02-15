@@ -63,6 +63,14 @@ Pour utiliser la destination Google Drive:
 - Le confirm dialog affiche maintenant "Envoyer l'avertissement et installer"
 - Tests: Frontend + backend vérifiés (100%)
 
+### Refactoring ImportExport.jsx (TERMINÉ - 2026-02-15)
+- Découpé le composant monolithique de 988 lignes en 4 fichiers :
+  - `ImportExport.jsx` (51 lignes) — Orchestrateur avec onglets
+  - `ImportExportTab.jsx` (298 lignes) — UI import/export
+  - `BackupTab.jsx` (429 lignes) — UI sauvegardes automatiques
+  - `importExportModules.js` (107 lignes) — Configuration modules partagée
+- Tests: 100% (8/8 backend + frontend)
+
 ## Backlog
 
 ### P0
