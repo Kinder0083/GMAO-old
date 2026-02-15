@@ -538,7 +538,7 @@ const ImportExport = () => {
               <input
                 id="import-file"
                 type="file"
-                accept=".csv,.xlsx,.xls"
+                accept=".csv,.xlsx,.xls,.zip"
                 onChange={handleFileSelect}
                 disabled={importing}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer"
@@ -677,7 +677,7 @@ const ImportExport = () => {
             <ul className="list-disc list-inside space-y-1">
               <li>Sélectionnez le module à importer</li>
               <li>Choisissez le mode : "Ajouter" (nouvelles entrées) ou "Écraser" (mise à jour par ID)</li>
-              <li>Sélectionnez votre fichier CSV ou Excel</li>
+              <li>Sélectionnez votre fichier CSV, Excel ou ZIP (export complet)</li>
               <li>L'import démarre automatiquement</li>
             </ul>
           </div>
