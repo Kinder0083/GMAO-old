@@ -412,6 +412,10 @@ cd /opt/gmao-iris && ./update.sh
 - Import/Export > Sauvegardes Automatiques
 - Planifier des backups quotidiens/hebdomadaires/mensuels
 - Destinations : local, Google Drive, ou les deux
+- Les heures des planifications utilisent le fuseau horaire configure dans Parametres > Fuseau horaire
+- Upload manuel vers Google Drive : cliquez sur l'icone d'upload a cote d'un backup dans l'historique
+- Les fichiers sont stockes dans le dossier **"Backup GMAO"** sur Google Drive
+- Icone disquette dans le header : **vert** = backup recent reussi, **rouge** = echec, **gris** = aucun ou ancien
 
 **Via la ligne de commande :**
 ```bash
