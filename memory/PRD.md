@@ -6,29 +6,40 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète et 
 ## Travaux Récents (Session Février 2026)
 
 ### Terminé
-- **Correction timezone scheduler** : APScheduler utilise désormais le fuseau horaire configuré dans les paramètres de l'application
-- **Upload manuel Google Drive** : Nouvel endpoint `POST /api/backup/drive/upload/{filename}` + bouton UI dans BackupTab.jsx
-- **Gestion erreurs Google Drive** : Messages d'erreur améliorés pour guider l'utilisateur (403 accessNotConfigured)
-- **README.md** : Documentation complète mise à jour (guide 6 étapes Google Drive, dépannage)
-- **Manuel utilisateur intégré** : 3 nouvelles sections ajoutées au chapitre Import/Export :
-  - `sec-023-02` : Sauvegardes Automatiques (planification, fuseau horaire, icône de statut)
-  - `sec-023-03` : Upload Manuel vers Google Drive
-  - `sec-023-04` : Configuration Google Drive (guide complet activation API, OAuth, dépannage)
-- **Code migration amélioré** : Le startup backend met à jour les sections des chapitres existants (pas seulement les nouveaux chapitres)
+- **Correction timezone scheduler** : APScheduler utilise le fuseau horaire configuré
+- **Upload manuel Google Drive** : Endpoint `POST /api/backup/drive/upload/{filename}` + bouton UI
+- **Gestion erreurs Google Drive** : Messages d'erreur améliorés (403 accessNotConfigured)
+- **README.md** : Documentation complète (guide 6 étapes Google Drive, dépannage)
+- **Manuel utilisateur intégré** : 3 nouvelles sections (sauvegardes, upload GDrive, config GDrive)
+- **Code migration amélioré** : Startup backend met à jour les sections des chapitres existants
+- **Restauration de sauvegardes (NOUVEAU)** :
+  - Nouvel onglet "Restauration" dans Import/Export
+  - Endpoint `POST /api/restore/backup` avec modes merge et full
+  - Mode "Fusionner" : ajoute/met à jour sans toucher aux données existantes
+  - Mode "Restauration complète" : vide les collections avant import
+  - Supporte ZIP de backup GMAO (data.xlsx + uploads/)
+  - Validation du fichier ZIP (format, présence de data.xlsx)
+  - Confirmation requise avant restauration complète
+  - Affichage détaillé des résultats par module
 
-### Fichiers Modifiés
-- `backend/manual_default_content.json` : +3 sections (sauvegardes, upload GDrive, config GDrive)
-- `backend/server.py` : Migration startup mise à jour (update sections chapitres existants)
-- `backend/api/backup_routes.py` : Endpoint upload GDrive + messages d'erreur
-- `backend/services/backup_service.py` : Logique dossier "Backup GMAO" GDrive
-- `frontend/src/components/backup/BackupTab.jsx` : Bouton upload GDrive
-- `README.md` : Documentation complète
+### Fichiers Modifiés/Créés
+- `backend/import_export_routes.py` : Endpoint restore/backup
+- `frontend/src/pages/RestoreTab.jsx` : **NOUVEAU** - Composant onglet restauration
+- `frontend/src/pages/ImportExport.jsx` : Ajout onglet Restauration
+- `backend/manual_default_content.json` : +3 sections manual
+- `backend/server.py` : Migration startup (update sections chapitres)
 
 ## Architecture
 - **Backend** : FastAPI (Python), MongoDB, APScheduler
 - **Frontend** : React 19, Shadcn/UI, Tailwind CSS
 - **Auth** : JWT + bcrypt
-- **Sauvegardes** : Local + Google Drive (OAuth 2.0)
+- **Sauvegardes** : Local + Google Drive (OAuth 2.0) + Restauration ZIP
+
+## Endpoints clés
+- `POST /api/restore/backup?mode=merge|full` : Restauration de sauvegarde ZIP
+- `POST /api/backup/drive/upload/{filename}` : Upload manuel vers Google Drive
+- `POST /api/import/{module}` : Import données (CSV, XLSX, ZIP)
+- `GET /api/export/{module}` : Export données
 
 ## Backlog
 Aucune tâche en attente.
