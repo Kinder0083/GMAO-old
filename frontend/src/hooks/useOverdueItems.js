@@ -127,7 +127,7 @@ export const useOverdueItems = (canViewModule) => {
           if (imprResponse.ok) {
             const improvementRequests = await imprResponse.json();
             const overdueImpr = improvementRequests.filter(impr => {
-              if (!impr.date_limite_desiree || impr.statut === 'TERMINE' || impr.statut === 'ANNULE') return false;
+              if (!impr.date_limite_desiree || impr.status !== 'VALIDEE') return false;
               const dueDate = new Date(impr.date_limite_desiree);
               return dueDate < today;
             });
