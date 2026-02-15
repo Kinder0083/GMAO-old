@@ -44,7 +44,7 @@ class TestOverdueItems:
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_get_work_orders(self, auth_token):
@@ -125,7 +125,7 @@ class TestSurveillanceBadge:
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_get_surveillance_badge_stats(self, auth_token):
@@ -153,7 +153,7 @@ class TestInventoryStats:
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_get_inventory_stats(self, auth_token):
@@ -181,7 +181,7 @@ class TestChatUnreadCount:
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_get_chat_unread_count(self, auth_token):
@@ -208,7 +208,7 @@ class TestWorkOrderCRUDWithWebSocket:
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_create_work_order_with_overdue_date(self, auth_token):
@@ -326,7 +326,7 @@ class TestCleanupTestData:
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
     def test_cleanup_test_work_orders(self, auth_token):
