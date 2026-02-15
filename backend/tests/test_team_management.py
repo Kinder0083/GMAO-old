@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://zip-archive-patch.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://proxmox-deploy-tool.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"
