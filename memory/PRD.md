@@ -43,8 +43,12 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète et 
 
 ### Bug Fix - Badge échéances calendrier (15 Fév 2026)
 - **Problème** : Le badge jaune du calendrier dans le header comptait les demandes d'amélioration en retard quel que soit leur statut (SOUMISE, REJETEE, etc.)
-- **Cause racine** : `MainLayout.jsx` ligne 330 utilisait le mauvais champ (`impr.statut` au lieu de `impr.status`) et filtrait par exclusion au lieu de ne garder que les demandes acceptées
+- **Cause racine** : `MainLayout.jsx` utilisait le mauvais champ (`impr.statut` au lieu de `impr.status`) et filtrait par exclusion au lieu de ne garder que les demandes acceptées
 - **Fix** : Remplacé le filtre par `impr.status !== 'VALIDEE'` — seules les demandes validées (acceptées) avec date dépassée sont comptées
+
+### Refactorisation - useOverdueItems hook (15 Fév 2026)
+- **Avant** : Logique dupliquée entre `MainLayout.jsx` (~170 lignes) et `useOverdueItems.js`
+- **Après** : `useOverdueItems.js` est la source unique de vérité, `MainLayout.jsx` utilise le hook directement
 - **Fichiers modifiés** : `frontend/src/components/Layout/MainLayout.jsx`, `frontend/src/hooks/useOverdueItems.js`
 
 ## Backlog
