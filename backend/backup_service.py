@@ -233,12 +233,12 @@ async def _upload_to_gdrive(file_bytes: bytes, filename: str, schedule: dict) ->
 
     file_metadata = {
         'name': filename,
-        'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'mimeType': 'application/zip'
     }
     if folder_id:
         file_metadata['parents'] = [folder_id]
 
-    media = MediaInMemoryUpload(file_bytes, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    media = MediaInMemoryUpload(file_bytes, mimetype='application/zip')
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
     return file.get('id')
