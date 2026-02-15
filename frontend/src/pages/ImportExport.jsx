@@ -98,7 +98,32 @@ const ImportExport = () => {
     { value: 'audit-logs', label: 'Journal d\'audit', group: 'Configuration' },
   ];
 
-  const handleExport = async () => {
+  // Grouper les modules par catégorie
+  const groupedModules = modules.reduce((acc, mod) => {
+    const group = mod.group || '';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(mod);
+    return acc;
+  }, {});
+
+  const renderModuleOptions = () => (
+    <>
+      {Object.entries(groupedModules).map(([group, mods]) => (
+        <React.Fragment key={group}>
+          {group && (
+            <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+              {group}
+            </div>
+          )}
+          {mods.map(mod => (
+            <SelectItem key={mod.value} value={mod.value}>
+              {mod.label}
+            </SelectItem>
+          ))}
+        </React.Fragment>
+      ))}
+    </>
+  );
     try {
       setExporting(true);
       const backend_url = getBackendURL();
