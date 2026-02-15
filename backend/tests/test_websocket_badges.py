@@ -298,7 +298,7 @@ class TestRealtimeManagerEndpoint:
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            return response.json().get("token"), response.json().get("user", {}).get("id")
+            return response.json().get("access_token"), response.json().get("user", {}).get("id")
         pytest.skip("Authentication failed")
     
     def test_websocket_endpoint_exists(self, auth_token):
