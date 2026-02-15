@@ -97,8 +97,7 @@ if [ "$IS_LXC" = true ]; then
         echo ""
         echo "  -------------------------------------------------------"
 
-        # Essayer de detecter le CTID
-        CTID=""
+        # Afficher le hostname pour aider l'utilisateur
         if [ -f /etc/hostname ]; then
             HOSTNAME_LXC=$(cat /etc/hostname)
             echo "  # Container detecte : $HOSTNAME_LXC"
