@@ -27,6 +27,7 @@ const BackupTab = () => {
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [runningBackup, setRunningBackup] = useState(false);
+  const [uploadingToDrive, setUploadingToDrive] = useState(null);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [scheduleForm, setScheduleForm] = useState({ ...DEFAULT_SCHEDULE });
 
