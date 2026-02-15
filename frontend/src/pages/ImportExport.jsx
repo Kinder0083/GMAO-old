@@ -249,15 +249,11 @@ const ImportExport = () => {
             <div className="space-y-2">
               <Label>Module à exporter</Label>
               <Select value={selectedModule} onValueChange={setSelectedModule}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="export-module-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {modules.map(mod => (
-                    <SelectItem key={mod.value} value={mod.value}>
-                      {mod.label}
-                    </SelectItem>
-                  ))}
+                  {renderModuleOptions()}
                 </SelectContent>
               </Select>
             </div>
@@ -304,15 +300,11 @@ const ImportExport = () => {
             <div className="space-y-2">
               <Label>Module à importer</Label>
               <Select value={selectedModule} onValueChange={setSelectedModule}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="import-module-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {modules.map(mod => (
-                    <SelectItem key={mod.value} value={mod.value}>
-                      {mod.label}
-                    </SelectItem>
-                  ))}
+                  {renderModuleOptions()}
                 </SelectContent>
               </Select>
               {selectedModule === 'all' && (
