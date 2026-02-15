@@ -23,6 +23,7 @@ import { useWorkOrdersCount } from '../../hooks/useWorkOrdersCount';
 import { useSurveillanceBadge } from '../../hooks/useSurveillanceBadge';
 import { useInventoryStats } from '../../hooks/useInventoryStats';
 import { useChatUnreadCount } from '../../hooks/useChatUnreadCount';
+import { useHeaderWebSocket } from '../../hooks/useHeaderWebSocket';
 import { usePreferences } from '../../contexts/PreferencesContext';
 
 const MainLayout = () => {
