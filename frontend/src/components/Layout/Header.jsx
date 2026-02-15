@@ -22,6 +22,7 @@ import ManualButton from '../Common/ManualButton';
 import AlertNotifications from '../Common/AlertNotifications';
 import NotificationsDropdown from '../Common/NotificationsDropdown';
 import CameraAlertIcon from '../Common/CameraAlertIcon';
+import BackupStatusIcon from '../Common/BackupStatusIcon';
 import MESAlertIcon from './MESAlertIcon';
 
 const Header = ({
@@ -79,6 +80,9 @@ const Header = ({
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Icône Sauvegarde */}
+        <BackupStatusIcon />
+
         {/* Icône Alertes Caméras */}
         <CameraAlertIcon />
         <MESAlertIcon />
