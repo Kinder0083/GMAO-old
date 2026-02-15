@@ -52,6 +52,17 @@ Pour utiliser la destination Google Drive:
 - Fix : lecture du header `Content-Disposition` de la réponse backend pour déterminer dynamiquement l'extension (`.zip` pour exports "all" et backups, `.xlsx` pour modules individuels)
 - Tests: 8/8 backend + UI frontend (100%)
 
+### Vérification d'intégrité des backups (TERMINÉ - 2026-02-15)
+- Après chaque création de ZIP (backup auto ou export), vérification avec `testzip()` + présence de `data.xlsx`
+- Si corruption détectée, le backup est marqué en erreur et l'admin est notifié
+- Tests: 9/9 backend (100%)
+
+### Broadcast avertissement MAJ (CORRIGÉ - 2026-02-15)
+- La page Updates.jsx n'envoyait PAS l'avertissement aux utilisateurs avant d'appliquer la MAJ
+- Fix : ajout de l'appel à `POST /api/updates/broadcast-warning` + délai de 30s avant installation
+- Le confirm dialog affiche maintenant "Envoyer l'avertissement et installer"
+- Tests: Frontend + backend vérifiés (100%)
+
 ## Backlog
 
 ### P0
