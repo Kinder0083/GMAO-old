@@ -3,7 +3,7 @@
  * Source unique de vérité pour le calcul des compteurs overdue du header
  */
 import { useState, useEffect, useCallback } from 'react';
-import { getBackendURL } from '../../utils/config';
+import { getBackendURL } from '../utils/config';
 
 export const useOverdueItems = () => {
   const [overdueCount, setOverdueCount] = useState(0);
