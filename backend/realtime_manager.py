@@ -129,13 +129,8 @@ class RealtimeManager:
     
     async def emit_event(self, entity_type: str, event_type: str, data: Any, user_id: Optional[str] = None):
         """
-        Émettre un événement à tous les utilisateurs connectés
-        
-        Args:
-            entity_type: Type d'entité (work_orders, equipments, etc.)
-            event_type: Type d'événement (created, updated, deleted, etc.)
-            data: Données de l'événement
-            user_id: ID de l'utilisateur qui a déclenché l'événement (pour exclure)
+        Émettre un événement à tous les utilisateurs connectés.
+        Si l'entité est pertinente pour le header, notifie aussi la room header_badges.
         """
         message = {
             "type": event_type,
@@ -147,6 +142,15 @@ class RealtimeManager:
         await self.broadcast(entity_type, message, exclude_user=user_id)
         
         logger.info(f"[Realtime] Event {event_type} émis pour {entity_type}")
+        
+        # Notifier les badges du header si entité pertinente
+        if entity_type in HEADER_RELEVANT_ENTITIES:
+            await self.broadcast("header_badges", {
+                "type": "header_refresh",
+                "source": entity_type,
+                "event": event_type,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
     
     def get_connected_users(self, entity_type: str) -> list:
         """
