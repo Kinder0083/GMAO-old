@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
-import { Select, SelectContent, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Download, Upload, Database, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import axios from 'axios';
@@ -128,8 +128,8 @@ const ImportExportTab = () => {
               <Select value={exportFormat} onValueChange={setExportFormat}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectValue />
-                  {renderFormatOptions()}
+                  <SelectItem value="csv">CSV (un module seulement)</SelectItem>
+                  <SelectItem value="xlsx">Excel (XLSX)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -172,8 +172,8 @@ const ImportExportTab = () => {
               <Select value={importMode} onValueChange={setImportMode}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectValue />
-                  {renderImportModeOptions()}
+                  <SelectItem value="add">Ajouter aux données existantes</SelectItem>
+                  <SelectItem value="replace">Écraser les données existantes (par ID)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -203,7 +203,66 @@ const ImportExportTab = () => {
       </div>
 
       {/* Résultat d'import */}
-      {importResult && <ImportResultCard importResult={importResult} />}
+      {importResult && (
+        <Card>
+          <CardHeader><CardTitle>Résultat de l'import</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
+                <Database size={24} className="text-blue-600" />
+                <div><p className="text-sm text-gray-600">Total</p><p className="text-2xl font-bold text-blue-600">{importResult.total}</p></div>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
+                <CheckCircle size={24} className="text-green-600" />
+                <div><p className="text-sm text-gray-600">Ajoutés</p><p className="text-2xl font-bold text-green-600">{importResult.inserted}</p></div>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg">
+                <AlertCircle size={24} className="text-amber-600" />
+                <div><p className="text-sm text-gray-600">Mis à jour</p><p className="text-2xl font-bold text-amber-600">{importResult.updated}</p></div>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
+                <XCircle size={24} className="text-red-600" />
+                <div><p className="text-sm text-gray-600">Ignorés</p><p className="text-2xl font-bold text-red-600">{importResult.skipped}</p></div>
+              </div>
+            </div>
+
+            {importResult.modules && Object.keys(importResult.modules).length > 0 && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Détails par module</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(importResult.modules).map(([moduleName, moduleStats]) => (
+                    <div key={moduleName} className="border rounded-lg p-4">
+                      <h4 className="font-medium text-sm mb-2 capitalize">
+                        {modules.find(m => m.value === moduleName)?.label || moduleName}
+                      </h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between"><span className="text-gray-600">Total:</span><span className="font-medium">{moduleStats.total}</span></div>
+                        <div className="flex justify-between"><span className="text-green-600">Ajoutés:</span><span className="font-medium text-green-600">{moduleStats.inserted}</span></div>
+                        <div className="flex justify-between"><span className="text-amber-600">Mis à jour:</span><span className="font-medium text-amber-600">{moduleStats.updated}</span></div>
+                        <div className="flex justify-between"><span className="text-red-600">Ignorés:</span><span className="font-medium text-red-600">{moduleStats.skipped}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {importResult.errors && importResult.errors.length > 0 && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h3 className="font-semibold text-red-800 mb-2">Erreurs ({importResult.errors.length})</h3>
+                <div className="space-y-1 max-h-60 overflow-y-auto">
+                  {importResult.errors.slice(0, 10).map((error, idx) => (
+                    <p key={idx} className="text-sm text-red-700">{error}</p>
+                  ))}
+                  {importResult.errors.length > 10 && (
+                    <p className="text-sm text-red-600 font-medium mt-2">... et {importResult.errors.length - 10} autres erreurs</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Guide */}
       <Card>
@@ -235,86 +294,5 @@ const ImportExportTab = () => {
     </>
   );
 };
-
-const ImportResultCard = ({ importResult }) => (
-  <Card>
-    <CardHeader><CardTitle>Résultat de l'import</CardTitle></CardHeader>
-    <CardContent>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-          <Database size={24} className="text-blue-600" />
-          <div><p className="text-sm text-gray-600">Total</p><p className="text-2xl font-bold text-blue-600">{importResult.total}</p></div>
-        </div>
-        <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-          <CheckCircle size={24} className="text-green-600" />
-          <div><p className="text-sm text-gray-600">Ajoutés</p><p className="text-2xl font-bold text-green-600">{importResult.inserted}</p></div>
-        </div>
-        <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg">
-          <AlertCircle size={24} className="text-amber-600" />
-          <div><p className="text-sm text-gray-600">Mis à jour</p><p className="text-2xl font-bold text-amber-600">{importResult.updated}</p></div>
-        </div>
-        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
-          <XCircle size={24} className="text-red-600" />
-          <div><p className="text-sm text-gray-600">Ignorés</p><p className="text-2xl font-bold text-red-600">{importResult.skipped}</p></div>
-        </div>
-      </div>
-
-      {importResult.modules && Object.keys(importResult.modules).length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-semibold text-lg">Détails par module</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(importResult.modules).map(([moduleName, moduleStats]) => (
-              <div key={moduleName} className="border rounded-lg p-4">
-                <h4 className="font-medium text-sm mb-2 capitalize">
-                  {modules.find(m => m.value === moduleName)?.label || moduleName}
-                </h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-600">Total:</span><span className="font-medium">{moduleStats.total}</span></div>
-                  <div className="flex justify-between"><span className="text-green-600">Ajoutés:</span><span className="font-medium text-green-600">{moduleStats.inserted}</span></div>
-                  <div className="flex justify-between"><span className="text-amber-600">Mis à jour:</span><span className="font-medium text-amber-600">{moduleStats.updated}</span></div>
-                  <div className="flex justify-between"><span className="text-red-600">Ignorés:</span><span className="font-medium text-red-600">{moduleStats.skipped}</span></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {importResult.errors && importResult.errors.length > 0 && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <h3 className="font-semibold text-red-800 mb-2">Erreurs ({importResult.errors.length})</h3>
-          <div className="space-y-1 max-h-60 overflow-y-auto">
-            {importResult.errors.slice(0, 10).map((error, idx) => (
-              <p key={idx} className="text-sm text-red-700">{error}</p>
-            ))}
-            {importResult.errors.length > 10 && (
-              <p className="text-sm text-red-600 font-medium mt-2">... et {importResult.errors.length - 10} autres erreurs</p>
-            )}
-          </div>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
-
-function renderFormatOptions() {
-  const { SelectItem } = require('../components/ui/select');
-  return (
-    <>
-      <SelectItem value="csv">CSV (un module seulement)</SelectItem>
-      <SelectItem value="xlsx">Excel (XLSX)</SelectItem>
-    </>
-  );
-}
-
-function renderImportModeOptions() {
-  const { SelectItem } = require('../components/ui/select');
-  return (
-    <>
-      <SelectItem value="add">Ajouter aux données existantes</SelectItem>
-      <SelectItem value="replace">Écraser les données existantes (par ID)</SelectItem>
-    </>
-  );
-}
 
 export default ImportExportTab;
