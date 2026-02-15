@@ -8837,9 +8837,8 @@ api_router.include_router(demande_arret_attachments_router)  # Routes attachment
 api_router.include_router(demande_arret_router)  # Routes principales EN DERNIER
 
 # Import/Export routes (modularisé)
-from import_export_routes import router as import_export_router, init_db as init_import_export_db, set_auth_dependency
+from import_export_routes import router as import_export_router, init_db as init_import_export_db
 init_import_export_db(db)
-set_auth_dependency(get_current_admin_user)
 api_router.include_router(import_export_router)
 
 # Chat Live
