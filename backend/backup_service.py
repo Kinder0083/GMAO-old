@@ -44,7 +44,7 @@ def _clean_item_for_export(item: dict) -> dict:
 
 async def execute_backup(schedule: dict) -> dict:
     """
-    Exécute une sauvegarde complète de toutes les données.
+    Exécute une sauvegarde complète de toutes les données + fichiers uploadés.
     Retourne un dict avec le résultat.
     """
     from import_export_routes import EXPORT_MODULES
@@ -60,33 +60,52 @@ async def execute_backup(schedule: dict) -> dict:
         "file_size": 0,
         "google_drive_file_id": None,
         "error_message": None,
-        "module_count": 0
+        "module_count": 0,
+        "file_count": 0
     }
 
     result = await db.backup_history.insert_one(history_entry)
     history_id = result.inserted_id
 
     try:
-        # 1. Générer le fichier Excel avec toutes les données
-        logger.info("[Backup] Génération du fichier Excel...")
-        output = io.BytesIO()
+        # 1. Générer le fichier ZIP avec données Excel + fichiers uploadés
+        logger.info("[Backup] Génération du fichier ZIP...")
+        zip_output = io.BytesIO()
         module_count = 0
+        file_count = 0
 
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            for mod_name, collection_name in EXPORT_MODULES.items():
-                items = await db[collection_name].find().to_list(10000)
-                cleaned = [_clean_item_for_export(item) for item in items]
-                df = pd.DataFrame(cleaned)
-                sheet_name = mod_name[:31]
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-                module_count += 1
+        with zipfile.ZipFile(zip_output, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # 1a. Générer le fichier Excel des données
+            xlsx_output = io.BytesIO()
+            with pd.ExcelWriter(xlsx_output, engine='openpyxl') as writer:
+                for mod_name, collection_name in EXPORT_MODULES.items():
+                    items = await db[collection_name].find().to_list(10000)
+                    cleaned = [_clean_item_for_export(item) for item in items]
+                    df = pd.DataFrame(cleaned)
+                    sheet_name = mod_name[:31]
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    module_count += 1
 
-        output.seek(0)
-        file_bytes = output.getvalue()
+            xlsx_output.seek(0)
+            zf.writestr("data.xlsx", xlsx_output.getvalue())
+
+            # 1b. Ajouter tous les fichiers uploadés
+            uploads_dir = Path("/app/backend/uploads")
+            if uploads_dir.exists():
+                for file_path in uploads_dir.rglob("*"):
+                    if file_path.is_file():
+                        arcname = f"uploads/{file_path.relative_to(uploads_dir)}"
+                        zf.write(file_path, arcname)
+                        file_count += 1
+
+            logger.info(f"[Backup] ZIP: {module_count} modules, {file_count} fichiers")
+
+        zip_output.seek(0)
+        file_bytes = zip_output.getvalue()
         file_size = len(file_bytes)
 
         timestamp = started_at.strftime('%Y%m%d_%H%M%S')
-        filename = f"backup_gmao_{timestamp}.xlsx"
+        filename = f"backup_gmao_{timestamp}.zip"
         destination = schedule.get("destination", "local")
 
         local_path = None
@@ -123,7 +142,8 @@ async def execute_backup(schedule: dict) -> dict:
                 "file_path": local_path,
                 "file_size": file_size,
                 "google_drive_file_id": gdrive_file_id,
-                "module_count": module_count
+                "module_count": module_count,
+                "file_count": file_count
             }}
         )
 
@@ -139,12 +159,12 @@ async def execute_backup(schedule: dict) -> dict:
             upsert=True
         )
 
-        logger.info(f"[Backup] Sauvegarde terminée avec succès: {module_count} modules, {file_size} bytes")
+        logger.info(f"[Backup] Sauvegarde terminée: {module_count} modules, {file_count} fichiers, {file_size} bytes")
 
         # 7. Envoyer notification email
-        await _send_backup_email(schedule, "success", file_size, module_count)
+        await _send_backup_email(schedule, "success", file_size, module_count, file_count=file_count)
 
-        return {"status": "success", "file_size": file_size, "module_count": module_count}
+        return {"status": "success", "file_size": file_size, "module_count": module_count, "file_count": file_count}
 
     except Exception as e:
         error_msg = str(e)
