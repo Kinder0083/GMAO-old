@@ -33,7 +33,11 @@ const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState({ nom: 'Utilisateur', role: 'VIEWER', firstLogin: false, id: '' });
-  const [workOrdersCount, setWorkOrdersCount] = useState(0);
+  const [overdueMenuOpen, setOverdueMenuOpen] = useState(false);
+  const { canView, isAdmin } = usePermissions();
+
+  // Hooks modulaires pour les données du header
+  const { workOrdersCount } = useWorkOrdersCount(user.id);
   const {
     overdueCount,
     overdueDetails,
@@ -41,11 +45,9 @@ const MainLayout = () => {
     overdueRequestsCount,
     overdueMaintenanceCount
   } = useOverdueItems();
-  const [overdueMenuOpen, setOverdueMenuOpen] = useState(false);
-  const [surveillanceBadge, setSurveillanceBadge] = useState({ echeances_proches: 0, pourcentage_realisation: 0 });
-  const [inventoryStats, setInventoryStats] = useState({ rupture: 0, niveau_bas: 0 });
-  const [chatUnreadCount, setChatUnreadCount] = useState(0);
-  const { canView, isAdmin } = usePermissions();
+  const { surveillanceBadge } = useSurveillanceBadge();
+  const { inventoryStats } = useInventoryStats();
+  const { chatUnreadCount } = useChatUnreadCount(canView('chatLive'));
 
   // Gérer le comportement auto-collapse de la sidebar
   useEffect(() => {
