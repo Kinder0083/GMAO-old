@@ -218,7 +218,6 @@ else
 
     # S'assurer que Nginx ecoute sur le port 80 avec le bon server_name pour la validation
     # Ecrire une config temporaire minimale pour la validation Certbot
-    TEMP_NGINX_WRITTEN=false
     if [ -f "$NGINX_CONF" ]; then
         cp "$NGINX_CONF" "${NGINX_CONF}.pre-certbot.backup"
     fi
