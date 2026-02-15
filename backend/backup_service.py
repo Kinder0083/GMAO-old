@@ -6,6 +6,7 @@ import io
 import os
 import logging
 import shutil
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
