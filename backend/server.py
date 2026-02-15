@@ -8744,8 +8744,9 @@ async def mark_changelog_seen(current_user: dict = Depends(get_current_user)):
     try:
         user_id = current_user.get("id")
         
-        entries = await db.system_update_history.find({}, {"_id": 0, "version": 1}).to_list(None)
-        all_versions = [e.get("version", "") for e in entries if e.get("version")]
+        entries = await db.system_update_history.find({}, {"_id": 0, "version": 1, "started_at": 1}).to_list(None)
+        # Utiliser version ou started_at comme identifiant unique
+        all_versions = [e.get("version") or e.get("started_at", "") for e in entries if e.get("version") or e.get("started_at")]
         
         await db.changelog_seen.update_one(
             {"user_id": user_id},
