@@ -27,10 +27,10 @@ class TestAuthentication:
         )
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
-        assert "token" in data, "No token in response"
+        assert "access_token" in data, "No access_token in response"
         assert "user" in data, "No user in response"
-        print(f"SUCCESS: Login returned token and user data")
-        return data.get("token"), data.get("user")
+        print(f"SUCCESS: Login returned access_token and user data")
+        return data.get("access_token"), data.get("user")
 
 
 class TestOverdueItems:
