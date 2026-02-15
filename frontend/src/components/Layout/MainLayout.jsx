@@ -55,12 +55,14 @@ const MainLayout = () => {
   const location = useLocation();
   const [user, setUser] = useState({ nom: 'Utilisateur', role: 'VIEWER', firstLogin: false, id: '' });
   const [workOrdersCount, setWorkOrdersCount] = useState(0);
-  const [overdueCount, setOverdueCount] = useState(0);
-  const [overdueDetails, setOverdueDetails] = useState({});
+  const {
+    overdueCount,
+    overdueDetails,
+    overdueExecutionCount,
+    overdueRequestsCount,
+    overdueMaintenanceCount
+  } = useOverdueItems();
   const [overdueMenuOpen, setOverdueMenuOpen] = useState(false);
-  const [overdueExecutionCount, setOverdueExecutionCount] = useState(0);
-  const [overdueRequestsCount, setOverdueRequestsCount] = useState(0);
-  const [overdueMaintenanceCount, setOverdueMaintenanceCount] = useState(0);
   const [surveillanceBadge, setSurveillanceBadge] = useState({ echeances_proches: 0, pourcentage_realisation: 0 });
   const [inventoryStats, setInventoryStats] = useState({ rupture: 0, niveau_bas: 0 });
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
