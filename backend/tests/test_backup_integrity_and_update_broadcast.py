@@ -215,7 +215,7 @@ class TestUpdateBroadcastWarning(TestSetup):
 class TestBackendLogs:
     """Test that backend logs contain expected integrity verification messages"""
     
-    def test_backup_logs_contain_integrity_message(self, auth_headers):
+    def test_backup_logs_contain_integrity_message(self):
         """After backup, logs should contain 'Intégrité ZIP vérifiée'"""
         # This test is informational - we can't easily read server logs from HTTP
         # The main agent has already verified this via curl and log inspection
@@ -224,7 +224,7 @@ class TestBackendLogs:
         print("  logger.info(f'[Backup] Intégrité ZIP vérifiée: {len(names)} entrée(s), aucune corruption')")
         assert True
     
-    def test_export_logs_contain_integrity_message(self, auth_headers):
+    def test_export_logs_contain_integrity_message(self):
         """After export, logs should contain 'Intégrité ZIP vérifiée'"""
         # Similar to above - code review confirms logging
         print("Code review confirms logging at import_export_routes.py line 632:")
