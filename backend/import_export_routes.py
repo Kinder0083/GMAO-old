@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from fastapi.responses import StreamingResponse
 import pandas as pd
 from bson import ObjectId
+from dependencies import get_current_admin_user
 
 logger = logging.getLogger(__name__)
 
@@ -547,25 +548,13 @@ async def process_import_item(item: dict, module: str, collection_name: str, cur
     return {"action": "inserted", "id": str(cleaned["_id"])}
 
 
-# Fonction pour obtenir get_current_admin_user (sera définie depuis server.py)
-_get_current_admin_user = None
-
-def set_auth_dependency(auth_func):
-    """Configurer la fonction d'authentification admin"""
-    global _get_current_admin_user
-    _get_current_admin_user = auth_func
-
-
 @router.get("/export/{module}")
 async def export_data(
     module: str,
     format: str = "csv",
-    current_user: dict = Depends(lambda: _get_current_admin_user)
+    current_user: dict = Depends(get_current_admin_user)
 ):
     """Exporter les données d'un module (admin uniquement)"""
-    # Import de la dépendance ici pour éviter les imports circulaires
-    from server import get_current_admin_user
-    
     try:
         if module not in EXPORT_MODULES and module != "all":
             raise HTTPException(status_code=400, detail="Module invalide")
@@ -632,11 +621,9 @@ async def import_data(
     module: str,
     mode: str = "add",
     file: UploadFile = File(...),
-    current_user: dict = Depends(lambda: _get_current_admin_user)
+    current_user: dict = Depends(get_current_admin_user)
 ):
     """Importer les données d'un module (admin uniquement)"""
-    from server import get_current_admin_user
-    
     try:
         if module not in EXPORT_MODULES and module != "all":
             raise HTTPException(status_code=400, detail="Module invalide")
