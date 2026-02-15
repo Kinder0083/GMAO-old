@@ -1,34 +1,10 @@
 /**
  * MainLayout - Composant principal de mise en page
- * Refactorisé pour utiliser des composants modulaires (Header, Sidebar)
+ * Refactorisé pour utiliser des hooks modulaires
  */
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  ClipboardList,
-  Package,
-  MapPin,
-  Wrench,
-  BarChart3,
-  Users,
-  ShoppingCart,
-  ShoppingBag,
-  Calendar,
-  Database,
-  FileText,
-  Gauge,
-  MessageSquare,
-  Lightbulb,
-  Sparkles,
-  Eye,
-  AlertTriangle,
-  FolderOpen,
-  Terminal,
-  Mail,
-  Activity,
-  Presentation
-} from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import { TooltipProvider } from '../ui/tooltip';
 import FirstLoginPasswordDialog from '../Common/FirstLoginPasswordDialog';
 import RecentUpdatePopup from '../Common/RecentUpdatePopup';
@@ -43,7 +19,10 @@ import Sidebar from './Sidebar';
 import { iconMap } from './menuConfig';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useOverdueItems } from '../../hooks/useOverdueItems';
-import { getBackendURL } from '../../utils/config';
+import { useWorkOrdersCount } from '../../hooks/useWorkOrdersCount';
+import { useSurveillanceBadge } from '../../hooks/useSurveillanceBadge';
+import { useInventoryStats } from '../../hooks/useInventoryStats';
+import { useChatUnreadCount } from '../../hooks/useChatUnreadCount';
 import { usePreferences } from '../../contexts/PreferencesContext';
 
 const MainLayout = () => {
