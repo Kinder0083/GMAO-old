@@ -597,21 +597,56 @@ async def export_data(
                 raise HTTPException(status_code=400, detail="Pour exporter tout, utilisez le format xlsx")
         
         elif format == "xlsx":
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                for mod_name, items in data_to_export.items():
-                    df = pd.DataFrame(items)
-                    sheet_name = mod_name[:31]
-                    df.to_excel(writer, sheet_name=sheet_name, index=False)
-            
-            output.seek(0)
-            filename = f"export_{module}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-            
-            return StreamingResponse(
-                output,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f"attachment; filename={filename}"}
-            )
+            # Pour "all", créer un ZIP avec Excel + fichiers uploadés
+            if module == "all":
+                zip_output = io.BytesIO()
+                with zipfile.ZipFile(zip_output, 'w', zipfile.ZIP_DEFLATED) as zf:
+                    # 1. Ajouter le fichier Excel des données
+                    xlsx_output = io.BytesIO()
+                    with pd.ExcelWriter(xlsx_output, engine='openpyxl') as writer:
+                        for mod_name, items in data_to_export.items():
+                            df = pd.DataFrame(items)
+                            sheet_name = mod_name[:31]
+                            df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    xlsx_output.seek(0)
+                    zf.writestr("data.xlsx", xlsx_output.getvalue())
+                    logger.info(f"[Export] data.xlsx ajouté au ZIP")
+
+                    # 2. Ajouter tous les fichiers uploadés
+                    file_count = 0
+                    if UPLOADS_DIR.exists():
+                        for file_path in UPLOADS_DIR.rglob("*"):
+                            if file_path.is_file():
+                                arcname = f"uploads/{file_path.relative_to(UPLOADS_DIR)}"
+                                zf.write(file_path, arcname)
+                                file_count += 1
+                    logger.info(f"[Export] {file_count} fichier(s) ajouté(s) au ZIP")
+
+                zip_output.seek(0)
+                filename = f"export_complet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+
+                return StreamingResponse(
+                    zip_output,
+                    media_type="application/zip",
+                    headers={"Content-Disposition": f"attachment; filename={filename}"}
+                )
+            else:
+                # Export simple d'un seul module en XLSX
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    for mod_name, items in data_to_export.items():
+                        df = pd.DataFrame(items)
+                        sheet_name = mod_name[:31]
+                        df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+                output.seek(0)
+                filename = f"export_{module}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+                return StreamingResponse(
+                    output,
+                    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": f"attachment; filename={filename}"}
+                )
         
         else:
             raise HTTPException(status_code=400, detail="Format non supporté (csv ou xlsx)")
