@@ -931,6 +931,7 @@ const ImportExport = () => {
                       <th className="pb-2 font-medium">Destination</th>
                       <th className="pb-2 font-medium">Taille</th>
                       <th className="pb-2 font-medium">Modules</th>
+                      <th className="pb-2 font-medium">Fichiers</th>
                       <th className="pb-2 font-medium">Actions</th>
                     </tr>
                   </thead>
@@ -946,6 +947,7 @@ const ImportExport = () => {
                         <td className="py-2.5 text-gray-500">{destLabels[h.destination] || h.destination}</td>
                         <td className="py-2.5 text-gray-500">{h.file_size ? `${(h.file_size / 1024 / 1024).toFixed(2)} Mo` : '-'}</td>
                         <td className="py-2.5 text-gray-500">{h.module_count || '-'}</td>
+                        <td className="py-2.5 text-gray-500">{h.file_count || '-'}</td>
                         <td className="py-2.5">
                           {h.status === 'success' && h.file_path && (
                             <Button size="sm" variant="ghost" onClick={() => handleDownloadBackup(h.id)} data-testid={`download-backup-${h.id}`}>
