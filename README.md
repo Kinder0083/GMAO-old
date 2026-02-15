@@ -275,17 +275,72 @@ DOCS_PASS=<mot_de_passe>
 
 Pour utiliser Google Drive comme destination de sauvegarde :
 
+**Etape 1 : Creer un projet Google Cloud**
 1. Allez sur [Google Cloud Console](https://console.cloud.google.com)
-2. Creez un projet et activez l'API Google Drive
-3. Configurez l'ecran de consentement OAuth
-4. Creez des identifiants OAuth 2.0 (type : Application Web)
-5. Ajoutez l'URI de redirection autorisee :
+2. Creez un nouveau projet (ou selectionnez un projet existant)
+3. Notez le **numero du projet** (visible dans les parametres du projet)
+
+**Etape 2 : Activer l'API Google Drive (OBLIGATOIRE)**
+1. Dans le menu lateral, allez dans **APIs & Services > Bibliotheque**
+2. Recherchez **"Google Drive API"**
+3. Cliquez dessus puis cliquez sur **"Activer"** (Enable)
+4. **Attendez 1-2 minutes** pour que l'activation se propage
+
+> **IMPORTANT :** Sans cette etape, vous obtiendrez une erreur `HttpError 403 - accessNotConfigured` lors de l'upload vers Google Drive. Lien direct pour activer : `https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=VOTRE_NUMERO_PROJET`
+
+**Etape 3 : Configurer l'ecran de consentement OAuth**
+1. Allez dans **APIs & Services > Ecran de consentement OAuth**
+2. Choisissez **"Externe"** comme type d'utilisateur
+3. Remplissez les champs obligatoires (nom de l'application, email de contact)
+4. Dans les **Scopes**, ajoutez : `https://www.googleapis.com/auth/drive.file`
+5. Dans **Utilisateurs test**, ajoutez votre adresse email Google
+6. Publiez ou gardez en mode test (suffisant pour usage interne)
+
+**Etape 4 : Creer les identifiants OAuth 2.0**
+1. Allez dans **APIs & Services > Identifiants**
+2. Cliquez sur **"Creer des identifiants" > "ID client OAuth"**
+3. Type d'application : **Application Web**
+4. Nom : `GMAO Iris` (ou autre)
+5. **URI de redirection autorisee** : ajoutez exactement :
    ```
    https://votre-domaine.com/api/backup/drive/callback
    ```
-6. Renseignez `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_DRIVE_REDIRECT_URI` dans le `.env`
-7. Redemarrez le backend : `supervisorctl restart gmao-iris-backend`
-8. Dans l'application : Import/Export > Sauvegardes Automatiques > Connecter Google Drive
+6. Copiez le **Client ID** et le **Client Secret** generes
+
+**Etape 5 : Configurer le backend**
+1. Renseignez les variables dans `backend/.env` :
+   ```env
+   GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=GOCSPX-xxxx
+   GOOGLE_DRIVE_REDIRECT_URI=https://votre-domaine.com/api/backup/drive/callback
+   ```
+2. Redemarrez le backend :
+   ```bash
+   supervisorctl restart gmao-iris-backend
+   ```
+
+**Etape 6 : Connecter depuis l'application**
+1. Dans GMAO Iris : **Import/Export > Sauvegardes Automatiques**
+2. Cliquez sur **"Connecter Google Drive"**
+3. Autorisez l'acces dans la fenetre Google
+4. Vous devriez voir le statut **"Connecte"** en vert
+
+**Comportement des sauvegardes Google Drive :**
+- Les sauvegardes sont automatiquement stockees dans un dossier **"Backup GMAO"** sur Google Drive
+- Le dossier est cree automatiquement s'il n'existe pas
+- Vous pouvez egalement uploader manuellement un backup existant vers Google Drive via l'icone d'upload dans l'historique des sauvegardes
+
+### Checklist rapide Google Drive
+
+| Etape | Verification |
+|-------|-------------|
+| API Google Drive activee | Console Google > APIs & Services > Bibliotheque > Google Drive API > **Activee** |
+| Ecran de consentement configure | Console Google > APIs & Services > Ecran de consentement > **Configure** |
+| Identifiants OAuth crees | Console Google > APIs & Services > Identifiants > **ID client OAuth present** |
+| URI de redirection correcte | L'URI dans Google Cloud = `GOOGLE_DRIVE_REDIRECT_URI` dans `.env` |
+| Variables `.env` renseignees | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_DRIVE_REDIRECT_URI` |
+| Backend redemarre | `supervisorctl restart gmao-iris-backend` apres modification du `.env` |
+| Connexion dans l'app | Import/Export > Sauvegardes Automatiques > **Connecte (vert)** |
 
 ---
 
