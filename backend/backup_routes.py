@@ -292,8 +292,29 @@ async def upload_backup_to_drive(history_id: str, current_user: dict = Depends(g
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[Backup] Erreur upload manuel Google Drive: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur lors de l'upload: {str(e)}")
+        error_str = str(e)
+        logger.error(f"[Backup] Erreur upload manuel Google Drive: {error_str}")
+
+        # Détecter les erreurs courantes Google API et donner un message clair
+        if "accessNotConfigured" in error_str or "has not been used in project" in error_str:
+            raise HTTPException(
+                status_code=403,
+                detail="L'API Google Drive n'est pas activée dans votre projet Google Cloud. "
+                       "Rendez-vous dans la console Google Cloud (APIs & Services > Bibliothèque) "
+                       "et activez 'Google Drive API', puis réessayez après 1-2 minutes."
+            )
+        elif "invalid_grant" in error_str or "Token has been expired" in error_str:
+            raise HTTPException(
+                status_code=401,
+                detail="La session Google Drive a expiré. Veuillez vous reconnecter à Google Drive dans les paramètres."
+            )
+        elif "insufficientPermissions" in error_str:
+            raise HTTPException(
+                status_code=403,
+                detail="Permissions insuffisantes sur Google Drive. Reconnectez-vous pour accorder les autorisations nécessaires."
+            )
+
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'upload vers Google Drive: {error_str}")
 
 
 
