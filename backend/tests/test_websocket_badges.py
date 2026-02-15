@@ -22,7 +22,7 @@ class TestAuthentication:
     def test_login_success(self):
         """Test login with admin credentials"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         assert response.status_code == 200, f"Login failed: {response.text}"
@@ -40,7 +40,7 @@ class TestOverdueItems:
     def auth_token(self):
         """Get auth token"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
@@ -121,7 +121,7 @@ class TestSurveillanceBadge:
     def auth_token(self):
         """Get auth token"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
@@ -149,7 +149,7 @@ class TestInventoryStats:
     def auth_token(self):
         """Get auth token"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
@@ -177,7 +177,7 @@ class TestChatUnreadCount:
     def auth_token(self):
         """Get auth token"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
@@ -204,7 +204,7 @@ class TestWorkOrderCRUDWithWebSocket:
     def auth_token(self):
         """Get auth token"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
@@ -294,7 +294,7 @@ class TestRealtimeManagerEndpoint:
     def auth_token(self):
         """Get auth token"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
@@ -322,7 +322,7 @@ class TestCleanupTestData:
     def auth_token(self):
         """Get auth token"""
         response = requests.post(
-            f"{BASE_URL}/api/login",
+            f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
