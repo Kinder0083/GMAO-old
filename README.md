@@ -498,6 +498,23 @@ Causes frequentes :
 - **invalid_grant** : Le code d'autorisation a expire (reessayez)
 - **Packages manquants** : Verifiez que `google-auth-oauthlib` est installe (`pip list | grep google`)
 
+### Google Drive : erreur lors de l'upload (403)
+
+Si l'upload vers Google Drive echoue avec une erreur `HttpError 403 - accessNotConfigured` :
+1. **L'API Google Drive n'est pas activee** dans votre projet Google Cloud
+2. Allez sur : `https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=VOTRE_NUMERO_PROJET`
+3. Cliquez sur **"Activer"**
+4. Attendez **1-2 minutes** puis reessayez
+5. Si vous venez d'activer l'API, il peut falloir jusqu'a 5 minutes pour la propagation
+
+### Sauvegardes planifiees ne se declenchent pas
+
+Si les backups planifies ne s'executent pas a l'heure prevue :
+1. **Verifiez le fuseau horaire** : Parametres > Fuseau Horaire. Le scheduler utilise ce fuseau pour determiner l'heure de declenchement
+2. **Verifiez les logs** : `tail -100 /var/log/gmao-iris-backend.err.log | grep Backup`
+3. Vous devriez voir : `[Backup] Fuseau horaire configure: GMT+X` au demarrage
+4. **Redemarrez le backend** apres avoir modifie le fuseau horaire : `supervisorctl restart gmao-iris-backend`
+
 ---
 
 ## Collections MongoDB
