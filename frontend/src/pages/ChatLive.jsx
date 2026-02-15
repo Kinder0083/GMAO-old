@@ -69,7 +69,7 @@ const ChatLive = () => {
   // Connexion WebSocket
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token || !currentUser?.id) return;
+    if (!token || !user?.id) return;
 
     // Construire l'URL WebSocket depuis REACT_APP_BACKEND_URL
     const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
@@ -80,7 +80,7 @@ const ChatLive = () => {
       .replace('http://', 'ws://');
     
     // Utiliser user_id pour la compatibilité proxy
-    wsUrl = `${wsUrl}/api/ws/chat?user_id=${currentUser.id}`;
+    wsUrl = `${wsUrl}/api/ws/chat?user_id=${user.id}`;
     
     console.log('🔌 Tentative connexion WebSocket:', wsUrl);
     
