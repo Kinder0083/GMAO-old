@@ -1,596 +1,506 @@
 # GMAO Iris
 
-Application de Gestion de Maintenance Assistée par Ordinateur (GMAO) - Clone d'Atlas CMMS avec fonctionnalités premium
+Application de Gestion de Maintenance Assistee par Ordinateur (GMAO) complete et auto-hebergee.
 
-**Version:** 1.0.0  
-**Concepteur:** Grèg
+**Version :** 1.5.0
+**Concepteur :** Greg
+**Derniere mise a jour :** Fevrier 2026
 
-## 🎯 Fonctionnalités
+---
 
-### Gestion des Ordres de Travail
-- Création, assignation et suivi des ordres de maintenance
-- Gestion des priorités et statuts
-- Historique complet des interventions
-- Suivi du temps estimé vs temps réel
-- **📎 Pièces jointes multiples** (photos, vidéos, documents jusqu'à 25MB)
-- Filtrage avancé par date et période personnalisée
+## Presentation
 
-### Gestion des Équipements
-- Inventaire complet des équipements
-- **📊 Structure hiérarchique** (équipements parents/enfants)
-- Suivi de l'état opérationnel avec changement rapide de statut
-- Historique des maintenances
-- Gestion des garanties et coûts
-- Vue en liste et en arborescence
+GMAO Iris est une application web full-stack concue pour gerer l'ensemble du cycle de maintenance industrielle : ordres de travail, equipements, maintenance preventive, inventaire, surveillance, M.E.S., cameras, chat en temps reel, et bien plus. Elle se deploie sur un serveur Proxmox LXC en une commande et dispose d'un systeme de mise a jour integre.
 
-### Maintenance Préventive
-- Planification des maintenances récurrentes
-- Fréquences personnalisables (hebdomadaire, mensuel, trimestriel, annuel)
-- Alertes automatiques
-- Checklists de maintenance
-- Exécution immédiate possible
+---
 
-### Inventaire
-- Gestion des pièces détachées
-- Alertes de stock bas
-- Suivi des fournisseurs
-- Gestion des coûts
+## Fonctionnalites principales
 
-### Rapports et Analytics
-- Tableaux de bord en temps réel
-- Statistiques détaillées
-- Analyse des coûts
-- **📊 Exports multiples** : PDF, Excel, CSV (Admins uniquement)
-- Rapports personnalisables par période
+### Ordres de travail
+- Creation, assignation, suivi et historique complet
+- Gestion des priorites, statuts et temps (estime vs reel)
+- Pieces jointes multiples (photos, videos, documents jusqu'a 25 Mo)
+- Filtrage avance par date, periode, statut, priorite
+- Templates d'ordres de travail reutilisables
+- Bons de travail generables en PDF
 
-### Gestion Multi-utilisateurs
-- 3 rôles : Administrateur, Technicien, Visualiseur
-- **🔐 Permissions granulaires** par module (view, edit, delete)
-- Authentification JWT sécurisée
-- Gestion des équipes et services
-- Planning de disponibilité
+### Equipements
+- Inventaire complet avec structure hierarchique (parent/enfant)
+- Suivi de l'etat operationnel, historique des maintenances
+- Gestion des garanties, couts et compteurs (metres)
+- Vues en liste et en arborescence
 
-### Import/Export (Admin)
-- Import/export de données en masse
-- Support CSV et Excel
-- Mode ajout ou écrasement
-- Gestion des doublons
-- Confirmation avant import
+### Maintenance preventive
+- Planification recurrente (hebdomadaire, mensuel, trimestriel, annuel)
+- Planning visuel (calendrier Gantt)
+- Checklists de maintenance, alertes automatiques
+- Execution immediate possible
 
-## 🚀 Technologies
+### Inventaire et achats
+- Gestion des pieces detachees et alertes de stock bas
+- Suivi des fournisseurs et des couts
+- Demandes d'achat avec workflow de validation
+- Historique des achats avec statistiques par utilisateur et par mois
 
-- **Frontend**: React 19 avec shadcn/ui et Tailwind CSS
-- **Backend**: FastAPI (Python 3.11+)
-- **Base de données**: MongoDB 7.0+
-- **Authentification**: JWT avec bcrypt
-- **Serveur Web**: Nginx
-- **Process Manager**: Supervisor
-- **Conteneurisation**: Compatible Docker et Proxmox LXC
+### Surveillance et securite
+- Plan de surveillance avec suivi des controles periodiques
+- Rapports de surveillance (3 modes : cartes, tableau, graphiques)
+- Gestion des presqu'accidents avec rapports
+- Integration cameras (snapshots, alertes via Frigate/MQTT)
+- Autorisations particulieres (formulaires et suivi)
 
-## 📦 Installation
+### M.E.S. (Manufacturing Execution System)
+- Suivi de production en temps reel
+- Calcul automatique de cadence (par minute, via scheduler)
+- Rapports M.E.S. planifies
 
-### Prérequis
+### Communication et collaboration
+- Chat en temps reel (WebSocket)
+- Tableau d'affichage collaboratif (Whiteboard, WebSocket)
+- Consignes inter-equipes avec acquittement
+- Notifications temps reel pour les ordres de travail et equipements
 
-- Docker et Docker Compose
-- Node.js 18+ (pour le développement)
-- Python 3.11+ (pour le développement)
+### Rapports et analytics
+- Tableaux de bord en temps reel
+- Dashboard personnalisable avec widgets custom
+- Statistiques detaillees et analyse des couts
+- Exports PDF, Excel, CSV (admin)
+- Rapports hebdomadaires automatiques par email
 
-### Installation rapide avec Docker
+### Import / Export et sauvegardes
+- Import/export de 63 modules (selecteur par 12 categories)
+- Export complet en ZIP (data.xlsx + fichiers uploades)
+- Import ZIP pour restauration complete
+- Sauvegardes automatiques planifiees (quotidien/hebdo/mensuel)
+- Destinations : local, Google Drive, ou les deux
+- Nettoyage automatique (retention 1 a 5 backups)
+- Verification d'integrite des archives ZIP
+- Historique avec telechargement, notifications email
+- Icone de statut dans le header (vert = backup recent)
 
-1. Clonez le dépôt :
-```bash
-git clone https://github.com/VOTRE_REPO/gmao-atlas-clone.git
-cd gmao-atlas-clone
+### Gestion des utilisateurs et roles
+- 3 roles : Administrateur, Technicien, Visualiseur
+- Permissions granulaires par module (view, edit, delete)
+- Gestion des equipes, services et responsables hierarchiques
+- Planning de disponibilite
+- Preferences utilisateur personnalisees
+
+### IoT et capteurs
+- Dashboard IoT avec visualisation des capteurs
+- Integration MQTT (publication/souscription, logs)
+- Collecte automatique de donnees capteurs et compteurs
+
+### Documentation et journal
+- Gestion documentaire avec explorateur de fichiers
+- Manuel integre avec chapitres
+- Journal d'activite complet (audit)
+
+### Systeme de mise a jour
+- Detection automatique des nouvelles versions (comparaison commit Git)
+- Mise a jour en un clic depuis l'interface admin
+- Avertissement broadcast a tous les utilisateurs connectes avant MAJ
+- Script post-update automatique (dependances + rebuild frontend)
+
+### Autres
+- Demandes d'arret de maintenance avec workflow email
+- Demandes d'amelioration avec suivi
+- Demandes d'intervention
+- Acces SSH distant depuis l'interface (admin)
+- Configuration Tailscale depuis l'interface web
+- Gestion des fuseaux horaires
+
+---
+
+## Architecture technique
+
+```
+gmao-iris/
+├── backend/                    # API FastAPI (Python 3.11+)
+│   ├── server.py               # Point d'entree principal (~9000 lignes)
+│   ├── models.py               # Modeles Pydantic
+│   ├── auth.py                 # Authentification JWT + bcrypt
+│   ├── dependencies.py         # Dependances FastAPI (auth guards)
+│   ├── *_routes.py             # 35 modules de routes API
+│   ├── *_service.py            # 16 services metier
+│   ├── websocket_manager.py    # Chat WebSocket
+│   ├── realtime_manager.py     # Notifications temps reel
+│   ├── whiteboard_manager.py   # Tableau d'affichage WebSocket
+│   ├── mqtt_manager.py         # Integration MQTT
+│   ├── backup_service.py       # Sauvegardes auto (local + Google Drive)
+│   ├── backup_routes.py        # API sauvegardes + OAuth Google Drive
+│   ├── import_export_routes.py # Import/export 63 modules
+│   ├── update_service.py       # Mises a jour depuis GitHub
+│   ├── migrations/             # Scripts de migration DB
+│   ├── uploads/                # Fichiers uploades
+│   └── .env                    # Configuration (voir ci-dessous)
+│
+├── frontend/                   # Application React 19
+│   ├── src/
+│   │   ├── pages/              # 66 pages
+│   │   ├── components/         # Composants reutilisables
+│   │   │   ├── ui/             # Shadcn/UI
+│   │   │   ├── chat/           # Chat temps reel
+│   │   │   ├── backup/         # (reserve)
+│   │   │   └── import/         # (reserve)
+│   │   └── hooks/              # Hooks React personnalises
+│   ├── public/                 # Assets statiques
+│   ├── nginx.conf              # Config Nginx production
+│   └── package.json            # Dependances (React 19, Tailwind, etc.)
+│
+├── gmao-iris-install.sh        # Script installation Proxmox (complet)
+├── gmao-ssl-gdrive-setup.sh    # Script post-install SSL + Google Drive
+├── updates/                    # Metadonnees de version
+│   └── version.json
+├── CHANGELOG.md                # Notes de version
+└── README.md                   # Ce fichier
 ```
 
-2. Créez le fichier `.env` :
+### Stack technique
+
+| Couche      | Technologie                                     |
+|-------------|--------------------------------------------------|
+| Frontend    | React 19, Shadcn/UI, Tailwind CSS, Lucide Icons |
+| Backend     | FastAPI (Python 3.11+), Uvicorn                  |
+| Base de donnees | MongoDB 7.0+                                |
+| Temps reel  | WebSocket (chat, whiteboard, notifications)      |
+| Scheduler   | APScheduler (backups, rapports, M.E.S.)          |
+| Auth        | JWT + bcrypt                                     |
+| Serveur web | Nginx (reverse proxy, SSL, static files)         |
+| Process     | Supervisor                                       |
+| Deploiement | Proxmox LXC (Debian 12)                         |
+| IA          | Emergent LLM (assistant chat integre)            |
+
+---
+
+## Installation
+
+### Installation Proxmox LXC (recommandee)
+
+Le script d'installation cree automatiquement un container LXC Debian 12 avec tout le necessaire.
+
+**Depuis le serveur Proxmox (host) :**
+
 ```bash
-cp .env.example .env
+bash gmao-iris-install.sh
 ```
 
-3. Modifiez le fichier `.env` avec vos paramètres :
-```env
-MONGO_USER=admin
-MONGO_PASSWORD=votre_mot_de_passe_securise
-DB_NAME=gmao_atlas
-JWT_SECRET_KEY=votre_cle_secrete_jwt
-PUBLIC_API_URL=http://localhost:8001
+Le script interactif vous demandera :
+- Token GitHub (acces au depot prive)
+- Configuration reseau (IP statique ou DHCP)
+- Identifiants administrateur
+- Mode d'acces distant (URL manuelle, Tailscale, ou local uniquement)
+
+**Ce qui est installe automatiquement :**
+- MongoDB 7.0, Node.js 20, Python 3.11+, Nginx, Supervisor
+- Build complet du frontend (yarn)
+- Environnement virtuel Python avec toutes les dependances
+- Comptes administrateurs, services configures et demarres
+- Hooks Git pour mise a jour automatique des dependances
+
+### Post-installation : SSL + Google Drive
+
+Apres l'installation, executez le script de configuration SSL et Google Drive **dans le container LXC** :
+
+```bash
+sudo bash gmao-ssl-gdrive-setup.sh
 ```
 
-4. Démarrez l'application :
+Ce script interactif :
+1. Demande votre nom de domaine (ex: `gmaoiris.duckdns.org`)
+2. Verifie la resolution DNS
+3. Installe Certbot et genere un certificat SSL Let's Encrypt
+4. Configure Nginx avec HTTPS (redirection HTTP, proxy API, WebSocket)
+5. Met a jour le `.env` backend (URLs HTTPS, Google Drive)
+6. Configure le renouvellement automatique du certificat
+7. Redemarre les services et teste la connexion
+
+### Installation Docker (alternative)
+
 ```bash
+git clone https://github.com/Kinder0083/GMAO.git
+cd GMAO
 docker-compose up -d
 ```
 
-5. Accédez à l'application :
-- **Frontend**: http://localhost:3000
-- **API Backend**: http://localhost:8001
-- **Documentation API**: http://localhost:8001/docs
+**Acces :**
+- Frontend : `http://localhost:3000`
+- API : `http://localhost:8001`
+- Documentation API : `http://localhost:8001/docs`
 
-### Installation sur Proxmox LXC (Recommandé)
+---
 
-**Installation automatique en une commande:**
+## Configuration
 
-```bash
-wget -qO - https://raw.githubusercontent.com/votreuser/gmao-iris/main/gmao-iris-proxmox.sh | bash
-```
+### Variables d'environnement backend (`backend/.env`)
 
-Pour plus de détails, consultez [INSTALLATION_PROXMOX_COMPLET.md](INSTALLATION_PROXMOX_COMPLET.md)
-
-**Caractéristiques:**
-- Installation complète automatisée
-- Container LXC optimisé
-- MongoDB 7.0 préconfiguré
-- Nginx + Supervisor
-- Création automatique de comptes admin
-- Support SSL Let's Encrypt
-
-### Installation Docker (Alternative)
-
-1. Clonez le dépôt :
-```bash
-git clone https://github.com/votreuser/gmao-iris.git
-cd gmao-iris
-```
-
-2. Créez les fichiers `.env` :
-
-**Backend** (`backend/.env`):
-```bash
-cp backend/.env.example backend/.env
-```
-
-Modifiez avec vos paramètres:
 ```env
+# Base de donnees
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=gmao_iris
-SECRET_KEY=$(openssl rand -hex 32)
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
-PORT=8001
-HOST=0.0.0.0
+
+# Securite
+SECRET_KEY=<cle_generee_openssl_rand_hex_32>
+
+# URLs (adapter a votre domaine)
+FRONTEND_URL=https://votre-domaine.com
+BACKEND_URL=https://votre-domaine.com
+APP_URL=https://votre-domaine.com
+
+# SMTP (emails)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=votre-email@gmail.com
+SMTP_PASSWORD=<mot_de_passe_application>
+SMTP_SENDER_EMAIL=votre-email@gmail.com
+SMTP_FROM_NAME=GMAO Iris
+SMTP_USE_TLS=true
+
+# Google Drive (optionnel - pour sauvegardes cloud)
+GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxx
+GOOGLE_DRIVE_REDIRECT_URI=https://votre-domaine.com/api/backup/drive/callback
+
+# IA (assistant chat)
+EMERGENT_LLM_KEY=sk-emergent-xxxx
+
+# Cameras (optionnel)
+CAMERA_ENCRYPTION_KEY=<cle_generee>
+
+# Documentation API
+DOCS_USER=admin
+DOCS_PASS=<mot_de_passe>
 ```
 
-**Frontend** (`frontend/.env`):
+### Configuration Google Drive
+
+Pour utiliser Google Drive comme destination de sauvegarde :
+
+1. Allez sur [Google Cloud Console](https://console.cloud.google.com)
+2. Creez un projet et activez l'API Google Drive
+3. Configurez l'ecran de consentement OAuth
+4. Creez des identifiants OAuth 2.0 (type : Application Web)
+5. Ajoutez l'URI de redirection autorisee :
+   ```
+   https://votre-domaine.com/api/backup/drive/callback
+   ```
+6. Renseignez `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_DRIVE_REDIRECT_URI` dans le `.env`
+7. Redemarrez le backend : `supervisorctl restart gmao-iris-backend`
+8. Dans l'application : Import/Export > Sauvegardes Automatiques > Connecter Google Drive
+
+---
+
+## Utilisation
+
+### Comptes par defaut (apres installation Proxmox)
+
+1. **Compte administrateur** : defini pendant l'installation
+2. **Compte de secours** : `buenogy@gmail.com` / `Admin2024!`
+
+> Changez ou supprimez le compte de secours en production.
+
+### Endpoints API principaux
+
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/api/auth/login` | Authentification |
+| GET | `/api/auth/me` | Profil utilisateur |
+| GET | `/api/work-orders` | Ordres de travail |
+| GET | `/api/equipments` | Equipements |
+| GET | `/api/preventive-maintenance` | Maintenance preventive |
+| GET | `/api/inventory` | Inventaire |
+| POST | `/api/export/{module}` | Export donnees (admin) |
+| POST | `/api/import/{module}` | Import donnees (admin) |
+| GET | `/api/backup/schedules` | Planifications de sauvegarde |
+| POST | `/api/backup/run` | Sauvegarde manuelle |
+| GET | `/api/backup/drive/connect` | Connexion OAuth Google Drive |
+| GET | `/api/backup/drive/status` | Statut connexion Google Drive |
+| GET | `/api/version` | Version de l'application |
+| POST | `/api/updates/broadcast-warning` | Avertissement avant MAJ |
+| WS | `/ws/chat/` | Chat temps reel |
+| WS | `/ws/whiteboard/` | Tableau d'affichage |
+| WS | `/api/ws/realtime/{entity}` | Notifications temps reel |
+
+Documentation Swagger complete : `https://votre-domaine.com/docs` (identifiants dans `.env`)
+
+---
+
+## Administration
+
+### Commandes Proxmox
+
 ```bash
-cp frontend/.env.example frontend/.env
+# Entrer dans le container
+pct enter <CTID>
+
+# Statut des services
+supervisorctl status
+systemctl status mongod
+systemctl status nginx
+
+# Logs backend
+tail -f /var/log/gmao-iris-backend.err.log
+tail -f /var/log/gmao-iris-backend.out.log
+
+# Redemarrer le backend
+supervisorctl restart gmao-iris-backend
+
+# Tester et redemarrer Nginx
+nginx -t && systemctl reload nginx
+
+# Mise a jour manuelle
+cd /opt/gmao-iris && ./update.sh
 ```
 
-Modifiez:
-```env
-REACT_APP_BACKEND_URL=http://localhost:8001
-NODE_ENV=production
-```
+### Sauvegardes
 
-3. Démarrez l'application :
+**Via l'interface (recommande) :**
+- Import/Export > Sauvegardes Automatiques
+- Planifier des backups quotidiens/hebdomadaires/mensuels
+- Destinations : local, Google Drive, ou les deux
+
+**Via la ligne de commande :**
 ```bash
-docker-compose up -d
+# Backup MongoDB
+mongodump --db gmao_iris --out /backup/gmao-$(date +%Y%m%d)
+
+# Snapshot Proxmox (depuis le host)
+vzdump <CTID> --mode snapshot --compress zstd
 ```
 
-4. Accédez à l'application :
-- **Frontend**: http://localhost:3000
-- **API Backend**: http://localhost:8001
-- **Documentation API**: http://localhost:8001/docs
+### SSL / Certificat
 
-## 👤 Gestion des Utilisateurs
-
-### Créer un administrateur
-
-**Méthode 1: Script interactif (Recommandé)**
 ```bash
-python3 create_admin.py
+# Verifier le certificat
+certbot certificates
+
+# Renouveler manuellement
+certbot renew
+
+# Le renouvellement automatique est configure via cron ou certbot.timer
 ```
 
-**Méthode 2: Depuis le backend**
+---
+
+## Depannage
+
+### Backend ne demarre pas
+
 ```bash
-cd backend
+# Verifier les logs
+tail -50 /var/log/gmao-iris-backend.err.log
+
+# Verifier MongoDB
+systemctl status mongod
+
+# Reinstaller les dependances
+cd /opt/gmao-iris/backend
 source venv/bin/activate
-python3 create_admin_manual.py
+pip install -r requirements.txt
+pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
+supervisorctl restart gmao-iris-backend
 ```
 
-**Méthode 3: Via API**
+### Erreur 502 Bad Gateway
+
 ```bash
-curl -X POST http://localhost:8001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nom": "Votre Nom",
-    "prenom": "Votre Prénom",
-    "email": "votre.email@exemple.com",
-    "password": "VotreMotDePasse123!",
-    "role": "ADMIN",
-    "telephone": "+33612345678"
-  }'
+# Verifier que le backend tourne
+supervisorctl status gmao-iris-backend
+
+# Redemarrer
+supervisorctl restart gmao-iris-backend
+sleep 5
+nginx -t && systemctl reload nginx
 ```
 
-### Comptes de test (environnement Proxmox)
+### Impossible de se connecter
 
-Après installation Proxmox, deux comptes sont créés:
+```bash
+cd /opt/gmao-iris/backend
+source venv/bin/activate
 
-1. **Votre compte personnalisé** (défini pendant l'installation)
-2. **Compte de secours:**
-   - Email: `buenogy@gmail.com`
-   - Mot de passe: `Admin2024!`
-   - Rôle: ADMIN
+# Lister les utilisateurs
+python3 -c "
+from pymongo import MongoClient
+import os
+from dotenv import load_dotenv
+load_dotenv()
+client = MongoClient(os.environ['MONGO_URL'])
+db = client[os.environ.get('DB_NAME', 'gmao_iris')]
+for user in db.users.find():
+    print(f\"Email: {user['email']}, Role: {user['role']}, Statut: {user.get('statut','?')}\")
+"
+```
 
-⚠️ **Important**: Changez ou supprimez le compte de secours en production !
+### Google Drive : erreur de connexion
 
-## Développement
+Si le callback OAuth echoue, le message d'erreur s'affiche dans un toast sur la page Import/Export.
+Causes frequentes :
+- **redirect_uri_mismatch** : L'URI dans Google Cloud Console ne correspond pas a `GOOGLE_DRIVE_REDIRECT_URI` dans le `.env`
+- **invalid_grant** : Le code d'autorisation a expire (reessayez)
+- **Packages manquants** : Verifiez que `google-auth-oauthlib` est installe (`pip list | grep google`)
+
+---
+
+## Collections MongoDB
+
+| Collection | Description |
+|------------|-------------|
+| `users` | Utilisateurs et permissions |
+| `work_orders` | Ordres de travail |
+| `equipments` | Equipements (hierarchie parent/enfant) |
+| `preventive_maintenance` | Plans de maintenance preventive |
+| `inventory` | Pieces et stock |
+| `locations` | Emplacements |
+| `vendors` | Fournisseurs |
+| `backup_schedules` | Planifications de sauvegarde |
+| `backup_history` | Historique des sauvegardes |
+| `backup_status` | Statut derniere sauvegarde |
+| `drive_credentials` | Tokens OAuth Google Drive |
+| `surveillance_plans` | Plans de surveillance |
+| `presqu_accidents` | Presqu'accidents |
+| `improvement_requests` | Demandes d'amelioration |
+| `purchase_requests` | Demandes d'achat |
+| `chat_messages` | Messages de chat |
+| `consignes` | Consignes inter-equipes |
+| `documentations` | Documents |
+| `sensors` | Capteurs IoT |
+| ... | Et 40+ autres collections |
+
+---
+
+## Developpement
 
 ### Frontend
 
 ```bash
 cd frontend
 yarn install
-yarn start
+yarn start     # Serveur dev sur http://localhost:3000
 ```
 
 ### Backend
 
 ```bash
 cd backend
-pip install -r requirements.txt
-uvicorn server:app --reload
-```
-
-## Architecture
-
-```
-gmao-atlas-clone/
-├── frontend/               # Application React
-│   ├── src/
-│   │   ├── components/    # Composants réutilisables
-│   │   ├── pages/         # Pages de l'application
-│   │   ├── mock/          # Données mockées (development)
-│   │   └── hooks/         # Hooks React personnalisés
-│   └── public/
-├── backend/               # API FastAPI
-│   ├── server.py         # Point d'entrée
-│   ├── models.py         # Modèles Pydantic
-│   ├── auth.py           # Authentification JWT
-│   ├── dependencies.py   # Dépendances FastAPI
-│   └── .env.example      # Template configuration backend
-├── create_admin.py       # Script création admin interactif
-├── gmao-iris-proxmox.sh  # Script installation Proxmox
-├── docker-compose.yml    # Configuration Docker
-├── .env.example          # Variables d'environnement
-├── CHANGELOG.md          # Notes de version
-└── INSTALLATION_PROXMOX_COMPLET.md  # Guide complet Proxmox
-```
-
-## 📊 Structure de la Base de Données
-
-### Collection `users`
-
-```javascript
-{
-  "_id": ObjectId("..."),           // ID MongoDB
-  "id": "uuid-v4-string",           // UUID unique
-  "email": "user@example.com",      // Email (unique)
-  "password": "bcrypt-hash",        // Hash bcrypt
-  "prenom": "John",                 // Prénom
-  "nom": "Doe",                     // Nom
-  "role": "ADMIN",                  // ADMIN|TECHNICIEN|VISUALISEUR
-  "telephone": "+33612345678",      // Téléphone
-  "service": "IT",                  // Service (nullable)
-  "statut": "actif",                // actif|inactif
-  "dateCreation": ISODate("..."),   // Date de création
-  "derniereConnexion": ISODate("..."), // Dernière connexion
-  "permissions": {                  // Permissions granulaires
-    "dashboard": {"view": true, "edit": true, "delete": true},
-    "workOrders": {"view": true, "edit": true, "delete": true},
-    // ... autres modules
-  }
-}
-```
-
-### Collection `work_orders`
-
-```javascript
-{
-  "_id": ObjectId("..."),
-  "id": "uuid-v4-string",
-  "titre": "Titre de l'ordre",
-  "description": "Description détaillée",
-  "priorite": "HAUTE|MOYENNE|BASSE",
-  "statut": "OUVERT|EN_COURS|EN_ATTENTE|TERMINE",
-  "equipmentId": "uuid-equipment",
-  "assigneA": "uuid-user",
-  "locationId": "uuid-location",
-  "tempsEstime": 120,              // minutes
-  "tempsReel": 90,                 // minutes
-  "dateCreation": ISODate("..."),
-  "dateLimite": ISODate("..."),
-  "attachments": [                 // Pièces jointes
-    {
-      "id": "uuid",
-      "filename": "photo.jpg",
-      "filepath": "/uploads/...",
-      "mimetype": "image/jpeg",
-      "size": 1024000,
-      "uploadedAt": ISODate("...")
-    }
-  ]
-}
-```
-
-## 📚 API Documentation
-
-La documentation interactive de l'API est disponible à :
-- **Swagger UI**: http://localhost:8001/docs
-- **ReDoc**: http://localhost:8001/redoc
-
-### Endpoints principaux
-
-- `POST /api/auth/login` - Authentification
-- `POST /api/auth/register` - Inscription
-- `GET /api/auth/me` - Profil utilisateur
-- `GET /api/work-orders` - Liste des ordres de travail
-- `POST /api/work-orders` - Créer un ordre
-- `GET /api/equipments` - Liste des équipements
-- `POST /api/export/{module}` - Export de données (Admin)
-- `POST /api/import/{module}` - Import de données (Admin)
-
-## 🔧 Gestion de l'Application
-
-### Docker
-
-```bash
-# Voir les logs
-docker-compose logs -f
-
-# Redémarrer
-docker-compose restart
-
-# Arrêter
-docker-compose stop
-
-# Supprimer (attention: efface les données)
-docker-compose down -v
-```
-
-### Proxmox (dans le container)
-
-```bash
-# Entrer dans le container
-pct enter CTID
-
-# Statut des services
-systemctl status mongod
-systemctl status nginx
-supervisorctl status
-
-# Logs backend
-tail -f /var/log/gmao-iris-backend.out.log
-tail -f /var/log/gmao-iris-backend.err.log
-
-# Redémarrer backend
-supervisorctl restart gmao-iris-backend
-
-# Redémarrer Nginx
-systemctl restart nginx
-```
-
-## 🌐 Configuration Tailscale (Accès à Distance)
-
-### Interface Web de Configuration
-
-**GMAO Iris** inclut une interface web intégrée pour configurer facilement l'accès via Tailscale, **sans SSH**.
-
-#### Accès à l'interface
-
-1. Connectez-vous en tant qu'**Administrateur**
-2. Menu latéral → **Paramètres Spéciaux**
-3. Scroller vers la section **"Configuration Tailscale (IP)"**
-
-#### Fonctionnalités
-
-✅ **Configuration de l'IP Tailscale** depuis l'interface web  
-✅ **Recompilation automatique** du frontend  
-✅ **Redémarrage automatique** des services (nginx, backend)  
-✅ **Sauvegarde automatique** de l'ancienne configuration  
-✅ **Restauration en un clic** en cas de problème  
-✅ **Health checks** pour vérifier que le backend est prêt  
-
-#### Procédure de Configuration
-
-1. **Obtenir votre IP Tailscale** :
-   ```bash
-   # Sur votre serveur Proxmox
-   tailscale ip -4
-   # Exemple de résultat: 100.105.2.113
-   ```
-
-2. **Dans l'interface GMAO Iris** :
-   - Aller dans **Paramètres Spéciaux** → **Configuration Tailscale**
-   - Saisir votre IP Tailscale (ex: `100.105.2.113`)
-   - Cliquer sur **"Appliquer la nouvelle IP"**
-   - Confirmer l'action dans le dialogue
-
-3. **Attendre la reconfiguration** (⏰ **2-3 minutes**):
-   - ⏳ Toast de confirmation visible pendant 30 secondes
-   - 🔄 Page se recharge automatiquement vers la nouvelle IP
-   - ⏰ **IMPORTANT**: Attendez 2 minutes complètes avant de tester
-   - 🔃 Rafraîchissez avec **Ctrl+F5** (vider le cache)
-
-4. **Vérifier l'accès** :
-   - Depuis n'importe quel appareil connecté à Tailscale
-   - Accédez à `http://VOTRE_IP_TAILSCALE`
-   - Exemple: `http://100.105.2.113`
-
-#### 🆘 Dépannage - Erreur "Bad Gateway"
-
-Si vous voyez **"Bad Gateway"** après le changement d'IP :
-
-**Solution 1: Via l'interface web (Recommandé)**
-1. ⏰ **Attendez 2 minutes complètes** - Le backend met du temps à démarrer
-2. 🔃 Rafraîchissez votre navigateur (**Ctrl+F5**)
-3. Si le problème persiste, utilisez le bouton **"Restaurer l'ancienne IP"** (bouton orange)
-
-**Solution 2: Via SSH**
-```bash
-# Restaurer l'ancienne configuration
-cd /opt/gmao-iris/frontend
-cp .env.backup .env
-
-# Recompiler le frontend
-yarn build
-
-# Redémarrer les services
-systemctl restart nginx
-supervisorctl restart gmao-iris-backend
-
-# Attendre 2 minutes et tester
-```
-
-#### Sécurité
-
-- ✅ **Accès réservé aux ADMIN** uniquement
-- ✅ Validation stricte du format IP
-- ✅ Confirmation obligatoire avant modification
-- ✅ Sauvegarde automatique (`.env.backup`)
-- ✅ Restauration automatique en cas d'échec
-- ✅ Toutes les actions tracées dans les logs
-
-#### Configuration Manuelle (Alternative)
-
-Si vous préférez configurer manuellement sans l'interface web :
-
-```bash
-# 1. Sauvegarder la configuration actuelle
-cd /opt/gmao-iris/frontend
-cp .env .env.backup
-
-# 2. Modifier le fichier .env
-cat > .env << EOF
-NODE_ENV=production
-REACT_APP_BACKEND_URL=http://VOTRE_IP_TAILSCALE
-EOF
-
-# 3. Recompiler le frontend (1-2 minutes)
-yarn build
-
-# 4. Redémarrer les services
-supervisorctl restart gmao-iris-backend
-sleep 10
-systemctl restart nginx
-
-# 5. Attendre 2 minutes et tester
-```
-
-#### Points Importants
-
-⚠️ **L'IP Tailscale doit être accessible** :
-- Tailscale doit être installé et actif sur le serveur
-- L'appareil client doit être connecté au même réseau Tailscale
-
-⚠️ **Nginx doit être configuré** pour écouter sur toutes les interfaces :
-```nginx
-server {
-    listen 80;
-    server_name _;  # Accepte toutes les IPs
-    # ... reste de la configuration
-}
-```
-
-⚠️ **Délai de démarrage** :
-- Le backend peut mettre **30-60 secondes** à démarrer
-- Nginx redémarre après le backend
-- **Attendez toujours 2 minutes complètes** avant de considérer qu'il y a un problème
-
-## 💾 Sauvegarde
-
-### Docker
-
-```bash
-# Sauvegarder MongoDB
-docker exec gmao-mongodb mongodump --out /data/backup
-docker cp gmao-mongodb:/data/backup ./backup-$(date +%Y%m%d)
-
-# Restaurer
-docker cp ./backup-20250118 gmao-mongodb:/data/restore
-docker exec gmao-mongodb mongorestore /data/restore
-```
-
-### Proxmox
-
-```bash
-# Dans le container
-mongodump --db gmao_iris --out /backup/gmao-$(date +%Y%m%d)
-
-# Depuis Proxmox host
-pct snapshot CTID backup-$(date +%Y%m%d)
-vzdump CTID --mode snapshot --compress zstd
-```
-
-## 🚨 Dépannage
-
-### Backend ne démarre pas
-
-```bash
-# Vérifier les logs
-tail -50 /var/log/gmao-iris-backend.err.log
-
-# Vérifier MongoDB
-systemctl status mongod
-
-# Réinstaller dépendances
-cd /opt/gmao-iris/backend
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+uvicorn server:app --reload --port 8001
 ```
-
-### Impossible de se connecter
-
-```bash
-# Lister les utilisateurs
-cd /opt/gmao-iris/backend
-source venv/bin/activate
-python3 -c "
-from pymongo import MongoClient
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-client = MongoClient(os.environ['MONGO_URL'])
-db = client[os.environ.get('DB_NAME', 'gmao_iris')]
-
-for user in db.users.find():
-    print(f\"Email: {user['email']}, Role: {user['role']}\")
-"
-
-# Créer un nouvel admin
-python3 /opt/gmao-iris/create_admin.py
-```
-
-### Erreur 502 Bad Gateway
-
-```bash
-# Vérifier backend
-supervisorctl status gmao-iris-backend
-supervisorctl restart gmao-iris-backend
-
-# Vérifier Nginx
-nginx -t
-systemctl restart nginx
-```
-
-## 📄 Licence
-
-Ce projet est sous licence Propriétaire.
-
-## 🙏 Support
-
-- 📖 Documentation: [INSTALLATION_PROXMOX_COMPLET.md](INSTALLATION_PROXMOX_COMPLET.md)
-- 📋 Changelog: [CHANGELOG.md](CHANGELOG.md)
-- 🐛 Issues: Ouvrez une issue sur GitHub
-- 💬 Questions: Consultez la documentation ou contactez le support
-
-## 👨‍💻 Développé par
-
-**Concepteur:** Grèg  
-**Version:** 1.0.0  
-**Date:** Octobre 2025
 
 ---
 
-**Développé avec ❤️ pour simplifier la gestion de maintenance**
+## Licence
+
+Ce projet est sous licence Proprietaire.
+
+## Support
+
+- Documentation API : `/docs` (Swagger) ou `/redoc`
+- Logs : `/var/log/gmao-iris-backend.err.log`
+- Issues : GitHub
+
+---
+
+**Developpe par Greg**
+**Version 1.5.0 - Fevrier 2026**
