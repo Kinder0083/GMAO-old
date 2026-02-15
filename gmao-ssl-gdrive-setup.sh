@@ -20,7 +20,6 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
-BOLD='\033[1m'
 NC='\033[0m'
 
 msg()  { echo -e "${BLUE}>>>${NC} $1"; }
@@ -246,7 +245,6 @@ TMPNGINX
     ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
     nginx -t 2>/dev/null && systemctl reload nginx
-    TEMP_NGINX_WRITTEN=true
 
     # Tentative 1 : mode nginx
     msg "Tentative avec le plugin Nginx..."
@@ -368,7 +366,7 @@ if nginx -t 2>&1; then
     ok "Nginx configure avec SSL"
 else
     # Restaurer le backup en cas d'erreur
-    LATEST_BACKUP=$(ls -t ${NGINX_CONF}.backup.* 2>/dev/null | head -1)
+    LATEST_BACKUP=$(find "$(dirname "$NGINX_CONF")" -name "$(basename "$NGINX_CONF").backup.*" -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2)
     if [ -n "$LATEST_BACKUP" ]; then
         cp "$LATEST_BACKUP" "$NGINX_CONF"
         nginx -t 2>/dev/null && systemctl reload nginx
@@ -442,9 +440,11 @@ if [[ "$SETUP_GDRIVE" =~ ^[OoYy]$ ]]; then
     sed -i '/^GOOGLE_DRIVE_REDIRECT_URI=/d' "$BACKEND_ENV"
 
     # Ajouter les nouvelles
-    echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> "$BACKEND_ENV"
-    echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> "$BACKEND_ENV"
-    echo "GOOGLE_DRIVE_REDIRECT_URI=$REDIRECT_URI" >> "$BACKEND_ENV"
+    {
+        echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID"
+        echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET"
+        echo "GOOGLE_DRIVE_REDIRECT_URI=$REDIRECT_URI"
+    } >> "$BACKEND_ENV"
 
     ok "Identifiants Google Drive configures"
     echo ""
