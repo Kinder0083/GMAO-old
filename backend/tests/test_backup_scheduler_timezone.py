@@ -211,16 +211,14 @@ class TestTimezoneSystemSettings:
     """Test timezone_offset in system_settings (used by scheduler)"""
 
     def test_system_settings_timezone(self, auth_headers):
-        """GET /api/system-settings - Verify timezone_offset exists"""
-        response = requests.get(f"{BASE_URL}/api/system-settings", headers=auth_headers)
+        """GET /api/timezone/offset - Verify timezone_offset is GMT+1"""
+        response = requests.get(f"{BASE_URL}/api/timezone/offset", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         # Check if timezone_offset is set (should be 1 for GMT+1)
-        if "timezone_offset" in data:
-            assert data["timezone_offset"] == 1, f"Expected timezone_offset=1 (GMT+1), got {data['timezone_offset']}"
-            print(f"System settings timezone_offset: {data['timezone_offset']} (GMT+1)")
-        else:
-            print("WARNING: timezone_offset not found in system_settings, using default 1")
+        assert "timezone_offset" in data, "Response should contain timezone_offset"
+        assert data["timezone_offset"] == 1, f"Expected timezone_offset=1 (GMT+1), got {data['timezone_offset']}"
+        print(f"Timezone offset confirmed: {data['timezone_offset']} (GMT+1)")
 
 
 if __name__ == "__main__":
