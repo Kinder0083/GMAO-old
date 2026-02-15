@@ -207,88 +207,119 @@ async def get_drive_status(current_user: dict = Depends(get_current_admin_user))
     return {"connected": True, "updated_at": creds.get("updated_at")}
 
 
-@router.get("/drive/connect")
-async def connect_drive(current_user: dict = Depends(get_current_admin_user)):
-    """Initier le flux OAuth Google Drive"""
-    from google_auth_oauthlib.flow import Flow
+DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
+
+def _get_drive_config():
+    """Récupère et valide la configuration Google Drive depuis les variables d'environnement"""
     client_id = os.environ.get("GOOGLE_CLIENT_ID")
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
     redirect_uri = os.environ.get("GOOGLE_DRIVE_REDIRECT_URI")
+    if not client_id or not client_secret or not redirect_uri:
+        return None
+    return {
+        "web": {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [redirect_uri]
+        }
+    }, redirect_uri
 
-    if not client_id or not client_secret:
+
+@router.get("/drive/connect")
+async def connect_drive(current_user: dict = Depends(get_current_admin_user)):
+    """Initier le flux OAuth Google Drive"""
+    try:
+        from google_auth_oauthlib.flow import Flow
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Le package google-auth-oauthlib n'est pas installé sur le serveur.")
+
+    config = _get_drive_config()
+    if not config:
         raise HTTPException(
             status_code=400,
-            detail="Google Drive non configuré. Ajoutez GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET dans les variables d'environnement."
+            detail="Google Drive non configuré. Ajoutez GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET et GOOGLE_DRIVE_REDIRECT_URI dans le .env."
         )
 
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [redirect_uri]
-            }
-        },
-        scopes=['https://www.googleapis.com/auth/drive.file'],
-        redirect_uri=redirect_uri
-    )
+    client_config, redirect_uri = config
 
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true',
-        prompt='consent'
-    )
+    try:
+        flow = Flow.from_client_config(
+            client_config,
+            scopes=DRIVE_SCOPES,
+            redirect_uri=redirect_uri
+        )
+
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent'
+        )
+    except Exception as e:
+        logger.error(f"[Google Drive] Erreur création flux OAuth: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur OAuth: {str(e)}")
 
     return {"authorization_url": authorization_url}
 
 
 @router.get("/drive/callback")
 async def drive_callback(code: str = Query(...), state: str = Query(default="")):
-    """Callback OAuth Google Drive"""
-    from google_auth_oauthlib.flow import Flow
+    """Callback OAuth Google Drive - appelé par Google après autorisation"""
+    from fastapi.responses import HTMLResponse
 
-    client_id = os.environ.get("GOOGLE_CLIENT_ID")
-    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
-    redirect_uri = os.environ.get("GOOGLE_DRIVE_REDIRECT_URI")
-    frontend_url = os.environ.get("FRONTEND_URL")
+    frontend_url = os.environ.get("FRONTEND_URL", "")
 
-    flow = Flow.from_client_config(
-        {
-            "web": {
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [redirect_uri]
-            }
-        },
-        scopes=None,
-        redirect_uri=redirect_uri
-    )
+    try:
+        from google_auth_oauthlib.flow import Flow
+    except ImportError:
+        logger.error("[Google Drive] google-auth-oauthlib non installé")
+        return HTMLResponse(
+            content="<h1>Erreur serveur</h1><p>Package google-auth-oauthlib manquant.</p>",
+            status_code=500
+        )
 
-    flow.fetch_token(code=code)
-    credentials = flow.credentials
+    config = _get_drive_config()
+    if not config:
+        logger.error("[Google Drive] Variables d'environnement manquantes dans le callback")
+        return RedirectResponse(url=f"{frontend_url}/import-export?drive_error=config_missing")
 
-    await db.drive_credentials.update_one(
-        {"key": "admin"},
-        {"$set": {
-            "key": "admin",
-            "access_token": credentials.token,
-            "refresh_token": credentials.refresh_token,
-            "token_uri": credentials.token_uri,
-            "client_id": credentials.client_id,
-            "client_secret": credentials.client_secret,
-            "scopes": list(credentials.scopes) if credentials.scopes else [],
-            "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }},
-        upsert=True
-    )
+    client_config, redirect_uri = config
 
-    return RedirectResponse(url=f"{frontend_url}/import-export?drive_connected=true")
+    try:
+        flow = Flow.from_client_config(
+            client_config,
+            scopes=DRIVE_SCOPES,
+            redirect_uri=redirect_uri
+        )
+
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+
+        await db.drive_credentials.update_one(
+            {"key": "admin"},
+            {"$set": {
+                "key": "admin",
+                "access_token": credentials.token,
+                "refresh_token": credentials.refresh_token,
+                "token_uri": credentials.token_uri,
+                "client_id": credentials.client_id,
+                "client_secret": credentials.client_secret,
+                "scopes": list(credentials.scopes) if credentials.scopes else [],
+                "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+
+        logger.info("[Google Drive] Connexion OAuth réussie, tokens enregistrés")
+        return RedirectResponse(url=f"{frontend_url}/import-export?drive_connected=true")
+
+    except Exception as e:
+        logger.error(f"[Google Drive] Erreur callback OAuth: {type(e).__name__}: {e}")
+        error_msg = str(e).replace("'", "").replace('"', '')[:200]
+        return RedirectResponse(url=f"{frontend_url}/import-export?drive_error={error_msg}")
 
 
 @router.delete("/drive/disconnect")
