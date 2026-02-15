@@ -1,9 +1,12 @@
 /**
- * Hook personnalisé pour gérer les éléments en retard (échéances dépassées)
- * Source unique de vérité pour le calcul des compteurs overdue du header
+ * Hook pour les éléments en retard (échéances dépassées)
+ * Refresh déclenché par WebSocket via useHeaderWebSocket
+ * Polling 5min en fallback
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getBackendURL } from '../utils/config';
+
+const FALLBACK_INTERVAL = 300000; // 5 min
 
 export const useOverdueItems = () => {
   const [overdueCount, setOverdueCount] = useState(0);
@@ -19,7 +22,6 @@ export const useOverdueItems = () => {
     const backend_url = getBackendURL();
     const userInfo = localStorage.getItem('user');
     const permissions = userInfo ? JSON.parse(userInfo).permissions : {};
-
     const canViewModule = (module) => permissions[module]?.view === true;
 
     const today = new Date();
@@ -32,149 +34,109 @@ export const useOverdueItems = () => {
     const details = {};
 
     try {
-      // 1. Ordres de travail en retard (ORANGE)
+      // 1. Ordres de travail (ORANGE)
       if (canViewModule('workOrders')) {
         try {
-          const woResponse = await fetch(`${backend_url}/api/work-orders`, {
+          const res = await fetch(`${backend_url}/api/work-orders`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          if (woResponse.ok) {
-            const workOrders = await woResponse.json();
-            const overdueWO = workOrders.filter(wo => {
+          if (res.ok) {
+            const items = await res.json();
+            const overdue = items.filter(wo => {
               if (!wo.dateLimite || wo.statut === 'TERMINE' || wo.statut === 'ANNULE') return false;
-              const dueDate = new Date(wo.dateLimite);
-              return dueDate < today;
+              return new Date(wo.dateLimite) < today;
             });
-            if (overdueWO.length > 0) {
-              details.workOrders = {
-                count: overdueWO.length,
-                label: 'Ordres de travail',
-                route: '/work-orders',
-                category: 'execution'
-              };
-              executionCount += overdueWO.length;
-              total += overdueWO.length;
+            if (overdue.length > 0) {
+              details.workOrders = { count: overdue.length, label: 'Ordres de travail', route: '/work-orders', category: 'execution' };
+              executionCount += overdue.length;
+              total += overdue.length;
             }
           }
-        } catch (err) {
-          console.error('Erreur work orders:', err);
-        }
+        } catch (err) { console.error('Erreur work orders:', err); }
       }
 
-      // 2. Améliorations en retard (ORANGE)
+      // 2. Améliorations (ORANGE)
       if (canViewModule('improvements')) {
         try {
-          const impResponse = await fetch(`${backend_url}/api/improvements`, {
+          const res = await fetch(`${backend_url}/api/improvements`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          if (impResponse.ok) {
-            const improvements = await impResponse.json();
-            const overdueImp = improvements.filter(imp => {
+          if (res.ok) {
+            const items = await res.json();
+            const overdue = items.filter(imp => {
               if (!imp.dateLimite || imp.statut === 'TERMINE' || imp.statut === 'ANNULE' || imp.statut === 'REFUSE') return false;
-              const dueDate = new Date(imp.dateLimite);
-              return dueDate < today;
+              return new Date(imp.dateLimite) < today;
             });
-            if (overdueImp.length > 0) {
-              details.improvements = {
-                count: overdueImp.length,
-                label: 'Améliorations',
-                route: '/improvements',
-                category: 'execution'
-              };
-              executionCount += overdueImp.length;
-              total += overdueImp.length;
+            if (overdue.length > 0) {
+              details.improvements = { count: overdue.length, label: 'Améliorations', route: '/improvements', category: 'execution' };
+              executionCount += overdue.length;
+              total += overdue.length;
             }
           }
-        } catch (err) {
-          console.error('Erreur improvements:', err);
-        }
+        } catch (err) { console.error('Erreur improvements:', err); }
       }
 
-      // 3. Demandes d'intervention en retard (JAUNE)
+      // 3. Demandes d'intervention (JAUNE)
       if (canViewModule('interventionRequests')) {
         try {
-          const irResponse = await fetch(`${backend_url}/api/intervention-requests`, {
+          const res = await fetch(`${backend_url}/api/intervention-requests`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          if (irResponse.ok) {
-            const interventionRequests = await irResponse.json();
-            const overdueIR = interventionRequests.filter(ir => {
+          if (res.ok) {
+            const items = await res.json();
+            const overdue = items.filter(ir => {
               if (!ir.date_limite_desiree || ir.statut === 'TERMINE' || ir.statut === 'ANNULE' || ir.statut === 'REFUSE') return false;
-              const dueDate = new Date(ir.date_limite_desiree);
-              return dueDate < today;
+              return new Date(ir.date_limite_desiree) < today;
             });
-            if (overdueIR.length > 0) {
-              details.interventionRequests = {
-                count: overdueIR.length,
-                label: "Demandes d'intervention",
-                route: '/intervention-requests',
-                category: 'requests'
-              };
-              requestsCount += overdueIR.length;
-              total += overdueIR.length;
+            if (overdue.length > 0) {
+              details.interventionRequests = { count: overdue.length, label: "Demandes d'intervention", route: '/intervention-requests', category: 'requests' };
+              requestsCount += overdue.length;
+              total += overdue.length;
             }
           }
-        } catch (err) {
-          console.error('Erreur intervention requests:', err);
-        }
+        } catch (err) { console.error('Erreur intervention requests:', err); }
       }
 
-      // 4. Demandes d'amélioration en retard (JAUNE) - Seules les VALIDEE comptent
+      // 4. Demandes d'amélioration (JAUNE) - Exclut REJETEE et CONVERTIE
       if (canViewModule('improvementRequests')) {
         try {
-          const imprResponse = await fetch(`${backend_url}/api/improvement-requests`, {
+          const res = await fetch(`${backend_url}/api/improvement-requests`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          if (imprResponse.ok) {
-            const improvementRequests = await imprResponse.json();
-            const overdueIMPR = improvementRequests.filter(impr => {
+          if (res.ok) {
+            const items = await res.json();
+            const overdue = items.filter(impr => {
               if (!impr.date_limite_desiree || impr.status === 'REJETEE' || impr.status === 'CONVERTIE') return false;
-              const dueDate = new Date(impr.date_limite_desiree);
-              return dueDate < today;
+              return new Date(impr.date_limite_desiree) < today;
             });
-            if (overdueIMPR.length > 0) {
-              details.improvementRequests = {
-                count: overdueIMPR.length,
-                label: "Demandes d'amélioration",
-                route: '/improvement-requests',
-                category: 'requests'
-              };
-              requestsCount += overdueIMPR.length;
-              total += overdueIMPR.length;
+            if (overdue.length > 0) {
+              details.improvementRequests = { count: overdue.length, label: "Demandes d'amélioration", route: '/improvement-requests', category: 'requests' };
+              requestsCount += overdue.length;
+              total += overdue.length;
             }
           }
-        } catch (err) {
-          console.error('Erreur improvement requests:', err);
-        }
+        } catch (err) { console.error('Erreur improvement requests:', err); }
       }
 
       // 5. Maintenances préventives (BLEU)
       if (canViewModule('preventiveMaintenance')) {
         try {
-          const pmResponse = await fetch(`${backend_url}/api/preventive-maintenance`, {
+          const res = await fetch(`${backend_url}/api/preventive-maintenance`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          if (pmResponse.ok) {
-            const pms = await pmResponse.json();
-            const overduePM = pms.filter(pm => {
+          if (res.ok) {
+            const items = await res.json();
+            const overdue = items.filter(pm => {
               if (!pm.prochaineMaintenance || pm.statut !== 'ACTIF') return false;
-              const nextDate = new Date(pm.prochaineMaintenance);
-              return nextDate < today;
+              return new Date(pm.prochaineMaintenance) < today;
             });
-            if (overduePM.length > 0) {
-              details.preventiveMaintenance = {
-                count: overduePM.length,
-                label: 'Maintenances préventives',
-                route: '/preventive-maintenance',
-                category: 'maintenance'
-              };
-              maintenanceCount += overduePM.length;
-              total += overduePM.length;
+            if (overdue.length > 0) {
+              details.preventiveMaintenance = { count: overdue.length, label: 'Maintenances préventives', route: '/preventive-maintenance', category: 'maintenance' };
+              maintenanceCount += overdue.length;
+              total += overdue.length;
             }
           }
-        } catch (err) {
-          console.error('Erreur preventive maintenance:', err);
-        }
+        } catch (err) { console.error('Erreur preventive maintenance:', err); }
       }
 
       setOverdueCount(total);
@@ -187,38 +149,27 @@ export const useOverdueItems = () => {
     }
   }, []);
 
-  // Charger au montage, rafraîchir toutes les minutes, et écouter les événements
   useEffect(() => {
     loadOverdueItems();
-    const interval = setInterval(loadOverdueItems, 60000);
+    const interval = setInterval(loadOverdueItems, FALLBACK_INTERVAL);
 
     const refresh = () => loadOverdueItems();
-    window.addEventListener('workOrderCreated', refresh);
-    window.addEventListener('workOrderUpdated', refresh);
-    window.addEventListener('workOrderDeleted', refresh);
-    window.addEventListener('improvementCreated', refresh);
-    window.addEventListener('improvementUpdated', refresh);
-    window.addEventListener('improvementDeleted', refresh);
+    // Events déclenchés par le WebSocket header
+    const events = [
+      'workOrderCreated', 'workOrderUpdated', 'workOrderDeleted',
+      'improvementCreated', 'improvementUpdated', 'improvementDeleted',
+      'interventionRequestChanged', 'improvementRequestChanged',
+      'preventiveMaintenanceChanged'
+    ];
+    events.forEach(evt => window.addEventListener(evt, refresh));
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('workOrderCreated', refresh);
-      window.removeEventListener('workOrderUpdated', refresh);
-      window.removeEventListener('workOrderDeleted', refresh);
-      window.removeEventListener('improvementCreated', refresh);
-      window.removeEventListener('improvementUpdated', refresh);
-      window.removeEventListener('improvementDeleted', refresh);
+      events.forEach(evt => window.removeEventListener(evt, refresh));
     };
   }, [loadOverdueItems]);
 
-  return {
-    overdueCount,
-    overdueDetails,
-    overdueExecutionCount,
-    overdueRequestsCount,
-    overdueMaintenanceCount,
-    refresh: loadOverdueItems
-  };
+  return { overdueCount, overdueDetails, overdueExecutionCount, overdueRequestsCount, overdueMaintenanceCount, refresh: loadOverdueItems };
 };
 
 export default useOverdueItems;

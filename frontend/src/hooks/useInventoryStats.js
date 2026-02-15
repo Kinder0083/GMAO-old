@@ -1,8 +1,12 @@
 /**
  * Hook pour les statistiques d'inventaire (rupture, niveau bas)
+ * Refresh déclenché par WebSocket via useHeaderWebSocket
+ * Polling 5min en fallback
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getBackendURL } from '../utils/config';
+
+const FALLBACK_INTERVAL = 300000; // 5 min
 
 export const useInventoryStats = () => {
   const [inventoryStats, setInventoryStats] = useState({ rupture: 0, niveau_bas: 0 });
@@ -22,24 +26,21 @@ export const useInventoryStats = () => {
         setInventoryStats(data);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des stats inventaire:', error);
+      console.error('Erreur stats inventaire:', error);
     }
   }, []);
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 60000);
+    const interval = setInterval(load, FALLBACK_INTERVAL);
 
     const refresh = () => load();
-    window.addEventListener('inventoryItemCreated', refresh);
-    window.addEventListener('inventoryItemUpdated', refresh);
-    window.addEventListener('inventoryItemDeleted', refresh);
+    const events = ['inventoryItemCreated', 'inventoryItemUpdated', 'inventoryItemDeleted'];
+    events.forEach(evt => window.addEventListener(evt, refresh));
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('inventoryItemCreated', refresh);
-      window.removeEventListener('inventoryItemUpdated', refresh);
-      window.removeEventListener('inventoryItemDeleted', refresh);
+      events.forEach(evt => window.removeEventListener(evt, refresh));
     };
   }, [load]);
 

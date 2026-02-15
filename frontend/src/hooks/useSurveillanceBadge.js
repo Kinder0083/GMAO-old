@@ -1,8 +1,12 @@
 /**
  * Hook pour les statistiques du badge surveillance
+ * Refresh déclenché par WebSocket via useHeaderWebSocket
+ * Polling 5min en fallback
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getBackendURL } from '../utils/config';
+
+const FALLBACK_INTERVAL = 300000; // 5 min
 
 export const useSurveillanceBadge = () => {
   const [surveillanceBadge, setSurveillanceBadge] = useState({ echeances_proches: 0, pourcentage_realisation: 0 });
@@ -22,24 +26,21 @@ export const useSurveillanceBadge = () => {
         setSurveillanceBadge(data);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des stats de surveillance:', error);
+      console.error('Erreur stats surveillance:', error);
     }
   }, []);
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 60000);
+    const interval = setInterval(load, FALLBACK_INTERVAL);
 
     const refresh = () => load();
-    window.addEventListener('surveillanceItemCreated', refresh);
-    window.addEventListener('surveillanceItemUpdated', refresh);
-    window.addEventListener('surveillanceItemDeleted', refresh);
+    const events = ['surveillanceItemCreated', 'surveillanceItemUpdated', 'surveillanceItemDeleted'];
+    events.forEach(evt => window.addEventListener(evt, refresh));
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('surveillanceItemCreated', refresh);
-      window.removeEventListener('surveillanceItemUpdated', refresh);
-      window.removeEventListener('surveillanceItemDeleted', refresh);
+      events.forEach(evt => window.removeEventListener(evt, refresh));
     };
   }, [load]);
 

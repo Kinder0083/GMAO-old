@@ -1,8 +1,12 @@
 /**
  * Hook pour le compteur d'ordres de travail assignés et ouverts
+ * Refresh déclenché par WebSocket via useHeaderWebSocket
+ * Polling 5min en fallback
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getBackendURL } from '../utils/config';
+
+const FALLBACK_INTERVAL = 300000; // 5 min
 
 export const useWorkOrdersCount = (userId) => {
   const [workOrdersCount, setWorkOrdersCount] = useState(0);
@@ -20,33 +24,29 @@ export const useWorkOrdersCount = (userId) => {
 
       if (response.ok) {
         const data = await response.json();
-        const assignedOrders = data.filter(order => {
+        const count = data.filter(order => {
           const isAssigned = order.assigne_a_id === userId ||
             (order.assigneA && order.assigneA.id === userId);
-          const isOpen = order.statut === 'OUVERT';
-          return isAssigned && isOpen;
-        });
-        setWorkOrdersCount(assignedOrders.length);
+          return isAssigned && order.statut === 'OUVERT';
+        }).length;
+        setWorkOrdersCount(count);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des ordres de travail:', error);
+      console.error('Erreur chargement OT:', error);
     }
   }, [userId]);
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 60000);
+    const interval = setInterval(load, FALLBACK_INTERVAL);
 
     const refresh = () => load();
-    window.addEventListener('workOrderCreated', refresh);
-    window.addEventListener('workOrderUpdated', refresh);
-    window.addEventListener('workOrderDeleted', refresh);
+    const events = ['workOrderCreated', 'workOrderUpdated', 'workOrderDeleted'];
+    events.forEach(evt => window.addEventListener(evt, refresh));
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('workOrderCreated', refresh);
-      window.removeEventListener('workOrderUpdated', refresh);
-      window.removeEventListener('workOrderDeleted', refresh);
+      events.forEach(evt => window.removeEventListener(evt, refresh));
     };
   }, [load]);
 
