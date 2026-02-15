@@ -1,42 +1,34 @@
-# GMAO Iris - PRD (Product Requirements Document)
+# GMAO Iris - PRD
 
-## Problem Statement
-Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète avec gestion des équipements, ordres de travail, maintenances préventives, inventaire, sauvegardes automatiques, intégration Google Drive, accès distant via Tailscale Funnel.
+## Problème Original
+Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète et auto-hébergée pour la gestion de maintenance industrielle.
 
-## Core Architecture
-- **Frontend**: React + Shadcn/UI + Tailwind CSS
-- **Backend**: FastAPI + MongoDB (Motor async driver)
-- **Scheduler**: APScheduler (AsyncIOScheduler) pour tâches cron
-- **Integrations**: Google Drive API (OAuth2), Tailscale Funnel, MQTT
+## Travaux Récents (Session Février 2026)
 
-## Key Files
-- `backend/backup_routes.py` - Routes backup + scheduler + Google Drive OAuth + upload manuel
-- `backend/backup_service.py` - Service d'exécution des backups (ZIP + Excel + uploads)
-- `frontend/src/pages/BackupTab.jsx` - Interface sauvegardes automatiques
-- `backend/server.py` - Serveur principal FastAPI, scheduler startup
-- `backend/timezone_routes.py` - Configuration fuseau horaire
+### Terminé
+- **Correction timezone scheduler** : APScheduler utilise désormais le fuseau horaire configuré dans les paramètres de l'application
+- **Upload manuel Google Drive** : Nouvel endpoint `POST /api/backup/drive/upload/{filename}` + bouton UI dans BackupTab.jsx
+- **Gestion erreurs Google Drive** : Messages d'erreur améliorés pour guider l'utilisateur (403 accessNotConfigured)
+- **README.md** : Documentation complète mise à jour (guide 6 étapes Google Drive, dépannage)
+- **Manuel utilisateur intégré** : 3 nouvelles sections ajoutées au chapitre Import/Export :
+  - `sec-023-02` : Sauvegardes Automatiques (planification, fuseau horaire, icône de statut)
+  - `sec-023-03` : Upload Manuel vers Google Drive
+  - `sec-023-04` : Configuration Google Drive (guide complet activation API, OAuth, dépannage)
+- **Code migration amélioré** : Le startup backend met à jour les sections des chapitres existants (pas seulement les nouveaux chapitres)
 
-## What's Implemented (Feb 2026)
+### Fichiers Modifiés
+- `backend/manual_default_content.json` : +3 sections (sauvegardes, upload GDrive, config GDrive)
+- `backend/server.py` : Migration startup mise à jour (update sections chapitres existants)
+- `backend/api/backup_routes.py` : Endpoint upload GDrive + messages d'erreur
+- `backend/services/backup_service.py` : Logique dossier "Backup GMAO" GDrive
+- `frontend/src/components/backup/BackupTab.jsx` : Bouton upload GDrive
+- `README.md` : Documentation complète
 
-### Session précédente (complété)
-- Google Drive OAuth "Bad Gateway" fix
-- Horloge digitale dans le header (Clock.jsx)
-- Tailscale Funnel setup script
-- README.md complet
-
-### Session actuelle (Feb 15, 2026)
-- **P0 FIXED**: Sauvegardes planifiées - Le scheduler APScheduler utilisait UTC au lieu du fuseau horaire configuré (GMT+1). Corrigé dans `_reload_scheduler` qui lit maintenant `timezone_offset` depuis `system_settings` et l'applique aux CronTrigger.
-- **P1 DONE**: Bouton d'upload manuel vers Google Drive - Nouvel endpoint `POST /api/backup/drive/upload/{history_id}`, fonction helper `_get_or_create_gdrive_folder` pour créer/trouver le dossier "Backup GMAO", bouton Upload dans l'interface historique (visible seulement quand Drive connecté et fichier pas encore uploadé).
-- **P1 DONE**: `_upload_to_gdrive` dans `backup_service.py` utilise maintenant le dossier "Backup GMAO" par défaut.
-
-## Testing
-- 11/11 tests backend passent (pytest)
-- Frontend vérifié: CRUD planifications, backup manuel, historique, boutons conditionnels
-- Test report: `/app/test_reports/iteration_17.json`
-
-## Credentials
-- App: admin@test.com / Admin123!
-- Google Drive: credentials in backend/.env
+## Architecture
+- **Backend** : FastAPI (Python), MongoDB, APScheduler
+- **Frontend** : React 19, Shadcn/UI, Tailwind CSS
+- **Auth** : JWT + bcrypt
+- **Sauvegardes** : Local + Google Drive (OAuth 2.0)
 
 ## Backlog
-- Aucune tâche en attente identifiée
+Aucune tâche en attente.
