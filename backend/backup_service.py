@@ -139,7 +139,11 @@ async def execute_backup(schedule: dict) -> dict:
                 gdrive_file_id = await _upload_to_gdrive(file_bytes, filename, schedule)
                 logger.info(f"[Backup] Fichier uploadé sur Google Drive: {gdrive_file_id}")
             except Exception as e:
-                logger.error(f"[Backup] Erreur upload Google Drive: {e}")
+                error_str = str(e)
+                if "accessNotConfigured" in error_str or "has not been used in project" in error_str:
+                    logger.error("[Backup] L'API Google Drive n'est pas activée dans le projet Google Cloud")
+                else:
+                    logger.error(f"[Backup] Erreur upload Google Drive: {error_str}")
                 if destination == "gdrive":
                     raise
 
