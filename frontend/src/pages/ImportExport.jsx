@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Download, Save } from 'lucide-react';
+import { Download, Save, RotateCcw } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import ImportExportTab from './ImportExportTab';
 import BackupTab from './BackupTab';
+import RestoreTab from './RestoreTab';
 
 const ImportExport = () => {
   const { toast } = useToast();
@@ -44,10 +45,18 @@ const ImportExport = () => {
         >
           <Save size={16} className="inline mr-2" />Sauvegardes Automatiques
         </button>
+        <button
+          onClick={() => setActiveTab('restore')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'restore' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+          data-testid="tab-restore"
+        >
+          <RotateCcw size={16} className="inline mr-2" />Restauration
+        </button>
       </div>
 
       {activeTab === 'import-export' && <ImportExportTab />}
       {activeTab === 'backup' && <BackupTab />}
+      {activeTab === 'restore' && <RestoreTab />}
     </div>
   );
 };
