@@ -272,6 +272,7 @@ const ImportExport = () => {
             </div>
 
             <Button
+              data-testid="export-button"
               onClick={handleExport}
               disabled={exporting || (exportFormat === 'csv' && selectedModule === 'all')}
               className="w-full bg-blue-600 hover:bg-blue-700"
@@ -345,6 +346,7 @@ const ImportExport = () => {
             </div>
 
             <Button
+              data-testid="import-button"
               onClick={handleImport}
               disabled={importing || !selectedFile}
               className="w-full bg-green-600 hover:bg-green-700"
