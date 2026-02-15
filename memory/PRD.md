@@ -49,7 +49,16 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète et 
 ### Refactorisation - useOverdueItems hook (15 Fév 2026)
 - **Avant** : Logique dupliquée entre `MainLayout.jsx` (~170 lignes) et `useOverdueItems.js`
 - **Après** : `useOverdueItems.js` est la source unique de vérité, `MainLayout.jsx` utilise le hook directement
-- **Fichiers modifiés** : `frontend/src/components/Layout/MainLayout.jsx`, `frontend/src/hooks/useOverdueItems.js`
+
+### Refactorisation complète - Hooks header (15 Fév 2026)
+- **4 nouveaux hooks extraits** de `MainLayout.jsx` :
+  - `useWorkOrdersCount.js` — compteur OT assignés + event listeners
+  - `useSurveillanceBadge.js` — stats badge surveillance + event listeners
+  - `useInventoryStats.js` — stats inventaire (rupture, niveau bas) + event listeners
+  - `useChatUnreadCount.js` — messages non lus chat live + polling 10s
+- **MainLayout.jsx** : ~457 lignes → 293 lignes (-164 lignes)
+- **Fichiers modifiés** : `frontend/src/components/Layout/MainLayout.jsx`
+- **Fichiers créés** : `frontend/src/hooks/useWorkOrdersCount.js`, `useSurveillanceBadge.js`, `useInventoryStats.js`, `useChatUnreadCount.js`
 
 ## Backlog
 Aucune tâche en attente.
