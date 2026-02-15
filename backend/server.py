@@ -8841,6 +8841,13 @@ from import_export_routes import router as import_export_router, init_db as init
 init_import_export_db(db)
 api_router.include_router(import_export_router)
 
+# Backup routes (sauvegardes automatiques)
+from backup_routes import router as backup_router, init_db as init_backup_db, set_scheduler as set_backup_scheduler
+from backup_service import init_db as init_backup_service_db
+init_backup_db(db)
+init_backup_service_db(db)
+api_router.include_router(backup_router)
+
 # Chat Live
 from chat_routes import router as chat_router, init_chat_routes
 init_chat_routes(db)
