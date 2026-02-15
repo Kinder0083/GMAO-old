@@ -15,6 +15,10 @@ const ImportExport = () => {
       setActiveTab('backup');
       toast({ title: 'Google Drive connecté avec succès' });
     }
+    if (searchParams.get('drive_error')) {
+      setActiveTab('backup');
+      toast({ title: 'Erreur connexion Google Drive', description: decodeURIComponent(searchParams.get('drive_error')), variant: 'destructive' });
+    }
   }, [searchParams, toast]);
 
   return (
