@@ -12,6 +12,8 @@ import { formatErrorMessage } from '../utils/errorFormatter';
 
 const ImportExport = () => {
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState('import-export');
   const [selectedModule, setSelectedModule] = useState('all');
   const [exportFormat, setExportFormat] = useState('xlsx');
   const [importMode, setImportMode] = useState('add');
@@ -19,6 +21,62 @@ const ImportExport = () => {
   const [exporting, setExporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+
+  // Backup state
+  const [schedules, setSchedules] = useState([]);
+  const [backupHistory, setBackupHistory] = useState([]);
+  const [driveStatus, setDriveStatus] = useState({ connected: false });
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [runningBackup, setRunningBackup] = useState(false);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({
+    frequency: 'daily',
+    day_of_week: 0,
+    day_of_month: 1,
+    hour: 2,
+    minute: 0,
+    destination: 'local',
+    retention_count: 3,
+    email_recipient: '',
+    enabled: true
+  });
+
+  const backend_url = getBackendURL();
+  const token = localStorage.getItem('token');
+  const authHeaders = { Authorization: `Bearer ${token}` };
+
+  // Check if redirected from Google Drive OAuth
+  useEffect(() => {
+    if (searchParams.get('drive_connected') === 'true') {
+      setActiveTab('backup');
+      toast({ title: 'Google Drive connecté avec succès' });
+    }
+  }, [searchParams]);
+
+  // Load backup data when tab switches
+  const loadBackupData = useCallback(async () => {
+    if (!token) return;
+    setLoadingSchedules(true);
+    try {
+      const [schedRes, histRes, driveRes] = await Promise.all([
+        axios.get(`${backend_url}/api/backup/schedules`, { headers: authHeaders }),
+        axios.get(`${backend_url}/api/backup/history?limit=10`, { headers: authHeaders }),
+        axios.get(`${backend_url}/api/backup/drive/status`, { headers: authHeaders })
+      ]);
+      setSchedules(schedRes.data);
+      setBackupHistory(histRes.data);
+      setDriveStatus(driveRes.data);
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingSchedules(false);
+    }
+  }, [backend_url, token]);
+
+  useEffect(() => {
+    if (activeTab === 'backup') loadBackupData();
+  }, [activeTab, loadBackupData]);
 
   const modules = [
     { value: 'all', label: 'Toutes les données', group: '' },
