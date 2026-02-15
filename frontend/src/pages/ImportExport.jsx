@@ -268,10 +268,17 @@ const ImportExport = () => {
       const res = await axios.get(`${backend_url}/api/backup/download/${historyId}`, {
         headers: authHeaders, responseType: 'blob'
       });
+      // Déterminer le nom du fichier depuis le header Content-Disposition ou .zip par défaut
+      const disposition = res.headers['content-disposition'];
+      let filename = 'backup.zip';
+      if (disposition) {
+        const match = disposition.match(/filename=(.+)/);
+        if (match) filename = match[1].replace(/"/g, '');
+      }
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'backup.xlsx');
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -325,12 +332,21 @@ const ImportExport = () => {
       );
 
       // Créer un lien de téléchargement
+      // Déterminer le nom du fichier depuis le header Content-Disposition ou par défaut
+      const disposition = response.headers['content-disposition'];
+      let filename;
+      if (disposition) {
+        const match = disposition.match(/filename=(.+)/);
+        if (match) filename = match[1].replace(/"/g, '');
+      }
+      if (!filename) {
+        filename = selectedModule === 'all'
+          ? `export_complet.zip`
+          : `${selectedModule}.${exportFormat}`;
+      }
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      const filename = selectedModule === 'all' 
-        ? `export_all.${exportFormat}` 
-        : `${selectedModule}.${exportFormat}`;
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
