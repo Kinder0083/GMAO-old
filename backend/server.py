@@ -8720,6 +8720,11 @@ async def get_changelog(current_user: dict = Depends(get_current_user)):
             {"_id": 0}
         ).sort("started_at", -1).limit(20).to_list(20)
         
+        # Générer un identifiant unique pour chaque entrée (version ou started_at)
+        for entry in entries:
+            if not entry.get("version"):
+                entry["version"] = entry.get("started_at", "unknown")
+        
         # Récupérer les versions lues par cet utilisateur
         user_seen = await db.changelog_seen.find_one({"user_id": user_id}, {"_id": 0})
         seen_versions = set(user_seen.get("versions", [])) if user_seen else set()
