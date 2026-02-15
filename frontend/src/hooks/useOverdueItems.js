@@ -1,36 +1,37 @@
 /**
  * Hook personnalisé pour gérer les éléments en retard (échéances dépassées)
- * Extrait de MainLayout.jsx pour une meilleure modularité
+ * Source unique de vérité pour le calcul des compteurs overdue du header
  */
 import { useState, useEffect, useCallback } from 'react';
 import { getBackendURL } from '../../utils/config';
 
-export const useOverdueItems = (canViewModule) => {
+export const useOverdueItems = () => {
   const [overdueCount, setOverdueCount] = useState(0);
   const [overdueDetails, setOverdueDetails] = useState({});
   const [overdueExecutionCount, setOverdueExecutionCount] = useState(0);
   const [overdueRequestsCount, setOverdueRequestsCount] = useState(0);
   const [overdueMaintenanceCount, setOverdueMaintenanceCount] = useState(0);
-  const [loading, setLoading] = useState(false);
 
   const loadOverdueItems = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    
+
     const backend_url = getBackendURL();
-    
-    setLoading(true);
-    
+    const userInfo = localStorage.getItem('user');
+    const permissions = userInfo ? JSON.parse(userInfo).permissions : {};
+
+    const canViewModule = (module) => permissions[module]?.view === true;
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    let total = 0;
+    let executionCount = 0;
+    let requestsCount = 0;
+    let maintenanceCount = 0;
+    const details = {};
+
     try {
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      
-      let total = 0;
-      let executionCount = 0;
-      let requestsCount = 0;
-      let maintenanceCount = 0;
-      const details = {};
-      
       // 1. Ordres de travail en retard (ORANGE)
       if (canViewModule('workOrders')) {
         try {
@@ -59,7 +60,7 @@ export const useOverdueItems = (canViewModule) => {
           console.error('Erreur work orders:', err);
         }
       }
-      
+
       // 2. Améliorations en retard (ORANGE)
       if (canViewModule('improvements')) {
         try {
@@ -69,7 +70,7 @@ export const useOverdueItems = (canViewModule) => {
           if (impResponse.ok) {
             const improvements = await impResponse.json();
             const overdueImp = improvements.filter(imp => {
-              if (!imp.dateLimite || imp.statut === 'TERMINE' || imp.statut === 'ANNULE') return false;
+              if (!imp.dateLimite || imp.statut === 'TERMINE' || imp.statut === 'ANNULE' || imp.statut === 'REFUSE') return false;
               const dueDate = new Date(imp.dateLimite);
               return dueDate < today;
             });
@@ -88,7 +89,7 @@ export const useOverdueItems = (canViewModule) => {
           console.error('Erreur improvements:', err);
         }
       }
-      
+
       // 3. Demandes d'intervention en retard (JAUNE)
       if (canViewModule('interventionRequests')) {
         try {
@@ -98,7 +99,7 @@ export const useOverdueItems = (canViewModule) => {
           if (irResponse.ok) {
             const interventionRequests = await irResponse.json();
             const overdueIR = interventionRequests.filter(ir => {
-              if (!ir.date_limite_desiree || ir.statut === 'TERMINE' || ir.statut === 'ANNULE') return false;
+              if (!ir.date_limite_desiree || ir.statut === 'TERMINE' || ir.statut === 'ANNULE' || ir.statut === 'REFUSE') return false;
               const dueDate = new Date(ir.date_limite_desiree);
               return dueDate < today;
             });
@@ -117,8 +118,8 @@ export const useOverdueItems = (canViewModule) => {
           console.error('Erreur intervention requests:', err);
         }
       }
-      
-      // 4. Demandes d'amélioration en retard (JAUNE)
+
+      // 4. Demandes d'amélioration en retard (JAUNE) - Seules les VALIDEE comptent
       if (canViewModule('improvementRequests')) {
         try {
           const imprResponse = await fetch(`${backend_url}/api/improvement-requests`, {
@@ -126,39 +127,39 @@ export const useOverdueItems = (canViewModule) => {
           });
           if (imprResponse.ok) {
             const improvementRequests = await imprResponse.json();
-            const overdueImpr = improvementRequests.filter(impr => {
+            const overdueIMPR = improvementRequests.filter(impr => {
               if (!impr.date_limite_desiree || impr.status !== 'VALIDEE') return false;
               const dueDate = new Date(impr.date_limite_desiree);
               return dueDate < today;
             });
-            if (overdueImpr.length > 0) {
+            if (overdueIMPR.length > 0) {
               details.improvementRequests = {
-                count: overdueImpr.length,
+                count: overdueIMPR.length,
                 label: "Demandes d'amélioration",
                 route: '/improvement-requests',
                 category: 'requests'
               };
-              requestsCount += overdueImpr.length;
-              total += overdueImpr.length;
+              requestsCount += overdueIMPR.length;
+              total += overdueIMPR.length;
             }
           }
         } catch (err) {
           console.error('Erreur improvement requests:', err);
         }
       }
-      
-      // 5. Maintenances préventives en retard (BLEU)
+
+      // 5. Maintenances préventives (BLEU)
       if (canViewModule('preventiveMaintenance')) {
         try {
           const pmResponse = await fetch(`${backend_url}/api/preventive-maintenance`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (pmResponse.ok) {
-            const preventiveMaintenances = await pmResponse.json();
-            const overduePM = preventiveMaintenances.filter(pm => {
-              if (!pm.next_date || pm.statut === 'TERMINE' || pm.actif === false) return false;
-              const dueDate = new Date(pm.next_date);
-              return dueDate < today;
+            const pms = await pmResponse.json();
+            const overduePM = pms.filter(pm => {
+              if (!pm.prochaineMaintenance || pm.statut !== 'ACTIF') return false;
+              const nextDate = new Date(pm.prochaineMaintenance);
+              return nextDate < today;
             });
             if (overduePM.length > 0) {
               details.preventiveMaintenance = {
@@ -175,25 +176,39 @@ export const useOverdueItems = (canViewModule) => {
           console.error('Erreur preventive maintenance:', err);
         }
       }
-      
+
       setOverdueCount(total);
-      setOverdueDetails(details);
       setOverdueExecutionCount(executionCount);
       setOverdueRequestsCount(requestsCount);
       setOverdueMaintenanceCount(maintenanceCount);
-      
+      setOverdueDetails(details);
     } catch (error) {
       console.error('Erreur chargement échéances:', error);
-    } finally {
-      setLoading(false);
     }
-  }, [canViewModule]);
+  }, []);
 
-  // Charger au montage et rafraîchir périodiquement
+  // Charger au montage, rafraîchir toutes les minutes, et écouter les événements
   useEffect(() => {
     loadOverdueItems();
-    const interval = setInterval(loadOverdueItems, 60000); // Toutes les minutes
-    return () => clearInterval(interval);
+    const interval = setInterval(loadOverdueItems, 60000);
+
+    const refresh = () => loadOverdueItems();
+    window.addEventListener('workOrderCreated', refresh);
+    window.addEventListener('workOrderUpdated', refresh);
+    window.addEventListener('workOrderDeleted', refresh);
+    window.addEventListener('improvementCreated', refresh);
+    window.addEventListener('improvementUpdated', refresh);
+    window.addEventListener('improvementDeleted', refresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('workOrderCreated', refresh);
+      window.removeEventListener('workOrderUpdated', refresh);
+      window.removeEventListener('workOrderDeleted', refresh);
+      window.removeEventListener('improvementCreated', refresh);
+      window.removeEventListener('improvementUpdated', refresh);
+      window.removeEventListener('improvementDeleted', refresh);
+    };
   }, [loadOverdueItems]);
 
   return {
@@ -202,7 +217,6 @@ export const useOverdueItems = (canViewModule) => {
     overdueExecutionCount,
     overdueRequestsCount,
     overdueMaintenanceCount,
-    loading,
     refresh: loadOverdueItems
   };
 };
