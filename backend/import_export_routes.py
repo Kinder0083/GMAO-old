@@ -610,7 +610,7 @@ async def export_data(
                             df.to_excel(writer, sheet_name=sheet_name, index=False)
                     xlsx_output.seek(0)
                     zf.writestr("data.xlsx", xlsx_output.getvalue())
-                    logger.info(f"[Export] data.xlsx ajouté au ZIP")
+                    logger.info("[Export] data.xlsx ajouté au ZIP")
 
                     # 2. Ajouter tous les fichiers uploadés
                     file_count = 0
