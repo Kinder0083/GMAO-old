@@ -9451,6 +9451,15 @@ async def startup_scheduler():
         logger.info("   - Vérification versions LLM: chaque lundi à 03h00")
         logger.info("   - Notifications PM: tous les jours à 07h00")
         logger.info("   - Rappels surveillance: tous les jours à 07h30")
+
+        # Charger les planifications de backup automatique
+        try:
+            set_backup_scheduler(scheduler)
+            from backup_routes import _reload_scheduler as reload_backup_jobs
+            await reload_backup_jobs()
+            logger.info("   - Sauvegardes automatiques: planifications chargées")
+        except Exception as e:
+            logger.warning(f"   - Sauvegardes automatiques: erreur chargement ({e})")
         
         # M.E.S - Calcul cadence chaque minute (abonnement MQTT sera fait APRÈS connexion)
         from mes_routes import mes_service as _mes_ref
