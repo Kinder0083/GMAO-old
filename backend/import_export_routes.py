@@ -623,6 +623,15 @@ async def export_data(
                     logger.info(f"[Export] {file_count} fichier(s) ajouté(s) au ZIP")
 
                 zip_output.seek(0)
+
+                # Vérification d'intégrité du ZIP
+                with zipfile.ZipFile(io.BytesIO(zip_output.getvalue()), 'r') as zf_verify:
+                    bad_file = zf_verify.testzip()
+                    if bad_file is not None:
+                        raise HTTPException(status_code=500, detail=f"Fichier corrompu dans le ZIP: {bad_file}")
+                    logger.info(f"[Export] Intégrité ZIP vérifiée: {len(zf_verify.namelist())} entrée(s)")
+
+                zip_output.seek(0)
                 filename = f"export_complet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
 
                 return StreamingResponse(
