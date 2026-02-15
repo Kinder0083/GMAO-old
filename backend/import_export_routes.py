@@ -667,6 +667,129 @@ async def export_data(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/restore/backup")
+async def restore_backup(
+    mode: str = "merge",
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Restaurer une sauvegarde complète depuis un fichier ZIP de backup GMAO"""
+    try:
+        if not file.filename.endswith('.zip'):
+            raise HTTPException(status_code=400, detail="Le fichier doit être un ZIP de sauvegarde GMAO")
+
+        content = await file.read()
+        restored_files = 0
+        collections_cleared = 0
+
+        # Vérifier que c'est un ZIP valide avec data.xlsx
+        try:
+            zf_test = zipfile.ZipFile(io.BytesIO(content), 'r')
+            if 'data.xlsx' not in zf_test.namelist():
+                zf_test.close()
+                raise HTTPException(status_code=400, detail="ZIP invalide : le fichier data.xlsx est manquant. Ce n'est pas un backup GMAO valide.")
+            zf_test.close()
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="Le fichier ZIP est corrompu ou invalide")
+
+        data_sheets = {}
+
+        with zipfile.ZipFile(io.BytesIO(content), 'r') as zf:
+            # 1. Lire data.xlsx
+            xlsx_bytes = zf.read('data.xlsx')
+            all_sheets = pd.read_excel(io.BytesIO(xlsx_bytes), sheet_name=None, engine='openpyxl')
+            logger.info(f"[Restore] data.xlsx: {len(all_sheets)} feuilles")
+
+            for sheet_name, df in all_sheets.items():
+                module_name = SHEET_TO_MODULE.get(sheet_name.lower())
+                if module_name and module_name in EXPORT_MODULES:
+                    data_sheets[module_name] = df
+                    logger.info(f"[Restore] Feuille '{sheet_name}' -> '{module_name}': {len(df)} lignes")
+
+            # 2. Restaurer les fichiers uploadés
+            upload_entries = [n for n in zf.namelist() if n.startswith('uploads/') and not n.endswith('/')]
+            for entry in upload_entries:
+                target = UPLOADS_DIR / entry.replace('uploads/', '', 1)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with open(target, 'wb') as f:
+                    f.write(zf.read(entry))
+                restored_files += 1
+
+            logger.info(f"[Restore] {restored_files} fichier(s) restauré(s)")
+
+        # Mode "full": vider les collections avant import
+        if mode == "full":
+            # Collections protégées qu'on ne vide PAS
+            protected_collections = {"manual_chapters", "manual_sections"}
+            for module_name, df in data_sheets.items():
+                collection_name = EXPORT_MODULES[module_name]
+                if collection_name not in protected_collections:
+                    result = await db[collection_name].delete_many({})
+                    collections_cleared += 1
+                    logger.info(f"[Restore FULL] Collection '{collection_name}' vidée ({result.deleted_count} documents)")
+
+        # Importer les données
+        stats = {
+            "total": 0,
+            "inserted": 0,
+            "updated": 0,
+            "skipped": 0,
+            "errors": [],
+            "modules": {},
+            "collections_cleared": collections_cleared,
+            "restored_files": restored_files
+        }
+
+        import_mode = "add" if mode == "full" else "replace"
+
+        for current_module, df in data_sheets.items():
+            collection_name = EXPORT_MODULES[current_module]
+
+            if current_module in COLUMN_MAPPINGS:
+                df = df.rename(columns=COLUMN_MAPPINGS[current_module])
+
+            df.columns = [str(col).strip() if col is not None else f'col_{i}' for i, col in enumerate(df.columns)]
+
+            items = df.to_dict('records')
+            module_stats = {"total": len(items), "inserted": 0, "updated": 0, "skipped": 0, "errors": []}
+
+            logger.info(f"[Restore] Module '{current_module}': {len(items)} éléments")
+
+            for idx, item in enumerate(items):
+                try:
+                    result = await process_import_item(item, current_module, collection_name, current_user, import_mode)
+                    if result["action"] == "inserted":
+                        module_stats["inserted"] += 1
+                    elif result["action"] == "updated":
+                        module_stats["updated"] += 1
+                    elif result["action"] == "skipped":
+                        module_stats["skipped"] += 1
+                except Exception as e:
+                    module_stats["errors"].append(f"Ligne {idx+1}: {str(e)[:100]}")
+                    module_stats["skipped"] += 1
+
+            stats["modules"][current_module] = module_stats
+            stats["total"] += module_stats["total"]
+            stats["inserted"] += module_stats["inserted"]
+            stats["updated"] += module_stats["updated"]
+            stats["skipped"] += module_stats["skipped"]
+            stats["errors"].extend(module_stats["errors"][:5])
+
+        logger.info(f"[Restore] Terminé: {stats['inserted']} insérés, {stats['updated']} mis à jour, {stats['skipped']} ignorés, {restored_files} fichiers, {collections_cleared} collections vidées")
+
+        return {
+            "success": True,
+            "message": f"Restauration réussie: {stats['inserted']} insérés, {stats['updated']} mis à jour, {restored_files} fichiers restaurés" + (f", {collections_cleared} collections vidées" if mode == "full" else ""),
+            "stats": stats
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur restauration: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/import/{module}")
 async def import_data(
     module: str,
