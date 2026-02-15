@@ -47,13 +47,19 @@ Pour utiliser la destination Google Drive:
    - GOOGLE_CLIENT_SECRET=...
    - GOOGLE_DRIVE_REDIRECT_URI=https://[URL]/api/backup/drive/callback
 
+### Bug fichier corrompu (P0 - CORRIGÉ - 2026-02-15)
+- Le frontend enregistrait les archives ZIP avec extension `.xlsx`, rendant les fichiers inutilisables
+- Fix : lecture du header `Content-Disposition` de la réponse backend pour déterminer dynamiquement l'extension (`.zip` pour exports "all" et backups, `.xlsx` pour modules individuels)
+- Tests: 8/8 backend + UI frontend (100%)
+
 ## Backlog
 
-### P1
-- Confirmer avec l'utilisateur si le bug d'importation Excel persiste encore
+### P0
+- **Google Drive** : Intégration en attente des identifiants API utilisateur (dépendances installées)
 
-### P2
-- Animation du logo page de connexion (reporté par l'utilisateur)
+### Tâches retirées
+- ~~Bug import Excel~~ — Confirmé résolu par l'utilisateur
+- ~~Animation logo login~~ — Annulé par l'utilisateur
 
 ## Collections MongoDB ajoutées
 - `backup_schedules` - Planifications de sauvegarde
