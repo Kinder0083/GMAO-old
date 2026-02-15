@@ -313,7 +313,7 @@ async def _delete_from_gdrive(file_id: str):
     service.files().delete(fileId=file_id).execute()
 
 
-async def _send_backup_email(schedule: dict, status: str, file_size: int = 0, module_count: int = 0, error_msg: str = ""):
+async def _send_backup_email(schedule: dict, status: str, file_size: int = 0, module_count: int = 0, file_count: int = 0, error_msg: str = ""):
     """Envoyer un email de notification de backup"""
     import email_service
 
@@ -336,6 +336,7 @@ async def _send_backup_email(schedule: dict, status: str, file_size: int = 0, mo
                 <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
                     <tr><td style="padding: 8px; color: #6b7280;">Date</td><td style="padding: 8px; font-weight: bold;">{now}</td></tr>
                     <tr><td style="padding: 8px; color: #6b7280;">Modules</td><td style="padding: 8px; font-weight: bold;">{module_count} modules</td></tr>
+                    <tr><td style="padding: 8px; color: #6b7280;">Fichiers joints</td><td style="padding: 8px; font-weight: bold;">{file_count} fichiers</td></tr>
                     <tr><td style="padding: 8px; color: #6b7280;">Taille</td><td style="padding: 8px; font-weight: bold;">{size_mb} Mo</td></tr>
                     <tr><td style="padding: 8px; color: #6b7280;">Destination</td><td style="padding: 8px; font-weight: bold;">{schedule.get('destination', 'local')}</td></tr>
                 </table>
