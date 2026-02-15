@@ -77,6 +77,7 @@ const Header = ({
           <ManualButton />
           <AIButton />
           <HelpButton />
+          <HeaderClock />
         </div>
       </div>
 
