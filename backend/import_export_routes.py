@@ -222,6 +222,29 @@ COLUMN_MAPPINGS = {
         "Email": "email", "Téléphone": "phone", "Phone": "phone",
         "Adresse": "address", "Address": "address",
         "Contact": "contact", "Notes": "notes"
+    },
+    "contracts": {
+        "N° Contrat": "numero_contrat", "Numero Contrat": "numero_contrat",
+        "Titre": "titre", "Objet": "titre",
+        "Type": "type_contrat", "Type Contrat": "type_contrat",
+        "Statut": "statut",
+        "Date Etablissement": "date_etablissement",
+        "Date Debut": "date_debut", "Date de debut": "date_debut",
+        "Date Fin": "date_fin", "Date de fin": "date_fin",
+        "Montant Total": "montant_total",
+        "Periodicite": "periodicite_paiement",
+        "Montant Periode": "montant_periode",
+        "Mode Paiement": "mode_paiement",
+        "Fournisseur": "fournisseur_nom",
+        "Adresse Fournisseur": "fournisseur_adresse",
+        "Tel Fournisseur": "fournisseur_telephone",
+        "Email Fournisseur": "fournisseur_email",
+        "Contact": "contact_nom",
+        "Tel Contact": "contact_telephone",
+        "Email Contact": "contact_email",
+        "Signataire": "signataire_interne_nom",
+        "Commande Interne": "commande_interne",
+        "Notes": "notes"
     }
 }
 
