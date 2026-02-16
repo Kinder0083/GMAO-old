@@ -115,6 +115,8 @@ EXPORT_MODULES = {
     "audit-logs": "audit_logs",
     # --- Dashboard service ---
     "service-dashboard-configs": "service_dashboard_configs",
+    # --- Contrats ---
+    "contracts": "contracts",
 }
 
 # Mappings de colonnes pour l'import (noms français/anglais vers noms internes)

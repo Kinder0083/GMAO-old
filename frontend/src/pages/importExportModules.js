@@ -66,6 +66,7 @@ export const modules = [
   { value: 'vendors', label: 'Fournisseurs', group: 'Stock' },
   { value: 'purchase-history', label: 'Historique Achat', group: 'Stock' },
   { value: 'purchase-requests', label: 'Demandes d\'Achat', group: 'Stock' },
+  { value: 'contracts', label: 'Contrats', group: 'Stock' },
   // --- Communication ---
   { value: 'chat-messages', label: 'Messages Chat Live', group: 'Communication' },
   { value: 'whiteboards', label: 'Tableaux blancs', group: 'Communication' },
