@@ -113,6 +113,7 @@ const DEFAULT_MENU_ITEMS = [
   { id: 'people', label: 'Utilisateurs', path: '/people', icon: 'Users', module: 'people', visible: true, favorite: false, order: 19, category_id: null },
   { id: 'planning', label: 'Planning', path: '/planning', icon: 'Calendar', module: 'planning', visible: true, favorite: false, order: 20, category_id: null },
   { id: 'vendors', label: 'Fournisseurs', path: '/vendors', icon: 'ShoppingCart', module: 'vendors', visible: true, favorite: false, order: 21, category_id: null },
+  { id: 'contrats', label: 'Contrats', path: '/contrats', icon: 'FileSignature', module: 'contrats', visible: true, favorite: false, order: 21.5, category_id: null },
   { id: 'purchase-history', label: 'Historique Achat', path: '/purchase-history', icon: 'ShoppingBag', module: 'purchaseHistory', visible: true, favorite: false, order: 22, category_id: null },
   { id: 'import-export', label: 'Import / Export', path: '/import-export', icon: 'Database', module: 'importExport', visible: true, favorite: false, order: 23, category_id: null },
   { id: 'sensors', label: 'Capteurs MQTT', path: '/sensors', icon: 'Activity', module: 'sensors', visible: true, favorite: false, order: 24, category_id: null },
