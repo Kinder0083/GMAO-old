@@ -195,6 +195,152 @@ async def get_contracts_stats(
     }
 
 
+@router.get("/dashboard")
+async def get_contracts_dashboard(
+    current_user: dict = Depends(require_permission("contrats", "view"))
+):
+    """Données complètes pour le tableau de bord des contrats"""
+    now = datetime.now(timezone.utc)
+    contracts = await db.contracts.find({}).to_list(1000)
+
+    # --- KPI ---
+    actifs = [c for c in contracts if c.get("statut") == "actif"]
+    expires = [c for c in contracts if c.get("statut") == "expire"]
+    resilies = [c for c in contracts if c.get("statut") == "resilie"]
+
+    def _monthly_cost(c):
+        mp = c.get("montant_periode")
+        if not mp:
+            return 0
+        per = c.get("periodicite_paiement", "mensuel")
+        if per == "trimestriel":
+            return mp / 3
+        if per == "annuel":
+            return mp / 12
+        return mp
+
+    budget_mensuel = sum(_monthly_cost(c) for c in actifs)
+
+    # Contrats à renouveler ce trimestre
+    in_90_days = (now + timedelta(days=90)).isoformat()
+    a_renouveler = [c for c in actifs if c.get("date_fin") and c["date_fin"] <= in_90_days]
+
+    # Top fournisseurs par coût mensuel
+    vendor_costs = {}
+    for c in actifs:
+        nom = c.get("fournisseur_nom") or "Inconnu"
+        vendor_costs[nom] = vendor_costs.get(nom, 0) + _monthly_cost(c)
+    top_vendors = sorted(vendor_costs.items(), key=lambda x: -x[1])[:5]
+
+    kpi = {
+        "total": len(contracts),
+        "actifs": len(actifs),
+        "expires": len(expires),
+        "resilies": len(resilies),
+        "budget_mensuel": round(budget_mensuel, 2),
+        "budget_annuel": round(budget_mensuel * 12, 2),
+        "a_renouveler_trimestre": len(a_renouveler),
+        "top_vendors": [{"nom": n, "cout_mensuel": round(c, 2)} for n, c in top_vendors]
+    }
+
+    # --- Répartition par type (pie chart) ---
+    type_counts = {}
+    for c in contracts:
+        t = c.get("type_contrat", "autre")
+        type_counts[t] = type_counts.get(t, 0) + 1
+    repartition_type = [{"type": k, "count": v} for k, v in type_counts.items()]
+
+    # --- Coût mensuel par fournisseur (bar chart) ---
+    cout_par_vendor = [{"fournisseur": n, "cout_mensuel": round(c, 2), "cout_annuel": round(c * 12, 2)} for n, c in top_vendors]
+
+    # --- Évolution budget sur 12 mois (line chart) ---
+    evolution = []
+    mois_labels = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"]
+    for month_offset in range(12):
+        target_month = (now.month - 11 + month_offset - 1) % 12 + 1
+        target_year = now.year if (now.month - 11 + month_offset) > 0 else now.year - 1
+        month_start = f"{target_year}-{target_month:02d}-01"
+        if target_month == 12:
+            month_end = f"{target_year + 1}-01-01"
+        else:
+            month_end = f"{target_year}-{target_month + 1:02d}-01"
+
+        cout = 0
+        for c in contracts:
+            if c.get("statut") in ("actif", "expire"):
+                debut = c.get("date_debut", c.get("date_etablissement", ""))
+                fin = c.get("date_fin", "9999-12-31")
+                if debut <= month_end and fin >= month_start:
+                    cout += _monthly_cost(c)
+        evolution.append({
+            "mois": mois_labels[target_month - 1],
+            "mois_num": f"{target_year}-{target_month:02d}",
+            "cout": round(cout, 2)
+        })
+
+    # --- Calendrier des échéances (12 prochains mois) ---
+    calendar_events = []
+    for c in contracts:
+        if c.get("statut") != "actif":
+            continue
+        date_fin_str = c.get("date_fin")
+        if not date_fin_str:
+            continue
+        try:
+            date_fin = datetime.fromisoformat(date_fin_str.replace("Z", "+00:00")) if isinstance(date_fin_str, str) else date_fin_str
+            jours = (date_fin - now).days
+            if -30 <= jours <= 365:
+                seuil_resil = c.get("alerte_resiliation_jours")
+                event = {
+                    "id": str(c["_id"]),
+                    "titre": c.get("titre", ""),
+                    "numero": c.get("numero_contrat", ""),
+                    "fournisseur": c.get("fournisseur_nom", ""),
+                    "date_fin": date_fin_str,
+                    "jours_restants": jours,
+                    "type": "echeance",
+                    "severity": "critical" if jours <= 0 else "warning" if jours <= 30 else "info"
+                }
+                calendar_events.append(event)
+
+                if seuil_resil:
+                    date_resil = date_fin - timedelta(days=seuil_resil)
+                    jours_resil = (date_resil - now).days
+                    if -30 <= jours_resil <= 365:
+                        calendar_events.append({
+                            "id": f"resil_{c['_id']}",
+                            "titre": c.get("titre", ""),
+                            "numero": c.get("numero_contrat", ""),
+                            "fournisseur": c.get("fournisseur_nom", ""),
+                            "date_fin": date_resil.isoformat(),
+                            "jours_restants": jours_resil,
+                            "type": "resiliation",
+                            "severity": "critical" if jours_resil <= 0 else "warning" if jours_resil <= 30 else "info",
+                            "preavis": seuil_resil
+                        })
+        except (ValueError, TypeError):
+            continue
+
+    calendar_events.sort(key=lambda e: e.get("jours_restants", 999))
+
+    # --- Répartition par statut ---
+    repartition_statut = [
+        {"statut": "actif", "count": len(actifs)},
+        {"statut": "expire", "count": len(expires)},
+        {"statut": "resilie", "count": len(resilies)},
+        {"statut": "en_renouvellement", "count": len([c for c in contracts if c.get("statut") == "en_renouvellement"])}
+    ]
+
+    return {
+        "kpi": kpi,
+        "repartition_type": repartition_type,
+        "repartition_statut": repartition_statut,
+        "cout_par_vendor": cout_par_vendor,
+        "evolution_budget": evolution,
+        "calendar_events": calendar_events
+    }
+
+
 @router.get("/alerts")
 async def get_contract_alerts(
     current_user: dict = Depends(require_permission("contrats", "view"))
