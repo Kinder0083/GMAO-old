@@ -35,6 +35,7 @@ import ValidateImprovementRequest from "./pages/ValidateImprovementRequest";
 import EndMaintenance from "./pages/EndMaintenance";
 import Vendors from "./pages/Vendors";
 import Contracts from "./pages/Contracts";
+import ContractsDashboard from "./pages/ContractsDashboard";
 import Settings from "./pages/Settings";
 import SpecialSettings from "./pages/SpecialSettings";
 import ImportExport from "./pages/ImportExport";
