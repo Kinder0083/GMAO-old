@@ -98,7 +98,7 @@ export default function Contracts() {
         contractsAPI.getContracts(params),
         contractsAPI.getStats(),
         contractsAPI.getAlerts(),
-        vendorsAPI ? vendorsAPI.getVendors().catch(() => []) : Promise.resolve([])
+        vendorsAPI ? vendorsAPI.getAll().then(res => res.data || []).catch(() => []) : Promise.resolve([])
       ]);
       setContracts(contractsData);
       setStats(statsData);
