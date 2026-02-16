@@ -904,6 +904,7 @@ export const contractsAPI = {
   getContracts: (params) => api.get('/contracts', { params }).then(res => res.data),
   getContract: (id) => api.get(`/contracts/${id}`).then(res => res.data),
   getStats: () => api.get('/contracts/stats').then(res => res.data),
+  getDashboard: () => api.get('/contracts/dashboard').then(res => res.data),
   getAlerts: () => api.get('/contracts/alerts').then(res => res.data),
   createContract: (data) => api.post('/contracts', data).then(res => res.data),
   updateContract: (id, data) => api.put(`/contracts/${id}`, data).then(res => res.data),
