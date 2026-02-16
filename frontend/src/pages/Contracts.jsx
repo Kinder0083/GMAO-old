@@ -60,7 +60,7 @@ const emptyForm = {
   fournisseur_id: '', fournisseur_nom: '', fournisseur_adresse: '', fournisseur_telephone: '',
   fournisseur_email: '', fournisseur_site_web: '',
   contact_nom: '', contact_telephone: '', contact_email: '',
-  signataire_interne_id: '', signataire_interne_nom: '',
+  signataire_interne_id: '', signataire_interne_nom: '', commande_interne: '',
   alerte_echeance_jours: 30, alerte_resiliation_jours: '', alerte_paiement: false,
   notes: ''
 };
