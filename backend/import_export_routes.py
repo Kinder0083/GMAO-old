@@ -354,6 +354,8 @@ SHEET_TO_MODULE = {
     "audit_logs": "audit-logs",
     "service-dashboard-configs": "service-dashboard-configs",
     "service_dashboard_configs": "service-dashboard-configs",
+    "contracts": "contracts",
+    "contrats": "contracts",
 }
 
 
