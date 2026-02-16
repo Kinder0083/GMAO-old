@@ -724,6 +724,7 @@ async def check_contract_alerts():
 
     try:
         now = datetime.now(timezone.utc)
+        now_naive = now.replace(tzinfo=None)
         contracts = await db.contracts.find({"statut": "actif"}).to_list(1000)
         alerts_to_send = []
 
@@ -733,8 +734,14 @@ async def check_contract_alerts():
                 continue
 
             try:
-                date_fin = datetime.fromisoformat(date_fin_str.replace("Z", "+00:00")) if isinstance(date_fin_str, str) else date_fin_str
-                jours_restants = (date_fin - now).days
+                if isinstance(date_fin_str, str):
+                    clean = date_fin_str.replace("Z", "+00:00")
+                    date_fin = datetime.fromisoformat(clean)
+                    if date_fin.tzinfo:
+                        date_fin = date_fin.replace(tzinfo=None)
+                else:
+                    date_fin = date_fin_str.replace(tzinfo=None) if hasattr(date_fin_str, 'replace') else date_fin_str
+                jours_restants = (date_fin - now_naive).days
                 titre = contract.get("titre", "Sans titre")
                 numero = contract.get("numero_contrat", "N/A")
 
