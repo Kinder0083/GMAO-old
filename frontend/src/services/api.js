@@ -428,7 +428,20 @@ export const surveillanceAPI = {
   
   exportTemplate: () => api.get('/surveillance/export/template', {
     responseType: 'blob'
-  }).then(res => res.data)
+  }).then(res => res.data),
+  
+  // Extraction IA
+  extractFromDocument: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/surveillance/ai/extract', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    }).then(res => res.data);
+  },
+  
+  // Création batch depuis IA
+  createBatchFromAI: (data) => api.post('/surveillance/ai/create-batch', data).then(res => res.data)
 };
 
 // ==================== PRESQU'ACCIDENT ====================
