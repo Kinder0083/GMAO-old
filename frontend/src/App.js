@@ -165,6 +165,7 @@ function App() {
             <Route path="planning-mprev" element={<PlanningMPrev />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="contrats" element={<Contracts />} />
+            <Route path="contrats/dashboard" element={<ContractsDashboard />} />
             <Route path="purchase-history" element={<PurchaseHistory />} />
             <Route path="purchase-requests" element={<PurchaseRequests />} />
             <Route path="purchase-requests/archives" element={<PurchaseRequestsArchives />} />
