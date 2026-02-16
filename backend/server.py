@@ -429,6 +429,7 @@ async def register(user_create: UserCreate):
             "inventory": {"view": True, "edit": True, "delete": True},
             "locations": {"view": True, "edit": True, "delete": True},
             "vendors": {"view": True, "edit": True, "delete": True},
+            "contrats": {"view": True, "edit": True, "delete": True},
             "reports": {"view": True, "edit": True, "delete": True}
         }
     elif user_create.role == UserRole.TECHNICIEN:
