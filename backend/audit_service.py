@@ -75,77 +75,68 @@ class AuditService:
         """
         Récupère les logs d'audit avec filtres optionnels
         """
-        query = {}
-        
-        if user_id:
-            query["user_id"] = user_id
-        if action:
-            query["action"] = action.value
-        if entity_type:
-            query["entity_type"] = entity_type.value
-        if start_date or end_date:
-            query["timestamp"] = {}
-            if start_date:
-                query["timestamp"]["$gte"] = start_date
-            if end_date:
-                query["timestamp"]["$lte"] = end_date
-        
-        cursor = self.db.audit_logs.find(query).sort("timestamp", -1).skip(skip).limit(limit)
-        logs = await cursor.to_list(length=limit)
-        
-        # Convertir les ObjectId et timestamps pour la sérialisation JSON
-        for log in logs:
-            if "_id" in log:
-                log["_id"] = str(log["_id"])
-            # S'assurer que le timestamp est au format ISO avec timezone UTC
-            if "timestamp" in log and log["timestamp"]:
-                if hasattr(log["timestamp"], 'isoformat'):
-                    # Convertir en ISO format
-                    iso_str = log["timestamp"].isoformat()
-                    # Ajouter 'Z' si pas de timezone
-                    if '+' not in iso_str and 'Z' not in iso_str:
-                        log["timestamp"] = iso_str + 'Z'
-                    else:
-                        log["timestamp"] = iso_str
-                elif isinstance(log["timestamp"], str):
-                    # Si c'est déjà une string, s'assurer qu'elle a 'Z'
-                    if '+' not in log["timestamp"] and not log["timestamp"].endswith('Z'):
-                        log["timestamp"] = log["timestamp"] + 'Z'
-        
-        # Compter le total
-        total = await self.db.audit_logs.count_documents(query)
-        
-        return logs, total
+        try:
+            query = {}
+            
+            if user_id:
+                query["user_id"] = user_id
+            if action:
+                query["action"] = action.value
+            if entity_type:
+                query["entity_type"] = entity_type.value
+            if start_date or end_date:
+                query["timestamp"] = {}
+                if start_date:
+                    query["timestamp"]["$gte"] = start_date
+                if end_date:
+                    query["timestamp"]["$lte"] = end_date
+            
+            cursor = self.db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit)
+            logs = await cursor.to_list(length=limit)
+            
+            # Convertir les timestamps pour la sérialisation JSON
+            for log in logs:
+                self._normalize_timestamp(log)
+            
+            # Compter le total
+            total = await self.db.audit_logs.count_documents(query)
+            
+            return logs, total
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des logs d'audit: {e}")
+            return [], 0
     
+    def _normalize_timestamp(self, log: dict):
+        """Normalise le champ timestamp d'un log pour la sérialisation JSON"""
+        if "timestamp" in log and log["timestamp"]:
+            ts = log["timestamp"]
+            if hasattr(ts, 'isoformat'):
+                iso_str = ts.isoformat()
+                if '+' not in iso_str and 'Z' not in iso_str:
+                    log["timestamp"] = iso_str + 'Z'
+                else:
+                    log["timestamp"] = iso_str
+            elif isinstance(ts, str):
+                if '+' not in ts and not ts.endswith('Z'):
+                    log["timestamp"] = ts + 'Z'
+
     async def get_entity_history(self, entity_type: EntityType, entity_id: str):
         """
         Récupère l'historique complet d'une entité spécifique
         """
-        query = {
-            "entity_type": entity_type.value,
-            "entity_id": entity_id
-        }
-        
-        cursor = self.db.audit_logs.find(query).sort("timestamp", -1)
-        logs = await cursor.to_list(length=None)
-        
-        # Convertir les ObjectId et timestamps pour la sérialisation JSON
-        for log in logs:
-            if "_id" in log:
-                log["_id"] = str(log["_id"])
-            # S'assurer que le timestamp est au format ISO avec timezone UTC
-            if "timestamp" in log and log["timestamp"]:
-                if hasattr(log["timestamp"], 'isoformat'):
-                    # Convertir en ISO format
-                    iso_str = log["timestamp"].isoformat()
-                    # Ajouter 'Z' si pas de timezone
-                    if '+' not in iso_str and 'Z' not in iso_str:
-                        log["timestamp"] = iso_str + 'Z'
-                    else:
-                        log["timestamp"] = iso_str
-                elif isinstance(log["timestamp"], str):
-                    # Si c'est déjà une string, s'assurer qu'elle a 'Z'
-                    if '+' not in log["timestamp"] and not log["timestamp"].endswith('Z'):
-                        log["timestamp"] = log["timestamp"] + 'Z'
-        
-        return logs
+        try:
+            query = {
+                "entity_type": entity_type.value,
+                "entity_id": entity_id
+            }
+            
+            cursor = self.db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1)
+            logs = await cursor.to_list(length=None)
+            
+            for log in logs:
+                self._normalize_timestamp(log)
+            
+            return logs
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération de l'historique d'entité: {e}")
+            return []
