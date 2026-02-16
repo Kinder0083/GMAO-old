@@ -305,6 +305,10 @@ export default function Contracts() {
           <p className="text-gray-500 mt-1">Gestion des contrats fournisseurs</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/contrats/dashboard')} data-testid="dashboard-btn">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Tableau de bord
+          </Button>
           {alerts.length > 0 && (
             <Button variant="outline" onClick={() => setShowAlerts(true)} className="relative" data-testid="alerts-btn">
               <Bell className="w-4 h-4 mr-2" />
