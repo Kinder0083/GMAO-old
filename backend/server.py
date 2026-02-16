@@ -4346,6 +4346,7 @@ async def migrate_menu_preferences(current_user: dict = Depends(get_current_user
             { "id": "people", "label": "Utilisateurs", "path": "/people", "icon": "Users", "module": "people", "visible": True, "favorite": False, "order": 17 },
             { "id": "planning", "label": "Planning", "path": "/planning", "icon": "Calendar", "module": "planning", "visible": True, "favorite": False, "order": 18 },
             { "id": "vendors", "label": "Fournisseurs", "path": "/vendors", "icon": "ShoppingCart", "module": "vendors", "visible": True, "favorite": False, "order": 19 },
+            { "id": "contrats", "label": "Contrats", "path": "/contrats", "icon": "FileSignature", "module": "contrats", "visible": True, "favorite": False, "order": 19.5 },
             { "id": "purchase-history", "label": "Historique Achat", "path": "/purchase-history", "icon": "ShoppingBag", "module": "purchaseHistory", "visible": True, "favorite": False, "order": 20 },
             { "id": "import-export", "label": "Import / Export", "path": "/import-export", "icon": "Database", "module": "importExport", "visible": True, "favorite": False, "order": 21 },
             { "id": "sensors", "label": "Capteurs MQTT", "path": "/sensors", "icon": "Activity", "module": "sensors", "visible": True, "favorite": False, "order": 22 },
