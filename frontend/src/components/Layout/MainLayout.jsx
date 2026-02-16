@@ -163,6 +163,7 @@ const MainLayout = () => {
     { id: 'people', icon: 'Users', label: 'Utilisateurs', path: '/people', module: 'people', visible: true, order: 17 },
     { id: 'planning', icon: 'Calendar', label: 'Planning', path: '/planning', module: 'planning', visible: true, order: 18 },
     { id: 'vendors', icon: 'ShoppingCart', label: 'Fournisseurs', path: '/vendors', module: 'vendors', visible: true, order: 19 },
+    { id: 'contrats', icon: 'FileSignature', label: 'Contrats', path: '/contrats', module: 'contrats', visible: true, order: 19.5 },
     { id: 'purchase-history', icon: 'ShoppingBag', label: 'Historique Achat', path: '/purchase-history', module: 'purchaseHistory', visible: true, order: 20 },
     { id: 'import-export', icon: 'Database', label: 'Import / Export', path: '/import-export', module: 'importExport', visible: true, order: 21 },
     { id: 'whiteboard', icon: 'PresentationIcon', label: 'Tableau d\'affichage', path: '/whiteboard', module: 'whiteboard', visible: true, order: 22 }
