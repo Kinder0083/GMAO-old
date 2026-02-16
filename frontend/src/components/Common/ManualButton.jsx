@@ -821,17 +821,70 @@ const ManualButton = () => {
           {/* Search Bar */}
           <div className="px-6 py-3 border-b bg-gray-50 shrink-0">
             <div className="flex gap-2 items-center mb-2">
-              <div className="flex-1 relative">
-                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <div className="flex-1 relative" ref={searchInputRef}>
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" />
                 <Input
-                  placeholder="Rechercher dans le manuel... (Ex: équipement, maintenance, stock)"
+                  data-testid="manual-search-input"
+                  placeholder="Rechercher dans le manuel... (Ex: Google Drive, maintenance, stock)"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchManual()}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setShowSuggestions(false);
+                      searchManual();
+                    }
+                    if (e.key === 'Escape') setShowSuggestions(false);
+                  }}
+                  onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
                   className="pl-10"
                 />
+
+                {/* Dropdown auto-complétion */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    data-testid="manual-search-suggestions"
+                    className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[420px] overflow-y-auto"
+                  >
+                    <div className="px-3 py-2 text-xs text-gray-500 border-b bg-gray-50 rounded-t-lg flex items-center justify-between">
+                      <span>{suggestions.length} suggestion{suggestions.length > 1 ? 's' : ''}</span>
+                      <span className="text-gray-400">Entrée pour recherche complète</span>
+                    </div>
+                    {suggestions.map((result, i) => (
+                      <div
+                        key={result.section.id}
+                        data-testid={`manual-suggestion-${i}`}
+                        className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                        onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(result); }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium">
+                            {result.chapter?.title?.replace(/^[^\s]+\s/, '') || 'Manuel'}
+                          </span>
+                          {result.section.level && result.section.level !== 'both' && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              result.section.level === 'beginner' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'
+                            }`}>
+                              {result.section.level === 'beginner' ? 'Débutant' : 'Avancé'}
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          className="text-sm font-medium text-gray-900"
+                          dangerouslySetInnerHTML={{ __html: highlightText(result.section.title, searchQuery) }}
+                        />
+                        {result.excerpt && (
+                          <p
+                            className="text-xs text-gray-500 mt-1 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: highlightText(result.excerpt, searchQuery) }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <Button onClick={searchManual} size="sm" disabled={loading}>
+              <Button onClick={() => { setShowSuggestions(false); searchManual(); }} size="sm" disabled={loading} data-testid="manual-search-btn">
                 {loading ? 'Recherche...' : 'Rechercher'}
               </Button>
               
