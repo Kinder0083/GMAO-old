@@ -9022,6 +9022,11 @@ from analytics_routes import router as analytics_router, set_database as set_ana
 set_analytics_db(db)
 api_router.include_router(analytics_router)
 
+# Routes Contrats
+from contract_routes import router as contract_router, init_db as init_contract_db
+init_contract_db(db, audit_service)
+api_router.include_router(contract_router)
+
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 
