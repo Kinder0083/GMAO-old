@@ -1571,8 +1571,12 @@ class SurveillanceItemCreate(BaseModel):
     derniere_visite: Optional[str] = None
     prochain_controle: Optional[str] = None
     commentaire: Optional[str] = None
-    duree_rappel_echeance: int = 30  # Durée en jours avant échéance pour l'alerte (défaut: 30)
-    responsable_notification_id: Optional[str] = None  # ID de l'utilisateur qui recevra l'email de rappel
+    reference_reglementaire: Optional[str] = None
+    numero_rapport: Optional[str] = None
+    organisme_controle: Optional[str] = None
+    resultat_controle: Optional[str] = None
+    duree_rappel_echeance: int = 30
+    responsable_notification_id: Optional[str] = None
 
 class SurveillanceItemUpdate(BaseModel):
     classe_type: Optional[str] = None
