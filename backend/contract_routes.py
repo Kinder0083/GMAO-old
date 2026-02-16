@@ -355,6 +355,7 @@ async def get_contract_alerts(
 ):
     """Récupère les alertes de contrats (échéances, résiliations, paiements)"""
     now = datetime.now(timezone.utc)
+    now_naive = now.replace(tzinfo=None)
     alerts = []
     
     # Récupérer tous les contrats actifs
@@ -367,8 +368,14 @@ async def get_contract_alerts(
         date_fin_str = contract.get("date_fin")
         if date_fin_str:
             try:
-                date_fin = datetime.fromisoformat(date_fin_str.replace("Z", "+00:00")) if isinstance(date_fin_str, str) else date_fin_str
-                jours_restants = (date_fin - now).days
+                if isinstance(date_fin_str, str):
+                    clean = date_fin_str.replace("Z", "+00:00")
+                    date_fin = datetime.fromisoformat(clean)
+                    if date_fin.tzinfo:
+                        date_fin = date_fin.replace(tzinfo=None)
+                else:
+                    date_fin = date_fin_str.replace(tzinfo=None) if hasattr(date_fin_str, 'replace') else date_fin_str
+                jours_restants = (date_fin - now_naive).days
                 
                 # Alerte d'échéance
                 seuil_echeance = contract.get("alerte_echeance_jours", 30)
