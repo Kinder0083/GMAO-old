@@ -75,14 +75,24 @@ async def get_manual_content(
             filtered_sections.append(section)
         
         # Filtrer les chapitres qui n'ont plus de sections après filtrage
+        section_chapter_map = {}
+        for s in filtered_sections:
+            ch_id = s.get("chapter_id")
+            if ch_id:
+                section_chapter_map.setdefault(ch_id, set()).add(s["id"])
+        
         section_ids = {s["id"] for s in filtered_sections}
         final_chapters = []
         for chapter in filtered_chapters:
             # Vérifier si le chapitre a au moins une section visible
+            # Méthode 1: via le champ "sections" du chapitre
             chapter_has_sections = any(
                 sec_id in section_ids 
                 for sec_id in chapter.get("sections", [])
             )
+            # Méthode 2: via chapter_id des sections
+            if not chapter_has_sections:
+                chapter_has_sections = chapter.get("id") in section_chapter_map
             if chapter_has_sections:
                 final_chapters.append(chapter)
         
