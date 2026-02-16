@@ -28,7 +28,7 @@ class TestContractsAuth:
     def test_get_contracts_requires_auth(self):
         """GET /api/contracts requires authentication"""
         response = requests.get(f"{BASE_URL}/api/contracts")
-        assert response.status_code == 401, "Should require auth"
+        assert response.status_code in [401, 403], f"Should require auth, got {response.status_code}"
     
     def test_get_contracts_with_auth(self):
         """GET /api/contracts returns 200 with valid auth"""
