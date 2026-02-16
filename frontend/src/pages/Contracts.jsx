@@ -668,6 +668,12 @@ export default function Contracts() {
                   {selectedContract.date_fin && (
                     <div><span className="text-gray-500">Jours restants:</span> <strong>{getDaysRemaining(selectedContract.date_fin)}j</strong></div>
                   )}
+                  {selectedContract.signataire_interne_nom && (
+                    <div><span className="text-gray-500">Signataire:</span> <strong>{selectedContract.signataire_interne_nom}</strong></div>
+                  )}
+                  {selectedContract.commande_interne && (
+                    <div><span className="text-gray-500">Commande interne:</span> <strong>{selectedContract.commande_interne}</strong></div>
+                  )}
                 </div>
 
                 {/* Financial */}
