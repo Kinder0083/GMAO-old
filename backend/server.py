@@ -441,6 +441,7 @@ async def register(user_create: UserCreate):
             "inventory": {"view": True, "edit": True, "delete": False},
             "locations": {"view": True, "edit": False, "delete": False},
             "vendors": {"view": True, "edit": False, "delete": False},
+            "contrats": {"view": True, "edit": False, "delete": False},
             "reports": {"view": True, "edit": False, "delete": False}
         }
     else:  # VISUALISEUR
@@ -452,6 +453,7 @@ async def register(user_create: UserCreate):
             "inventory": {"view": True, "edit": False, "delete": False},
             "locations": {"view": True, "edit": False, "delete": False},
             "vendors": {"view": True, "edit": False, "delete": False},
+            "contrats": {"view": True, "edit": False, "delete": False},
             "reports": {"view": True, "edit": False, "delete": False}
         }
     
