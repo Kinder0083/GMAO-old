@@ -1580,7 +1580,7 @@ class SurveillanceItemCreate(BaseModel):
 
 class SurveillanceItemUpdate(BaseModel):
     classe_type: Optional[str] = None
-    category: Optional[str] = None  # Catégorie dynamique (ex: "INCENDIE", "ELECTRIQUE", etc.)
+    category: Optional[str] = None
     batiment: Optional[str] = None
     periodicite: Optional[str] = None
     responsable: Optional[SurveillanceResponsible] = None
@@ -1605,8 +1605,12 @@ class SurveillanceItemUpdate(BaseModel):
     commentaire: Optional[str] = None
     piece_jointe_url: Optional[str] = None
     piece_jointe_nom: Optional[str] = None
-    duree_rappel_echeance: Optional[int] = None  # Durée en jours avant échéance pour l'alerte
-    responsable_notification_id: Optional[str] = None  # ID de l'utilisateur qui recevra l'email de rappel
+    reference_reglementaire: Optional[str] = None
+    numero_rapport: Optional[str] = None
+    organisme_controle: Optional[str] = None
+    resultat_controle: Optional[str] = None
+    duree_rappel_echeance: Optional[int] = None
+    responsable_notification_id: Optional[str] = None
 
 
 # ==================== PRESQU'ACCIDENT (NEAR MISS) MODELS ====================
