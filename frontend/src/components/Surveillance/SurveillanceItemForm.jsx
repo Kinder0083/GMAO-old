@@ -226,9 +226,16 @@ function SurveillanceItemForm({ open, item, onClose }) {
           <DialogTitle>{item ? 'Éditer le contrôle' : 'Nouveau contrôle'}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {/* Section : Identification */}
+          <div className="border-b pb-2 mb-1">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+              <FileText className="h-4 w-4" /> Identification
+            </h3>
+          </div>
+
           <div>
             <Label>Type de contrôle *</Label>
-            <Input value={formData.classe_type} onChange={(e) => setFormData({...formData, classe_type: e.target.value})} placeholder="Ex: Protection incendie" />
+            <Input value={formData.classe_type} onChange={(e) => setFormData({...formData, classe_type: e.target.value})} placeholder="Ex: Thermographie infrarouge installations électriques" data-testid="input-classe-type" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -237,33 +244,27 @@ function SurveillanceItemForm({ open, item, onClose }) {
               <Input 
                 value={formData.category} 
                 onChange={(e) => setFormData({...formData, category: e.target.value.toUpperCase()})} 
-                placeholder="Ex: INCENDIE, ELECTRIQUE, NOUVELLE_CATEGORIE..."
+                placeholder="Ex: ELECTRIQUE, MANUTENTION..."
                 list="categories-list"
+                data-testid="input-category"
               />
               <datalist id="categories-list">
                 {existingCategories.map(cat => (
                   <option key={cat} value={cat} />
                 ))}
               </datalist>
-              <p className="text-xs text-gray-500 mt-1">
-                💡 Tapez le nom de la catégorie (ex: INCENDIE) ou créez-en une nouvelle
-              </p>
             </div>
             <div>
               <Label>Bâtiment *</Label>
-              <Input value={formData.batiment} onChange={(e) => setFormData({...formData, batiment: e.target.value})} placeholder="Ex: BATIMENT 1" />
+              <Input value={formData.batiment} onChange={(e) => setFormData({...formData, batiment: e.target.value})} placeholder="Ex: BATIMENT 2" data-testid="input-batiment" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Périodicité *</Label>
-              <Input value={formData.periodicite} onChange={(e) => setFormData({...formData, periodicite: e.target.value})} placeholder="Ex: 6 mois" />
-            </div>
-            <div>
               <Label>Responsable *</Label>
               <Select value={formData.responsable} onValueChange={(val) => setFormData({...formData, responsable: val})}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                <SelectTrigger data-testid="select-responsable"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="MAINT">MAINT</SelectItem>
                   <SelectItem value="PROD">PROD</SelectItem>
@@ -272,22 +273,78 @@ function SurveillanceItemForm({ open, item, onClose }) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div>
-            <Label>Exécutant *</Label>
-            <Input value={formData.executant} onChange={(e) => setFormData({...formData, executant: e.target.value})} placeholder="Ex: DESAUTEL" />
+            <div>
+              <Label>Exécutant *</Label>
+              <Input value={formData.executant} onChange={(e) => setFormData({...formData, executant: e.target.value})} placeholder="Ex: APAVE, SOCOTEC" data-testid="input-executant" />
+            </div>
           </div>
 
           <div>
             <Label>Description</Label>
-            <Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} />
+            <Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} data-testid="input-description" />
+          </div>
+
+          {/* Section : Réglementation & Rapport */}
+          <div className="border-b pb-2 mb-1 mt-2">
+            <h3 className="text-sm font-semibold text-gray-700">Réglementation & Rapport</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Organisme de contrôle</Label>
+              <Input value={formData.organisme_controle} onChange={(e) => setFormData({...formData, organisme_controle: e.target.value})} placeholder="Ex: APAVE, SOCOTEC, DEKRA" data-testid="input-organisme" />
+            </div>
+            <div>
+              <Label>N° de rapport</Label>
+              <Input value={formData.numero_rapport} onChange={(e) => setFormData({...formData, numero_rapport: e.target.value})} placeholder="Numéro du rapport" data-testid="input-numero-rapport" />
+            </div>
+          </div>
+
+          <div>
+            <Label>Référence réglementaire</Label>
+            <Textarea value={formData.reference_reglementaire} onChange={(e) => setFormData({...formData, reference_reglementaire: e.target.value})} rows={2} placeholder="Articles de loi, arrêtés, normes..." data-testid="input-ref-reglementaire" />
+          </div>
+
+          <div>
+            <Label>Résultat du contrôle</Label>
+            <Select value={formData.resultat_controle || "none"} onValueChange={(val) => setFormData({...formData, resultat_controle: val === "none" ? "" : val})}>
+              <SelectTrigger data-testid="select-resultat"><SelectValue placeholder="Sélectionner le résultat" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Non renseigné</SelectItem>
+                <SelectItem value="Conforme">Conforme</SelectItem>
+                <SelectItem value="Non conforme">Non conforme</SelectItem>
+                <SelectItem value="Avec réserves">Avec réserves</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Section : Planification */}
+          <div className="border-b pb-2 mb-1 mt-2">
+            <h3 className="text-sm font-semibold text-gray-700">Planification</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Périodicité *</Label>
+              <Input value={formData.periodicite} onChange={(e) => setFormData({...formData, periodicite: e.target.value})} placeholder="Ex: 1 an, 6 mois" data-testid="input-periodicite" />
+            </div>
+            <div>
+              <Label>Durée rappel (jours)</Label>
+              <Input 
+                type="number" 
+                min="1" 
+                max="365" 
+                value={formData.duree_rappel_echeance} 
+                onChange={(e) => setFormData({...formData, duree_rappel_echeance: parseInt(e.target.value) || 30})} 
+                data-testid="input-duree-rappel"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Dernière visite</Label>
-              <Input type="date" value={formData.derniere_visite} onChange={(e) => setFormData({...formData, derniere_visite: e.target.value})} />
+              <Input type="date" value={formData.derniere_visite} onChange={(e) => setFormData({...formData, derniere_visite: e.target.value})} data-testid="input-derniere-visite" />
             </div>
             <div>
               <Label>Prochain contrôle</Label>
@@ -296,26 +353,17 @@ function SurveillanceItemForm({ open, item, onClose }) {
                 value={formData.prochain_controle} 
                 onChange={(e) => setFormData({...formData, prochain_controle: e.target.value})} 
                 className={formData.derniere_visite && formData.periodicite ? "bg-blue-50 border-blue-200" : ""}
+                data-testid="input-prochain-controle"
               />
               {formData.derniere_visite && formData.periodicite && (
-                <p className="text-xs text-blue-600 mt-1">
-                  ✨ Calculé automatiquement : Dernière visite + Périodicité
-                </p>
+                <p className="text-xs text-blue-600 mt-1">Calculé auto : Dernière visite + Périodicité</p>
               )}
             </div>
           </div>
 
-          <div>
-            <Label>Durée de rappel d'échéance (jours)</Label>
-            <Input 
-              type="number" 
-              min="1" 
-              max="365" 
-              value={formData.duree_rappel_echeance} 
-              onChange={(e) => setFormData({...formData, duree_rappel_echeance: parseInt(e.target.value) || 30})} 
-              placeholder="30"
-            />
-            <p className="text-xs text-gray-500 mt-1">Nombre de jours avant l'échéance pour recevoir un rappel</p>
+          {/* Section : Notifications */}
+          <div className="border-b pb-2 mb-1 mt-2">
+            <h3 className="text-sm font-semibold text-gray-700">Notifications</h3>
           </div>
 
           <div>
@@ -326,7 +374,7 @@ function SurveillanceItemForm({ open, item, onClose }) {
                   value={formData.responsable_notification_id || "none"} 
                   onValueChange={(val) => setFormData({...formData, responsable_notification_id: val === "none" ? "" : val})}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="select-notification-responsable">
                     <SelectValue placeholder="Sélectionner un responsable" />
                   </SelectTrigger>
                   <SelectContent>
@@ -356,11 +404,8 @@ function SurveillanceItemForm({ open, item, onClose }) {
                   }
                   setSendingEmail(true);
                   try {
-                    const response = await surveillanceAPI.sendManualReminder(item.id);
-                    toast({
-                      title: 'Succès',
-                      description: 'Email de rappel envoyé avec succès'
-                    });
+                    await surveillanceAPI.sendManualReminder(item.id);
+                    toast({ title: 'Succès', description: 'Email de rappel envoyé avec succès' });
                   } catch (error) {
                     toast({
                       title: 'Erreur',
@@ -373,22 +418,23 @@ function SurveillanceItemForm({ open, item, onClose }) {
                 }}
                 className="whitespace-nowrap"
                 title={!item ? "Enregistrez d'abord le contrôle" : "Envoyer un email de rappel maintenant"}
+                data-testid="send-reminder-btn"
               >
                 <Send size={16} className="mr-1" />
                 {sendingEmail ? 'Envoi...' : 'Envoi Manuel'}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Cette personne recevra un email de rappel avant l'échéance du contrôle</p>
+            <p className="text-xs text-gray-500 mt-1">Cette personne recevra un email de rappel avant l'échéance</p>
           </div>
 
           <div>
             <Label>Commentaire</Label>
-            <Textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows={2} />
+            <Textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows={3} data-testid="input-commentaire" />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onClose(false)} disabled={loading}>Annuler</Button>
-          <Button onClick={handleSubmit} disabled={loading}>{loading ? 'Enregistrement...' : (item ? 'Mettre à jour' : 'Créer')}</Button>
+          <Button variant="outline" onClick={() => onClose(false)} disabled={loading} data-testid="form-cancel-btn">Annuler</Button>
+          <Button onClick={handleSubmit} disabled={loading} data-testid="form-submit-btn">{loading ? 'Enregistrement...' : (item ? 'Mettre à jour' : 'Créer')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
