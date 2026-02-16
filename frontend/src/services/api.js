@@ -898,4 +898,33 @@ export const customWidgetsAPI = {
     }).then(res => res.data),
 };
 
+
+// ==================== CONTRATS ====================
+export const contractsAPI = {
+  getContracts: (params) => api.get('/contracts', { params }).then(res => res.data),
+  getContract: (id) => api.get(`/contracts/${id}`).then(res => res.data),
+  getStats: () => api.get('/contracts/stats').then(res => res.data),
+  getAlerts: () => api.get('/contracts/alerts').then(res => res.data),
+  createContract: (data) => api.post('/contracts', data).then(res => res.data),
+  updateContract: (id, data) => api.put(`/contracts/${id}`, data).then(res => res.data),
+  deleteContract: (id) => api.delete(`/contracts/${id}`).then(res => res.data),
+  uploadFile: (contractId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/contracts/${contractId}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(res => res.data);
+  },
+  downloadFile: (contractId, fileId) => api.get(`/contracts/${contractId}/download/${fileId}`, { responseType: 'blob' }),
+  deleteFile: (contractId, fileId) => api.delete(`/contracts/${contractId}/files/${fileId}`).then(res => res.data),
+  extractWithAI: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/contracts/ai/extract', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000
+    }).then(res => res.data);
+  }
+};
+
 export default api;
