@@ -9686,6 +9686,7 @@ async def startup_scheduler():
             "people": {"label": "Utilisateurs", "path": "/people", "icon": "Users", "module": "people"},
             "planning": {"label": "Planning", "path": "/planning", "icon": "Calendar", "module": "planning"},
             "vendors": {"label": "Fournisseurs", "path": "/vendors", "icon": "ShoppingCart", "module": "vendors"},
+            "contrats": {"label": "Contrats", "path": "/contrats", "icon": "FileSignature", "module": "contrats"},
             "purchase-history": {"label": "Historique Achat", "path": "/purchase-history", "icon": "ShoppingBag", "module": "purchaseHistory"},
             "import-export": {"label": "Import / Export", "path": "/import-export", "icon": "Database", "module": "importExport"},
             "sensors": {"label": "Capteurs MQTT", "path": "/sensors", "icon": "Activity", "module": "sensors"},
