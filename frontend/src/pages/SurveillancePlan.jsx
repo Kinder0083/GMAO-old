@@ -30,6 +30,7 @@ function SurveillancePlan() {
   const [openForm, setOpenForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
+  const [openAIExtract, setOpenAIExtract] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoryOrderChanged, setCategoryOrderChanged] = useState(false);
   const [showOverdueFilter, setShowOverdueFilter] = useState(false);
