@@ -142,7 +142,91 @@ const ManualButton = () => {
     setSelectedChapter(chapter);
     setSearchResults([]); // Réinitialiser les résultats de recherche
     setCurrentPage(1);
+    setSuggestions([]);
+    setShowSuggestions(false);
   };
+
+  // Auto-complétion locale instantanée
+  const computeSuggestions = (query) => {
+    if (!query || query.length < 2 || !manualData?.sections || !manualData?.chapters) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const terms = query.toLowerCase().split(/\s+/).filter(t => t.length >= 2);
+    if (terms.length === 0) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const scored = manualData.sections.map(section => {
+      const title = (section.title || '').toLowerCase();
+      const keywords = (section.keywords || []).map(k => k.toLowerCase());
+      const content = (section.content || '').toLowerCase();
+
+      let score = 0;
+      for (const term of terms) {
+        if (title.includes(term)) score += 10;
+        if (keywords.some(k => k.includes(term))) score += 6;
+        if (content.includes(term)) score += 1;
+      }
+
+      // Trouver le chapitre parent
+      const chapter = manualData.chapters.find(c =>
+        c.sections && c.sections.includes(section.id)
+      );
+
+      // Extraire un extrait pertinent
+      let excerpt = '';
+      if (score > 0 && content) {
+        const idx = content.indexOf(terms[0]);
+        if (idx >= 0) {
+          const start = Math.max(0, idx - 30);
+          excerpt = (start > 0 ? '...' : '') + section.content.substring(start, start + 120) + '...';
+        }
+      }
+
+      return { section, chapter, score, excerpt };
+    })
+    .filter(r => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
+
+    setSuggestions(scored);
+    setShowSuggestions(scored.length > 0);
+  };
+
+  const handleSearchInput = (value) => {
+    setSearchQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => computeSuggestions(value), 150);
+  };
+
+  const handleSuggestionClick = (result) => {
+    if (result.section && result.chapter) {
+      selectSection(result.section, result.chapter);
+      setExpandedChapters(new Set([result.chapter.id]));
+      setSearchQuery('');
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Fermer les suggestions quand on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        suggestionsRef.current && !suggestionsRef.current.contains(e.target) &&
+        searchInputRef.current && !searchInputRef.current.contains(e.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fonction pour surligner les mots-clés dans le texte
   const highlightText = (text, query) => {
