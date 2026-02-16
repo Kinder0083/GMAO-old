@@ -71,6 +71,7 @@ class ContractCreate(BaseModel):
     
     signataire_interne_id: Optional[str] = None
     signataire_interne_nom: Optional[str] = None
+    commande_interne: Optional[str] = None
     
     alerte_echeance_jours: int = 30
     alerte_resiliation_jours: Optional[int] = None
