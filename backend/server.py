@@ -9476,6 +9476,16 @@ async def startup_scheduler():
             replace_existing=True
         )
         
+        # Configurer la vérification des alertes de contrats tous les jours à 8h00 GMT
+        from contract_routes import check_contract_alerts
+        scheduler.add_job(
+            check_contract_alerts,
+            CronTrigger(hour=8, minute=0),  # Tous les jours à 8h00
+            id='contract_alerts_check',
+            name='Alertes contrats',
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("✅ Scheduler démarré:")
         logger.info("   - Vérification maintenances préventives: tous les jours à 00h00")
