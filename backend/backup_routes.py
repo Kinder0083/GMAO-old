@@ -144,7 +144,7 @@ async def run_backup_now(current_user: dict = Depends(get_current_admin_user)):
         schedule = {
             "_id": "manual",
             "destination": "local",
-            "retention_count": 3,
+            "retention_count": 5,
             "email_recipient": None
         }
 
