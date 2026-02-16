@@ -94,9 +94,8 @@ class AuditService:
             cursor = self.db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit)
             logs = await cursor.to_list(length=limit)
             
-            # Convertir les timestamps pour la sérialisation JSON
-            for log in logs:
-                self._normalize_timestamp(log)
+            # Sanitiser chaque log pour la sérialisation JSON
+            logs = [self._sanitize_log(log) for log in logs]
             
             # Compter le total
             total = await self.db.audit_logs.count_documents(query)
@@ -154,8 +153,7 @@ class AuditService:
             cursor = self.db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1)
             logs = await cursor.to_list(length=None)
             
-            for log in logs:
-                self._normalize_timestamp(log)
+            logs = [self._sanitize_log(log) for log in logs]
             
             return logs
         except Exception as e:
