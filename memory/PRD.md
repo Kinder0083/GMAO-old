@@ -71,4 +71,13 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète et 
 - **Fichiers modifiés** : `realtime_manager.py`, `realtime_events.py`, `chat_routes.py`, tous les hooks header
 
 ## Backlog
-Aucune tâche en attente.
+
+### Recherche auto-complétion dans le manuel (16 Fév 2026)
+- **Fonctionnalité** : Auto-complétion locale instantanée dans la barre de recherche du manuel utilisateur
+- **Comportement** : Dès 2 caractères tapés, un dropdown affiche les sections pertinentes triées par score (titre x10, mots-clés x6, contenu x1)
+- **UX** : Mots-clés surlignés en jaune, badge chapitre + niveau, extrait pertinent, max 8 suggestions
+- **Navigation** : Clic sur une suggestion navigue directement vers la section et ouvre le chapitre
+- **Fallback** : Entrée ou bouton "Rechercher" lance toujours la recherche complète via API
+- **Fichier modifié** : `frontend/src/components/Common/ManualButton.jsx`
+
+Aucune autre tâche en attente.
