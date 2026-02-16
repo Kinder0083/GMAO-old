@@ -16,7 +16,6 @@ import {
 import { contractsAPI, vendorsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
-import { getBackendURL } from '../utils/config';
 
 const TYPE_LABELS = {
   maintenance: 'Maintenance',
