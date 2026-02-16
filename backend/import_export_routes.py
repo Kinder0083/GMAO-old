@@ -720,7 +720,7 @@ async def restore_backup(
         # Mode "full": vider les collections avant import
         if mode == "full":
             # Collections protégées qu'on ne vide PAS
-            protected_collections = {"manual_chapters", "manual_sections"}
+            protected_collections = {"manual_chapters", "manual_sections", "audit_logs"}
             for module_name, df in data_sheets.items():
                 collection_name = EXPORT_MODULES[module_name]
                 if collection_name not in protected_collections:
