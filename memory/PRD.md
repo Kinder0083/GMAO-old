@@ -80,4 +80,9 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète et 
 - **Fallback** : Entrée ou bouton "Rechercher" lance toujours la recherche complète via API
 - **Fichier modifié** : `frontend/src/components/Common/ManualButton.jsx`
 
+### Fix rétention globale backup + protection journal (16 Fév 2026)
+- **Bug 1** : La limite de sauvegardes ne s'appliquait pas globalement (manuelles et automatiques comptées séparément). Fix : `_cleanup_old_backups` compte maintenant TOUTES les sauvegardes et garde les 5 plus récentes
+- **Bug 2** : Le journal d'audit était vidé lors d'une restauration en mode "full". Fix : `audit_logs` ajouté aux collections protégées
+- **Fichiers modifiés** : `backup_service.py`, `backup_routes.py`, `import_export_routes.py`
+
 Aucune autre tâche en attente.
