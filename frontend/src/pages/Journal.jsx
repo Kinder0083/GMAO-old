@@ -60,15 +60,29 @@ const Journal = () => {
       };
 
       const response = await auditAPI.getAuditLogs(params);
-      setLogs(response.logs);
-      setPagination(prev => ({ ...prev, total: response.total }));
+      setLogs(response?.logs || []);
+      setPagination(prev => ({ ...prev, total: response?.total || 0 }));
     } catch (error) {
       console.error('Erreur lors du chargement des logs:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Erreur lors du chargement du journal',
-        variant: 'destructive'
-      });
+      // En cas d'erreur réseau/API, afficher une liste vide au lieu d'un message d'erreur bloquant
+      setLogs([]);
+      setPagination(prev => ({ ...prev, total: 0 }));
+      const statusCode = error?.response?.status;
+      if (statusCode === 403) {
+        toast({
+          title: 'Accès refusé',
+          description: 'Vous n\'avez pas les droits pour accéder au journal d\'audit',
+          variant: 'destructive'
+        });
+      } else if (statusCode === 401) {
+        // Le intercepteur axios gère déjà la redirection
+      } else {
+        toast({
+          title: 'Avertissement',
+          description: 'Impossible de charger le journal. Les données seront disponibles lors de la prochaine connexion.',
+          variant: 'destructive'
+        });
+      }
     } finally {
       setLoading(false);
     }
