@@ -1536,6 +1536,12 @@ class SurveillanceItem(BaseModel):
     novembre: bool = False
     decembre: bool = False
     
+    # Informations réglementaires et rapport
+    reference_reglementaire: Optional[str] = None  # Articles de loi, arrêtés, normes
+    numero_rapport: Optional[str] = None  # Numéro du rapport de contrôle
+    organisme_controle: Optional[str] = None  # APAVE, SOCOTEC, DEKRA, etc.
+    resultat_controle: Optional[str] = None  # Conforme / Non conforme / Avec réserves
+    
     # Documents et commentaires
     commentaire: Optional[str] = None
     piece_jointe_url: Optional[str] = None  # URL du fichier uploadé
