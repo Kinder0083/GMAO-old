@@ -103,6 +103,7 @@ class ContractUpdate(BaseModel):
     contact_email: Optional[str] = None
     signataire_interne_id: Optional[str] = None
     signataire_interne_nom: Optional[str] = None
+    commande_interne: Optional[str] = None
     alerte_echeance_jours: Optional[int] = None
     alerte_resiliation_jours: Optional[int] = None
     alerte_paiement: Optional[bool] = None
