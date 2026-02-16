@@ -5913,12 +5913,25 @@ async def get_audit_logs(
     """
     try:
         # Convertir les strings en enums si fournis
-        action_enum = ActionType(action) if action else None
-        entity_type_enum = EntityType(entity_type) if entity_type else None
+        action_enum = None
+        entity_type_enum = None
+        try:
+            action_enum = ActionType(action) if action else None
+        except ValueError:
+            pass
+        try:
+            entity_type_enum = EntityType(entity_type) if entity_type else None
+        except ValueError:
+            pass
         
         # Convertir les dates si fournies
-        start_dt = datetime.fromisoformat(start_date) if start_date else None
-        end_dt = datetime.fromisoformat(end_date) if end_date else None
+        start_dt = None
+        end_dt = None
+        try:
+            start_dt = datetime.fromisoformat(start_date) if start_date else None
+            end_dt = datetime.fromisoformat(end_date) if end_date else None
+        except (ValueError, TypeError):
+            pass
         
         logs, total = await audit_service.get_logs(
             skip=skip,
@@ -5939,10 +5952,13 @@ async def get_audit_logs(
         
     except Exception as e:
         logger.error(f"Erreur lors de la récupération des logs d'audit: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur lors de la récupération des logs d'audit"
-        )
+        # Retourner une réponse vide au lieu d'une erreur 500
+        return {
+            "logs": [],
+            "total": 0,
+            "skip": skip,
+            "limit": limit
+        }
 
 @api_router.get("/audit-logs/entity/{entity_type}/{entity_id}", tags=["Audit"])
 async def get_entity_audit_history(
