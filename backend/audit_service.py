@@ -120,6 +120,27 @@ class AuditService:
                 if '+' not in ts and not ts.endswith('Z'):
                     log["timestamp"] = ts + 'Z'
 
+    def _sanitize_log(self, log: dict) -> dict:
+        """Convertit tout ObjectId restant en string pour la sérialisation JSON"""
+        from bson import ObjectId as BsonObjectId
+        sanitized = {}
+        for key, value in log.items():
+            if key == "_id":
+                continue
+            if isinstance(value, BsonObjectId):
+                sanitized[key] = str(value)
+            elif isinstance(value, dict):
+                sanitized[key] = {k: str(v) if isinstance(v, BsonObjectId) else v for k, v in value.items()}
+            elif isinstance(value, datetime):
+                iso_str = value.isoformat()
+                if '+' not in iso_str and 'Z' not in iso_str:
+                    sanitized[key] = iso_str + 'Z'
+                else:
+                    sanitized[key] = iso_str
+            else:
+                sanitized[key] = value
+        return sanitized
+
     async def get_entity_history(self, entity_type: EntityType, entity_id: str):
         """
         Récupère l'historique complet d'une entité spécifique
