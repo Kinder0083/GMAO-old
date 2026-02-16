@@ -608,6 +608,10 @@ export default function Contracts() {
                 <Label>Nom</Label>
                 <Input value={formData.signataire_interne_nom} onChange={e => setFormData(p => ({...p, signataire_interne_nom: e.target.value}))} data-testid="input-signataire" />
               </div>
+              <div>
+                <Label>Commande interne</Label>
+                <Input value={formData.commande_interne} onChange={e => setFormData(p => ({...p, commande_interne: e.target.value}))} placeholder="N° de commande interne" data-testid="input-commande-interne" />
+              </div>
 
               {/* Alertes */}
               <div className="space-y-3 md:col-span-2">
