@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Send } from 'lucide-react';
+import { Send, FileText } from 'lucide-react';
 import { surveillanceAPI, usersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 
@@ -26,6 +26,10 @@ function SurveillanceItemForm({ open, item, onClose }) {
     derniere_visite: '',
     prochain_controle: '',
     commentaire: '',
+    reference_reglementaire: '',
+    numero_rapport: '',
+    organisme_controle: '',
+    resultat_controle: '',
     duree_rappel_echeance: 30,
     responsable_notification_id: ''
   });
