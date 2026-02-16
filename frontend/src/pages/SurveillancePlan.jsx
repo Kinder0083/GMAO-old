@@ -336,6 +336,16 @@ function SurveillancePlan() {
         <SurveillanceItemForm open={openForm} item={selectedItem} onClose={handleFormClose} />
       )}
 
+      {openAIExtract && (
+        <SurveillanceAIExtract 
+          open={openAIExtract} 
+          onClose={(shouldRefresh) => {
+            setOpenAIExtract(false);
+            if (shouldRefresh) loadData();
+          }} 
+        />
+      )}
+
       {openCategoryDialog && (
         <CategoryOrderDialog
           open={openCategoryDialog}
