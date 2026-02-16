@@ -807,6 +807,384 @@ async def check_due_dates(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+# ==================== Extraction IA de documents de contrôle ====================
+
+@router.post("/ai/extract")
+async def extract_surveillance_from_document(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyse un document de contrôle (PDF) via IA et extrait les informations
+    pour créer un ou plusieurs contrôles dans le plan de surveillance.
+    L'IA recherche aussi la périodicité réglementaire.
+    """
+    import tempfile
+    import os
+    import json
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé LLM non configurée")
+
+        # Sauvegarder temporairement le fichier
+        ext = os.path.splitext(file.filename)[1].lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        mime_map = {
+            ".pdf": "application/pdf",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp"
+        }
+        mime_type = mime_map.get(ext, "application/pdf")
+
+        # Étape 1 : Extraction des informations du document
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"surveillance_extract_{uuid.uuid4().hex[:8]}",
+            system_message="""Tu es un expert en réglementation française de sécurité au travail et en contrôles réglementaires.
+Analyse le document de contrôle/vérification fourni et extrais TOUS les types de contrôles distincts qu'il contient.
+
+Un même document peut contenir plusieurs types de contrôles réglementaires différents (ex: levage, portes automatiques, EPI, installations électriques, etc.).
+Pour CHAQUE type de contrôle distinct, crée une entrée séparée.
+
+Réponds UNIQUEMENT avec un JSON valide, sans texte autour ni backticks.
+
+Format attendu:
+{
+  "document_info": {
+    "numero_rapport": "string - numéro du rapport ou null",
+    "organisme_controle": "string - nom de l'organisme (APAVE, SOCOTEC, DEKRA, BUREAU VERITAS, etc.)",
+    "date_intervention": "YYYY-MM-DD - date du contrôle",
+    "site_controle": "string - nom/adresse du site contrôlé"
+  },
+  "controles": [
+    {
+      "classe_type": "string - type précis du contrôle (ex: 'Vérification périodique des chariots élévateurs', 'Thermographie infrarouge installations électriques', 'Vérification portes automatiques')",
+      "category": "string parmi: ELECTRIQUE, INCENDIE, MANUTENTION, SECURITE_ENVIRONNEMENT, MMRI, EXTRACTION, AUTRE",
+      "batiment": "string - bâtiment ou zone concernée",
+      "executant": "string - nom de l'organisme qui a réalisé le contrôle",
+      "description": "string - description détaillée de ce qui a été contrôlé, liste des équipements principaux",
+      "derniere_visite": "YYYY-MM-DD - date de la visite/contrôle",
+      "references_reglementaires": "string - toutes les références légales trouvées (articles Code du Travail, arrêtés, normes, etc.)",
+      "resultat": "CONFORME|NON_CONFORME|AVEC_RESERVES",
+      "anomalies": "string - description détaillée des anomalies/non-conformités trouvées ou null si aucune",
+      "periodicite_detectee": "string - périodicité si explicitement mentionnée dans le document (ex: '1 an', '6 mois') ou null si non trouvée",
+      "equipements_concernes": "string - liste résumée des équipements inspectés"
+    }
+  ]
+}
+
+IMPORTANT:
+- Sépare bien les différents types de contrôles (levage ≠ portes automatiques ≠ EPI ≠ installations électriques)
+- Pour la catégorie, utilise les valeurs exactes fournies
+- Extrais TOUTES les références réglementaires mentionnées
+- Si un contrôle montre des anomalies, mets le résultat à NON_CONFORME ou AVEC_RESERVES et détaille dans anomalies"""
+        ).with_model("gemini", "gemini-2.5-flash")
+
+        file_content = FileContentWithMimeType(
+            file_path=tmp_path,
+            mime_type=mime_type
+        )
+
+        response = await chat.send_message(UserMessage(
+            text="Analyse ce document de contrôle réglementaire et extrais toutes les informations pour chaque type de contrôle distinct.",
+            file_contents=[file_content]
+        ))
+
+        # Nettoyer le fichier temporaire
+        os.unlink(tmp_path)
+
+        # Parser la réponse JSON
+        response_text = response.strip()
+        if response_text.startswith("```"):
+            response_text = response_text.split("\n", 1)[1] if "\n" in response_text else response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+        
+        extracted = json.loads(response_text)
+
+        # Étape 2 : Pour chaque contrôle sans périodicité, rechercher via IA + connaissances réglementaires
+        controles = extracted.get("controles", [])
+        for ctrl in controles:
+            if not ctrl.get("periodicite_detectee"):
+                # Utiliser une seconde requête IA pour rechercher la périodicité réglementaire
+                refs = ctrl.get("references_reglementaires", "")
+                classe = ctrl.get("classe_type", "")
+                category = ctrl.get("category", "")
+                
+                periodicity_chat = LlmChat(
+                    api_key=api_key,
+                    session_id=f"periodicity_search_{uuid.uuid4().hex[:8]}",
+                    system_message="""Tu es un expert en réglementation française de sécurité au travail.
+On te donne un type de contrôle et ses références réglementaires.
+Tu dois déterminer la périodicité réglementaire obligatoire en France pour ce type de contrôle.
+
+Réponds UNIQUEMENT avec un JSON valide, sans texte ni backticks:
+{
+  "periodicite": "string - la périodicité (ex: '1 an', '6 mois', '3 mois', '5 ans') ou null si introuvable",
+  "source_reglementaire": "string - le texte de loi qui impose cette périodicité ou null",
+  "confiance": "HAUTE|MOYENNE|BASSE - ton niveau de confiance dans cette réponse",
+  "explication": "string - brève explication de la réglementation applicable"
+}
+
+Voici les principales périodicités réglementaires françaises:
+- Installations électriques (vérification initiale + périodique): 1 an (Arrêté du 26/12/2011, Art. R4226-14 Code du Travail)
+- Thermographie infrarouge APSAD D19: 1 an (recommandation APSAD)
+- Appareils de levage (chariots élévateurs, ponts roulants): 1 an pour la VGP (Arrêté du 01/03/2004)
+- Ascenseurs/monte-charges: 1 an (Arrêté du 29/12/2010)
+- Portes et portails automatiques: 6 mois (Arrêté du 21/12/1993)
+- Échafaudages roulants: 3 mois ou avant chaque utilisation (Arrêté du 21/12/2004)
+- EPI contre les chutes: 12 mois (Arrêté du 19/03/1993)
+- Extincteurs: 1 an (Arrêté du 20/05/1963, R4227-39 Code du Travail)
+- SSI/détection incendie: 1 an (MS 73, PE 4)
+- Installations de gaz: 1 an (Arrêté du 21/12/1993)
+- Appareils à pression: selon catégorie (Arrêté du 20/11/2017)"""
+                ).with_model("gemini", "gemini-2.5-flash")
+
+                period_response = await periodicity_chat.send_message(UserMessage(
+                    text=f"""Détermine la périodicité réglementaire pour ce contrôle:
+- Type: {classe}
+- Catégorie: {category}
+- Références réglementaires trouvées dans le document: {refs}
+- Équipements: {ctrl.get('equipements_concernes', 'Non précisé')}"""
+                ))
+
+                period_text = period_response.strip()
+                if period_text.startswith("```"):
+                    period_text = period_text.split("\n", 1)[1] if "\n" in period_text else period_text[3:]
+                if period_text.endswith("```"):
+                    period_text = period_text[:-3]
+                period_text = period_text.strip()
+
+                try:
+                    period_data = json.loads(period_text)
+                    ctrl["periodicite_detectee"] = period_data.get("periodicite")
+                    ctrl["periodicite_source"] = period_data.get("source_reglementaire")
+                    ctrl["periodicite_confiance"] = period_data.get("confiance", "BASSE")
+                    ctrl["periodicite_explication"] = period_data.get("explication")
+                except json.JSONDecodeError:
+                    ctrl["periodicite_detectee"] = None
+                    ctrl["periodicite_confiance"] = "BASSE"
+                    ctrl["periodicite_explication"] = "Impossible de déterminer automatiquement"
+            else:
+                ctrl["periodicite_confiance"] = "HAUTE"
+                ctrl["periodicite_source"] = ctrl.get("references_reglementaires")
+                ctrl["periodicite_explication"] = "Périodicité trouvée directement dans le document"
+
+        extracted["controles"] = controles
+        return {"success": True, "data": extracted}
+
+    except json.JSONDecodeError:
+        logger.error(f"Erreur parsing JSON de l'IA: {response_text[:300] if 'response_text' in dir() else 'N/A'}")
+        return {"success": False, "error": "L'IA n'a pas pu extraire les informations correctement. Veuillez réessayer."}
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Module emergentintegrations non installé")
+    except Exception as e:
+        logger.error(f"Erreur extraction IA surveillance: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"success": False, "error": f"Erreur lors de l'extraction: {str(e)}"}
+
+
+@router.post("/ai/create-batch")
+async def create_batch_from_ai(
+    items_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Crée plusieurs contrôles de surveillance à partir des données extraites par l'IA.
+    Crée automatiquement un bon de travail curatif pour chaque non-conformité.
+    """
+    try:
+        controles = items_data.get("controles", [])
+        document_info = items_data.get("document_info", {})
+        
+        created_items = []
+        created_work_orders = []
+        
+        for ctrl in controles:
+            # Calculer prochain_controle si on a periodicite + derniere_visite
+            prochain_controle = None
+            derniere_visite = ctrl.get("derniere_visite")
+            periodicite = ctrl.get("periodicite")
+            
+            if derniere_visite and periodicite:
+                try:
+                    from dateutil.relativedelta import relativedelta
+                    base_date = datetime.fromisoformat(derniere_visite)
+                    period_lower = periodicite.lower().strip()
+                    
+                    import re
+                    num_match = re.search(r'(\d+)', period_lower)
+                    num = int(num_match.group(1)) if num_match else 1
+                    
+                    if 'an' in period_lower:
+                        next_date = base_date + relativedelta(years=num)
+                    elif 'mois' in period_lower:
+                        next_date = base_date + relativedelta(months=num)
+                    elif 'semaine' in period_lower:
+                        next_date = base_date + timedelta(weeks=num)
+                    elif 'jour' in period_lower:
+                        next_date = base_date + timedelta(days=num)
+                    else:
+                        next_date = None
+                    
+                    if next_date:
+                        prochain_controle = next_date.strftime("%Y-%m-%d")
+                except Exception as e:
+                    logger.warning(f"Erreur calcul prochain contrôle: {e}")
+            
+            # Construire le commentaire avec anomalies
+            commentaire_parts = []
+            if ctrl.get("anomalies"):
+                commentaire_parts.append(f"ANOMALIES DÉTECTÉES:\n{ctrl['anomalies']}")
+            if ctrl.get("equipements_concernes"):
+                commentaire_parts.append(f"Équipements: {ctrl['equipements_concernes']}")
+            commentaire = "\n\n".join(commentaire_parts) if commentaire_parts else None
+            
+            # Déterminer le résultat
+            resultat_map = {
+                "CONFORME": "Conforme",
+                "NON_CONFORME": "Non conforme",
+                "AVEC_RESERVES": "Avec réserves"
+            }
+            resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
+            
+            # Créer l'item de surveillance
+            item = SurveillanceItem(
+                classe_type=ctrl.get("classe_type", ""),
+                category=ctrl.get("category", "AUTRE"),
+                batiment=ctrl.get("batiment", ""),
+                periodicite=ctrl.get("periodicite", "Non déterminée"),
+                responsable=SurveillanceResponsible.EXTERNE,
+                executant=ctrl.get("executant", document_info.get("organisme_controle", "")),
+                description=ctrl.get("description"),
+                derniere_visite=derniere_visite,
+                prochain_controle=prochain_controle,
+                status=SurveillanceItemStatus.REALISE,
+                date_realisation=derniere_visite,
+                commentaire=commentaire,
+                reference_reglementaire=ctrl.get("references_reglementaires"),
+                numero_rapport=document_info.get("numero_rapport"),
+                organisme_controle=document_info.get("organisme_controle"),
+                resultat_controle=resultat,
+                created_by=current_user.get("id"),
+                updated_by=current_user.get("id")
+            )
+            
+            item_dict = item.model_dump()
+            await db.surveillance_items.insert_one(item_dict)
+            
+            if "_id" in item_dict:
+                del item_dict["_id"]
+            
+            created_items.append(item_dict)
+            
+            # Audit
+            await audit_service.log_action(
+                user_id=current_user["id"],
+                user_name=f"{current_user['prenom']} {current_user['nom']}",
+                user_email=current_user["email"],
+                action=ActionType.CREATE,
+                entity_type=EntityType.SURVEILLANCE,
+                entity_id=item.id,
+                entity_name=f"Plan surveillance (IA): {item.classe_type}"
+            )
+            
+            # Si non-conformité, créer automatiquement un bon de travail curatif
+            if ctrl.get("resultat") in ("NON_CONFORME", "AVEC_RESERVES") and ctrl.get("anomalies"):
+                from bson import ObjectId as BsonObjectId
+                
+                wo_count = await db.work_orders.count_documents({})
+                wo_numero = str(5800 + wo_count + 1)
+                
+                wo_dict = {
+                    "_id": BsonObjectId(),
+                    "titre": f"[Curatif] {ctrl.get('classe_type', 'Contrôle')} - Non-conformité",
+                    "description": f"Non-conformité détectée lors du contrôle réglementaire.\n\n"
+                                   f"Organisme: {document_info.get('organisme_controle', 'N/A')}\n"
+                                   f"Date du contrôle: {ctrl.get('derniere_visite', 'N/A')}\n"
+                                   f"Rapport: {document_info.get('numero_rapport', 'N/A')}\n\n"
+                                   f"ANOMALIES:\n{ctrl.get('anomalies', '')}",
+                    "statut": "OUVERT",
+                    "priorite": "HAUTE",
+                    "categorie": "TRAVAUX_CURATIF",
+                    "equipement_id": None,
+                    "assigne_a_id": None,
+                    "emplacement_id": None,
+                    "dateLimite": None,
+                    "tempsEstime": None,
+                    "tempsReel": None,
+                    "createdBy": current_user.get("id"),
+                    "numero": wo_numero,
+                    "dateCreation": datetime.now(timezone.utc),
+                    "dateTermine": None,
+                    "attachments": [],
+                    "comments": [],
+                    "parts_used": [],
+                    "service": None,
+                    "surveillance_item_id": item.id
+                }
+                wo_dict["id"] = str(wo_dict["_id"])
+                
+                await db.work_orders.insert_one(wo_dict)
+                
+                # Audit du bon de travail
+                await audit_service.log_action(
+                    user_id=current_user["id"],
+                    user_name=f"{current_user['prenom']} {current_user['nom']}",
+                    user_email=current_user["email"],
+                    action=ActionType.CREATE,
+                    entity_type=EntityType.WORK_ORDER,
+                    entity_id=wo_dict["id"],
+                    entity_name=wo_dict["titre"],
+                    details=f"BT curatif #{wo_numero} créé auto depuis contrôle IA"
+                )
+                
+                created_work_orders.append({
+                    "id": wo_dict["id"],
+                    "numero": wo_numero,
+                    "titre": wo_dict["titre"],
+                    "anomalies": ctrl.get("anomalies")
+                })
+            
+            # Broadcast WebSocket
+            if realtime_manager:
+                await realtime_manager.emit_event(
+                    "surveillance_plans",
+                    "created",
+                    item_dict,
+                    user_id=current_user["id"]
+                )
+        
+        return {
+            "success": True,
+            "created_count": len(created_items),
+            "created_items": created_items,
+            "work_orders_created": created_work_orders,
+            "message": f"{len(created_items)} contrôle(s) créé(s)" + 
+                       (f", {len(created_work_orders)} bon(s) de travail curatif(s) créé(s)" if created_work_orders else "")
+        }
+    
+    except Exception as e:
+        logger.error(f"Erreur création batch surveillance: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # ==================== Envoi d'emails de rappel d'échéance ====================
 
 async def send_surveillance_reminder_email(user_email: str, user_name: str, item: dict):
