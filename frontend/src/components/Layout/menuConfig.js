@@ -42,7 +42,8 @@ import {
   Clock,
   Camera,
   Zap,
-  FileBarChart
+  FileBarChart,
+  FileSignature
 } from 'lucide-react';
 
 // Mapping des noms d'icônes vers les composants
