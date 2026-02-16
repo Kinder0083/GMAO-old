@@ -9302,14 +9302,16 @@ async def reset_section(section: str, current_user: dict = Depends(get_current_a
     
     result = await db[section].delete_many(query)
     
-    # Log d'audit
-    await db.audit_logs.insert_one({
-        "action": f"RESET_{section.upper()}",
-        "user_email": current_user["email"],
-        "user_id": current_user["id"],
-        "details": f"Réinitialisation de {RESET_COLLECTIONS[section]}: {result.deleted_count} éléments supprimés",
-        "timestamp": datetime.utcnow()
-    })
+    # Log d'audit via le service centralisé
+    await audit_service.log_action(
+        user_id=current_user["id"],
+        user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+        user_email=current_user["email"],
+        action=ActionType.DELETE,
+        entity_type=EntityType.USER,
+        entity_name=RESET_COLLECTIONS[section],
+        details=f"Réinitialisation de {RESET_COLLECTIONS[section]}: {result.deleted_count} éléments supprimés"
+    )
     
     return {
         "success": True,
