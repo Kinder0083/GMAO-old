@@ -40,6 +40,11 @@ const ManualButton = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editLevel, setEditLevel] = useState('beginner');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = React.useRef(null);
+  const searchInputRef = React.useRef(null);
+  const suggestionsRef = React.useRef(null);
   const { toast } = useToast();
   
   // Vérifier si l'utilisateur est ADMIN
