@@ -9496,6 +9496,7 @@ async def startup_scheduler():
         logger.info("   - Vérification versions LLM: chaque lundi à 03h00")
         logger.info("   - Notifications PM: tous les jours à 07h00")
         logger.info("   - Rappels surveillance: tous les jours à 07h30")
+        logger.info("   - Alertes contrats: tous les jours à 08h00")
 
         # Charger les planifications de backup automatique
         try:
