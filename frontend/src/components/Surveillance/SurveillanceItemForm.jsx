@@ -51,6 +51,10 @@ function SurveillanceItemForm({ open, item, onClose }) {
         derniere_visite: item.derniere_visite ? item.derniere_visite.split('T')[0] : '',
         prochain_controle: item.prochain_controle ? item.prochain_controle.split('T')[0] : '',
         commentaire: item.commentaire || '',
+        reference_reglementaire: item.reference_reglementaire || '',
+        numero_rapport: item.numero_rapport || '',
+        organisme_controle: item.organisme_controle || '',
+        resultat_controle: item.resultat_controle || '',
         duree_rappel_echeance: item.duree_rappel_echeance || 30,
         responsable_notification_id: item.responsable_notification_id || '',
         // Champs booléens pour les mois
@@ -80,6 +84,10 @@ function SurveillanceItemForm({ open, item, onClose }) {
         derniere_visite: '',
         prochain_controle: '',
         commentaire: '',
+        reference_reglementaire: '',
+        numero_rapport: '',
+        organisme_controle: '',
+        resultat_controle: '',
         duree_rappel_echeance: 30,
         responsable_notification_id: ''
       });
