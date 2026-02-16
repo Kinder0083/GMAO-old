@@ -280,6 +280,7 @@ async def get_contracts_dashboard(
 
     # --- Calendrier des échéances (12 prochains mois) ---
     calendar_events = []
+    now_naive = now.replace(tzinfo=None)
     for c in contracts:
         if c.get("statut") != "actif":
             continue
@@ -287,8 +288,15 @@ async def get_contracts_dashboard(
         if not date_fin_str:
             continue
         try:
-            date_fin = datetime.fromisoformat(date_fin_str.replace("Z", "+00:00")) if isinstance(date_fin_str, str) else date_fin_str
-            jours = (date_fin - now).days
+            if isinstance(date_fin_str, str):
+                # Gérer les dates avec ou sans timezone
+                clean = date_fin_str.replace("Z", "+00:00")
+                date_fin = datetime.fromisoformat(clean)
+                if date_fin.tzinfo:
+                    date_fin = date_fin.replace(tzinfo=None)
+            else:
+                date_fin = date_fin_str.replace(tzinfo=None) if hasattr(date_fin_str, 'replace') else date_fin_str
+            jours = (date_fin - now_naive).days
             if -30 <= jours <= 365:
                 seuil_resil = c.get("alerte_resiliation_jours")
                 event = {
