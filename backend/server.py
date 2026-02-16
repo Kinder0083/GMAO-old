@@ -9335,14 +9335,16 @@ async def reset_all(current_user: dict = Depends(get_current_admin_user)):
         details[label] = result.deleted_count
         total += result.deleted_count
     
-    # Log d'audit
-    await db.audit_logs.insert_one({
-        "action": "RESET_ALL",
-        "user_email": current_user["email"],
-        "user_id": current_user["id"],
-        "details": f"Réinitialisation complète: {total} éléments supprimés",
-        "timestamp": datetime.utcnow()
-    })
+    # Log d'audit via le service centralisé
+    await audit_service.log_action(
+        user_id=current_user["id"],
+        user_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+        user_email=current_user["email"],
+        action=ActionType.DELETE,
+        entity_type=EntityType.USER,
+        entity_name="Toutes les données",
+        details=f"Réinitialisation complète: {total} éléments supprimés"
+    )
     
     return {
         "success": True,
