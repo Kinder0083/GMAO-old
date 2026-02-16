@@ -12,7 +12,7 @@ import { Textarea } from '../components/ui/textarea';
 import { 
   Plus, Search, FileSignature, Building2, AlertTriangle, Calendar, 
   Euro, Trash2, Edit, Eye, Upload, Download, Paperclip, X, 
-  FileText, Sparkles, Loader2, Bell, ChevronDown, ChevronUp
+  FileText, Sparkles, Loader2, Bell, ChevronDown, ChevronUp, BarChart3
 } from 'lucide-react';
 import { contractsAPI, vendorsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
