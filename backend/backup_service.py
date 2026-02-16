@@ -276,20 +276,19 @@ async def _upload_to_gdrive(file_bytes: bytes, filename: str, schedule: dict) ->
 
 
 async def _cleanup_old_backups(schedule: dict, retention_count: int):
-    """Nettoyer les anciens backups en gardant les N derniers"""
-    schedule_id = str(schedule.get("_id", ""))
+    """Nettoyer les anciens backups en appliquant la limite GLOBALE (toutes sauvegardes confondues)"""
     destination = schedule.get("destination", "local")
 
-    # Récupérer tous les backups réussis pour ce schedule, triés par date
+    # Récupérer TOUS les backups réussis, tous schedules confondus, triés par date
     history = await db.backup_history.find(
-        {"schedule_id": schedule_id, "status": "success"}
+        {"status": "success"}
     ).sort("started_at", -1).to_list(1000)
 
     if len(history) <= retention_count:
         return
 
     to_delete = history[retention_count:]
-    logger.info(f"[Backup] Nettoyage: suppression de {len(to_delete)} ancien(s) backup(s)")
+    logger.info(f"[Backup] Nettoyage global: suppression de {len(to_delete)} ancien(s) backup(s) (limite: {retention_count})")
 
     for entry in to_delete:
         # Supprimer fichier local
@@ -301,7 +300,7 @@ async def _cleanup_old_backups(schedule: dict, retention_count: int):
                 logger.warning(f"[Backup] Erreur suppression fichier local: {e}")
 
         # Supprimer de Google Drive
-        if entry.get("google_drive_file_id") and destination in ("gdrive", "local_gdrive"):
+        if entry.get("google_drive_file_id"):
             try:
                 await _delete_from_gdrive(entry["google_drive_file_id"])
             except Exception as e:
