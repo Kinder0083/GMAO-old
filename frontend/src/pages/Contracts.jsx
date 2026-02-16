@@ -69,6 +69,7 @@ const emptyForm = {
 export default function Contracts() {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
+  const navigate = useNavigate();
   const [contracts, setContracts] = useState([]);
   const [stats, setStats] = useState(null);
   const [alerts, setAlerts] = useState([]);
