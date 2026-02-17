@@ -191,7 +191,7 @@ gmao-iris/
 | Serveur web | Nginx (reverse proxy, SSL, static files)         |
 | Process     | Supervisor                                       |
 | Deploiement | Proxmox LXC (Debian 12)                         |
-| IA          | Emergent LLM (assistant chat integre)            |
+| IA          | Emergent LLM (Gemini 2.5 Flash) - assistant, analyse QHSE, generation documents |
 
 ---
 
