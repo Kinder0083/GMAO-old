@@ -592,6 +592,10 @@ const PresquAccidentRapport = () => {
       {displayMode === 'cards' && renderCardsView()}
       {displayMode === 'table' && renderTableView()}
       {displayMode === 'charts' && renderChartsView()}
+
+      {/* Dialogs IA */}
+      <AIPATrendAnalyzer open={openTrendAnalysis} onClose={() => setOpenTrendAnalysis(false)} />
+      <AIQHSEReport open={openQHSEReport} onClose={() => setOpenQHSEReport(false)} />
     </div>
   );
 };
