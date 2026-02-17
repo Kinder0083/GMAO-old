@@ -555,6 +555,19 @@ const GuidedTour = () => {
   } = useGuidedTour();
 
   const [targetRect, setTargetRect] = useState(null);
+
+  // Recuperer le profil utilisateur pour personnaliser la visite
+  const tourSteps = useMemo(() => {
+    try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const service = userData.service || null;
+      const role = userData.role || null;
+      return buildTourSteps(service, role);
+    } catch {
+      return buildTourSteps(null, null);
+    }
+  }, []);
+
   const currentStep = tourSteps[stepIndex];
 
   // Trouver l'élément cible et calculer sa position
