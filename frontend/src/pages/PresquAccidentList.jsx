@@ -26,6 +26,7 @@ function PresquAccidentList() {
   const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [users, setUsers] = useState([]);
   const [serviceResponsables, setServiceResponsables] = useState([]);
+  const [equipments, setEquipments] = useState([]);
   
   // Dialog de traitement/réponse
   const [openTraitement, setOpenTraitement] = useState(false);
