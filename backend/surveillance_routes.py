@@ -163,6 +163,7 @@ async def get_surveillance_items(
     responsable: Optional[str] = None,
     batiment: Optional[str] = None,
     status: Optional[str] = None,
+    annee: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """Récupérer tous les items du plan de surveillance avec filtres"""
@@ -177,6 +178,8 @@ async def get_surveillance_items(
             query["batiment"] = batiment
         if status:
             query["status"] = status
+        if annee:
+            query["annee"] = annee
         
         items = await db.surveillance_items.find(query).to_list(length=None)
         
