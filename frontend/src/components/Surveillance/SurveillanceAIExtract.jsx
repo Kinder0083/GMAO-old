@@ -18,6 +18,8 @@ function SurveillanceAIExtract({ open, onClose }) {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [result, setResult] = useState(null);
 
+  const [sourceFile, setSourceFile] = useState(null);
+
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
