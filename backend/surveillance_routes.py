@@ -1493,7 +1493,7 @@ async def get_ai_smart_alerts(
             alerts.append({
                 "type": "missing_wo",
                 "severity": "HAUTE",
-                "title": f"Non-conformité sans bon de travail curatif",
+                "title": "Non-conformité sans bon de travail curatif",
                 "details": f"Analyse du {a.get('created_at', '')[:10]} - {a.get('organisme_controle', 'N/A')}",
                 "categorie": ", ".join(a.get("categories", [])),
                 "date": a.get("created_at", "")[:10]
