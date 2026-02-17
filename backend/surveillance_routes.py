@@ -222,16 +222,34 @@ async def create_surveillance_item(
     item_data: SurveillanceItemCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    """Créer un nouvel item de surveillance"""
+    """Créer un nouvel item de surveillance + contrôles récurrents jusqu'à N+1"""
     try:
+        # Déterminer l'année du contrôle
+        annee = get_year_from_date_str(item_data.prochain_controle) if item_data.prochain_controle else datetime.now().year
+        groupe_id = item_data.groupe_controle_id if hasattr(item_data, 'groupe_controle_id') and item_data.groupe_controle_id else str(uuid.uuid4())
+        
         item = SurveillanceItem(
             **item_data.model_dump(),
+            annee=annee,
+            groupe_controle_id=groupe_id,
             created_by=current_user.get("id"),
             updated_by=current_user.get("id")
         )
         
         item_dict = item.model_dump()
         await db.surveillance_items.insert_one(item_dict)
+        
+        # Générer les contrôles récurrents futurs jusqu'à fin N+1
+        recurring_count = 0
+        if item_data.prochain_controle and item_data.periodicite:
+            recurring = generate_recurring_controls(item_dict, item_data.prochain_controle, item_data.periodicite)
+            if recurring:
+                for r in recurring:
+                    r["created_by"] = current_user.get("id")
+                    r["updated_by"] = current_user.get("id")
+                await db.surveillance_items.insert_many(recurring)
+                recurring_count = len(recurring)
+                logger.info(f"✅ {recurring_count} contrôle(s) récurrent(s) créé(s) pour {item.classe_type}")
         
         # Audit
         await audit_service.log_action(
@@ -246,6 +264,8 @@ async def create_surveillance_item(
         
         if "_id" in item_dict:
             del item_dict["_id"]
+        
+        item_dict["recurring_count"] = recurring_count
         
         # Broadcast WebSocket pour la synchronisation temps réel
         if realtime_manager:
