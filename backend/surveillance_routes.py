@@ -1164,6 +1164,18 @@ async def create_batch_from_ai(
         controles = items_data.get("controles", [])
         document_info = items_data.get("document_info", {})
         
+        # Préparer la pièce jointe source si fournie
+        source_file = items_data.get("source_file")
+        source_attachment = None
+        if source_file and source_file.get("url"):
+            source_attachment = {
+                "id": source_file.get("id", str(uuid.uuid4())),
+                "filename": source_file.get("filename", "document.pdf"),
+                "url": source_file.get("url"),
+                "size": source_file.get("size", 0),
+                "uploaded_at": datetime.now(timezone.utc).isoformat()
+            }
+        
         created_items = []
         created_work_orders = []
         
