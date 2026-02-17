@@ -60,8 +60,15 @@ async def ai_diagnostic(
         if not work_order_id:
             raise HTTPException(status_code=400, detail="work_order_id requis")
 
-        # Récupérer l'OT
+        # Récupérer l'OT (id string ou ObjectId)
         wo = await db.work_orders.find_one({"id": work_order_id}, {"_id": 0})
+        if not wo:
+            try:
+                wo = await db.work_orders.find_one({"_id": ObjectId(work_order_id)})
+                if wo:
+                    wo["id"] = str(wo.pop("_id"))
+            except Exception:
+                pass
         if not wo:
             raise HTTPException(status_code=404, detail="OT introuvable")
 
