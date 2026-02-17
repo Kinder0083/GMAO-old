@@ -91,7 +91,9 @@ export const iconMap = {
   'Bell': Bell,
   'RefreshCw': RefreshCw,
   'Radio': Radio,
-  'Palette': Palette
+  'Palette': Palette,
+  'History': History,
+  'TrendingUp': TrendingUp
 };
 
 // Liste par défaut des items du menu
