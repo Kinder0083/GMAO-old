@@ -68,3 +68,10 @@ Application de GMAO (Gestion de Maintenance Assistée par Ordinateur) nommée "G
 
 ## Backlog
 - Aucune tâche en attente
+
+### Documentation mise à jour (17 Feb 2026)
+- README.md : section IA complète, endpoints API IA, stack technique mise à jour
+- CHANGELOG.md : version 1.6.0 détaillée
+- Manuel utilisateur : 2 nouveaux chapitres IA (8 sections)
+- version.json : v1.6.0 "Intelligence Artificielle QHSE"
+- Personnalisation IA : liste des fonctionnalités utilisant le modèle LLM
