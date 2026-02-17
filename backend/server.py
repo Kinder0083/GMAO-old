@@ -419,43 +419,8 @@ async def register(user_create: UserCreate):
     # Hash password
     hashed_password = get_password_hash(user_create.password)
     
-    # Définir les permissions par défaut selon le rôle
-    if user_create.role == UserRole.ADMIN:
-        permissions = {
-            "dashboard": {"view": True, "edit": True, "delete": True},
-            "workOrders": {"view": True, "edit": True, "delete": True},
-            "assets": {"view": True, "edit": True, "delete": True},
-            "preventiveMaintenance": {"view": True, "edit": True, "delete": True},
-            "inventory": {"view": True, "edit": True, "delete": True},
-            "locations": {"view": True, "edit": True, "delete": True},
-            "vendors": {"view": True, "edit": True, "delete": True},
-            "contrats": {"view": True, "edit": True, "delete": True},
-            "reports": {"view": True, "edit": True, "delete": True}
-        }
-    elif user_create.role == UserRole.TECHNICIEN:
-        permissions = {
-            "dashboard": {"view": True, "edit": False, "delete": False},
-            "workOrders": {"view": True, "edit": True, "delete": False},
-            "assets": {"view": True, "edit": True, "delete": False},
-            "preventiveMaintenance": {"view": True, "edit": True, "delete": False},
-            "inventory": {"view": True, "edit": True, "delete": False},
-            "locations": {"view": True, "edit": False, "delete": False},
-            "vendors": {"view": True, "edit": False, "delete": False},
-            "contrats": {"view": True, "edit": False, "delete": False},
-            "reports": {"view": True, "edit": False, "delete": False}
-        }
-    else:  # VISUALISEUR
-        permissions = {
-            "dashboard": {"view": True, "edit": False, "delete": False},
-            "workOrders": {"view": True, "edit": False, "delete": False},
-            "assets": {"view": True, "edit": False, "delete": False},
-            "preventiveMaintenance": {"view": True, "edit": False, "delete": False},
-            "inventory": {"view": True, "edit": False, "delete": False},
-            "locations": {"view": True, "edit": False, "delete": False},
-            "vendors": {"view": True, "edit": False, "delete": False},
-            "contrats": {"view": True, "edit": False, "delete": False},
-            "reports": {"view": True, "edit": False, "delete": False}
-        }
+    # Définir les permissions par défaut selon le rôle (utilisation centralisée)
+    permissions = get_default_permissions_by_role(user_create.role).model_dump()
     
     # Create user
     user_dict = user_create.model_dump()
@@ -3618,6 +3583,12 @@ async def update_user(user_id: str, user_update: UserUpdate, current_user: dict 
     """Modifier un utilisateur (admin uniquement)"""
     try:
         update_data = {k: v for k, v in user_update.model_dump().items() if v is not None}
+        
+        # Si le rôle change, mettre à jour automatiquement les permissions par défaut
+        if "role" in update_data:
+            new_role = update_data["role"]
+            default_permissions = get_default_permissions_by_role(new_role).model_dump()
+            update_data["permissions"] = default_permissions
         
         await db.users.update_one(
             {"_id": ObjectId(user_id)},
