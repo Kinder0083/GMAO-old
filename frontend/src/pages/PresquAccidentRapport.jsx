@@ -465,7 +465,23 @@ const PresquAccidentRapport = () => {
           <p className="text-gray-600 mt-1">Statistiques et indicateurs de performance</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 font-medium">Mode d'affichage :</span>
+          <Button
+            variant="outline"
+            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            data-testid="open-pa-trend-btn"
+            onClick={() => setOpenTrendAnalysis(true)}
+          >
+            <Brain size={16} className="mr-1" /> Analyse IA
+          </Button>
+          <Button
+            variant="outline"
+            className="border-blue-300 text-blue-700 hover:bg-blue-50"
+            data-testid="open-qhse-report-btn"
+            onClick={() => setOpenQHSEReport(true)}
+          >
+            <FileText size={16} className="mr-1" /> Rapport QHSE
+          </Button>
+          <span className="text-sm text-gray-600 font-medium ml-2">Affichage :</span>
           <Select value={displayMode} onValueChange={setDisplayMode}>
             <SelectTrigger className="w-48">
               <SelectValue />
