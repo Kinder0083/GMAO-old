@@ -347,6 +347,17 @@ const AnalyticsChecklistsPage = () => {
           </Button>
           
           <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setAiAnalyzerOpen(true)}
+            data-testid="ai-nc-analyzer-btn"
+            className="border-amber-500 text-amber-700 hover:bg-amber-50"
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            Analyse IA
+          </Button>
+          
+          <Button 
             variant="default" 
             size="sm" 
             onClick={exportToPDF}
