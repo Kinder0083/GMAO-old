@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Loader2, Brain, AlertTriangle, TrendingDown, TrendingUp, Minus, Wrench, ShieldAlert, Lightbulb, ClipboardList, Check } from 'lucide-react';
+import { Loader2, Brain, AlertTriangle, TrendingDown, TrendingUp, Minus, Wrench, ShieldAlert, Lightbulb, ClipboardList, Check, Mail, Bell } from 'lucide-react';
 import { aiMaintenanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 
@@ -42,6 +42,7 @@ export default function AINonconformityAnalyzer({ open, onClose }) {
   const [error, setError] = useState(null);
   const [creatingWOs, setCreatingWOs] = useState(false);
   const [createdWOs, setCreatedWOs] = useState([]);
+  const [notificationsSent, setNotificationsSent] = useState([]);
 
   const handleAnalyze = async () => {
     setStep('analyzing');
@@ -51,6 +52,7 @@ export default function AINonconformityAnalyzer({ open, onClose }) {
       if (result.success) {
         setAnalysis(result.data);
         setStats(result.stats);
+        setNotificationsSent(result.notifications_sent || []);
         setStep('results');
       } else {
         setError(result.error);
@@ -69,6 +71,7 @@ export default function AINonconformityAnalyzer({ open, onClose }) {
     setStats(null);
     setError(null);
     setCreatedWOs([]);
+    setNotificationsSent([]);
     onClose(hadCreations);
   };
 
