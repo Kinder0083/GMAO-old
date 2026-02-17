@@ -546,6 +546,12 @@ const WorkOrderDialog = ({ open, onOpenChange, workOrder, onSuccess }) => {
             <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{workOrder.description}</p>
           </div>
 
+          {/* IA Panels */}
+          <div className="flex flex-wrap gap-2">
+            <AIDiagnosticPanel workOrderId={workOrder.id} />
+            <AISummaryPanel workOrderId={workOrder.id} />
+          </div>
+
           <Separator />
 
           {/* Details Grid */}
