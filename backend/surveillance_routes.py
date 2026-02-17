@@ -1245,6 +1245,7 @@ async def create_batch_from_ai(
                 numero_rapport=document_info.get("numero_rapport"),
                 organisme_controle=document_info.get("organisme_controle"),
                 resultat_controle=resultat,
+                attachments=[source_attachment] if source_attachment else [],
                 created_by=current_user.get("id"),
                 updated_by=current_user.get("id")
             )
