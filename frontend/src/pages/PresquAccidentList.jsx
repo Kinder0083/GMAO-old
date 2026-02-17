@@ -306,11 +306,19 @@ function PresquAccidentList() {
       date_incident: item.date_incident?.split('T')[0] || '',
       lieu: item.lieu || '',
       service: item.service || 'AUTRE',
-      personnes_impliquees: item.personnes_impliquees || '',
+      categorie_incident: item.categorie_incident || '',
+      equipement_id: item.equipement_id || '',
+      equipement_nom: item.equipement_nom || '',
       declarant: item.declarant || '',
+      personnes_impliquees: item.personnes_impliquees || '',
+      temoins: item.temoins || '',
       responsable_id: item.responsable_id || '',
       contexte_cause: item.contexte_cause || '',
+      mesures_immediates: item.mesures_immediates || '',
       severite: item.severite || 'MOYEN',
+      type_lesion_potentielle: item.type_lesion_potentielle || '',
+      facteurs_contributifs: item.facteurs_contributifs || [],
+      conditions_incident: item.conditions_incident || '',
       actions_proposees: item.actions_proposees || ''
     });
     setPendingFiles([]);
