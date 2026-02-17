@@ -111,6 +111,26 @@ NEW_CHAPTERS = [
         "target_modules": ["documentations"],
         "sections": ["sec-035-01", "sec-035-02", "sec-035-03"]
     },
+    {
+        "id": "ch-036",
+        "title": "IA - Checklists et Maintenance",
+        "description": "Fonctionnalites d'intelligence artificielle pour les checklists et la maintenance",
+        "icon": "Brain",
+        "order": 36,
+        "target_roles": [],
+        "target_modules": ["analyticsChecklists"],
+        "sections": ["sec-036-01", "sec-036-02", "sec-036-03", "sec-036-04"]
+    },
+    {
+        "id": "ch-037",
+        "title": "IA - Presqu'accidents",
+        "description": "Fonctionnalites d'intelligence artificielle pour l'analyse des presqu'accidents",
+        "icon": "Brain",
+        "order": 37,
+        "target_roles": [],
+        "target_modules": ["presquaccident", "presquaccidentRapport"],
+        "sections": ["sec-037-01", "sec-037-02", "sec-037-03", "sec-037-04"]
+    },
 ]
 
 NEW_SECTIONS = [
