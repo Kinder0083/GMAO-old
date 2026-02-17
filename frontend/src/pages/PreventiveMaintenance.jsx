@@ -10,11 +10,12 @@ import {
   DialogHeader,
   DialogTitle
 } from '../components/ui/dialog';
-import { Plus, Calendar, Clock, CheckCircle, LayoutGrid, Grid, Trash2, ClipboardCheck, Pencil, Play, History, BookOpen } from 'lucide-react';
+import { Plus, Calendar, Clock, CheckCircle, LayoutGrid, Grid, Trash2, ClipboardCheck, Pencil, Play, History, BookOpen, Sparkles } from 'lucide-react';
 import PreventiveMaintenanceFormDialog from '../components/PreventiveMaintenance/PreventiveMaintenanceFormDialog';
 import ChecklistFormDialog from '../components/PreventiveMaintenance/ChecklistFormDialog';
 import ChecklistExecutionDialog from '../components/PreventiveMaintenance/ChecklistExecutionDialog';
 import ChecklistHistoryView from '../components/PreventiveMaintenance/ChecklistHistoryView';
+import AIMaintenanceGenerator from '../components/AIMaintenanceGenerator';
 import { preventiveMaintenanceAPI, workOrdersAPI, checklistsAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
