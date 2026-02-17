@@ -28,7 +28,7 @@ class TestAIWorkOrderCreation:
         })
         
         if login_resp.status_code == 200:
-            token = login_resp.json().get('token')
+            token = login_resp.json().get('access_token')
             self.session.headers.update({'Authorization': f'Bearer {token}'})
             self.logged_in = True
         else:
