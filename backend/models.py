@@ -1544,8 +1544,9 @@ class SurveillanceItem(BaseModel):
     
     # Documents et commentaires
     commentaire: Optional[str] = None
-    piece_jointe_url: Optional[str] = None  # URL du fichier uploadé
-    piece_jointe_nom: Optional[str] = None  # Nom original du fichier
+    piece_jointe_url: Optional[str] = None  # URL du fichier uploadé (legacy, single file)
+    piece_jointe_nom: Optional[str] = None  # Nom original du fichier (legacy)
+    attachments: List[dict] = []  # Liste de fichiers joints [{id, filename, url, size, uploaded_at}]
     
     # Alertes
     alerte_envoyee: bool = False  # True si alerte d'échéance déjà envoyée
