@@ -14,6 +14,8 @@ import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { usePresquAccident } from '../hooks/usePresquAccident';
 import AttachmentUploader from '../components/shared/AttachmentUploader';
 import AttachmentsList from '../components/shared/AttachmentsList';
+import AIRootCauseAnalyzer from '../components/AIRootCauseAnalyzer';
+import AISimilarIncidents from '../components/AISimilarIncidents';
 
 function PresquAccidentList() {
   const { toast } = useToast();
