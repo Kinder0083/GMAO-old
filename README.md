@@ -132,6 +132,19 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Configuration Tailscale depuis l'interface web
 - Gestion des fuseaux horaires
 
+### Visite guidee personnalisee par profil
+- A la premiere connexion, une visite guidee interactive presente les modules de l'application
+- La visite est **automatiquement adaptee au profil** (service) de l'utilisateur connecte :
+  - **Maintenance** : Equipements, Ordres de travail, Maintenance preventive, Planning, Inventaire, Demandes d'intervention
+  - **Production** : M.E.S., Planning, Ordres de travail, Demandes d'intervention, Compteurs, Presqu'accidents
+  - **QHSE** : Presqu'accidents + IA, Rapport Presqu'accidents, Analytics Checklists, Plan de Surveillance, Documentations, Contrats
+  - **Logistique / ADV** : Inventaire, Demandes d'achat, Fournisseurs, Equipements, Historique Achat
+  - **Direction / Admin** : Dashboard Service, Rapports, Gestion d'equipe, Utilisateurs, Rapport Presqu'accidents, Rapports Hebdomadaires
+  - **Generique** (aucun service defini) : Equipements, Ordres de travail, Planning, Presqu'accidents, Rapports
+- Les etapes communes (menu, dashboard, notifications, chat, assistant IA) sont presentes pour tous les profils
+- Les textes de chaque etape sont adaptes au metier de l'utilisateur
+- La visite peut etre relancee a tout moment depuis les parametres
+
 ---
 
 ## Architecture technique
