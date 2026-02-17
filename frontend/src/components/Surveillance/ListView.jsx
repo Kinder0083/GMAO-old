@@ -24,7 +24,7 @@ const getStatusLabel = (status) => {
   }
 };
 
-function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear }) {
+function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear, trends }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
 
   if (loading) return <div className="text-center p-4">Chargement...</div>;
@@ -56,7 +56,7 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-1">
                       {item.classe_type}
-                      <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} />
+                      <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} trend={trends?.[item.groupe_controle_id]} />
                     </div>
                   </TableCell>
                   <TableCell><Badge variant="outline">{item.category}</Badge></TableCell>

@@ -31,7 +31,7 @@ const getCategoryIcon = (category) => {
   return CATEGORY_ICONS[category] || CATEGORY_ICONS['default'];
 };
 
-function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear }) {
+function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear, trends }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
   const [historyDialog, setHistoryDialog] = useState({ open: false, control: null });
   const [groupedItems, setGroupedItems] = useState({});
@@ -175,7 +175,7 @@ function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentY
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-1">
                         {item.classe_type}
-                        <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} />
+                        <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} trend={trends?.[item.groupe_controle_id]} />
                       </div>
                     </TableCell>
                     <TableCell>{item.batiment}</TableCell>

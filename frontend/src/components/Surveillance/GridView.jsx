@@ -24,7 +24,7 @@ const getStatusLabel = (status) => {
   }
 };
 
-function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear }) {
+function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear, trends }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
 
   if (loading) return <div className="text-center p-4">Chargement...</div>;
@@ -51,7 +51,7 @@ function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-sm flex items-center gap-1">
                         {item.classe_type}
-                        <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} />
+                        <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} trend={trends?.[item.groupe_controle_id]} />
                       </CardTitle>
                       <Badge className={getStatusColor(item.status)}>{getStatusLabel(item.status)}</Badge>
                     </div>
