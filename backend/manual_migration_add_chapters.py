@@ -798,6 +798,284 @@ Le responsable de production ou le directeur recoit la demande et peut :
         "level": "advanced",
         "keywords": ["validation", "refus", "notification", "historique", "statistiques"],
     },
+    # === IA - CHECKLISTS ET MAINTENANCE ===
+    {
+        "id": "sec-036-01",
+        "chapter_id": "ch-036",
+        "title": "Generation IA de Checklists",
+        "content": """**Generer une checklist depuis un document technique**
+
+Cette fonctionnalite permet de creer automatiquement un template de checklist en uploadant un document technique (PDF, image, texte).
+
+**Comment utiliser :**
+1. Allez dans **Gestion des Checklists**
+2. Cliquez sur le bouton **"Generer avec IA"**
+3. Uploadez votre document technique (notice constructeur, procedure, norme...)
+4. L'IA analyse le document et genere automatiquement :
+   - Les points de controle a verifier
+   - Les criteres d'acceptation pour chaque point
+   - Les niveaux de criticite
+
+**Types de documents acceptes :**
+- Documents PDF
+- Images (photos de notices, schemas)
+- Fichiers texte
+
+**Conseil :** Plus le document est detaille et structure, plus la checklist generee sera pertinente et complete.""",
+        "order": 1,
+        "level": "beginner",
+        "keywords": ["ia", "checklist", "generation", "document", "automatique"],
+    },
+    {
+        "id": "sec-036-02",
+        "chapter_id": "ch-036",
+        "title": "Generation IA de Plans de Maintenance",
+        "content": """**Generer un programme de maintenance depuis un document constructeur**
+
+L'IA peut analyser la documentation d'un equipement pour generer automatiquement un plan de maintenance preventive.
+
+**Comment utiliser :**
+1. Allez dans **Maintenance Preventive**
+2. Cliquez sur le bouton **"Generer avec IA"**
+3. Uploadez la documentation constructeur de l'equipement
+4. L'IA genere un plan complet incluant :
+   - Les taches de maintenance a realiser
+   - La periodicite recommandee (hebdomadaire, mensuelle, trimestrielle, annuelle)
+   - Les competences requises
+   - Les pieces de rechange necessaires
+
+**Conseil :** Utilisez de preference la notice d'entretien du constructeur ou le cahier de maintenance de l'equipement.""",
+        "order": 2,
+        "level": "beginner",
+        "keywords": ["ia", "maintenance", "preventive", "generation", "plan", "programme"],
+    },
+    {
+        "id": "sec-036-03",
+        "chapter_id": "ch-036",
+        "title": "Analyse IA des Non-Conformites",
+        "content": """**Analyser les tendances de non-conformites avec l'IA**
+
+L'IA analyse l'historique des executions de checklists pour detecter les problemes recurrents et proposer des actions correctives.
+
+**Comment utiliser :**
+1. Allez dans **Analytics Checklists**
+2. Cliquez sur le bouton **"Analyse IA"**
+3. Selectionnez la periode d'analyse (30, 60, 90 jours)
+4. L'IA genere un rapport comprenant :
+   - Les patterns de non-conformite recurrents
+   - Les equipements a risque avec niveau d'urgence
+   - La tendance globale (amelioration, stable, degradation)
+   - Des suggestions d'ordres de travail curatifs
+
+**Creation d'ordres de travail en 1 clic :**
+Depuis les resultats de l'analyse, cliquez sur **"Creer l'OT"** a cote de chaque action suggeree pour generer automatiquement un ordre de travail curatif.
+
+**Alertes automatiques :**
+Si des patterns critiques sont detectes, le systeme envoie automatiquement :
+- Une notification in-app au responsable du service concerne
+- Un email d'alerte HTML avec le detail des patterns detectes""",
+        "order": 3,
+        "level": "intermediate",
+        "keywords": ["ia", "non-conformite", "analyse", "tendance", "alerte", "ordre de travail"],
+    },
+    {
+        "id": "sec-036-04",
+        "chapter_id": "ch-036",
+        "title": "Alertes Email Automatiques IA",
+        "content": """**Systeme d'alertes automatiques lie aux analyses IA**
+
+Quand une analyse IA (non-conformites ou presqu'accidents) detecte des patterns critiques, le systeme envoie automatiquement des alertes.
+
+**Fonctionnement :**
+1. L'IA identifie les patterns de severite CRITIQUE ou IMPORTANT
+2. Le systeme determine le(s) service(s) concerne(s)
+3. Il recherche le responsable du service dans la table des responsables
+4. Deux types d'alertes sont envoyes :
+   - **Notification in-app** : visible dans la cloche de notifications
+   - **Email HTML** : envoye a l'adresse email du responsable
+
+**Contenu de l'email :**
+- Resume de l'analyse
+- Tableau des patterns critiques detectes
+- Liste des equipements a risque
+- Actions correctives suggerees
+- Lien direct vers l'application
+
+**Configuration :**
+Les responsables de service sont definis dans **Gestion d'equipe > Responsables de service**. Assurez-vous que chaque service a un responsable designe avec une adresse email valide.
+
+**Pre-requis :** Configuration SMTP dans le fichier .env du backend (SMTP_SERVER, SMTP_PORT, etc.)""",
+        "order": 4,
+        "level": "advanced",
+        "keywords": ["ia", "alerte", "email", "notification", "responsable", "critique"],
+    },
+    # === IA - PRESQU'ACCIDENTS ===
+    {
+        "id": "sec-037-01",
+        "chapter_id": "ch-037",
+        "title": "Analyse IA des Causes Racines",
+        "content": """**Analyser les causes racines d'un presqu'accident avec l'IA**
+
+L'IA utilise les methodes d'analyse 5 Pourquoi et Ishikawa pour identifier les causes profondes d'un incident.
+
+**Comment utiliser :**
+1. Ouvrez un presqu'accident existant
+2. Cliquez sur l'icone de traitement (clipboard)
+3. Dans le dialogue de traitement, cliquez sur **"Analyser avec IA"**
+4. L'IA genere automatiquement :
+
+**Methode 5 Pourquoi :**
+- 5 niveaux de questionnement progressif
+- Chaque niveau propose une question et sa reponse
+- Le dernier niveau identifie la cause racine
+
+**Diagramme Ishikawa (6M) :**
+- **Milieu** : causes liees a l'environnement de travail
+- **Materiel** : causes liees aux equipements et outils
+- **Methode** : causes liees aux procedures et process
+- **Main d'oeuvre** : causes liees au facteur humain
+- **Matiere** : causes liees aux materiaux et produits
+- **Management** : causes liees a l'organisation et la supervision
+
+**Actions preventives :**
+L'IA propose des actions classees par priorite (HAUTE/MOYENNE/BASSE) avec le type (technique, organisationnel, humain, environnemental) et un delai recommande.
+
+**Evaluation automatique :**
+L'IA suggere un score de severite et de recurrence. Cliquez sur **"Appliquer cette evaluation"** pour pre-remplir automatiquement les champs du formulaire de traitement.
+
+**Note :** L'IA prend en compte l'historique de tous les incidents precedents pour enrichir son analyse.""",
+        "order": 1,
+        "level": "intermediate",
+        "keywords": ["ia", "causes racines", "5 pourquoi", "ishikawa", "traitement", "analyse"],
+    },
+    {
+        "id": "sec-037-02",
+        "chapter_id": "ch-037",
+        "title": "Detection Automatique d'Incidents Similaires",
+        "content": """**Detection automatique des incidents similaires lors de la creation**
+
+Lors de la saisie d'un nouveau presqu'accident, l'IA recherche automatiquement les incidents similaires dans l'historique.
+
+**Fonctionnement :**
+1. Commencez a remplir le formulaire de nouveau presqu'accident
+2. Des que vous avez saisi suffisamment de texte (minimum 15 caracteres dans la description), l'IA lance une recherche automatique
+3. Apres 2 secondes de pause de saisie, les resultats s'affichent dans un encadre dore
+
+**Informations affichees pour chaque incident similaire :**
+- Numero et titre de l'incident
+- Score de similarite (en pourcentage)
+- Raison de la similarite (pourquoi l'IA considere cet incident comme similaire)
+- Lecons a retenir (actions qui avaient ete prises)
+
+**Utilite :**
+- Eviter les doublons de declaration
+- Capitaliser sur les actions deja entreprises pour des incidents similaires
+- Identifier les recurrences des leur declaration
+- Appliquer les bonnes pratiques deja definies
+
+**Note :** La recherche se declenche a chaque modification significative du texte. Elle est optimisee pour ne pas surcharger le systeme (debounce de 2 secondes).""",
+        "order": 2,
+        "level": "beginner",
+        "keywords": ["ia", "similaire", "detection", "historique", "doublon", "creation"],
+    },
+    {
+        "id": "sec-037-03",
+        "chapter_id": "ch-037",
+        "title": "Analyse IA des Tendances Presqu'accidents",
+        "content": """**Analyser les tendances globales des presqu'accidents**
+
+L'IA analyse l'ensemble des presqu'accidents enregistres pour identifier les tendances, zones a risque et predire les risques futurs.
+
+**Comment utiliser :**
+1. Allez dans **Rapport Presqu'accidents**
+2. Cliquez sur le bouton **"Analyse IA"** dans l'en-tete de la page
+3. Cliquez sur **"Lancer l'analyse des tendances"**
+
+**Le rapport d'analyse comprend :**
+
+**Resume et tendance globale :**
+- Synthese de la situation
+- Tendance : DEGRADATION / STABLE / AMELIORATION
+
+**Patterns recurrents :**
+- Description du pattern identifie
+- Severite (CRITIQUE / IMPORTANT / MODERE)
+- Nombre d'occurrences
+- Lieux et services concernes
+- Cause probable et recommandation
+
+**Zones a risque :**
+- Identification des zones geographiques les plus accidentogenes
+- Niveau de risque (ELEVE / MOYEN / FAIBLE)
+- Types d'incidents les plus frequents par zone
+
+**Predictions :**
+- Risques futurs anticipes par l'IA
+- Probabilite (HAUTE / MOYENNE / BASSE)
+- Zones concernees et justification
+- Actions preventives suggerees
+
+**Analyse des facteurs contributifs :**
+- Repartition entre facteurs humain, materiel, organisationnel et environnemental
+
+**Recommandations prioritaires :**
+- Actions concretes classees par priorite
+- Service concerne et impact attendu
+
+**Alertes automatiques :**
+Si des patterns critiques sont detectes, des alertes email sont envoyees automatiquement aux responsables des services concernes.""",
+        "order": 3,
+        "level": "intermediate",
+        "keywords": ["ia", "tendance", "prediction", "zone a risque", "pattern", "rapport"],
+    },
+    {
+        "id": "sec-037-04",
+        "chapter_id": "ch-037",
+        "title": "Rapport de Synthese QHSE",
+        "content": """**Generer un rapport QHSE pour reunion**
+
+L'IA genere un rapport de synthese structure, professionnel et pret a etre presente en comite QHSE.
+
+**Comment utiliser :**
+1. Allez dans **Rapport Presqu'accidents**
+2. Cliquez sur le bouton **"Rapport QHSE"** dans l'en-tete de la page
+3. Cliquez sur **"Generer le rapport"**
+4. Le rapport s'affiche et peut etre imprime via le bouton **"Imprimer le rapport"**
+
+**Structure du rapport :**
+
+**1. Resume executif**
+- Paragraphe de synthese pour le management (3 a 5 phrases)
+- Vision globale de la situation securite
+
+**2. Indicateurs cles**
+- Total incidents, taux de traitement, incidents en retard
+- Tendance globale avec commentaire
+
+**3. Analyse par service**
+- Nombre d'incidents par service
+- Severite dominante et problematique principale
+
+**4. Top risques**
+- Les risques les plus importants classes par gravite
+- Localisation et statut de traitement
+
+**5. Plan d'action propose**
+- Actions concretes a proposer en reunion
+- Priorite (1 = urgente, 2 = importante, 3 = souhaitable)
+- Service responsable et echeance suggeree
+- Resultat attendu pour chaque action
+
+**6. Conclusion et points de vigilance**
+- Message cle pour le prochain mois
+- Points a surveiller particulierement
+
+**Impression :**
+Cliquez sur **"Imprimer le rapport"** pour ouvrir la fenetre d'impression du navigateur. Le rapport est formate pour l'impression (marges, mise en page).""",
+        "order": 4,
+        "level": "intermediate",
+        "keywords": ["ia", "rapport", "qhse", "synthese", "reunion", "impression", "plan action"],
+    },
 ]
 
 
