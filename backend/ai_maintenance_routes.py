@@ -5,6 +5,7 @@ Routes IA pour les Checklists et la Maintenance Préventive
 - Feature 3: Analyse IA des non-conformités récurrentes
 """
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from dependencies import get_current_user
 from typing import Optional
 from datetime import datetime, timezone
 import logging
@@ -44,7 +45,7 @@ def clean_json_response(text: str) -> str:
 @router.post("/generate-checklist")
 async def generate_checklist_from_document(
     file: UploadFile = File(...),
-    current_user: dict = Depends(lambda: None)  # Placeholder, remplacé à l'init
+    current_user: dict = Depends(get_current_user)  # Placeholder, remplacé à l'init
 ):
     """
     Upload un document technique (PDF, image) et l'IA génère un template de checklist
@@ -149,7 +150,7 @@ IMPORTANT:
 @router.post("/create-checklists-batch")
 async def create_checklists_batch(
     data: dict,
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """Crée les checklists templates à partir des données extraites par l'IA."""
     try:
@@ -209,7 +210,7 @@ async def create_checklists_batch(
 @router.post("/generate-maintenance-program")
 async def generate_maintenance_program(
     file: UploadFile = File(...),
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Upload un document constructeur et l'IA génère un programme complet
@@ -314,7 +315,7 @@ IMPORTANT:
 @router.post("/create-maintenance-batch")
 async def create_maintenance_batch(
     data: dict,
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Crée le programme de maintenance préventive + checklists associées
@@ -417,7 +418,7 @@ async def create_maintenance_batch(
 @router.post("/analyze-nonconformities")
 async def analyze_nonconformities(
     data: dict = {},
-    current_user: dict = Depends(lambda: None)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Analyse l'historique des exécutions de checklists via IA pour détecter
