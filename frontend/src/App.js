@@ -183,6 +183,8 @@ function App() {
             <Route path="improvements" element={<Improvements />} />
             <Route path="surveillance-plan" element={<SurveillancePlan />} />
             <Route path="surveillance-rapport" element={<SurveillanceRapport />} />
+            <Route path="surveillance-ai-history" element={<SurveillanceAIHistory />} />
+            <Route path="surveillance-ai-dashboard" element={<SurveillanceAIDashboard />} />
             <Route path="presqu-accident" element={<PresquAccidentList />} />
             <Route path="presqu-accident-rapport" element={<PresquAccidentRapport />} />
             <Route path="documentations" element={<Documentations />} />
