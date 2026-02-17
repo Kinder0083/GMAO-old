@@ -122,6 +122,16 @@ NEW_CHAPTERS = [
         "sections": ["sec-038-01", "sec-038-02", "sec-038-03", "sec-038-04"]
     },
     {
+        "id": "ch-039",
+        "title": "Visite guidee personnalisee",
+        "description": "Visite guidee adaptee au profil de l'utilisateur",
+        "icon": "Map",
+        "order": 39,
+        "target_roles": [],
+        "target_modules": [],
+        "sections": ["sec-039-01"]
+    },
+    {
         "id": "ch-037",
         "title": "IA - Presqu'accidents",
         "description": "Fonctionnalites d'intelligence artificielle pour l'analyse des presqu'accidents",
