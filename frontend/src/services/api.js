@@ -1022,4 +1022,9 @@ export const contractsAPI = {
   }
 };
 
+// IA Rapports Hebdomadaires
+export const aiReportsAPI = {
+  generate: (service, periodDays, reportType) => api.post('/ai-weekly-reports/generate', { service, period_days: periodDays, report_type: reportType }).then(r => r.data),
+};
+
 export default api;
