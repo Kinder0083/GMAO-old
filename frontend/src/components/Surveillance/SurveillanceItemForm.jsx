@@ -76,6 +76,8 @@ function SurveillanceItemForm({ open, item, onClose }) {
         novembre: item.novembre || false,
         decembre: item.decembre || false
       });
+      setAttachments(item.attachments || []);
+      setPendingFiles([]);
     } else {
       // Reset pour création
       setFormData({
