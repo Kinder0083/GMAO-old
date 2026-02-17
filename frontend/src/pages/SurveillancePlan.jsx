@@ -552,10 +552,11 @@ function SurveillancePlan() {
             key={categoryOrderChanged}
             currentYear={selectedYear}
             onNavigateToYear={(year) => setSelectedYear(year)}
+            trends={trends}
           />
         </TabsContent>
         <TabsContent value="grid">
-          <GridView items={filteredItems} loading={loading} onEdit={handleEdit} onDelete={handleDelete} onRefresh={loadData} currentYear={selectedYear} onNavigateToYear={(year) => setSelectedYear(year)} />
+          <GridView items={filteredItems} loading={loading} onEdit={handleEdit} onDelete={handleDelete} onRefresh={loadData} currentYear={selectedYear} onNavigateToYear={(year) => setSelectedYear(year)} trends={trends} />
         </TabsContent>
         <TabsContent value="calendar">
           <CalendarView items={filteredItems} loading={loading} onEdit={handleEdit} onRefresh={loadData} />
