@@ -615,4 +615,4 @@ Ce projet est sous licence Proprietaire.
 ---
 
 **Developpe par Greg**
-**Version 1.5.0 - Fevrier 2026**
+**Version 1.6.0 - Fevrier 2026**
