@@ -15,7 +15,8 @@
     "IA : Alertes email automatiques aux responsables de service",
     "Formulaire presqu'accidents enrichi : 7 nouvelles rubriques (categorie, equipement, mesures immediates, lesion, temoins, conditions, facteurs)",
     "Formulaire presqu'accidents reorganise en 7 sections claires",
-    "Manuel utilisateur mis a jour avec 8 nouveaux chapitres IA",
+    "Visite guidee personnalisee par profil : Maintenance, Production, QHSE, Logistique, Direction, Generique",
+    "Manuel utilisateur mis a jour avec 9 nouveaux chapitres (IA + visite guidee)",
     "Section Personnalisation IA : liste des fonctionnalites utilisant le modele LLM",
     "Correction RBAC : permissions corrigees pour utilisateurs non-admin",
     "Plan de surveillance : onglets par annee + controles recurrents automatiques"
