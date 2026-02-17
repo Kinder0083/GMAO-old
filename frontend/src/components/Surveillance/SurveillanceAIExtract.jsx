@@ -47,6 +47,7 @@ function SurveillanceAIExtract({ open, onClose }) {
       const result = await surveillanceAPI.extractFromDocument(file);
       if (result.success) {
         setExtractedData(result.data);
+        setSourceFile(result.source_file || null);
         const indices = result.data.controles.map((_, i) => i);
         setSelectedControles(indices);
         setStep('review');
