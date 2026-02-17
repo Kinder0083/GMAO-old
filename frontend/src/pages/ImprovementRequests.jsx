@@ -143,7 +143,6 @@ const ImprovementRequests = () => {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-gray-900">Demandes d'amélioration</h1>
-            <ServiceFilterBadge />
           </div>
           <p className="text-gray-600 mt-1">Gérez vos demandes d'amélioration</p>
         </div>
