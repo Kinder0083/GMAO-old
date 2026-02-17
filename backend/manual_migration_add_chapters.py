@@ -1117,13 +1117,14 @@ async def run_migration():
     await db.manual_versions.update_many({"is_current": True}, {"$set": {"is_current": False}})
     await db.manual_versions.insert_one({
         "id": f"migration-{now.strftime('%Y%m%d%H%M%S')}",
-        "version": "2.3",
+        "version": "2.4",
         "release_date": now.isoformat(),
         "changes": [
             "Ajout chapitres: Cameras, Rapports M.E.S., Dashboard Service",
             "Ajout chapitres: Gestion d'equipe, Rapports Hebdo., Tableau d'affichage",
             "Ajout chapitres: Analytics Checklists, Personnalisation",
-            "Ajout chapitres: Autorisations Particulieres, Demandes d'Arret"
+            "Ajout chapitres: Autorisations Particulieres, Demandes d'Arret",
+            "Ajout chapitres: IA Checklists/Maintenance, IA Presqu'accidents"
         ],
         "author_id": "system",
         "author_name": "Migration automatique",
