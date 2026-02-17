@@ -768,6 +768,8 @@ function PresquAccidentList() {
                           <span>📅 {new Date(item.date_incident).toLocaleDateString('fr-FR')}</span>
                           <span>📍 {item.lieu}</span>
                           <span>🏢 {item.service}</span>
+                          {item.categorie_incident && <Badge variant="outline" className="text-[10px]">{item.categorie_incident.replace(/_/g, ' ')}</Badge>}
+                          {item.equipement_nom && <span>⚙️ {item.equipement_nom}</span>}
                           {item.declarant && <span>👤 {item.declarant}</span>}
                         </div>
                       </div>
