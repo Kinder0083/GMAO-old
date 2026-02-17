@@ -193,6 +193,41 @@ export default function AINonconformityAnalyzer({ open, onClose }) {
                 )}
               </div>
 
+              {/* Notifications envoyées */}
+              {notificationsSent.length > 0 && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg" data-testid="notifications-sent-banner">
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2 text-blue-800">
+                    <Bell className="h-4 w-4" />
+                    Alertes automatiques envoyées
+                  </h3>
+                  <div className="space-y-1.5">
+                    {notificationsSent.map((n, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-blue-700">
+                          <strong>{n.service}</strong> — {n.responsable}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {n.notification_created && (
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <Bell className="h-3 w-3" /> Notification
+                            </span>
+                          )}
+                          {n.email_sent ? (
+                            <span className="flex items-center gap-1 text-green-600">
+                              <Mail className="h-3 w-3" /> Email envoyé
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-orange-600">
+                              <Mail className="h-3 w-3" /> Email non envoyé
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Patterns */}
               {analysis.non_conformities_patterns?.length > 0 && (
                 <div>
