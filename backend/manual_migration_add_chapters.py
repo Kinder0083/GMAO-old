@@ -1086,6 +1086,44 @@ Cliquez sur **"Imprimer le rapport"** pour ouvrir la fenetre d'impression du nav
         "level": "intermediate",
         "keywords": ["ia", "rapport", "qhse", "synthese", "reunion", "impression", "plan action"],
     },
+    # === VISITE GUIDEE ===
+    {
+        "id": "sec-039-01",
+        "chapter_id": "ch-039",
+        "title": "Visite guidee adaptee a votre profil",
+        "content": """**La visite guidee personnalisee**
+
+Lors de votre premiere connexion, GMAO Iris vous propose une visite guidee interactive pour decouvrir les fonctionnalites essentielles. Cette visite est **automatiquement adaptee a votre profil** (service).
+
+**Les profils disponibles :**
+
+**Maintenance :**
+Vous decouvrirez les modules Equipements, Ordres de travail, Maintenance preventive, Planning, Inventaire et Demandes d'intervention. Les textes sont orientes vers la gestion quotidienne des interventions et du parc machines.
+
+**Production :**
+La visite met en avant le M.E.S. (suivi de production), le Planning, les Ordres de travail, les Demandes d'intervention, les Compteurs et les Presqu'accidents. L'accent est mis sur le suivi de la production et le signalement rapide des problemes.
+
+**QHSE :**
+Vous verrez les Presqu'accidents avec les fonctionnalites IA (causes racines, incidents similaires), le Rapport Presqu'accidents avec l'analyse IA des tendances, Analytics Checklists, le Plan de Surveillance, les Documentations et les Contrats.
+
+**Logistique / ADV :**
+La visite presente l'Inventaire, les Demandes d'achat, les Fournisseurs, les Equipements et l'Historique Achat. Les textes sont orientes vers la gestion des stocks et des approvisionnements.
+
+**Direction / Admin :**
+Vous decouvrirez le Dashboard Service, les Rapports, la Gestion d'equipe, les Utilisateurs, le Rapport Presqu'accidents et les Rapports Hebdomadaires. L'accent est mis sur le pilotage et la prise de decision.
+
+**Generique (aucun service defini) :**
+Si votre profil n'a pas de service attribue, une visite standard presente les modules les plus courants : Equipements, Ordres de travail, Planning, Presqu'accidents et Rapports.
+
+**Etapes communes a tous :**
+Quel que soit votre profil, la visite inclut toujours : le menu de navigation, le tableau de bord, les notifications, le chat en direct et l'assistant IA.
+
+**Relancer la visite :**
+Vous pouvez relancer la visite a tout moment depuis **Parametres > Visite guidee**.""",
+        "order": 1,
+        "level": "beginner",
+        "keywords": ["visite", "guidee", "profil", "service", "onboarding", "decouverte", "premiere connexion"],
+    },
 ]
 
 
