@@ -108,6 +108,7 @@ function SurveillanceAIExtract({ open, onClose }) {
     setExtractedData(null);
     setSelectedControles([]);
     setResult(null);
+    setSourceFile(null);
     onClose(shouldRefresh);
   };
 
