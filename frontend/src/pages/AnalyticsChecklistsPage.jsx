@@ -611,6 +611,11 @@ const AnalyticsChecklistsPage = () => {
         </Card>
       </div>
       </div> {/* Fin du contenu à exporter */}
+      
+      <AINonconformityAnalyzer
+        open={aiAnalyzerOpen}
+        onClose={() => setAiAnalyzerOpen(false)}
+      />
     </div>
   );
 };
