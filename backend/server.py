@@ -6690,13 +6690,9 @@ async def create_intervention_request(
 
 @api_router.get("/intervention-requests", response_model=List[InterventionRequest], tags=["Demandes Intervention"])
 async def get_all_intervention_requests(current_user: dict = Depends(require_permission("interventionRequests", "view"))):
-    """Récupérer toutes les demandes d'intervention avec filtrage par service"""
-    from service_filter import apply_service_filter
-    
+    """Récupérer toutes les demandes d'intervention"""
     try:
         query = {}
-        # Appliquer le filtre par service
-        query = await apply_service_filter(query, current_user, "service")
         
         requests = []
         async for req in db.intervention_requests.find(query).sort("date_creation", -1):
