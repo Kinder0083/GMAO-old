@@ -70,6 +70,89 @@ function SurveillanceAIDashboard() {
     label: monthLabels[e.mois?.split('-')[1]] || e.mois
   }));
 
+  const exportPDF = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const element = reportRef.current;
+
+      // Capture le dashboard en canvas haute résolution
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1200
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgWidth = 190; // A4 width minus margins
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageHeight = 277; // A4 height minus margins
+
+      // En-tête
+      pdf.setFillColor(30, 58, 138); // bleu foncé
+      pdf.rect(0, 0, 210, 28, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Rapport de Tendances IA - Plan de Surveillance', 10, 12);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      pdf.text(`GMAO Iris - Rapport QHSE du ${dateStr}`, 10, 19);
+      pdf.text(`Analyses: ${kpis.total_analyses} | Controles: ${kpis.total_controles} | Conformite: ${kpis.taux_conformite}%`, 10, 25);
+
+      // Contenu (image du dashboard)
+      let yOffset = 32;
+      let remainingHeight = imgHeight;
+      let sourceY = 0;
+
+      while (remainingHeight > 0) {
+        const sliceHeight = Math.min(remainingHeight, pageHeight - (yOffset > 32 ? 10 : yOffset));
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = (sliceHeight / imgWidth) * canvas.width;
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, (sourceY / imgWidth) * canvas.width, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
+
+        const sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(sliceImg, 'JPEG', 10, yOffset, imgWidth, sliceHeight);
+
+        remainingHeight -= sliceHeight;
+        sourceY += sliceHeight;
+
+        if (remainingHeight > 0) {
+          pdf.addPage();
+          yOffset = 10;
+        }
+      }
+
+      // Pied de page sur chaque page
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(7);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(`Page ${i}/${totalPages} - Rapport genere automatiquement par GMAO Iris`, 10, 290);
+      }
+
+      pdf.save(`rapport-tendances-ia-${now.toISOString().split('T')[0]}.pdf`);
+      toast({ title: 'Export PDF', description: 'Rapport téléchargé avec succès' });
+    } catch (error) {
+      console.error('Erreur export PDF:', error);
+      toast({ title: 'Erreur', description: "Impossible de générer le PDF", variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const getSeverityColor = (severity) => {
     if (severity === 'HAUTE') return 'bg-red-100 text-red-700 border-red-200';
     if (severity === 'MOYENNE') return 'bg-amber-100 text-amber-700 border-amber-200';
