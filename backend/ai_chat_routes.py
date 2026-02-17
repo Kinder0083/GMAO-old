@@ -1638,21 +1638,20 @@ async def get_llm_response(
     provider: str,
     model: str,
     context: str = None,
-    app_context: dict = None
+    app_context: dict = None,
+    dynamic_context: str = ""
 ) -> str:
-    """Obtenir une réponse du LLM configuré avec contexte enrichi"""
+    """Obtenir une réponse du LLM avec mémoire de conversation et contexte enrichi"""
     
     # Récupérer la clé API
     api_key = None
     provider_info = LLM_PROVIDERS.get(provider, LLM_PROVIDERS["gemini"])
     key_name = provider_info.get("provider_key", "EMERGENT_LLM_KEY")
     
-    # Vérifier d'abord les paramètres globaux
     global_key = await db.global_settings.find_one({"key": key_name})
     if global_key and global_key.get("value"):
         api_key = global_key["value"]
     else:
-        # Utiliser la variable d'environnement
         api_key = os.environ.get(key_name) or os.environ.get("EMERGENT_LLM_KEY")
     
     if not api_key:
@@ -1661,43 +1660,51 @@ async def get_llm_response(
     # Préparer le message système avec le contexte enrichi
     system_message = get_system_message(assistant_name, assistant_gender, language, app_context)
     
-    # Ajouter le contexte de page si disponible (et non déjà dans app_context)
     if context and not app_context:
         system_message += f"\n\nContexte actuel de l'utilisateur : {context}"
     
-    # Utiliser emergentintegrations pour l'appel LLM
+    # Construire initial_messages avec l'historique complet
+    messages = [{"role": "system", "content": system_message}]
+    
+    # Injecter l'historique de conversation (les 20 derniers messages pour limiter les tokens)
+    recent_history = history[-20:] if len(history) > 20 else history
+    for msg in recent_history:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
+    
+    # Ajouter le contexte dynamique au message courant si disponible
+    enriched_message = message
+    if dynamic_context:
+        enriched_message = f"{message}\n\n[DONNEES PERTINENTES DE LA BASE DE DONNEES]\n{dynamic_context}"
+    
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         
-        # Déterminer le provider pour emergentintegrations
         ei_provider = provider
         if provider in ["deepseek", "mistral"]:
-            # Pour les providers non supportés par Emergent, on utilise leur API directement
-            # Pour l'instant, on fallback sur gemini
             logger.warning(f"Provider {provider} non supporté par Emergent, fallback sur gemini")
             ei_provider = "gemini"
             model = "gemini-2.5-flash"
         
-        # Créer le chat
+        # Créer le chat avec l'historique complet via initial_messages
         chat = LlmChat(
             api_key=api_key,
-            session_id=f"gmao_{assistant_name}",
-            system_message=system_message
+            session_id=f"gmao_{assistant_name}_{uuid.uuid4().hex[:6]}",
+            system_message=system_message,
+            initial_messages=messages
         )
         
-        # Configurer le modèle
         chat.with_model(ei_provider, model)
         
-        # Créer le message utilisateur
-        user_message = UserMessage(text=message)
-        
-        # Envoyer et récupérer la réponse
+        user_message = UserMessage(text=enriched_message)
         response = await chat.send_message(user_message)
         
         return response
         
     except ImportError:
-        logger.error("emergentintegrations non installé, installation en cours...")
+        logger.error("emergentintegrations non installé")
         raise Exception("Le module emergentintegrations n'est pas installé")
     except Exception as e:
         logger.error(f"Erreur appel LLM: {e}")
