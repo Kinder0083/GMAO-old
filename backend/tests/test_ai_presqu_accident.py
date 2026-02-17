@@ -44,7 +44,8 @@ class TestAIAnalyzeRootCauses(TestAuthentication):
         response = requests.get(f"{BASE_URL}/api/presqu-accident/items", headers=auth_headers)
         assert response.status_code == 200, f"Failed to get items: {response.text}"
         data = response.json()
-        items = data.get("data", [])
+        # Response can be a list directly or {data: [...]}
+        items = data if isinstance(data, list) else data.get("data", [])
         assert len(items) > 0, "No presqu'accident items in DB"
         return items[0]
     
