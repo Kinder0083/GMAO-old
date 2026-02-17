@@ -73,6 +73,8 @@ function SurveillanceAIExtract({ open, onClose }) {
     try {
       const selectedData = {
         document_info: extractedData.document_info,
+        filename: file?.name || 'document.pdf',
+        file_size: file?.size || 0,
         controles: selectedControles.map(i => {
           const ctrl = extractedData.controles[i];
           return {
