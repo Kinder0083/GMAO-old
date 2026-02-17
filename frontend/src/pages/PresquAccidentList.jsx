@@ -123,6 +123,15 @@ function PresquAccidentList() {
     }
   };
 
+  const loadEquipments = async () => {
+    try {
+      const response = await equipmentsAPI.getAll();
+      setEquipments(response.data || []);
+    } catch (error) {
+      console.error('Erreur chargement équipements:', error);
+    }
+  };
+
   const applyFilters = () => {
     let filtered = [...items];
     
