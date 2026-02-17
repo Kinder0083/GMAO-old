@@ -25,7 +25,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import api from '../services/api';
+import api, { sensorsAPI } from '../services/api';
 import { useSensors } from '../hooks/useSensors';
 import { useToast } from '../hooks/use-toast';
 import SensorChart from '../components/Sensors/SensorChart';
