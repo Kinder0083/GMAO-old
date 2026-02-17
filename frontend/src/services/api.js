@@ -441,7 +441,17 @@ export const surveillanceAPI = {
   },
   
   // Création batch depuis IA
-  createBatchFromAI: (data) => api.post('/surveillance/ai/create-batch', data).then(res => res.data)
+  createBatchFromAI: (data) => api.post('/surveillance/ai/create-batch', data).then(res => res.data),
+  
+  // Historique des analyses IA
+  getAIHistory: (params) => api.get('/surveillance/ai/history', { params }).then(res => res.data),
+  getAIHistoryDetail: (id) => api.get(`/surveillance/ai/history/${id}`).then(res => res.data),
+  
+  // Analytics & Tendances IA
+  getAIAnalytics: () => api.get('/surveillance/ai/analytics').then(res => res.data),
+  
+  // Alertes intelligentes IA
+  getAIAlerts: () => api.get('/surveillance/ai/alerts').then(res => res.data)
 };
 
 // ==================== PRESQU'ACCIDENT ====================
