@@ -472,122 +472,191 @@ Tu es maintenant {gender_adj2} à aider l'utilisateur. Sois proactive, experte e
 
 async def get_enriched_app_context(current_user: dict) -> dict:
     """
-    Récupère le contexte enrichi de l'application pour améliorer la pertinence des réponses de l'IA.
-    Inclut des statistiques en temps réel sur l'état de l'application.
+    Récupère le contexte enrichi de l'application avec des données CONCRÈTES
+    pour que l'IA puisse répondre avec précision.
     """
     try:
         context = {
             "current_user_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip() or current_user.get('email', 'Utilisateur'),
             "current_user_role": current_user.get('role', 'N/A'),
+            "current_user_service": current_user.get('service', 'N/A'),
             "current_page": "N/A",
             "last_action": "N/A"
         }
-        
-        # Compter les ordres de travail actifs
+
+        # --- OT actifs : compteur + 5 derniers détails ---
         try:
-            active_wos = await db.work_orders.count_documents({
-                "statut": {"$in": ["en_attente", "en_cours", "En attente", "En cours"]}
-            })
-            context["active_work_orders"] = active_wos
+            active_filter = {"statut": {"$in": ["en_attente", "en_cours", "En attente", "En cours"]}}
+            context["active_work_orders"] = await db.work_orders.count_documents(active_filter)
+            urgent_filter = {**active_filter, "priorite": {"$in": ["haute", "urgente", "Haute", "Urgente", "critical"]}}
+            context["urgent_work_orders"] = await db.work_orders.count_documents(urgent_filter)
+            recent_wos = await db.work_orders.find(
+                active_filter, {"_id": 0, "id": 1, "titre": 1, "priorite": 1, "statut": 1, "type_maintenance": 1, "assigned_to_name": 1, "created_at": 1}
+            ).sort("created_at", -1).to_list(length=5)
+            context["recent_work_orders"] = [
+                f"- {wo.get('titre','')} | {wo.get('priorite','?')} | {wo.get('statut','?')} | Assigné: {wo.get('assigned_to_name','Non assigné')}"
+                for wo in recent_wos
+            ]
         except Exception:
             context["active_work_orders"] = 0
-        
-        # Compter les OT urgents (priorité haute)
-        try:
-            urgent_wos = await db.work_orders.count_documents({
-                "statut": {"$in": ["en_attente", "en_cours", "En attente", "En cours"]},
-                "priorite": {"$in": ["haute", "urgente", "Haute", "Urgente", "critical"]}
-            })
-            context["urgent_work_orders"] = urgent_wos
-        except Exception:
             context["urgent_work_orders"] = 0
-        
-        # Équipements en maintenance
+            context["recent_work_orders"] = []
+
+        # --- Équipements en maintenance : compteur + noms ---
         try:
-            eq_maintenance = await db.equipments.count_documents({
-                "statut": {"$in": ["en_maintenance", "En maintenance", "hors_service", "Hors service"]}
-            })
-            context["equipment_in_maintenance"] = eq_maintenance
+            eq_filter = {"statut": {"$in": ["en_maintenance", "En maintenance", "hors_service", "Hors service"]}}
+            context["equipment_in_maintenance"] = await db.equipments.count_documents(eq_filter)
+            eq_list = await db.equipments.find(
+                eq_filter, {"_id": 0, "nom": 1, "reference": 1, "statut": 1, "emplacement": 1}
+            ).to_list(length=5)
+            context["equipment_details"] = [
+                f"- {eq.get('nom','')} ({eq.get('reference','')}) | {eq.get('statut','')} | {eq.get('emplacement','')}"
+                for eq in eq_list
+            ]
         except Exception:
             context["equipment_in_maintenance"] = 0
-        
-        # Alertes actives (capteurs)
+            context["equipment_details"] = []
+
+        # --- Alertes actives ---
         try:
-            alerts = await db.sensor_alerts.count_documents({
-                "status": {"$in": ["active", "unacknowledged"]}
-            })
-            context["active_alerts"] = alerts
+            context["active_alerts"] = await db.alerts.count_documents({"read": False, "archived": False})
+            alert_list = await db.alerts.find(
+                {"read": False, "archived": False}, {"_id": 0, "title": 1, "message": 1, "severity": 1, "source_name": 1}
+            ).sort("created_at", -1).to_list(length=5)
+            context["alert_details"] = [
+                f"- [{a.get('severity','?')}] {a.get('title','')} (source: {a.get('source_name','')})"
+                for a in alert_list
+            ]
         except Exception:
             context["active_alerts"] = 0
-        
-        # Capteurs en alerte
+            context["alert_details"] = []
+
+        # --- Capteurs en alerte ---
         try:
-            sensors_alert = await db.sensors.count_documents({
-                "status": {"$in": ["alert", "warning", "critical"]}
-            })
-            context["sensors_in_alert"] = sensors_alert
+            context["sensors_in_alert"] = await db.sensors.count_documents(
+                {"status": {"$in": ["alert", "warning", "critical"]}}
+            )
         except Exception:
             context["sensors_in_alert"] = 0
-        
-        # Inventaire - Articles en rupture
+
+        # --- Inventaire ---
         try:
-            inventory_rupture = await db.inventory.count_documents({
-                "$expr": {"$lte": ["$quantite", 0]}
+            context["inventory_rupture"] = await db.inventory.count_documents({"$expr": {"$lte": ["$quantite", 0]}})
+            context["inventory_low"] = await db.inventory.count_documents({
+                "$and": [{"$expr": {"$gt": ["$quantite", 0]}}, {"$expr": {"$lte": ["$quantite", "$seuil_alerte"]}}]
             })
-            context["inventory_rupture"] = inventory_rupture
+            low_items = await db.inventory.find(
+                {"$expr": {"$lte": ["$quantite", "$seuil_alerte"]}},
+                {"_id": 0, "nom": 1, "reference": 1, "quantite": 1, "seuil_alerte": 1}
+            ).to_list(length=5)
+            context["inventory_critical_items"] = [
+                f"- {it.get('nom','')} ({it.get('reference','')}) : {it.get('quantite',0)} restant (seuil: {it.get('seuil_alerte',0)})"
+                for it in low_items
+            ]
         except Exception:
             context["inventory_rupture"] = 0
-        
-        # Inventaire - Articles niveau bas
-        try:
-            inventory_low = await db.inventory.count_documents({
-                "$and": [
-                    {"$expr": {"$gt": ["$quantite", 0]}},
-                    {"$expr": {"$lte": ["$quantite", "$seuil_alerte"]}}
-                ]
-            })
-            context["inventory_low"] = inventory_low
-        except Exception:
             context["inventory_low"] = 0
-        
-        # Maintenances préventives en retard
+            context["inventory_critical_items"] = []
+
+        # --- Maintenances préventives en retard ---
         try:
-            from datetime import datetime, timezone
             today = datetime.now(timezone.utc)
-            pm_overdue = await db.preventive_maintenance.count_documents({
-                "prochaine_date": {"$lt": today},
-                "statut": {"$ne": "terminé"}
+            context["preventive_maintenance_overdue"] = await db.preventive_maintenance.count_documents({
+                "prochaine_date": {"$lt": today}, "statut": {"$ne": "terminé"}
             })
-            context["preventive_maintenance_overdue"] = pm_overdue
         except Exception:
             context["preventive_maintenance_overdue"] = 0
-        
-        # Dernière action utilisateur (depuis l'audit)
+
+        # --- Dernière action utilisateur ---
         try:
             last_audit = await db.audit_logs.find_one(
-                {"user_id": current_user.get("id")},
-                sort=[("timestamp", -1)]
+                {"user_id": current_user.get("id")}, sort=[("timestamp", -1)]
             )
             if last_audit:
                 context["last_action"] = f"{last_audit.get('action', 'N/A')} sur {last_audit.get('entity_type', 'N/A')}"
         except Exception:
             context["last_action"] = "N/A"
-        
+
         return context
-        
+
     except Exception as e:
         logger.error(f"Erreur récupération contexte enrichi: {e}")
         return {
             "current_user_name": current_user.get('email', 'Utilisateur'),
             "current_user_role": current_user.get('role', 'N/A'),
-            "active_work_orders": 0,
-            "urgent_work_orders": 0,
-            "equipment_in_maintenance": 0,
-            "active_alerts": 0,
-            "sensors_in_alert": 0,
-            "current_page": "N/A",
-            "last_action": "N/A"
+            "active_work_orders": 0, "urgent_work_orders": 0,
+            "equipment_in_maintenance": 0, "active_alerts": 0,
+            "sensors_in_alert": 0, "current_page": "N/A", "last_action": "N/A"
         }
+
+
+async def get_dynamic_query_context(message: str) -> str:
+    """
+    Analyse la question de l'utilisateur et effectue des requêtes DB ciblées
+    pour fournir des données concrètes au LLM.
+    """
+    extra = []
+    msg_lower = message.lower()
+
+    try:
+        # Détection de questions sur les OT
+        if any(k in msg_lower for k in ["ordre", "ot ", " ot", "travail", "intervention"]):
+            wos = await db.work_orders.find(
+                {}, {"_id": 0, "id": 1, "titre": 1, "priorite": 1, "statut": 1, "type_maintenance": 1, "assigned_to_name": 1, "description": 1}
+            ).sort("created_at", -1).to_list(length=10)
+            if wos:
+                lines = [f"  - [{wo.get('statut','')}] {wo.get('titre','')} | Priorite: {wo.get('priorite','')} | Type: {wo.get('type_maintenance','')} | Assigne: {wo.get('assigned_to_name','N/A')}" for wo in wos]
+                extra.append(f"DERNIERS ORDRES DE TRAVAIL :\n" + "\n".join(lines))
+
+        # Détection de questions sur les équipements
+        if any(k in msg_lower for k in ["equipement", "machine", "pompe", "moteur", "compresseur"]):
+            eqs = await db.equipments.find(
+                {}, {"_id": 0, "id": 1, "nom": 1, "reference": 1, "statut": 1, "type": 1, "fabricant": 1, "emplacement": 1}
+            ).sort("nom", 1).to_list(length=15)
+            if eqs:
+                lines = [f"  - {eq.get('nom','')} | Ref: {eq.get('reference','')} | Statut: {eq.get('statut','')} | Type: {eq.get('type','')} | Lieu: {eq.get('emplacement','')}" for eq in eqs]
+                extra.append(f"EQUIPEMENTS :\n" + "\n".join(lines))
+
+        # Détection de questions sur les capteurs
+        if any(k in msg_lower for k in ["capteur", "sensor", "temperature", "pression", "vibration", "iot"]):
+            sensors = await db.sensors.find(
+                {}, {"_id": 0, "id": 1, "name": 1, "type": 1, "unit": 1, "last_value": 1, "status": 1, "alert_enabled": 1, "min_threshold": 1, "max_threshold": 1}
+            ).to_list(length=10)
+            if sensors:
+                lines = [f"  - {s.get('name','')} | Type: {s.get('type','')} | Valeur: {s.get('last_value','?')}{s.get('unit','')} | Seuils: [{s.get('min_threshold','')}, {s.get('max_threshold','')}] | Alerte: {'Oui' if s.get('alert_enabled') else 'Non'}" for s in sensors]
+                extra.append(f"CAPTEURS IoT :\n" + "\n".join(lines))
+
+        # Détection de questions sur l'inventaire
+        if any(k in msg_lower for k in ["inventaire", "stock", "piece", "filtre", "huile", "courroie"]):
+            items = await db.inventory.find(
+                {}, {"_id": 0, "nom": 1, "reference": 1, "quantite": 1, "seuil_alerte": 1, "emplacement": 1}
+            ).sort("quantite", 1).to_list(length=10)
+            if items:
+                lines = [f"  - {it.get('nom','')} ({it.get('reference','')}) : {it.get('quantite',0)} en stock (seuil: {it.get('seuil_alerte',0)})" for it in items]
+                extra.append(f"INVENTAIRE :\n" + "\n".join(lines))
+
+        # Détection de questions sur le planning / équipe
+        if any(k in msg_lower for k in ["planning", "equipe", "technicien", "charge", "disponib"]):
+            members = await db.team_members.find(
+                {}, {"_id": 0, "nom": 1, "prenom": 1, "poste": 1, "service": 1, "statut": 1}
+            ).to_list(length=15)
+            if members:
+                lines = [f"  - {m.get('prenom','')} {m.get('nom','')} | {m.get('poste','')} | Service: {m.get('service','')} | Statut: {m.get('statut','')}" for m in members]
+                extra.append(f"MEMBRES DE L'EQUIPE :\n" + "\n".join(lines))
+
+        # Détection de questions sur les contrats
+        if any(k in msg_lower for k in ["contrat", "fournisseur", "prestataire"]):
+            contracts = await db.contracts.find(
+                {}, {"_id": 0, "title": 1, "fournisseur": 1, "statut": 1, "date_fin": 1, "montant": 1}
+            ).sort("date_fin", 1).to_list(length=10)
+            if contracts:
+                lines = [f"  - {c.get('title','')} | {c.get('fournisseur','')} | {c.get('statut','')} | Fin: {c.get('date_fin','?')}" for c in contracts]
+                extra.append(f"CONTRATS :\n" + "\n".join(lines))
+
+    except Exception as e:
+        logger.warning(f"Erreur requete dynamique contexte: {e}")
+
+    return "\n\n".join(extra) if extra else ""
 
 
 # ==================== Endpoints ====================
