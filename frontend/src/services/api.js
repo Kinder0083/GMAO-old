@@ -196,6 +196,9 @@ export const aiMaintenanceAPI = {
 
   // Feature 3: Analyse IA des non-conformités
   analyzeNonconformities: (days = 90) => api.post('/ai-maintenance/analyze-nonconformities', { days }).then(res => res.data),
+
+  // Feature 4: Création d'OT curatifs depuis l'analyse
+  createWorkOrdersFromAnalysis: (workOrders) => api.post('/ai-maintenance/create-work-orders-from-analysis', { work_orders: workOrders }).then(res => res.data),
 };
 
 // ==================== USERS ====================
