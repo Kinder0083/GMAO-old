@@ -14,6 +14,7 @@ import ReportTemplateForm from '../components/WeeklyReports/ReportTemplateForm';
 import ReportTemplateCard from '../components/WeeklyReports/ReportTemplateCard';
 import ReportHistoryTable from '../components/WeeklyReports/ReportHistoryTable';
 import ReportGlobalSettings from '../components/WeeklyReports/ReportGlobalSettings';
+import AIReportGenerator from '../components/WeeklyReports/AIReportGenerator';
 
 const WeeklyReportsPage = () => {
   const { toast } = useToast();
