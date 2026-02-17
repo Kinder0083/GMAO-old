@@ -395,6 +395,14 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | GET | `/api/backup/drive/status` | Statut connexion Google Drive |
 | GET | `/api/version` | Version de l'application |
 | POST | `/api/updates/broadcast-warning` | Avertissement avant MAJ |
+| POST | `/api/ai/checklist/generate-from-doc` | IA : generer checklist depuis document |
+| POST | `/api/ai/maintenance/generate-from-doc` | IA : generer plan maintenance depuis document |
+| POST | `/api/ai-maintenance/analyze-nonconformities` | IA : analyser non-conformites checklists |
+| POST | `/api/ai-maintenance/create-curative-wos` | IA : creer OT curatifs |
+| POST | `/api/ai-presqu-accident/analyze-root-causes` | IA : analyse causes racines (5 Pourquoi + Ishikawa) |
+| POST | `/api/ai-presqu-accident/find-similar` | IA : detection incidents similaires |
+| POST | `/api/ai-presqu-accident/analyze-trends` | IA : analyse tendances presqu'accidents |
+| POST | `/api/ai-presqu-accident/generate-report` | IA : rapport synthese QHSE |
 | WS | `/ws/chat/` | Chat temps reel |
 | WS | `/ws/whiteboard/` | Tableau d'affichage |
 | WS | `/api/ws/realtime/{entity}` | Notifications temps reel |
