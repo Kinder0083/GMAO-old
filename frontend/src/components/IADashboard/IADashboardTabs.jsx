@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { 
   Wrench, ClipboardList, Activity, ShieldCheck, Bot, Loader2,
   Trash2, ToggleLeft, ToggleRight, Clock, User, Zap
 } from 'lucide-react';
-import api, { workOrdersAPI, automationsAPI, sensorsAPI, surveillanceAPI } from '../services/api';
-import { useToast } from '../hooks/use-toast';
+import api, { workOrdersAPI, automationsAPI, sensorsAPI, surveillanceAPI } from '../../services/api';
+import { useToast } from '../../hooks/use-toast';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, LineChart, Line
