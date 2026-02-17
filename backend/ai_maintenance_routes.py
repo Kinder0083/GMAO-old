@@ -138,7 +138,7 @@ IMPORTANT:
         }
 
     except json.JSONDecodeError:
-        logger.error(f"Erreur parsing JSON checklist IA")
+        logger.error("Erreur parsing JSON checklist IA")
         return {"success": False, "error": "L'IA n'a pas pu extraire les informations correctement. Réessayez."}
     except Exception as e:
         logger.error(f"Erreur génération checklist IA: {e}")
@@ -303,7 +303,7 @@ IMPORTANT:
         }
 
     except json.JSONDecodeError:
-        logger.error(f"Erreur parsing JSON maintenance IA")
+        logger.error("Erreur parsing JSON maintenance IA")
         return {"success": False, "error": "L'IA n'a pas pu extraire les informations correctement. Réessayez."}
     except Exception as e:
         logger.error(f"Erreur génération programme maintenance IA: {e}")
@@ -588,7 +588,7 @@ Format attendu:
         }
 
     except json.JSONDecodeError:
-        logger.error(f"Erreur parsing JSON analyse NC")
+        logger.error("Erreur parsing JSON analyse NC")
         return {"success": False, "error": "L'IA n'a pas pu analyser les données correctement."}
     except Exception as e:
         logger.error(f"Erreur analyse non-conformités IA: {e}")
