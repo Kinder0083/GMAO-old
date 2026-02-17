@@ -8822,6 +8822,15 @@ from ai_work_order_routes import router as ai_wo_router, init_ai_wo_routes
 init_ai_wo_routes(db, audit_service)
 api_router.include_router(ai_wo_router)
 
+from ai_weekly_report_routes import router as ai_report_router, init_ai_report_routes
+init_ai_report_routes(db)
+api_router.include_router(ai_report_router)
+
+from ai_sensor_routes import router as ai_sensor_router, init_ai_sensor_routes
+init_ai_sensor_routes(db)
+api_router.include_router(ai_sensor_router)
+
+
 
 # Import presqu'accident routes
 from presqu_accident_routes import router as presqu_accident_router, init_presqu_accident_routes
