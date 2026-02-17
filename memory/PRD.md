@@ -47,15 +47,24 @@ Application de GMAO (Gestion de Maintenance Assistée par Ordinateur) nommée "G
 - Endpoint: POST /api/ai-maintenance/create-work-orders-from-analysis
 - OT créés avec categorie=TRAVAUX_CURATIF, statut=OUVERT, source=ai_nonconformity_analysis
 
-### Alertes Email Automatiques NC Critiques ✅ (17 Feb 2026)
+### Alertes Email Automatiques NC Critiques (17 Feb 2026)
 - Quand l'analyse IA détecte des patterns CRITIQUE/IMPORTANT, envoi automatique :
   - Notification in-app (collection `notifications`, type `ai_nc_critical_alert`)
   - Email HTML formaté au responsable du service concerné (via `service_responsables`)
-- Logique : patterns critiques → identification équipements → lookup service → lookup responsable → email + notification
-- Fallback : si aucun service identifié, notifie tous les responsables de service
-- Frontend : bandeau bleu "Alertes automatiques envoyées" avec statut par service (email envoyé/non envoyé)
 - Fichiers modifiés : `ai_maintenance_routes.py`, `email_service.py`, `AINonconformityAnalyzer.jsx`
-- Tests : 100% backend (9/9 pytest), 100% frontend
+
+### Nouvelles rubriques Presqu'accidents + Reorganisation formulaire (17 Feb 2026)
+- 7 nouvelles rubriques ajoutées : Catégorie incident, Equipement lié, Mesures immédiates, Type lésion potentielle, Témoins, Conditions incident, Facteurs contributifs
+- Formulaire réorganisé en 7 sections claires : Identification, Description, Personnes, Evaluation, Equipement, Actions, Pièces jointes
+- Fichiers modifiés : `models.py`, `PresquAccidentList.jsx`
+
+### 4 Fonctionnalités IA Presqu'accidents (17 Feb 2026)
+- **Analyse IA Causes Racines** : 5 Pourquoi + Ishikawa dans le dialogue de traitement, avec bouton "Appliquer l'évaluation"
+- **Détection Incidents Similaires** : Recherche automatique lors de la création (debounce 2s, min 15 chars)
+- **Analyse IA Tendances** : Patterns récurrents, zones à risque, prédictions, alertes email aux responsables
+- **Rapport QHSE** : Rapport structuré prêt pour réunion (résumé exécutif, KPIs, plan d'action, impression)
+- Fichiers créés : `ai_presqu_accident_routes.py`, `AIRootCauseAnalyzer.jsx`, `AISimilarIncidents.jsx`, `AIPATrendAnalyzer.jsx`, `AIQHSEReport.jsx`
+- Fichiers modifiés : `server.py`, `api.js`, `PresquAccidentList.jsx`, `PresquAccidentRapport.jsx`
 
 ## Backlog
 - Aucune tâche en attente
