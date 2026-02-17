@@ -453,7 +453,7 @@ function SurveillancePlan() {
           <Badge variant="default" className="bg-green-500">Réalisés: {stats.global.realises}</Badge>
           <Badge variant="default" className="bg-blue-500">Planifiés: {stats.global.planifies}</Badge>
           <Badge variant="default" className="bg-orange-500">À planifier: {stats.global.a_planifier}</Badge>
-          <Badge variant="secondary">Taux: {stats.global.pourcentage_realisation}%</Badge>
+          <Badge variant="secondary">Taux {selectedYear}: {stats.global.pourcentage_realisation}%</Badge>
           
           {/* Badge filtre en retard actif */}
           {showOverdueFilter && (
