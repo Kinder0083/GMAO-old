@@ -130,7 +130,7 @@ def generate_recurring_controls(base_item_dict: dict, start_date_str: str, perio
             "prochain_controle": next_date.strftime("%Y-%m-%d"),
             "annee": next_date.year,
             "groupe_controle_id": groupe_id,
-            "status": "a_planifier",
+            "status": "PLANIFIER",
             "date_realisation": None,
             "derniere_visite": None,
             "alerte_envoyee": False,
