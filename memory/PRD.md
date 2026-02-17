@@ -47,5 +47,15 @@ Application de GMAO (Gestion de Maintenance Assistée par Ordinateur) nommée "G
 - Endpoint: POST /api/ai-maintenance/create-work-orders-from-analysis
 - OT créés avec categorie=TRAVAUX_CURATIF, statut=OUVERT, source=ai_nonconformity_analysis
 
+### Alertes Email Automatiques NC Critiques ✅ (17 Feb 2026)
+- Quand l'analyse IA détecte des patterns CRITIQUE/IMPORTANT, envoi automatique :
+  - Notification in-app (collection `notifications`, type `ai_nc_critical_alert`)
+  - Email HTML formaté au responsable du service concerné (via `service_responsables`)
+- Logique : patterns critiques → identification équipements → lookup service → lookup responsable → email + notification
+- Fallback : si aucun service identifié, notifie tous les responsables de service
+- Frontend : bandeau bleu "Alertes automatiques envoyées" avec statut par service (email envoyé/non envoyé)
+- Fichiers modifiés : `ai_maintenance_routes.py`, `email_service.py`, `AINonconformityAnalyzer.jsx`
+- Tests : 100% backend (9/9 pytest), 100% frontend
+
 ## Backlog
 - Aucune tâche en attente
