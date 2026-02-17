@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Link2 } from 'lucide-react';
+import { Link2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { surveillanceAPI } from '../../services/api';
 
 const statusDot = (status) => {
@@ -14,7 +14,23 @@ const statusLabel = (status) => {
   return 'A planifier';
 };
 
-export default function RecurrenceIndicator({ item, currentYear, onNavigateToYear }) {
+const TrendArrow = ({ trend }) => {
+  if (!trend || trend.trend === 'none') return null;
+  const config = {
+    up: { Icon: TrendingUp, color: 'text-green-500', title: `Bonne conformite (${trend.realized}/${trend.total} realises)` },
+    stable: { Icon: Minus, color: 'text-amber-500', title: `Conformite moyenne (${trend.realized}/${trend.total} realises)` },
+    down: { Icon: TrendingDown, color: 'text-red-500', title: `Conformite faible (${trend.realized}/${trend.total} realises)` },
+  };
+  const { Icon, color, title } = config[trend.trend] || {};
+  if (!Icon) return null;
+  return (
+    <span title={title} data-testid={`trend-${trend.trend}`} className={`inline-flex items-center ${color}`}>
+      <Icon className="h-3.5 w-3.5" />
+    </span>
+  );
+};
+
+export default function RecurrenceIndicator({ item, currentYear, onNavigateToYear, trend }) {
   const [open, setOpen] = useState(false);
   const [occurrences, setOccurrences] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -58,7 +74,8 @@ export default function RecurrenceIndicator({ item, currentYear, onNavigateToYea
   if (!groupeId) return null;
 
   return (
-    <div className="relative inline-flex" ref={ref}>
+    <div className="relative inline-flex items-center gap-0.5" ref={ref}>
+      <TrendArrow trend={trend} />
       <button
         onClick={handleClick}
         className="p-1 rounded hover:bg-blue-50 transition-colors group"
@@ -70,12 +87,21 @@ export default function RecurrenceIndicator({ item, currentYear, onNavigateToYea
 
       {open && (
         <div
-          className="absolute z-50 left-full ml-1 top-1/2 -translate-y-1/2 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[220px] py-2 px-3"
+          className="absolute z-50 left-full ml-1 top-1/2 -translate-y-1/2 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[240px] py-2 px-3"
           data-testid="recurrence-popover"
         >
-          <p className="text-xs font-semibold text-gray-700 mb-1.5 border-b pb-1">
-            Occurrences ({loading ? '...' : occurrences?.length || 0})
-          </p>
+          <div className="flex items-center justify-between mb-1.5 border-b pb-1">
+            <p className="text-xs font-semibold text-gray-700">
+              Occurrences ({loading ? '...' : occurrences?.length || 0})
+            </p>
+            {trend && trend.trend !== 'none' && (
+              <span className={`text-[10px] flex items-center gap-1 ${
+                trend.trend === 'up' ? 'text-green-600' : trend.trend === 'down' ? 'text-red-600' : 'text-amber-600'
+              }`} data-testid="trend-summary">
+                {trend.realized}/{trend.total} conformes
+              </span>
+            )}
+          </div>
 
           {loading && (
             <p className="text-xs text-gray-400 py-2">Chargement...</p>
