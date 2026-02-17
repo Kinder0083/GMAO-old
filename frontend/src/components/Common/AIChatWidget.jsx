@@ -347,6 +347,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     let cleanText = responseText
       .replace(guideStartRegex, '')
       .replace(actionCommandRegex, '')
+      .replace(autoTextRegex, '')
       .replace(commandRegex, '')
       .trim();
     
