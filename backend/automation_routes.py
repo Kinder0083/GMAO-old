@@ -69,9 +69,9 @@ async def parse_automation_request(
         equipments = await db.equipments.find({}, {"_id": 0, "id": 1, "nom": 1, "reference": 1, "type": 1}).to_list(50)
         users = await db.users.find({}, {"_id": 0, "id": 1, "email": 1, "nom": 1, "prenom": 1, "role": 1, "service": 1}).to_list(50)
         
-        sensors_text = "\n".join([f"  - id:{s['id']} | {s.get('name','')} | type:{s.get('type','')} | unite:{s.get('unit','')} | seuils:[{s.get('min_threshold','?')}, {s.get('max_threshold','?')}]" for s in sensors]) or "  Aucun capteur"
-        equip_text = "\n".join([f"  - id:{e['id']} | {e.get('nom','')} ({e.get('reference','')})" for e in equipments[:20]]) or "  Aucun equipement"
-        users_text = "\n".join([f"  - id:{u['id']} | {u.get('prenom','')} {u.get('nom','')} | {u.get('email','')} | service:{u.get('service','')}" for u in users]) or "  Aucun utilisateur"
+        sensors_text = "\n".join([f"  - id:{s.get('id','?')} | {s.get('name','')} | type:{s.get('type','')} | unite:{s.get('unit','')} | seuils:[{s.get('min_threshold','?')}, {s.get('max_threshold','?')}]" for s in sensors]) or "  Aucun capteur"
+        equip_text = "\n".join([f"  - id:{e.get('id','?')} | {e.get('nom','')} ({e.get('reference','')})" for e in equipments[:20]]) or "  Aucun equipement"
+        users_text = "\n".join([f"  - id:{u.get('id','?')} | {u.get('prenom','')} {u.get('nom','')} | {u.get('email','')} | service:{u.get('service','')}" for u in users]) or "  Aucun utilisateur"
 
         prompt = f"""Tu es un systeme d'automatisation GMAO. L'utilisateur demande de configurer une automatisation en langage naturel. Analyse sa demande et traduis-la en configuration structuree.
 
