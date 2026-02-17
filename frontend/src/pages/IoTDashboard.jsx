@@ -548,6 +548,11 @@ const IoTDashboard = () => {
                       {stats?.max != null ? `Max: ${Number(stats.max).toFixed(1)} ${sensor.unite}` : ''}
                     </span>
                   </div>
+                  
+                  {/* Analyse IA */}
+                  <div className="mt-3 px-1">
+                    <AISensorAnalysis sensorId={sensor.id} sensorsAPI={sensorsAPI} />
+                  </div>
                 </Card>
               );
             })}
