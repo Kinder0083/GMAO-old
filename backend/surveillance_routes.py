@@ -14,6 +14,7 @@ from models import (
     SurveillanceItemUpdate,
     SurveillanceItemStatus,
     SurveillanceResponsible,
+    AIAnalysisHistory,
     ActionType,
     EntityType,
     SuccessResponse
