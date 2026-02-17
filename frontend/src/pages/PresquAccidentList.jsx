@@ -89,6 +89,7 @@ function PresquAccidentList() {
     loadData();
     loadUsers();
     loadServiceResponsables();
+    loadEquipments();
   }, []);
 
   useEffect(() => {
