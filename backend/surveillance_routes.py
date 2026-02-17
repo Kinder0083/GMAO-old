@@ -594,38 +594,47 @@ async def send_manual_reminder(
 @router.post("/items/{item_id}/upload")
 async def upload_piece_jointe(
     item_id: str,
-    file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload une pièce jointe pour un item"""
+    """Upload une ou plusieurs pièces jointes pour un item"""
     try:
-        # Vérifier que l'item existe
         item = await db.surveillance_items.find_one({"id": item_id})
         if not item:
             raise HTTPException(status_code=404, detail="Item non trouvé")
         
-        # Créer le répertoire uploads/surveillance si nécessaire
         upload_dir = Path("uploads/surveillance")
         upload_dir.mkdir(parents=True, exist_ok=True)
         
-        # Générer un nom de fichier unique
-        file_ext = Path(file.filename).suffix
-        unique_filename = f"{item_id}_{uuid.uuid4()}{file_ext}"
-        file_path = upload_dir / unique_filename
+        existing_attachments = item.get("attachments", [])
+        new_attachments = []
         
-        # Sauvegarder le fichier
-        with open(file_path, "wb") as f:
+        for file in files:
+            file_ext = Path(file.filename).suffix
+            file_id = str(uuid.uuid4())
+            unique_filename = f"{item_id}_{file_id}{file_ext}"
+            file_path = upload_dir / unique_filename
+            
             content = await file.read()
-            f.write(content)
+            with open(file_path, "wb") as f:
+                f.write(content)
+            
+            attachment = {
+                "id": file_id,
+                "filename": file.filename,
+                "url": f"/uploads/surveillance/{unique_filename}",
+                "size": len(content),
+                "uploaded_at": datetime.now(timezone.utc).isoformat()
+            }
+            new_attachments.append(attachment)
         
-        # Mettre à jour l'item avec l'URL du fichier
-        file_url = f"/uploads/surveillance/{unique_filename}"
+        all_attachments = existing_attachments + new_attachments
+        
         await db.surveillance_items.update_one(
             {"id": item_id},
             {
                 "$set": {
-                    "piece_jointe_url": file_url,
-                    "piece_jointe_nom": file.filename,
+                    "attachments": all_attachments,
                     "updated_at": datetime.now(timezone.utc).isoformat(),
                     "updated_by": current_user.get("id")
                 }
@@ -634,13 +643,135 @@ async def upload_piece_jointe(
         
         return {
             "success": True,
-            "file_url": file_url,
-            "file_name": file.filename
+            "attachments": new_attachments,
+            "total_attachments": len(all_attachments)
         }
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Erreur upload pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/items/{item_id}/attachments/{attachment_id}")
+async def delete_attachment(
+    item_id: str,
+    attachment_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer une pièce jointe"""
+    try:
+        item = await db.surveillance_items.find_one({"id": item_id})
+        if not item:
+            raise HTTPException(status_code=404, detail="Item non trouvé")
+        
+        attachments = item.get("attachments", [])
+        attachment = next((a for a in attachments if a.get("id") == attachment_id), None)
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Pièce jointe non trouvée")
+        
+        # Supprimer le fichier physique
+        file_path = Path(attachment["url"].lstrip("/"))
+        if file_path.exists():
+            file_path.unlink()
+        
+        # Retirer de la liste
+        new_attachments = [a for a in attachments if a.get("id") != attachment_id]
+        await db.surveillance_items.update_one(
+            {"id": item_id},
+            {
+                "$set": {
+                    "attachments": new_attachments,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": current_user.get("id")
+                }
+            }
+        )
+        
+        return {"success": True, "message": "Pièce jointe supprimée"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur suppression pièce jointe: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Recherche ====================
+
+@router.post("/search")
+async def search_surveillance_items(
+    search_request: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Recherche dans les contrôles du plan de surveillance (style Manuel)"""
+    try:
+        query = search_request.get("query", "").lower().strip()
+        if not query:
+            return {"results": []}
+        
+        items = await db.surveillance_items.find({}, {"_id": 0}).to_list(length=None)
+        
+        results = []
+        for item in items:
+            score = 0.0
+            
+            # Champs à rechercher avec pondération
+            fields = {
+                "classe_type": 3.0,
+                "category": 2.5,
+                "executant": 2.0,
+                "organisme_controle": 2.0,
+                "batiment": 1.5,
+                "description": 1.0,
+                "commentaire": 1.0,
+                "reference_reglementaire": 1.5,
+                "numero_rapport": 2.0,
+                "periodicite": 1.0,
+                "resultat_controle": 1.0
+            }
+            
+            matched_fields = []
+            for field, weight in fields.items():
+                value = str(item.get(field, "") or "").lower()
+                if query in value:
+                    score += weight
+                    matched_fields.append(field)
+            
+            if score > 0:
+                # Construire un extrait pertinent
+                excerpt_parts = []
+                if item.get("classe_type"):
+                    excerpt_parts.append(item["classe_type"])
+                if item.get("description"):
+                    desc = item["description"]
+                    idx = desc.lower().find(query)
+                    if idx >= 0:
+                        start = max(0, idx - 40)
+                        excerpt_parts.append("..." + desc[start:start + 120] + "...")
+                    else:
+                        excerpt_parts.append(desc[:120])
+                
+                results.append({
+                    "id": item.get("id"),
+                    "classe_type": item.get("classe_type", ""),
+                    "category": item.get("category", ""),
+                    "batiment": item.get("batiment", ""),
+                    "executant": item.get("executant", ""),
+                    "periodicite": item.get("periodicite", ""),
+                    "resultat_controle": item.get("resultat_controle"),
+                    "derniere_visite": item.get("derniere_visite"),
+                    "prochain_controle": item.get("prochain_controle"),
+                    "status": item.get("status"),
+                    "excerpt": " | ".join(excerpt_parts),
+                    "matched_fields": matched_fields,
+                    "relevance_score": score
+                })
+        
+        results.sort(key=lambda x: x["relevance_score"], reverse=True)
+        return {"results": results[:20]}
+    
+    except Exception as e:
+        logger.error(f"Erreur recherche surveillance: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
