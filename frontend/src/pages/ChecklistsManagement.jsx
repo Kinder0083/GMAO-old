@@ -101,17 +101,27 @@ const ChecklistsManagement = () => {
             <p className="text-gray-600 mt-1">Créez et gérez vos modèles de checklists pour les maintenances préventives</p>
           </div>
         </div>
-        <Button 
-          className="bg-green-600 hover:bg-green-700 text-white"
-          onClick={() => {
-            setSelectedChecklist(null);
-            setChecklistDialogOpen(true);
-          }}
-          data-testid="new-checklist-btn"
-        >
-          <Plus size={20} className="mr-2" />
-          Nouvelle Checklist
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setAiGeneratorOpen(true)}
+            data-testid="ai-checklist-generator-btn"
+          >
+            <Sparkles size={20} className="mr-2 text-blue-600" />
+            Générer avec IA
+          </Button>
+          <Button 
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => {
+              setSelectedChecklist(null);
+              setChecklistDialogOpen(true);
+            }}
+            data-testid="new-checklist-btn"
+          >
+            <Plus size={20} className="mr-2" />
+            Nouvelle Checklist
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
