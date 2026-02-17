@@ -1353,8 +1353,6 @@ async def get_ai_analytics(
                 if cat not in categories:
                     categories[cat] = {"categorie": cat, "analyses": 0, "conformes": 0, "non_conformes": 0, "avec_reserves": 0}
                 categories[cat]["analyses"] += 1
-            # Répartir les compteurs proportionnellement
-            nb_cats = len(a.get("categories", [])) or 1
             for cat in a.get("categories", []):
                 categories[cat]["conformes"] += a.get("conformes_count", 0)
                 categories[cat]["non_conformes"] += a.get("non_conformes_count", 0)
