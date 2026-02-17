@@ -595,3 +595,91 @@ Format attendu:
         import traceback
         logger.error(traceback.format_exc())
         return {"success": False, "error": f"Erreur lors de l'analyse: {str(e)}"}
+
+
+# ========================================================
+# Feature 4: Création d'OT curatifs depuis l'analyse IA
+# ========================================================
+
+@router.post("/create-work-orders-from-analysis")
+async def create_work_orders_from_analysis(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Crée des ordres de travail curatifs à partir des suggestions de l'analyse IA.
+    Accepte une liste de work_orders avec titre, description, priorite, equipement.
+    """
+    try:
+        from bson import ObjectId
+        
+        suggested_wos = data.get("work_orders", [])
+        if not suggested_wos:
+            raise HTTPException(status_code=400, detail="Aucun OT à créer")
+        
+        priority_map = {
+            "URGENTE": "URGENTE",
+            "HAUTE": "HAUTE",
+            "NORMALE": "NORMALE",
+            "MOYENNE": "MOYENNE",
+            "BASSE": "BASSE"
+        }
+        
+        created = []
+        for wo_data in suggested_wos:
+            # Générer numéro séquentiel
+            count = await db.work_orders.count_documents({})
+            numero = str(5800 + count + 1)
+            
+            priorite = priority_map.get(wo_data.get("priorite", "NORMALE"), "NORMALE")
+            
+            wo = {
+                "_id": ObjectId(),
+                "titre": wo_data.get("titre", "OT Curatif IA"),
+                "description": wo_data.get("description", ""),
+                "statut": "OUVERT",
+                "priorite": priorite,
+                "categorie": "CURATIF",
+                "equipement_id": wo_data.get("equipement_id") or None,
+                "assigne_a_id": None,
+                "emplacement_id": None,
+                "dateLimite": None,
+                "tempsEstime": None,
+                "tempsReel": None,
+                "dateTermine": None,
+                "createdBy": current_user.get("id"),
+                "service": None,
+                "preventive_maintenance_id": None,
+                "checklist_id": None,
+                "numero": numero,
+                "dateCreation": datetime.now(timezone.utc),
+                "attachments": [],
+                "comments": [],
+                "parts_used": [],
+                "source": "ai_nonconformity_analysis",
+                "equipement_name": wo_data.get("equipement", "")
+            }
+            wo["id"] = str(wo["_id"])
+            
+            await db.work_orders.insert_one(wo)
+            
+            created.append({
+                "id": wo["id"],
+                "numero": numero,
+                "titre": wo["titre"],
+                "priorite": priorite
+            })
+        
+        logger.info(f"✅ {len(created)} OT curatif(s) créé(s) depuis analyse IA")
+        
+        return {
+            "success": True,
+            "created_count": len(created),
+            "work_orders": created
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur création OT depuis analyse IA: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
