@@ -775,7 +775,8 @@ async def chat_with_ai(
                 provider=llm_provider,
                 model=llm_model,
                 context=request.context,
-                app_context=app_context
+                app_context=app_context,
+                dynamic_context=dynamic_context
             )
         except Exception as llm_error:
             logger.error(f"Erreur LLM: {llm_error}")
