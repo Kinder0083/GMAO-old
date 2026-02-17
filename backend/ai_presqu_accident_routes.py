@@ -151,7 +151,7 @@ Format attendu:
             text=f"Analyse les causes racines de cet incident et propose des actions correctives:\n{incident_text}"
         ))
 
-        cleaned = clean_json_response(response.text)
+        cleaned = clean_json_response(response)
         analysis = json.loads(cleaned)
 
         # Sauvegarder l'analyse
@@ -267,7 +267,7 @@ HISTORIQUE DES INCIDENTS:
 {incidents_text}"""
         ))
 
-        cleaned = clean_json_response(response.text)
+        cleaned = clean_json_response(response)
         result = json.loads(cleaned)
 
         return {"success": True, "data": result}
@@ -400,7 +400,7 @@ Format:
                  "\n".join(incidents_detail)
         ))
 
-        cleaned = clean_json_response(response.text)
+        cleaned = clean_json_response(response)
         analysis = json.loads(cleaned)
 
         # Sauvegarder
@@ -644,7 +644,7 @@ DÉTAIL DES INCIDENTS:
 {chr(10).join(incidents_detail)}"""
         ))
 
-        cleaned = clean_json_response(response.text)
+        cleaned = clean_json_response(response)
         report = json.loads(cleaned)
 
         # Sauvegarder
