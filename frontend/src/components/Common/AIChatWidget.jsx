@@ -317,11 +317,20 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
         const actionType = actionMatch[1];
         const actionData = JSON.parse(actionMatch[2]);
         console.log('Action automatique détectée:', actionType, actionData);
-        
-        // Exécuter l'action automatique
         executeAutoAction(actionType, actionData);
       } catch (e) {
         console.error('Erreur parsing action JSON:', e);
+      }
+    }
+    
+    // Parser CONFIGURE_AUTOMATION avec texte libre (pas JSON)
+    const autoTextRegex = /\[\[CONFIGURE_AUTOMATION:([^\]]+)\]\]/g;
+    let autoTextMatch;
+    while ((autoTextMatch = autoTextRegex.exec(responseText)) !== null) {
+      const msg = autoTextMatch[1].trim();
+      if (!msg.startsWith('{')) {
+        console.log('Automation texte libre:', msg);
+        executeAutoAction('CONFIGURE_AUTOMATION', { message: msg });
       }
     }
     
