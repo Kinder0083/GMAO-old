@@ -65,9 +65,10 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Historique des achats avec statistiques par utilisateur et par mois
 
 ### Surveillance et securite
-- Plan de surveillance avec suivi des controles periodiques
+- Plan de surveillance avec suivi des controles periodiques (onglets par annee, generation automatique des controles recurrents)
 - Rapports de surveillance (3 modes : cartes, tableau, graphiques)
-- Gestion des presqu'accidents avec rapports
+- Gestion des presqu'accidents avec formulaire enrichi (7 sections : identification, description, personnes, evaluation risque, equipement, actions, pieces jointes)
+- Champs presqu'accidents : categorie d'incident, equipement lie GMAO, mesures immediates, type lesion potentielle, temoins, conditions, facteurs contributifs
 - Integration cameras (snapshots, alertes via Frigate/MQTT)
 - Autorisations particulieres (formulaires et suivi)
 
