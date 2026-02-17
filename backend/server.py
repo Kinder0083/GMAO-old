@@ -9571,7 +9571,6 @@ async def startup_scheduler():
         await init_system_roles()
         logger.info("✅ Rôles système initialisés")
         
-        logger.info("🔍 Début migration permissions rôles...")
         # Migrer les permissions des rôles (ajouter les modules manquants)
         try:
             from roles_routes import get_default_permissions_by_role
