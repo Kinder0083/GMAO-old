@@ -122,7 +122,7 @@ class TestAIWorkOrderCreation:
         
         # Verify statut and categorie
         assert wo_data.get('statut') == 'OUVERT', f"Expected statut=OUVERT, got {wo_data.get('statut')}"
-        assert wo_data.get('categorie') == 'CURATIF', f"Expected categorie=CURATIF, got {wo_data.get('categorie')}"
+        assert wo_data.get('categorie') == 'TRAVAUX_CURATIF', f"Expected categorie=TRAVAUX_CURATIF, got {wo_data.get('categorie')}"
         assert wo_data.get('source') == 'ai_nonconformity_analysis', f"Expected source=ai_nonconformity_analysis, got {wo_data.get('source')}"
         
         print(f"Verified WO #{wo_data.get('numero')}: statut={wo_data.get('statut')}, categorie={wo_data.get('categorie')}, source={wo_data.get('source')}")
