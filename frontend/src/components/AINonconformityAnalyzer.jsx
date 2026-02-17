@@ -40,6 +40,8 @@ export default function AINonconformityAnalyzer({ open, onClose }) {
   const [analysis, setAnalysis] = useState(null);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
+  const [creatingWOs, setCreatingWOs] = useState(false);
+  const [createdWOs, setCreatedWOs] = useState([]);
 
   const handleAnalyze = async () => {
     setStep('analyzing');
