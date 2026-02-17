@@ -1,75 +1,61 @@
-# GMAO Iris - PRD
+# GMAO Iris - Product Requirements Document
 
-## Problème original
-Application GMAO (CMMS) complète pour la gestion de maintenance assistée par ordinateur. Interface en français.
+## Problème Original
+Application de GMAO (Gestion de Maintenance Assistée par Ordinateur) nommée "GMAO Iris" avec de nombreux modules: ordres de travail, équipements, maintenance préventive, surveillance, etc.
+
+## Fonctionnalités Récentes Ajoutées (Sessions Précédentes)
+- **AI Extraction Surveillance**: Upload de documents, extraction IA, recherche web de périodicité, création automatique d'ordres curatifs
+- **Historique & Dashboard AI**: Collection `ai_analysis_history`, page historique, dashboard KPIs/graphiques/alertes
+- **Export PDF Dashboard**: Bouton export PDF via jspdf + html2canvas
+- **Pièces jointes multiples**: Support multi-fichiers sur contrôles de surveillance
+- **Recherche Plan de Surveillance**: Endpoint search + UI barre de recherche
+
+## Bug P0 Corrigé (Session Actuelle - 17 Feb 2026)
+
+### Problème
+Les utilisateurs non-admin ne pouvaient pas accéder aux modules (Ordres de Travail, etc.) malgré leurs permissions de rôle.
+
+### Causes Racines Identifiées et Corrigées
+1. **`serialize_doc()` polluait les permissions** - Ajoutait récursivement `dateCreation` et `attachments` à TOUS les dicts imbriqués, y compris les permissions. Corrigé avec paramètre `_is_root`.
+2. **`register` utilisait des permissions hardcodées obsolètes** (9 modules au lieu de 42). Corrigé pour utiliser `get_default_permissions_by_role()`.
+3. **`update_user` ne mettait PAS à jour les permissions quand le rôle changeait**. Corrigé pour auto-update.
+4. **Migration automatique au démarrage** ajoutée pour corriger les utilisateurs existants avec permissions incomplètes.
+5. **Bug menu migration** corrigé (crash quand `menu_items` contenait des strings).
+
+### Fichiers Modifiés
+- `backend/server.py`: serialize_doc(), register(), update_user(), startup migration, migrate-all-permissions endpoint
+- Aucun fichier frontend modifié (le bug était 100% backend)
+
+### Endpoints Ajoutés
+- `POST /api/users/migrate-all-permissions` - Réinitialise les permissions de tous les utilisateurs selon leur rôle
 
 ## Architecture
-- **Frontend**: React + Shadcn/UI + TailwindCSS + Recharts + Nivo
-- **Backend**: FastAPI + Motor (async MongoDB)
-- **Database**: MongoDB (gmao_iris)
-- **Intégrations**: Google Drive API, Tailscale Funnel, MQTT, Gemini (extraction IA contrats + surveillance)
+```
+/app
+├── backend/
+│   ├── server.py              # Serveur principal FastAPI
+│   ├── auth.py                # Auth JWT
+│   ├── dependencies.py        # get_current_user, require_permission, check_permission
+│   ├── models.py              # Modèles Pydantic, UserPermissions, get_default_permissions_by_role
+│   ├── roles_routes.py        # Routes gestion des rôles
+│   ├── surveillance_routes.py # Routes AI surveillance
+│   └── ...
+└── frontend/
+    └── src/
+        ├── hooks/usePermissions.js  # Hook permissions frontend
+        ├── components/Layout/MainLayout.jsx  # Menu filtrage par permissions
+        └── ...
+```
 
-## Fonctionnalités implémentées
+## Intégrations 3rd Party
+- Google Drive API
+- Gemini Pro (via emergentintegrations) - Extraction IA
+- Tailscale Funnel
 
-### Sessions précédentes
-- Tableau de bord, ordres de travail, équipements, inventaire, zones
-- Maintenance préventive, fournisseurs, historique d'achat
-- Chat live, capteurs MQTT, système de backup/restore
-- Import/export de données, journal d'audit
-- Manuel utilisateur, personnalisation
-- Gestion des utilisateurs et permissions (RBAC)
-- Bug Fix: Journal d'audit - ObjectId MongoDB, rétention sauvegardes
-- Feature: Section Contrats (CRUD, alertes, extraction IA Gemini, dashboard KPIs)
-
-### Session 16/02/2026
-- **Feature: Extraction IA documents de contrôle (Plan de Surveillance)**
-  - Upload PDF de contrôle → Gemini extrait les infos multi-types
-  - Recherche automatique de la périodicité réglementaire
-  - Création batch de plusieurs contrôles depuis un seul document
-  - Création automatique BT curatifs pour non-conformités
-  - Nouveaux champs: référence réglementaire, n° rapport, organisme, résultat
-
-### Session 17/02/2026
-- **Feature: Historique des analyses IA (Phase 1 - Stockage)**
-  - Collection MongoDB `ai_analysis_history` 
-  - Archivage automatique à chaque create-batch (filename, résultats, IDs créés, données brutes)
-- **Feature: Page Historique IA (Phase 2)**
-  - Liste chronologique de toutes les analyses IA
-  - Filtres par organisme et catégorie
-  - Dialog détail avec données brutes extraites
-  - Route: /surveillance-ai-history
-- **Feature: Tableau de bord IA Tendances (Phase 3)**
-  - KPIs: analyses, contrôles, taux conformité, non-conformités, BT curatifs
-  - Graphiques: évolution mensuelle (AreaChart), répartition résultats (PieChart), par organisme (BarChart), conformité par catégorie (barres de progression)
-  - **Export PDF** : Bouton pour générer un rapport PDF formaté pour réunions QHSE (en-tête bleu, KPIs, graphiques, alertes, pagination auto)
-  - Route: /surveillance-ai-dashboard
-- **Feature: Alertes intelligentes (Phase 4)**
-  - Détection de tendances de dégradation (non-conformités consécutives)
-  - Alerte taux conformité bas par catégorie (<70%)
-  - Alerte non-conformité sans BT curatif
-  - Sévérité HAUTE/MOYENNE/BASSE avec tri par priorité
-
-## Fichiers clés - Surveillance IA
-- `backend/surveillance_routes.py` - Routes: /ai/extract, /ai/create-batch, /ai/history, /ai/analytics, /ai/alerts
-- `backend/models.py` - SurveillanceItem + AIAnalysisHistory
-- `frontend/src/components/Surveillance/SurveillanceAIExtract.jsx` - Dialog extraction
-- `frontend/src/components/Surveillance/SurveillanceItemForm.jsx` - Formulaire mis à jour
-- `frontend/src/pages/SurveillancePlan.jsx` - Bouton "Analyse IA"
-- `frontend/src/pages/SurveillanceAIHistory.jsx` - Page historique
-- `frontend/src/pages/SurveillanceAIDashboard.jsx` - Dashboard tendances
-
-- **Feature: Pièces jointes multiples** sur les contrôles de surveillance
-  - Upload multi-fichiers (PDF, images, etc.)
-
-## Credentials
-  - Download et suppression individuelle
-  - Rattachement automatique du PDF source lors de la création via IA
-  - Section "Pièces jointes" dans le formulaire (création + édition)
-- **Feature: Recherche avancée** dans le Plan de Surveillance (style Manuel)
-  - Barre de recherche avec scoring pondéré (type > catégorie > exécutant > description...)
-  - Résultats avec badges catégorie, badges résultat, excerpts, score de pertinence
-  - Clic sur résultat = ouverture directe en édition
+## Comptes de Test
 - Admin: admin@test.com / Admin123!
+- Technicien: tech.test@test.com / Test1234!
 
-## Backlog
-- Aucune tâche en attente identifiée
+## Backlog / Tâches Futures
+- Aucune tâche en attente signalée par l'utilisateur
+- Note: Le dialogue de changement de mot de passe apparaît pour les utilisateurs firstLogin=true (comportement attendu)
