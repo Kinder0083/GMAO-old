@@ -827,8 +827,8 @@ Cette fonctionnalite permet de creer automatiquement un template de checklist en
         "keywords": ["ia", "checklist", "generation", "document", "automatique"],
     },
     {
-        "id": "sec-036-02",
-        "chapter_id": "ch-036",
+        "id": "sec-038-02",
+        "chapter_id": "ch-038",
         "title": "Generation IA de Plans de Maintenance",
         "content": """**Generer un programme de maintenance depuis un document constructeur**
 
@@ -850,8 +850,8 @@ L'IA peut analyser la documentation d'un equipement pour generer automatiquement
         "keywords": ["ia", "maintenance", "preventive", "generation", "plan", "programme"],
     },
     {
-        "id": "sec-036-03",
-        "chapter_id": "ch-036",
+        "id": "sec-038-03",
+        "chapter_id": "ch-038",
         "title": "Analyse IA des Non-Conformites",
         "content": """**Analyser les tendances de non-conformites avec l'IA**
 
@@ -879,8 +879,8 @@ Si des patterns critiques sont detectes, le systeme envoie automatiquement :
         "keywords": ["ia", "non-conformite", "analyse", "tendance", "alerte", "ordre de travail"],
     },
     {
-        "id": "sec-036-04",
-        "chapter_id": "ch-036",
+        "id": "sec-038-04",
+        "chapter_id": "ch-038",
         "title": "Alertes Email Automatiques IA",
         "content": """**Systeme d'alertes automatiques lie aux analyses IA**
 
