@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Edit, Trash2, CheckCircle, Paperclip } from 'lucide-react';
 import CompleteSurveillanceDialog from './CompleteSurveillanceDialog';
+import RecurrenceIndicator from './RecurrenceIndicator';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -23,7 +24,7 @@ const getStatusLabel = (status) => {
   }
 };
 
-function GridView({ items, loading, onEdit, onDelete, onRefresh }) {
+function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
 
   if (loading) return <div className="text-center p-4">Chargement...</div>;
@@ -48,7 +49,10 @@ function GridView({ items, loading, onEdit, onDelete, onRefresh }) {
                 <Card key={item.id}>
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-sm">{item.classe_type}</CardTitle>
+                      <CardTitle className="text-sm flex items-center gap-1">
+                        {item.classe_type}
+                        <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} />
+                      </CardTitle>
                       <Badge className={getStatusColor(item.status)}>{getStatusLabel(item.status)}</Badge>
                     </div>
                   </CardHeader>

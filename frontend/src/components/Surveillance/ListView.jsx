@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Edit, Trash2, CheckCircle } from 'lucide-react';
 import CompleteSurveillanceDialog from './CompleteSurveillanceDialog';
+import RecurrenceIndicator from './RecurrenceIndicator';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -23,7 +24,7 @@ const getStatusLabel = (status) => {
   }
 };
 
-function ListView({ items, loading, onEdit, onDelete, onRefresh }) {
+function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
 
   if (loading) return <div className="text-center p-4">Chargement...</div>;
@@ -52,7 +53,12 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh }) {
             ) : (
               items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.classe_type}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-1">
+                      {item.classe_type}
+                      <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} />
+                    </div>
+                  </TableCell>
                   <TableCell><Badge variant="outline">{item.category}</Badge></TableCell>
                   <TableCell>{item.batiment}</TableCell>
                   <TableCell>{item.periodicite}</TableCell>

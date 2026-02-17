@@ -5,6 +5,7 @@ import { Badge } from '../ui/badge';
 import { Edit, Trash2, CheckCircle, Eye, ChevronRight } from 'lucide-react';
 import CompleteSurveillanceDialog from './CompleteSurveillanceDialogNew';
 import HistoryDialog from './HistoryDialog';
+import RecurrenceIndicator from './RecurrenceIndicator';
 import { CATEGORY_ICONS } from './CategoryOrderDialog';
 import api from '../../services/api';
 
@@ -30,7 +31,7 @@ const getCategoryIcon = (category) => {
   return CATEGORY_ICONS[category] || CATEGORY_ICONS['default'];
 };
 
-function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh }) {
+function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
   const [historyDialog, setHistoryDialog] = useState({ open: false, control: null });
   const [groupedItems, setGroupedItems] = useState({});
@@ -171,7 +172,12 @@ function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh }) {
               <TableBody>
                 {categoryItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.classe_type}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-1">
+                        {item.classe_type}
+                        <RecurrenceIndicator item={item} currentYear={currentYear} onNavigateToYear={onNavigateToYear} />
+                      </div>
+                    </TableCell>
                     <TableCell>{item.batiment}</TableCell>
                     <TableCell>{item.periodicite}</TableCell>
                     <TableCell>{item.responsable}</TableCell>
