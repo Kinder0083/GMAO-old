@@ -1679,6 +1679,40 @@ class PresquAccidentSeverity(str, Enum):
     ELEVE = "ELEVE"  # Élevé
     CRITIQUE = "CRITIQUE"  # Critique
 
+class PresquAccidentCategory(str, Enum):
+    CHUTE_PERSONNE = "CHUTE_PERSONNE"
+    CHUTE_OBJET = "CHUTE_OBJET"
+    BRULURE = "BRULURE"
+    COINCEMENT = "COINCEMENT"
+    COUPURE = "COUPURE"
+    COLLISION = "COLLISION"
+    EXPOSITION_CHIMIQUE = "EXPOSITION_CHIMIQUE"
+    ELECTRIQUE = "ELECTRIQUE"
+    ERGONOMIQUE = "ERGONOMIQUE"
+    PROJECTION = "PROJECTION"
+    INCENDIE_EXPLOSION = "INCENDIE_EXPLOSION"
+    AUTRE = "AUTRE"
+
+class PresquAccidentLesion(str, Enum):
+    FRACTURE = "FRACTURE"
+    BRULURE = "BRULURE"
+    COUPURE = "COUPURE"
+    CONTUSION = "CONTUSION"
+    ENTORSE = "ENTORSE"
+    INTOXICATION = "INTOXICATION"
+    IRRITATION = "IRRITATION"
+    ELECTRISATION = "ELECTRISATION"
+    ECRASEMENT = "ECRASEMENT"
+    DOULEUR_MUSCULAIRE = "DOULEUR_MUSCULAIRE"
+    AUCUNE = "AUCUNE"
+    AUTRE = "AUTRE"
+
+class PresquAccidentFacteur(str, Enum):
+    HUMAIN = "HUMAIN"
+    MATERIEL = "MATERIEL"
+    ORGANISATIONNEL = "ORGANISATIONNEL"
+    ENVIRONNEMENTAL = "ENVIRONNEMENTAL"
+
 class PresquAccidentItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     numero: Optional[str] = None  # Format: [année]-[numéro] ex: 2026-001
@@ -1689,15 +1723,25 @@ class PresquAccidentItem(BaseModel):
     date_incident: str  # Date ISO de l'incident
     lieu: str  # Lieu de l'incident
     service: PresquAccidentService  # Service concerné
+    categorie_incident: Optional[str] = None  # Catégorie/type d'incident
     
-    # Personnes impliquées
-    personnes_impliquees: Optional[str] = None  # Noms des personnes (séparés par virgule)
+    # Équipement concerné
+    equipement_id: Optional[str] = None  # ID équipement lié (depuis la base GMAO)
+    equipement_nom: Optional[str] = None  # Nom de l'équipement (dénormalisé)
+    
+    # Personnes
     declarant: Optional[str] = None  # Nom du déclarant
+    personnes_impliquees: Optional[str] = None  # Noms des personnes (séparés par virgule)
+    temoins: Optional[str] = None  # Noms des témoins
     responsable_id: Optional[str] = None  # ID de l'utilisateur responsable du traitement
     
     # Analyse
     contexte_cause: Optional[str] = None  # Contexte et cause probable
+    mesures_immediates: Optional[str] = None  # Mesures immédiates prises
     severite: PresquAccidentSeverity = PresquAccidentSeverity.MOYEN
+    type_lesion_potentielle: Optional[str] = None  # Type de lésion potentielle
+    facteurs_contributifs: List[str] = Field(default_factory=list)  # Facteurs contributifs
+    conditions_incident: Optional[str] = None  # Conditions au moment de l'incident
     
     # Actions proposées par le déclarant
     actions_proposees: Optional[str] = None  # Actions proposées par l'encadrement
