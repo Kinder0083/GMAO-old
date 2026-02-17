@@ -1127,8 +1127,7 @@ async def get_work_orders(
     date_type: str = "creation",
     current_user: dict = Depends(require_permission("workOrders", "view"))
 ):
-    """Liste tous les ordres de travail avec filtrage par date et service"""
-    from service_filter import apply_service_filter
+    """Liste tous les ordres de travail avec filtrage par date"""
     
     query = {}
     
@@ -1139,9 +1138,6 @@ async def get_work_orders(
             "$gte": datetime.fromisoformat(date_debut),
             "$lte": datetime.fromisoformat(date_fin)
         }
-    
-    # Appliquer le filtre par service pour les responsables de service
-    query = await apply_service_filter(query, current_user, "service")
     
     work_orders = await db.work_orders.find(query).to_list(1000)
     
