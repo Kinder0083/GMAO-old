@@ -77,14 +77,22 @@ async def ai_diagnostic(
         eq_id = wo.get("equipement_id") or (wo.get("equipement") or {}).get("id")
         if eq_id:
             equipment = await db.equipments.find_one({"id": eq_id}, {"_id": 0})
+            if not equipment:
+                try:
+                    equipment = await db.equipments.find_one({"_id": ObjectId(eq_id)})
+                    if equipment:
+                        equipment["id"] = str(equipment.pop("_id"))
+                except Exception:
+                    pass
 
         # Historique des OT sur cet équipement
         history = []
         if eq_id:
-            history = await db.work_orders.find(
-                {"equipement_id": eq_id, "id": {"$ne": work_order_id}},
+            cursor = db.work_orders.find(
+                {"$or": [{"equipement_id": eq_id}, {"equipement.id": eq_id}], "id": {"$ne": work_order_id}, "_id": {"$ne": ObjectId(work_order_id) if len(work_order_id) == 24 else None}},
                 {"_id": 0, "titre": 1, "description": 1, "statut": 1, "priorite": 1, "categorie": 1, "dateCreation": 1, "comments": 1, "parts_used": 1}
             ).sort("dateCreation", -1).to_list(length=15)
+            history = await cursor if hasattr(cursor, '__await__') else cursor
 
         # Historique des pièces utilisées
         all_parts = []
