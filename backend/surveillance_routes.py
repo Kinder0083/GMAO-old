@@ -1128,7 +1128,16 @@ Voici les principales périodicités réglementaires françaises:
                 ctrl["periodicite_explication"] = "Périodicité trouvée directement dans le document"
 
         extracted["controles"] = controles
-        return {"success": True, "data": extracted}
+        return {
+            "success": True, 
+            "data": extracted,
+            "source_file": {
+                "id": permanent_file_id,
+                "filename": file.filename,
+                "url": permanent_url,
+                "size": len(content)
+            }
+        }
 
     except json.JSONDecodeError:
         logger.error(f"Erreur parsing JSON de l'IA: {response_text[:300] if 'response_text' in dir() else 'N/A'}")
