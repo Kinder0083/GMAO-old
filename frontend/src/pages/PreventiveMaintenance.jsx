@@ -767,6 +767,13 @@ const PreventiveMaintenance = () => {
 
       {/* Confirm Dialog */}
       <ConfirmDialog />
+      <AIMaintenanceGenerator
+        open={aiMaintenanceOpen}
+        onClose={(shouldRefresh) => {
+          setAiMaintenanceOpen(false);
+          if (shouldRefresh) loadChecklists();
+        }}
+      />
     </div>
   );
 };
