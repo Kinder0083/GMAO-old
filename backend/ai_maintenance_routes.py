@@ -639,7 +639,7 @@ async def create_work_orders_from_analysis(
                 "description": wo_data.get("description", ""),
                 "statut": "OUVERT",
                 "priorite": priorite,
-                "categorie": "CURATIF",
+                "categorie": "TRAVAUX_CURATIF",
                 "equipement_id": wo_data.get("equipement_id") or None,
                 "assigne_a_id": None,
                 "emplacement_id": None,
