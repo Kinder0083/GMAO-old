@@ -9573,69 +9573,74 @@ async def startup_scheduler():
         logger.info("✅ Rôles système initialisés")
         
         # Migrer les permissions des rôles (ajouter les modules manquants)
-        from roles_routes import get_default_permissions_by_role
-        NEW_PERMISSION_KEYS = ["mes", "mesReports", "serviceDashboard", "weeklyReports", "demandesArret", "consignes", "autorisationsParticulieres", "timeTracking", "cameras", "analyticsChecklists"]
-        roles = await db.roles.find({}).to_list(length=None)
-        perm_updated = 0
-        for role in roles:
-            perms = role.get("permissions", {})
-            needs_update = False
-            for key in NEW_PERMISSION_KEYS:
-                if key not in perms:
-                    needs_update = True
-                    default_perms = get_default_permissions_by_role(role.get("code", ""))
-                    default_dict = default_perms.model_dump()
-                    perms[key] = default_dict.get(key, {"view": False, "edit": False, "delete": False})
-            if needs_update:
-                await db.roles.update_one({"id": role["id"]}, {"$set": {"permissions": perms}})
-                perm_updated += 1
-        if perm_updated > 0:
-            logger.info(f"✅ Permissions migrées pour {perm_updated} rôle(s)")
+        try:
+            from roles_routes import get_default_permissions_by_role
+            NEW_PERMISSION_KEYS = ["mes", "mesReports", "serviceDashboard", "weeklyReports", "demandesArret", "consignes", "autorisationsParticulieres", "timeTracking", "cameras", "analyticsChecklists"]
+            roles = await db.roles.find({}).to_list(length=None)
+            perm_updated = 0
+            for role in roles:
+                perms = role.get("permissions", {})
+                if not isinstance(perms, dict):
+                    perms = {}
+                needs_update = False
+                for key in NEW_PERMISSION_KEYS:
+                    if key not in perms:
+                        needs_update = True
+                        default_perms = get_default_permissions_by_role(role.get("code", ""))
+                        default_dict = default_perms.model_dump()
+                        perms[key] = default_dict.get(key, {"view": False, "edit": False, "delete": False})
+                if needs_update:
+                    await db.roles.update_one({"id": role["id"]}, {"$set": {"permissions": perms}})
+                    perm_updated += 1
+            if perm_updated > 0:
+                logger.info(f"✅ Permissions migrées pour {perm_updated} rôle(s)")
+        except Exception as role_mig_err:
+            import traceback
+            logger.error(f"❌ Erreur migration permissions rôles: {role_mig_err}\n{traceback.format_exc()}")
         
         # Migrer les permissions de TOUS les utilisateurs existants
-        # Corrige les utilisateurs ayant des permissions incomplètes ou manquantes
-        all_users = await db.users.find({}).to_list(length=None)
-        users_perm_updated = 0
-        for u in all_users:
-            user_role = u.get("role", "VISUALISEUR")
-            current_perms = u.get("permissions", {})
-            # Si permissions est une liste ou string (corrompu), le remplacer entièrement
-            if not isinstance(current_perms, dict):
-                current_perms = {}
-            default_perms = get_default_permissions_by_role(user_role).model_dump()
-            needs_update = False
-            # Nettoyer d'abord les clés parasites (dateCreation, attachments, etc.)
-            valid_module_keys = set(default_perms.keys())
-            keys_to_remove = [k for k in current_perms if k not in valid_module_keys]
-            if keys_to_remove:
-                for k in keys_to_remove:
-                    del current_perms[k]
-                needs_update = True
-            # Vérifier chaque module du défaut et ajouter les manquants
-            for module_key, module_val in default_perms.items():
-                if module_key not in current_perms:
-                    current_perms[module_key] = module_val
+        try:
+            all_users = await db.users.find({}).to_list(length=None)
+            users_perm_updated = 0
+            for u in all_users:
+                user_role = u.get("role", "VISUALISEUR")
+                current_perms = u.get("permissions", {})
+                if not isinstance(current_perms, dict):
+                    current_perms = {}
+                default_perms = get_default_permissions_by_role(user_role).model_dump()
+                needs_update = False
+                valid_module_keys = set(default_perms.keys())
+                keys_to_remove = [k for k in current_perms if k not in valid_module_keys]
+                if keys_to_remove:
+                    for k in keys_to_remove:
+                        del current_perms[k]
                     needs_update = True
-                elif not isinstance(current_perms[module_key], dict):
-                    current_perms[module_key] = module_val
-                    needs_update = True
-                else:
-                    # Nettoyer les champs parasites dans chaque module
-                    valid_keys = {"view", "edit", "delete"}
-                    existing = current_perms[module_key]
-                    has_extra = any(k not in valid_keys for k in existing.keys())
-                    if has_extra:
-                        current_perms[module_key] = {
-                            "view": existing.get("view", module_val.get("view", False)),
-                            "edit": existing.get("edit", module_val.get("edit", False)),
-                            "delete": existing.get("delete", module_val.get("delete", False))
-                        }
+                for module_key, module_val in default_perms.items():
+                    if module_key not in current_perms:
+                        current_perms[module_key] = module_val
                         needs_update = True
-            if needs_update:
-                await db.users.update_one({"_id": u["_id"]}, {"$set": {"permissions": current_perms}})
-                users_perm_updated += 1
-        if users_perm_updated > 0:
-            logger.info(f"✅ Permissions utilisateurs migrées pour {users_perm_updated} utilisateur(s)")
+                    elif not isinstance(current_perms[module_key], dict):
+                        current_perms[module_key] = module_val
+                        needs_update = True
+                    else:
+                        valid_keys = {"view", "edit", "delete"}
+                        existing = current_perms[module_key]
+                        has_extra = any(k not in valid_keys for k in existing.keys())
+                        if has_extra:
+                            current_perms[module_key] = {
+                                "view": existing.get("view", module_val.get("view", False)),
+                                "edit": existing.get("edit", module_val.get("edit", False)),
+                                "delete": existing.get("delete", module_val.get("delete", False))
+                            }
+                            needs_update = True
+                if needs_update:
+                    await db.users.update_one({"_id": u["_id"]}, {"$set": {"permissions": current_perms}})
+                    users_perm_updated += 1
+            if users_perm_updated > 0:
+                logger.info(f"✅ Permissions utilisateurs migrées pour {users_perm_updated} utilisateur(s)")
+        except Exception as user_mig_err:
+            import traceback
+            logger.error(f"❌ Erreur migration permissions utilisateurs: {user_mig_err}\n{traceback.format_exc()}")
         
         # Migrer le manuel utilisateur (ajouter chapitres manquants)
         import json as json_lib
