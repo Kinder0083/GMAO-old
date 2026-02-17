@@ -410,10 +410,16 @@ export const surveillanceAPI = {
   },
   
   // Stats et alertes
-  getStats: () => api.get('/surveillance/stats').then(res => res.data),
+  getStats: (annee) => api.get('/surveillance/stats', { params: annee ? { annee } : {} }).then(res => res.data),
   getAlerts: () => api.get('/surveillance/alerts').then(res => res.data),
   getBadgeStats: () => api.get('/surveillance/badge-stats').then(res => res.data),
   getRapportStats: () => api.get('/surveillance/rapport-stats').then(res => res.data),
+  
+  // Années disponibles
+  getAvailableYears: () => api.get('/surveillance/available-years').then(res => res.data),
+  
+  // Migration des années
+  migrateYears: () => api.post('/surveillance/migrate-years').then(res => res.data),
   
   // Vérification automatique des échéances
   checkDueDates: () => api.post('/surveillance/check-due-dates').then(res => res.data),
