@@ -567,13 +567,15 @@ Si les backups planifies ne s'executent pas a l'heure prevue :
 | `backup_status` | Statut derniere sauvegarde |
 | `drive_credentials` | Tokens OAuth Google Drive |
 | `surveillance_plans` | Plans de surveillance |
-| `presqu_accidents` | Presqu'accidents |
+| `presqu_accidents` | Presqu'accidents (enrichi: categorie, equipement, lesion, facteurs, temoins, conditions) |
 | `improvement_requests` | Demandes d'amelioration |
 | `purchase_requests` | Demandes d'achat |
 | `chat_messages` | Messages de chat |
 | `consignes` | Consignes inter-equipes |
 | `documentations` | Documents |
 | `sensors` | Capteurs IoT |
+| `ai_analysis_history` | Historique des analyses IA (causes racines, tendances, rapports) |
+| `notifications` | Notifications in-app (inclut alertes IA critiques) |
 | ... | Et 40+ autres collections |
 
 ---
