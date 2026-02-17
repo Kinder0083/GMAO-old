@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "latest-976a02f",
   "versionName": "Intelligence Artificielle QHSE",
   "releaseDate": "2026-02-17",
   "description": "Integration complete de l'IA pour l'analyse QHSE : checklists, maintenance preventive, presqu'accidents, rapports automatiques et alertes email",
@@ -25,5 +25,5 @@
   "breaking": false,
   "downloadUrl": "https://github.com/Kinder0083/GMAO",
   "author": "Greg",
-  "lastUpdate": "2026-02-17T18:30:00.000000+00:00"
+  "lastUpdate": "2026-02-17T23:05:33.253875+00:00"
 }
