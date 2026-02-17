@@ -1779,11 +1779,19 @@ class PresquAccidentItemCreate(BaseModel):
     date_incident: str
     lieu: str
     service: PresquAccidentService
-    personnes_impliquees: Optional[str] = None
+    categorie_incident: Optional[str] = None
+    equipement_id: Optional[str] = None
+    equipement_nom: Optional[str] = None
     declarant: Optional[str] = None
-    responsable_id: Optional[str] = None  # ID utilisateur responsable
+    personnes_impliquees: Optional[str] = None
+    temoins: Optional[str] = None
+    responsable_id: Optional[str] = None
     contexte_cause: Optional[str] = None
+    mesures_immediates: Optional[str] = None
     severite: PresquAccidentSeverity = PresquAccidentSeverity.MOYEN
+    type_lesion_potentielle: Optional[str] = None
+    facteurs_contributifs: List[str] = Field(default_factory=list)
+    conditions_incident: Optional[str] = None
     actions_proposees: Optional[str] = None
 
 class PresquAccidentItemUpdate(BaseModel):
@@ -1792,11 +1800,19 @@ class PresquAccidentItemUpdate(BaseModel):
     date_incident: Optional[str] = None
     lieu: Optional[str] = None
     service: Optional[PresquAccidentService] = None
-    personnes_impliquees: Optional[str] = None
+    categorie_incident: Optional[str] = None
+    equipement_id: Optional[str] = None
+    equipement_nom: Optional[str] = None
     declarant: Optional[str] = None
+    personnes_impliquees: Optional[str] = None
+    temoins: Optional[str] = None
     responsable_id: Optional[str] = None
     contexte_cause: Optional[str] = None
+    mesures_immediates: Optional[str] = None
     severite: Optional[PresquAccidentSeverity] = None
+    type_lesion_potentielle: Optional[str] = None
+    facteurs_contributifs: Optional[List[str]] = None
+    conditions_incident: Optional[str] = None
     actions_proposees: Optional[str] = None
     # Champs de traitement
     actions_preventions: Optional[str] = None
