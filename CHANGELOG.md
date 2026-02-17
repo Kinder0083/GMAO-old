@@ -1,6 +1,93 @@
 # GMAO Iris - Notes de Version
 
-## Version 1.2.0 - MISE À JOUR MAJEURE (Octobre 2024)
+## Version 1.6.0 - MISE A JOUR MAJEURE IA & QHSE (Fevrier 2026)
+
+### Intelligence Artificielle - Checklists & Maintenance
+
+#### Generation IA de Checklists
+- Upload d'un document technique (PDF, image, texte), l'IA genere automatiquement un template de checklist complet
+- Les items generes incluent les points de controle, criteres d'acceptation et niveaux de criticite
+- Acces depuis le module "Gestion des Checklists" via le bouton "Generer avec IA"
+
+#### Generation IA de Programmes de Maintenance
+- Upload d'une documentation constructeur, l'IA genere un plan de maintenance preventive detaille
+- Inclut periodicite, taches, competences requises et pieces necessaires
+- Acces depuis le module "Maintenance Preventive"
+
+#### Analyse IA des Non-Conformites
+- Analyse automatique de l'historique des executions de checklists
+- Detection des patterns recurrents de non-conformites, tendances negatives, equipements a risque
+- Suggestions d'actions correctives avec ordres de travail curatifs creables en 1 clic
+- Envoi automatique d'alertes email aux responsables de service concerne en cas de patterns critiques
+
+### Intelligence Artificielle - Presqu'accidents
+
+#### Analyse IA des Causes Racines
+- Methode 5 Pourquoi automatisee : l'IA genere les 5 niveaux de questionnement et identifie la cause racine
+- Diagramme Ishikawa (6M) : analyse structuree par Milieu, Materiel, Methode, Main d'oeuvre, Matiere, Management
+- Proposition d'actions preventives classees par priorite (HAUTE/MOYENNE/BASSE) avec delais recommandes
+- Evaluation automatique severite/recurrence applicable en 1 clic au formulaire de traitement
+- Prise en compte de l'historique des incidents pour identifier les recurrences
+- Acces via le bouton "Analyser avec IA" dans le dialogue de traitement
+
+#### Detection Automatique d'Incidents Similaires
+- Lors de la saisie d'un nouveau presqu'accident, l'IA recherche automatiquement les incidents similaires
+- Declenchement automatique apres 2 secondes de saisie (minimum 15 caracteres de description)
+- Affichage du score de similarite, de la raison de la similarite et des lecons a retenir
+- Recommandations basees sur les actions deja entreprises pour les incidents precedents
+
+#### Analyse IA des Tendances Globales
+- Analyse de l'ensemble des presqu'accidents pour identifier les tendances
+- Detection des patterns recurrents classes par severite (CRITIQUE/IMPORTANT/MODERE)
+- Identification des zones a risque avec niveau de risque et nombre d'incidents
+- Predictions de risques futurs avec probabilite et actions preventives suggerees
+- Analyse des facteurs contributifs (humain, materiel, organisationnel, environnemental)
+- Recommandations prioritaires avec impact attendu et service concerne
+- Envoi automatique d'alertes email aux responsables de service concerne
+- Acces depuis le module "Rapport Presqu'accidents" via le bouton "Analyse IA"
+
+#### Rapport de Synthese QHSE
+- Generation automatique d'un rapport de synthese structure pour reunion QHSE
+- Resume executif, indicateurs cles (total, taux traitement, en retard, tendance)
+- Analyse par service et par categorie d'incident
+- Top risques classes par gravite
+- Plan d'action propose avec priorites, responsables, echeances et resultats attendus
+- Conclusion et points de vigilance
+- Option d'impression directe du rapport
+- Acces depuis le module "Rapport Presqu'accidents" via le bouton "Rapport QHSE"
+
+### Formulaire Presqu'accidents Enrichi
+
+#### 7 Nouvelles Rubriques
+- **Categorie d'incident** : Chute personne, Chute objet, Brulure, Coincement, Coupure, Collision, Exposition chimique, Electrique, Ergonomique, Projection, Incendie/Explosion, Autre
+- **Equipement lie** : Association directe avec un equipement de la base GMAO
+- **Mesures immediates prises** : Actions realisees sur le moment pour securiser la zone
+- **Type de lesion potentielle** : Fracture, Brulure, Coupure, Contusion, Entorse, Intoxication, etc.
+- **Temoins** : Personnes ayant assiste a l'incident (distinct des personnes impliquees)
+- **Conditions au moment de l'incident** : Poste, meteo, fatigue, charge de travail, etc.
+- **Facteurs contributifs** : Selection multiple parmi Humain, Materiel, Organisationnel, Environnemental
+
+#### Reorganisation du Formulaire
+- 7 sections claires avec fieldset : Identification, Description, Personnes, Evaluation, Equipement, Actions, Pieces jointes
+- Placeholders explicatifs dans chaque champ pour guider la saisie
+- Boutons toggle pour les facteurs contributifs (selection/deselection intuitive)
+- Descriptions contextuelles pour les niveaux de gravite
+
+### Alertes Email Automatiques
+- Systeme d'alerte automatique connecte aux analyses IA
+- Envoi d'email HTML formate au responsable du service concerne
+- Notification in-app simultanee dans le systeme d'alertes
+- Template email professionnel avec statistiques, patterns critiques et lien vers l'application
+- Fallback : notification a tous les responsables si le service ne peut etre determine
+
+### Corrections et Ameliorations
+- Correction critique du systeme RBAC (permissions par module) pour les utilisateurs non-admin
+- Migration automatique des permissions au demarrage pour corriger les donnees existantes
+- Plan de surveillance : onglets par annee avec generation automatique des controles recurrents
+
+---
+
+## Version 1.2.0 - MISE A JOUR MAJEURE (Octobre 2024)
 
 ### ✨ Nouvelles Fonctionnalités
 
