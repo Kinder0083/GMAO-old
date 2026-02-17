@@ -391,6 +391,25 @@ async def delete_surveillance_item(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/occurrences/{groupe_controle_id}")
+async def get_control_occurrences(
+    groupe_controle_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer toutes les occurrences d'un contrôle récurrent par son groupe_controle_id"""
+    try:
+        items = await db.surveillance_items.find(
+            {"groupe_controle_id": groupe_controle_id},
+            {"_id": 0, "id": 1, "annee": 1, "prochain_controle": 1, "status": 1,
+             "classe_type": 1, "periodicite": 1, "date_realisation": 1}
+        ).sort("annee", 1).to_list(length=50)
+
+        return {"success": True, "occurrences": items, "total": len(items)}
+    except Exception as e:
+        logger.error(f"Erreur récupération occurrences {groupe_controle_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Années et Migration ====================
 
 @router.get("/available-years")
