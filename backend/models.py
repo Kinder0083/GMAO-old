@@ -1560,6 +1560,10 @@ class SurveillanceItem(BaseModel):
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+    
+    # Gestion par année et récurrence
+    annee: Optional[int] = None  # Année du contrôle (ex: 2026)
+    groupe_controle_id: Optional[str] = None  # Lien entre contrôles récurrents
 
 class SurveillanceItemCreate(BaseModel):
     classe_type: str
