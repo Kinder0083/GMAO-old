@@ -452,6 +452,9 @@ export const surveillanceAPI = {
   // Migration des années
   migrateYears: () => api.post('/surveillance/migrate-years').then(res => res.data),
   
+  // Occurrences d'un contrôle récurrent
+  getOccurrences: (groupeId) => api.get(`/surveillance/occurrences/${groupeId}`).then(res => res.data),
+  
   // Vérification automatique des échéances
   checkDueDates: () => api.post('/surveillance/check-due-dates').then(res => res.data),
   
