@@ -2,7 +2,7 @@
 
 Application de Gestion de Maintenance Assistee par Ordinateur (GMAO) complete et auto-hebergee.
 
-**Version :** 1.5.0
+**Version :** 1.6.0
 **Concepteur :** Greg
 **Derniere mise a jour :** Fevrier 2026
 
@@ -10,11 +10,33 @@ Application de Gestion de Maintenance Assistee par Ordinateur (GMAO) complete et
 
 ## Presentation
 
-GMAO Iris est une application web full-stack concue pour gerer l'ensemble du cycle de maintenance industrielle : ordres de travail, equipements, maintenance preventive, inventaire, surveillance, M.E.S., cameras, chat en temps reel, et bien plus. Elle se deploie sur un serveur Proxmox LXC en une commande et dispose d'un systeme de mise a jour integre.
+GMAO Iris est une application web full-stack concue pour gerer l'ensemble du cycle de maintenance industrielle : ordres de travail, equipements, maintenance preventive, inventaire, surveillance, M.E.S., cameras, chat en temps reel, et bien plus. Elle integre desormais une couche d'**intelligence artificielle** pour l'analyse automatique des donnees QHSE. Elle se deploie sur un serveur Proxmox LXC en une commande et dispose d'un systeme de mise a jour integre.
 
 ---
 
 ## Fonctionnalites principales
+
+### Intelligence Artificielle (IA)
+
+GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automatiser et enrichir les processus QHSE.
+
+#### IA - Checklists et Maintenance
+- **Generation automatique de checklists** : Upload d'un document technique, l'IA genere un template de checklist complet
+- **Generation automatique de programmes de maintenance** : Upload d'une documentation constructeur, l'IA genere un plan de maintenance preventive
+- **Analyse IA des non-conformites** : Analyse l'historique des executions de checklists pour detecter les patterns recurrents, tendances negatives et equipements a risque
+- **Creation d'ordres de travail curatifs en 1 clic** : Depuis les resultats de l'analyse IA, creation automatique d'OT pour les actions correctives suggerees
+- **Alertes email automatiques** : Envoi automatique d'emails aux responsables de service quand des patterns critiques sont detectes
+
+#### IA - Presqu'accidents
+- **Analyse des causes racines** : Methode 5 Pourquoi + diagramme Ishikawa generes automatiquement par l'IA a partir de la description de l'incident, avec suggestion d'actions preventives et evaluation severite/recurrence
+- **Detection d'incidents similaires** : Lors de la creation d'un presqu'accident, l'IA recherche automatiquement les incidents similaires dans l'historique pour capitaliser sur les actions deja entreprises
+- **Analyse IA des tendances** : Analyse globale de tous les presqu'accidents pour identifier les patterns recurrents, zones a risque, predictions de risques futurs, avec envoi d'alertes email aux responsables
+- **Rapport de synthese QHSE** : Generation automatique d'un rapport structure (resume executif, KPIs, analyse par service, top risques, plan d'action) pret pour presentation en reunion QHSE, avec option d'impression
+
+#### IA - Assistant
+- Assistant IA conversationnel integre (personnalisable : nom, genre, modele LLM)
+- Historique des conversations IA accessible depuis le module "Historique IA"
+- Module "Tendances IA" pour visualiser les analyses et tendances detectees
 
 ### Ordres de travail
 - Creation, assignation, suivi et historique complet
