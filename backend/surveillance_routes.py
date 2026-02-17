@@ -394,10 +394,17 @@ async def delete_surveillance_item(
 # ==================== Statistiques et Indicateurs ====================
 
 @router.get("/stats")
-async def get_surveillance_stats(current_user: dict = Depends(get_current_user)):
-    """Récupérer les statistiques globales du plan de surveillance"""
+async def get_surveillance_stats(
+    annee: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer les statistiques du plan de surveillance (filtrables par année)"""
     try:
-        items = await db.surveillance_items.find().to_list(length=None)
+        query = {}
+        if annee:
+            query["annee"] = annee
+        
+        items = await db.surveillance_items.find(query).to_list(length=None)
         
         total = len(items)
         realises = len([i for i in items if i.get("status") == SurveillanceItemStatus.REALISE.value])
