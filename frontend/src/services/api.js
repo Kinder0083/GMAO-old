@@ -840,7 +840,10 @@ const sensorsAPI = {
   testFormula: (formula, testValue) =>
     api.post('/sensors/test-formula', null, {
       params: { formula, test_value: testValue }
-    })
+    }),
+  
+  // IA - Analyse prédictive
+  aiAnalyze: (sensorId) => api.post('/ai-sensors/analyze', { sensor_id: sensorId }).then(r => r.data),
 };
 
 api.sensors = sensorsAPI;
