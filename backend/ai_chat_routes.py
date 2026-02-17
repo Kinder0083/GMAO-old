@@ -112,38 +112,41 @@ def get_system_message(assistant_name: str, assistant_gender: str, language: str
     # Construire le contexte enrichi de l'application
     app_context_text = ""
     if app_context:
+        # Construire les listes détaillées
+        recent_wos_text = "\n".join(app_context.get('recent_work_orders', [])) or "   Aucun OT actif"
+        eq_details_text = "\n".join(app_context.get('equipment_details', [])) or "   Aucun equipement en maintenance"
+        alert_details_text = "\n".join(app_context.get('alert_details', [])) or "   Aucune alerte"
+        inv_items_text = "\n".join(app_context.get('inventory_critical_items', [])) or "   Stock normal"
+
         app_context_text = f"""
 
-═══════════════════════════════════════════════════════════════
-📊 CONTEXTE TEMPS RÉEL DE L'APPLICATION
-═══════════════════════════════════════════════════════════════
+CONTEXTE TEMPS REEL DE L'APPLICATION
 
-👤 UTILISATEUR CONNECTÉ :
-   - Nom : {app_context.get('current_user_name', 'Inconnu')}
-   - Rôle : {app_context.get('current_user_role', 'N/A')}
-   - Page actuelle : {app_context.get('current_page', 'Non détectée')}
-   - Dernière action : {app_context.get('last_action', 'Aucune')}
+UTILISATEUR CONNECTE :
+   Nom : {app_context.get('current_user_name', 'Inconnu')}
+   Role : {app_context.get('current_user_role', 'N/A')}
+   Service : {app_context.get('current_user_service', 'N/A')}
+   Page actuelle : {app_context.get('current_page', 'Non detectee')}
+   Derniere action : {app_context.get('last_action', 'Aucune')}
 
-📋 ORDRES DE TRAVAIL :
-   - En cours/attente : {app_context.get('active_work_orders', 0)}
-   - Urgents (priorité haute) : {app_context.get('urgent_work_orders', 0)}
+ORDRES DE TRAVAIL : {app_context.get('active_work_orders', 0)} actifs, {app_context.get('urgent_work_orders', 0)} urgents
+{recent_wos_text}
 
-🔧 ÉQUIPEMENTS :
-   - En maintenance/hors service : {app_context.get('equipment_in_maintenance', 0)}
+EQUIPEMENTS EN MAINTENANCE : {app_context.get('equipment_in_maintenance', 0)}
+{eq_details_text}
 
-🚨 ALERTES :
-   - Alertes actives : {app_context.get('active_alerts', 0)}
-   - Capteurs en alerte : {app_context.get('sensors_in_alert', 0)}
+ALERTES ACTIVES : {app_context.get('active_alerts', 0)}
+{alert_details_text}
 
-📦 INVENTAIRE :
-   - Articles en rupture : {app_context.get('inventory_rupture', 0)}
-   - Articles niveau bas : {app_context.get('inventory_low', 0)}
+CAPTEURS EN ALERTE : {app_context.get('sensors_in_alert', 0)}
 
-⚡ UTILISE CES DONNÉES pour personnaliser tes réponses :
-   - Si OT urgents > 0 : Mentionne-le et propose de les afficher
-   - Si alertes actives : Propose de les consulter
-   - Adapte ton aide à la page actuelle de l'utilisateur
-═══════════════════════════════════════════════════════════════"""
+INVENTAIRE : {app_context.get('inventory_rupture', 0)} en rupture, {app_context.get('inventory_low', 0)} niveau bas
+{inv_items_text}
+
+MAINTENANCES PREVENTIVES EN RETARD : {app_context.get('preventive_maintenance_overdue', 0)}
+
+UTILISE CES DONNEES CONCRETES pour personnaliser tes reponses. Cite les noms, titres et details specifiques.
+"""
     
     return f"""
 ═══════════════════════════════════════════════════════════════════════════════
