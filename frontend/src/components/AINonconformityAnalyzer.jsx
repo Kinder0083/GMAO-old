@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Loader2, Brain, AlertTriangle, TrendingDown, TrendingUp, Minus, Wrench, ShieldAlert, Lightbulb, ClipboardList } from 'lucide-react';
+import { Loader2, Brain, AlertTriangle, TrendingDown, TrendingUp, Minus, Wrench, ShieldAlert, Lightbulb, ClipboardList, Check } from 'lucide-react';
 import { aiMaintenanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 
