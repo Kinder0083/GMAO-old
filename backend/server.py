@@ -317,7 +317,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Helper functions
-def serialize_doc(doc):
+def serialize_doc(doc, _is_root=True):
     """Convert MongoDB document to JSON serializable format"""
     if doc is None:
         return None
@@ -343,21 +343,20 @@ def serialize_doc(doc):
         elif isinstance(value, list):
             doc[key] = [
                 str(item) if isinstance(item, ObjectId) 
-                else serialize_doc(item) if isinstance(item, dict) 
+                else serialize_doc(item, _is_root=False) if isinstance(item, dict) 
                 else str(item) if isinstance(item, (int, float)) and key in ["telephone", "phone", "numero"]
                 else item 
                 for item in value
             ]
         elif isinstance(value, dict):
-            doc[key] = serialize_doc(value)
+            doc[key] = serialize_doc(value, _is_root=False)
     
-    # Ajouter dateCreation si manquant (pour compatibilité)
-    if "dateCreation" not in doc:
-        doc["dateCreation"] = datetime.utcnow()
-    
-    # S'assurer que attachments existe
-    if "attachments" not in doc:
-        doc["attachments"] = []
+    # Ajouter dateCreation et attachments uniquement au niveau racine du document
+    if _is_root:
+        if "dateCreation" not in doc:
+            doc["dateCreation"] = datetime.utcnow()
+        if "attachments" not in doc:
+            doc["attachments"] = []
     
     return doc
 
