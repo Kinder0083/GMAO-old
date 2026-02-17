@@ -1507,6 +1507,22 @@ function PresquAccidentList() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog IA Analyse Causes Racines */}
+      <AIRootCauseAnalyzer
+        item={rcaItem}
+        open={openRCA}
+        onClose={() => { setOpenRCA(false); setRcaItem(null); }}
+        onApplyEvaluation={(sev, rec) => {
+          setTraitementData(prev => ({
+            ...prev,
+            severite_traitement: sev,
+            recurrence: rec
+          }));
+          setOpenRCA(false);
+          toast({ title: "Evaluation appliquee", description: `Severite: ${sev}, Recurrence: ${rec}` });
+        }}
+      />
     </div>
   );
 }
