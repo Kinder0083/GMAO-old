@@ -18,35 +18,44 @@ Application GMAO (CMMS) complète pour la gestion de maintenance assistée par o
 - Import/export de données, journal d'audit
 - Manuel utilisateur, personnalisation
 - Gestion des utilisateurs et permissions (RBAC)
-- Bug Fix P0: Journal d'audit - ObjectId MongoDB non sérialisables
-- Bug Fix P1: Rétention des sauvegardes globale
-- Feature: Mises à jour temps réel des badges header via WebSocket
-- Feature: Recherche autocomplete dans le manuel utilisateur
-- **Feature: Section Contrats** (CRUD, alertes, extraction IA Gemini, dashboard)
-- **Feature: Tableau de bord Contrats** (KPIs, graphiques, timeline)
+- Bug Fix: Journal d'audit - ObjectId MongoDB, rétention sauvegardes
+- Feature: Section Contrats (CRUD, alertes, extraction IA Gemini, dashboard KPIs)
 
-### Session actuelle (16/02/2026)
-- **Feature: Extraction IA de documents de contrôle (Plan de Surveillance)**
-  - Upload de documents PDF de contrôle (rapports APAVE, SOCOTEC, etc.)
-  - Analyse IA via Gemini pour extraire les informations de chaque type de contrôle
-  - Détection automatique de la périodicité réglementaire (avec niveau de confiance)
-  - Création automatique de PLUSIEURS contrôles depuis un seul document multi-équipements
-  - Création automatique de bons de travail curatifs (TRAVAUX_CURATIF) pour les non-conformités
-  - Nouveaux champs formulaire : référence réglementaire, numéro de rapport, organisme de contrôle, résultat (Conforme/Non conforme/Avec réserves)
-  - Formulaire réorganisé en sections : Identification, Réglementation & Rapport, Planification, Notifications
+### Session 16/02/2026
+- **Feature: Extraction IA documents de contrôle (Plan de Surveillance)**
+  - Upload PDF de contrôle → Gemini extrait les infos multi-types
+  - Recherche automatique de la périodicité réglementaire
+  - Création batch de plusieurs contrôles depuis un seul document
+  - Création automatique BT curatifs pour non-conformités
+  - Nouveaux champs: référence réglementaire, n° rapport, organisme, résultat
+
+### Session 17/02/2026
+- **Feature: Historique des analyses IA (Phase 1 - Stockage)**
+  - Collection MongoDB `ai_analysis_history` 
+  - Archivage automatique à chaque create-batch (filename, résultats, IDs créés, données brutes)
+- **Feature: Page Historique IA (Phase 2)**
+  - Liste chronologique de toutes les analyses IA
+  - Filtres par organisme et catégorie
+  - Dialog détail avec données brutes extraites
+  - Route: /surveillance-ai-history
+- **Feature: Tableau de bord IA Tendances (Phase 3)**
+  - KPIs: analyses, contrôles, taux conformité, non-conformités, BT curatifs
+  - Graphiques: évolution mensuelle (AreaChart), répartition résultats (PieChart), par organisme (BarChart), conformité par catégorie (barres de progression)
+  - Route: /surveillance-ai-dashboard
+- **Feature: Alertes intelligentes (Phase 4)**
+  - Détection de tendances de dégradation (non-conformités consécutives)
+  - Alerte taux conformité bas par catégorie (<70%)
+  - Alerte non-conformité sans BT curatif
+  - Sévérité HAUTE/MOYENNE/BASSE avec tri par priorité
 
 ## Fichiers clés - Surveillance IA
-- `backend/surveillance_routes.py` - Routes IA: /ai/extract, /ai/create-batch
-- `backend/models.py` - SurveillanceItem avec nouveaux champs
-- `frontend/src/components/Surveillance/SurveillanceAIExtract.jsx` - Dialog extraction IA
+- `backend/surveillance_routes.py` - Routes: /ai/extract, /ai/create-batch, /ai/history, /ai/analytics, /ai/alerts
+- `backend/models.py` - SurveillanceItem + AIAnalysisHistory
+- `frontend/src/components/Surveillance/SurveillanceAIExtract.jsx` - Dialog extraction
 - `frontend/src/components/Surveillance/SurveillanceItemForm.jsx` - Formulaire mis à jour
 - `frontend/src/pages/SurveillancePlan.jsx` - Bouton "Analyse IA"
-- `frontend/src/services/api.js` - surveillanceAPI.extractFromDocument, createBatchFromAI
-
-## Fichiers clés - Contrats
-- `backend/contract_routes.py` - Routes CRUD, dashboard, alertes, extraction IA
-- `frontend/src/pages/Contracts.jsx` - Page liste des contrats
-- `frontend/src/pages/ContractsDashboard.jsx` - Tableau de bord contrats
+- `frontend/src/pages/SurveillanceAIHistory.jsx` - Page historique
+- `frontend/src/pages/SurveillanceAIDashboard.jsx` - Dashboard tendances
 
 ## Credentials
 - Admin: admin@test.com / Admin123!
