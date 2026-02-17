@@ -202,6 +202,41 @@ function SurveillancePlan() {
     }
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const data = await surveillanceAPI.searchItems(searchQuery);
+      setSearchResults(data.results || []);
+      if (data.results?.length === 0) {
+        toast({ title: 'Aucun résultat', description: `Aucun contrôle trouvé pour "${searchQuery}"`, variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Erreur lors de la recherche', variant: 'destructive' });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearch(false);
+  };
+
+  const highlightText = (text, query) => {
+    if (!text || !query) return text || '';
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-200 rounded px-0.5">$1</mark>');
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
