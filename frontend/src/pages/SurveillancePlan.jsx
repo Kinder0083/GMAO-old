@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Plus, Download, Upload, Bell, Settings, X, FileText, Search, Loader2 } from 'lucide-react';
+import { Plus, Download, Upload, Bell, Settings, X, FileText, Search, Loader2, Calendar, RefreshCw } from 'lucide-react';
 import { surveillanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
@@ -19,12 +19,19 @@ import CalendarView from '../components/Surveillance/CalendarView';
 import SurveillanceItemForm from '../components/Surveillance/SurveillanceItemForm';
 import SurveillanceAIExtract from '../components/Surveillance/SurveillanceAIExtract';
 import CategoryOrderDialog from '../components/Surveillance/CategoryOrderDialog';
-import { useSurveillancePlan } from '../hooks/useSurveillancePlan';
 
 function SurveillancePlan() {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const location = useLocation();
+  
+  // Année sélectionnée
+  const [availableYears, setAvailableYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  
+  // Données
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filteredItems, setFilteredItems] = useState([]);
   const [stats, setStats] = useState(null);
   const [alerts, setAlerts] = useState([]);
@@ -35,6 +42,7 @@ function SurveillancePlan() {
   const [categories, setCategories] = useState([]);
   const [categoryOrderChanged, setCategoryOrderChanged] = useState(false);
   const [showOverdueFilter, setShowOverdueFilter] = useState(false);
+  const [migrating, setMigrating] = useState(false);
   
   // Recherche
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,13 +56,47 @@ function SurveillancePlan() {
     status: ''
   });
 
-  // Utiliser le hook temps réel
-  const { items, loading, refresh: loadItems } = useSurveillancePlan();
-
-  // Charger les stats et alertes séparément
+  // Charger les années disponibles au montage
   useEffect(() => {
-    loadStatsAndAlerts();
+    loadAvailableYears();
   }, []);
+
+  // Charger les données quand l'année change
+  useEffect(() => {
+    if (selectedYear) {
+      loadItems();
+      loadStatsAndAlerts();
+    }
+  }, [selectedYear]);
+
+  const loadAvailableYears = async () => {
+    try {
+      const data = await surveillanceAPI.getAvailableYears();
+      setAvailableYears(data.years || []);
+      // Si pas d'année encore sélectionnée, prendre l'année courante
+      if (!selectedYear) {
+        setSelectedYear(data.current_year || new Date().getFullYear());
+      }
+    } catch (error) {
+      console.error('Erreur chargement années:', error);
+      // Fallback: année courante
+      const current = new Date().getFullYear();
+      setAvailableYears([current - 1, current, current + 1]);
+    }
+  };
+
+  const loadItems = async () => {
+    setLoading(true);
+    try {
+      const data = await surveillanceAPI.getItems({ annee: selectedYear });
+      setItems(data || []);
+    } catch (error) {
+      console.error('Erreur chargement items:', error);
+      toast({ title: 'Erreur', description: 'Erreur de chargement des contrôles', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadStatsAndAlerts = async () => {
     try {
