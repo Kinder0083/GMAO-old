@@ -1,81 +1,337 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useGuidedTour } from '../../contexts/GuidedTourContext';
 import { X, ChevronLeft, ChevronRight, SkipForward } from 'lucide-react';
 
-// Définition des étapes de la visite guidée
-const tourSteps = [
-  {
-    target: 'body',
-    title: '🎉 Bienvenue sur GMAO Iris !',
-    content: 'Cette visite guidée va vous présenter les principales fonctionnalités de l\'application.',
-    subContent: 'Cliquez sur "Suivant" pour commencer ou "Passer" pour ignorer.',
-    placement: 'center',
-    isIntro: true
-  },
+// ========================================================
+// Etapes COMMUNES a tous les profils
+// ========================================================
+const COMMON_INTRO = (serviceName) => ({
+  target: 'body',
+  title: 'Bienvenue sur GMAO Iris !',
+  content: serviceName
+    ? `Cette visite est adaptee a votre profil ${serviceName}. Decouvrez les modules essentiels pour votre activite.`
+    : 'Cette visite guidee va vous presenter les principales fonctionnalites de l\'application.',
+  subContent: 'Cliquez sur "Suivant" pour commencer ou "Passer" pour ignorer.',
+  placement: 'center',
+  isIntro: true
+});
+
+const COMMON_START = [
   {
     target: '[data-testid="sidebar-nav"]',
-    title: '📍 Menu de navigation',
-    content: 'Utilisez ce menu pour accéder aux différentes sections de l\'application : équipements, maintenance, rapports, et plus encore.',
+    title: 'Menu de navigation',
+    content: 'Votre menu principal pour acceder a tous les modules. Les sections visibles dependent de vos permissions.',
     placement: 'right'
   },
   {
     target: '[data-testid="dashboard-stats"]',
-    title: '📊 Tableau de bord',
-    content: 'Visualisez d\'un coup d\'œil les statistiques clés : interventions en cours, équipements actifs, alertes et performances.',
+    title: 'Tableau de bord',
+    content: 'Vue d\'ensemble de votre activite : interventions en cours, equipements, alertes et performances.',
     placement: 'bottom'
   },
   {
     target: '[data-testid="notifications-btn"]',
-    title: '🔔 Notifications',
-    content: 'Restez informé des alertes, nouvelles interventions et messages importants. Le badge rouge indique le nombre de notifications non lues.',
+    title: 'Notifications',
+    content: 'Restez informe des alertes, nouvelles interventions et messages importants. Le badge rouge indique les notifications non lues.',
     placement: 'bottom'
   },
-  {
-    target: '[data-testid="user-profile-btn"]',
-    title: '👤 Menu utilisateur',
-    content: 'Accédez à votre profil, vos préférences et déconnectez-vous depuis ce menu.',
-    placement: 'bottom-end'
-  },
-  {
-    target: '[data-testid="sidebar-assets"]',
-    title: '🔧 Équipements',
-    content: 'Gérez votre parc d\'équipements : ajoutez, modifiez et suivez l\'état de chaque machine. Organisez-les par bâtiment ou par type.',
-    placement: 'right'
-  },
-  {
-    target: '[data-testid="sidebar-work-orders"]',
-    title: '🛠️ Ordres de travail',
-    content: 'Créez et suivez les interventions de maintenance. Assignez des techniciens, définissez les priorités et suivez l\'avancement.',
-    placement: 'right'
-  },
-  {
-    target: '[data-testid="sidebar-planning"]',
-    title: '📅 Planning',
-    content: 'Visualisez le calendrier des interventions planifiées et la charge de travail de votre équipe.',
-    placement: 'right'
-  },
+];
+
+const COMMON_END = [
   {
     target: '[data-testid="sidebar-chat-live"]',
-    title: '💬 Chat en direct',
-    content: 'Communiquez avec votre équipe en temps réel. Envoyez des messages, des consignes importantes et partagez des informations.',
+    title: 'Chat en direct',
+    content: 'Communiquez avec votre equipe en temps reel. Envoyez des messages et partagez des informations.',
     placement: 'right'
   },
   {
     target: '[data-testid="ai-assistant-button"]',
-    title: '🤖 Assistant IA',
-    content: 'Votre assistant intelligent pour vous aider dans vos tâches quotidiennes. Posez des questions, demandez des analyses ou générez des rapports.',
+    title: 'Assistant IA',
+    content: 'Votre assistant intelligent pour vous aider au quotidien. Posez des questions, demandez des analyses ou generez des rapports.',
     placement: 'bottom'
   },
-  {
-    target: 'body',
-    title: '✅ Visite terminée !',
-    content: 'Vous êtes maintenant prêt à utiliser GMAO Iris.',
-    subContent: '💡 Vous pouvez relancer cette visite à tout moment depuis Paramètres → Visite guidée.',
-    placement: 'center',
-    isOutro: true
-  }
 ];
+
+const COMMON_OUTRO = (serviceName) => ({
+  target: 'body',
+  title: 'Visite terminee !',
+  content: serviceName
+    ? `Vous etes pret a utiliser GMAO Iris avec votre profil ${serviceName}.`
+    : 'Vous etes maintenant pret a utiliser GMAO Iris.',
+  subContent: 'Vous pouvez relancer cette visite a tout moment depuis Parametres > Visite guidee.',
+  placement: 'center',
+  isOutro: true
+});
+
+// ========================================================
+// Etapes SPECIFIQUES par profil / service
+// ========================================================
+const STEPS_MAINTENANCE = [
+  {
+    target: '[data-testid="sidebar-assets"]',
+    title: 'Equipements',
+    content: 'Gerez votre parc d\'equipements : consultez les fiches techniques, l\'historique des interventions et l\'etat de chaque machine.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-work-orders"]',
+    title: 'Ordres de travail',
+    content: 'Consultez les OT qui vous sont assignes, suivez leur avancement et renseignez les temps passes et pieces utilisees.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-preventive-maintenance"]',
+    title: 'Maintenance preventive',
+    content: 'Planifiez et suivez les operations de maintenance preventive. L\'IA peut generer des plans depuis la documentation constructeur.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-planning"]',
+    title: 'Planning',
+    content: 'Visualisez votre charge de travail et les interventions planifiees sur un calendrier interactif.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-inventory"]',
+    title: 'Inventaire',
+    content: 'Gerez le stock de pieces detachees et consommables. Suivez les niveaux de stock et les reservations.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-intervention-requests"]',
+    title: 'Demandes d\'intervention',
+    content: 'Recevez et traitez les demandes de la production. Transformez-les en ordres de travail en quelques clics.',
+    placement: 'right'
+  },
+];
+
+const STEPS_PRODUCTION = [
+  {
+    target: '[data-testid="sidebar-mes"]',
+    title: 'M.E.S (Suivi de production)',
+    content: 'Suivez votre production en temps reel : OF en cours, arrets, TRS et indicateurs de performance.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-planning"]',
+    title: 'Planning',
+    content: 'Consultez le planning de production et les interventions de maintenance prevues sur vos lignes.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-work-orders"]',
+    title: 'Ordres de travail',
+    content: 'Suivez les interventions de maintenance sur vos equipements et leur impact sur la production.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-intervention-requests"]',
+    title: 'Demandes d\'intervention',
+    content: 'Signalez rapidement un probleme sur un equipement. Votre demande sera traitee par l\'equipe maintenance.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-meters"]',
+    title: 'Compteurs',
+    content: 'Relevez et suivez les compteurs de vos machines (heures, cycles, consommations).',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-presqu-accident"]',
+    title: 'Presqu\'accidents',
+    content: 'Declarez les presqu\'accidents pour ameliorer la securite. L\'IA detecte automatiquement les incidents similaires passes.',
+    placement: 'right'
+  },
+];
+
+const STEPS_QHSE = [
+  {
+    target: '[data-testid="sidebar-presqu-accident"]',
+    title: 'Presqu\'accidents',
+    content: 'Gerez les declarations avec le formulaire enrichi (7 sections). L\'IA analyse les causes racines (5 Pourquoi + Ishikawa) et detecte les incidents similaires.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-presqu-accident-rapport"]',
+    title: 'Rapport Presqu\'accidents',
+    content: 'Tableaux de bord et statistiques. Utilisez l\'analyse IA des tendances et generez des rapports QHSE pour vos reunions.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-analytics-checklists"]',
+    title: 'Analytics Checklists',
+    content: 'Suivez les non-conformites. L\'IA detecte les patterns recurrents et cree des OT curatifs en 1 clic.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-surveillance-plan"]',
+    title: 'Plan de Surveillance',
+    content: 'Gerez les controles reglementaires periodiques (MMRI, incendie, electrique...) avec generation automatique des echeances.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-documentations"]',
+    title: 'Documentations',
+    content: 'Centralisez vos documents QHSE : procedures, fiches de securite, plans de prevention, rapports d\'audit.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-contrats"]',
+    title: 'Contrats',
+    content: 'Suivez les contrats de maintenance, les echeances et les renouvellements.',
+    placement: 'right'
+  },
+];
+
+const STEPS_LOGISTIQUE = [
+  {
+    target: '[data-testid="sidebar-inventory"]',
+    title: 'Inventaire',
+    content: 'Gerez le stock de pieces et consommables. Suivez les niveaux, les seuils d\'alerte et les mouvements.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-purchase-requests"]',
+    title: 'Demandes d\'achat',
+    content: 'Creez et suivez les demandes d\'achat. Validez les devis et gerez les approvisionnements.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-vendors"]',
+    title: 'Fournisseurs',
+    content: 'Gerez votre base fournisseurs : coordonnees, contrats, historique des commandes et evaluations.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-assets"]',
+    title: 'Equipements',
+    content: 'Consultez les fiches equipements pour verifier les references de pieces de rechange.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-purchase-history"]',
+    title: 'Historique Achat',
+    content: 'Retrouvez l\'historique complet de vos achats et commandes passees.',
+    placement: 'right'
+  },
+];
+
+const STEPS_DIRECTION = [
+  {
+    target: '[data-testid="sidebar-service-dashboard"]',
+    title: 'Dashboard Service',
+    content: 'Tableaux de bord personnalisables par service. Creez des widgets sur mesure pour suivre vos KPIs.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-reports"]',
+    title: 'Rapports',
+    content: 'Generez des rapports d\'activite detailles pour piloter les operations et prendre les bonnes decisions.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-team-management"]',
+    title: 'Gestion d\'equipe',
+    content: 'Gerez les equipes, les responsables de service, les absences et le suivi du temps.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-people"]',
+    title: 'Utilisateurs',
+    content: 'Administrez les comptes utilisateurs, les roles et les permissions d\'acces aux modules.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-presqu-accident-rapport"]',
+    title: 'Rapport Presqu\'accidents',
+    content: 'Suivez les indicateurs securite. L\'IA genere des rapports QHSE prets pour vos reunions de direction.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-weekly-reports"]',
+    title: 'Rapports Hebdomadaires',
+    content: 'Consultez et envoyez les rapports d\'activite hebdomadaires a vos equipes.',
+    placement: 'right'
+  },
+];
+
+// Visite GENERIQUE (pas de service defini)
+const STEPS_GENERIC = [
+  {
+    target: '[data-testid="sidebar-assets"]',
+    title: 'Equipements',
+    content: 'Gerez votre parc d\'equipements : fiches techniques, historique des interventions et etat de chaque machine.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-work-orders"]',
+    title: 'Ordres de travail',
+    content: 'Creez et suivez les interventions de maintenance. Assignez des techniciens et suivez l\'avancement.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-planning"]',
+    title: 'Planning',
+    content: 'Visualisez le calendrier des interventions planifiees et la charge de travail de votre equipe.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-presqu-accident"]',
+    title: 'Presqu\'accidents',
+    content: 'Declarez et suivez les presqu\'accidents. L\'IA vous aide avec l\'analyse des causes racines et la detection d\'incidents similaires.',
+    placement: 'right'
+  },
+  {
+    target: '[data-testid="sidebar-reports"]',
+    title: 'Rapports',
+    content: 'Generez des rapports d\'activite et consultez les statistiques de performance.',
+    placement: 'right'
+  },
+];
+
+// ========================================================
+// Mapping service -> etapes
+// ========================================================
+const SERVICE_STEPS_MAP = {
+  'Maintenance': { steps: STEPS_MAINTENANCE, label: 'Maintenance' },
+  'MAINTENANCE': { steps: STEPS_MAINTENANCE, label: 'Maintenance' },
+  'Production': { steps: STEPS_PRODUCTION, label: 'Production' },
+  'PRODUCTION': { steps: STEPS_PRODUCTION, label: 'Production' },
+  'QHSE': { steps: STEPS_QHSE, label: 'QHSE' },
+  'Qualite': { steps: STEPS_QHSE, label: 'QHSE' },
+  'Logistique': { steps: STEPS_LOGISTIQUE, label: 'Logistique' },
+  'LOGISTIQUE': { steps: STEPS_LOGISTIQUE, label: 'Logistique' },
+  'ADV': { steps: STEPS_LOGISTIQUE, label: 'ADV / Logistique' },
+  'Direction': { steps: STEPS_DIRECTION, label: 'Direction' },
+  'DIRECTION': { steps: STEPS_DIRECTION, label: 'Direction' },
+};
+
+function buildTourSteps(userService, userRole) {
+  const isAdmin = userRole === 'ADMIN';
+  const config = SERVICE_STEPS_MAP[userService];
+  const serviceName = config?.label || null;
+
+  // Admin sans service specifique -> visite Direction
+  let profileSteps;
+  if (config) {
+    profileSteps = config.steps;
+  } else if (isAdmin) {
+    profileSteps = STEPS_DIRECTION;
+  } else {
+    profileSteps = STEPS_GENERIC;
+  }
+
+  const finalLabel = serviceName || (isAdmin ? 'Administrateur' : null);
+
+  return [
+    COMMON_INTRO(finalLabel),
+    ...COMMON_START,
+    ...profileSteps,
+    ...COMMON_END,
+    COMMON_OUTRO(finalLabel),
+  ];
+}
 
 // Composant Tooltip personnalisé
 const TourTooltip = ({ step, currentIndex, totalSteps, onNext, onPrev, onSkip, onClose, targetRect }) => {
