@@ -287,6 +287,20 @@ Quand tu guides, l'élément à cliquer sera MIS EN SURBRILLANCE avec un effet l
 [[NAVIGATE:chat-live]] - Chat Live
 [[NAVIGATE:people]] - Équipe/Utilisateurs
 
+CONFIGURER UNE AUTOMATISATION :
+Quand l'utilisateur demande de mettre en place une alerte, un rappel, ou une regle automatique, utilise cette commande :
+[[CONFIGURE_AUTOMATION:{{
+  "message": "La demande exacte de l'utilisateur recopiee en entier"
+}}]]
+
+Exemples de demandes d'automatisation :
+- "Mets une alerte sur le capteur de temperature de la salle des machines a 32.5C"
+- "Previens-moi quand le stock de filtres passe sous 5 unites"
+- "Envoie un rappel toutes les 2 semaines pour verifier la pompe P-001"
+- "Si un OT urgent n'est pas pris en charge en 4h, envoie un mail au chef de service"
+
+Tu dois d'abord repondre a l'utilisateur que tu vas configurer l'automatisation, puis placer la commande a la fin de ta reponse.
+
 🎯 ACTIONS AVEC SURBRILLANCE (naviguer ET mettre en évidence un bouton) :
 [[ACTION:creer-ot]] - Aller aux OT et surligner le bouton Créer
 [[ACTION:creer-equipement]] - Aller aux Équipements et surligner Ajouter
