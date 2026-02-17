@@ -75,3 +75,10 @@ Application de GMAO (Gestion de Maintenance Assistée par Ordinateur) nommée "G
 - Manuel utilisateur : 2 nouveaux chapitres IA (8 sections)
 - version.json : v1.6.0 "Intelligence Artificielle QHSE"
 - Personnalisation IA : liste des fonctionnalités utilisant le modèle LLM
+
+### Visite guidée personnalisée par profil (17 Feb 2026)
+- 6 profils : Maintenance, Production, QHSE, Logistique, Direction, Générique (fallback)
+- Étapes communes (intro, menu, dashboard, notifications, chat, assistant IA, fin) + étapes spécifiques au métier
+- Textes adaptés au profil (ex: "Consultez les OT qui vous sont assignés" pour Maintenance)
+- Admin sans service → visite Direction, non-admin sans service → visite Générique
+- Fichier modifié : `GuidedTour.jsx`
