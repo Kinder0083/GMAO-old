@@ -36,6 +36,12 @@ function SurveillancePlan() {
   const [categoryOrderChanged, setCategoryOrderChanged] = useState(false);
   const [showOverdueFilter, setShowOverdueFilter] = useState(false);
   
+  // Recherche
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  
   const [filters, setFilters] = useState({
     category: '',
     responsable: '',
