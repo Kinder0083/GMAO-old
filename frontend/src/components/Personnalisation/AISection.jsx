@@ -187,7 +187,7 @@ const AISection = () => {
 
         {/* Aperçu */}
         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-          <h4 className="font-medium text-purple-800 mb-2">Aperçu</h4>
+          <h4 className="font-medium text-purple-800 mb-2">Apercu</h4>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
               <Bot className="text-white" size={24} />
@@ -199,6 +199,21 @@ const AISection = () => {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Fonctionnalites IA */}
+        <div className="p-4 bg-gray-50 rounded-lg border">
+          <h4 className="font-medium text-gray-800 mb-2 text-sm">Fonctionnalites IA utilisant ce modele</h4>
+          <ul className="text-xs text-gray-600 space-y-1">
+            <li>- Assistant conversationnel ({aiName})</li>
+            <li>- Generation de checklists et plans de maintenance depuis documents</li>
+            <li>- Analyse des non-conformites et creation d'OT curatifs</li>
+            <li>- Analyse des causes racines (5 Pourquoi + Ishikawa)</li>
+            <li>- Detection d'incidents similaires</li>
+            <li>- Analyse des tendances et predictions de risques</li>
+            <li>- Generation de rapports QHSE</li>
+            <li>- Alertes email automatiques</li>
+          </ul>
         </div>
 
         {/* Bouton Sauvegarder */}
