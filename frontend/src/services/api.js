@@ -170,6 +170,34 @@ export const checklistsAPI = {
   getHistory: (params) => api.get('/checklists/history', { params })
 };
 
+// ==================== IA MAINTENANCE (Checklists + Maintenance Prev.) ====================
+export const aiMaintenanceAPI = {
+  // Feature 1: Génération IA de checklists
+  generateChecklist: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/ai-maintenance/generate-checklist', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    }).then(res => res.data);
+  },
+  createChecklistsBatch: (data) => api.post('/ai-maintenance/create-checklists-batch', data).then(res => res.data),
+
+  // Feature 2: Génération IA de programme de maintenance
+  generateMaintenanceProgram: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/ai-maintenance/generate-maintenance-program', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    }).then(res => res.data);
+  },
+  createMaintenanceBatch: (data) => api.post('/ai-maintenance/create-maintenance-batch', data).then(res => res.data),
+
+  // Feature 3: Analyse IA des non-conformités
+  analyzeNonconformities: (days = 90) => api.post('/ai-maintenance/analyze-nonconformities', { days }).then(res => res.data),
+};
+
 // ==================== USERS ====================
 export const usersAPI = {
   getAll: () => api.get('/users'),
