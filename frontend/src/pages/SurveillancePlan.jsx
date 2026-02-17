@@ -263,6 +263,92 @@ function SurveillancePlan() {
         </div>
       </div>
 
+      {/* Barre de recherche */}
+      {showSearch && (
+        <div className="mb-4 flex gap-2" data-testid="search-bar">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher un contrôle (type, catégorie, bâtiment, exécutant, n° rapport...)"
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              autoFocus
+              data-testid="search-input"
+            />
+          </div>
+          <Button onClick={handleSearch} disabled={searching || !searchQuery.trim()} data-testid="search-submit-btn">
+            {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          </Button>
+          {searchResults.length > 0 && (
+            <Button variant="outline" onClick={clearSearch} data-testid="clear-search-btn">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Résultats de recherche */}
+      {searchResults.length > 0 && (
+        <Card className="mb-4 border-blue-200" data-testid="search-results">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">
+                {searchResults.length} résultat(s) pour "{searchQuery}"
+              </h3>
+              <Button variant="ghost" size="sm" onClick={clearSearch}>
+                <X className="h-4 w-4 mr-1" /> Fermer
+              </Button>
+            </div>
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-2">
+                {searchResults.map((result, index) => (
+                  <div
+                    key={result.id}
+                    className="p-3 rounded-lg border hover:border-blue-400 hover:shadow-sm transition-all cursor-pointer bg-white"
+                    onClick={() => { handleEdit(items.find(i => i.id === result.id) || result); clearSearch(); }}
+                    data-testid={`search-result-${index}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-xs">{result.category}</Badge>
+                          <span
+                            className="font-medium text-sm"
+                            dangerouslySetInnerHTML={{ __html: highlightText(result.classe_type, searchQuery) }}
+                          />
+                          {result.resultat_controle && (
+                            <Badge className={`text-xs ${
+                              result.resultat_controle === 'Conforme' ? 'bg-emerald-100 text-emerald-700' :
+                              result.resultat_controle === 'Non conforme' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>{result.resultat_controle}</Badge>
+                          )}
+                        </div>
+                        <p
+                          className="text-xs text-gray-600"
+                          dangerouslySetInnerHTML={{ __html: highlightText(result.excerpt, searchQuery) }}
+                        />
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                          {result.batiment && <span>Bât: {result.batiment}</span>}
+                          {result.executant && <span>Exéc: {result.executant}</span>}
+                          {result.periodicite && <span>Péri: {result.periodicite}</span>}
+                          {result.prochain_controle && <span>Prochain: {result.prochain_controle}</span>}
+                          <span className="ml-auto text-blue-500">
+                            Score: {result.relevance_score?.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
       {alerts.length > 0 && (
         <Alert className="mb-4 border-orange-500">
           <Bell className="h-4 w-4" />
