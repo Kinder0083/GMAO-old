@@ -520,6 +520,12 @@ export const presquAccidentAPI = {
   update: (id, data) => api.put(`/presqu-accident/items/${id}`, data).then(res => res.data),
   delete: (id) => api.delete(`/presqu-accident/items/${id}`).then(res => res.data),
   
+  // IA Presqu'accidents
+  aiAnalyzeRootCauses: (itemId) => api.post('/ai-presqu-accident/analyze-root-causes', { item_id: itemId }).then(res => res.data),
+  aiFindSimilar: (data) => api.post('/ai-presqu-accident/find-similar', data).then(res => res.data),
+  aiAnalyzeTrends: (days = 365) => api.post('/ai-presqu-accident/analyze-trends', { days }).then(res => res.data),
+  aiGenerateReport: (days = 365) => api.post('/ai-presqu-accident/generate-report', { days }).then(res => res.data),
+  
   // Attachments (nouveau format multi-fichiers)
   uploadAttachment: (id, file) => {
     const formData = new FormData();
