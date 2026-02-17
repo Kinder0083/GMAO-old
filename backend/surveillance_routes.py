@@ -1169,11 +1169,47 @@ async def create_batch_from_ai(
                     user_id=current_user["id"]
                 )
         
+        # Archiver automatiquement l'analyse IA (Phase 1)
+        result_counts = {"CONFORME": 0, "NON_CONFORME": 0, "AVEC_RESERVES": 0}
+        categories_set = set()
+        for ctrl in controles:
+            r = ctrl.get("resultat", "")
+            if r in result_counts:
+                result_counts[r] += 1
+            cat = ctrl.get("category")
+            if cat:
+                categories_set.add(cat)
+        
+        history_entry = AIAnalysisHistory(
+            filename=items_data.get("filename", "document.pdf"),
+            file_size=items_data.get("file_size"),
+            organisme_controle=document_info.get("organisme_controle"),
+            date_intervention=document_info.get("date_intervention"),
+            numero_rapport=document_info.get("numero_rapport"),
+            site_controle=document_info.get("site_controle"),
+            controles_count=len(created_items),
+            conformes_count=result_counts["CONFORME"],
+            non_conformes_count=result_counts["NON_CONFORME"],
+            avec_reserves_count=result_counts["AVEC_RESERVES"],
+            created_item_ids=[item["id"] for item in created_items],
+            created_work_order_ids=[wo["id"] for wo in created_work_orders],
+            raw_extracted_data=items_data,
+            categories=list(categories_set),
+            analyzed_by=current_user.get("id"),
+            analyzed_by_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        )
+        
+        history_dict = history_entry.model_dump()
+        await db.ai_analysis_history.insert_one(history_dict)
+        if "_id" in history_dict:
+            del history_dict["_id"]
+        
         return {
             "success": True,
             "created_count": len(created_items),
             "created_items": created_items,
             "work_orders_created": created_work_orders,
+            "analysis_id": history_entry.id,
             "message": f"{len(created_items)} contrôle(s) créé(s)" + 
                        (f", {len(created_work_orders)} bon(s) de travail curatif(s) créé(s)" if created_work_orders else "")
         }
@@ -1185,8 +1221,297 @@ async def create_batch_from_ai(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Historique des analyses IA (Phase 1 & 2) ====================
 
-# ==================== Envoi d'emails de rappel d'échéance ====================
+@router.get("/ai/history")
+async def get_ai_analysis_history(
+    limit: int = 50,
+    skip: int = 0,
+    organisme: Optional[str] = None,
+    category: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer l'historique des analyses IA"""
+    try:
+        query = {}
+        if organisme:
+            query["organisme_controle"] = {"$regex": organisme, "$options": "i"}
+        if category:
+            query["categories"] = category
+        
+        total = await db.ai_analysis_history.count_documents(query)
+        items = await db.ai_analysis_history.find(
+            query, {"_id": 0, "raw_extracted_data": 0}
+        ).sort("created_at", -1).skip(skip).limit(limit).to_list(length=None)
+        
+        return {
+            "total": total,
+            "items": items
+        }
+    except Exception as e:
+        logger.error(f"Erreur récupération historique IA: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ai/history/{analysis_id}")
+async def get_ai_analysis_detail(
+    analysis_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer le détail d'une analyse IA"""
+    try:
+        item = await db.ai_analysis_history.find_one({"id": analysis_id}, {"_id": 0})
+        if not item:
+            raise HTTPException(status_code=404, detail="Analyse non trouvée")
+        return item
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur récupération détail analyse: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Tableau de bord & Tendances IA (Phase 3) ====================
+
+@router.get("/ai/analytics")
+async def get_ai_analytics(
+    current_user: dict = Depends(get_current_user)
+):
+    """Statistiques et tendances des analyses IA"""
+    try:
+        all_analyses = await db.ai_analysis_history.find(
+            {}, {"_id": 0, "raw_extracted_data": 0}
+        ).sort("created_at", -1).to_list(length=None)
+        
+        total_analyses = len(all_analyses)
+        if total_analyses == 0:
+            return {
+                "kpis": {
+                    "total_analyses": 0,
+                    "total_controles": 0,
+                    "taux_conformite": 0,
+                    "total_non_conformites": 0,
+                    "total_work_orders": 0
+                },
+                "evolution_mensuelle": [],
+                "par_organisme": [],
+                "par_categorie": [],
+                "par_resultat": [],
+                "tendances_degradation": []
+            }
+        
+        # KPIs globaux
+        total_controles = sum(a.get("controles_count", 0) for a in all_analyses)
+        total_conformes = sum(a.get("conformes_count", 0) for a in all_analyses)
+        total_non_conformes = sum(a.get("non_conformes_count", 0) for a in all_analyses)
+        total_avec_reserves = sum(a.get("avec_reserves_count", 0) for a in all_analyses)
+        total_wo = sum(len(a.get("created_work_order_ids", [])) for a in all_analyses)
+        
+        taux_conformite = round((total_conformes / total_controles * 100) if total_controles > 0 else 0, 1)
+        
+        # Évolution mensuelle (12 derniers mois)
+        evolution = {}
+        now = datetime.now(timezone.utc)
+        for i in range(11, -1, -1):
+            month_date = now - timedelta(days=i * 30)
+            key = month_date.strftime("%Y-%m")
+            evolution[key] = {"mois": key, "analyses": 0, "controles": 0, "conformes": 0, "non_conformes": 0}
+        
+        for a in all_analyses:
+            try:
+                date_str = a.get("created_at", "")
+                if date_str:
+                    month_key = date_str[:7]  # YYYY-MM
+                    if month_key in evolution:
+                        evolution[month_key]["analyses"] += 1
+                        evolution[month_key]["controles"] += a.get("controles_count", 0)
+                        evolution[month_key]["conformes"] += a.get("conformes_count", 0)
+                        evolution[month_key]["non_conformes"] += a.get("non_conformes_count", 0)
+            except Exception:
+                pass
+        
+        evolution_list = list(evolution.values())
+        # Calculer taux conformité mensuel
+        for e in evolution_list:
+            total_m = e["conformes"] + e["non_conformes"]
+            e["taux_conformite"] = round((e["conformes"] / total_m * 100) if total_m > 0 else 0, 1)
+        
+        # Par organisme
+        organismes = {}
+        for a in all_analyses:
+            org = a.get("organisme_controle") or "Non précisé"
+            if org not in organismes:
+                organismes[org] = {"organisme": org, "analyses": 0, "controles": 0, "non_conformites": 0}
+            organismes[org]["analyses"] += 1
+            organismes[org]["controles"] += a.get("controles_count", 0)
+            organismes[org]["non_conformites"] += a.get("non_conformes_count", 0)
+        
+        # Par catégorie
+        categories = {}
+        for a in all_analyses:
+            for cat in a.get("categories", []):
+                if cat not in categories:
+                    categories[cat] = {"categorie": cat, "analyses": 0, "conformes": 0, "non_conformes": 0, "avec_reserves": 0}
+                categories[cat]["analyses"] += 1
+            # Répartir les compteurs proportionnellement
+            nb_cats = len(a.get("categories", [])) or 1
+            for cat in a.get("categories", []):
+                categories[cat]["conformes"] += a.get("conformes_count", 0)
+                categories[cat]["non_conformes"] += a.get("non_conformes_count", 0)
+                categories[cat]["avec_reserves"] += a.get("avec_reserves_count", 0)
+        
+        # Par résultat (pour pie chart)
+        par_resultat = [
+            {"id": "Conforme", "label": "Conforme", "value": total_conformes, "color": "#10b981"},
+            {"id": "Non conforme", "label": "Non conforme", "value": total_non_conformes, "color": "#ef4444"},
+            {"id": "Avec réserves", "label": "Avec réserves", "value": total_avec_reserves, "color": "#f59e0b"}
+        ]
+        
+        # Phase 4: Détection de tendances de dégradation
+        tendances = await _detect_degradation_trends(all_analyses)
+        
+        return {
+            "kpis": {
+                "total_analyses": total_analyses,
+                "total_controles": total_controles,
+                "taux_conformite": taux_conformite,
+                "total_non_conformites": total_non_conformes + total_avec_reserves,
+                "total_work_orders": total_wo
+            },
+            "evolution_mensuelle": evolution_list,
+            "par_organisme": list(organismes.values()),
+            "par_categorie": list(categories.values()),
+            "par_resultat": [r for r in par_resultat if r["value"] > 0],
+            "tendances_degradation": tendances
+        }
+    except Exception as e:
+        logger.error(f"Erreur analytics IA: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Alertes intelligentes (Phase 4) ====================
+
+async def _detect_degradation_trends(all_analyses):
+    """Détecte les tendances de dégradation à partir de l'historique"""
+    trends = []
+    
+    # Regrouper par catégorie + organisme pour voir les évolutions
+    type_history = {}
+    for a in sorted(all_analyses, key=lambda x: x.get("created_at", "")):
+        for cat in a.get("categories", []):
+            key = cat
+            if key not in type_history:
+                type_history[key] = []
+            type_history[key].append({
+                "date": a.get("created_at", "")[:10],
+                "conformes": a.get("conformes_count", 0),
+                "non_conformes": a.get("non_conformes_count", 0),
+                "avec_reserves": a.get("avec_reserves_count", 0),
+                "organisme": a.get("organisme_controle")
+            })
+    
+    for cat, history in type_history.items():
+        if len(history) < 2:
+            continue
+        
+        # Vérifier les 2 dernières analyses
+        recent = history[-2:]
+        last_nc = recent[-1]["non_conformes"] + recent[-1]["avec_reserves"]
+        prev_nc = recent[-2]["non_conformes"] + recent[-2]["avec_reserves"]
+        
+        if last_nc > 0 and prev_nc > 0:
+            trends.append({
+                "type": "degradation_consecutive",
+                "severity": "HAUTE",
+                "categorie": cat,
+                "message": f"Non-conformités consécutives sur {cat} ({recent[-2]['date']} et {recent[-1]['date']})",
+                "details": f"Dernière analyse: {last_nc} NC, Précédente: {prev_nc} NC",
+                "last_date": recent[-1]["date"]
+            })
+        elif last_nc > prev_nc and last_nc > 0:
+            trends.append({
+                "type": "degradation_increase",
+                "severity": "MOYENNE",
+                "categorie": cat,
+                "message": f"Augmentation des non-conformités sur {cat}",
+                "details": f"Passage de {prev_nc} à {last_nc} non-conformité(s)",
+                "last_date": recent[-1]["date"]
+            })
+    
+    return trends
+
+
+@router.get("/ai/alerts")
+async def get_ai_smart_alerts(
+    current_user: dict = Depends(get_current_user)
+):
+    """Récupérer les alertes intelligentes basées sur l'historique IA"""
+    try:
+        all_analyses = await db.ai_analysis_history.find(
+            {}, {"_id": 0, "raw_extracted_data": 0}
+        ).sort("created_at", -1).to_list(length=None)
+        
+        alerts = []
+        
+        # 1. Tendances de dégradation
+        tendances = await _detect_degradation_trends(all_analyses)
+        for t in tendances:
+            alerts.append({
+                "type": "degradation",
+                "severity": t["severity"],
+                "title": t["message"],
+                "details": t["details"],
+                "categorie": t["categorie"],
+                "date": t["last_date"]
+            })
+        
+        # 2. Catégories avec taux de conformité bas
+        cat_stats = {}
+        for a in all_analyses:
+            for cat in a.get("categories", []):
+                if cat not in cat_stats:
+                    cat_stats[cat] = {"conformes": 0, "total": 0}
+                cat_stats[cat]["conformes"] += a.get("conformes_count", 0)
+                cat_stats[cat]["total"] += a.get("controles_count", 0)
+        
+        for cat, stats in cat_stats.items():
+            if stats["total"] >= 2:
+                taux = (stats["conformes"] / stats["total"] * 100) if stats["total"] > 0 else 0
+                if taux < 70:
+                    alerts.append({
+                        "type": "low_conformity",
+                        "severity": "HAUTE" if taux < 50 else "MOYENNE",
+                        "title": f"Taux de conformité bas: {cat} ({round(taux, 1)}%)",
+                        "details": f"{stats['conformes']}/{stats['total']} contrôles conformes",
+                        "categorie": cat,
+                        "date": None
+                    })
+        
+        # 3. Vérifier les contrôles non-conformes sans BT curatif
+        recent_nc = [a for a in all_analyses if a.get("non_conformes_count", 0) > 0 and not a.get("created_work_order_ids")]
+        for a in recent_nc[:5]:
+            alerts.append({
+                "type": "missing_wo",
+                "severity": "HAUTE",
+                "title": f"Non-conformité sans bon de travail curatif",
+                "details": f"Analyse du {a.get('created_at', '')[:10]} - {a.get('organisme_controle', 'N/A')}",
+                "categorie": ", ".join(a.get("categories", [])),
+                "date": a.get("created_at", "")[:10]
+            })
+        
+        # Trier par sévérité
+        severity_order = {"HAUTE": 0, "MOYENNE": 1, "BASSE": 2}
+        alerts.sort(key=lambda x: severity_order.get(x["severity"], 3))
+        
+        return {
+            "count": len(alerts),
+            "alerts": alerts
+        }
+    except Exception as e:
+        logger.error(f"Erreur alertes intelligentes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def send_surveillance_reminder_email(user_email: str, user_name: str, item: dict):
     """
