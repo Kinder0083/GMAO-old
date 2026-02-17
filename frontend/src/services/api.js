@@ -430,6 +430,21 @@ export const surveillanceAPI = {
     responseType: 'blob'
   }).then(res => res.data),
   
+  // Upload pièces jointes
+  uploadAttachments: (itemId, files) => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return api.post(`/surveillance/items/${itemId}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(res => res.data);
+  },
+  
+  // Supprimer pièce jointe
+  deleteAttachment: (itemId, attachmentId) => api.delete(`/surveillance/items/${itemId}/attachments/${attachmentId}`).then(res => res.data),
+  
+  // Recherche
+  searchItems: (query) => api.post('/surveillance/search', { query }).then(res => res.data),
+  
   // Extraction IA
   extractFromDocument: (file) => {
     const formData = new FormData();
