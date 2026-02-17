@@ -43,6 +43,7 @@ function SurveillancePlan() {
   const [categoryOrderChanged, setCategoryOrderChanged] = useState(false);
   const [showOverdueFilter, setShowOverdueFilter] = useState(false);
   const [migrating, setMigrating] = useState(false);
+  const [trends, setTrends] = useState({});
   
   // Recherche
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,6 +91,16 @@ function SurveillancePlan() {
     try {
       const data = await surveillanceAPI.getItems({ annee: selectedYear });
       setItems(data || []);
+      // Charger les tendances pour les contrôles récurrents
+      const ids = [...new Set((data || []).map(i => i.groupe_controle_id).filter(Boolean))];
+      if (ids.length > 0) {
+        try {
+          const res = await surveillanceAPI.getBatchTrends(ids, selectedYear);
+          setTrends(res.trends || {});
+        } catch { setTrends({}); }
+      } else {
+        setTrends({});
+      }
     } catch (error) {
       console.error('Erreur chargement items:', error);
       toast({ title: 'Erreur', description: 'Erreur de chargement des contrôles', variant: 'destructive' });
