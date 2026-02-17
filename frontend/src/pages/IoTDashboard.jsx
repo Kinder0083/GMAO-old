@@ -29,6 +29,7 @@ import api from '../services/api';
 import { useSensors } from '../hooks/useSensors';
 import { useToast } from '../hooks/use-toast';
 import SensorChart from '../components/Sensors/SensorChart';
+import AISensorAnalysis from '../components/Sensors/AISensorAnalysis';
 import { formatLocalDate as formatLocalDateUtil } from '../utils/dateUtils';
 
 const IoTDashboard = () => {
