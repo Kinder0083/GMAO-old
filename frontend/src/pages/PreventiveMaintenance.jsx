@@ -46,6 +46,7 @@ const PreventiveMaintenance = () => {
   // États pour l'exécution et l'historique des checklists
   const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [aiMaintenanceOpen, setAiMaintenanceOpen] = useState(false);
   const [checklistToExecute, setChecklistToExecute] = useState(null);
   const [executionContext, setExecutionContext] = useState({});
 
