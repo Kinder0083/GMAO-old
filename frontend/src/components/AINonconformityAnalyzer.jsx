@@ -63,12 +63,57 @@ export default function AINonconformityAnalyzer({ open, onClose }) {
   };
 
   const handleClose = () => {
+    const hadCreations = createdWOs.length > 0;
     setStep('config');
     setAnalysis(null);
     setStats(null);
     setError(null);
-    onClose();
+    setCreatedWOs([]);
+    onClose(hadCreations);
   };
+
+  const handleCreateSingleWO = async (wo) => {
+    setCreatingWOs(true);
+    try {
+      const result = await aiMaintenanceAPI.createWorkOrdersFromAnalysis([wo]);
+      if (result.success) {
+        setCreatedWOs(prev => [...prev, ...result.work_orders]);
+        toast({
+          title: 'OT créé',
+          description: `OT #${result.work_orders[0]?.numero} "${wo.titre}" créé avec succès`
+        });
+      }
+    } catch (err) {
+      toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
+    } finally {
+      setCreatingWOs(false);
+    }
+  };
+
+  const handleCreateAllWOs = async () => {
+    const wosToCreate = analysis.work_orders_suggested.filter(
+      wo => !createdWOs.some(c => c.titre === wo.titre)
+    );
+    if (!wosToCreate.length) return;
+    
+    setCreatingWOs(true);
+    try {
+      const result = await aiMaintenanceAPI.createWorkOrdersFromAnalysis(wosToCreate);
+      if (result.success) {
+        setCreatedWOs(prev => [...prev, ...result.work_orders]);
+        toast({
+          title: 'OT curatifs créés',
+          description: `${result.created_count} ordre(s) de travail créé(s) avec succès`
+        });
+      }
+    } catch (err) {
+      toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
+    } finally {
+      setCreatingWOs(false);
+    }
+  };
+
+  const isWOCreated = (wo) => createdWOs.some(c => c.titre === wo.titre);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
