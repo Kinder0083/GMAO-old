@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Plus, ClipboardCheck, CheckCircle, Grid, Play, Pencil, Trash2, History, ArrowLeft } from 'lucide-react';
+import { Plus, ClipboardCheck, CheckCircle, Grid, Play, Pencil, Trash2, History, ArrowLeft, Sparkles } from 'lucide-react';
 import ChecklistFormDialog from '../components/PreventiveMaintenance/ChecklistFormDialog';
 import ChecklistExecutionDialog from '../components/PreventiveMaintenance/ChecklistExecutionDialog';
 import ChecklistHistoryView from '../components/PreventiveMaintenance/ChecklistHistoryView';
+import AIChecklistGenerator from '../components/AIChecklistGenerator';
 import { checklistsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
@@ -24,6 +25,7 @@ const ChecklistsManagement = () => {
   const [checklistToExecute, setChecklistToExecute] = useState(null);
   const [executionContext, setExecutionContext] = useState({ equipmentId: null, equipmentName: '' });
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
 
   const canDelete = user.role === 'ADMIN' || user.permissions?.preventiveMaintenance?.delete;
 
