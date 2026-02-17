@@ -17,6 +17,8 @@ import { Calendar, Clock, User, MapPin, Wrench, FileText, MessageSquare, Send, P
 import AttachmentsList from './AttachmentsList';
 import AttachmentUploader from './AttachmentUploader';
 import StatusChangeDialog from './StatusChangeDialog';
+import AIDiagnosticPanel from './AIDiagnosticPanel';
+import AISummaryPanel from './AISummaryPanel';
 import { commentsAPI, workOrdersAPI, inventoryAPI, equipmentsAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { formatTimeToHoursMinutes } from '../../utils/timeFormat';
