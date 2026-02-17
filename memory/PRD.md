@@ -58,7 +58,15 @@ Application GMAO (CMMS) complète pour la gestion de maintenance assistée par o
 - `frontend/src/pages/SurveillanceAIHistory.jsx` - Page historique
 - `frontend/src/pages/SurveillanceAIDashboard.jsx` - Dashboard tendances
 
-## Credentials
+- **Feature: Pièces jointes multiples** sur les contrôles de surveillance
+  - Upload multi-fichiers (PDF, images, etc.)
+  - Download et suppression individuelle
+  - Rattachement automatique du PDF source lors de la création via IA
+  - Section "Pièces jointes" dans le formulaire (création + édition)
+- **Feature: Recherche avancée** dans le Plan de Surveillance (style Manuel)
+  - Barre de recherche avec scoring pondéré (type > catégorie > exécutant > description...)
+  - Résultats avec badges catégorie, badges résultat, excerpts, score de pertinence
+  - Clic sur résultat = ouverture directe en édition
 - Admin: admin@test.com / Admin123!
 
 ## Backlog
