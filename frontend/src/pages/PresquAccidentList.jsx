@@ -1207,10 +1207,21 @@ function PresquAccidentList() {
             <div className="space-y-4">
               {/* Résumé de l'incident */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-bold">{traitementItem.numero}</span>
-                  <span className="text-gray-600">-</span>
-                  <span>{traitementItem.titre}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{traitementItem.numero}</span>
+                    <span className="text-gray-600">-</span>
+                    <span>{traitementItem.titre}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                    data-testid="open-rca-btn"
+                    onClick={() => { setRcaItem(traitementItem); setOpenRCA(true); }}
+                  >
+                    <Brain size={14} className="mr-1" /> Analyser avec IA
+                  </Button>
                 </div>
                 <p className="text-sm text-gray-600">{traitementItem.description}</p>
               </div>
