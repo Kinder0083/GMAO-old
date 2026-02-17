@@ -471,6 +471,70 @@ function SurveillanceItemForm({ open, item, onClose }) {
             <p className="text-xs text-gray-500 mt-1">Cette personne recevra un email de rappel avant l'échéance</p>
           </div>
 
+          {/* Section : Pièces jointes */}
+          <div className="border-b pb-2 mb-1 mt-2">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+              <Paperclip className="h-4 w-4" /> Pièces jointes
+            </h3>
+          </div>
+
+          {/* Fichiers existants (mode édition) */}
+          {attachments.length > 0 && (
+            <div className="space-y-1.5">
+              {attachments.map((att) => (
+                <div key={att.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm" data-testid={`attachment-${att.id}`}>
+                  <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                  <span className="flex-1 truncate">{att.filename}</span>
+                  <span className="text-xs text-gray-400">{att.size ? `${(att.size / 1024).toFixed(0)} Ko` : ''}</span>
+                  <a
+                    href={`${API_URL}/api${att.url}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 hover:text-blue-800"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                  <button onClick={() => handleDeleteAttachment(att.id)} className="text-red-400 hover:text-red-600">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Fichiers en attente (mode création) */}
+          {pendingFiles.length > 0 && (
+            <div className="space-y-1.5">
+              {pendingFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 bg-blue-50 rounded text-sm" data-testid={`pending-file-${i}`}>
+                  <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                  <span className="flex-1 truncate">{f.name}</span>
+                  <span className="text-xs text-gray-400">{(f.size / 1024).toFixed(0)} Ko</span>
+                  <button onClick={() => handleRemovePending(i)} className="text-red-400 hover:text-red-600">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div>
+            {item ? (
+              <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                {uploading ? 'Upload en cours...' : 'Ajouter des fichiers'}
+                <input type="file" multiple hidden onChange={handleUploadMore} disabled={uploading} />
+              </label>
+            ) : (
+              <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+                <Paperclip className="h-4 w-4" />
+                Ajouter des fichiers
+                <input type="file" multiple hidden onChange={handleFileAdd} data-testid="file-input" />
+              </label>
+            )}
+          </div>
+
           <div>
             <Label>Commentaire</Label>
             <Textarea value={formData.commentaire} onChange={(e) => setFormData({...formData, commentaire: e.target.value})} rows={3} data-testid="input-commentaire" />
