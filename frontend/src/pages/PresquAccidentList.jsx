@@ -953,6 +953,17 @@ function PresquAccidentList() {
                   placeholder="Qu'avez-vous fait sur le moment pour securiser la zone ?"
                 />
               </div>
+
+              {/* Detection IA d'incidents similaires */}
+              {!selectedItem && (
+                <AISimilarIncidents
+                  titre={formData.titre}
+                  description={formData.description}
+                  lieu={formData.lieu}
+                  service={formData.service}
+                  categorie_incident={formData.categorie_incident}
+                />
+              )}
             </fieldset>
 
             {/* Section 3 : Personnes concernees */}
