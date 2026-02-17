@@ -320,6 +320,35 @@ function SurveillancePlan() {
         </div>
       </div>
 
+      {/* Onglets par année */}
+      <div className="mb-4" data-testid="year-tabs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Calendar className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-600 mr-1">Année :</span>
+          {availableYears.map(year => {
+            const isSelected = year === selectedYear;
+            const isCurrent = year === new Date().getFullYear();
+            return (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year)}
+                data-testid={`year-tab-${year}`}
+                className={`
+                  px-4 py-1.5 rounded-full text-sm font-medium transition-all
+                  ${isSelected 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+                  ${isCurrent && !isSelected ? 'ring-1 ring-blue-300' : ''}
+                `}
+              >
+                {year}
+                {isCurrent && <span className="ml-1 text-xs opacity-75">(en cours)</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Barre de recherche */}
       {showSearch && (
         <div className="mb-4 flex gap-2" data-testid="search-bar">
