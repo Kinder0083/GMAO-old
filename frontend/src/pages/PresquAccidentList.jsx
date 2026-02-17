@@ -834,171 +834,353 @@ function PresquAccidentList() {
           <DialogHeader>
             <DialogTitle>{selectedItem ? 'Modifier' : 'Nouveau'} Presqu'accident</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label>Titre *</Label>
-                <Input 
-                  value={formData.titre} 
-                  onChange={(e) => setFormData({...formData, titre: e.target.value})}
-                  required
-                />
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Section 1 : Identification */}
+            <fieldset className="border rounded-lg p-4 space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 px-2">Identification</legend>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label>Titre de l'incident *</Label>
+                  <Input
+                    data-testid="pa-titre"
+                    value={formData.titre}
+                    onChange={(e) => setFormData({...formData, titre: e.target.value})}
+                    placeholder="Ex: Risque de chute depuis la plateforme"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Date de l'incident *</Label>
+                  <Input
+                    type="date"
+                    data-testid="pa-date"
+                    value={formData.date_incident}
+                    onChange={(e) => setFormData({...formData, date_incident: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Lieu *</Label>
+                  <Input
+                    data-testid="pa-lieu"
+                    value={formData.lieu}
+                    onChange={(e) => setFormData({...formData, lieu: e.target.value})}
+                    placeholder="Ex: Atelier B2, Zone de stockage"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Service *</Label>
+                  <Select value={formData.service} onValueChange={(value) => setFormData({...formData, service: value})}>
+                    <SelectTrigger data-testid="pa-service">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ADV">ADV</SelectItem>
+                      <SelectItem value="LOGISTIQUE">Logistique</SelectItem>
+                      <SelectItem value="PRODUCTION">Production</SelectItem>
+                      <SelectItem value="QHSE">QHSE</SelectItem>
+                      <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                      <SelectItem value="LABO">Labo</SelectItem>
+                      <SelectItem value="INDUS">Indus</SelectItem>
+                      <SelectItem value="AUTRE">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Type d'incident</Label>
+                  <Select value={formData.categorie_incident} onValueChange={(value) => setFormData({...formData, categorie_incident: value})}>
+                    <SelectTrigger data-testid="pa-categorie">
+                      <SelectValue placeholder="Sélectionner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CHUTE_PERSONNE">Chute de personne</SelectItem>
+                      <SelectItem value="CHUTE_OBJET">Chute d'objet</SelectItem>
+                      <SelectItem value="BRULURE">Brulure</SelectItem>
+                      <SelectItem value="COINCEMENT">Coincement / Ecrasement</SelectItem>
+                      <SelectItem value="COUPURE">Coupure</SelectItem>
+                      <SelectItem value="COLLISION">Collision / Heurt</SelectItem>
+                      <SelectItem value="EXPOSITION_CHIMIQUE">Exposition chimique</SelectItem>
+                      <SelectItem value="ELECTRIQUE">Risque electrique</SelectItem>
+                      <SelectItem value="ERGONOMIQUE">Ergonomique / TMS</SelectItem>
+                      <SelectItem value="PROJECTION">Projection</SelectItem>
+                      <SelectItem value="INCENDIE_EXPLOSION">Incendie / Explosion</SelectItem>
+                      <SelectItem value="AUTRE">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              
-              <div className="col-span-2">
-                <Label>Description *</Label>
-                <Textarea 
-                  value={formData.description} 
+            </fieldset>
+
+            {/* Section 2 : Description de l'incident */}
+            <fieldset className="border rounded-lg p-4 space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 px-2">Description de l'incident</legend>
+              <div>
+                <Label>Que s'est-il passe ? *</Label>
+                <Textarea
+                  data-testid="pa-description"
+                  value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows={3}
+                  placeholder="Decrivez les circonstances de l'incident..."
                   required
                 />
               </div>
-
               <div>
-                <Label>Date incident *</Label>
-                <Input 
-                  type="date"
-                  value={formData.date_incident} 
-                  onChange={(e) => setFormData({...formData, date_incident: e.target.value})}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label>Lieu *</Label>
-                <Input 
-                  value={formData.lieu} 
-                  onChange={(e) => setFormData({...formData, lieu: e.target.value})}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label>Service d'appartenance *</Label>
-                <Select value={formData.service} onValueChange={(value) => setFormData({...formData, service: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADV">ADV</SelectItem>
-                    <SelectItem value="LOGISTIQUE">Logistique</SelectItem>
-                    <SelectItem value="PRODUCTION">Production</SelectItem>
-                    <SelectItem value="QHSE">QHSE</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                    <SelectItem value="LABO">Labo</SelectItem>
-                    <SelectItem value="INDUS">Indus</SelectItem>
-                    <SelectItem value="AUTRE">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Personnes impliquées</Label>
-                <Input 
-                  value={formData.personnes_impliquees} 
-                  onChange={(e) => setFormData({...formData, personnes_impliquees: e.target.value})}
-                  placeholder="Nom, Prénom"
-                />
-              </div>
-
-              <div>
-                <Label>Déclarant</Label>
-                <Input 
-                  value={formData.declarant} 
-                  onChange={(e) => setFormData({...formData, declarant: e.target.value})}
-                />
-              </div>
-
-              <div className="col-span-2">
                 <Label>Contexte / Cause probable</Label>
-                <Textarea 
-                  value={formData.contexte_cause} 
+                <Textarea
+                  data-testid="pa-contexte"
+                  value={formData.contexte_cause}
                   onChange={(e) => setFormData({...formData, contexte_cause: e.target.value})}
                   rows={2}
+                  placeholder="Pourquoi est-ce arrive ? Quelles conditions ?"
                 />
               </div>
+              <div>
+                <Label>Mesures immediates prises</Label>
+                <Textarea
+                  data-testid="pa-mesures-immediates"
+                  value={formData.mesures_immediates}
+                  onChange={(e) => setFormData({...formData, mesures_immediates: e.target.value})}
+                  rows={2}
+                  placeholder="Qu'avez-vous fait sur le moment pour securiser la zone ?"
+                />
+              </div>
+            </fieldset>
 
-              <div className="col-span-2">
-                <Label>Actions proposées</Label>
-                <Textarea 
-                  value={formData.actions_proposees} 
+            {/* Section 3 : Personnes concernees */}
+            <fieldset className="border rounded-lg p-4 space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 px-2">Personnes concernees</legend>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Declarant</Label>
+                  <Input
+                    data-testid="pa-declarant"
+                    value={formData.declarant}
+                    onChange={(e) => setFormData({...formData, declarant: e.target.value})}
+                    placeholder="Qui declare l'incident ?"
+                  />
+                </div>
+                <div>
+                  <Label>Personnes impliquees</Label>
+                  <Input
+                    data-testid="pa-personnes"
+                    value={formData.personnes_impliquees}
+                    onChange={(e) => setFormData({...formData, personnes_impliquees: e.target.value})}
+                    placeholder="Noms separes par des virgules"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>Temoins</Label>
+                  <Input
+                    data-testid="pa-temoins"
+                    value={formData.temoins}
+                    onChange={(e) => setFormData({...formData, temoins: e.target.value})}
+                    placeholder="Noms des personnes ayant assiste a l'incident"
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            {/* Section 4 : Evaluation du risque */}
+            <fieldset className="border rounded-lg p-4 space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 px-2">Evaluation du risque</legend>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Gravite estimee</Label>
+                  <Select value={formData.severite} onValueChange={(value) => setFormData({...formData, severite: value})}>
+                    <SelectTrigger data-testid="pa-severite">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FAIBLE">Faible - Pas de blessure probable</SelectItem>
+                      <SelectItem value="MOYEN">Moyen - Blessure legere possible</SelectItem>
+                      <SelectItem value="ELEVE">Eleve - Blessure grave possible</SelectItem>
+                      <SelectItem value="CRITIQUE">Critique - Risque vital</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Type de lesion potentielle</Label>
+                  <Select value={formData.type_lesion_potentielle} onValueChange={(value) => setFormData({...formData, type_lesion_potentielle: value})}>
+                    <SelectTrigger data-testid="pa-lesion">
+                      <SelectValue placeholder="Qu'aurait-il pu se passer ?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FRACTURE">Fracture</SelectItem>
+                      <SelectItem value="BRULURE">Brulure</SelectItem>
+                      <SelectItem value="COUPURE">Coupure</SelectItem>
+                      <SelectItem value="CONTUSION">Contusion / Hematome</SelectItem>
+                      <SelectItem value="ENTORSE">Entorse / Foulure</SelectItem>
+                      <SelectItem value="INTOXICATION">Intoxication</SelectItem>
+                      <SelectItem value="IRRITATION">Irritation (peau, yeux)</SelectItem>
+                      <SelectItem value="ELECTRISATION">Electrisation</SelectItem>
+                      <SelectItem value="ECRASEMENT">Ecrasement</SelectItem>
+                      <SelectItem value="DOULEUR_MUSCULAIRE">Douleur musculaire / TMS</SelectItem>
+                      <SelectItem value="AUCUNE">Aucune lesion probable</SelectItem>
+                      <SelectItem value="AUTRE">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Facteurs contributifs</Label>
+                  <div className="flex flex-wrap gap-2 mt-1" data-testid="pa-facteurs">
+                    {[
+                      { value: 'HUMAIN', label: 'Facteur humain', desc: 'Fatigue, inattention, formation...' },
+                      { value: 'MATERIEL', label: 'Facteur materiel', desc: 'Equipement defaillant, EPI...' },
+                      { value: 'ORGANISATIONNEL', label: 'Facteur organisationnel', desc: 'Procedure, planification...' },
+                      { value: 'ENVIRONNEMENTAL', label: 'Facteur environnemental', desc: 'Eclairage, bruit, sol...' }
+                    ].map(f => {
+                      const isSelected = formData.facteurs_contributifs.includes(f.value);
+                      return (
+                        <button
+                          key={f.value}
+                          type="button"
+                          title={f.desc}
+                          className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                            isSelected
+                              ? 'bg-blue-100 border-blue-400 text-blue-800 font-medium'
+                              : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                          }`}
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              facteurs_contributifs: isSelected
+                                ? prev.facteurs_contributifs.filter(v => v !== f.value)
+                                : [...prev.facteurs_contributifs, f.value]
+                            }));
+                          }}
+                        >
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Cliquez pour selectionner un ou plusieurs facteurs</p>
+                </div>
+                <div className="col-span-2">
+                  <Label>Conditions au moment de l'incident</Label>
+                  <Input
+                    data-testid="pa-conditions"
+                    value={formData.conditions_incident}
+                    onChange={(e) => setFormData({...formData, conditions_incident: e.target.value})}
+                    placeholder="Ex: Poste de nuit, sol mouille, forte chaleur, charge de travail elevee..."
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            {/* Section 5 : Equipement concerne */}
+            <fieldset className="border rounded-lg p-4 space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 px-2 flex items-center gap-1.5">
+                <Wrench size={14} />
+                Equipement concerne
+              </legend>
+              <div>
+                <Label>Equipement lie (optionnel)</Label>
+                <Select
+                  value={formData.equipement_id}
+                  onValueChange={(value) => {
+                    const eq = equipments.find(e => (e.id || e._id) === value);
+                    setFormData({
+                      ...formData,
+                      equipement_id: value,
+                      equipement_nom: eq?.nom || ''
+                    });
+                  }}
+                >
+                  <SelectTrigger data-testid="pa-equipement">
+                    <SelectValue placeholder="Aucun equipement selectionne" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun</SelectItem>
+                    {equipments.map(eq => (
+                      <SelectItem key={eq.id || eq._id} value={eq.id || eq._id}>
+                        {eq.nom} {eq.categorie ? `(${eq.categorie})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">Associez un equipement de la GMAO si l'incident est lie a une machine ou installation</p>
+              </div>
+            </fieldset>
+
+            {/* Section 6 : Actions proposees */}
+            <fieldset className="border rounded-lg p-4 space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 px-2">Actions proposees</legend>
+              <div>
+                <Label>Quelles actions suggerez-vous ?</Label>
+                <Textarea
+                  data-testid="pa-actions"
+                  value={formData.actions_proposees}
                   onChange={(e) => setFormData({...formData, actions_proposees: e.target.value})}
                   rows={2}
+                  placeholder="Proposez des actions pour eviter que cela se reproduise..."
                 />
               </div>
+            </fieldset>
 
-              {/* Section Pièces jointes */}
-              <div className="col-span-2 pt-4 border-t">
-                <Label className="flex items-center gap-2 mb-3">
-                  <Paperclip size={16} />
-                  Pièces jointes
-                </Label>
-                
-                {selectedItem ? (
-                  <div className="space-y-4">
-                    <AttachmentUploader
-                      itemId={selectedItem?.id}
-                      uploadFunction={presquAccidentAPI.uploadAttachment}
-                      onUploadComplete={() => {
-                        setAttachmentRefresh(prev => prev + 1);
-                        loadItems();
-                      }}
-                      entityLabel="le presqu'accident"
+            {/* Section 7 : Pieces jointes */}
+            <fieldset className="border rounded-lg p-4 space-y-3">
+              <legend className="text-sm font-semibold text-gray-700 px-2 flex items-center gap-1.5">
+                <Paperclip size={14} />
+                Pieces jointes
+              </legend>
+              {selectedItem ? (
+                <div className="space-y-4">
+                  <AttachmentUploader
+                    itemId={selectedItem?.id}
+                    uploadFunction={presquAccidentAPI.uploadAttachment}
+                    onUploadComplete={() => {
+                      setAttachmentRefresh(prev => prev + 1);
+                      loadItems();
+                    }}
+                    entityLabel="le presqu'accident"
+                  />
+                  <AttachmentsList
+                    itemId={selectedItem?.id}
+                    getAttachmentsFunction={presquAccidentAPI.getAttachments}
+                    downloadFunction={presquAccidentAPI.downloadAttachment}
+                    deleteFunction={presquAccidentAPI.deleteAttachment}
+                    refreshTrigger={attachmentRefresh}
+                    canDelete={true}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="border-2 border-dashed rounded-lg p-4">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
-                    
-                    <AttachmentsList
-                      itemId={selectedItem?.id}
-                      getAttachmentsFunction={presquAccidentAPI.getAttachments}
-                      downloadFunction={presquAccidentAPI.downloadAttachment}
-                      deleteFunction={presquAccidentAPI.deleteAttachment}
-                      refreshTrigger={attachmentRefresh}
-                      canDelete={true}
-                    />
+                    <p className="text-xs text-gray-500 mt-2">Photos, documents... pour illustrer l'incident</p>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="border-2 border-dashed rounded-lg p-4">
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileSelect}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Sélectionnez les fichiers à joindre (photos, documents...)
-                      </p>
+                  {pendingFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm">Fichiers selectionnes :</Label>
+                      {pendingFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                          <span className="text-sm truncate">{file.name}</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removePendingFile(index)}>
+                            <X size={16} />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                    
-                    {pendingFiles.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-sm">Fichiers sélectionnés :</Label>
-                        {pendingFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                            <span className="text-sm truncate">{file.name}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removePendingFile(index)}
-                            >
-                              <X size={16} />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+                  )}
+                </div>
+              )}
+            </fieldset>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setOpenForm(false)}>
                 Annuler
               </Button>
               <Button type="submit" data-testid="submit-presqu-accident-btn">
-                {selectedItem ? 'Mettre à jour' : 'Créer'}
+                {selectedItem ? 'Mettre a jour' : 'Declarer l\'incident'}
               </Button>
             </div>
           </form>
