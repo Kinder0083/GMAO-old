@@ -6,6 +6,7 @@ Routes IA pour les Ordres de Travail
 from fastapi import APIRouter, Depends, HTTPException
 from dependencies import get_current_user
 from datetime import datetime, timezone, timedelta
+from bson import ObjectId
 import logging
 import json
 import os
