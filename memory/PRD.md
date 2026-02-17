@@ -76,6 +76,18 @@ Application de GMAO (Gestion de Maintenance Assistée par Ordinateur) nommée "G
 - Fichiers : `RecurrenceIndicator.jsx`, `ListView.jsx`, `ListViewGrouped.jsx`, `GridView.jsx`, `SurveillancePlan.jsx`
 - Tests : 100% backend (5/5 pytest), 100% frontend (7/7 features)
 
+### Indicateur de tendance de conformité (17 Feb 2026)
+- Flèche colorée visible immédiatement à côté de chaque contrôle récurrent :
+  - Verte (TrendingUp) : bonne conformité historique (>=80% réalisés)
+  - Orange (Minus) : conformité moyenne (50-79%)
+  - Rouge (TrendingDown) : conformité faible (<50%)
+  - Aucun indicateur : pas d'historique
+- Calcul en lot via `POST /api/surveillance/batch-trends` (agrégation MongoDB)
+- Résumé "x/y conformes" dans le popover des occurrences
+- Rechargement automatique au changement d'année
+- Fichiers : `RecurrenceIndicator.jsx` (TrendArrow), `SurveillancePlan.jsx`, `ListView.jsx`, `ListViewGrouped.jsx`, `GridView.jsx`, `surveillance_routes.py`, `api.js`
+- Tests : 100% backend (6/6 pytest), 100% frontend (7/7 features)
+
 ## Backlog
 - Aucune tâche en attente
 
