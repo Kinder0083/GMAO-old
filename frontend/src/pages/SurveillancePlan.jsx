@@ -106,7 +106,7 @@ function SurveillancePlan() {
       });
       
       const [statsData, alertsData] = await Promise.all([
-        surveillanceAPI.getStats(),
+        surveillanceAPI.getStats(selectedYear),
         surveillanceAPI.getAlerts()
       ]);
       setStats(statsData);
@@ -119,6 +119,21 @@ function SurveillancePlan() {
   const loadData = async () => {
     await loadItems();
     await loadStatsAndAlerts();
+    await loadAvailableYears();
+  };
+
+  const handleMigrateYears = async () => {
+    setMigrating(true);
+    try {
+      const result = await surveillanceAPI.migrateYears();
+      toast({ title: 'Migration terminée', description: result.message });
+      await loadAvailableYears();
+      await loadData();
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Erreur lors de la migration', variant: 'destructive' });
+    } finally {
+      setMigrating(false);
+    }
   };
 
   // Détecter si on vient du badge "contrôles en retard"
