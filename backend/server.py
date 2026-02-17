@@ -9567,6 +9567,47 @@ async def startup_scheduler():
         if perm_updated > 0:
             logger.info(f"✅ Permissions migrées pour {perm_updated} rôle(s)")
         
+        # Migrer les permissions de TOUS les utilisateurs existants
+        # Corrige les utilisateurs ayant des permissions incomplètes ou manquantes
+        all_users = await db.users.find({}).to_list(length=None)
+        users_perm_updated = 0
+        for u in all_users:
+            user_role = u.get("role", "VISUALISEUR")
+            # Admin bypass - pas besoin de permissions
+            if user_role == "ADMIN":
+                continue
+            current_perms = u.get("permissions", {})
+            # Si permissions est une liste (corrompu), le remplacer entièrement
+            if isinstance(current_perms, list):
+                current_perms = {}
+            default_perms = get_default_permissions_by_role(user_role).model_dump()
+            needs_update = False
+            # Vérifier chaque module du défaut et ajouter les manquants
+            for module_key, module_val in default_perms.items():
+                if module_key not in current_perms:
+                    current_perms[module_key] = module_val
+                    needs_update = True
+                elif not isinstance(current_perms[module_key], dict):
+                    current_perms[module_key] = module_val
+                    needs_update = True
+                else:
+                    # Nettoyer les champs parasites (dateCreation, attachments, etc.)
+                    valid_keys = {"view", "edit", "delete"}
+                    existing = current_perms[module_key]
+                    has_extra = any(k not in valid_keys for k in existing.keys())
+                    if has_extra:
+                        current_perms[module_key] = {
+                            "view": existing.get("view", module_val.get("view", False)),
+                            "edit": existing.get("edit", module_val.get("edit", False)),
+                            "delete": existing.get("delete", module_val.get("delete", False))
+                        }
+                        needs_update = True
+            if needs_update:
+                await db.users.update_one({"_id": u["_id"]}, {"$set": {"permissions": current_perms}})
+                users_perm_updated += 1
+        if users_perm_updated > 0:
+            logger.info(f"✅ Permissions utilisateurs migrées pour {users_perm_updated} utilisateur(s)")
+        
         # Migrer le manuel utilisateur (ajouter chapitres manquants)
         import json as json_lib
         manual_json_path = os.path.join(os.path.dirname(__file__), "manual_default_content.json")
