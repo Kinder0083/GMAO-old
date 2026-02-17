@@ -1578,6 +1578,7 @@ class SurveillanceItemCreate(BaseModel):
     resultat_controle: Optional[str] = None
     duree_rappel_echeance: int = 30
     responsable_notification_id: Optional[str] = None
+    groupe_controle_id: Optional[str] = None  # Pour lier les contrôles récurrents
 
 class SurveillanceItemUpdate(BaseModel):
     classe_type: Optional[str] = None
@@ -1612,6 +1613,7 @@ class SurveillanceItemUpdate(BaseModel):
     resultat_controle: Optional[str] = None
     duree_rappel_echeance: Optional[int] = None
     responsable_notification_id: Optional[str] = None
+    annee: Optional[int] = None
 
 
 
