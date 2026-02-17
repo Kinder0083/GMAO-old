@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { 
   BarChart3, TrendingUp, AlertTriangle, CheckCircle2, XCircle, 
-  Wrench, FileText, Activity, ShieldAlert
+  Wrench, FileText, Activity, ShieldAlert, Download, Loader2
 } from 'lucide-react';
 import { surveillanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
