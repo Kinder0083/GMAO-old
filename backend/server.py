@@ -8814,6 +8814,10 @@ from ai_maintenance_routes import router as ai_maintenance_router, init_ai_maint
 init_ai_maintenance_routes(db, audit_service)
 api_router.include_router(ai_maintenance_router)
 
+from ai_presqu_accident_routes import router as ai_pa_router, init_ai_pa_routes
+init_ai_pa_routes(db, audit_service)
+api_router.include_router(ai_pa_router)
+
 # Import presqu'accident routes
 from presqu_accident_routes import router as presqu_accident_router, init_presqu_accident_routes
 
