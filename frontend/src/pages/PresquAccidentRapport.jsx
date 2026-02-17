@@ -2,17 +2,21 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { AlertCircle, TrendingUp, BarChart3, Table2, Grid3X3, PieChart, Clock } from 'lucide-react';
+import { AlertCircle, TrendingUp, BarChart3, Table2, Grid3X3, PieChart, Clock, Brain, FileText } from 'lucide-react';
 import { presquAccidentAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
 import { usePresquAccident } from '../hooks/usePresquAccident';
+import AIPATrendAnalyzer from '../components/AIPATrendAnalyzer';
+import AIQHSEReport from '../components/AIQHSEReport';
 
 const PresquAccidentRapport = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [openTrendAnalysis, setOpenTrendAnalysis] = useState(false);
+  const [openQHSEReport, setOpenQHSEReport] = useState(false);
   const [displayMode, setDisplayMode] = useState(() => {
     return localStorage.getItem('presqu_accident_rapport_display_mode') || 'cards';
   });
