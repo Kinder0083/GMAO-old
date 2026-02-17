@@ -9,7 +9,7 @@ import ImprovementRequestFormDialog from '../components/ImprovementRequests/Impr
 import ConvertToImprovementDialog from '../components/ImprovementRequests/ConvertToImprovementDialog';
 import ImprovementRequestValidationDialog from '../components/ImprovementRequests/ImprovementRequestValidationDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
-import ServiceFilterBadge from '../components/Common/ServiceFilterBadge';
+
 import { improvementRequestsAPI, improvementsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useImprovementRequests } from '../hooks/useImprovementRequests';
