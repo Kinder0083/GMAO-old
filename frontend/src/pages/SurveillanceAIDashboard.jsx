@@ -19,8 +19,10 @@ const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'
 function SurveillanceAIDashboard() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [alerts, setAlerts] = useState([]);
+  const reportRef = useRef(null);
 
   const loadData = useCallback(async () => {
     try {
