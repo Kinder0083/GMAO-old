@@ -410,6 +410,62 @@ async def get_control_occurrences(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/batch-trends")
+async def get_batch_trends(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Calcul des tendances de conformité pour un lot de contrôles récurrents"""
+    try:
+        ids = data.get("groupe_controle_ids", [])
+        current_year = data.get("current_year", datetime.now(timezone.utc).year)
+
+        if not ids:
+            return {"success": True, "trends": {}}
+
+        pipeline = [
+            {"$match": {"groupe_controle_id": {"$in": ids}}},
+            {"$group": {
+                "_id": "$groupe_controle_id",
+                "occurrences": {"$push": {
+                    "annee": "$annee",
+                    "status": "$status",
+                    "prochain_controle": "$prochain_controle",
+                    "date_realisation": "$date_realisation"
+                }}
+            }}
+        ]
+        results = await db.surveillance_items.aggregate(pipeline).to_list(length=500)
+
+        trends = {}
+        for group in results:
+            gid = group["_id"]
+            occs = group["occurrences"]
+            past = [o for o in occs if (o.get("annee") or 9999) < current_year]
+
+            if not past:
+                trends[gid] = {"trend": "none", "realized": 0, "total": 0}
+                continue
+
+            realized = sum(1 for o in past if o.get("status") == "REALISE")
+            total_past = len(past)
+            ratio = realized / total_past
+
+            if ratio >= 0.8:
+                trend = "up"
+            elif ratio >= 0.5:
+                trend = "stable"
+            else:
+                trend = "down"
+
+            trends[gid] = {"trend": trend, "realized": realized, "total": total_past}
+
+        return {"success": True, "trends": trends}
+    except Exception as e:
+        logger.error(f"Erreur calcul tendances: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Années et Migration ====================
 
 @router.get("/available-years")

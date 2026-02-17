@@ -455,6 +455,9 @@ export const surveillanceAPI = {
   // Occurrences d'un contrôle récurrent
   getOccurrences: (groupeId) => api.get(`/surveillance/occurrences/${groupeId}`).then(res => res.data),
   
+  // Tendances de conformité en lot
+  getBatchTrends: (groupeIds, currentYear) => api.post('/surveillance/batch-trends', { groupe_controle_ids: groupeIds, current_year: currentYear }).then(res => res.data),
+  
   // Vérification automatique des échéances
   checkDueDates: () => api.post('/surveillance/check-due-dates').then(res => res.data),
   
