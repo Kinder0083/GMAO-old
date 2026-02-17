@@ -267,23 +267,59 @@ export default function AINonconformityAnalyzer({ open, onClose }) {
               {/* OT suggérés */}
               {analysis.work_orders_suggested?.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <Wrench className="h-4 w-4 text-blue-600" />
-                    Ordres de travail suggérés ({analysis.work_orders_suggested.length})
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-sm flex items-center gap-2">
+                      <Wrench className="h-4 w-4 text-blue-600" />
+                      Ordres de travail suggérés ({analysis.work_orders_suggested.length})
+                    </h3>
+                    {analysis.work_orders_suggested.length > 1 && (
+                      <Button
+                        size="sm"
+                        onClick={handleCreateAllWOs}
+                        disabled={creatingWOs || analysis.work_orders_suggested.every(isWOCreated)}
+                        data-testid="create-all-wo-btn"
+                        className="bg-blue-600 hover:bg-blue-700 text-xs h-7"
+                      >
+                        {creatingWOs ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Wrench className="h-3 w-3 mr-1" />}
+                        Créer tous les OT
+                      </Button>
+                    )}
+                  </div>
                   <div className="space-y-2">
-                    {analysis.work_orders_suggested.map((wo, i) => (
-                      <div key={i} className="p-3 border rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{wo.titre}</span>
-                          <Badge className={wo.priorite === 'URGENTE' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}>
-                            {wo.priorite}
-                          </Badge>
+                    {analysis.work_orders_suggested.map((wo, i) => {
+                      const created = isWOCreated(wo);
+                      const createdData = createdWOs.find(c => c.titre === wo.titre);
+                      return (
+                        <div key={i} className={`p-3 border rounded-lg ${created ? 'bg-green-50 border-green-200' : ''}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">{wo.titre}</span>
+                            <div className="flex items-center gap-1.5">
+                              <Badge className={wo.priorite === 'URGENTE' ? 'bg-red-100 text-red-800' : wo.priorite === 'HAUTE' ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'}>
+                                {wo.priorite}
+                              </Badge>
+                              {created ? (
+                                <Badge className="bg-green-100 text-green-800">
+                                  <Check className="h-3 w-3 mr-1" /> OT #{createdData?.numero}
+                                </Badge>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCreateSingleWO(wo)}
+                                  disabled={creatingWOs}
+                                  data-testid={`create-wo-btn-${i}`}
+                                  className="text-xs h-7 border-blue-400 text-blue-700 hover:bg-blue-50"
+                                >
+                                  {creatingWOs ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Wrench className="h-3 w-3 mr-1" /> Créer OT</>}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">{wo.description}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Equipement : {wo.equipement}</p>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">{wo.description}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Equipement : {wo.equipement}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
