@@ -169,9 +169,13 @@ function SurveillanceAIDashboard() {
     <div className="p-6 space-y-6" data-testid="ai-dashboard-page">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Tableau de bord IA - Tendances</h1>
+        <Button onClick={exportPDF} disabled={exporting} variant="outline" data-testid="export-pdf-btn">
+          {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          {exporting ? 'Génération...' : 'Export PDF'}
+        </Button>
       </div>
 
-      {/* Phase 4: Alertes intelligentes */}
+      <div ref={reportRef} className="space-y-6">
       {alerts.length > 0 && (
         <div className="space-y-2" data-testid="smart-alerts">
           {alerts.slice(0, 5).map((alert, i) => (
