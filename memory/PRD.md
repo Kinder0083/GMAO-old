@@ -41,6 +41,7 @@ Application GMAO (CMMS) complète pour la gestion de maintenance assistée par o
 - **Feature: Tableau de bord IA Tendances (Phase 3)**
   - KPIs: analyses, contrôles, taux conformité, non-conformités, BT curatifs
   - Graphiques: évolution mensuelle (AreaChart), répartition résultats (PieChart), par organisme (BarChart), conformité par catégorie (barres de progression)
+  - **Export PDF** : Bouton pour générer un rapport PDF formaté pour réunions QHSE (en-tête bleu, KPIs, graphiques, alertes, pagination auto)
   - Route: /surveillance-ai-dashboard
 - **Feature: Alertes intelligentes (Phase 4)**
   - Détection de tendances de dégradation (non-conformités consécutives)
