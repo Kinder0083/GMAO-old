@@ -67,6 +67,10 @@ export const workOrdersAPI = {
   update: (id, data) => api.put(`/work-orders/${id}`, data),
   delete: (id) => api.delete(`/work-orders/${id}`),
   
+  // IA
+  aiDiagnostic: (workOrderId) => api.post('/ai-work-orders/diagnostic', { work_order_id: workOrderId }).then(r => r.data),
+  aiSummary: (workOrderId) => api.post('/ai-work-orders/summary', { work_order_id: workOrderId }).then(r => r.data),
+  
   // Add time spent
   addTimeSpent: (workOrderId, hours, minutes) => 
     api.post(`/work-orders/${workOrderId}/add-time`, { hours, minutes }),
