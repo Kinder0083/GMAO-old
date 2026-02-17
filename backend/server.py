@@ -9767,7 +9767,8 @@ async def startup_scheduler():
         logger.info("✅ Service d'alertes caméras démarré (vérification toutes les 60s)")
         
     except Exception as e:
-        logger.error(f"❌ Erreur lors du démarrage du scheduler: {str(e)}")
+        import traceback
+        logger.error(f"❌ Erreur lors du démarrage du scheduler: {str(e)}\n{traceback.format_exc()}")
 
 @app.on_event("shutdown")
 async def shutdown_services():
