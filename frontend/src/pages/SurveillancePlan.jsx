@@ -242,6 +242,9 @@ function SurveillancePlan() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Plan de Surveillance</h1>
         <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => setShowSearch(!showSearch)} data-testid="toggle-search-btn">
+            <Search className="h-4 w-4" />
+          </Button>
           <Button variant="outline" onClick={() => setOpenAIExtract(true)} data-testid="ai-extract-btn">
             <FileText className="mr-2 h-4 w-4" /> Analyse IA
           </Button>
