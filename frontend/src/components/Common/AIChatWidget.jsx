@@ -155,11 +155,48 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
         case 'SEARCH':
           // Effectuer une recherche et afficher les résultats
           toast({
-            title: '🔍 Recherche en cours',
+            title: 'Recherche en cours',
             description: `Recherche dans ${actionData.type}...`,
           });
+          break;
           
-          // TODO: Implémenter la recherche réelle via API
+        case 'CONFIGURE_AUTOMATION':
+          // Parser et appliquer une automatisation
+          try {
+            const parseRes = await api.post('/automations/parse', { message: actionData.message });
+            const automation = parseRes.data?.automation;
+            
+            if (automation?.understood) {
+              // Appliquer directement
+              const applyRes = await api.post('/automations/apply', { automation });
+              
+              toast({
+                title: 'Automatisation configuree',
+                description: automation.name || 'Configuration reussie',
+              });
+              
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: applyRes.data?.message || automation.confirmation_message || 'Automatisation mise en place !',
+                timestamp: new Date().toISOString(),
+                isSystemAction: true
+              }]);
+            } else if (automation?.needs_clarification) {
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: automation.clarification_question || 'J\'ai besoin de plus de details pour configurer cette automatisation.',
+                timestamp: new Date().toISOString(),
+                isSystemAction: true
+              }]);
+            }
+          } catch (autoErr) {
+            console.error('Erreur automatisation:', autoErr);
+            toast({
+              title: 'Erreur automatisation',
+              description: 'Impossible de configurer l\'automatisation',
+              variant: 'destructive',
+            });
+          }
           break;
           
         default:
