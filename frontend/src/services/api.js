@@ -1027,4 +1027,13 @@ export const aiReportsAPI = {
   generate: (service, periodDays, reportType) => api.post('/ai-weekly-reports/generate', { service, period_days: periodDays, report_type: reportType }).then(r => r.data),
 };
 
+// Automatisations
+export const automationsAPI = {
+  parse: (message) => api.post('/automations/parse', { message }).then(r => r.data),
+  apply: (automation) => api.post('/automations/apply', { automation }).then(r => r.data),
+  list: () => api.get('/automations/list').then(r => r.data),
+  remove: (id) => api.delete(`/automations/${id}`).then(r => r.data),
+  toggle: (id) => api.put(`/automations/${id}/toggle`).then(r => r.data),
+};
+
 export default api;
