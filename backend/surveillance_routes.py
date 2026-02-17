@@ -391,6 +391,97 @@ async def delete_surveillance_item(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Années et Migration ====================
+
+@router.get("/available-years")
+async def get_available_years(current_user: dict = Depends(get_current_user)):
+    """Récupérer la liste des années ayant des contrôles"""
+    try:
+        pipeline = [
+            {"$match": {"annee": {"$ne": None}}},
+            {"$group": {"_id": "$annee"}},
+            {"$sort": {"_id": 1}}
+        ]
+        result = await db.surveillance_items.aggregate(pipeline).to_list(length=None)
+        years = [r["_id"] for r in result if r["_id"]]
+        
+        current_year = datetime.now().year
+        # S'assurer que l'année courante et N+1 sont incluses
+        if current_year not in years:
+            years.append(current_year)
+        if (current_year + 1) not in years:
+            years.append(current_year + 1)
+        
+        years = sorted(set(years))
+        return {"years": years, "current_year": current_year}
+    except Exception as e:
+        logger.error(f"Erreur récupération années: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/migrate-years")
+async def migrate_surveillance_years(current_user: dict = Depends(get_current_user)):
+    """Migration: assigner annee aux contrôles existants et générer les récurrences manquantes"""
+    try:
+        items = await db.surveillance_items.find({"$or": [{"annee": None}, {"annee": {"$exists": False}}]}).to_list(length=None)
+        
+        updated = 0
+        generated = 0
+        
+        for item in items:
+            # 1. Assigner l'année
+            annee = get_year_from_date_str(item.get("prochain_controle"))
+            if not annee:
+                annee = get_year_from_date_str(item.get("created_at")) or datetime.now().year
+            
+            update_fields = {"annee": annee}
+            
+            # Assigner un groupe_controle_id si manquant
+            if not item.get("groupe_controle_id"):
+                update_fields["groupe_controle_id"] = str(uuid.uuid4())
+            
+            await db.surveillance_items.update_one(
+                {"id": item["id"]},
+                {"$set": update_fields}
+            )
+            updated += 1
+            
+            # 2. Générer les contrôles récurrents futurs si pas déjà fait
+            groupe_id = item.get("groupe_controle_id") or update_fields.get("groupe_controle_id")
+            if item.get("prochain_controle") and item.get("periodicite"):
+                # Vérifier qu'il n'y a pas déjà des récurrences pour ce groupe
+                existing_count = await db.surveillance_items.count_documents({
+                    "groupe_controle_id": groupe_id,
+                    "id": {"$ne": item["id"]}
+                })
+                if existing_count == 0:
+                    item_copy = {**item}
+                    item_copy.pop("_id", None)
+                    item_copy["groupe_controle_id"] = groupe_id
+                    
+                    recurring = generate_recurring_controls(
+                        item_copy,
+                        item["prochain_controle"],
+                        item["periodicite"]
+                    )
+                    if recurring:
+                        for r in recurring:
+                            r["created_by"] = item.get("created_by")
+                            r["updated_by"] = item.get("updated_by")
+                        await db.surveillance_items.insert_many(recurring)
+                        generated += len(recurring)
+        
+        return {
+            "success": True,
+            "updated": updated,
+            "generated": generated,
+            "message": f"{updated} contrôle(s) mis à jour, {generated} contrôle(s) récurrent(s) générés"
+        }
+    except Exception as e:
+        logger.error(f"Erreur migration années: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Statistiques et Indicateurs ====================
 
 @router.get("/stats")
