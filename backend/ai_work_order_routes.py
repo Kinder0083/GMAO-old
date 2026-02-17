@@ -198,6 +198,13 @@ async def ai_summary(
 
         wo = await db.work_orders.find_one({"id": work_order_id}, {"_id": 0})
         if not wo:
+            try:
+                wo = await db.work_orders.find_one({"_id": ObjectId(work_order_id)})
+                if wo:
+                    wo["id"] = str(wo.pop("_id"))
+            except Exception:
+                pass
+        if not wo:
             raise HTTPException(status_code=404, detail="OT introuvable")
 
         # Récupérer l'équipement
