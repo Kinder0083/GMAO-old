@@ -179,23 +179,13 @@ function SurveillanceItemForm({ open, item, onClose }) {
   }, [formData.derniere_visite, formData.periodicite]);
 
   const handleSubmit = async () => {
-    // Validation des champs obligatoires
     if (!formData.classe_type || !formData.category || !formData.batiment || !formData.periodicite || !formData.responsable || !formData.executant) {
-      console.error('❌ Champs manquants:', {
-        classe_type: !!formData.classe_type,
-        category: !!formData.category,
-        batiment: !!formData.batiment,
-        periodicite: !!formData.periodicite,
-        responsable: !!formData.responsable,
-        executant: !!formData.executant
-      });
       toast({ title: 'Erreur', description: 'Champs obligatoires manquants', variant: 'destructive' });
       return;
     }
 
     setLoading(true);
     try {
-      // Nettoyer les données : transformer les chaînes vides en null
       const apiData = Object.fromEntries(
         Object.entries(formData).map(([key, value]) => [
           key,
@@ -203,19 +193,28 @@ function SurveillanceItemForm({ open, item, onClose }) {
         ])
       );
       
-      console.log('📤 Envoi données au backend:', apiData);
+      let itemId = item?.id;
       
       if (item) {
         await surveillanceAPI.updateItem(item.id, apiData);
-        toast({ title: 'Succès', description: 'Item mis à jour' });
       } else {
-        await surveillanceAPI.createItem(apiData);
-        toast({ title: 'Succès', description: 'Item créé' });
+        const result = await surveillanceAPI.createItem(apiData);
+        itemId = result?.id || result?.data?.id;
       }
+      
+      // Upload des fichiers en attente
+      if (pendingFiles.length > 0 && itemId) {
+        try {
+          await surveillanceAPI.uploadAttachments(itemId, pendingFiles);
+        } catch (uploadError) {
+          console.error('Erreur upload fichiers:', uploadError);
+          toast({ title: 'Attention', description: 'Contrôle sauvegardé mais erreur lors de l\'upload des fichiers', variant: 'destructive' });
+        }
+      }
+      
+      toast({ title: 'Succès', description: item ? 'Contrôle mis à jour' : 'Contrôle créé' });
       onClose(true);
     } catch (error) {
-      console.error('❌ Erreur API:', error);
-      console.error('❌ Détails erreur:', error.response?.data || error.message);
       toast({ 
         title: 'Erreur', 
         description: error.response?.data?.detail || 'Erreur enregistrement', 
@@ -223,6 +222,44 @@ function SurveillanceItemForm({ open, item, onClose }) {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileAdd = (e) => {
+    const newFiles = Array.from(e.target.files || []);
+    setPendingFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const handleRemovePending = (index) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteAttachment = async (attachmentId) => {
+    if (!item?.id) return;
+    try {
+      await surveillanceAPI.deleteAttachment(item.id, attachmentId);
+      setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+      toast({ title: 'Succès', description: 'Pièce jointe supprimée' });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Impossible de supprimer', variant: 'destructive' });
+    }
+  };
+
+  const handleUploadMore = async (e) => {
+    if (!item?.id) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      const result = await surveillanceAPI.uploadAttachments(item.id, files);
+      if (result.success) {
+        setAttachments(prev => [...prev, ...result.attachments]);
+        toast({ title: 'Succès', description: `${result.attachments.length} fichier(s) ajouté(s)` });
+      }
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Erreur lors de l\'upload', variant: 'destructive' });
+    } finally {
+      setUploading(false);
     }
   };
 
