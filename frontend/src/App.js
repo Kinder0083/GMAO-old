@@ -50,6 +50,8 @@ import ImprovementRequests from "./pages/ImprovementRequests";
 import Improvements from "./pages/Improvements";
 import SurveillancePlan from "./pages/SurveillancePlan";
 import SurveillanceRapport from "./pages/SurveillanceRapport";
+import SurveillanceAIHistory from "./pages/SurveillanceAIHistory";
+import SurveillanceAIDashboard from "./pages/SurveillanceAIDashboard";
 import PresquAccidentList from "./pages/PresquAccidentList";
 import PresquAccidentRapport from "./pages/PresquAccidentRapport";
 import Documentations from "./pages/Documentations";
