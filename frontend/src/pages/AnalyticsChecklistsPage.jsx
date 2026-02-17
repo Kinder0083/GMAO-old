@@ -41,11 +41,13 @@ import {
   Loader2,
   Calendar,
   BarChart3,
-  FileDown
+  FileDown,
+  Brain
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import AINonconformityAnalyzer from '../components/AINonconformityAnalyzer';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
