@@ -1613,6 +1613,41 @@ class SurveillanceItemUpdate(BaseModel):
     responsable_notification_id: Optional[str] = None
 
 
+
+# ==================== AI ANALYSIS HISTORY MODELS ====================
+
+class AIAnalysisHistory(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    filename: str
+    file_size: Optional[int] = None
+    organisme_controle: Optional[str] = None
+    date_intervention: Optional[str] = None
+    numero_rapport: Optional[str] = None
+    site_controle: Optional[str] = None
+    
+    # Résultats
+    controles_count: int = 0
+    conformes_count: int = 0
+    non_conformes_count: int = 0
+    avec_reserves_count: int = 0
+    
+    # IDs créés
+    created_item_ids: List[str] = []
+    created_work_order_ids: List[str] = []
+    
+    # Données brutes extraites
+    raw_extracted_data: Optional[dict] = None
+    
+    # Catégories détectées
+    categories: List[str] = []
+    
+    # Métadonnées
+    analyzed_by: Optional[str] = None
+    analyzed_by_name: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+
 # ==================== PRESQU'ACCIDENT (NEAR MISS) MODELS ====================
 
 class PresquAccidentStatus(str, Enum):
