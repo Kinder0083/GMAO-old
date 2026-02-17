@@ -576,6 +576,26 @@ Format attendu:
         }
         await db.ai_analysis_history.insert_one(analysis_record)
 
+        # --- Alertes automatiques pour patterns critiques ---
+        notifications_sent = []
+        critical_patterns = [
+            p for p in analysis.get("non_conformities_patterns", [])
+            if p.get("severity") in ("CRITIQUE", "IMPORTANT")
+        ]
+
+        if critical_patterns:
+            notifications_sent = await _send_nc_critical_alerts(
+                analysis=analysis,
+                critical_patterns=critical_patterns,
+                stats={
+                    "total_executions": len(executions),
+                    "total_items_checked": total_items,
+                    "total_non_conformities": total_nc,
+                    "period_days": data.get("days", 90)
+                },
+                analyzed_by_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+            )
+
         return {
             "success": True,
             "data": analysis,
@@ -584,7 +604,8 @@ Format attendu:
                 "total_items_checked": total_items,
                 "total_non_conformities": total_nc,
                 "period_days": data.get("days", 90)
-            }
+            },
+            "notifications_sent": notifications_sent
         }
 
     except json.JSONDecodeError:

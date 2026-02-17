@@ -709,6 +709,156 @@ Ceci est un email de test automatique envoyé depuis GMAO Iris.
 
 
 
+def send_critical_nc_alert_email(
+    to_email: str,
+    responsable_name: str,
+    service_name: str,
+    analysis_summary: str,
+    critical_patterns: list,
+    equipements_a_risque: list,
+    work_orders_suggested: list,
+    stats: dict
+) -> bool:
+    """
+    Envoie un email d'alerte pour les non-conformités critiques détectées par l'IA.
+    """
+    subject = f"ALERTE NC Critique - {service_name} - GMAO Iris"
+
+    patterns_html = ""
+    for p in critical_patterns:
+        patterns_html += f"""
+        <tr>
+            <td style="padding:10px;border-bottom:1px solid #eee;">{p.get('pattern','')}</td>
+            <td style="padding:10px;border-bottom:1px solid #eee;text-align:center;">
+                <span style="background:#dc2626;color:#fff;padding:3px 8px;border-radius:4px;font-size:12px;">{p.get('severity','')}</span>
+            </td>
+            <td style="padding:10px;border-bottom:1px solid #eee;text-align:center;">{p.get('occurrences',0)}</td>
+            <td style="padding:10px;border-bottom:1px solid #eee;">{p.get('cause_probable','N/A')}</td>
+        </tr>"""
+
+    equipements_html = ""
+    for eq in equipements_a_risque:
+        urgence_color = "#dc2626" if eq.get("urgence") == "HAUTE" else "#f59e0b" if eq.get("urgence") == "MOYENNE" else "#22c55e"
+        equipements_html += f"""
+        <tr>
+            <td style="padding:10px;border-bottom:1px solid #eee;">{eq.get('equipement','')}</td>
+            <td style="padding:10px;border-bottom:1px solid #eee;text-align:center;">
+                <span style="background:{urgence_color};color:#fff;padding:3px 8px;border-radius:4px;font-size:12px;">{eq.get('urgence','')}</span>
+            </td>
+            <td style="padding:10px;border-bottom:1px solid #eee;">{', '.join(eq.get('problemes_principaux',[]))}</td>
+        </tr>"""
+
+    wo_html = ""
+    for wo in work_orders_suggested[:5]:
+        wo_html += f"<li><strong>{wo.get('titre','')}</strong> - {wo.get('equipement','')} (Priorite: {wo.get('priorite','')})</li>"
+
+    html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 700px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: #dc2626; color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0; }}
+        .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }}
+        .stats-grid {{ display: flex; gap: 15px; margin: 20px 0; }}
+        .stat-box {{ background: #fff; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #e5e7eb; }}
+        .stat-value {{ font-size: 24px; font-weight: bold; color: #1f2937; }}
+        .stat-label {{ font-size: 12px; color: #6b7280; margin-top: 4px; }}
+        table {{ width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; }}
+        th {{ background: #374151; color: white; padding: 12px; text-align: left; font-size: 13px; }}
+        .section-title {{ color: #1f2937; margin-top: 25px; margin-bottom: 10px; font-size: 16px; border-bottom: 2px solid #dc2626; padding-bottom: 5px; }}
+        .footer {{ text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #777; }}
+        .alert-box {{ background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin:0;">ALERTE Non-Conformites Critiques</h1>
+            <p style="margin:5px 0 0;opacity:0.9;">Analyse IA - GMAO Iris</p>
+        </div>
+        <div class="content">
+            <p>Bonjour <strong>{responsable_name}</strong>,</p>
+
+            <div class="alert-box">
+                <strong>L'analyse IA des checklists a detecte des non-conformites critiques concernant votre service ({service_name}).</strong>
+                <p style="margin:8px 0 0;font-size:14px;">{analysis_summary}</p>
+            </div>
+
+            <div style="display:flex;gap:15px;margin:20px 0;">
+                <div style="background:#fff;padding:15px;border-radius:8px;flex:1;text-align:center;border:1px solid #e5e7eb;">
+                    <div style="font-size:24px;font-weight:bold;color:#1f2937;">{stats.get('total_executions',0)}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:4px;">Executions analysees</div>
+                </div>
+                <div style="background:#fff;padding:15px;border-radius:8px;flex:1;text-align:center;border:1px solid #e5e7eb;">
+                    <div style="font-size:24px;font-weight:bold;color:#dc2626;">{stats.get('total_non_conformities',0)}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:4px;">Non-conformites</div>
+                </div>
+                <div style="background:#fff;padding:15px;border-radius:8px;flex:1;text-align:center;border:1px solid #e5e7eb;">
+                    <div style="font-size:24px;font-weight:bold;color:#f59e0b;">{len(critical_patterns)}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:4px;">Patterns critiques</div>
+                </div>
+            </div>
+
+            <h3 class="section-title">Patterns critiques detectes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pattern</th>
+                        <th>Severite</th>
+                        <th>Occurrences</th>
+                        <th>Cause probable</th>
+                    </tr>
+                </thead>
+                <tbody>{patterns_html}</tbody>
+            </table>
+
+            {"<h3 class='section-title'>Equipements a risque</h3><table><thead><tr><th>Equipement</th><th>Urgence</th><th>Problemes</th></tr></thead><tbody>" + equipements_html + "</tbody></table>" if equipements_html else ""}
+
+            {"<h3 class='section-title'>Actions correctives suggerees par l'IA</h3><ul style='background:#fff;padding:20px 20px 20px 35px;border-radius:8px;border:1px solid #e5e7eb;'>" + wo_html + "</ul>" if wo_html else ""}
+
+            <p style="margin-top:25px;">Connectez-vous a GMAO Iris pour consulter le rapport complet et creer les ordres de travail curatifs.</p>
+
+            <div style="text-align:center;margin:25px 0;">
+                <a href="{APP_URL}" style="display:inline-block;padding:12px 30px;background:#dc2626;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Voir le rapport complet</a>
+            </div>
+
+            <p>Cordialement,<br>GMAO Iris - Systeme d'Alertes Automatiques</p>
+        </div>
+        <div class="footer">
+            <p>Ceci est un email automatique genere par l'analyse IA de GMAO Iris.</p>
+            <p>&copy; 2025 GMAO Iris - Tous droits reserves</p>
+        </div>
+    </div>
+</body>
+</html>
+    """
+
+    text_content = f"""
+ALERTE Non-Conformites Critiques - GMAO Iris
+
+Bonjour {responsable_name},
+
+L'analyse IA des checklists a detecte des non-conformites critiques concernant votre service ({service_name}).
+
+{analysis_summary}
+
+Statistiques:
+- Executions analysees: {stats.get('total_executions',0)}
+- Non-conformites: {stats.get('total_non_conformities',0)}
+- Patterns critiques: {len(critical_patterns)}
+
+Connectez-vous a GMAO Iris pour consulter le rapport complet.
+
+Cordialement,
+GMAO Iris
+    """
+
+    return send_email(to_email, subject, html_content, text_content)
+
+
 def send_weekly_report_email(
     to_email: str,
     subject: str,
