@@ -9732,6 +9732,8 @@ async def startup_scheduler():
         menus_migrated = 0
         for pref in user_prefs:
             menu_items = pref.get("menu_items", [])
+            # Filtrer les entrées non-dict (corruption de données)
+            menu_items = [item for item in menu_items if isinstance(item, dict)]
             existing_ids = {item.get("id") for item in menu_items}
             needs_update = False
             # Fix existing items that are missing required fields
