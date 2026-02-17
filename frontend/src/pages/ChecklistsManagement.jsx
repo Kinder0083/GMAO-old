@@ -317,6 +317,13 @@ const ChecklistsManagement = () => {
       />
 
       <ConfirmDialog />
+      <AIChecklistGenerator
+        open={aiGeneratorOpen}
+        onClose={(shouldRefresh) => {
+          setAiGeneratorOpen(false);
+          if (shouldRefresh) loadChecklists();
+        }}
+      />
     </div>
   );
 };
