@@ -29,6 +29,8 @@ function PresquAccidentList() {
   const [users, setUsers] = useState([]);
   const [serviceResponsables, setServiceResponsables] = useState([]);
   const [equipments, setEquipments] = useState([]);
+  const [openRCA, setOpenRCA] = useState(false);
+  const [rcaItem, setRcaItem] = useState(null);
   
   // Dialog de traitement/réponse
   const [openTraitement, setOpenTraitement] = useState(false);
