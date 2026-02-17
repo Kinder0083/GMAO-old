@@ -39,6 +39,122 @@ def init_surveillance_routes(database, audit_svc, realtime_mgr=None):
     realtime_manager = realtime_mgr
 
 
+# ==================== Utilitaires récurrence ====================
+
+def parse_periodicite_to_months(periodicite: str) -> int:
+    """Convertit une périodicité texte en nombre de mois.
+    Ex: '1 an' -> 12, '6 mois' -> 6, '3 mois' -> 3, '1 mois' -> 1, '2 ans' -> 24
+    """
+    p = periodicite.lower().strip()
+    import re
+    # Patterns: "X an(s)", "X mois", "trimestriel", "semestriel", "annuel", "mensuel"
+    if "trimestriel" in p:
+        return 3
+    if "semestriel" in p:
+        return 6
+    if "annuel" in p:
+        return 12
+    if "mensuel" in p:
+        return 1
+    
+    m = re.match(r'(\d+)\s*(an|ans|année|années)', p)
+    if m:
+        return int(m.group(1)) * 12
+    
+    m = re.match(r'(\d+)\s*(mois)', p)
+    if m:
+        return int(m.group(1))
+    
+    # Fallback: essayer de trouver un nombre
+    m = re.search(r'(\d+)', p)
+    if m:
+        num = int(m.group(1))
+        if "an" in p:
+            return num * 12
+        return num
+    
+    return 12  # Défaut: annuel
+
+
+def add_months_to_date(date: datetime, months: int) -> datetime:
+    """Ajoute N mois à une date."""
+    month = date.month - 1 + months
+    year = date.year + month // 12
+    month = month % 12 + 1
+    day = min(date.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+    return date.replace(year=year, month=month, day=day)
+
+
+def get_year_from_date_str(date_str: str) -> Optional[int]:
+    """Extrait l'année d'une date ISO string."""
+    if not date_str:
+        return None
+    try:
+        return datetime.fromisoformat(date_str.replace('Z', '+00:00')).year
+    except:
+        try:
+            return int(date_str[:4])
+        except:
+            return None
+
+
+def generate_recurring_controls(base_item_dict: dict, start_date_str: str, periodicite: str) -> list:
+    """Génère tous les contrôles récurrents de start_date jusqu'à fin N+1.
+    Retourne une liste de dicts prêts à être insérés en DB.
+    """
+    months = parse_periodicite_to_months(periodicite)
+    if months <= 0:
+        return []
+    
+    try:
+        start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+    except:
+        try:
+            start_date = datetime.strptime(start_date_str[:10], "%Y-%m-%d")
+        except:
+            return []
+    
+    current_year = datetime.now().year
+    end_year = current_year + 1
+    end_date = datetime(end_year, 12, 31, 23, 59, 59)
+    
+    groupe_id = base_item_dict.get("groupe_controle_id") or str(uuid.uuid4())
+    
+    recurring = []
+    next_date = add_months_to_date(start_date, months)
+    
+    while next_date <= end_date:
+        new_item = {
+            **base_item_dict,
+            "id": str(uuid.uuid4()),
+            "prochain_controle": next_date.strftime("%Y-%m-%d"),
+            "annee": next_date.year,
+            "groupe_controle_id": groupe_id,
+            "status": "a_planifier",
+            "date_realisation": None,
+            "derniere_visite": None,
+            "alerte_envoyee": False,
+            "email_rappel_envoye": False,
+            "numero_rapport": None,
+            "resultat_controle": None,
+            "commentaire": None,
+            "attachments": [],
+            # Reset des mois
+            "janvier": False, "fevrier": False, "mars": False,
+            "avril": False, "mai": False, "juin": False,
+            "juillet": False, "aout": False, "septembre": False,
+            "octobre": False, "novembre": False, "decembre": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        # Nettoyer _id si présent
+        new_item.pop("_id", None)
+        recurring.append(new_item)
+        next_date = add_months_to_date(next_date, months)
+    
+    return recurring
+
+
 # ==================== CRUD Routes ====================
 
 @router.get("/items", response_model=List[dict])
