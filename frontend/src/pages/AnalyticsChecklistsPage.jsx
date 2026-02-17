@@ -99,6 +99,7 @@ const AnalyticsChecklistsPage = () => {
   const [nonConformities, setNonConformities] = useState({ total: 0, items: [] });
   const [equipmentStats, setEquipmentStats] = useState([]);
   const [technicianStats, setTechnicianStats] = useState([]);
+  const [aiAnalyzerOpen, setAiAnalyzerOpen] = useState(false);
 
   // Fonction d'export PDF
   const exportToPDF = async () => {
