@@ -9598,15 +9598,19 @@ async def startup_scheduler():
         users_perm_updated = 0
         for u in all_users:
             user_role = u.get("role", "VISUALISEUR")
-            # Admin bypass - pas besoin de permissions
-            if user_role == "ADMIN":
-                continue
             current_perms = u.get("permissions", {})
-            # Si permissions est une liste (corrompu), le remplacer entièrement
-            if isinstance(current_perms, list):
+            # Si permissions est une liste ou string (corrompu), le remplacer entièrement
+            if not isinstance(current_perms, dict):
                 current_perms = {}
             default_perms = get_default_permissions_by_role(user_role).model_dump()
             needs_update = False
+            # Nettoyer d'abord les clés parasites (dateCreation, attachments, etc.)
+            valid_module_keys = set(default_perms.keys())
+            keys_to_remove = [k for k in current_perms if k not in valid_module_keys]
+            if keys_to_remove:
+                for k in keys_to_remove:
+                    del current_perms[k]
+                needs_update = True
             # Vérifier chaque module du défaut et ajouter les manquants
             for module_key, module_val in default_perms.items():
                 if module_key not in current_perms:
@@ -9616,7 +9620,7 @@ async def startup_scheduler():
                     current_perms[module_key] = module_val
                     needs_update = True
                 else:
-                    # Nettoyer les champs parasites (dateCreation, attachments, etc.)
+                    # Nettoyer les champs parasites dans chaque module
                     valid_keys = {"view", "edit", "delete"}
                     existing = current_perms[module_key]
                     has_extra = any(k not in valid_keys for k in existing.keys())
