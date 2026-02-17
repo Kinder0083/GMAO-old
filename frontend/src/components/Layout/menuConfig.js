@@ -117,6 +117,8 @@ export const getDefaultMenuItems = (isAdmin) => [
   { id: 'mqtt-logs', icon: 'Terminal', label: 'Logs MQTT', path: '/mqtt-logs', module: 'sensors', visible: false, order: 13 },
   { id: 'surveillance-plan', icon: 'Eye', label: 'Plan de Surveillance', path: '/surveillance-plan', module: 'surveillance', visible: true, order: 11 },
   { id: 'surveillance-rapport', icon: 'FileText', label: 'Rapport Surveillance', path: '/surveillance-rapport', module: 'surveillanceRapport', visible: true, order: 12 },
+  { id: 'surveillance-ai-history', icon: 'History', label: 'Historique IA', path: '/surveillance-ai-history', module: 'surveillance', visible: true, order: 12.1 },
+  { id: 'surveillance-ai-dashboard', icon: 'TrendingUp', label: 'Tendances IA', path: '/surveillance-ai-dashboard', module: 'surveillance', visible: true, order: 12.2 },
   { id: 'weekly-reports', icon: 'FileText', label: 'Rapports Hebdo.', path: '/weekly-reports', module: 'weeklyReports', visible: true, order: 12.5 },
   { id: 'team-management', icon: 'UserCog', label: 'Gestion d\'équipe', path: '/team-management', module: 'timeTracking', visible: true, order: 17.5 },
   { id: 'cameras', icon: 'Camera', label: 'Caméras', path: '/cameras', module: 'cameras', visible: true, order: 17.6 },
