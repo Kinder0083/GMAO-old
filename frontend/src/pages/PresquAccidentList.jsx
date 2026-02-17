@@ -258,11 +258,19 @@ function PresquAccidentList() {
           date_incident: formData.date_incident,
           lieu: formData.lieu,
           service: formData.service,
-          personnes_impliquees: formData.personnes_impliquees,
+          categorie_incident: formData.categorie_incident || null,
+          equipement_id: formData.equipement_id || null,
+          equipement_nom: formData.equipement_nom || null,
           declarant: formData.declarant,
+          personnes_impliquees: formData.personnes_impliquees,
+          temoins: formData.temoins,
           responsable_id: formData.responsable_id,
           contexte_cause: formData.contexte_cause,
+          mesures_immediates: formData.mesures_immediates,
           severite: formData.severite,
+          type_lesion_potentielle: formData.type_lesion_potentielle || null,
+          facteurs_contributifs: formData.facteurs_contributifs,
+          conditions_incident: formData.conditions_incident,
           actions_proposees: formData.actions_proposees
         };
         await presquAccidentAPI.update(selectedItem.id, updateData);
