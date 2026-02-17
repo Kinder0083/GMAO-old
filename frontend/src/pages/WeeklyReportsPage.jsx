@@ -298,6 +298,9 @@ const WeeklyReportsPage = () => {
 
         {/* Templates Tab */}
         <TabsContent value="templates" className="space-y-4">
+          {/* Générateur IA de rapports */}
+          <AIReportGenerator />
+
           {templates.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
