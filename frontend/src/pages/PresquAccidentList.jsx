@@ -229,11 +229,19 @@ function PresquAccidentList() {
       date_incident: new Date().toISOString().split('T')[0],
       lieu: '',
       service: 'AUTRE',
-      personnes_impliquees: '',
+      categorie_incident: '',
+      equipement_id: '',
+      equipement_nom: '',
       declarant: '',
+      personnes_impliquees: '',
+      temoins: '',
       responsable_id: '',
       contexte_cause: '',
+      mesures_immediates: '',
       severite: 'MOYEN',
+      type_lesion_potentielle: '',
+      facteurs_contributifs: [],
+      conditions_incident: '',
       actions_proposees: ''
     });
     setPendingFiles([]);
