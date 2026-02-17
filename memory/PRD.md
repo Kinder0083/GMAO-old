@@ -66,6 +66,16 @@ Application de GMAO (Gestion de Maintenance Assistée par Ordinateur) nommée "G
 - Fichiers créés : `ai_presqu_accident_routes.py`, `AIRootCauseAnalyzer.jsx`, `AISimilarIncidents.jsx`, `AIPATrendAnalyzer.jsx`, `AIQHSEReport.jsx`
 - Fichiers modifiés : `server.py`, `api.js`, `PresquAccidentList.jsx`, `PresquAccidentRapport.jsx`
 
+### Indicateur visuel contrôles récurrents - Plan de Surveillance (17 Feb 2026)
+- Icône chaîne (Link2) à côté du nom de chaque contrôle ayant un `groupe_controle_id`
+- Popover au clic : affiche toutes les occurrences du contrôle (année, date, statut)
+- Navigation inter-année : clic sur une occurrence → changement d'onglet année
+- Occurrence courante mise en évidence (fond bleu, label "ici")
+- Intégré dans les 3 vues : ListViewGrouped (Liste), GridView (Grille), ListView
+- Backend : `GET /api/surveillance/occurrences/{groupe_controle_id}`
+- Fichiers : `RecurrenceIndicator.jsx`, `ListView.jsx`, `ListViewGrouped.jsx`, `GridView.jsx`, `SurveillancePlan.jsx`
+- Tests : 100% backend (5/5 pytest), 100% frontend (7/7 features)
+
 ## Backlog
 - Aucune tâche en attente
 
