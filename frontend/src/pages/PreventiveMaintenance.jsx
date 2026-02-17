@@ -314,6 +314,14 @@ const PreventiveMaintenance = () => {
           </div>
           <div className="flex gap-2">
             <Button 
+              variant="outline"
+              onClick={() => setAiMaintenanceOpen(true)}
+              data-testid="ai-maintenance-generator-btn"
+            >
+              <Sparkles size={20} className="mr-2 text-purple-600" />
+              Générer avec IA
+            </Button>
+            <Button 
               variant="outline" 
               className="border-purple-500 text-purple-600 hover:bg-purple-50"
               onClick={() => navigate('/preventive-maintenance/checklists')}
