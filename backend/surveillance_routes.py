@@ -963,12 +963,25 @@ async def extract_surveillance_from_document(
         if not api_key:
             raise HTTPException(status_code=500, detail="Clé LLM non configurée")
 
-        # Sauvegarder temporairement le fichier
+        # Sauvegarder temporairement le fichier ET de façon permanente
         ext = os.path.splitext(file.filename)[1].lower()
+        
+        # Sauvegarde permanente pour rattachement aux contrôles
+        upload_dir = Path("uploads/surveillance")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        permanent_file_id = str(uuid.uuid4())
+        permanent_filename = f"ai_source_{permanent_file_id}{ext}"
+        permanent_path = upload_dir / permanent_filename
+        permanent_url = f"/uploads/surveillance/{permanent_filename}"
+        
         with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
             content = await file.read()
             tmp.write(content)
             tmp_path = tmp.name
+        
+        # Sauvegarder aussi de façon permanente
+        with open(permanent_path, "wb") as f:
+            f.write(content)
 
         mime_map = {
             ".pdf": "application/pdf",
