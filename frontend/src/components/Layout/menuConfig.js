@@ -43,7 +43,9 @@ import {
   Camera,
   Zap,
   FileBarChart,
-  FileSignature
+  FileSignature,
+  History,
+  TrendingUp
 } from 'lucide-react';
 
 // Mapping des noms d'icônes vers les composants
