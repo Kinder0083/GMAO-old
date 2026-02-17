@@ -800,8 +800,8 @@ Le responsable de production ou le directeur recoit la demande et peut :
     },
     # === IA - CHECKLISTS ET MAINTENANCE ===
     {
-        "id": "sec-036-01",
-        "chapter_id": "ch-036",
+        "id": "sec-038-01",
+        "chapter_id": "ch-038",
         "title": "Generation IA de Checklists",
         "content": """**Generer une checklist depuis un document technique**
 
