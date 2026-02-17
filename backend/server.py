@@ -3863,6 +3863,31 @@ async def init_cameras_permissions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/users/migrate-all-permissions", tags=["Utilisateurs"])
+async def migrate_all_user_permissions(
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Migrer les permissions de TOUS les utilisateurs selon leur rôle actuel.
+    Réinitialise les permissions par défaut pour chaque utilisateur selon son rôle."""
+    try:
+        all_users = await db.users.find({}).to_list(length=None)
+        updated_count = 0
+        for u in all_users:
+            user_role = u.get("role", "VISUALISEUR")
+            default_perms = get_default_permissions_by_role(user_role).model_dump()
+            await db.users.update_one(
+                {"_id": u["_id"]},
+                {"$set": {"permissions": default_perms}}
+            )
+            updated_count += 1
+        return {
+            "success": True,
+            "message": f"Permissions mises à jour pour {updated_count} utilisateur(s)",
+            "updated_count": updated_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/users/{user_id}/set-password-permanent",
     summary="Definir un mot de passe permanent", response_model=SuccessResponse, tags=["Utilisateurs"])
 async def set_password_permanent(
