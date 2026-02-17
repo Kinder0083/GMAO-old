@@ -792,7 +792,7 @@ api.mqtt = {
 };
 
 // ==================== Sensors API ====================
-const sensorsAPI = {
+export const sensorsAPI = {
   getAll: (type = null) => {
     const params = {};
     if (type) params.type = type;
