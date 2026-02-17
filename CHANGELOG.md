@@ -85,6 +85,15 @@
 - Migration automatique des permissions au demarrage pour corriger les donnees existantes
 - Plan de surveillance : onglets par annee avec generation automatique des controles recurrents
 
+### Visite Guidee Personnalisee par Profil
+- La visite guidee est desormais adaptee au service de l'utilisateur connecte
+- 6 profils disponibles : Maintenance, Production, QHSE, Logistique/ADV, Direction, Generique (fallback)
+- Etapes communes conservees pour tous (menu, dashboard, notifications, chat, assistant IA)
+- Etapes specifiques au metier avec textes adaptes (ex: "Consultez les OT qui vous sont assignes" pour Maintenance, "Suivez les indicateurs securite" pour Direction)
+- Admin sans service defini recoit la visite Direction
+- Utilisateur sans service defini recoit la visite Generique
+- La visite peut etre relancee depuis les parametres
+
 ---
 
 ## Version 1.2.0 - MISE A JOUR MAJEURE (Octobre 2024)
