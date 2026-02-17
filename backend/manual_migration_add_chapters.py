@@ -112,14 +112,14 @@ NEW_CHAPTERS = [
         "sections": ["sec-035-01", "sec-035-02", "sec-035-03"]
     },
     {
-        "id": "ch-036",
+        "id": "ch-038",
         "title": "IA - Checklists et Maintenance",
         "description": "Fonctionnalites d'intelligence artificielle pour les checklists et la maintenance",
         "icon": "Brain",
-        "order": 36,
+        "order": 38,
         "target_roles": [],
         "target_modules": ["analyticsChecklists"],
-        "sections": ["sec-036-01", "sec-036-02", "sec-036-03", "sec-036-04"]
+        "sections": ["sec-038-01", "sec-038-02", "sec-038-03", "sec-038-04"]
     },
     {
         "id": "ch-037",
