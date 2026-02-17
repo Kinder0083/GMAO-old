@@ -749,6 +749,9 @@ async def chat_with_ai(
             {"session_id": session_id}
         ).sort("timestamp", 1).to_list(length=50)
         
+        # Requête dynamique : chercher des données spécifiques selon la question
+        dynamic_context = await get_dynamic_query_context(request.message)
+        
         # Sauvegarder le message de l'utilisateur
         user_message_doc = {
             "id": str(uuid.uuid4()),
