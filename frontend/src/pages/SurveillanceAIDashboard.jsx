@@ -382,6 +382,7 @@ function SurveillanceAIDashboard() {
           </CardContent>
         </Card>
       )}
+      </div>{/* end reportRef */}
     </div>
   );
 }
