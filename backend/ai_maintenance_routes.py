@@ -619,6 +619,134 @@ Format attendu:
 
 
 # ========================================================
+# Helper: Alertes automatiques pour NC critiques
+# ========================================================
+
+async def _send_nc_critical_alerts(analysis: dict, critical_patterns: list, stats: dict, analyzed_by_name: str) -> list:
+    """
+    Envoie des alertes (notification in-app + email) aux responsables de service
+    lorsque des patterns critiques sont détectés par l'analyse IA.
+    """
+    from email_service import send_critical_nc_alert_email
+
+    notifications_sent = []
+
+    try:
+        # Collecter les noms d'équipements concernés par les patterns critiques
+        equipment_names = set()
+        for p in critical_patterns:
+            for eq_name in p.get("equipements_concernes", []):
+                equipment_names.add(eq_name.strip().lower())
+
+        # Aussi depuis equipements_a_risque avec urgence HAUTE
+        for eq in analysis.get("equipements_a_risque", []):
+            if eq.get("urgence") == "HAUTE":
+                equipment_names.add(eq.get("equipement", "").strip().lower())
+
+        # Trouver les services des équipements concernés via la DB
+        services_to_notify = set()
+
+        if equipment_names:
+            # Chercher les équipements en DB pour récupérer leur emplacement/service
+            regex_patterns = [{"nom": {"$regex": name, "$options": "i"}} for name in equipment_names if name]
+            if regex_patterns:
+                equipments = await db.equipments.find(
+                    {"$or": regex_patterns},
+                    {"_id": 0, "service": 1, "emplacement_id": 1, "nom": 1}
+                ).to_list(length=100)
+
+                for eq in equipments:
+                    if eq.get("service"):
+                        services_to_notify.add(eq["service"])
+
+        # Si aucun service trouvé, notifier tous les responsables de service
+        if not services_to_notify:
+            all_responsables = await db.service_responsables.find({}, {"_id": 0}).to_list(length=50)
+            services_to_notify = {r.get("service") for r in all_responsables if r.get("service")}
+
+        if not services_to_notify:
+            logger.warning("Aucun service responsable trouvé pour les alertes NC")
+            return notifications_sent
+
+        # Pour chaque service, trouver le responsable et envoyer les alertes
+        for service_name in services_to_notify:
+            responsable = await db.service_responsables.find_one(
+                {"service": {"$regex": f"^{service_name}$", "$options": "i"}},
+                {"_id": 0}
+            )
+            if not responsable:
+                continue
+
+            user_id = responsable.get("user_id")
+            responsable_name = responsable.get("user_name", "Responsable")
+
+            # Récupérer l'email du responsable
+            from bson import ObjectId
+            user = None
+            try:
+                user = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "email": 1, "prenom": 1, "nom": 1})
+            except Exception:
+                pass
+            if not user:
+                user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1, "prenom": 1, "nom": 1})
+
+            if not user or not user.get("email"):
+                logger.warning(f"Email non trouvé pour le responsable {responsable_name} (service: {service_name})")
+                continue
+
+            email = user["email"]
+            full_name = f"{user.get('prenom', '')} {user.get('nom', '')}".strip() or responsable_name
+
+            # 1. Créer notification in-app
+            notification = {
+                "id": str(uuid.uuid4()),
+                "type": "ai_nc_critical_alert",
+                "title": f"Alerte NC critique - {service_name}",
+                "message": f"L'analyse IA a détecté {len(critical_patterns)} pattern(s) critique(s) affectant votre service. {analysis.get('summary', '')}",
+                "severity": "CRITICAL",
+                "user_id": user_id,
+                "read": False,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "source": "ai_nonconformity_analysis",
+                "data": {
+                    "critical_patterns_count": len(critical_patterns),
+                    "analyzed_by": analyzed_by_name,
+                    "period_days": stats.get("period_days", 90)
+                }
+            }
+            await db.notifications.insert_one(notification)
+
+            # 2. Envoyer l'email
+            email_sent = send_critical_nc_alert_email(
+                to_email=email,
+                responsable_name=full_name,
+                service_name=service_name,
+                analysis_summary=analysis.get("summary", ""),
+                critical_patterns=critical_patterns,
+                equipements_a_risque=analysis.get("equipements_a_risque", []),
+                work_orders_suggested=analysis.get("work_orders_suggested", []),
+                stats=stats
+            )
+
+            notifications_sent.append({
+                "service": service_name,
+                "responsable": full_name,
+                "email": email,
+                "email_sent": email_sent,
+                "notification_created": True
+            })
+
+            logger.info(f"{'✅' if email_sent else '⚠️'} Alerte NC envoyée à {full_name} ({email}) pour service {service_name} - Email: {'OK' if email_sent else 'ECHEC'}")
+
+    except Exception as e:
+        logger.error(f"Erreur envoi alertes NC critiques: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+
+    return notifications_sent
+
+
+# ========================================================
 # Feature 4: Création d'OT curatifs depuis l'analyse IA
 # ========================================================
 
