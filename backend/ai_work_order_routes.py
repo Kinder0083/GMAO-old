@@ -128,7 +128,9 @@ EQUIPEMENT CONCERNE :
             for h in history[:10]:
                 comments = "; ".join([c.get("text", "") for c in h.get("comments", [])[:3]])
                 parts = ", ".join([p.get("nom", p.get("name", "?")) for p in h.get("parts_used", [])])
-                lines.append(f"- [{h.get('dateCreation','?')[:10]}] {h.get('titre','')} | {h.get('categorie','')} | {h.get('statut','')} | Pieces: {parts or 'aucune'} | Commentaires: {comments[:100] or 'aucun'}")
+                dc = h.get('dateCreation', '?')
+                dc_str = dc.strftime('%Y-%m-%d') if hasattr(dc, 'strftime') else str(dc)[:10]
+                lines.append(f"- [{dc_str}] {h.get('titre','')} | {h.get('categorie','')} | {h.get('statut','')} | Pieces: {parts or 'aucune'} | Commentaires: {comments[:100] or 'aucun'}")
             history_text = "\n".join(lines)
 
         prompt = f"""Tu es un expert en maintenance industrielle. Analyse cet ordre de travail et fournis un diagnostic structure.
