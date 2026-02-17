@@ -3,10 +3,16 @@ import { surveillanceAPI } from '../services/api';
 
 /**
  * Hook pour gérer le plan de surveillance avec synchronisation temps réel
+ * @param {Object} options - Options du hook
+ * @param {number} options.annee - Année pour filtrer les contrôles
  */
 export const useSurveillancePlan = (options = {}) => {
+  const { annee, ...restOptions } = options;
+
   const fetchItems = async () => {
-    const items = await surveillanceAPI.getItems();
+    const params = {};
+    if (annee) params.annee = annee;
+    const items = await surveillanceAPI.getItems(params);
     return items;
   };
 
@@ -20,7 +26,7 @@ export const useSurveillancePlan = (options = {}) => {
     enableWebSocket: true,
     fallbackPolling: true,
     pollingInterval: 30000,
-    ...options
+    ...restOptions
   });
 
   return {
