@@ -143,7 +143,9 @@ gmao-iris/
 │   ├── models.py               # Modeles Pydantic
 │   ├── auth.py                 # Authentification JWT + bcrypt
 │   ├── dependencies.py         # Dependances FastAPI (auth guards)
-│   ├── *_routes.py             # 35 modules de routes API
+│   ├── *_routes.py             # 35+ modules de routes API
+│   ├── ai_maintenance_routes.py # IA : checklists, maintenance, non-conformites
+│   ├── ai_presqu_accident_routes.py # IA : causes racines, incidents similaires, tendances, rapport QHSE
 │   ├── *_service.py            # 16 services metier
 │   ├── websocket_manager.py    # Chat WebSocket
 │   ├── realtime_manager.py     # Notifications temps reel
