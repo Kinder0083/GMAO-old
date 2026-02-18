@@ -177,7 +177,12 @@ function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentY
                         className="text-blue-600 hover:underline cursor-pointer"
                         title="Voir l'historique"
                       >
-                        {item.prochain_controle ? new Date(item.prochain_controle).toLocaleDateString('fr-FR') : '-'}
+                        {(() => {
+                          const dateStr = item.status === 'REALISE' && item.derniere_visite
+                            ? item.derniere_visite
+                            : item.prochain_controle;
+                          return dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : '-';
+                        })()}
                       </button>
                     </TableCell>
                     <TableCell>
