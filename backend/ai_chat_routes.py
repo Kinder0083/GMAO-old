@@ -231,13 +231,18 @@ CRÉER UN ORDRE DE TRAVAIL :
   "description": "Description détaillée",
   "priorite": "BASSE|NORMALE|MOYENNE|HAUTE|URGENTE",
   "categorie": "TRAVAUX_CURATIF|TRAVAUX_PREVENTIFS|TRAVAUX_DIVERS|CHANGEMENT_FORMAT|FORMATION|REGLAGE",
-  "equipement_nom": "Nom de l'équipement (optionnel, pour info dans la description)",
+  "equipement_nom": "Nom de l'équipement (optionnel)",
+  "assigne_a": "Prenom Nom du technicien a assigner (optionnel)",
   "tempsEstime": 2.5
 }}]]
 
 Exemple : Si l'utilisateur dit "Crée un OT pour réparer la pompe P-001 en urgence"
 → Tu réponds : "Je crée immédiatement un ordre de travail correctif urgent pour la pompe P-001."
 [[CREATE_OT:{{"titre": "Réparation pompe P-001", "description": "Intervention corrective demandée par l'utilisateur - Equipement: P-001", "priorite": "URGENTE", "categorie": "TRAVAUX_CURATIF", "equipement_nom": "P-001"}}]]
+
+Exemple : Si l'utilisateur dit "Crée un OT pour la Bioci 1 et assigne-le a Axel"
+→ Tu reponds : "Je cree un OT pour la Bioci 1 et l'assigne a Axel."
+[[CREATE_OT:{{"titre": "Intervention Bioci 1", "description": "Intervention demandee - Equipement: Bioci 1", "priorite": "NORMALE", "categorie": "TRAVAUX_CURATIF", "equipement_nom": "Bioci 1", "assigne_a": "Axel"}}]]
 
 MODIFIER UN ORDRE DE TRAVAIL EXISTANT :
 [[MODIFY_OT:{{
@@ -249,6 +254,7 @@ MODIFIER UN ORDRE DE TRAVAIL EXISTANT :
     "titre": "Nouveau titre (optionnel)",
     "categorie": "TRAVAUX_CURATIF|TRAVAUX_PREVENTIFS|TRAVAUX_DIVERS|CHANGEMENT_FORMAT|FORMATION|REGLAGE",
     "equipement_nom": "Nom ou reference de l'equipement (optionnel)",
+    "assigne_a": "Prenom Nom du technicien (optionnel)",
     "tempsEstime": 2.5
   }}
 }}]]
@@ -262,6 +268,10 @@ Exemple : Si l'utilisateur dit "Passe l'OT de la pompe P-001 en priorite haute"
 Exemple : Si l'utilisateur dit "Mets l'OT #5801 en cours"
 → Tu reponds : "Je passe l'OT #5801 au statut En cours."
 [[MODIFY_OT:{{"ot_reference": "#5801", "modifications": {{"statut": "EN_COURS"}}}}]]
+
+Exemple : Si l'utilisateur dit "Assigne l'OT reparation convoyeur a Axel dupont"
+→ Tu reponds : "J'assigne l'OT a Axel dupont."
+[[MODIFY_OT:{{"ot_reference": "reparation convoyeur", "modifications": {{"assigne_a": "Axel dupont"}}}}]]
 
 Exemple : Si l'utilisateur dit "Change l'equipement de l'OT reparation convoyeur pour le mettre sur la Pompe P-002"
 → Tu reponds : "Je modifie l'equipement de cet OT."
