@@ -9,7 +9,7 @@ Types d'automatisations supportees :
 4. Seuils inventaire
 """
 from fastapi import APIRouter, Depends, HTTPException
-from dependencies import get_current_user
+from dependencies import get_current_user, require_permission
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import logging
