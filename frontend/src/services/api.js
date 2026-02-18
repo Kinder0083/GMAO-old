@@ -1037,4 +1037,8 @@ export const automationsAPI = {
   testTrigger: (id) => api.post(`/automations/test-trigger/${id}`).then(r => r.data),
 };
 
+// Attacher les APIs nommees a l'objet api pour acces universel
+api.workOrders = workOrdersAPI;
+api.automations = automationsAPI;
+
 export default api;
