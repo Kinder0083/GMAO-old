@@ -1501,7 +1501,29 @@ async def create_batch_from_ai(
         for ctrl_index, ctrl in enumerate(controles):
           try:
             derniere_visite = ctrl.get("derniere_visite") or document_info.get("date_intervention")
-            periodicite = ctrl.get("periodicite") or "Non déterminée"
+            periodicite_raw = ctrl.get("periodicite") or "Non déterminée"
+            
+            # Normaliser la périodicité (nettoyer les références réglementaires)
+            # "Annuelle (réf. Arrêtés du 5 mars)" → "1 an"
+            periodicite = periodicite_raw
+            p_lower = periodicite_raw.lower().strip()
+            if any(w in p_lower for w in ['annuel', 'annual']):
+                if 'bi' in p_lower or 'biennal' in p_lower:
+                    periodicite = "2 ans"
+                else:
+                    periodicite = "1 an"
+            elif 'semestriel' in p_lower:
+                periodicite = "6 mois"
+            elif 'trimestriel' in p_lower:
+                periodicite = "3 mois"
+            elif 'bimestriel' in p_lower:
+                periodicite = "2 mois"
+            elif 'mensuel' in p_lower:
+                periodicite = "1 mois"
+            elif 'hebdomadaire' in p_lower:
+                periodicite = "1 semaine"
+            elif 'quotidien' in p_lower:
+                periodicite = "1 jour"
             
             # Calculer prochain_controle = derniere_visite + periodicite
             # C'est la date du PROCHAIN contrôle à effectuer
