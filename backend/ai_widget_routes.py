@@ -274,7 +274,3 @@ async def generate_widget(
     except Exception as e:
         logger.error(f"Erreur generation widget IA: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# Import Depends ici pour eviter import circulaire
-from dependencies import get_current_user
