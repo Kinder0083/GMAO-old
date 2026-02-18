@@ -201,5 +201,79 @@ class AlertService:
             logger.error(f"Erreur envoi message chat alerte: {e}")
             return False
 
+    async def send_push_notification(self, alert: Dict, config: Dict) -> bool:
+        """Creer des notifications push pour les utilisateurs concernes"""
+        try:
+            automation_name = config.get("automation_name", "")
+            
+            # Trouver les utilisateurs a notifier : createur de l'automatisation + admins + techniciens
+            target_users = set()
+            
+            # Le createur de l'automatisation
+            if config.get("created_by"):
+                target_users.add(config["created_by"])
+            
+            # Tous les admins et techniciens
+            users = await self.db.users.find(
+                {"role": {"$in": ["admin", "Admin", "direction", "Direction", "maintenance", "Maintenance"]}},
+                {"_id": 0, "id": 1}
+            ).to_list(50)
+            for u in users:
+                if u.get("id"):
+                    target_users.add(u["id"])
+            
+            severity_map = {"INFO": "low", "WARNING": "high", "CRITICAL": "urgent"}
+            priority = severity_map.get(alert.get("severity"), "medium")
+            
+            for user_id in target_users:
+                notification = {
+                    "id": str(uuid4()),
+                    "type": "automation_trigger",
+                    "title": f"Automatisation declenchee : {automation_name or alert['title']}",
+                    "message": alert["message"],
+                    "priority": priority,
+                    "user_id": user_id,
+                    "link": "/surveillance-ai-dashboard",
+                    "metadata": {
+                        "alert_id": alert.get("id"),
+                        "source_type": alert.get("source_type"),
+                        "source_id": alert.get("source_id"),
+                        "source_name": alert.get("source_name"),
+                        "value": alert.get("value"),
+                        "threshold": alert.get("threshold"),
+                        "automation_name": automation_name,
+                        "is_automation_notification": True
+                    },
+                    "read": False,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "read_at": None
+                }
+                await self.db.notifications.insert_one(notification)
+            
+            # Mettre a jour le compteur de declenchement de l'automatisation associee
+            await self._update_automation_trigger_count(config)
+            
+            logger.info(f"Notifications push envoyees a {len(target_users)} utilisateur(s) pour alerte {alert['id']}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur envoi notification push: {e}")
+            return False
+
+    async def _update_automation_trigger_count(self, config: Dict):
+        """Met a jour trigger_count et last_triggered de l'automatisation liee"""
+        try:
+            auto_id = config.get("id")
+            if auto_id:
+                await self.db.automations.update_one(
+                    {"id": auto_id},
+                    {
+                        "$inc": {"trigger_count": 1},
+                        "$set": {"last_triggered": datetime.now(timezone.utc).isoformat()}
+                    }
+                )
+        except Exception as e:
+            logger.error(f"Erreur MAJ compteur automatisation: {e}")
+
 # Instance globale
 alert_service = AlertService()
