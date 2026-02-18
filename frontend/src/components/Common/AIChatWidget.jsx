@@ -266,6 +266,109 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
           }
           break;
         }
+
+        case 'CLOSE_OT': {
+          // Clôturer un OT en une seule commande
+          try {
+            const searchRef = (actionData.ot_reference || '').replace('#', '').trim();
+            const woListRes = await workOrdersAPI.getAll();
+            const woList = woListRes.data || [];
+            const matchedWo = woList.find(wo =>
+              wo.id?.includes(searchRef) ||
+              wo.numero?.includes(searchRef) ||
+              wo.titre?.toLowerCase().includes(searchRef.toLowerCase())
+            );
+            if (!matchedWo) {
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `Je n'ai pas trouvé d'OT correspondant à "${actionData.ot_reference}". Pouvez-vous préciser ?`,
+                timestamp: new Date().toISOString(),
+                isSystemAction: true
+              }]);
+              break;
+            }
+            const woId = matchedWo.id;
+            const resultParts = [];
+
+            // 1. Ajouter le temps passé
+            if (actionData.temps) {
+              const t = actionData.temps.toLowerCase().trim();
+              let hours = 0, minutes = 0;
+              const hMatch = t.match(/(\d+)\s*h/);
+              const mMatch = t.match(/(\d+)\s*min/);
+              if (hMatch) hours = parseInt(hMatch[1]);
+              if (mMatch) minutes = parseInt(mMatch[1]);
+              if (!hMatch && !mMatch) {
+                const num = parseFloat(t);
+                if (!isNaN(num)) { hours = Math.floor(num); minutes = Math.round((num - hours) * 60); }
+              }
+              if (hours > 0 || minutes > 0) {
+                await workOrdersAPI.addTimeSpent(woId, hours, minutes);
+                resultParts.push(`${hours}h${minutes > 0 ? minutes + 'min' : ''} de temps ajouté`);
+              }
+            }
+
+            // 2. Ajouter commentaire + pièces utilisées
+            const commentText = actionData.commentaire || actionData.resume || `OT clôturé via Adria`;
+            const partsPayload = [];
+            if (actionData.pieces && actionData.pieces.length > 0) {
+              try {
+                const invRes = await inventoryAPI.getAll();
+                const invList = invRes.data || [];
+                for (const piece of actionData.pieces) {
+                  const pName = (piece.nom || piece).toLowerCase();
+                  const qty = piece.quantite || piece.quantity || 1;
+                  const invItem = invList.find(i =>
+                    i.nom?.toLowerCase().includes(pName) ||
+                    i.reference?.toLowerCase().includes(pName)
+                  );
+                  if (invItem) {
+                    partsPayload.push({
+                      inventory_item_id: invItem.id,
+                      inventory_item_name: invItem.nom,
+                      quantity: qty
+                    });
+                    resultParts.push(`${invItem.nom} x${qty} (déduit du stock)`);
+                  } else {
+                    partsPayload.push({
+                      custom_part_name: piece.nom || piece,
+                      quantity: qty
+                    });
+                    resultParts.push(`${piece.nom || piece} x${qty} (pièce externe)`);
+                  }
+                }
+              } catch (invErr) {
+                console.warn('Erreur résolution pièces:', invErr);
+              }
+            }
+            await api.post(`/work-orders/${woId}/comments`, {
+              text: commentText,
+              parts_used: partsPayload
+            });
+
+            // 3. Mettre le statut à TERMINE
+            await workOrdersAPI.update(woId, { statut: 'TERMINE' });
+
+            window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'work_orders', action: 'updated' } }));
+            const summary = [`OT "${matchedWo.titre}" clôturé`, ...resultParts].join('\n- ');
+            toast({ title: 'OT clôturé', description: `"${matchedWo.titre}" terminé` });
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `J'ai clôturé l'OT "${matchedWo.titre}" (${matchedWo.numero || '#' + woId.slice(-4)}) :\n- ${summary}`,
+              timestamp: new Date().toISOString(),
+              isSystemAction: true
+            }]);
+          } catch (closeErr) {
+            console.error('Erreur clôture OT:', closeErr);
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `Erreur lors de la clôture : ${closeErr.response?.data?.detail || closeErr.message}`,
+              timestamp: new Date().toISOString(),
+              isSystemAction: true
+            }]);
+          }
+          break;
+        }
           
         case 'ADD_TIME_OT':
           // Ajouter du temps à un OT
