@@ -1596,7 +1596,7 @@ async def create_batch_from_ai(
             item = SurveillanceItem(
                 classe_type=ctrl.get("classe_type", ""),
                 category=ctrl.get("category", "AUTRE"),
-                batiment=ctrl.get("batiment", ""),
+                batiment=ctrl.get("batiment") or "",
                 periodicite=ctrl.get("periodicite", "Non déterminée"),
                 responsable=SurveillanceResponsible.EXTERNE,
                 executant=ctrl.get("executant", document_info.get("organisme_controle", "")),
