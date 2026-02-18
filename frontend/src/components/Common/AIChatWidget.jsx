@@ -3,7 +3,7 @@ import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, 
 import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
-import api, { workOrdersAPI, equipmentsAPI, usersAPI } from '../../services/api';
+import api, { workOrdersAPI, equipmentsAPI, usersAPI, inventoryAPI } from '../../services/api';
 import GuidedHighlight from './GuidedHighlight';
 
 // Import du contexte (pas du hook)
@@ -482,7 +482,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     }
     
     // Parser les commandes d'action automatique (CREATE_OT, SEARCH, etc.)
-    const actionCommandRegex = /\[\[(CREATE_OT|MODIFY_OT|ADD_TIME_OT|COMMENT_OT|SEARCH|CONFIGURE_AUTOMATION|CREATE_WIDGET):(\{[\s\S]*?\})\]\]/g;
+    const actionCommandRegex = /\[\[(CREATE_OT|MODIFY_OT|CLOSE_OT|ADD_TIME_OT|COMMENT_OT|SEARCH|CONFIGURE_AUTOMATION|CREATE_WIDGET):(\{[\s\S]*?\})\]\]/g;
     let actionMatch;
     
     while ((actionMatch = actionCommandRegex.exec(responseText)) !== null) {
