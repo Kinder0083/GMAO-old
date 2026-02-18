@@ -268,6 +268,20 @@ export const useRealtimeData = (entityType, fetchDataFn, options = {}) => {
   }, [wsConnected]);
 
   /**
+   * Ecouter les evenements de rafraichissement manuels (ex: creation OT via Adria)
+   * Le WebSocket exclut l'utilisateur createur, donc on ecoute un evenement custom
+   */
+  useEffect(() => {
+    const handleRefreshEvent = (e) => {
+      if (e.detail?.entity === entityType) {
+        loadData();
+      }
+    };
+    window.addEventListener('gmao-data-refresh', handleRefreshEvent);
+    return () => window.removeEventListener('gmao-data-refresh', handleRefreshEvent);
+  }, [entityType, loadData]);
+
+  /**
    * Fonction pour rafraîchir manuellement
    */
   const refresh = useCallback(() => {
