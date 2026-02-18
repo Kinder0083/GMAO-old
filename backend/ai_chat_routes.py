@@ -229,15 +229,15 @@ CRÉER UN ORDRE DE TRAVAIL :
 [[CREATE_OT:{{
   "titre": "Titre de l'OT",
   "description": "Description détaillée",
-  "type_maintenance": "CORRECTIVE|PREVENTIVE|AMELIORATIVE",
-  "priorite": "BASSE|NORMALE|HAUTE|URGENTE",
-  "equipement_nom": "Nom de l'équipement (optionnel)",
-  "temps_estime": "2h30 (optionnel)"
+  "priorite": "BASSE|NORMALE|MOYENNE|HAUTE|URGENTE",
+  "categorie": "TRAVAUX_CURATIF|TRAVAUX_PREVENTIFS|TRAVAUX_DIVERS|CHANGEMENT_FORMAT|FORMATION|REGLAGE",
+  "equipement_nom": "Nom de l'équipement (optionnel, pour info dans la description)",
+  "tempsEstime": 2.5
 }}]]
 
 Exemple : Si l'utilisateur dit "Crée un OT pour réparer la pompe P-001 en urgence"
 → Tu réponds : "Je crée immédiatement un ordre de travail correctif urgent pour la pompe P-001."
-[[CREATE_OT:{{"titre": "Réparation pompe P-001", "description": "Intervention corrective demandée par l'utilisateur", "type_maintenance": "CORRECTIVE", "priorite": "URGENTE", "equipement_nom": "P-001"}}]]
+[[CREATE_OT:{{"titre": "Réparation pompe P-001", "description": "Intervention corrective demandée par l'utilisateur - Equipement: P-001", "priorite": "URGENTE", "categorie": "TRAVAUX_CURATIF", "equipement_nom": "P-001"}}]]
 
 AJOUTER DU TEMPS À UN OT :
 [[ADD_TIME_OT:{{
