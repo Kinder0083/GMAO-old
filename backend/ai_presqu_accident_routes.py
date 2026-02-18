@@ -36,6 +36,18 @@ def clean_json_response(text: str) -> str:
     return t.strip()
 
 
+async def _get_llm_key():
+    """Recupere la cle LLM depuis l'env ou la DB global_settings."""
+    key = os.environ.get("EMERGENT_LLM_KEY")
+    if not key:
+        gk = await db.global_settings.find_one({"key": "EMERGENT_LLM_KEY"})
+        if gk and gk.get("value"):
+            key = gk["value"]
+    if not key:
+        raise HTTPException(status_code=500, detail="Cle LLM non configuree")
+    return key
+
+
 # ========================================================
 # Feature 1: Analyse IA des causes racines
 # ========================================================
