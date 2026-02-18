@@ -112,15 +112,19 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       switch (actionType) {
         case 'CREATE_OT':
           // Créer un ordre de travail automatiquement
-          const otResponse = await workOrdersAPI.create({
+          const otPayload = {
             titre: actionData.titre,
             description: actionData.description || '',
-            type_maintenance: actionData.type_maintenance || 'CORRECTIVE',
-            priorite: actionData.priorite || 'NORMALE',
-            statut: 'en_attente',
-            equipement_nom: actionData.equipement_nom,
-            temps_estime: actionData.temps_estime
-          });
+            priorite: (actionData.priorite || 'NORMALE').toUpperCase(),
+            statut: 'OUVERT',
+          };
+          if (actionData.tempsEstime || actionData.temps_estime) {
+            otPayload.tempsEstime = parseFloat(actionData.tempsEstime || actionData.temps_estime);
+          }
+          if (actionData.categorie) {
+            otPayload.categorie = actionData.categorie;
+          }
+          const otResponse = await workOrdersAPI.create(otPayload);
           
           toast({
             title: '✅ Ordre de travail créé',
