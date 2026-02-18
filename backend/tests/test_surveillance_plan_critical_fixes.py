@@ -272,6 +272,8 @@ class TestSurveillancePlanCriticalFixes:
         - Items where today is BEFORE prochain_controle (not after)
         - Items where today is within duree_rappel_echeance days BEFORE prochain_controle
         """
+        import time
+        
         # Create a PLANIFIER item with prochain_controle in the future (within reminder period)
         future_date = (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%d")
         
@@ -287,13 +289,19 @@ class TestSurveillancePlanCriticalFixes:
             "duree_rappel_echeance": 30
         }
         
-        response = requests.post(
-            f"{BASE_URL}/api/surveillance/items",
-            json=payload,
-            headers=request.cls.headers
-        )
+        # Retry logic for transient 520 errors
+        response = None
+        for attempt in range(3):
+            response = requests.post(
+                f"{BASE_URL}/api/surveillance/items",
+                json=payload,
+                headers=request.cls.headers
+            )
+            if response.status_code != 520:
+                break
+            time.sleep(2)
         
-        assert response.status_code == 200, f"Create item failed: {response.text}"
+        assert response.status_code == 200, f"Create item failed after retries: {response.text}"
         new_item = response.json()
         TestSurveillancePlanCriticalFixes.created_item_ids.append(new_item["id"])
         
