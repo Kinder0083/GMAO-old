@@ -53,16 +53,18 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
     - README.md : sections MODIFY_OT, CLOSE_OT, assignation technicien
     - Manuel : 3 nouvelles sections (sec-024-11/12/13) + maj sec-024-05
     - Tests: verification contenu via API (PASS)
-21. Bug fix: Surveillance AI batch creation - annee manquant
-    - Items crees via IA n'avaient pas de champ annee → invisibles dans le filtre par annee
-    - Ajout calcul annee (basé sur derniere_visite)
-    - prochain_controle = derniere_visite + periodicite (date du prochain controle)
-    - Ajout groupe_controle_id + generation controles recurrents
-    - Gestion erreur par controle (un echec ne crashe pas le batch)
-    - Message erreur frontend affiche le detail serveur
-    - Pourcentage de realisation = count(status=REALISE) / total (sans condition de date)
-    - Colonne "Prochain contrôle" → "Date du contrôle" (ListViewGrouped + ListView)
-    - Tests: curl backend + stats API validés
+21. Bug fix: Surveillance AI batch creation - corrections completes
+    - Items crees via IA n'avaient pas de champ annee → invisibles
+    - annee = annee de derniere_visite (pas prochain_controle)
+    - prochain_controle = derniere_visite + periodicite (pour stats "a jour")
+    - Normalisation periodicite: "Annuelle (ref. Arretes du 5 mars 1993)" → "1 an"
+    - batiment=null → "" (ne crashe plus Pydantic)
+    - derniere_visite manquant → fallback date_intervention du document
+    - Colonne "Date du controle" affiche derniere_visite si REALISE, prochain sinon
+    - Pourcentage realisation = count(status=REALISE)/total (sans condition date)
+    - Prompt IA ameliore: extraction multi-controles + periodicite format simple
+    - Gestion erreur par controle + generation recurrences
+    - Tests: 100% (9/9 backend, iteration_49)
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
