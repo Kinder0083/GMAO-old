@@ -78,7 +78,10 @@ const MODULES = [
   { key: 'weeklyReports', label: 'Rapports Hebdomadaires' },
   { key: 'demandesArret', label: 'Demandes d\'arrêt' },
   { key: 'consignes', label: 'Consignes' },
-  { key: 'autorisationsParticulieres', label: 'Autorisations Particulières' }
+  { key: 'autorisationsParticulieres', label: 'Autorisations Particulières' },
+  { key: 'aiDashboard', label: 'Tableau de bord IA' },
+  { key: 'aiAutomations', label: 'Automatisations IA' },
+  { key: 'aiWidgets', label: 'Widgets IA (Adria)' },
 ];
 
 // Couleurs disponibles pour les badges
