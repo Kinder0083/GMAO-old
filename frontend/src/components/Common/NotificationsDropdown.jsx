@@ -137,6 +137,10 @@ const NotificationsDropdown = () => {
     if (type === 'rp_created' || metadata?.is_rp_notification) {
       return <AlertTriangle className="text-red-500" size={18} />;
     }
+    // Notification automatisation déclenchée
+    if (type === 'automation_trigger' || metadata?.is_automation_notification) {
+      return <Zap className="text-amber-500" size={18} />;
+    }
     
     switch (type) {
       case 'pm_upcoming':
@@ -148,6 +152,8 @@ const NotificationsDropdown = () => {
         return <Wrench className="text-orange-500" size={18} />;
       case 'equipment_status':
         return <AlertTriangle className="text-yellow-500" size={18} />;
+      case 'sensor_alert':
+        return <Zap className="text-red-500" size={18} />;
       default:
         return <Bell className="text-gray-500" size={18} />;
     }
