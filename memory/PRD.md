@@ -9,28 +9,30 @@ L'objectif est d'infuser des capacites IA dans toute l'application et enrichir l
 /app
 ├── backend/
 │   ├── server.py                        # Serveur principal FastAPI
+│   ├── alert_service.py                 # Service alertes + notifications push automatisations
 │   ├── ai_chat_routes.py               # Adria - Assistant IA
 │   ├── ai_maintenance_routes.py        # IA checklists, maintenance
 │   ├── ai_presqu_accident_routes.py    # IA presqu'accidents
 │   ├── ai_work_order_routes.py         # IA OT (diagnostic + resume)
 │   ├── ai_weekly_report_routes.py      # IA rapports hebdomadaires
 │   ├── ai_sensor_routes.py             # IA capteurs (anomalies)
-│   ├── automation_routes.py            # Module automatisations
+│   ├── automation_routes.py            # Module automatisations + test-trigger
 │   ├── surveillance_routes.py          # Plan de surveillance + analytics IA
 │   └── dependencies.py                 # Auth
 └── frontend/
     └── src/
         ├── components/
         │   ├── Common/AIChatWidget.jsx
+        │   ├── Common/NotificationsDropdown.jsx  # Supporte automation_trigger
         │   ├── WorkOrders/AIDiagnosticPanel.jsx
         │   ├── WorkOrders/AISummaryPanel.jsx
         │   ├── Sensors/AISensorAnalysis.jsx
         │   ├── WeeklyReports/AIReportGenerator.jsx
         │   ├── Surveillance/RecurrenceIndicator.jsx
-        │   └── IADashboard/IADashboardTabs.jsx    # Onglets dashboard IA
+        │   └── IADashboard/IADashboardTabs.jsx    # + bouton test trigger
         ├── services/api.js
         └── pages/
-            ├── SurveillanceAIDashboard.jsx         # Dashboard IA unifie (5 onglets)
+            ├── SurveillanceAIDashboard.jsx
             └── WorkOrderDialog.jsx
 ```
 
@@ -45,32 +47,30 @@ L'objectif est d'infuser des capacites IA dans toute l'application et enrichir l
 ### 2. IA Ordres de Travail (17 Feb 2026)
 - POST /api/ai-work-orders/diagnostic
 - POST /api/ai-work-orders/summary
-- Composants: AIDiagnosticPanel.jsx, AISummaryPanel.jsx
 
 ### 3. IA Rapports Hebdomadaires (17 Feb 2026)
 - POST /api/ai-weekly-reports/generate
-- Composant: AIReportGenerator.jsx
 
 ### 4. IA Capteurs Predictive (17 Feb 2026)
 - POST /api/ai-sensors/analyze
-- Composant: AISensorAnalysis.jsx
 
 ### 5. Module Automatisations (17 Feb 2026)
 - POST /api/automations/parse, POST /api/automations/apply
 - GET /api/automations/list, DELETE, PUT toggle
 
 ### 6. Indicateur recurrence + tendance (17 Feb 2026)
-- Icone chaine + fleches tendance dans Plan de Surveillance
 
-### 7. Tableau de bord IA unifie (18 Feb 2026) - COMPLETE
-- Page SurveillanceAIDashboard.jsx avec 5 onglets:
-  - Tendances: KPIs, graphiques evolution mensuelle, repartition, organismes, categories
-  - Ordres de travail: KPIs, graphiques categories/equipements, temps maintenance
-  - Capteurs: KPIs statut, cartes capteurs, alertes recentes
-  - Surveillance: KPIs conformite, barre progression, conformite par categorie
-  - Automatisations: Liste avec activation/desactivation/suppression
-- Bug fix: tooltip graphique evolution (YYYY-MM/undefined -> YYYY-MM)
-- Bug fix: mapping champs par_resultat (resultat/count -> label/value)
+### 7. Tableau de bord IA unifie (18 Feb 2026)
+- 5 onglets: Tendances, OT, Capteurs, Surveillance, Automatisations
+- Bug fix: tooltip evolution + mapping par_resultat
+
+### 8. Notifications push automatisations (18 Feb 2026) - NEW
+- Backend: alert_service.send_push_notification() cree des notifications pour admin/techniciens
+- Backend: POST /api/automations/test-trigger/{id} pour simulation
+- Backend: Mise a jour trigger_count et last_triggered
+- Frontend: Bouton test (cloche) dans onglet Automatisations
+- Frontend: NotificationsDropdown supporte type automation_trigger avec icone Zap ambre
+- Flux reel: capteur MQTT > seuil depasse > alert_service > NOTIFICATION_ONLY > notification push
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
@@ -81,5 +81,5 @@ L'objectif est d'infuser des capacites IA dans toute l'application et enrichir l
 
 ## Backlog
 - Enrichissements dashboard (filtres par date, comparaisons periodes)
-- Export PDF ameliore pour chaque onglet
+- Export PDF ameliore par onglet
 - Nouvelles fonctionnalites IA selon besoins utilisateur
