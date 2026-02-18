@@ -4,21 +4,25 @@
 Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
 
 ## Fonctionnalites IA implementees
-1. Adria - Assistant IA (memoire, contexte enrichi, commandes auto)
-2. IA Ordres de Travail (diagnostic + resume)
-3. IA Rapports Hebdomadaires
-4. IA Capteurs Predictive
-5. Module Automatisations (parse/apply/list/toggle/delete/test-trigger)
-6. Indicateur recurrence + tendance
-7. Tableau de bord IA unifie (5 onglets)
-8. Notifications push automatisations
-9. Bug fix: Creation OT via Adria (import workOrdersAPI)
-10. Bug fix: Rapport QHSE + toutes routes IA - fallback cle LLM DB (18 Feb 2026)
 
-## Bug fix #10 detail
-- Cause: ai_presqu_accident_routes.py, ai_maintenance_routes.py, ai_chat_routes.py (TTS/STT) ne cherchaient la cle LLM que dans os.environ, pas dans global_settings DB
-- Fix: Ajout helper _get_llm_key() avec fallback DB dans ai_presqu_accident_routes.py et ai_maintenance_routes.py, + fallback inline dans ai_chat_routes.py (transcription/TTS)
-- Fichiers corriges: ai_presqu_accident_routes.py (4 occurrences), ai_maintenance_routes.py (3 occurrences), ai_chat_routes.py (2 occurrences)
+### 1-9. Sessions precedentes (voir CHANGELOG)
+
+### 10. Creation de widgets IA via Adria (18 Feb 2026) - NEW
+- Backend: POST /api/ai/widgets/generate - genere config widget via Gemini a partir de langage naturel
+- Support complet des 7 types de visualisation (value, gauge, line_chart, bar_chart, pie_chart, donut, table)
+- Support des sources GMAO (OT, equipements, capteurs, inventaire, surveillance, etc.)
+- Support des formules mathematiques ($references, +, -, *, /, IF(), ROUND(), etc.)
+- Frontend: commande [[CREATE_WIDGET:...]] parsee dans AIChatWidget.jsx
+- Widget cree directement sur le Dashboard Service, visible immediatement
+- Tests passes 100% backend + frontend
+
+## Architecture cles
+- ai_widget_routes.py : endpoint generation widget IA
+- ai_chat_routes.py : prompt Adria avec commande CREATE_WIDGET
+- AIChatWidget.jsx : handler CREATE_WIDGET + regex parser
+- custom_widgets_routes.py : CRUD widgets existant
+- formula_engine.py : moteur formules mathematiques
+- gmao_data_service.py : sources donnees GMAO
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
@@ -28,6 +32,6 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
 - Gemini Pro (via emergentintegrations + EMERGENT_LLM_KEY)
 
 ## Backlog
-- Tableau de bord temps reel (compteurs live, historique alertes 24h) - sauvegarde
-- Enrichissements dashboard (filtres par date, comparaisons periodes)
-- Export PDF ameliore par onglet
+- Tableau de bord temps reel (compteurs live, historique alertes 24h)
+- Enrichissements dashboard IA (filtres par date, export PDF)
+- Amelioration rafraichissement temps reel (WebSocket exclude_user)
