@@ -215,8 +215,8 @@ async def generate_widget(
         )
         chat.with_model("gemini", "gemini-2.5-flash")
 
-        response = await chat.send_message(UserMessage(text=user_prompt))
-        raw = clean_json_response(response.message)
+        response_text = await chat.send_message(UserMessage(text=user_prompt))
+        raw = clean_json_response(response_text)
 
         try:
             widget_config = json.loads(raw)
