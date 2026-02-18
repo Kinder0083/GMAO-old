@@ -1,155 +1,164 @@
-<analysis>**original_problem_statement:**
-The user's initial goal was to infuse AI capabilities throughout the application. Key features implemented prior to this session included enhancing the Adria AI assistant, adding AI diagnostics to Work Orders, AI-powered report generation, and an AI Automation module.
+<analysis>Analyse de l'historique des messages LLM et résumé pour le prochain agent.
 
-During this session, the user requested and the agent implemented:
-1.  A feature for Adria to create custom dashboard widgets based on natural language, including handling mathematical formulas.
-2.  A system for push notifications when an automation is triggered.
-3.  Updates to the user manual, , and role permissions to reflect all the new AI features.
+**original_problem_statement:**
+L'utilisateur a signalé une série de bugs critiques et de problèmes de logique dans la fonctionnalité Plan de Surveillance lors de la création de contrôles via l'analyse IA d'un document PDF. Les problèmes principaux sont :
+1.  **Date de contrôle incorrecte** : Un contrôle réalisé en 2026 est affiché dans l'interface utilisateur avec la date de 2027. La colonne affiche la date du *prochain* contrôle au lieu de la date de *réalisation*.
+2.  **Erreurs de création en masse** : Lors de l'analyse d'un rapport contenant plusieurs contrôles (par ex. 8), l'IA n'en crée qu'un seul et retourne des erreurs pour les 7 autres.
+3.  **Titre de colonne incorrect** : L'utilisateur a demandé de renommer la colonne Prochain contrôle en Date du Contrôle, mais le changement n'a pas été appliqué partout.
+4.  **Statistiques de réalisation erronées** : Un contrôle créé avec le statut Réalisé n'était pas comptabilisé dans le pourcentage de réalisation, car le calcul dépendait d'une date future.
 
-The user has now reported a new bug and requested a new feature:
-1.  **Bug:** When Adria creates a Work Order, it confirms that the equipment and priority are set, but this information is not saved in the final Work Order.
-2.  **Feature Request:** Enable Adria to modify existing Work Orders.
+Auparavant dans la session, l'agent a corrigé un bug où l'assistant IA Adria ne sauvegardait pas l'équipement et la priorité lors de la création d'un Ordre de Travail (OT), et a implémenté plusieurs nouvelles fonctionnalités pour Adria : la modification d'OTs, l'assignation de techniciens, et la clôture d'OTs avec temps et pièces en une seule commande. Un refactoring majeur du composant  a également été effectué.
 
-**User's preferred language**: French. The next agent MUST respond in French.
+**User's preferred language**: French
 
 **what currently exists?**
-The application is a full-stack React/FastAPI/MongoDB platform with significant AI capabilities. In this session, the agent successfully implemented a major new feature allowing the AI assistant, Adria, to create custom widgets on the Dashboard Service from natural language commands, including complex formulas. Additionally, a push notification system for automation triggers was added.
+L'application est une plateforme full-stack (React/FastAPI/MongoDB) de GMAO avec des fonctionnalités d'IA avancées. La session a vu l'ajout de nombreuses capacités à l'assistant Adria (modification, assignation, clôture d'OTs) et un refactoring majeur du code du widget de chat.
 
-Several critical bugs were also fixed:
--   A recurring frontend error () when Adria created work orders was resolved with a robust fix to the API module.
--   An issue preventing real-time UI updates for the user who initiated an action (due to WebSocket  logic) was solved by implementing a frontend-driven refresh event.
--   A systemic bug where multiple AI backend routes failed to retrieve the LLM API key from the database (relying only on environment variables) was corrected by standardizing the key retrieval logic.
--   Documentation (, in-app manual) and user role permissions were updated to reflect all the new AI functionalities.
-
-The application is stable on the preview environment, with all completed features tested.
+Cependant, la fonctionnalité d'importation IA pour le Plan de Surveillance est actuellement dans un état critique et bogué. L'agent a effectué plusieurs tentatives de correction, résolvant des problèmes sous-jacents de parsing de périodicité, de gestion des valeurs  (), et de génération de contrôles récurrents. Le problème principal restant est une incohérence logique fondamentale entre la date stockée en base de données et celle attendue par l'utilisateur dans l'affichage.
 
 **Last working item**:
--   **Last item agent was working:** Investigating a new bug reported by the user where Adria fails to save the  and  fields when creating a Work Order, despite confirming it has done so in the chat. The agent had just started exploring the relevant code files.
+-   **Last item agent was working:** Correction d'un bug fondamental et récurrent dans le Plan de Surveillance. L'utilisateur a signalé que pour un contrôle *réalisé* en 2026, l'interface affichait une date en 2027. L'agent a finalement identifié que la cause principale était que le backend assignait  au champ  de l'enregistrement de base, au lieu d'y mettre la . Le travail s'est arrêté alors que l'agent commençait à implémenter la correction finale dans .
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** both. First, use the backend testing agent to create a test for the  endpoint, ensuring it correctly processes  and . Then, use the frontend testing agent to run an end-to-end test by asking Adria to create a work order and verifying the created entity in the database has the correct data.
+-   **Which testing method agent to use?** both. D'abord, un test backend avec  pour vérifier que la création d'un item via le batch IA avec le statut  stocke bien  dans le champ . Ensuite, le testing agent pour un test E2E complet, en demandant à l'IA d'analyser le PDF, de créer les contrôles, et en vérifiant dans le rapport du testing agent que l'item affiché dans l'UI a la bonne date (2026) et que les statistiques de réalisation sont correctes.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** Adria does not save  and  when creating a Work Order. (Priority: P0)
+-   Issue 1: La date affichée pour les contrôles créés par IA est incorrecte (P0)
+-   Issue 2: Le renommage de la colonne UI Prochain contrôle est incomplet (P1)
+-   Issue 3: La robustesse de l'extraction IA pour plusieurs contrôles reste à valider (P2)
 
-  **Issues Detail:**
-  -   **Issue 1: Work Order creation via Adria is missing data.**
-      -   **Attempted fixes:** None yet. Investigation has just begun.
-      -   **Next debug checklist:**
-          1.  Examine  to see the exact  command structure Adria is prompted to generate.
-          2.  Review , specifically the  function, to see how it parses the  command and what payload it sends to the backend.
-          3.  Inspect the  endpoint in  and the  Pydantic model in  to verify how  and  are received and processed. It's possible the field names or data types (e.g., expecting an ID vs. a name string) are mismatched.
-      -   **Why fix this issue and what will be achieved with the fix?** This is a regression or a flaw in a core AI feature. Fixing it is critical for the usability of Adria for managing Work Orders.
-      -   **Status:** IN PROGRESS
-      -   **Is recurring issue?** N
-      -   **Should Test frontend/backend/both after fix?** Both.
-      -   **Blocked on other issue:** None.
+**Issues Detail:**
+-   **Issue 1: Date de contrôle incorrecte dans le Plan de Surveillance**
+    -   **Attempted fixes:** De nombreuses tentatives ont été faites, en modifiant la logique de calcul de l'année (), en changeant la date affichée dans le frontend, et en supprimant une condition de date dans le calcul des statistiques. La dernière analyse de l'agent a conclu que le problème est à la source : la valeur écrite dans le champ  de la base de données est erronée pour les items .
+    -   **Next debug checklist:**
+        1.  Ouvrir .
+        2.  Localiser la fonction .
+        3.  Dans la boucle , trouver la section où l'item est créé.
+        4.  **Modifier la ligne** qui calcule . Assurer que si , alors  est défini sur , et non .
+        5.  S'assurer que la fonction  est toujours appelée avec la date de base correcte pour générer les occurrences futures.
+    -   **Why fix this issue and what will be achieved with the fix?** C'est le bug principal qui empêche la fonctionnalité d'être utilisable. Le corriger alignera enfin le comportement de l'application avec la logique métier de l'utilisateur, qui est que la date d'un contrôle réalisé est la date à laquelle il a été fait, pas la date du prochain.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 2: Renommage de la colonne UI incomplet**
+    -   **Attempted fixes:** L'agent a modifié certains fichiers frontend mais en a manqué d'autres.
+    -   **Next debug checklist:**
+        1.  Faire un  pour trouver toutes les occurrences.
+        2.  Modifier , , et  pour remplacer Prochain contrôle par Date du Contrôle.
+        3.  Modifier également la logique d'affichage dans ces fichiers pour afficher  si , sinon .
+    -   **Why fix this issue and what will be achieved with the fix?** C'est une demande explicite de l'utilisateur pour améliorer la clarté de l'interface. Le faire résoudra une confusion majeure pour l'utilisateur.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 3: Robustesse de l'extraction IA**
+    -   **Attempted fixes:** L'agent a amélioré le prompt IA et a rendu le backend plus robuste aux données manquantes () et aux formats de périodicité non standards.
+    -   **Next debug checklist:**
+        1.  Une fois les issues 1 et 2 résolues, relancer un test E2E complet avec le fichier PDF de l'utilisateur qui contient 8 contrôles ().
+        2.  Vérifier la réponse du backend : est-ce que 8 items ont été créés avec succès, sans erreur ?
+        3.  Si des erreurs persistent, analyser les logs et le payload pour identifier le contrôle qui échoue et pourquoi (probablement un cas limite de données non encore géré).
+    -   **Why fix this issue and what will be achieved with the fix?** Assurer que la fonctionnalité d'IA est fiable et peut traiter des documents réels complexes, ce qui est la valeur ajoutée principale de cette feature.
+    -   **Status:** TESTING PENDING
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** Issue 1.
 
 **In progress Task List**:
 -   None.
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   (P1) **Modify Work Orders via Adria:** Implement the functionality for Adria to modify an existing Work Order based on a user's natural language request. This will likely involve:
-        -   Updating Adria's system prompt () with a new  command.
-        -   Adding a new handler in  for this command.
-        -   Creating a  endpoint in the backend if it doesn't already exist and is suitable.
 -   **Future Tasks:**
-    -   Follow up with the user on the real-time refresh functionality. While a fix was implemented and tested, the user had previously reported needing a manual refresh. Confirm if the latest fix has resolved this on their end.
+    -   (P2) Implémenter une suggestion précédente : permettre à Adria de clôturer un OT et de générer un résumé de l'intervention en une seule commande vocale (par ex. Termine lOT Bioci 1, ça a pris 2h, jai changé le filtre). L'utilisateur avait demandé de garder cette idée dans un coin pour plus tard.
 
 **Completed work in this session**
--   **Feature: AI-Powered Widget Creation (DONE):** Implemented functionality for Adria to create custom widgets on the Dashboard Service from natural language, including handling mathematical formulas.
--   **Feature: Push Notifications for Automations (DONE):** Added a system to send users push notifications when an automation they configured is triggered.
--   **Task: Documentation and Permissions Update (DONE):** Updated the in-app user manual, , and user role permissions to include all new AI features and secure the new endpoints.
--   **Bug Fix: Adria Work Order Creation Failure (DONE):** Resolved a recurring JavaScript error () by implementing a more robust API import/export pattern in the frontend.
--   **Bug Fix: Real-Time UI Refresh (DONE):** Fixed an issue where the UI wouldn't update for the user creating a Work Order via Adria. Implemented a frontend event-based refresh mechanism.
--   **Bug Fix: Inconsistent LLM Key Retrieval (DONE):** Standardized the LLM API key retrieval logic across all AI-related backend routes to check both environment variables and database settings, ensuring compatibility with the user's environment.
--   **Bug Fix: AI Dashboard Chart Data (DONE):** Corrected mismatched data keys between the backend API and frontend charting components in .
+-   **Bug Fix:** Adria - Création d'OT : l'équipement et la priorité sont maintenant correctement sauvegardés.
+-   **Feature:** Adria - Modification d'OT : implémentation de la commande .
+-   **Feature:** Adria - Assignation de technicien : Adria peut maintenant assigner un utilisateur à un OT.
+-   **Feature:** Adria - Clôture d'OT : implémentation de la commande  pour ajouter temps, pièces et changer le statut.
+-   **Refactoring:** Le composant  (plus de 1300 lignes) a été divisé en trois fichiers logiques :  (UI),  (logique métier), et  (hook vocal).
+-   **Documentation:** Mise à jour du  et du manuel utilisateur en base de données pour refléter les nouvelles capacités d'Adria.
+-   **Bug Fix (In Progress):** Multiples itérations de corrections sur le Plan de Surveillance pour améliorer la robustesse du backend (gestion des erreurs, parsing de dates/périodicité) et corriger la logique de création des contrôles récurrents.
 
 **Earlier issues found/mentioned but not fixed**
--   None. All previously known issues were addressed in this session.
+-   Le renommage de la colonne Prochain contrôle en Date du Contrôle sur toutes les vues du Plan de Surveillance a été demandé mais seulement partiellement exécuté.
 
 **Known issue recurrence from previous fork**
--   The error  related to Adria creating work orders recurred multiple times in this session. A more robust fix was implemented by modifying the central API export file (). While it seems stable now, it has been a persistent problem area.
+-   N/A
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **AI-driven Configuration:** Using an LLM to parse natural language and generate a structured JSON object that configures a new UI component (a dashboard widget).
--   **Frontend-driven Refresh:** Dispatching a custom browser event () after a successful API call to trigger a central data hook () to re-fetch data, bypassing WebSocket limitations where the originating client is excluded from broadcasts.
--   **Robust API Module Design:** Modifying the central API file () to attach named exports to the default export (). This ensures that older code relying on a different import pattern does not break, making the application more resilient to import/bundling issues.
--   **Standardized Configuration Fallback:** Refactoring backend modules to use a consistent helper () that checks for an API key in environment variables first, then falls back to a database setting, ensuring functionality across different deployment environments.
--   **Declarative Permissions:** Using a  decorator on FastAPI routes to centralize and enforce role-based access control.
+-   **State Inconsistency Debugging:** Le problème principal de la session a été de traquer une incohérence entre l'état de la base de données, la logique frontend et l'attente de l'utilisateur, spécifiquement sur le sens du champ .
+-   **Robust Data Parsing:** Création de logiques de parsing robustes pour gérer des formats de texte non structurés (périodicité, bâtiment, dates) provenant de l'IA et éviter les crashs.
+-   **Component Refactoring:** Division d'un grand composant React monolithique en un composant de présentation et des hooks/fichiers de logique métier séparés pour améliorer la lisibilité et la maintenabilité.
+-   **Recurring Item Generation:** Implémentation d'une logique complexe pour générer une série d'enregistrements futurs (contrôles récurrents) à partir d'un seul événement de base, en respectant des règles métier précises (jusqu'à N+1).
 
 **key DB schema**
--   **roles:** Permissions have been extended with new keys for AI features, e.g., .
--   **manual_chapters / manual_sections:** New records were inserted to document the AI features. The structure includes , , , and .
+-   **surveillance_items:** Contient les champs cruciaux au cœur du bug :  (int),  (datetime),  (datetime),  (str: REALISE, PLANIFIER, A PLANIFIER). La logique de leur remplissage est ce qui a été débattu et corrigé.
 
 **All files of reference**
--    (Core file for the current bug and upcoming feature)
--    (Contains Adria's system prompt which defines AI commands)
--    (Contains the backend logic for creating/updating work orders)
--    (Defines the data structure for work orders)
--    (Central point for all frontend API calls)
+-   : Fichier principal à corriger pour le bug de date.
+-   : Fichier où la logique de calcul des statistiques a été corrigée et où le titre de colonne doit être changé.
+-   : Autre vue à corriger (titre de colonne).
+-   : Autre vue à corriger (titre de colonne).
+-   : Le nouveau fichier contenant toute la logique métier des commandes Adria.
+-   : Le fichier de test de l'utilisateur qui a révélé tous les bugs du plan de surveillance.
 
 **Areas that need refactoring**:
--   The  component is growing large with multiple command handlers ( function). It could be beneficial to refactor the command parsing and execution logic into separate helper functions or a dedicated module.
+-   Le refactoring majeur a déjà été fait sur . Aucune autre zone de refactoring immédiate n'est nécessaire.
 
 **key api endpoints**
--   : Endpoint for creating new work orders. (Relevant to current bug)
--   : (New) Generates a custom widget configuration via AI.
--   : (New) A test endpoint to simulate an automation trigger.
--   : Used to update role permissions.
--   : (Fixed) One of the many endpoints where the LLM key retrieval was fixed.
+-   : Endpoint utilisé par l'IA pour créer des contrôles, c'est la source de tous les bugs récents.
+-   : (Nouveau) Endpoint pour la modification d'OTs.
+-   : Endpoint utilisé par la commande .
 
 **Critical Info for New Agent**
 -   **Vous devez répondre en français.**
--   Your first priority is to fix the bug where Adria fails to save  and  for new work orders. The root cause is likely a mismatch between the data Adria is prompted to send and what the backend API expects.
--   After fixing the bug, the next task is to implement the user's request to allow Adria to *modify* existing work orders.
--   Be aware that the user's Proxmox environment has sometimes behaved differently from the preview environment (e.g., regarding API key locations). Ensure your fixes are robust and don't rely solely on environment variables if a database fallback exists.
+-   **Priorité absolue :** Fixez le bug de la date dans le Plan de Surveillance en modifiant  pour que  soit égal à  pour un item . C'est la clé de tout.
+-   **Deuxième priorité :** Corrigez l'interface. Renommez la colonne Prochain contrôle en Date du Contrôle dans **tous** les fichiers de vue concernés (, , ) et ajustez la valeur affichée pour qu'elle corresponde à la date de réalisation pour les items terminés.
+-   L'utilisateur est très attentif aux détails et a signalé les mêmes problèmes plusieurs fois. Soyez extrêmement rigoureux dans vos tests et vérifiez que chaque aspect des demandes de l'utilisateur est bien couvert avant de conclure. Ne vous fiez pas à une seule méthode de test.
+-   La logique de génération des contrôles récurrents est complexe et a été définie précisément par l'utilisateur (Message 289). Ne la modifiez pas sans être certain de comprendre toutes les implications.
 
 **documents and test reports created in this job**
--   : Test report for AI Dashboard bug fixes.
--   : Test report for the push notification system.
--   : Test report for the fix of the  bug.
--   : Test report for the LLM key retrieval fix across AI routes.
--   : Test report confirming the robust  fix.
--   : Test report for the  fix.
--   : Test report for the AI widget creation feature.
--   : Test report for the documentation and permissions updates.
--   : Script created to populate the user manual in the database.
--   : Updated.
+De nombreux rapports de test ont été générés. Les plus pertinents pour la suite sont :
+-   : Validation du refactoring de .
+-   : Premier fix (échoué) du bug  du plan de surveillance.
+-   : Test du fix de la logique de récurrence.
+-   : Validation des derniers correctifs sur la robustesse du .
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** Reports a bug where Adria-created Work Orders are missing equipment/priority data and requests a new feature for Adria to modify existing Work Orders. (PENDING)
-2.  **User:** Asks agent to update the user manual, README file, and role permissions with the new AI features. (COMPLETED)
-3.  **User:** Approves the plan to implement AI-powered widget creation. (COMPLETED)
-4.  **User:** Enthusiastically agrees to the widget creation idea and adds the requirement that it must support mathematical formulas. (COMPLETED)
-5.  **User:** Confirms a fix worked but notes that a manual page refresh is still required to see the new Work Order. Asks if Adria can create custom widgets. (COMPLETED - This led to the widget feature and a separate fix for the refresh issue).
-6.  **User:** Confirms a previous bug fix for OT creation worked, but again notes the need for a manual refresh and asks if the WebSocket is functioning correctly. (COMPLETED - Led to WebSocket investigation and fix).
-7.  **User:** Reports that a fix for OT creation did not work and the same error persists. (COMPLETED - A more robust fix was later implemented).
-8.  **User:** Provides a screenshot of the recurring OT creation error. (COMPLETED)
-9.  **User:** Reports the OT creation error again with a screenshot. (COMPLETED)
-10. **User:** Reports an error when trying to generate a Rapport de synthèse QHSE. (COMPLETED - This was part of the LLM key retrieval bug).
+1.  **User (LATEST):** Rapporte que le problème de date est *toujours* présent. Fournit des captures d'écran montrant clairement que la date affichée est 2027 au lieu de 2026. (PENDING)
+2.  **User:** Signale que l'IA ne crée qu'un seul contrôle sur 8, que la date est fausse (2027), et que l'intitulé de la colonne n'a pas été changé. (PENDING)
+3.  **User:** Indique que les stats de réalisation ne s'incrémentent pas et que l'intitulé de colonne est source de confusion. Demande que la colonne s'appelle Date du contrôle et que le statut seul pilote les stats. (Partiellement traité)
+4.  **User:** Rapporte que les contrôles sont enregistrés avec un an d'avance (2027 au lieu de 2026). (Traité, mais le fix a introduit un autre problème)
+5.  **User:** Explique en détail la logique attendue pour la génération des contrôles récurrents (avec onglets par année et génération jusqu'à N+1), car l'agent avait mal interprété. (Traité)
+6.  **User:** Signale que les contrôles créés par IA n'apparaissent pas. (Traité, c'était le bug )
+7.  **User:** Approuve la suggestion de refactoriser  et de mettre à jour la documentation. (COMPLETED)
+8.  **User:** Approuve la suggestion d'implémenter la clôture d'OT par Adria. (COMPLETED)
+9.  **User:** Approuve la suggestion de permettre à Adria d'assigner des techniciens. (COMPLETED)
+10. **User:** Rapporte le bug initial et majeur du Plan de Surveillance. (PENDING)
 
 **Project Health Check:**
--   **Broken:** No. The application is functional. There is one known bug in a specific AI workflow (creating OTs).
+-   **Broken:** Oui. La fonctionnalité clé Plan de Surveillance est inutilisable en l'état à cause d'une erreur de logique fondamentale.
 -   **Mocked:** N/A.
 
 **3rd Party Integrations**
--   **Gemini Pro (via ):** Used for all AI analysis, generation, and chat functionalities. Uses the Emergent LLM Key.
+-   **Gemini Pro (via ):** Utilisé pour l'assistant Adria et pour l'analyse des documents PDF du plan de surveillance.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. The agent has consistently used  after every major feature implementation and bug fix, achieving high success rates and even using the agent's auto-fixes.
+-   **Testing agent used after significant changes:** YES.
 -   **Troubleshoot agent used after agent stuck in loop:** NO.
 -   **Test files created:** None.
--   **Known regressions:** The feature for Adria to create a Work Order has a new bug where it's not saving all fields correctly.
+-   **Known regressions:** La logique de date dans le Plan de Surveillance a régressé plusieurs fois au cours des tentatives de correction.
 
 **Credentials to test flow:**
 -   **Admin (Profile: Direction):**  / 
 -   **Non-Admin (Profile: Maintenance):**  / 
 
 **What agent forgot to execute**
--   Nothing has been forgotten. The agent has been methodically implementing user requests and fixing bugs as they are reported.</analysis>
+-   L'agent a oublié d'appliquer le renommage de la colonne Prochain contrôle en Date du Contrôle à tous les fichiers de vue pertinents (, ), ne le faisant que dans un seul fichier. C'est une cause directe de la frustration de l'utilisateur dans son dernier message.</analysis>

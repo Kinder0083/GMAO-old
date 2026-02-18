@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ai-order-field-save.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://llm-history-analyzer.preview.emergentagent.com').rstrip('/')
 
 
 class TestSurveillanceBatchTrendsAPI:

@@ -12,7 +12,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://ai-order-field-save.preview.emergentagent.com"
+    BASE_URL = "https://llm-history-analyzer.preview.emergentagent.com"
 
 # Test credentials
 TEST_EMAIL = "admin@test.com"
