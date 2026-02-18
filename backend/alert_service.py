@@ -102,7 +102,9 @@ class AlertService:
                         actions_executed.append(action)
                         
                 elif action == "NOTIFICATION_ONLY":
-                    actions_executed.append(action)
+                    success = await self.send_push_notification(alert, config)
+                    if success:
+                        actions_executed.append(action)
             
             # Mettre à jour l'alerte avec les actions exécutées
             await self.db.alerts.update_one(
