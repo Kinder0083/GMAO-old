@@ -1034,6 +1034,7 @@ export const automationsAPI = {
   list: () => api.get('/automations/list').then(r => r.data),
   remove: (id) => api.delete(`/automations/${id}`).then(r => r.data),
   toggle: (id) => api.put(`/automations/${id}/toggle`).then(r => r.data),
+  testTrigger: (id) => api.post(`/automations/test-trigger/${id}`).then(r => r.data),
 };
 
 export default api;
