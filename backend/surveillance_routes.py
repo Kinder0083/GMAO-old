@@ -1311,8 +1311,14 @@ async def extract_surveillance_from_document(
             system_message="""Tu es un expert en réglementation française de sécurité au travail et en contrôles réglementaires.
 Analyse le document de contrôle/vérification fourni et extrais TOUS les types de contrôles distincts qu'il contient.
 
-Un même document peut contenir plusieurs types de contrôles réglementaires différents (ex: levage, portes automatiques, EPI, installations électriques, etc.).
-Pour CHAQUE type de contrôle distinct, crée une entrée séparée.
+Un rapport d'organisme de contrôle (APAVE, SOCOTEC, DEKRA, BUREAU VERITAS) peut contenir :
+- Plusieurs types de vérifications dans un même rapport (levage, électrique, incendie, etc.)
+- Plusieurs équipements inspectés pour un même type de contrôle
+- Des observations, anomalies ou réserves pour chaque point
+
+RÈGLE : Crée une entrée SÉPARÉE pour chaque type de contrôle/vérification réglementaire distinct.
+Si le rapport mentionne à la fois une VGP de machines ET une vérification d'installations électriques, ce sont 2 entrées.
+Si le rapport couvre plusieurs équipements du MÊME type, cela reste UNE SEULE entrée.
 
 Réponds UNIQUEMENT avec un JSON valide, sans texte autour ni backticks.
 
@@ -1320,32 +1326,32 @@ Format attendu:
 {
   "document_info": {
     "numero_rapport": "string - numéro du rapport ou null",
-    "organisme_controle": "string - nom de l'organisme (APAVE, SOCOTEC, DEKRA, BUREAU VERITAS, etc.)",
+    "organisme_controle": "string - nom de l'organisme",
     "date_intervention": "YYYY-MM-DD - date du contrôle",
     "site_controle": "string - nom/adresse du site contrôlé"
   },
   "controles": [
     {
-      "classe_type": "string - type précis du contrôle (ex: 'Vérification périodique des chariots élévateurs', 'Thermographie infrarouge installations électriques', 'Vérification portes automatiques')",
+      "classe_type": "string - type précis du contrôle",
       "category": "string parmi: ELECTRIQUE, INCENDIE, MANUTENTION, SECURITE_ENVIRONNEMENT, MMRI, EXTRACTION, AUTRE",
-      "batiment": "string - bâtiment ou zone concernée",
-      "executant": "string - nom de l'organisme qui a réalisé le contrôle",
-      "description": "string - description détaillée de ce qui a été contrôlé, liste des équipements principaux",
-      "derniere_visite": "YYYY-MM-DD - date de la visite/contrôle",
-      "references_reglementaires": "string - toutes les références légales trouvées (articles Code du Travail, arrêtés, normes, etc.)",
+      "batiment": "string - bâtiment ou zone concernée ('' si non précisé, JAMAIS null)",
+      "executant": "string - nom de l'organisme",
+      "description": "string - description de ce qui a été contrôlé",
+      "derniere_visite": "YYYY-MM-DD - date de la visite",
+      "references_reglementaires": "string - références légales",
       "resultat": "CONFORME|NON_CONFORME|AVEC_RESERVES",
-      "anomalies": "string - description détaillée des anomalies/non-conformités trouvées ou null si aucune",
-      "periodicite_detectee": "string - périodicité si explicitement mentionnée dans le document (ex: '1 an', '6 mois') ou null si non trouvée",
-      "equipements_concernes": "string - liste résumée des équipements inspectés"
+      "anomalies": "string ou null",
+      "periodicite_detectee": "UNIQUEMENT en format simple: '1 an', '6 mois', '3 mois', '2 ans'. NE PAS inclure de références réglementaires ici. null si non trouvée",
+      "equipements_concernes": "string - liste des équipements"
     }
   ]
 }
 
 IMPORTANT:
-- Sépare bien les différents types de contrôles (levage ≠ portes automatiques ≠ EPI ≠ installations électriques)
-- Pour la catégorie, utilise les valeurs exactes fournies
-- Extrais TOUTES les références réglementaires mentionnées
-- Si un contrôle montre des anomalies, mets le résultat à NON_CONFORME ou AVEC_RESERVES et détaille dans anomalies"""
+- Sépare les différents types de contrôles
+- periodicite_detectee en format SIMPLE uniquement (ex: '1 an', '6 mois')
+- batiment JAMAIS null, utiliser '' si non précisé
+- Si anomalies: résultat = NON_CONFORME ou AVEC_RESERVES"""
         ).with_model("gemini", "gemini-2.5-flash")
 
         file_content = FileContentWithMimeType(
