@@ -11,7 +11,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
-from dependencies import get_current_user
+from dependencies import get_current_user, require_permission
 
 logger = logging.getLogger(__name__)
 
