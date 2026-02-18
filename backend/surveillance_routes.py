@@ -1191,29 +1191,27 @@ async def export_template(current_user: dict = Depends(get_current_user)):
 @router.post("/check-due-dates")
 async def check_due_dates(current_user: dict = Depends(get_current_user)):
     """
-    Vérifier les dates d'échéance et mettre à jour automatiquement les statuts.
+    Vérifier les dates d'échéance et retourner les items nécessitant une alerte.
     
-    Logique:
-    - Pour chaque item avec statut "REALISE"
-    - Si la date actuelle est dans la période de rappel (duree_rappel_echeance jours avant prochain_controle)
-    - Alors changer le statut de "REALISE" à "PLANIFIER"
+    Logique (notification uniquement, PAS de changement de statut) :
+    - Pour chaque item NON réalisé avec un prochain_controle
+    - Si aujourd'hui est dans la période de rappel (duree_rappel_echeance jours AVANT prochain_controle)
+    - Alors signaler l'item comme nécessitant une alerte
     
-    Cet endpoint est appelé automatiquement au chargement de la page de surveillance.
+    Le délai de rappel (duree_rappel_echeance) est paramétrable par item (défaut: 30 jours).
+    Le décompte ne se déclenche que AVANT la date du contrôle, jamais après.
     """
     try:
         today = datetime.now(timezone.utc).date()
-        updated_count = 0
+        alerts_needed = []
         
-        # Récupérer tous les items avec statut REALISE
+        # Récupérer les items non réalisés ayant une date de prochain contrôle
         items = await db.surveillance_items.find({
-            "status": SurveillanceItemStatus.REALISE.value
+            "status": {"$ne": SurveillanceItemStatus.REALISE.value},
+            "prochain_controle": {"$ne": None, "$exists": True}
         }).to_list(length=None)
         
         for item in items:
-            # Vérifier si l'item a une date de prochain contrôle
-            if not item.get("prochain_controle"):
-                continue
-            
             try:
                 prochain_controle = datetime.fromisoformat(item["prochain_controle"]).date()
                 duree_rappel = item.get("duree_rappel_echeance", 30)
@@ -1221,30 +1219,29 @@ async def check_due_dates(current_user: dict = Depends(get_current_user)):
                 # Calculer la date de début de la période de rappel
                 date_rappel = prochain_controle - timedelta(days=duree_rappel)
                 
-                # Si nous sommes dans la période de rappel ou après
-                if today >= date_rappel:
-                    # Mettre à jour le statut vers PLANIFIER
-                    await db.surveillance_items.update_one(
-                        {"id": item["id"]},
-                        {
-                            "$set": {
-                                "status": SurveillanceItemStatus.PLANIFIER.value,
-                                "updated_at": datetime.now(timezone.utc).isoformat(),
-                                "updated_by": "system_auto_check"
-                            }
-                        }
-                    )
-                    updated_count += 1
-                    
-                    logger.info(f"Item {item['id']} ({item.get('classe_type')}) statut changé de REALISE à PLANIFIER (échéance: {prochain_controle})")
+                # Alerte uniquement en décompte : today >= date_rappel ET today <= prochain_controle
+                if today >= date_rappel and today <= prochain_controle:
+                    days_remaining = (prochain_controle - today).days
+                    alerts_needed.append({
+                        "id": item["id"],
+                        "classe_type": item.get("classe_type"),
+                        "category": item.get("category"),
+                        "batiment": item.get("batiment"),
+                        "prochain_controle": item["prochain_controle"],
+                        "days_remaining": days_remaining,
+                        "duree_rappel_echeance": duree_rappel,
+                        "alerte_envoyee": item.get("alerte_envoyee", False),
+                        "responsable_notification_id": item.get("responsable_notification_id")
+                    })
             except Exception as e:
                 logger.warning(f"Erreur traitement item {item.get('id')}: {str(e)}")
                 continue
         
         return {
             "success": True,
-            "updated_count": updated_count,
-            "message": f"{updated_count} contrôle(s) mis à jour automatiquement"
+            "alerts_count": len(alerts_needed),
+            "alerts": alerts_needed,
+            "message": f"{len(alerts_needed)} contrôle(s) à échéance proche"
         }
     except Exception as e:
         logger.error(f"Erreur vérification échéances: {str(e)}")
@@ -1621,8 +1618,8 @@ async def create_batch_from_ai(
             groupe_id = str(uuid.uuid4())
             
             # Créer l'item de surveillance (RÉALISÉ)
-            # Pour un item RÉALISÉ, prochain_controle = derniere_visite (date de réalisation)
-            # Les occurrences futures sont gérées par generate_recurring_controls
+            # prochain_controle = derniere_visite + periodicite (date du PROCHAIN contrôle)
+            # L'affichage dans le frontend utilise derniere_visite pour les items REALISE
             item = SurveillanceItem(
                 classe_type=ctrl.get("classe_type", ""),
                 category=ctrl.get("category", "AUTRE"),
@@ -1632,7 +1629,7 @@ async def create_batch_from_ai(
                 executant=ctrl.get("executant", document_info.get("organisme_controle", "")),
                 description=ctrl.get("description"),
                 derniere_visite=derniere_visite,
-                prochain_controle=derniere_visite,
+                prochain_controle=prochain_controle,
                 status=SurveillanceItemStatus.REALISE,
                 date_realisation=derniere_visite,
                 commentaire=commentaire,
