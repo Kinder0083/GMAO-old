@@ -128,7 +128,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
           if (actionData.categorie) {
             otPayload.categorie = actionData.categorie;
           }
-          const otResponse = await workOrdersAPI.create(otPayload);
+          const otResponse = await (workOrdersAPI || api.workOrders).create(otPayload);
           
           toast({
             title: '✅ Ordre de travail créé',
