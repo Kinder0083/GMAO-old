@@ -1467,6 +1467,10 @@ async def transcribe_audio_endpoint(
         # Récupérer la clé API
         api_key = os.environ.get("EMERGENT_LLM_KEY")
         if not api_key:
+            gk = await db.global_settings.find_one({"key": "EMERGENT_LLM_KEY"})
+            if gk and gk.get("value"):
+                api_key = gk["value"]
+        if not api_key:
             raise HTTPException(status_code=500, detail="Clé API non configurée pour la transcription")
         
         # Lire le contenu audio
