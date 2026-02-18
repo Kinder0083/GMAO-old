@@ -1490,8 +1490,10 @@ async def create_batch_from_ai(
         
         created_items = []
         created_work_orders = []
+        errors = []
         
-        for ctrl in controles:
+        for ctrl_index, ctrl in enumerate(controles):
+          try:
             # Calculer prochain_controle si on a periodicite + derniere_visite
             prochain_controle = None
             derniere_visite = ctrl.get("derniere_visite")
