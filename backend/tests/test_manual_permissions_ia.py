@@ -15,19 +15,28 @@ TECHNICIEN_EMAIL = "technicien@test.com"
 TECHNICIEN_PASSWORD = "Technicien123!"
 
 
+def get_auth_token(email, password):
+    """Helper function to get auth token"""
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={
+        "email": email,
+        "password": password
+    })
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("access_token") or data.get("token")
+    return None
+
+
 class TestManualContent:
     """Tests for GET /api/manual/content - New IA sections"""
 
     @pytest.fixture(scope="class")
     def admin_token(self):
         """Get admin auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        if response.status_code == 200:
-            return response.json().get("token")
-        pytest.skip(f"Admin login failed: {response.status_code} - {response.text}")
+        token = get_auth_token(ADMIN_EMAIL, ADMIN_PASSWORD)
+        if not token:
+            pytest.skip(f"Admin login failed")
+        return token
 
     def test_manual_content_loads(self, admin_token):
         """Test that manual content loads successfully"""
@@ -171,13 +180,10 @@ class TestRolesPermissions:
     @pytest.fixture(scope="class")
     def admin_token(self):
         """Get admin auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        if response.status_code == 200:
-            return response.json().get("token")
-        pytest.skip(f"Admin login failed: {response.status_code} - {response.text}")
+        token = get_auth_token(ADMIN_EMAIL, ADMIN_PASSWORD)
+        if not token:
+            pytest.skip(f"Admin login failed")
+        return token
 
     def test_roles_endpoint_returns_roles(self, admin_token):
         """Test that roles endpoint returns list of roles"""
@@ -304,25 +310,18 @@ class TestAIWidgetPermissions:
     @pytest.fixture(scope="class")
     def admin_token(self):
         """Get admin auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
-        })
-        if response.status_code == 200:
-            return response.json().get("token")
-        pytest.skip(f"Admin login failed: {response.status_code} - {response.text}")
+        token = get_auth_token(ADMIN_EMAIL, ADMIN_PASSWORD)
+        if not token:
+            pytest.skip(f"Admin login failed")
+        return token
 
     @pytest.fixture(scope="class")
     def technicien_token(self):
         """Get technicien auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": TECHNICIEN_EMAIL,
-            "password": TECHNICIEN_PASSWORD
-        })
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("access_token") or data.get("token")
-        pytest.skip(f"Technicien login failed: {response.status_code} - {response.text}")
+        token = get_auth_token(TECHNICIEN_EMAIL, TECHNICIEN_PASSWORD)
+        if not token:
+            pytest.skip(f"Technicien login failed")
+        return token
 
     def test_technicien_denied_widget_generation(self, technicien_token):
         """Test that technicien is denied (403) when trying to generate a widget"""
@@ -376,14 +375,10 @@ class TestAutomationPermissions:
     @pytest.fixture(scope="class")
     def technicien_token(self):
         """Get technicien auth token"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": TECHNICIEN_EMAIL,
-            "password": TECHNICIEN_PASSWORD
-        })
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("access_token") or data.get("token")
-        pytest.skip(f"Technicien login failed: {response.status_code} - {response.text}")
+        token = get_auth_token(TECHNICIEN_EMAIL, TECHNICIEN_PASSWORD)
+        if not token:
+            pytest.skip(f"Technicien login failed")
+        return token
 
     def test_technicien_denied_automation_parse(self, technicien_token):
         """Test that technicien is denied (403) when trying to parse automation"""
