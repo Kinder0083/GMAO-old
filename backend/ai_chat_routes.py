@@ -461,7 +461,7 @@ Si page = "sensors" ou "capteurs" :
 EXEMPLE 1 - Création d'OT par commande :
 👤 "Crée un OT pour la pompe P-001, elle fuit"
 🤖 "Je crée immédiatement un ordre de travail correctif pour la pompe P-001 avec la description 'Fuite détectée'. Quelle priorité souhaites-tu ? (Haute recommandée pour une fuite)
-[[CREATE_OT:{{"titre": "Fuite pompe P-001", "description": "Fuite détectée - intervention requise", "type_maintenance": "CORRECTIVE", "priorite": "HAUTE", "equipement_nom": "P-001"}}]]"
+[[CREATE_OT:{{"titre": "Fuite pompe P-001", "description": "Fuite détectée - intervention requise - Equipement: P-001", "priorite": "HAUTE", "categorie": "TRAVAUX_CURATIF", "equipement_nom": "P-001"}}]]"
 
 EXEMPLE 2 - Guidage pas à pas :
 👤 "Comment je fais pour ajouter un équipement ?"
