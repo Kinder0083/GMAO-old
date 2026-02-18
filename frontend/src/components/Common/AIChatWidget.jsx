@@ -164,6 +164,76 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
             isSystemAction: true
           }]);
           break;
+        }
+          
+        case 'MODIFY_OT': {
+          // Modifier un ordre de travail existant
+          try {
+            // Chercher l'OT par référence ou titre
+            const searchRef = (actionData.ot_reference || actionData.titre || '').replace('#', '').trim();
+            const woListRes = await workOrdersAPI.getAll();
+            const woList = woListRes.data || [];
+            const matchedWo = woList.find(wo =>
+              wo.id?.includes(searchRef) ||
+              wo.numero?.includes(searchRef) ||
+              wo.titre?.toLowerCase().includes(searchRef.toLowerCase())
+            );
+            if (!matchedWo) {
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `Je n'ai pas trouvé d'ordre de travail correspondant à "${actionData.ot_reference || actionData.titre}". Pouvez-vous préciser le numéro ou le titre exact ?`,
+                timestamp: new Date().toISOString(),
+                isSystemAction: true
+              }]);
+              break;
+            }
+            const mods = actionData.modifications || {};
+            const updatePayload = {};
+            if (mods.priorite) updatePayload.priorite = mods.priorite.toUpperCase();
+            if (mods.statut) updatePayload.statut = mods.statut.toUpperCase();
+            if (mods.description) updatePayload.description = mods.description;
+            if (mods.titre) updatePayload.titre = mods.titre;
+            if (mods.categorie) updatePayload.categorie = mods.categorie.toUpperCase();
+            if (mods.tempsEstime) updatePayload.tempsEstime = parseFloat(mods.tempsEstime);
+            // Résoudre equipement_nom en equipement_id
+            if (mods.equipement_nom) {
+              try {
+                const eqRes = await equipmentsAPI.getAll();
+                const eqList = eqRes.data || [];
+                const searchName = mods.equipement_nom.toLowerCase();
+                const matched = eqList.find(eq =>
+                  eq.nom?.toLowerCase().includes(searchName) ||
+                  eq.reference?.toLowerCase().includes(searchName)
+                );
+                if (matched) updatePayload.equipement_id = matched.id;
+              } catch (eqErr) {
+                console.warn('Impossible de résoudre l\'équipement:', eqErr);
+              }
+            }
+            await workOrdersAPI.update(matchedWo.id, updatePayload);
+            const modDetails = Object.entries(updatePayload).map(([k, v]) => `${k}: ${v}`).join(', ');
+            toast({
+              title: 'OT modifié',
+              description: `OT "${matchedWo.titre}" mis à jour`,
+            });
+            window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'work_orders', action: 'updated' } }));
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `J'ai modifié l'ordre de travail "${matchedWo.titre}" (${matchedWo.numero || '#' + matchedWo.id?.slice(-4)}) : ${modDetails}`,
+              timestamp: new Date().toISOString(),
+              isSystemAction: true
+            }]);
+          } catch (modErr) {
+            console.error('Erreur modification OT:', modErr);
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `Désolé, une erreur est survenue lors de la modification de l'OT : ${modErr.response?.data?.detail || modErr.message}`,
+              timestamp: new Date().toISOString(),
+              isSystemAction: true
+            }]);
+          }
+          break;
+        }
           
         case 'ADD_TIME_OT':
           // Ajouter du temps à un OT
