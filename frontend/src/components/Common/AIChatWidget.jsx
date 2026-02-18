@@ -450,7 +450,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
     }
     
     // Parser les commandes d'action automatique (CREATE_OT, SEARCH, etc.)
-    const actionCommandRegex = /\[\[(CREATE_OT|ADD_TIME_OT|COMMENT_OT|SEARCH|CONFIGURE_AUTOMATION|CREATE_WIDGET):(\{[\s\S]*?\})\]\]/g;
+    const actionCommandRegex = /\[\[(CREATE_OT|MODIFY_OT|ADD_TIME_OT|COMMENT_OT|SEARCH|CONFIGURE_AUTOMATION|CREATE_WIDGET):(\{[\s\S]*?\})\]\]/g;
     let actionMatch;
     
     while ((actionMatch = actionCommandRegex.exec(responseText)) !== null) {
