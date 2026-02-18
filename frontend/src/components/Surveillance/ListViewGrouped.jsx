@@ -99,18 +99,8 @@ function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentY
 
   const calculateCategoryPercentage = (categoryItems) => {
     if (categoryItems.length === 0) return 0;
-    
-    // Un contrôle est "à jour" si son statut est REALISE ET sa date de prochain contrôle n'est pas dépassée
-    const today = new Date();
-    const upToDate = categoryItems.filter(item => {
-      if (item.status !== 'REALISE') return false;
-      if (!item.prochain_controle) return false;
-      
-      const nextDate = new Date(item.prochain_controle);
-      return nextDate >= today;
-    });
-
-    return Math.round((upToDate.length / categoryItems.length) * 100);
+    const realises = categoryItems.filter(item => item.status === 'REALISE');
+    return Math.round((realises.length / categoryItems.length) * 100);
   };
 
   if (loading) return <div className="text-center p-4">Chargement...</div>;
@@ -164,7 +154,7 @@ function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentY
                   <TableHead>Bâtiment</TableHead>
                   <TableHead>Périodicité</TableHead>
                   <TableHead>Responsable</TableHead>
-                  <TableHead>Prochain contrôle</TableHead>
+                  <TableHead>Date du contrôle</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
