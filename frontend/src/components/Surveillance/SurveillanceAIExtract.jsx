@@ -96,7 +96,8 @@ function SurveillanceAIExtract({ open, onClose }) {
         setStep('review');
       }
     } catch (error) {
-      toast({ title: 'Erreur', description: 'Erreur lors de la création', variant: 'destructive' });
+      const detail = error.response?.data?.detail || error.message || 'Erreur inconnue';
+      toast({ title: 'Erreur', description: `Erreur lors de la création: ${detail}`, variant: 'destructive' });
       setStep('review');
     }
   };
