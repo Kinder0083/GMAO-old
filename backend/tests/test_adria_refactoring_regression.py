@@ -157,7 +157,12 @@ class TestCRUDWorkOrders(TestSetup):
     def test_close_ot_workflow(self, headers):
         """CLOSE_OT: Full close workflow - add time, comment, set TERMINE"""
         # Create test OT
-        ot_data = {"titre": "TEST_CLOSE_OT", "priorite": "NORMALE", "statut": "OUVERT"}
+        ot_data = {
+            "titre": "TEST_CLOSE_OT", 
+            "description": "Test close OT workflow",
+            "priorite": "NORMALE", 
+            "statut": "OUVERT"
+        }
         create_resp = requests.post(f"{BASE_URL}/api/work-orders", headers=headers, json=ot_data)
         assert create_resp.status_code == 200
         ot_id = create_resp.json().get("id")
