@@ -66,9 +66,7 @@ async def generate_checklist_from_document(
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Clé LLM non configurée")
+        api_key = await _get_llm_key()
 
         ext = os.path.splitext(file.filename)[1].lower()
         with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
@@ -231,9 +229,7 @@ async def generate_maintenance_program(
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Clé LLM non configurée")
+        api_key = await _get_llm_key()
 
         ext = os.path.splitext(file.filename)[1].lower()
         with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
