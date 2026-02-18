@@ -1494,36 +1494,12 @@ async def create_batch_from_ai(
         
         for ctrl_index, ctrl in enumerate(controles):
           try:
-            # Calculer prochain_controle si on a periodicite + derniere_visite
-            prochain_controle = None
             derniere_visite = ctrl.get("derniere_visite")
             periodicite = ctrl.get("periodicite")
             
-            if derniere_visite and periodicite:
-                try:
-                    from dateutil.relativedelta import relativedelta
-                    base_date = datetime.fromisoformat(derniere_visite)
-                    period_lower = periodicite.lower().strip()
-                    
-                    import re
-                    num_match = re.search(r'(\d+)', period_lower)
-                    num = int(num_match.group(1)) if num_match else 1
-                    
-                    if 'an' in period_lower:
-                        next_date = base_date + relativedelta(years=num)
-                    elif 'mois' in period_lower:
-                        next_date = base_date + relativedelta(months=num)
-                    elif 'semaine' in period_lower:
-                        next_date = base_date + timedelta(weeks=num)
-                    elif 'jour' in period_lower:
-                        next_date = base_date + timedelta(days=num)
-                    else:
-                        next_date = None
-                    
-                    if next_date:
-                        prochain_controle = next_date.strftime("%Y-%m-%d")
-                except Exception as e:
-                    logger.warning(f"Erreur calcul prochain contrôle: {e}")
+            # L'item de base est RÉALISÉ : prochain_controle = derniere_visite (date du contrôle effectué)
+            # Les récurrences futures sont des items SÉPARÉS générés par generate_recurring_controls
+            prochain_controle = derniere_visite  # Le contrôle a eu lieu à cette date
             
             # Construire le commentaire avec anomalies
             commentaire_parts = []
@@ -1541,20 +1517,14 @@ async def create_batch_from_ai(
             }
             resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
             
-            # Calculer l'année du contrôle
-            # Pour un contrôle RÉALISÉ, l'année est celle de la dernière visite (quand il a été fait)
-            # Pour un contrôle à planifier, l'année est celle du prochain contrôle
-            annee = None
-            if derniere_visite:
-                annee = get_year_from_date_str(derniere_visite)
-            elif prochain_controle:
-                annee = get_year_from_date_str(prochain_controle)
+            # L'année = année de la dernière visite (quand le contrôle a été fait)
+            annee = get_year_from_date_str(derniere_visite) if derniere_visite else datetime.now().year
             if not annee:
                 annee = datetime.now().year
             
             groupe_id = str(uuid.uuid4())
             
-            # Créer l'item de surveillance
+            # Créer l'item de surveillance (RÉALISÉ)
             item = SurveillanceItem(
                 classe_type=ctrl.get("classe_type", ""),
                 category=ctrl.get("category", "AUTRE"),
@@ -1587,9 +1557,10 @@ async def create_batch_from_ai(
             
             created_items.append(item_dict)
             
-            # Générer les contrôles récurrents futurs (comme l'endpoint standard)
-            if prochain_controle and ctrl.get("periodicite"):
-                recurring = generate_recurring_controls(item_dict, prochain_controle, ctrl.get("periodicite"))
+            # Générer les contrôles récurrents futurs à partir de la date du contrôle réalisé
+            # generate_recurring_controls part de start_date + periodicite et va jusqu'à fin N+1
+            if derniere_visite and periodicite:
+                recurring = generate_recurring_controls(item_dict, derniere_visite, periodicite)
                 if recurring:
                     for r in recurring:
                         r["created_by"] = current_user.get("id")
