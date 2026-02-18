@@ -8984,6 +8984,10 @@ from custom_widgets_routes import router as custom_widgets_router, init_custom_w
 init_custom_widgets_routes(db, audit_service)
 api_router.include_router(custom_widgets_router)
 
+from ai_widget_routes import router as ai_widget_router, init_ai_widget_routes
+init_ai_widget_routes(db)
+api_router.include_router(ai_widget_router)
+
 # Service de filtrage par service
 from service_filter import init_service_filter
 init_service_filter(db)
