@@ -112,9 +112,13 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       switch (actionType) {
         case 'CREATE_OT':
           // Créer un ordre de travail automatiquement
+          let otDesc = actionData.description || '';
+          if (actionData.equipement_nom && !otDesc.includes(actionData.equipement_nom)) {
+            otDesc += (otDesc ? '\n' : '') + `Equipement: ${actionData.equipement_nom}`;
+          }
           const otPayload = {
             titre: actionData.titre,
-            description: actionData.description || '',
+            description: otDesc,
             priorite: (actionData.priorite || 'NORMALE').toUpperCase(),
             statut: 'OUVERT',
           };
