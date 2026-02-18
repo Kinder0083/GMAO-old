@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { 
   Wrench, ClipboardList, Activity, ShieldCheck, Bot, Loader2,
-  Trash2, ToggleLeft, ToggleRight, Clock, User, Zap
+  Trash2, ToggleLeft, ToggleRight, Clock, User, Zap, Bell
 } from 'lucide-react';
 import api, { workOrdersAPI, automationsAPI, sensorsAPI, surveillanceAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
