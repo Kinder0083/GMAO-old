@@ -194,7 +194,7 @@ def clean_json_response(text: str) -> str:
 async def generate_widget(
     request: WidgetGenerateRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_permission("aiWidgets", "edit"))
 ):
     """Genere et cree un widget a partir d'une description en langage naturel."""
     try:
