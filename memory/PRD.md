@@ -18,13 +18,24 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
 10. Bug fix: Rapport QHSE (fallback cle LLM DB)
 11. Creation de widgets IA via Adria (formules mathematiques)
 
-### Session actuelle (18 Feb 2026)
+### Session precedente (18 Feb 2026)
 12. Manuel utilisateur : 6 nouvelles sections IA + 1 section Dashboard Service
 13. README.md : Enrichi avec fonctionnalites IA completes
 14. Permissions : 3 nouveaux modules (aiDashboard, aiAutomations, aiWidgets)
     - Admin: full access
     - Technicien: view only
     - require_permission sur ai_widget_routes.py et automation_routes.py
+
+### Session actuelle (18 Feb 2026)
+15. Bug fix: CREATE_OT via Adria - Resolution equipement_nom en equipement_id
+    - Import equipmentsAPI dans AIChatWidget.jsx
+    - Recherche equipement par nom/reference avant creation de l'OT
+    - Priorite et categorie correctement transmises au backend
+16. Nouvelle fonctionnalite: MODIFY_OT via Adria
+    - Commande [[MODIFY_OT:...]] ajoutee au prompt systeme
+    - Handler frontend: recherche OT par ref/titre, resolution equipement, appel PUT
+    - Regex de parsing mis a jour pour inclure MODIFY_OT
+    - Tests: 100% backend (8/8) + E2E frontend valide
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
@@ -34,6 +45,7 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
 - Gemini Pro (via emergentintegrations + EMERGENT_LLM_KEY)
 
 ## Backlog
+- Refactoring AIChatWidget.jsx (composant volumineux, extraire les handlers de commandes)
 - Tableau de bord temps reel (compteurs live, historique alertes 24h)
-- Amelioration rafraichissement temps reel WebSocket
 - Enrichissements dashboard IA (filtres, export PDF)
+- Bug TTS mineur: "Failed to execute clone on Response" (LOW priority)
