@@ -1494,8 +1494,8 @@ async def create_batch_from_ai(
         
         for ctrl_index, ctrl in enumerate(controles):
           try:
-            derniere_visite = ctrl.get("derniere_visite")
-            periodicite = ctrl.get("periodicite")
+            derniere_visite = ctrl.get("derniere_visite") or document_info.get("date_intervention")
+            periodicite = ctrl.get("periodicite") or "Non déterminée"
             
             # Calculer prochain_controle = derniere_visite + periodicite
             # C'est la date du PROCHAIN contrôle à effectuer
