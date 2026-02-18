@@ -53,7 +53,7 @@ async def _get_llm():
 @router.post("/parse")
 async def parse_automation_request(
     data: dict,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_permission("aiAutomations", "edit"))
 ):
     """
     Prend une commande en langage naturel et la traduit en configuration d'automatisation.
