@@ -1040,5 +1040,8 @@ export const automationsAPI = {
 // Attacher les APIs nommees a l'objet api pour acces universel
 api.workOrders = workOrdersAPI;
 api.automations = automationsAPI;
+api.aiWidgets = {
+  generate: (data) => api.post('/ai/widgets/generate', data).then(r => r.data),
+};
 
 export default api;
