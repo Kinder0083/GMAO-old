@@ -78,7 +78,7 @@ function TendancesTab({ analytics, alerts }) {
 
   const kpis = analytics.kpis || {};
   const formattedEvolution = (analytics.evolution_mensuelle || []).map(m => ({ ...m, label: m.mois }));
-  const par_resultat = (analytics.par_resultat || []).map(r => ({ label: r.resultat, value: r.count, color: r.resultat === 'CONFORME' ? '#10b981' : r.resultat === 'NON_CONFORME' ? '#ef4444' : '#f59e0b' }));
+  const par_resultat = (analytics.par_resultat || []).map(r => ({ label: r.label || r.resultat, value: r.value || r.count, color: r.color || (r.label === 'Conforme' ? '#10b981' : r.label === 'Non conforme' ? '#ef4444' : '#f59e0b') }));
   const par_organisme = analytics.par_organisme || [];
   const par_categorie = analytics.par_categorie || [];
   const tendances_degradation = analytics.tendances_degradation || [];
