@@ -36,6 +36,10 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
     - Handler frontend: recherche OT par ref/titre, resolution equipement, appel PUT
     - Regex de parsing mis a jour pour inclure MODIFY_OT
     - Tests: 100% backend (8/8) + E2E frontend valide
+17. Assignation technicien via Adria (CREATE_OT + MODIFY_OT)
+    - Champ assigne_a dans les commandes CREATE_OT et MODIFY_OT
+    - Resolution nom technicien en assigne_a_id via GET /api/users
+    - Tests: 100% backend (7/7) + E2E frontend valide (iteration_45)
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
