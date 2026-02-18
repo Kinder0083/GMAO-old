@@ -331,6 +331,7 @@ function AutomationsTab() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [automations, setAutomations] = useState([]);
+  const [testingId, setTestingId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -356,6 +357,19 @@ function AutomationsTab() {
       setAutomations(prev => prev.filter(a => a.id !== id));
       toast({ title: 'Automatisation supprimee' });
     } catch (e) { toast({ title: 'Erreur', variant: 'destructive' }); }
+  };
+
+  const handleTestTrigger = async (id) => {
+    try {
+      setTestingId(id);
+      const res = await automationsAPI.testTrigger(id);
+      toast({ title: 'Notification envoyee', description: res.message });
+      await load();
+    } catch (e) {
+      toast({ title: 'Erreur', description: 'Impossible de tester le declenchement', variant: 'destructive' });
+    } finally {
+      setTestingId(null);
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center py-12 text-gray-500"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement...</div>;
@@ -403,10 +417,22 @@ function AutomationsTab() {
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {a.created_at ? new Date(a.created_at).toLocaleDateString('fr-FR') : '-'}</span>
                       <span className="flex items-center gap-1"><User className="h-3 w-3" /> {a.created_by_name || 'Systeme'}</span>
-                      {a.trigger_count > 0 && <span>{a.trigger_count} declenchement(s)</span>}
+                      {a.trigger_count > 0 && <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> {a.trigger_count} declenchement(s)</span>}
+                      {a.last_triggered && <span className="text-gray-300">Dernier: {new Date(a.last_triggered).toLocaleDateString('fr-FR')}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTestTrigger(a.id)}
+                      disabled={testingId === a.id}
+                      title="Tester le declenchement"
+                      data-testid={`test-trigger-btn-${a.id}`}
+                      className="text-amber-500 hover:text-amber-700"
+                    >
+                      {testingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleToggle(a.id)} title={a.enabled ? 'Desactiver' : 'Activer'}>
                       {a.enabled ? <ToggleRight className="h-5 w-5 text-green-500" /> : <ToggleLeft className="h-5 w-5 text-gray-400" />}
                     </Button>
