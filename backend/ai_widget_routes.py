@@ -213,7 +213,7 @@ async def generate_widget(
             session_id=f"widget_gen_{uuid.uuid4().hex[:6]}",
             system_message=WIDGET_GENERATION_PROMPT
         )
-        chat.with_model("google", "gemini-2.0-flash")
+        chat.with_model("gemini", "gemini-2.5-flash")
 
         response = await chat.send_message(UserMessage(text=user_prompt))
         raw = clean_json_response(response.message)
