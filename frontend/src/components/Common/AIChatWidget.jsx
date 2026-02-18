@@ -210,6 +210,48 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
             });
           }
           break;
+
+        case 'CREATE_WIDGET':
+          // Creer un widget sur le Dashboard Service via l'IA
+          try {
+            const widgetRes = await api.aiWidgets.generate({
+              description: actionData.description,
+              sensor_id: actionData.sensor_id || null,
+              meter_id: actionData.meter_id || null
+            });
+
+            if (widgetRes.success) {
+              toast({
+                title: 'Widget cree',
+                description: `"${widgetRes.widget?.name}" ajoute au Dashboard Service`,
+              });
+
+              // Rafraichir le Dashboard Service si l'utilisateur y est
+              window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'custom_widgets', action: 'created' } }));
+
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `✅ Widget "${widgetRes.widget?.name}" cree avec succes sur le Dashboard Service ! Vous pouvez le voir en allant dans **Dashboard Service** dans le menu.`,
+                timestamp: new Date().toISOString(),
+                isSystemAction: true
+              }]);
+            }
+          } catch (widgetErr) {
+            console.error('Erreur creation widget:', widgetErr);
+            const errMsg = widgetErr?.response?.data?.detail || 'Impossible de creer le widget';
+            toast({
+              title: 'Erreur widget',
+              description: errMsg,
+              variant: 'destructive',
+            });
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `Desole, je n'ai pas pu creer le widget : ${errMsg}. Pouvez-vous reformuler votre demande ?`,
+              timestamp: new Date().toISOString(),
+              isSystemAction: true
+            }]);
+          }
+          break;
           
         default:
           console.warn('Action non reconnue:', actionType);
