@@ -116,6 +116,7 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 ### Gestion des utilisateurs et roles
 - 3 roles : Administrateur, Technicien, Visualiseur
 - Permissions granulaires par module (view, edit, delete)
+- **Modules IA** : Tableau de bord IA, Automatisations IA, Widgets IA (Adria) - configurables par role
 - Gestion des equipes, services et responsables hierarchiques
 - Planning de disponibilite
 - Preferences utilisateur personnalisees
