@@ -1716,8 +1716,10 @@ async def create_batch_from_ai(
             "created_items": created_items,
             "work_orders_created": created_work_orders,
             "analysis_id": history_entry.id,
+            "errors": errors if errors else None,
             "message": f"{len(created_items)} contrôle(s) créé(s)" + 
-                       (f", {len(created_work_orders)} bon(s) de travail curatif(s) créé(s)" if created_work_orders else "")
+                       (f", {len(created_work_orders)} bon(s) de travail curatif(s) créé(s)" if created_work_orders else "") +
+                       (f" ({len(errors)} erreur(s))" if errors else "")
         }
     
     except Exception as e:
