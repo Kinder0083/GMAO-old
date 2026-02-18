@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, CheckCheck, Trash2, Clock, AlertTriangle, Wrench, X } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, Clock, AlertTriangle, Wrench, X, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { notificationsAPI } from '../../services/api';
