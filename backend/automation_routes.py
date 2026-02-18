@@ -300,3 +300,63 @@ async def toggle_automation(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.post("/test-trigger/{automation_id}")
+async def test_trigger_automation(
+    automation_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Simule le declenchement d'une automatisation pour tester les notifications push.
+    Cree une notification pour l'utilisateur connecte sans modifier les capteurs.
+    """
+    try:
+        auto = await db.automations.find_one({"id": automation_id}, {"_id": 0})
+        if not auto:
+            raise HTTPException(status_code=404, detail="Automatisation introuvable")
+
+        now = datetime.now(timezone.utc)
+        config = auto.get("config", {})
+
+        # Creer une notification de test pour l'utilisateur courant
+        notification = {
+            "id": str(uuid.uuid4()),
+            "type": "automation_trigger",
+            "title": f"Automatisation declenchee : {auto.get('name', 'Sans nom')}",
+            "message": f"[TEST] {auto.get('description', '')} - Valeur simulee: {config.get('threshold_value', '?')} {config.get('threshold_unit', '')}",
+            "priority": "high",
+            "user_id": current_user.get("id"),
+            "link": "/surveillance-ai-dashboard",
+            "metadata": {
+                "source_type": "sensor",
+                "source_id": config.get("sensor_id", ""),
+                "source_name": config.get("sensor_name", ""),
+                "automation_name": auto.get("name", ""),
+                "automation_id": automation_id,
+                "is_automation_notification": True,
+                "is_test": True
+            },
+            "read": False,
+            "created_at": now.isoformat(),
+            "read_at": None
+        }
+        await db.notifications.insert_one(notification)
+
+        # Mettre a jour le compteur
+        await db.automations.update_one(
+            {"id": automation_id},
+            {"$inc": {"trigger_count": 1}, "$set": {"last_triggered": now.isoformat()}}
+        )
+
+        return {
+            "success": True,
+            "message": f"Notification de test envoyee pour '{auto.get('name')}'",
+            "notification_id": notification["id"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur test trigger: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
