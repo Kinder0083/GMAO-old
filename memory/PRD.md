@@ -45,6 +45,14 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
     - Resolution pieces depuis inventaire (deduction stock automatique)
     - Parsing temps flexible (2h, 1h30, 2h30min)
     - Tests: 100% backend (11/11) + E2E frontend valide (iteration_46)
+19. Refactoring AIChatWidget.jsx (1311 → 775 lignes, 3 fichiers)
+    - adriaCommandHandlers.js : handlers CREATE/MODIFY/CLOSE_OT + helpers resolution
+    - useAdriaVoice.js : hook custom STT/TTS
+    - Tests regression: 100% (13/13 backend + E2E frontend, iteration_47)
+20. Documentation mise a jour
+    - README.md : sections MODIFY_OT, CLOSE_OT, assignation technicien
+    - Manuel : 3 nouvelles sections (sec-024-11/12/13) + maj sec-024-05
+    - Tests: verification contenu via API (PASS)
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
