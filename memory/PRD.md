@@ -40,6 +40,11 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
     - Champ assigne_a dans les commandes CREATE_OT et MODIFY_OT
     - Resolution nom technicien en assigne_a_id via GET /api/users
     - Tests: 100% backend (7/7) + E2E frontend valide (iteration_45)
+18. Cloture OT en une commande via Adria (CLOSE_OT)
+    - Commande [[CLOSE_OT:...]] : recherche OT, ajout temps, commentaire + pieces, statut TERMINE
+    - Resolution pieces depuis inventaire (deduction stock automatique)
+    - Parsing temps flexible (2h, 1h30, 2h30min)
+    - Tests: 100% backend (11/11) + E2E frontend valide (iteration_46)
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
