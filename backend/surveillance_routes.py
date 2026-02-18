@@ -1671,6 +1671,9 @@ async def create_batch_from_ai(
                     item_dict,
                     user_id=current_user["id"]
                 )
+          except Exception as ctrl_error:
+            logger.error(f"Erreur création contrôle {ctrl_index} ({ctrl.get('classe_type', '?')}): {ctrl_error}")
+            errors.append(f"Contrôle {ctrl_index + 1} ({ctrl.get('classe_type', '?')[:30]}): {str(ctrl_error)}")
         
         # Archiver automatiquement l'analyse IA (Phase 1)
         result_counts = {"CONFORME": 0, "NON_CONFORME": 0, "AVEC_RESERVES": 0}
