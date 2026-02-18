@@ -593,7 +593,7 @@ const ManualButton = () => {
       <div className="space-y-1">
         {manualData.chapters.map(chapter => {
           const chapterSections = manualData.sections.filter(
-            s => chapter.sections.includes(s.id)
+            s => (chapter.sections || []).includes(s.id) || s.chapter_id === chapter.id
           );
           const isExpanded = expandedChapters.has(chapter.id);
 
