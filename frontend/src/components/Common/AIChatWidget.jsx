@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, Sparkles, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Sparkles, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
-import api, { workOrdersAPI, equipmentsAPI, usersAPI, inventoryAPI } from '../../services/api';
+import api from '../../services/api';
 import GuidedHighlight from './GuidedHighlight';
-
-// Import du contexte (pas du hook)
 import { AINavigationContext } from '../../contexts/AINavigationContext';
+import { executeCommand } from './adriaCommandHandlers';
+import useAdriaVoice from './useAdriaVoice';
 
-// Actions rapides disponibles
 const QUICK_ACTIONS = [
   { id: 'creer-ot', label: 'Créer un OT', icon: '📋' },
   { id: 'creer-equipement', label: 'Ajouter équipement', icon: '🔧' },
@@ -17,16 +16,39 @@ const QUICK_ACTIONS = [
   { id: 'capteurs', label: 'Capteurs IoT', icon: '📡' },
 ];
 
+const ACTION_COMMAND_REGEX = /\[\[(CREATE_OT|MODIFY_OT|CLOSE_OT|ADD_TIME_OT|COMMENT_OT|SEARCH|CONFIGURE_AUTOMATION|CREATE_WIDGET):(\{[\s\S]*?\})\]\]/g;
+const GUIDE_REGEX = /\[\[GUIDE_START:([^\]]+)\]\]\s*(\{[\s\S]*?\})\s*\[\[GUIDE_END\]\]/g;
+const AUTO_TEXT_REGEX = /\[\[CONFIGURE_AUTOMATION:([^\]]+)\]\]/g;
+const NAV_COMMAND_REGEX = /\[\[(NAVIGATE|ACTION|GUIDE|SPOTLIGHT|PULSE|TRAIL|TOOLTIP|CELEBRATE):([^\]]+)\]\]/g;
+
+const ROUTE_MAP = {
+  'dashboard': 'dashboard', 'work-orders': 'ordres-de-travail', 'assets': 'equipements',
+  'locations': 'emplacements', 'inventory': 'inventaire', 'preventive-maintenance': 'maintenance-preventive',
+  'sensors': 'capteurs', 'meters': 'compteurs', 'reports': 'rapports',
+  'settings': 'parametres', 'personnalisation': 'personnalisation'
+};
+
+const GUIDANCE_STEPS = {
+  'creer-ot': [
+    { route: '/work-orders', message: 'Bienvenue dans le module Ordres de Travail' },
+    { highlight: 'button:has-text("Créer"), button:has-text("+ Créer")', message: 'Cliquez sur ce bouton pour créer un nouvel ordre de travail', showHand: true },
+    { message: 'Remplissez le formulaire avec les informations de l\'intervention' }
+  ],
+  'creer-equipement': [
+    { route: '/assets', message: 'Bienvenue dans le module Équipements' },
+    { highlight: 'button:has-text("Ajouter"), button:has-text("+ Ajouter")', message: 'Cliquez ici pour ajouter un nouvel équipement', showHand: true },
+    { message: 'Remplissez les informations de l\'équipement (nom, type, emplacement...)' }
+  ]
+};
+
 const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion = null }) => {
   const { preferences } = usePreferences();
   const { toast } = useToast();
-  
-  // Utiliser le contexte de navigation de manière sécurisée (peut être null)
   const navigationContext = useContext(AINavigationContext);
   const executeAction = navigationContext?.executeAction;
   const navigateTo = navigationContext?.navigateTo;
   const startGuidance = navigationContext?.startGuidance;
-  
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,1236 +56,296 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
   const [minimized, setMinimized] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [hasProcessedInitialQuestion, setHasProcessedInitialQuestion] = useState(false);
-  const [activeGuide, setActiveGuide] = useState(null); // Guide visuel pas à pas
-  
-  // États pour la gestion vocale
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTTSEnabled, setIsTTSEnabled] = useState(true); // TTS activé par défaut
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const audioPlayerRef = useRef(null);
-  
+  const [activeGuide, setActiveGuide] = useState(null);
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  
   const aiName = preferences?.ai_assistant_name || 'Adria';
   const aiGender = preferences?.ai_assistant_gender || 'female';
 
-  // Scroll vers le bas automatiquement
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
+  // Hook vocal
+  const handleTranscription = async (transcription) => {
+    const userMessage = { role: 'user', content: `🎤 ${transcription}`, timestamp: new Date().toISOString(), isVoice: true };
+    setMessages(prev => [...prev, userMessage]);
+    setShowQuickActions(false);
+    await sendMessageToAI(transcription);
+  };
+  const voice = useAdriaVoice({ toast, onTranscription: handleTranscription });
 
-  // Focus sur l'input à l'ouverture
-  useEffect(() => {
-    if (isOpen && inputRef.current && !minimized) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [isOpen, minimized]);
-
+  // Scroll auto
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  // Focus input
+  useEffect(() => { if (isOpen && inputRef.current && !minimized) setTimeout(() => inputRef.current?.focus(), 100); }, [isOpen, minimized]);
   // Message de bienvenue
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const greeting = aiGender === 'female' 
+      const greeting = aiGender === 'female'
         ? `Bonjour ! Je suis ${aiName}, votre assistante GMAO. Comment puis-je vous aider aujourd'hui ?`
         : `Bonjour ! Je suis ${aiName}, votre assistant GMAO. Comment puis-je vous aider aujourd'hui ?`;
-      
-      setMessages([{
-        role: 'assistant',
-        content: greeting,
-        timestamp: new Date().toISOString()
-      }]);
+      setMessages([{ role: 'assistant', content: greeting, timestamp: new Date().toISOString() }]);
       setHasProcessedInitialQuestion(false);
     }
   }, [isOpen, aiName, aiGender]);
-
-  // Traiter la question initiale du menu contextuel
+  // Question initiale (menu contextuel)
   useEffect(() => {
     if (isOpen && initialQuestion && !hasProcessedInitialQuestion && messages.length > 0 && !loading) {
       setHasProcessedInitialQuestion(true);
       setShowQuickActions(false);
-      
-      // Ajouter la question comme message utilisateur
-      const userMessage = {
-        role: 'user',
-        content: initialQuestion,
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, userMessage]);
-      
-      // Envoyer la question à l'IA
+      setMessages(prev => [...prev, { role: 'user', content: initialQuestion, timestamp: new Date().toISOString() }]);
       sendMessageToAI(initialQuestion);
     }
   }, [isOpen, initialQuestion, hasProcessedInitialQuestion, messages.length, loading]);
+  useEffect(() => { if (!isOpen) setHasProcessedInitialQuestion(false); }, [isOpen]);
 
-  // Réinitialiser quand on ferme
-  useEffect(() => {
-    if (!isOpen) {
-      setHasProcessedInitialQuestion(false);
-    }
-  }, [isOpen]);
-
-  // Exécuter une action automatique (CREATE_OT, ADD_TIME_OT, SEARCH, etc.)
+  // ==================== Exécution des commandes IA ====================
   const executeAutoAction = async (actionType, actionData) => {
     try {
-      switch (actionType) {
-        case 'CREATE_OT': {
-          // Créer un ordre de travail automatiquement
-          let otDesc = actionData.description || '';
-          if (actionData.equipement_nom && !otDesc.includes(actionData.equipement_nom)) {
-            otDesc += (otDesc ? '\n' : '') + `Equipement: ${actionData.equipement_nom}`;
-          }
-          const otPayload = {
-            titre: actionData.titre,
-            description: otDesc,
-            priorite: (actionData.priorite || 'NORMALE').toUpperCase(),
-            statut: 'OUVERT',
-          };
-          // Résoudre equipement_nom en equipement_id
-          if (actionData.equipement_nom) {
-            try {
-              const eqRes = await equipmentsAPI.getAll();
-              const eqList = eqRes.data || [];
-              const searchName = actionData.equipement_nom.toLowerCase();
-              const matched = eqList.find(eq =>
-                eq.nom?.toLowerCase().includes(searchName) ||
-                eq.reference?.toLowerCase().includes(searchName)
-              );
-              if (matched) {
-                otPayload.equipement_id = matched.id;
-              }
-            } catch (eqErr) {
-              console.warn('Impossible de résoudre l\'équipement:', eqErr);
-            }
-          }
-          if (actionData.tempsEstime || actionData.temps_estime) {
-            otPayload.tempsEstime = parseFloat(actionData.tempsEstime || actionData.temps_estime);
-          }
-          if (actionData.categorie) {
-            otPayload.categorie = actionData.categorie;
-          }
-          // Résoudre assigne_a en assigne_a_id
-          if (actionData.assigne_a) {
-            try {
-              const usersRes = await usersAPI.getAll();
-              const usersList = usersRes.data || [];
-              const searchUser = actionData.assigne_a.toLowerCase();
-              const matchedUser = usersList.find(u => {
-                const fullName = `${u.prenom || ''} ${u.nom || ''}`.toLowerCase();
-                return fullName.includes(searchUser) || u.nom?.toLowerCase().includes(searchUser) || u.prenom?.toLowerCase().includes(searchUser);
-              });
-              if (matchedUser) {
-                otPayload.assigne_a_id = matchedUser.id;
-              }
-            } catch (uErr) {
-              console.warn('Impossible de résoudre le technicien:', uErr);
-            }
-          }
-          const otResponse = await (workOrdersAPI || api.workOrders).create(otPayload);
-          
-          toast({
-            title: '✅ Ordre de travail créé',
-            description: `OT "${actionData.titre}" créé avec succès`,
-          });
-          
-          // Déclencher un rafraîchissement des données temps réel
-          // Le WebSocket exclut l'utilisateur créateur, donc on force la MAJ
-          window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'work_orders', action: 'created' } }));
-          
-          // Ajouter un message de confirmation
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: `✅ J'ai créé l'ordre de travail "${actionData.titre}" avec succès ! Numéro: #${otResponse.data?.id?.slice(-4) || 'XXXX'}`,
-            timestamp: new Date().toISOString(),
-            isSystemAction: true
-          }]);
-          break;
-        }
-          
-        case 'MODIFY_OT': {
-          // Modifier un ordre de travail existant
-          try {
-            // Chercher l'OT par référence ou titre
-            const searchRef = (actionData.ot_reference || actionData.titre || '').replace('#', '').trim();
-            const woListRes = await workOrdersAPI.getAll();
-            const woList = woListRes.data || [];
-            const matchedWo = woList.find(wo =>
-              wo.id?.includes(searchRef) ||
-              wo.numero?.includes(searchRef) ||
-              wo.titre?.toLowerCase().includes(searchRef.toLowerCase())
-            );
-            if (!matchedWo) {
-              setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: `Je n'ai pas trouvé d'ordre de travail correspondant à "${actionData.ot_reference || actionData.titre}". Pouvez-vous préciser le numéro ou le titre exact ?`,
-                timestamp: new Date().toISOString(),
-                isSystemAction: true
-              }]);
-              break;
-            }
-            const mods = actionData.modifications || {};
-            const updatePayload = {};
-            if (mods.priorite) updatePayload.priorite = mods.priorite.toUpperCase();
-            if (mods.statut) updatePayload.statut = mods.statut.toUpperCase();
-            if (mods.description) updatePayload.description = mods.description;
-            if (mods.titre) updatePayload.titre = mods.titre;
-            if (mods.categorie) updatePayload.categorie = mods.categorie.toUpperCase();
-            if (mods.tempsEstime) updatePayload.tempsEstime = parseFloat(mods.tempsEstime);
-            // Résoudre equipement_nom en equipement_id
-            if (mods.equipement_nom) {
-              try {
-                const eqRes = await equipmentsAPI.getAll();
-                const eqList = eqRes.data || [];
-                const searchName = mods.equipement_nom.toLowerCase();
-                const matched = eqList.find(eq =>
-                  eq.nom?.toLowerCase().includes(searchName) ||
-                  eq.reference?.toLowerCase().includes(searchName)
-                );
-                if (matched) updatePayload.equipement_id = matched.id;
-              } catch (eqErr) {
-                console.warn('Impossible de résoudre l\'équipement:', eqErr);
-              }
-            }
-            // Résoudre assigne_a en assigne_a_id
-            if (mods.assigne_a) {
-              try {
-                const usersRes = await usersAPI.getAll();
-                const usersList = usersRes.data || [];
-                const searchUser = mods.assigne_a.toLowerCase();
-                const matchedUser = usersList.find(u => {
-                  const fullName = `${u.prenom || ''} ${u.nom || ''}`.toLowerCase();
-                  return fullName.includes(searchUser) || u.nom?.toLowerCase().includes(searchUser) || u.prenom?.toLowerCase().includes(searchUser);
-                });
-                if (matchedUser) updatePayload.assigne_a_id = matchedUser.id;
-              } catch (uErr) {
-                console.warn('Impossible de résoudre le technicien:', uErr);
-              }
-            }
-            await workOrdersAPI.update(matchedWo.id, updatePayload);
-            const modDetails = Object.entries(updatePayload).map(([k, v]) => `${k}: ${v}`).join(', ');
-            toast({
-              title: 'OT modifié',
-              description: `OT "${matchedWo.titre}" mis à jour`,
-            });
-            window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'work_orders', action: 'updated' } }));
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `J'ai modifié l'ordre de travail "${matchedWo.titre}" (${matchedWo.numero || '#' + matchedWo.id?.slice(-4)}) : ${modDetails}`,
-              timestamp: new Date().toISOString(),
-              isSystemAction: true
-            }]);
-          } catch (modErr) {
-            console.error('Erreur modification OT:', modErr);
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `Désolé, une erreur est survenue lors de la modification de l'OT : ${modErr.response?.data?.detail || modErr.message}`,
-              timestamp: new Date().toISOString(),
-              isSystemAction: true
-            }]);
-          }
-          break;
-        }
-
-        case 'CLOSE_OT': {
-          // Clôturer un OT en une seule commande
-          try {
-            const searchRef = (actionData.ot_reference || '').replace('#', '').trim();
-            const woListRes = await workOrdersAPI.getAll();
-            const woList = woListRes.data || [];
-            const matchedWo = woList.find(wo =>
-              wo.id?.includes(searchRef) ||
-              wo.numero?.includes(searchRef) ||
-              wo.titre?.toLowerCase().includes(searchRef.toLowerCase())
-            );
-            if (!matchedWo) {
-              setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: `Je n'ai pas trouvé d'OT correspondant à "${actionData.ot_reference}". Pouvez-vous préciser ?`,
-                timestamp: new Date().toISOString(),
-                isSystemAction: true
-              }]);
-              break;
-            }
-            const woId = matchedWo.id;
-            const resultParts = [];
-
-            // 1. Ajouter le temps passé
-            if (actionData.temps) {
-              const t = actionData.temps.toLowerCase().trim();
-              let hours = 0, minutes = 0;
-              const hMatch = t.match(/(\d+)\s*h/);
-              const mMatch = t.match(/(\d+)\s*min/);
-              if (hMatch) hours = parseInt(hMatch[1]);
-              if (mMatch) minutes = parseInt(mMatch[1]);
-              if (!hMatch && !mMatch) {
-                const num = parseFloat(t);
-                if (!isNaN(num)) { hours = Math.floor(num); minutes = Math.round((num - hours) * 60); }
-              }
-              if (hours > 0 || minutes > 0) {
-                await workOrdersAPI.addTimeSpent(woId, hours, minutes);
-                resultParts.push(`${hours}h${minutes > 0 ? minutes + 'min' : ''} de temps ajouté`);
-              }
-            }
-
-            // 2. Ajouter commentaire + pièces utilisées
-            const commentText = actionData.commentaire || actionData.resume || `OT clôturé via Adria`;
-            const partsPayload = [];
-            if (actionData.pieces && actionData.pieces.length > 0) {
-              try {
-                const invRes = await inventoryAPI.getAll();
-                const invList = invRes.data || [];
-                for (const piece of actionData.pieces) {
-                  const pName = (piece.nom || piece).toLowerCase();
-                  const qty = piece.quantite || piece.quantity || 1;
-                  const invItem = invList.find(i =>
-                    i.nom?.toLowerCase().includes(pName) ||
-                    i.reference?.toLowerCase().includes(pName)
-                  );
-                  if (invItem) {
-                    partsPayload.push({
-                      inventory_item_id: invItem.id,
-                      inventory_item_name: invItem.nom,
-                      quantity: qty
-                    });
-                    resultParts.push(`${invItem.nom} x${qty} (déduit du stock)`);
-                  } else {
-                    partsPayload.push({
-                      custom_part_name: piece.nom || piece,
-                      quantity: qty
-                    });
-                    resultParts.push(`${piece.nom || piece} x${qty} (pièce externe)`);
-                  }
-                }
-              } catch (invErr) {
-                console.warn('Erreur résolution pièces:', invErr);
-              }
-            }
-            await api.post(`/work-orders/${woId}/comments`, {
-              text: commentText,
-              parts_used: partsPayload
-            });
-
-            // 3. Mettre le statut à TERMINE
-            await workOrdersAPI.update(woId, { statut: 'TERMINE' });
-
-            window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'work_orders', action: 'updated' } }));
-            const summary = [`OT "${matchedWo.titre}" clôturé`, ...resultParts].join('\n- ');
-            toast({ title: 'OT clôturé', description: `"${matchedWo.titre}" terminé` });
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `J'ai clôturé l'OT "${matchedWo.titre}" (${matchedWo.numero || '#' + woId.slice(-4)}) :\n- ${summary}`,
-              timestamp: new Date().toISOString(),
-              isSystemAction: true
-            }]);
-          } catch (closeErr) {
-            console.error('Erreur clôture OT:', closeErr);
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `Erreur lors de la clôture : ${closeErr.response?.data?.detail || closeErr.message}`,
-              timestamp: new Date().toISOString(),
-              isSystemAction: true
-            }]);
-          }
-          break;
-        }
-          
-        case 'ADD_TIME_OT':
-          // Ajouter du temps à un OT
-          toast({
-            title: '⏱️ Temps ajouté',
-            description: `${actionData.temps} ajouté sur ${actionData.ot_reference}`,
-          });
-          break;
-          
-        case 'COMMENT_OT':
-          // Ajouter un commentaire
-          toast({
-            title: '💬 Commentaire ajouté',
-            description: `Commentaire ajouté sur ${actionData.ot_reference}`,
-          });
-          break;
-          
-        case 'SEARCH':
-          // Effectuer une recherche et afficher les résultats
-          toast({
-            title: 'Recherche en cours',
-            description: `Recherche dans ${actionData.type}...`,
-          });
-          break;
-          
-        case 'CONFIGURE_AUTOMATION':
-          // Parser et appliquer une automatisation
-          try {
-            const parseRes = await api.post('/automations/parse', { message: actionData.message });
-            const automation = parseRes.data?.automation;
-            
-            if (automation?.understood) {
-              // Appliquer directement
-              const applyRes = await api.post('/automations/apply', { automation });
-              
-              toast({
-                title: 'Automatisation configuree',
-                description: automation.name || 'Configuration reussie',
-              });
-              
-              setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: applyRes.data?.message || automation.confirmation_message || 'Automatisation mise en place !',
-                timestamp: new Date().toISOString(),
-                isSystemAction: true
-              }]);
-            } else if (automation?.needs_clarification) {
-              setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: automation.clarification_question || 'J\'ai besoin de plus de details pour configurer cette automatisation.',
-                timestamp: new Date().toISOString(),
-                isSystemAction: true
-              }]);
-            }
-          } catch (autoErr) {
-            console.error('Erreur automatisation:', autoErr);
-            toast({
-              title: 'Erreur automatisation',
-              description: 'Impossible de configurer l\'automatisation',
-              variant: 'destructive',
-            });
-          }
-          break;
-
-        case 'CREATE_WIDGET':
-          // Creer un widget sur le Dashboard Service via l'IA
-          try {
-            const widgetRes = await api.aiWidgets.generate({
-              description: actionData.description,
-              sensor_id: actionData.sensor_id || null,
-              meter_id: actionData.meter_id || null
-            });
-
-            if (widgetRes.success) {
-              toast({
-                title: 'Widget cree',
-                description: `"${widgetRes.widget?.name}" ajoute au Dashboard Service`,
-              });
-
-              // Rafraichir le Dashboard Service si l'utilisateur y est
-              window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'custom_widgets', action: 'created' } }));
-
-              setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: `✅ Widget "${widgetRes.widget?.name}" cree avec succes sur le Dashboard Service ! Vous pouvez le voir en allant dans **Dashboard Service** dans le menu.`,
-                timestamp: new Date().toISOString(),
-                isSystemAction: true
-              }]);
-            }
-          } catch (widgetErr) {
-            console.error('Erreur creation widget:', widgetErr);
-            const errMsg = widgetErr?.response?.data?.detail || 'Impossible de creer le widget';
-            toast({
-              title: 'Erreur widget',
-              description: errMsg,
-              variant: 'destructive',
-            });
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `Desole, je n'ai pas pu creer le widget : ${errMsg}. Pouvez-vous reformuler votre demande ?`,
-              timestamp: new Date().toISOString(),
-              isSystemAction: true
-            }]);
-          }
-          break;
-          
-        default:
-          console.warn('Action non reconnue:', actionType);
+      const result = await executeCommand(actionType, actionData);
+      if (result.toastTitle) toast({ title: result.toastTitle, description: result.toastDesc });
+      if (result.message) {
+        setMessages(prev => [...prev, {
+          role: 'assistant', content: result.message,
+          timestamp: new Date().toISOString(), isSystemAction: true
+        }]);
       }
     } catch (error) {
       console.error('Erreur action automatique:', error);
-      toast({
-        title: 'Erreur',
-        description: `Impossible d'exécuter l'action: ${error.message}`,
-        variant: 'destructive'
-      });
+      toast({ title: 'Erreur', description: `Impossible d'exécuter l'action: ${error.message}`, variant: 'destructive' });
+      setMessages(prev => [...prev, {
+        role: 'assistant', content: `Désolé, une erreur est survenue : ${error.response?.data?.detail || error.message}`,
+        timestamp: new Date().toISOString(), isSystemAction: true
+      }]);
     }
   };
 
-  // Exécuter une action rapide
-  const handleQuickAction = async (actionId) => {
-    setShowQuickActions(false);
-    
-    const action = QUICK_ACTIONS.find(a => a.id === actionId);
-    if (!action) return;
-
-    // Ajouter un message utilisateur simulé
-    const userMessage = {
-      role: 'user',
-      content: `${action.icon} ${action.label}`,
-      timestamp: new Date().toISOString(),
-      isQuickAction: true
-    };
-    setMessages(prev => [...prev, userMessage]);
-
-    // Exécuter l'action de navigation (si disponible)
-    if (executeAction) {
-      try {
-        await executeAction(actionId);
-        
-        const assistantMessage = {
-          role: 'assistant',
-          content: `Je vous ai dirigé vers "${action.label}". Que puis-je faire d'autre pour vous ?`,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-      } catch (error) {
-        console.error('Erreur action rapide:', error);
-        const errorMessage = {
-          role: 'assistant',
-          content: `Je n'ai pas pu naviguer vers "${action.label}". Voulez-vous que je vous explique comment y accéder ?`,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, errorMessage]);
-      }
-    } else {
-      // Navigation non disponible, donner des instructions
-      const assistantMessage = {
-        role: 'assistant',
-        content: `Pour accéder à "${action.label}", utilisez le menu latéral de l'application.`,
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-    }
-  };
-
-  // Démarrer un guidage étape par étape
-  const handleStartGuidance = (topic) => {
-    const guidanceSteps = {
-      'creer-ot': [
-        { route: '/work-orders', message: 'Bienvenue dans le module Ordres de Travail' },
-        { highlight: 'button:has-text("Créer"), button:has-text("+ Créer")', message: 'Cliquez sur ce bouton pour créer un nouvel ordre de travail', showHand: true },
-        { message: 'Remplissez le formulaire avec les informations de l\'intervention' }
-      ],
-      'creer-equipement': [
-        { route: '/assets', message: 'Bienvenue dans le module Équipements' },
-        { highlight: 'button:has-text("Ajouter"), button:has-text("+ Ajouter")', message: 'Cliquez ici pour ajouter un nouvel équipement', showHand: true },
-        { message: 'Remplissez les informations de l\'équipement (nom, type, emplacement...)' }
-      ]
-    };
-
-    if (guidanceSteps[topic] && startGuidance) {
-      startGuidance(guidanceSteps[topic]);
-      onClose();
-    }
-  };
-
-  // Parser et exécuter les commandes de navigation dans la réponse de l'IA
+  // ==================== Parsing des commandes dans la réponse IA ====================
   const parseAndExecuteCommands = (responseText) => {
-    // Vérifier d'abord les guides pas à pas avec JSON
-    const guideStartRegex = /\[\[GUIDE_START:([^\]]+)\]\]\s*(\{[\s\S]*?\})\s*\[\[GUIDE_END\]\]/g;
-    let guideMatch = guideStartRegex.exec(responseText);
-    
+    // Guides pas à pas
+    let guideMatch = GUIDE_REGEX.exec(responseText);
+    GUIDE_REGEX.lastIndex = 0;
     if (guideMatch) {
       try {
-        const guideName = guideMatch[1];
         const guideData = JSON.parse(guideMatch[2]);
-        console.log('Guide détecté:', guideName, guideData);
-        
-        // Activer le guide visuel
-        setActiveGuide({
-          name: guideName,
-          title: guideData.title || 'Guide interactif',
-          steps: guideData.steps || []
-        });
-        
-        toast({
-          title: '🎯 Guide démarré',
-          description: `${guideData.title || 'Suivez les étapes en surbrillance'}`
-        });
-      } catch (e) {
-        console.error('Erreur parsing guide JSON:', e);
-      }
+        setActiveGuide({ name: guideMatch[1], title: guideData.title || 'Guide interactif', steps: guideData.steps || [] });
+        toast({ title: 'Guide démarré', description: guideData.title || 'Suivez les étapes en surbrillance' });
+      } catch (e) { console.error('Erreur parsing guide:', e); }
     }
-    
-    // Parser les commandes d'action automatique (CREATE_OT, SEARCH, etc.)
-    const actionCommandRegex = /\[\[(CREATE_OT|MODIFY_OT|CLOSE_OT|ADD_TIME_OT|COMMENT_OT|SEARCH|CONFIGURE_AUTOMATION|CREATE_WIDGET):(\{[\s\S]*?\})\]\]/g;
+
+    // Actions automatiques (CREATE_OT, MODIFY_OT, CLOSE_OT, etc.)
     let actionMatch;
-    
-    while ((actionMatch = actionCommandRegex.exec(responseText)) !== null) {
+    const actionRegex = new RegExp(ACTION_COMMAND_REGEX.source, 'g');
+    while ((actionMatch = actionRegex.exec(responseText)) !== null) {
       try {
-        const actionType = actionMatch[1];
-        const actionData = JSON.parse(actionMatch[2]);
-        console.log('Action automatique détectée:', actionType, actionData);
-        executeAutoAction(actionType, actionData);
-      } catch (e) {
-        console.error('Erreur parsing action JSON:', e);
-      }
+        executeAutoAction(actionMatch[1], JSON.parse(actionMatch[2]));
+      } catch (e) { console.error('Erreur parsing action:', e); }
     }
-    
-    // Parser CONFIGURE_AUTOMATION avec texte libre (pas JSON)
-    const autoTextRegex = /\[\[CONFIGURE_AUTOMATION:([^\]]+)\]\]/g;
+
+    // Automation texte libre
+    const autoRegex = new RegExp(AUTO_TEXT_REGEX.source, 'g');
     let autoTextMatch;
-    while ((autoTextMatch = autoTextRegex.exec(responseText)) !== null) {
+    while ((autoTextMatch = autoRegex.exec(responseText)) !== null) {
       const msg = autoTextMatch[1].trim();
-      if (!msg.startsWith('{')) {
-        console.log('Automation texte libre:', msg);
-        executeAutoAction('CONFIGURE_AUTOMATION', { message: msg });
-      }
+      if (!msg.startsWith('{')) executeAutoAction('CONFIGURE_AUTOMATION', { message: msg });
     }
-    
-    // Regex pour détecter les commandes [[TYPE:action]] ou [[TYPE:selector:message]]
-    const commandRegex = /\[\[(NAVIGATE|ACTION|GUIDE|SPOTLIGHT|PULSE|TRAIL|TOOLTIP|CELEBRATE):([^\]]+)\]\]/g;
+
+    // Commandes de navigation
+    const navRegex = new RegExp(NAV_COMMAND_REGEX.source, 'g');
     let match;
     const commands = [];
-    
-    while ((match = commandRegex.exec(responseText)) !== null) {
+    while ((match = navRegex.exec(responseText)) !== null) {
       commands.push({ type: match[1], action: match[2] });
     }
-    
-    // Retirer toutes les commandes du texte affiché
+
+    // Nettoyer le texte affiché
     let cleanText = responseText
-      .replace(guideStartRegex, '')
-      .replace(actionCommandRegex, '')
-      .replace(autoTextRegex, '')
-      .replace(commandRegex, '')
-      .trim();
-    
-    // Exécuter les commandes (avec un délai pour laisser le message s'afficher)
+      .replace(GUIDE_REGEX, '').replace(ACTION_COMMAND_REGEX, '')
+      .replace(AUTO_TEXT_REGEX, '').replace(NAV_COMMAND_REGEX, '').trim();
+
     if (commands.length > 0) {
-      setTimeout(() => {
-        commands.forEach(cmd => {
-          console.log('Exécution commande IA:', cmd);
-          
-          if (cmd.type === 'NAVIGATE' && navigateTo) {
-            // Navigation simple vers une page
-            const routeMap = {
-              'dashboard': 'dashboard',
-              'work-orders': 'ordres-de-travail',
-              'assets': 'equipements',
-              'locations': 'emplacements',
-              'inventory': 'inventaire',
-              'preventive-maintenance': 'maintenance-preventive',
-              'sensors': 'capteurs',
-              'meters': 'compteurs',
-              'reports': 'rapports',
-              'settings': 'parametres',
-              'personnalisation': 'personnalisation'
-            };
-            const destination = routeMap[cmd.action] || cmd.action;
-            navigateTo(destination);
-            
-            toast({
-              title: '🧭 Navigation',
-              description: `Je vous emmène vers ${cmd.action.replace('-', ' ')}...`
-            });
-          } 
-          else if (cmd.type === 'ACTION' && executeAction) {
-            // Action avec surbrillance (naviguer + surligner un bouton)
-            executeAction(cmd.action);
-            
-            toast({
-              title: '👆 Action',
-              description: `Je vous montre où cliquer...`
-            });
-          }
-          else if (cmd.type === 'GUIDE' && startGuidance) {
-            // Démarrer un guide étape par étape (utiliser les guides prédéfinis ou personnalisés)
-            const started = startGuidance(cmd.action);
-            if (started) {
-              onClose(); // Fermer le chat pour mieux voir le guide
-              
-              toast({
-                title: '📖 Guide démarré',
-                description: 'Suivez les étapes pour accomplir cette action'
-              });
-            } else {
-              toast({
-                title: '⚠️ Guide non trouvé',
-                description: `Le guide "${cmd.action}" n'existe pas encore`,
-                variant: 'warning'
-              });
-            }
-          }
-          // Nouvelles commandes visuelles avancées (P3)
-          else if (cmd.type === 'SPOTLIGHT' && navigationContext?.showSpotlight) {
-            navigationContext.showSpotlight(cmd.action);
-            toast({
-              title: '✨ Spotlight',
-              description: 'Élément mis en lumière'
-            });
-          }
-          else if (cmd.type === 'PULSE' && navigationContext?.addPulseEffect) {
-            navigationContext.addPulseEffect(cmd.action);
-            toast({
-              title: '💫 Attention',
-              description: 'Regardez l\'élément qui pulse'
-            });
-          }
-          else if (cmd.type === 'TRAIL' && navigationContext?.showTrail) {
-            const [startSelector, endSelector] = cmd.action.split(':');
-            if (startSelector && endSelector) {
-              navigationContext.showTrail(startSelector, endSelector);
-              toast({
-                title: '➡️ Chemin',
-                description: 'Suivez la ligne vers l\'élément cible'
-              });
-            }
-          }
-          else if (cmd.type === 'TOOLTIP' && navigationContext?.showCustomTooltip) {
-            const [selector, ...messageParts] = cmd.action.split(':');
-            const message = messageParts.join(':');
-            if (selector && message) {
-              navigationContext.showCustomTooltip(selector, message);
-            }
-          }
-          else if (cmd.type === 'CELEBRATE' && navigationContext?.celebrate) {
-            navigationContext.celebrate();
-            toast({
-              title: '🎉 Félicitations !',
-              description: 'Vous avez réussi !'
-            });
-          }
-        });
-      }, 1000); // Délai de 1 seconde pour laisser le message s'afficher
+      setTimeout(() => executeNavCommands(commands), 1000);
     }
-    
     return cleanText;
   };
 
-  // Fonction pour envoyer un message à l'IA
+  const executeNavCommands = (commands) => {
+    commands.forEach(cmd => {
+      if (cmd.type === 'NAVIGATE' && navigateTo) {
+        navigateTo(ROUTE_MAP[cmd.action] || cmd.action);
+        toast({ title: 'Navigation', description: `Je vous emmène vers ${cmd.action.replace('-', ' ')}...` });
+      } else if (cmd.type === 'ACTION' && executeAction) {
+        executeAction(cmd.action);
+      } else if (cmd.type === 'GUIDE' && startGuidance) {
+        if (startGuidance(cmd.action)) onClose();
+      } else if (cmd.type === 'SPOTLIGHT' && navigationContext?.showSpotlight) {
+        navigationContext.showSpotlight(cmd.action);
+      } else if (cmd.type === 'PULSE' && navigationContext?.addPulseEffect) {
+        navigationContext.addPulseEffect(cmd.action);
+      } else if (cmd.type === 'TRAIL' && navigationContext?.showTrail) {
+        const [s, e] = cmd.action.split(':');
+        if (s && e) navigationContext.showTrail(s, e);
+      } else if (cmd.type === 'TOOLTIP' && navigationContext?.showCustomTooltip) {
+        const [sel, ...parts] = cmd.action.split(':');
+        if (sel && parts.length) navigationContext.showCustomTooltip(sel, parts.join(':'));
+      } else if (cmd.type === 'CELEBRATE' && navigationContext?.celebrate) {
+        navigationContext.celebrate();
+      }
+    });
+  };
+
+  // ==================== Envoi de message ====================
   const sendMessageToAI = async (messageContent) => {
     setLoading(true);
-
     try {
-      // Construire le contexte
       const context = initialContext || `Page actuelle: ${window.location.pathname}`;
-      
-      const response = await api.ai.chat({
-        message: messageContent,
-        session_id: sessionId,
-        context: context
-      });
-
-      // Parser la réponse pour extraire et exécuter les commandes
+      const response = await api.ai.chat({ message: messageContent, session_id: sessionId, context });
       const cleanResponse = parseAndExecuteCommands(response.data.response);
-
-      const assistantMessage = {
-        role: 'assistant',
-        content: cleanResponse,
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse, timestamp: new Date().toISOString() }]);
       setSessionId(response.data.session_id);
-      
-      // Synthèse vocale de la réponse (si TTS activé)
-      if (isTTSEnabled && cleanResponse) {
-        speakText(cleanResponse);
-      }
-      
+      if (voice.isTTSEnabled && cleanResponse) voice.speakText(cleanResponse);
     } catch (error) {
       console.error('Erreur chat IA:', error);
-      
-      const errorMessage = {
-        role: 'assistant',
-        content: `Désolé, je rencontre des difficultés techniques. ${error.response?.data?.detail || 'Veuillez réessayer.'}`,
-        timestamp: new Date().toISOString(),
-        error: true
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
-      
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de contacter l\'assistant IA',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
+      setMessages(prev => [...prev, {
+        role: 'assistant', content: `Désolé, je rencontre des difficultés techniques. ${error.response?.data?.detail || 'Veuillez réessayer.'}`,
+        timestamp: new Date().toISOString(), error: true
+      }]);
+      toast({ title: 'Erreur', description: 'Impossible de contacter l\'assistant IA', variant: 'destructive' });
+    } finally { setLoading(false); }
   };
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
-    
     setShowQuickActions(false);
-
-    const userMessage = {
-      role: 'user',
-      content: input.trim(),
-      timestamp: new Date().toISOString()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    const messageToSend = input.trim();
+    setMessages(prev => [...prev, { role: 'user', content: input.trim(), timestamp: new Date().toISOString() }]);
+    const msg = input.trim();
     setInput('');
-    
-    await sendMessageToAI(messageToSend);
+    await sendMessageToAI(msg);
   };
 
-  // ========== Fonctions vocales (STT & TTS) ==========
-  
-  // Démarrer l'enregistrement vocal
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-          echoCancellation: true,
-          noiseSuppression: true
-        } 
-      });
-      
-      // Déterminer le meilleur format supporté
-      let mimeType = 'audio/webm';
-      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        mimeType = 'audio/webm;codecs=opus';
-      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        mimeType = 'audio/webm';
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4';
-      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-        mimeType = 'audio/ogg';
+  const handleQuickAction = async (actionId) => {
+    setShowQuickActions(false);
+    const action = QUICK_ACTIONS.find(a => a.id === actionId);
+    if (!action) return;
+    setMessages(prev => [...prev, { role: 'user', content: `${action.icon} ${action.label}`, timestamp: new Date().toISOString(), isQuickAction: true }]);
+    if (executeAction) {
+      try {
+        await executeAction(actionId);
+        setMessages(prev => [...prev, { role: 'assistant', content: `Je vous ai dirigé vers "${action.label}". Que puis-je faire d'autre ?`, timestamp: new Date().toISOString() }]);
+      } catch {
+        setMessages(prev => [...prev, { role: 'assistant', content: `Je n'ai pas pu naviguer vers "${action.label}".`, timestamp: new Date().toISOString() }]);
       }
-      
-      console.log('Format audio utilisé:', mimeType);
-      
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        console.log('Données audio reçues:', event.data.size, 'bytes');
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = async () => {
-        // Arrêter les tracks audio
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Vérifier qu'on a des données
-        if (audioChunksRef.current.length === 0) {
-          toast({
-            title: 'Erreur',
-            description: 'Aucune donnée audio enregistrée',
-            variant: 'destructive'
-          });
-          return;
-        }
-        
-        // Créer le blob audio
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        console.log('Blob audio créé:', audioBlob.size, 'bytes, type:', audioBlob.type);
-        
-        if (audioBlob.size < 1000) {
-          toast({
-            title: 'Enregistrement trop court',
-            description: 'Veuillez parler plus longtemps',
-            variant: 'destructive'
-          });
-          return;
-        }
-        
-        // Envoyer pour transcription
-        await transcribeAudio(audioBlob);
-      };
-      
-      // Enregistrer des chunks toutes les 250ms pour avoir des données
-      mediaRecorder.start(250);
-      setIsRecording(true);
-      
-      toast({
-        title: '🎤 Enregistrement',
-        description: 'Parlez maintenant...',
-      });
-      
-    } catch (error) {
-      console.error('Erreur accès microphone:', error);
-      toast({
-        title: 'Erreur',
-        description: error.name === 'NotAllowedError' 
-          ? 'Accès au microphone refusé. Autorisez l\'accès dans les paramètres du navigateur.'
-          : 'Impossible d\'accéder au microphone. Vérifiez les permissions.',
-        variant: 'destructive'
-      });
-    }
-  };
-  
-  // Arrêter l'enregistrement
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-  
-  // Transcrire l'audio en texte
-  const transcribeAudio = async (audioBlob) => {
-    setLoading(true);
-    try {
-      console.log('Envoi audio pour transcription:', audioBlob.size, 'bytes');
-      
-      const formData = new FormData();
-      // Utiliser le bon type de fichier selon le format
-      const extension = audioBlob.type.includes('webm') ? 'webm' : 
-                       audioBlob.type.includes('mp4') ? 'mp4' : 
-                       audioBlob.type.includes('ogg') ? 'ogg' : 'wav';
-      formData.append('audio', audioBlob, `recording.${extension}`);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
-      
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || ''}/api/ai/voice/transcribe`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-      
-      console.log('Réponse serveur:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Erreur serveur:', errorText);
-        throw new Error(`Erreur serveur: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Données transcription:', data);
-      
-      if (data.success && data.transcription) {
-        // Ajouter le message transcrit
-        const userMessage = {
-          role: 'user',
-          content: `🎤 ${data.transcription}`,
-          timestamp: new Date().toISOString(),
-          isVoice: true
-        };
-        setMessages(prev => [...prev, userMessage]);
-        setShowQuickActions(false);
-        
-        toast({
-          title: '✅ Transcription réussie',
-          description: data.transcription.substring(0, 50) + '...',
-        });
-        
-        // Envoyer à l'IA
-        await sendMessageToAI(data.transcription);
-      } else {
-        toast({
-          title: 'Erreur transcription',
-          description: data.detail || 'Impossible de transcrire l\'audio. Réessayez.',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Erreur transcription:', error);
-      toast({
-        title: 'Erreur',
-        description: `Erreur lors de la transcription: ${error.message}`,
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Synthèse vocale - Lire la réponse de l'IA
-  const speakText = async (text) => {
-    if (!isTTSEnabled || !text) return;
-    
-    try {
-      setIsPlayingAudio(true);
-      
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL || ''}/api/ai/voice/tts`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          text: text.replace(/\[\[.*?\]\]/g, '').trim(), // Retirer les commandes
-          voice: 'nova' // Voix féminine naturelle
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success && data.audio_base64) {
-        // Convertir base64 en audio et jouer
-        const audioData = atob(data.audio_base64);
-        const arrayBuffer = new ArrayBuffer(audioData.length);
-        const view = new Uint8Array(arrayBuffer);
-        for (let i = 0; i < audioData.length; i++) {
-          view[i] = audioData.charCodeAt(i);
-        }
-        
-        const audioBlob = new Blob([arrayBuffer], { type: 'audio/mp3' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        if (audioPlayerRef.current) {
-          audioPlayerRef.current.pause();
-        }
-        
-        const audio = new Audio(audioUrl);
-        audioPlayerRef.current = audio;
-        
-        audio.onended = () => {
-          setIsPlayingAudio(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        audio.onerror = () => {
-          setIsPlayingAudio(false);
-          console.error('Erreur lecture audio');
-        };
-        
-        await audio.play();
-      }
-    } catch (error) {
-      console.error('Erreur TTS:', error);
-      setIsPlayingAudio(false);
-    }
-  };
-  
-  // Arrêter la lecture audio
-  const stopAudio = () => {
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.pause();
-      audioPlayerRef.current.currentTime = 0;
-      setIsPlayingAudio(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+    } else {
+      setMessages(prev => [...prev, { role: 'assistant', content: `Pour accéder à "${action.label}", utilisez le menu latéral.`, timestamp: new Date().toISOString() }]);
     }
   };
 
   const handleClearHistory = async () => {
-    if (!sessionId) {
-      setMessages([]);
-      setShowQuickActions(true);
-      return;
-    }
-
-    try {
-      await api.ai.clearHistory(sessionId);
-      setMessages([]);
-      setSessionId(null);
-      setShowQuickActions(true);
-      toast({
-        title: 'Historique effacé',
-        description: 'La conversation a été réinitialisée'
-      });
-    } catch (error) {
-      console.error('Erreur suppression historique:', error);
-    }
+    if (sessionId) { try { await api.ai.clearHistory(sessionId); } catch {} }
+    setMessages([]); setSessionId(null); setShowQuickActions(true);
+    toast({ title: 'Historique effacé', description: 'La conversation a été réinitialisée' });
   };
 
   if (!isOpen) return null;
 
   return (
-    <div 
-      className={`fixed bottom-4 right-4 transition-all duration-300 ${
-        minimized ? 'w-64' : 'w-96'
-      }`}
-      style={{ zIndex: 9999 }}
-    >
+    <div className={`fixed bottom-4 right-4 transition-all duration-300 ${minimized ? 'w-64' : 'w-96'}`} style={{ zIndex: 9999 }} data-testid="adria-chat-widget">
       <div className="bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
            style={{ maxHeight: minimized ? '48px' : '600px', height: minimized ? '48px' : '550px' }}>
-        
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-3 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-3 flex items-center justify-between" data-testid="adria-header">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <Bot size={20} />
-            </div>
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><Bot size={20} /></div>
             <div>
               <h3 className="font-semibold text-sm">{aiName}</h3>
-              {!minimized && (
-                <p className="text-xs text-purple-200">
-                  {aiGender === 'female' ? 'Assistante' : 'Assistant'} GMAO
-                </p>
-              )}
+              {!minimized && <p className="text-xs text-purple-200">{aiGender === 'female' ? 'Assistante' : 'Assistant'} GMAO</p>}
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={handleClearHistory}
-              className="p-1.5 hover:bg-white/20 rounded transition-colors"
-              title="Effacer l'historique"
-            >
-              <Trash2 size={16} />
-            </button>
-            <button
-              onClick={() => setMinimized(!minimized)}
-              className="p-1.5 hover:bg-white/20 rounded transition-colors"
-              title={minimized ? 'Agrandir' : 'Réduire'}
-            >
+            <button onClick={handleClearHistory} className="p-1.5 hover:bg-white/20 rounded transition-colors" title="Effacer l'historique" data-testid="adria-clear-btn"><Trash2 size={16} /></button>
+            <button onClick={() => setMinimized(!minimized)} className="p-1.5 hover:bg-white/20 rounded transition-colors" data-testid="adria-minimize-btn">
               {minimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
             </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 hover:bg-white/20 rounded transition-colors"
-              title="Fermer"
-            >
-              <X size={16} />
-            </button>
+            <button onClick={onClose} className="p-1.5 hover:bg-white/20 rounded transition-colors" title="Fermer" data-testid="adria-close-btn"><X size={16} /></button>
           </div>
         </div>
 
-        {/* Corps du chat */}
         {!minimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" style={{ maxHeight: '350px' }}>
-              {/* Actions rapides */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" style={{ maxHeight: '350px' }} data-testid="adria-messages">
               {showQuickActions && messages.length <= 1 && (
                 <div className="mb-4">
-                  <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                    <Sparkles size={12} />
-                    Actions rapides
-                  </p>
+                  <p className="text-xs text-gray-500 mb-2 flex items-center gap-1"><Sparkles size={12} />Actions rapides</p>
                   <div className="flex flex-wrap gap-2">
-                    {QUICK_ACTIONS.map((action) => (
-                      <button
-                        key={action.id}
-                        onClick={() => handleQuickAction(action.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full text-xs font-medium transition-colors"
-                      >
-                        <span>{action.icon}</span>
-                        <span>{action.label}</span>
+                    {QUICK_ACTIONS.map(action => (
+                      <button key={action.id} onClick={() => handleQuickAction(action.id)} data-testid={`quick-action-${action.id}`}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full text-xs font-medium transition-colors">
+                        <span>{action.icon}</span><span>{action.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-              
+
               {messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.role === 'user' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-purple-600 text-white'
-                  }`}>
+                <div key={index} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'}`}>
                     {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
                   <div className={`max-w-[75%] rounded-lg px-3 py-2 ${
-                    msg.role === 'user'
-                      ? msg.isQuickAction 
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-blue-600 text-white'
-                      : msg.error
-                        ? 'bg-red-100 text-red-800 border border-red-200'
-                        : 'bg-white text-gray-800 border border-gray-200'
+                    msg.role === 'user' ? (msg.isQuickAction ? 'bg-purple-500 text-white' : 'bg-blue-600 text-white')
+                      : msg.error ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-white text-gray-800 border border-gray-200'
                   }`}>
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    <p className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'
-                    }`}>
-                      {new Date(msg.timestamp).toLocaleTimeString('fr-FR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
+                    <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
+                      {new Date(msg.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
               ))}
-              
-              {/* Indicateur de chargement */}
+
               {loading && (
                 <div className="flex gap-2">
-                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                    <Bot size={16} className="text-white" />
-                  </div>
+                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center"><Bot size={16} className="text-white" /></div>
                   <div className="bg-white rounded-lg px-4 py-2 border border-gray-200">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Loader2 size={16} className="animate-spin" />
-                      <span className="text-sm">{aiName} réfléchit...</span>
-                    </div>
+                    <div className="flex items-center gap-2 text-gray-500"><Loader2 size={16} className="animate-spin" /><span className="text-sm">{aiName} réfléchit...</span></div>
                   </div>
                 </div>
               )}
-              
               <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
             <div className="p-3 border-t border-gray-200 bg-white">
-              {/* Contrôles TTS */}
               <div className="flex items-center justify-between mb-2 px-1">
-                <button
-                  onClick={() => setIsTTSEnabled(!isTTSEnabled)}
-                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-colors ${
-                    isTTSEnabled 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'bg-gray-100 text-gray-500'
-                  }`}
-                  title={isTTSEnabled ? 'Désactiver la voix' : 'Activer la voix'}
-                >
-                  {isTTSEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-                  <span>{isTTSEnabled ? 'Voix ON' : 'Voix OFF'}</span>
+                <button onClick={() => voice.setIsTTSEnabled(!voice.isTTSEnabled)} data-testid="adria-tts-toggle"
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-colors ${voice.isTTSEnabled ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
+                  {voice.isTTSEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                  <span>{voice.isTTSEnabled ? 'Voix ON' : 'Voix OFF'}</span>
                 </button>
-                
-                {isPlayingAudio && (
-                  <button
-                    onClick={stopAudio}
-                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-700"
-                  >
-                    <VolumeX size={14} />
-                    <span>Arrêter</span>
+                {voice.isPlayingAudio && (
+                  <button onClick={voice.stopAudio} className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-700" data-testid="adria-stop-audio">
+                    <VolumeX size={14} /><span>Arrêter</span>
                   </button>
                 )}
               </div>
-              
               <div className="flex gap-2">
-                {/* Bouton Microphone */}
-                <Button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={loading}
-                  variant={isRecording ? "destructive" : "outline"}
-                  className={`px-3 ${isRecording ? 'animate-pulse bg-red-500 hover:bg-red-600' : ''}`}
-                  title={isRecording ? 'Arrêter l\'enregistrement' : 'Parler à Adria'}
-                >
-                  {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                <Button onClick={voice.isRecording ? voice.stopRecording : voice.startRecording} disabled={loading}
+                  variant={voice.isRecording ? 'destructive' : 'outline'} className={`px-3 ${voice.isRecording ? 'animate-pulse bg-red-500 hover:bg-red-600' : ''}`}
+                  data-testid="adria-mic-btn">
+                  {voice.isRecording ? <MicOff size={18} /> : <Mic size={18} />}
                 </Button>
-                
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={isRecording ? '🎤 Enregistrement en cours...' : `Posez votre question à ${aiName}...`}
+                <textarea ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  placeholder={voice.isRecording ? 'Enregistrement en cours...' : `Posez votre question à ${aiName}...`}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                  rows={1}
-                  disabled={loading || isRecording}
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={!input.trim() || loading || isRecording}
-                  className="bg-purple-600 hover:bg-purple-700 px-3"
-                >
-                  {loading ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : (
-                    <Send size={18} />
-                  )}
+                  rows={1} disabled={loading || voice.isRecording} data-testid="adria-input" />
+                <Button onClick={handleSend} disabled={!input.trim() || loading || voice.isRecording}
+                  className="bg-purple-600 hover:bg-purple-700 px-3" data-testid="adria-send-btn">
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                 </Button>
               </div>
-              
-              {/* Indicateur d'enregistrement */}
-              {isRecording && (
+              {voice.isRecording && (
                 <div className="mt-2 flex items-center justify-center gap-2 text-red-600 text-sm">
                   <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                   <span>Parlez maintenant... Cliquez sur le micro pour terminer</span>
@@ -1273,35 +355,12 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
           </>
         )}
       </div>
-      
-      {/* Composant de guidage visuel pas à pas */}
+
       {activeGuide && (
-        <GuidedHighlight
-          guide={activeGuide}
-          onComplete={() => {
-            setActiveGuide(null);
-            toast({
-              title: '🎉 Guide terminé !',
-              description: 'Vous avez complété toutes les étapes.',
-            });
-            // Ajouter un message de félicitations
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: '🎉 Bravo ! Vous avez terminé le guide. N\'hésitez pas si vous avez d\'autres questions !',
-              timestamp: new Date().toISOString()
-            }]);
-          }}
-          onCancel={() => {
-            setActiveGuide(null);
-            toast({
-              title: 'Guide annulé',
-              description: 'Vous pouvez le reprendre à tout moment.',
-            });
-          }}
-          onStepChange={(step) => {
-            console.log('Étape du guide:', step);
-          }}
-        />
+        <GuidedHighlight guide={activeGuide}
+          onComplete={() => { setActiveGuide(null); toast({ title: 'Guide terminé !', description: 'Vous avez complété toutes les étapes.' }); setMessages(prev => [...prev, { role: 'assistant', content: 'Bravo ! Guide terminé.', timestamp: new Date().toISOString() }]); }}
+          onCancel={() => { setActiveGuide(null); toast({ title: 'Guide annulé' }); }}
+          onStepChange={(step) => console.log('Étape du guide:', step)} />
       )}
     </div>
   );
