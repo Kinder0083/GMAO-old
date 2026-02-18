@@ -320,7 +320,8 @@ class TestAIWidgetPermissions:
             "password": TECHNICIEN_PASSWORD
         })
         if response.status_code == 200:
-            return response.json().get("token")
+            data = response.json()
+            return data.get("access_token") or data.get("token")
         pytest.skip(f"Technicien login failed: {response.status_code} - {response.text}")
 
     def test_technicien_denied_widget_generation(self, technicien_token):
@@ -380,7 +381,8 @@ class TestAutomationPermissions:
             "password": TECHNICIEN_PASSWORD
         })
         if response.status_code == 200:
-            return response.json().get("token")
+            data = response.json()
+            return data.get("access_token") or data.get("token")
         pytest.skip(f"Technicien login failed: {response.status_code} - {response.text}")
 
     def test_technicien_denied_automation_parse(self, technicien_token):
