@@ -1532,6 +1532,22 @@ async def create_batch_from_ai(
             if not annee:
                 annee = datetime.now().year
             
+            # Construire le commentaire avec anomalies
+            commentaire_parts = []
+            if ctrl.get("anomalies"):
+                commentaire_parts.append(f"ANOMALIES DÉTECTÉES:\n{ctrl['anomalies']}")
+            if ctrl.get("equipements_concernes"):
+                commentaire_parts.append(f"Équipements: {ctrl['equipements_concernes']}")
+            commentaire = "\n\n".join(commentaire_parts) if commentaire_parts else None
+            
+            # Déterminer le résultat
+            resultat_map = {
+                "CONFORME": "Conforme",
+                "NON_CONFORME": "Non conforme",
+                "AVEC_RESERVES": "Avec réserves"
+            }
+            resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
+            
             groupe_id = str(uuid.uuid4())
             
             # Créer l'item de surveillance (RÉALISÉ)
