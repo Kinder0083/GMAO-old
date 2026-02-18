@@ -1539,6 +1539,17 @@ async def create_batch_from_ai(
             }
             resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
             
+            # Calculer l'année du contrôle
+            annee = None
+            if prochain_controle:
+                annee = get_year_from_date_str(prochain_controle)
+            elif derniere_visite:
+                annee = get_year_from_date_str(derniere_visite)
+            if not annee:
+                annee = datetime.now().year
+            
+            groupe_id = str(uuid.uuid4())
+            
             # Créer l'item de surveillance
             item = SurveillanceItem(
                 classe_type=ctrl.get("classe_type", ""),
@@ -1558,6 +1569,8 @@ async def create_batch_from_ai(
                 organisme_controle=document_info.get("organisme_controle"),
                 resultat_controle=resultat,
                 attachments=[source_attachment] if source_attachment else [],
+                annee=annee,
+                groupe_controle_id=groupe_id,
                 created_by=current_user.get("id"),
                 updated_by=current_user.get("id")
             )
@@ -1569,6 +1582,16 @@ async def create_batch_from_ai(
                 del item_dict["_id"]
             
             created_items.append(item_dict)
+            
+            # Générer les contrôles récurrents futurs (comme l'endpoint standard)
+            if prochain_controle and ctrl.get("periodicite"):
+                recurring = generate_recurring_controls(item_dict, prochain_controle, ctrl.get("periodicite"))
+                if recurring:
+                    for r in recurring:
+                        r["created_by"] = current_user.get("id")
+                        r["updated_by"] = current_user.get("id")
+                    await db.surveillance_items.insert_many(recurring)
+                    logger.info(f"✅ {len(recurring)} contrôle(s) récurrent(s) créé(s) pour {item.classe_type}")
             
             # Audit
             await audit_service.log_action(
