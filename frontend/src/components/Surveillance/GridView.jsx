@@ -61,9 +61,14 @@ function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
                       <p><strong>Bâtiment:</strong> {item.batiment}</p>
                       <p><strong>Périodicité:</strong> {item.periodicite}</p>
                       <p><strong>Responsable:</strong> {item.responsable}</p>
-                      {item.prochain_controle && (
-                        <p className="text-blue-600"><strong>Prochain:</strong> {new Date(item.prochain_controle).toLocaleDateString('fr-FR')}</p>
-                      )}
+                      {(() => {
+                        const dateStr = item.status === 'REALISE' && item.derniere_visite
+                          ? item.derniere_visite
+                          : item.prochain_controle;
+                        return dateStr ? (
+                          <p className="text-blue-600"><strong>Date du contrôle:</strong> {new Date(dateStr).toLocaleDateString('fr-FR')}</p>
+                        ) : null;
+                      })()}
                       {item.piece_jointe_url && (
                         <div className="flex items-center gap-1 text-gray-500">
                           <Paperclip className="h-3 w-3" />

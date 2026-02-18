@@ -1621,6 +1621,8 @@ async def create_batch_from_ai(
             groupe_id = str(uuid.uuid4())
             
             # Créer l'item de surveillance (RÉALISÉ)
+            # Pour un item RÉALISÉ, prochain_controle = derniere_visite (date de réalisation)
+            # Les occurrences futures sont gérées par generate_recurring_controls
             item = SurveillanceItem(
                 classe_type=ctrl.get("classe_type", ""),
                 category=ctrl.get("category", "AUTRE"),
@@ -1630,7 +1632,7 @@ async def create_batch_from_ai(
                 executant=ctrl.get("executant", document_info.get("organisme_controle", "")),
                 description=ctrl.get("description"),
                 derniere_visite=derniere_visite,
-                prochain_controle=prochain_controle,
+                prochain_controle=derniere_visite,
                 status=SurveillanceItemStatus.REALISE,
                 date_realisation=derniere_visite,
                 commentaire=commentaire,
