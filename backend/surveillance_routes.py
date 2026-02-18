@@ -1542,11 +1542,13 @@ async def create_batch_from_ai(
             resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
             
             # Calculer l'année du contrôle
+            # Pour un contrôle RÉALISÉ, l'année est celle de la dernière visite (quand il a été fait)
+            # Pour un contrôle à planifier, l'année est celle du prochain contrôle
             annee = None
-            if prochain_controle:
-                annee = get_year_from_date_str(prochain_controle)
-            elif derniere_visite:
+            if derniere_visite:
                 annee = get_year_from_date_str(derniere_visite)
+            elif prochain_controle:
+                annee = get_year_from_date_str(prochain_controle)
             if not annee:
                 annee = datetime.now().year
             
