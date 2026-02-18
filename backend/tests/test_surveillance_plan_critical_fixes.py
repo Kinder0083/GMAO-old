@@ -281,6 +281,7 @@ class TestSurveillancePlanCriticalFixes:
             "batiment": "TEST_BAT_E",
             "periodicite": "1 an",
             "responsable": "MAINT",
+            "executant": "APAVE",
             "prochain_controle": future_date,
             "status": "PLANIFIER",
             "duree_rappel_echeance": 30
