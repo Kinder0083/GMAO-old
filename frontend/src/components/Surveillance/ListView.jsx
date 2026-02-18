@@ -40,7 +40,7 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
               <TableHead>Bâtiment</TableHead>
               <TableHead>Périodicité</TableHead>
               <TableHead>Responsable</TableHead>
-              <TableHead>Prochain contrôle</TableHead>
+              <TableHead>Date du contrôle</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
