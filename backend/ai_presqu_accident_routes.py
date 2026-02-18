@@ -201,9 +201,7 @@ async def find_similar_incidents(
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
 
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Clé LLM non configurée")
+        api_key = await _get_llm_key()
 
         titre = data.get("titre", "")
         description = data.get("description", "")
