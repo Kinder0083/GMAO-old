@@ -53,6 +53,13 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
     - README.md : sections MODIFY_OT, CLOSE_OT, assignation technicien
     - Manuel : 3 nouvelles sections (sec-024-11/12/13) + maj sec-024-05
     - Tests: verification contenu via API (PASS)
+21. Bug fix: Surveillance AI batch creation - annee manquant
+    - Items crees via IA n'avaient pas de champ annee → invisibles dans le filtre par annee
+    - Ajout calcul annee (prochain_controle → derniere_visite → annee courante)
+    - Ajout groupe_controle_id + generation controles recurrents (comme endpoint standard)
+    - Gestion erreur par controle (un echec ne crashe pas le batch entier)
+    - Message erreur frontend affiche le detail serveur
+    - Tests: 100% (10/10 backend, iteration_48)
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
