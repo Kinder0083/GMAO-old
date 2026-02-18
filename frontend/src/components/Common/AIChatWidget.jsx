@@ -135,6 +135,10 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
             description: `OT "${actionData.titre}" créé avec succès`,
           });
           
+          // Déclencher un rafraîchissement des données temps réel
+          // Le WebSocket exclut l'utilisateur créateur, donc on force la MAJ
+          window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'work_orders', action: 'created' } }));
+          
           // Ajouter un message de confirmation
           setMessages(prev => [...prev, {
             role: 'assistant',
