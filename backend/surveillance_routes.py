@@ -1497,27 +1497,37 @@ async def create_batch_from_ai(
             derniere_visite = ctrl.get("derniere_visite")
             periodicite = ctrl.get("periodicite")
             
-            # L'item de base est RÉALISÉ : prochain_controle = derniere_visite (date du contrôle effectué)
-            # Les récurrences futures sont des items SÉPARÉS générés par generate_recurring_controls
-            prochain_controle = derniere_visite  # Le contrôle a eu lieu à cette date
+            # Calculer prochain_controle = derniere_visite + periodicite
+            # C'est la date du PROCHAIN contrôle à effectuer
+            prochain_controle = None
+            if derniere_visite and periodicite:
+                try:
+                    from dateutil.relativedelta import relativedelta
+                    base_date = datetime.fromisoformat(derniere_visite)
+                    period_lower = periodicite.lower().strip()
+                    
+                    import re
+                    num_match = re.search(r'(\d+)', period_lower)
+                    num = int(num_match.group(1)) if num_match else 1
+                    
+                    if 'an' in period_lower:
+                        next_date = base_date + relativedelta(years=num)
+                    elif 'mois' in period_lower:
+                        next_date = base_date + relativedelta(months=num)
+                    elif 'semaine' in period_lower:
+                        next_date = base_date + timedelta(weeks=num)
+                    elif 'jour' in period_lower:
+                        next_date = base_date + timedelta(days=num)
+                    else:
+                        next_date = None
+                    
+                    if next_date:
+                        prochain_controle = next_date.strftime("%Y-%m-%d")
+                except Exception as e:
+                    logger.warning(f"Erreur calcul prochain contrôle: {e}")
             
-            # Construire le commentaire avec anomalies
-            commentaire_parts = []
-            if ctrl.get("anomalies"):
-                commentaire_parts.append(f"ANOMALIES DÉTECTÉES:\n{ctrl['anomalies']}")
-            if ctrl.get("equipements_concernes"):
-                commentaire_parts.append(f"Équipements: {ctrl['equipements_concernes']}")
-            commentaire = "\n\n".join(commentaire_parts) if commentaire_parts else None
-            
-            # Déterminer le résultat
-            resultat_map = {
-                "CONFORME": "Conforme",
-                "NON_CONFORME": "Non conforme",
-                "AVEC_RESERVES": "Avec réserves"
-            }
-            resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
-            
-            # L'année = année de la dernière visite (quand le contrôle a été fait)
+            # L'année = année de la dernière visite (quand le contrôle a été FAIT)
+            # Pas l'année du prochain contrôle
             annee = get_year_from_date_str(derniere_visite) if derniere_visite else datetime.now().year
             if not annee:
                 annee = datetime.now().year
