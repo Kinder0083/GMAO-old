@@ -1568,6 +1568,10 @@ async def synthesize_speech(
         # Récupérer la clé API
         api_key = os.environ.get("EMERGENT_LLM_KEY")
         if not api_key:
+            gk = await db.global_settings.find_one({"key": "EMERGENT_LLM_KEY"})
+            if gk and gk.get("value"):
+                api_key = gk["value"]
+        if not api_key:
             raise HTTPException(status_code=500, detail="Clé API non configurée pour la synthèse vocale")
         
         # Limiter la longueur du texte
