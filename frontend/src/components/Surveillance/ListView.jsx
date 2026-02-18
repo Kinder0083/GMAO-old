@@ -64,7 +64,12 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
                   <TableCell>{item.periodicite}</TableCell>
                   <TableCell>{item.responsable}</TableCell>
                   <TableCell>
-                    {item.prochain_controle ? new Date(item.prochain_controle).toLocaleDateString('fr-FR') : '-'}
+                    {(() => {
+                      const dateStr = item.status === 'REALISE' && item.derniere_visite
+                        ? item.derniere_visite
+                        : item.prochain_controle;
+                      return dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : '-';
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(item.status)}>{getStatusLabel(item.status)}</Badge>
