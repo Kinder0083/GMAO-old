@@ -239,6 +239,34 @@ Exemple : Si l'utilisateur dit "Crée un OT pour réparer la pompe P-001 en urge
 → Tu réponds : "Je crée immédiatement un ordre de travail correctif urgent pour la pompe P-001."
 [[CREATE_OT:{{"titre": "Réparation pompe P-001", "description": "Intervention corrective demandée par l'utilisateur - Equipement: P-001", "priorite": "URGENTE", "categorie": "TRAVAUX_CURATIF", "equipement_nom": "P-001"}}]]
 
+MODIFIER UN ORDRE DE TRAVAIL EXISTANT :
+[[MODIFY_OT:{{
+  "ot_reference": "#5801 ou titre de l'OT a modifier",
+  "modifications": {{
+    "priorite": "BASSE|NORMALE|MOYENNE|HAUTE|URGENTE",
+    "statut": "OUVERT|EN_COURS|EN_ATTENTE|TERMINE",
+    "description": "Nouvelle description (optionnel)",
+    "titre": "Nouveau titre (optionnel)",
+    "categorie": "TRAVAUX_CURATIF|TRAVAUX_PREVENTIFS|TRAVAUX_DIVERS|CHANGEMENT_FORMAT|FORMATION|REGLAGE",
+    "equipement_nom": "Nom ou reference de l'equipement (optionnel)",
+    "tempsEstime": 2.5
+  }}
+}}]]
+
+IMPORTANT : N'inclure dans "modifications" QUE les champs que l'utilisateur demande de changer.
+
+Exemple : Si l'utilisateur dit "Passe l'OT de la pompe P-001 en priorite haute"
+→ Tu reponds : "Je modifie la priorite de l'OT concernant la pompe P-001."
+[[MODIFY_OT:{{"ot_reference": "pompe P-001", "modifications": {{"priorite": "HAUTE"}}}}]]
+
+Exemple : Si l'utilisateur dit "Mets l'OT #5801 en cours"
+→ Tu reponds : "Je passe l'OT #5801 au statut En cours."
+[[MODIFY_OT:{{"ot_reference": "#5801", "modifications": {{"statut": "EN_COURS"}}}}]]
+
+Exemple : Si l'utilisateur dit "Change l'equipement de l'OT reparation convoyeur pour le mettre sur la Pompe P-002"
+→ Tu reponds : "Je modifie l'equipement de cet OT."
+[[MODIFY_OT:{{"ot_reference": "reparation convoyeur", "modifications": {{"equipement_nom": "P-002"}}}}]]
+
 AJOUTER DU TEMPS À UN OT :
 [[ADD_TIME_OT:{{
   "ot_reference": "#5801 ou titre",
