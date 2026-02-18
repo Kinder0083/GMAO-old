@@ -3,7 +3,7 @@ import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, 
 import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
-import api from '../../services/api';
+import api, { workOrdersAPI } from '../../services/api';
 import GuidedHighlight from './GuidedHighlight';
 
 // Import du contexte (pas du hook)
