@@ -55,11 +55,14 @@ Application de GMAO nommee "GMAO Iris" avec capacites IA via assistant "Adria".
     - Tests: verification contenu via API (PASS)
 21. Bug fix: Surveillance AI batch creation - annee manquant
     - Items crees via IA n'avaient pas de champ annee → invisibles dans le filtre par annee
-    - Ajout calcul annee (prochain_controle → derniere_visite → annee courante)
-    - Ajout groupe_controle_id + generation controles recurrents (comme endpoint standard)
-    - Gestion erreur par controle (un echec ne crashe pas le batch entier)
+    - Ajout calcul annee (basé sur derniere_visite)
+    - prochain_controle = derniere_visite + periodicite (date du prochain controle)
+    - Ajout groupe_controle_id + generation controles recurrents
+    - Gestion erreur par controle (un echec ne crashe pas le batch)
     - Message erreur frontend affiche le detail serveur
-    - Tests: 100% (10/10 backend, iteration_48)
+    - Pourcentage de realisation = count(status=REALISE) / total (sans condition de date)
+    - Colonne "Prochain contrôle" → "Date du contrôle" (ListViewGrouped + ListView)
+    - Tests: curl backend + stats API validés
 
 ## Credentials test
 - Admin: admin@test.com / Admin123!
