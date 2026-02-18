@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Plus, Download, Upload, Bell, Settings, X, FileText, Search, Loader2, Calendar, RefreshCw } from 'lucide-react';
+import { Plus, Download, Upload, Bell, Settings, X, FileText, Search, Loader2, Calendar, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { surveillanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { useSurveillancePlan } from '../hooks/useSurveillancePlan';
 import ListView from '../components/Surveillance/ListView';
 import ListViewGrouped from '../components/Surveillance/ListViewGrouped';
 import GridView from '../components/Surveillance/GridView';
@@ -29,9 +30,10 @@ function SurveillancePlan() {
   const [availableYears, setAvailableYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   
-  // Données
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Données via hook WebSocket temps réel
+  const { items, loading, wsConnected, refresh } = useSurveillancePlan({ annee: selectedYear });
+
+  // État local
   const [filteredItems, setFilteredItems] = useState([]);
   const [stats, setStats] = useState(null);
   const [alerts, setAlerts] = useState([]);
@@ -62,60 +64,49 @@ function SurveillancePlan() {
     loadAvailableYears();
   }, []);
 
-  // Charger les données quand l'année change
+  // Quand l'année change, rafraîchir les items (via hook) + stats + alertes
   useEffect(() => {
     if (selectedYear) {
-      loadItems();
+      refresh();
       loadStatsAndAlerts();
     }
   }, [selectedYear]);
+
+  // Charger les tendances quand les items changent
+  useEffect(() => {
+    if (items && items.length > 0) {
+      loadTrends();
+    } else {
+      setTrends({});
+    }
+  }, [items]);
 
   const loadAvailableYears = async () => {
     try {
       const data = await surveillanceAPI.getAvailableYears();
       setAvailableYears(data.years || []);
-      // Si pas d'année encore sélectionnée, prendre l'année courante
       if (!selectedYear) {
         setSelectedYear(data.current_year || new Date().getFullYear());
       }
     } catch (error) {
       console.error('Erreur chargement années:', error);
-      // Fallback: année courante
       const current = new Date().getFullYear();
       setAvailableYears([current - 1, current, current + 1]);
     }
   };
 
-  const loadItems = async () => {
-    setLoading(true);
-    try {
-      const data = await surveillanceAPI.getItems({ annee: selectedYear });
-      setItems(data || []);
-      // Charger les tendances pour les contrôles récurrents
-      const ids = [...new Set((data || []).map(i => i.groupe_controle_id).filter(Boolean))];
-      if (ids.length > 0) {
-        try {
-          const res = await surveillanceAPI.getBatchTrends(ids, selectedYear);
-          setTrends(res.trends || {});
-        } catch { setTrends({}); }
-      } else {
-        setTrends({});
-      }
-    } catch (error) {
-      console.error('Erreur chargement items:', error);
-      toast({ title: 'Erreur', description: 'Erreur de chargement des contrôles', variant: 'destructive' });
-    } finally {
-      setLoading(false);
+  const loadTrends = async () => {
+    const ids = [...new Set((items || []).map(i => i.groupe_controle_id).filter(Boolean))];
+    if (ids.length > 0) {
+      try {
+        const res = await surveillanceAPI.getBatchTrends(ids, selectedYear);
+        setTrends(res.trends || {});
+      } catch { setTrends({}); }
     }
   };
 
   const loadStatsAndAlerts = async () => {
     try {
-      // Vérifier et mettre à jour automatiquement les statuts selon les échéances
-      await surveillanceAPI.checkDueDates().catch(err => {
-        console.warn('Erreur vérification échéances (non bloquant):', err);
-      });
-      
       const [statsData, alertsData] = await Promise.all([
         surveillanceAPI.getStats(selectedYear),
         surveillanceAPI.getAlerts()
@@ -128,7 +119,7 @@ function SurveillancePlan() {
   };
 
   const loadData = async () => {
-    await loadItems();
+    await refresh();
     await loadStatsAndAlerts();
     await loadAvailableYears();
   };
@@ -151,7 +142,6 @@ function SurveillancePlan() {
   useEffect(() => {
     if (location.state?.showOverdueOnly) {
       setShowOverdueFilter(true);
-      // Afficher un message explicatif
       toast({
         title: 'Filtre activé',
         description: 'Affichage des contrôles en retard uniquement',
@@ -176,11 +166,9 @@ function SurveillancePlan() {
       filtered = filtered.filter(item => {
         if (!item.prochain_controle) return false;
         const nextControlDate = new Date(item.prochain_controle);
-        // Calculer la date de début de période d'alerte
         const alertDays = item.duree_rappel_echeance || 30;
         const alertDate = new Date(nextControlDate);
         alertDate.setDate(alertDate.getDate() - alertDays);
-        // En retard = date actuelle >= date d'alerte
         return today >= alertDate;
       });
     }
@@ -195,7 +183,6 @@ function SurveillancePlan() {
 
   const extractCategories = () => {
     if (!items) return;
-    // Extraire toutes les catégories uniques des items
     const uniqueCategories = [...new Set(items.map(item => item.category))].filter(Boolean).sort();
     setCategories(uniqueCategories);
   };
@@ -308,7 +295,14 @@ function SurveillancePlan() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Plan de Surveillance</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">Plan de Surveillance</h1>
+          {wsConnected ? (
+            <Wifi className="h-4 w-4 text-green-500" title="Synchronisation temps réel active" />
+          ) : (
+            <WifiOff className="h-4 w-4 text-gray-400" title="Synchronisation hors ligne" />
+          )}
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="icon" onClick={() => setShowSearch(!showSearch)} data-testid="toggle-search-btn">
             <Search className="h-4 w-4" />
@@ -469,7 +463,7 @@ function SurveillancePlan() {
           {/* Badge filtre en retard actif */}
           {showOverdueFilter && (
             <Badge variant="destructive" className="bg-red-600 flex items-center gap-2">
-              🚨 Affichage : Contrôles en retard uniquement ({filteredItems.length})
+              Affichage : Contrôles en retard uniquement ({filteredItems.length})
               <button 
                 onClick={() => setShowOverdueFilter(false)}
                 className="ml-1 hover:bg-red-700 rounded-full p-0.5"
