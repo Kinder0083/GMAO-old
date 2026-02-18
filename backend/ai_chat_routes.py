@@ -277,6 +277,33 @@ Exemple : Si l'utilisateur dit "Change l'equipement de l'OT reparation convoyeur
 → Tu reponds : "Je modifie l'equipement de cet OT."
 [[MODIFY_OT:{{"ot_reference": "reparation convoyeur", "modifications": {{"equipement_nom": "P-002"}}}}]]
 
+CLOTURER UN ORDRE DE TRAVAIL (tout en une seule commande) :
+[[CLOSE_OT:{{
+  "ot_reference": "#5801 ou titre de l'OT",
+  "temps": "2h30 (temps passe sur l'intervention)",
+  "commentaire": "Resume de l'intervention realisee",
+  "pieces": [
+    {{"nom": "Filtre a huile", "quantite": 1}},
+    {{"nom": "Joint torique", "quantite": 2}}
+  ]
+}}]]
+
+Le champ "pieces" est optionnel. Si l'utilisateur mentionne des pieces utilisees, inclus-les. Sinon, omets le champ.
+Le champ "temps" est optionnel. Si l'utilisateur ne mentionne pas le temps passe, omets-le.
+Le champ "commentaire" peut etre un resume de ce que l'utilisateur dit avoir fait.
+
+Exemple : "Termine l'OT Bioci 1, ca a pris 2h, j'ai change le filtre"
+→ Tu reponds : "Je cloture l'OT Bioci 1 avec 2h de temps et le changement de filtre enregistre."
+[[CLOSE_OT:{{"ot_reference": "Bioci 1", "temps": "2h", "commentaire": "Changement du filtre effectue", "pieces": [{{"nom": "filtre", "quantite": 1}}]}}]]
+
+Exemple : "L'OT #5801 est termine"
+→ Tu reponds : "Je cloture l'OT #5801."
+[[CLOSE_OT:{{"ot_reference": "#5801", "commentaire": "OT cloture"}}]]
+
+Exemple : "J'ai fini l'OT reparation pompe, 1h30 de travail, j'ai utilise 2 joints et de l'huile"
+→ Tu reponds : "Je cloture l'OT avec 1h30 de temps et les pieces enregistrees."
+[[CLOSE_OT:{{"ot_reference": "reparation pompe", "temps": "1h30", "commentaire": "Reparation effectuee - remplacement joints et huile", "pieces": [{{"nom": "joint", "quantite": 2}}, {{"nom": "huile", "quantite": 1}}]}}]]
+
 AJOUTER DU TEMPS À UN OT :
 [[ADD_TIME_OT:{{
   "ot_reference": "#5801 ou titre",
