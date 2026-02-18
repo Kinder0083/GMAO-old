@@ -37,7 +37,10 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Assistant IA conversationnel integre (personnalisable : nom, genre, modele LLM)
 - **Memoire de conversation** : Adria se souvient du contexte des echanges precedents
 - **Contexte enrichi** : Requetes dynamiques vers les donnees GMAO (OT, equipements, alertes, inventaire) pour des reponses factuelles
-- **Creation d'OT par IA** : "Cree un OT urgent pour reparer la pompe P-001" - Adria cree l'OT automatiquement avec titre, description, priorite et categorie
+- **Creation d'OT par IA** : "Cree un OT urgent pour reparer la pompe P-001" - Adria cree l'OT automatiquement avec titre, description, priorite, categorie et equipement lie
+- **Modification d'OT par IA** : "Passe l'OT #5801 en priorite haute" ou "Assigne l'OT reparation pompe a Axel" - Adria modifie l'OT existant (priorite, statut, equipement, assignation, categorie)
+- **Cloture d'OT par IA** : "Termine l'OT Bioci 1, ca a pris 2h, j'ai change le filtre" - Adria cloture l'OT en une seule commande : ajout du temps passe, enregistrement des pieces utilisees (avec deduction stock automatique), commentaire de cloture, passage au statut TERMINE
+- **Assignation de technicien par IA** : "Cree un OT pour la Bioci 1 et assigne-le a Axel" - Adria resout le nom du technicien et lie l'OT au bon utilisateur
 - **Creation de Widgets IA** : "Cree un camembert des OT par priorite" - Adria genere et cree des widgets sur le Dashboard Service
 - **Support des formules mathematiques** : "Cree une jauge taux resolution = OT termines / total * 100" - L'IA genere les sources de donnees et les formules ($references, IF, ROUND, SUM, AVG)
 - **Automatisations IA** : Configuration de regles automatiques en langage naturel (alertes capteurs, rappels maintenance, escalades, seuils inventaire)
