@@ -227,6 +227,21 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
                 console.warn('Impossible de résoudre l\'équipement:', eqErr);
               }
             }
+            // Résoudre assigne_a en assigne_a_id
+            if (mods.assigne_a) {
+              try {
+                const usersRes = await usersAPI.getAll();
+                const usersList = usersRes.data || [];
+                const searchUser = mods.assigne_a.toLowerCase();
+                const matchedUser = usersList.find(u => {
+                  const fullName = `${u.prenom || ''} ${u.nom || ''}`.toLowerCase();
+                  return fullName.includes(searchUser) || u.nom?.toLowerCase().includes(searchUser) || u.prenom?.toLowerCase().includes(searchUser);
+                });
+                if (matchedUser) updatePayload.assigne_a_id = matchedUser.id;
+              } catch (uErr) {
+                console.warn('Impossible de résoudre le technicien:', uErr);
+              }
+            }
             await workOrdersAPI.update(matchedWo.id, updatePayload);
             const modDetails = Object.entries(updatePayload).map(([k, v]) => `${k}: ${v}`).join(', ');
             toast({
