@@ -33,10 +33,22 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - **Analyse IA des tendances** : Analyse globale de tous les presqu'accidents pour identifier les patterns recurrents, zones a risque, predictions de risques futurs, avec envoi d'alertes email aux responsables
 - **Rapport de synthese QHSE** : Generation automatique d'un rapport structure (resume executif, KPIs, analyse par service, top risques, plan d'action) pret pour presentation en reunion QHSE, avec option d'impression
 
-#### IA - Assistant
+#### IA - Assistant (Adria)
 - Assistant IA conversationnel integre (personnalisable : nom, genre, modele LLM)
+- **Memoire de conversation** : Adria se souvient du contexte des echanges precedents
+- **Contexte enrichi** : Requetes dynamiques vers les donnees GMAO (OT, equipements, alertes, inventaire) pour des reponses factuelles
+- **Creation d'OT par IA** : "Cree un OT urgent pour reparer la pompe P-001" - Adria cree l'OT automatiquement avec titre, description, priorite et categorie
+- **Creation de Widgets IA** : "Cree un camembert des OT par priorite" - Adria genere et cree des widgets sur le Dashboard Service
+- **Support des formules mathematiques** : "Cree une jauge taux resolution = OT termines / total * 100" - L'IA genere les sources de donnees et les formules ($references, IF, ROUND, SUM, AVG)
+- **Automatisations IA** : Configuration de regles automatiques en langage naturel (alertes capteurs, rappels maintenance, escalades, seuils inventaire)
 - Historique des conversations IA accessible depuis le module "Historique IA"
-- Module "Tendances IA" pour visualiser les analyses et tendances detectees
+
+#### IA - Tableau de Bord
+- **Tableau de bord IA unifie** avec 5 onglets : Tendances, Ordres de Travail, Capteurs, Surveillance, Automatisations
+- **Notifications push** : Alertes temps reel quand une automatisation se declenche (capteur, seuil, etc.)
+- **Diagnostic IA** : Analyse des causes probables et recommandations pour chaque OT
+- **Resume IA** : Synthese automatique des interventions
+- **Anomalies capteurs** : Detection predictive par analyse de l'historique des mesures
 
 ### Ordres de travail
 - Creation, assignation, suivi et historique complet
