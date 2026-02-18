@@ -1506,23 +1506,65 @@ async def create_batch_from_ai(
                     base_date = datetime.fromisoformat(derniere_visite)
                     period_lower = periodicite.lower().strip()
                     
-                    import re
-                    num_match = re.search(r'(\d+)', period_lower)
-                    num = int(num_match.group(1)) if num_match else 1
+                    # Normaliser la périodicité textuelle AVANT d'extraire les chiffres
+                    # "Annuelle" → 12 mois, "Semestrielle" → 6 mois, "Trimestrielle" → 3 mois, etc.
+                    normalized = None
+                    if any(w in period_lower for w in ['annuel', 'annual']):
+                        # Extraire le nombre d'années si explicite (ex: "2 ans", "bi-annuel")
+                        if 'bi' in period_lower or 'biennal' in period_lower:
+                            normalized = ('years', 2)
+                        else:
+                            normalized = ('years', 1)
+                    elif 'semestriel' in period_lower:
+                        normalized = ('months', 6)
+                    elif 'trimestriel' in period_lower:
+                        normalized = ('months', 3)
+                    elif 'bimestriel' in period_lower:
+                        normalized = ('months', 2)
+                    elif 'mensuel' in period_lower:
+                        normalized = ('months', 1)
+                    elif 'hebdomadaire' in period_lower:
+                        normalized = ('weeks', 1)
+                    elif 'quotidien' in period_lower:
+                        normalized = ('days', 1)
                     
-                    if 'an' in period_lower:
-                        next_date = base_date + relativedelta(years=num)
-                    elif 'mois' in period_lower:
-                        next_date = base_date + relativedelta(months=num)
-                    elif 'semaine' in period_lower:
-                        next_date = base_date + timedelta(weeks=num)
-                    elif 'jour' in period_lower:
-                        next_date = base_date + timedelta(days=num)
-                    else:
-                        next_date = None
-                    
-                    if next_date:
+                    if normalized:
+                        unit, num = normalized
+                        if unit == 'years':
+                            next_date = base_date + relativedelta(years=num)
+                        elif unit == 'months':
+                            next_date = base_date + relativedelta(months=num)
+                        elif unit == 'weeks':
+                            next_date = base_date + timedelta(weeks=num)
+                        else:
+                            next_date = base_date + timedelta(days=num)
                         prochain_controle = next_date.strftime("%Y-%m-%d")
+                    else:
+                        # Format numérique simple: "1 an", "6 mois", "3 mois", "5 ans"
+                        # Extraire UNIQUEMENT le premier nombre suivi d'une unité
+                        import re
+                        match_an = re.search(r'(\d+)\s*an', period_lower)
+                        match_mois = re.search(r'(\d+)\s*mois', period_lower)
+                        match_sem = re.search(r'(\d+)\s*semaine', period_lower)
+                        match_jour = re.search(r'(\d+)\s*jour', period_lower)
+                        
+                        if match_an:
+                            next_date = base_date + relativedelta(years=int(match_an.group(1)))
+                            prochain_controle = next_date.strftime("%Y-%m-%d")
+                        elif match_mois:
+                            next_date = base_date + relativedelta(months=int(match_mois.group(1)))
+                            prochain_controle = next_date.strftime("%Y-%m-%d")
+                        elif match_sem:
+                            next_date = base_date + timedelta(weeks=int(match_sem.group(1)))
+                            prochain_controle = next_date.strftime("%Y-%m-%d")
+                        elif match_jour:
+                            next_date = base_date + timedelta(days=int(match_jour.group(1)))
+                            prochain_controle = next_date.strftime("%Y-%m-%d")
+                        else:
+                            # Fallback: 1 an par défaut
+                            next_date = base_date + relativedelta(years=1)
+                            prochain_controle = next_date.strftime("%Y-%m-%d")
+                            logger.warning(f"Périodicité non reconnue '{periodicite}', fallback 1 an")
                 except Exception as e:
                     logger.warning(f"Erreur calcul prochain contrôle: {e}")
             
