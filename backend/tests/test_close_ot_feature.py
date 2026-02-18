@@ -85,13 +85,15 @@ class TestAddTimeEndpoint:
         # Create separate OT to avoid state dependency
         payload = {
             "titre": "TEST_Add_Time_H_Min",
+            "description": "Test OT for time testing",
             "priorite": "NORMALE",
             "statut": "OUVERT"
         }
         create_resp = authenticated_session.post(f"{BASE_URL}/api/work-orders", json=payload)
-        assert create_resp.status_code == 200
+        assert create_resp.status_code == 200, f"Create OT failed: {create_resp.text}"
         wo = create_resp.json()
-        wo_id = wo['id']
+        wo_id = wo.get('id')
+        assert wo_id, f"No id in response: {wo}"
         
         try:
             response = authenticated_session.post(
