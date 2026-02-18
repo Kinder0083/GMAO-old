@@ -145,6 +145,23 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
           if (actionData.categorie) {
             otPayload.categorie = actionData.categorie;
           }
+          // Résoudre assigne_a en assigne_a_id
+          if (actionData.assigne_a) {
+            try {
+              const usersRes = await usersAPI.getAll();
+              const usersList = usersRes.data || [];
+              const searchUser = actionData.assigne_a.toLowerCase();
+              const matchedUser = usersList.find(u => {
+                const fullName = `${u.prenom || ''} ${u.nom || ''}`.toLowerCase();
+                return fullName.includes(searchUser) || u.nom?.toLowerCase().includes(searchUser) || u.prenom?.toLowerCase().includes(searchUser);
+              });
+              if (matchedUser) {
+                otPayload.assigne_a_id = matchedUser.id;
+              }
+            } catch (uErr) {
+              console.warn('Impossible de résoudre le technicien:', uErr);
+            }
+          }
           const otResponse = await (workOrdersAPI || api.workOrders).create(otPayload);
           
           toast({
