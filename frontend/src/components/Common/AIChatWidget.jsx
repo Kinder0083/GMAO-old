@@ -112,7 +112,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
       switch (actionType) {
         case 'CREATE_OT':
           // Créer un ordre de travail automatiquement
-          const otResponse = await api.workOrders.create({
+          const otResponse = await workOrdersAPI.create({
             titre: actionData.titre,
             description: actionData.description || '',
             type_maintenance: actionData.type_maintenance || 'CORRECTIVE',
