@@ -3,7 +3,7 @@ import { X, Send, Bot, User, Loader2, Trash2, Minimize2, Maximize2, Navigation, 
 import { Button } from '../ui/button';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
-import api, { workOrdersAPI } from '../../services/api';
+import api, { workOrdersAPI, equipmentsAPI } from '../../services/api';
 import GuidedHighlight from './GuidedHighlight';
 
 // Import du contexte (pas du hook)
@@ -110,7 +110,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
   const executeAutoAction = async (actionType, actionData) => {
     try {
       switch (actionType) {
-        case 'CREATE_OT':
+        case 'CREATE_OT': {
           // Créer un ordre de travail automatiquement
           let otDesc = actionData.description || '';
           if (actionData.equipement_nom && !otDesc.includes(actionData.equipement_nom)) {
@@ -122,6 +122,23 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
             priorite: (actionData.priorite || 'NORMALE').toUpperCase(),
             statut: 'OUVERT',
           };
+          // Résoudre equipement_nom en equipement_id
+          if (actionData.equipement_nom) {
+            try {
+              const eqRes = await equipmentsAPI.getAll();
+              const eqList = eqRes.data || [];
+              const searchName = actionData.equipement_nom.toLowerCase();
+              const matched = eqList.find(eq =>
+                eq.nom?.toLowerCase().includes(searchName) ||
+                eq.reference?.toLowerCase().includes(searchName)
+              );
+              if (matched) {
+                otPayload.equipement_id = matched.id;
+              }
+            } catch (eqErr) {
+              console.warn('Impossible de résoudre l\'équipement:', eqErr);
+            }
+          }
           if (actionData.tempsEstime || actionData.temps_estime) {
             otPayload.tempsEstime = parseFloat(actionData.tempsEstime || actionData.temps_estime);
           }
