@@ -80,19 +80,31 @@ class TestAddTimeEndpoint:
         data = response.json()
         assert data.get("tempsReel") == 2.0, f"Expected tempsReel=2.0, got {data.get('tempsReel')}"
     
-    def test_add_time_hours_and_minutes(self, authenticated_session, test_work_order):
+    def test_add_time_hours_and_minutes(self, authenticated_session):
         """Test adding time with hours and minutes (2h30)"""
-        wo_id = test_work_order['id']
+        # Create separate OT to avoid state dependency
+        payload = {
+            "titre": "TEST_Add_Time_H_Min",
+            "priorite": "NORMALE",
+            "statut": "OUVERT"
+        }
+        create_resp = authenticated_session.post(f"{BASE_URL}/api/work-orders", json=payload)
+        assert create_resp.status_code == 200
+        wo = create_resp.json()
+        wo_id = wo['id']
         
-        response = authenticated_session.post(
-            f"{BASE_URL}/api/work-orders/{wo_id}/add-time",
-            json={"hours": 0, "minutes": 30}
-        )
-        assert response.status_code == 200, f"Add time failed: {response.text}"
-        
-        data = response.json()
-        # Previous test added 2h, now 30min = 2.5 total
-        assert data.get("tempsReel") == 2.5, f"Expected tempsReel=2.5, got {data.get('tempsReel')}"
+        try:
+            response = authenticated_session.post(
+                f"{BASE_URL}/api/work-orders/{wo_id}/add-time",
+                json={"hours": 2, "minutes": 30}
+            )
+            assert response.status_code == 200, f"Add time failed: {response.text}"
+            
+            data = response.json()
+            # 2h30 = 2.5 hours
+            assert data.get("tempsReel") == 2.5, f"Expected tempsReel=2.5, got {data.get('tempsReel')}"
+        finally:
+            authenticated_session.delete(f"{BASE_URL}/api/work-orders/{wo_id}")
     
     def test_add_time_minutes_only(self, authenticated_session):
         """Test adding time with minutes only"""
@@ -299,11 +311,11 @@ class TestAISystemPrompt:
     
     def test_ai_chat_endpoint_exists(self, authenticated_session):
         """Test that AI chat endpoint exists and returns response"""
+        # AI chat expects context as string or optional
         response = authenticated_session.post(
             f"{BASE_URL}/api/ai/chat",
             json={
-                "message": "Bonjour",
-                "context": {}
+                "message": "Bonjour"
             }
         )
         # AI endpoint should return 200
@@ -317,12 +329,15 @@ class TestTimeParsingFormats:
         """Test 2h format"""
         payload = {
             "titre": "TEST_Time_2h",
+            "description": "Test",
             "priorite": "NORMALE",
             "statut": "OUVERT"
         }
         create_resp = authenticated_session.post(f"{BASE_URL}/api/work-orders", json=payload)
+        assert create_resp.status_code == 200, f"Create OT failed: {create_resp.text}"
         wo = create_resp.json()
-        wo_id = wo['id']
+        wo_id = wo.get('id')
+        assert wo_id, f"No id in response: {wo}"
         
         try:
             # 2h = 2 hours
@@ -339,12 +354,15 @@ class TestTimeParsingFormats:
         """Test 1h30 format (1h + 30min)"""
         payload = {
             "titre": "TEST_Time_1h30",
+            "description": "Test",
             "priorite": "NORMALE",
             "statut": "OUVERT"
         }
         create_resp = authenticated_session.post(f"{BASE_URL}/api/work-orders", json=payload)
+        assert create_resp.status_code == 200, f"Create OT failed: {create_resp.text}"
         wo = create_resp.json()
-        wo_id = wo['id']
+        wo_id = wo.get('id')
+        assert wo_id, f"No id in response: {wo}"
         
         try:
             # 1h30 = 1 hour 30 min = 1.5 hours
@@ -361,12 +379,15 @@ class TestTimeParsingFormats:
         """Test 2h30min format"""
         payload = {
             "titre": "TEST_Time_2h30min",
+            "description": "Test",
             "priorite": "NORMALE",
             "statut": "OUVERT"
         }
         create_resp = authenticated_session.post(f"{BASE_URL}/api/work-orders", json=payload)
+        assert create_resp.status_code == 200, f"Create OT failed: {create_resp.text}"
         wo = create_resp.json()
-        wo_id = wo['id']
+        wo_id = wo.get('id')
+        assert wo_id, f"No id in response: {wo}"
         
         try:
             # 2h30min = 2 hours 30 min = 2.5 hours
