@@ -377,6 +377,18 @@ const Vendors = () => {
         onOpenChange={setFormDialogOpen}
         vendor={selectedVendor}
         onSuccess={refreshVendors}
+        prefillData={prefillData}
+      />
+
+      <VendorAIExtract
+        open={aiExtractOpen}
+        onClose={() => setAiExtractOpen(false)}
+        onCreateFromAI={(data) => {
+          setAiExtractOpen(false);
+          setPrefillData(data);
+          setSelectedVendor(null);
+          setFormDialogOpen(true);
+        }}
       />
       
       {/* Confirm Dialog */}
