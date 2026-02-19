@@ -17,6 +17,8 @@ const SurveillanceRapport = () => {
   const [stats, setStats] = useState(null);
   const [availableYears, setAvailableYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(null);
+  const [exporting, setExporting] = useState(null); // 'pdf' | 'excel' | null
+  const reportRef = useRef(null);
   const [displayMode, setDisplayMode] = useState(() => {
     return localStorage.getItem('surveillance_rapport_display_mode') || 'cards';
   });
