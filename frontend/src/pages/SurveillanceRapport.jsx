@@ -245,7 +245,7 @@ const SurveillanceRapport = () => {
           <p className="text-gray-500">Chargement des statistiques pour {selectedYear}...</p>
         </div>
       ) : (
-        <>
+        <div ref={reportRef}>
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Taux de réalisation */}
