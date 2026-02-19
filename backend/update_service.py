@@ -824,8 +824,8 @@ rm -f {restart_script.name}
             logger.info(f"✨ Mise à jour vers {version} terminée")
             
             # Compter les avertissements et erreurs
-            warning_steps = [l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "warning"]
-            error_steps = [l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "error"]
+            warning_steps = [entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "warning"]
+            error_steps = [entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "error"]
             
             # Déterminer le statut final
             has_critical_errors = len(update_history["errors"]) > 0
@@ -840,7 +840,7 @@ rm -f {restart_script.name}
             # Résumé lisible
             update_history["summary"] = {
                 "total_steps": len(update_history["logs"]),
-                "successful_steps": len([l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "success"]),
+                "successful_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "success"]),
                 "warning_steps": len(warning_steps),
                 "error_steps": len(error_steps),
                 "warnings": update_history["warnings"],
@@ -890,9 +890,9 @@ rm -f {restart_script.name}
             # Résumé
             update_history["summary"] = {
                 "total_steps": len(update_history["logs"]),
-                "successful_steps": len([l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "success"]),
-                "warning_steps": len([l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "warning"]),
-                "error_steps": len([l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "error"]),
+                "successful_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "success"]),
+                "warning_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "warning"]),
+                "error_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "error"]),
                 "warnings": update_history.get("warnings", []),
                 "errors": update_history.get("errors", []),
                 "files_changed": update_history.get("total_files_changed", 0)
