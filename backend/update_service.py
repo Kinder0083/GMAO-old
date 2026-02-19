@@ -528,15 +528,9 @@ class UpdateService:
                 self._log_step(update_history, "1/6 - Backup MongoDB", "mongodump",
                               stderr="Backup échoué (non bloquant, on continue)", status="warning")
             
-            # 2. Exporter les données en Excel
-            logger.info("📊 Étape 2/5: Export des données en Excel...")
-            try:
-                export_path = self.backup_dir / f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-                # Note: Cette partie nécessiterait l'implémentation de l'export Excel
-                # Pour l'instant, on continue sans erreur
-                logger.info("✅ Export Excel préparé")
-            except Exception as e:
-                logger.warning(f"⚠️ Export Excel non disponible: {str(e)}")
+            # 2. Export des données (placeholder)
+            logger.info("📊 Étape 2/5: Export des données...")
+            self._log_step(update_history, "2/6 - Export données", "N/A (placeholder)", status="success")
             
             # 3. Télécharger la mise à jour depuis GitHub
             logger.info(f"📥 Étape 3/5: Téléchargement de la version {version}...")
