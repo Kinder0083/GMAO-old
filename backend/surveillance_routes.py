@@ -1756,6 +1756,28 @@ async def create_batch_from_ai(
             # ==========================================
             # CAS 1: Occurrence existante trouvée → mise à jour
             # ==========================================
+            if matched_occurrence and matched_occurrence.get("_match_confidence") == "medium":
+                # Confiance moyenne → ajouter à la liste d'ambiguïté pour décision utilisateur
+                ambiguous_items.append({
+                    "ctrl_index": ctrl_index,
+                    "ctrl": ctrl,
+                    "candidate": {
+                        "id": matched_occurrence["id"],
+                        "classe_type": matched_occurrence.get("classe_type"),
+                        "category": matched_occurrence.get("category"),
+                        "batiment": matched_occurrence.get("batiment"),
+                        "prochain_controle": matched_occurrence.get("prochain_controle"),
+                        "periodicite": matched_occurrence.get("periodicite"),
+                        "executant": matched_occurrence.get("executant"),
+                        "groupe_controle_id": matched_occurrence.get("groupe_controle_id"),
+                        "match_score": matched_occurrence.get("_match_score"),
+                    },
+                    "report_date": derniere_visite,
+                    "periodicite": periodicite,
+                    "prochain_controle": prochain_controle,
+                })
+                continue  # Ne pas créer automatiquement, attendre la décision de l'utilisateur
+            
             if matched_occurrence and matched_occurrence.get("_match_confidence") == "high":
                 # Calculer l'écart en jours entre date prévue et date réelle
                 ecart_jours = None
