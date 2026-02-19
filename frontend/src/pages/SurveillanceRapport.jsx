@@ -62,6 +62,99 @@ const SurveillanceRapport = () => {
     localStorage.setItem('surveillance_rapport_display_mode', displayMode);
   }, [displayMode]);
 
+  // Export PDF visuel
+  const handleExportPDF = async () => {
+    if (!reportRef.current || !stats) return;
+    setExporting('pdf');
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2, useCORS: true, logging: false,
+        backgroundColor: '#f9fafb',
+        windowWidth: 1200,
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Si l'image dépasse une page, paginer
+      const pageHeight = 297; // A4 height in mm
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save(`rapport-surveillance-${selectedYear}.pdf`);
+      toast({ title: 'Export PDF', description: `Rapport ${selectedYear} téléchargé` });
+    } catch (error) {
+      console.error('Erreur export PDF:', error);
+      toast({ title: 'Erreur', description: "Échec de l'export PDF", variant: 'destructive' });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  // Export Excel structuré
+  const handleExportExcel = () => {
+    if (!stats) return;
+    setExporting('excel');
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      // Onglet Global
+      const globalData = [
+        ['Indicateur', 'Valeur'],
+        ['Année', selectedYear],
+        ['Total contrôles', stats.global.total],
+        ['Réalisés', stats.global.realises],
+        ['Taux de réalisation (%)', stats.global.pourcentage_realisation],
+        ['En retard', stats.global.en_retard],
+        ['Dans les temps (±8%)', stats.global.dans_les_temps_total > 0 ? `${stats.global.pourcentage_dans_les_temps}% (${stats.global.dans_les_temps}/${stats.global.dans_les_temps_total})` : 'N/A'],
+        ['Écart moyen (jours)', stats.global.ecart_moyen !== null ? stats.global.ecart_moyen : 'N/A'],
+        ['Anomalies', stats.anomalies],
+      ];
+      const wsGlobal = XLSX.utils.aoa_to_sheet(globalData);
+      wsGlobal['!cols'] = [{ wch: 25 }, { wch: 20 }];
+      XLSX.utils.book_append_sheet(wb, wsGlobal, 'Synthèse');
+      
+      // Onglet Catégories
+      const catRows = Object.entries(stats.by_category).map(([k, v]) => [
+        k.replace(/_/g, ' '), v.total, v.realises, v.pourcentage, v.ecart_moyen !== null && v.ecart_moyen !== undefined ? v.ecart_moyen : 'N/A'
+      ]);
+      const wsCat = XLSX.utils.aoa_to_sheet([['Catégorie', 'Total', 'Réalisés', 'Taux (%)', 'Écart moy. (j)'], ...catRows]);
+      wsCat['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(wb, wsCat, 'Par catégorie');
+      
+      // Onglet Bâtiments
+      const batRows = Object.entries(stats.by_batiment).map(([k, v]) => [k, v.total, v.realises, v.pourcentage]);
+      const wsBat = XLSX.utils.aoa_to_sheet([['Bâtiment', 'Total', 'Réalisés', 'Taux (%)'], ...batRows]);
+      wsBat['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, wsBat, 'Par bâtiment');
+      
+      // Onglet Périodicités
+      const perRows = Object.entries(stats.by_periodicite).map(([k, v]) => [k, v.total, v.realises, v.pourcentage]);
+      const wsPer = XLSX.utils.aoa_to_sheet([['Périodicité', 'Total', 'Réalisés', 'Taux (%)'], ...perRows]);
+      wsPer['!cols'] = [{ wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, wsPer, 'Par périodicité');
+      
+      XLSX.writeFile(wb, `rapport-surveillance-${selectedYear}.xlsx`);
+      toast({ title: 'Export Excel', description: `Rapport ${selectedYear} téléchargé` });
+    } catch (error) {
+      console.error('Erreur export Excel:', error);
+      toast({ title: 'Erreur', description: "Échec de l'export Excel", variant: 'destructive' });
+    } finally {
+      setExporting(null);
+    }
+  };
+
   const currentYear = new Date().getFullYear();
 
   if (!selectedYear) {
