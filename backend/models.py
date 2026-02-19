@@ -1090,6 +1090,19 @@ class VendorBase(BaseModel):
     telephone: str
     adresse: str
     specialite: str
+    # Champs enrichis
+    pays: Optional[str] = None
+    code_postal: Optional[str] = None
+    ville: Optional[str] = None
+    tva_intra: Optional[str] = None
+    siret: Optional[str] = None
+    conditions_paiement: Optional[str] = None
+    devise: Optional[str] = None
+    categorie: Optional[str] = None
+    sous_traitant: Optional[bool] = False
+    contact_fonction: Optional[str] = None
+    site_web: Optional[str] = None
+    notes: Optional[str] = None
     
     @field_validator('email')
     @classmethod
@@ -1110,6 +1123,18 @@ class VendorUpdate(BaseModel):
     telephone: Optional[str] = None
     adresse: Optional[str] = None
     specialite: Optional[str] = None
+    pays: Optional[str] = None
+    code_postal: Optional[str] = None
+    ville: Optional[str] = None
+    tva_intra: Optional[str] = None
+    siret: Optional[str] = None
+    conditions_paiement: Optional[str] = None
+    devise: Optional[str] = None
+    categorie: Optional[str] = None
+    sous_traitant: Optional[bool] = None
+    contact_fonction: Optional[str] = None
+    site_web: Optional[str] = None
+    notes: Optional[str] = None
     
     @field_validator('email')
     @classmethod
