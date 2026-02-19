@@ -839,41 +839,44 @@ async def get_badge_stats(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/rapport-stats")
-async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
+async def get_rapport_stats(
+    annee: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
     """
-    Récupérer les statistiques complètes pour la page Rapport
-    Inclut tous les KPIs : taux de réalisation par catégorie, bâtiment, périodicité, etc.
+    Récupérer les statistiques complètes pour la page Rapport.
+    Filtrable par année. Inclut écart moyen et % dans les temps (tolérance ±8%).
     """
     try:
-        items = await db.surveillance_items.find().to_list(length=None)
+        import math
+        
+        query = {}
+        if annee:
+            query["annee"] = annee
+        
+        items = await db.surveillance_items.find(query).to_list(length=None)
+        
+        empty_response = {
+            "global": {
+                "total": 0, "realises": 0, "planifies": 0, "a_planifier": 0,
+                "pourcentage_realisation": 0, "en_retard": 0, "a_temps": 0,
+                "ecart_moyen": None, "dans_les_temps": 0, "dans_les_temps_total": 0,
+                "pourcentage_dans_les_temps": 0
+            },
+            "by_category": {}, "by_batiment": {}, "by_periodicite": {},
+            "by_responsable": {}, "anomalies": 0
+        }
         
         total = len(items)
         if total == 0:
-            return {
-                "global": {
-                    "total": 0,
-                    "realises": 0,
-                    "planifies": 0,
-                    "a_planifier": 0,
-                    "pourcentage_realisation": 0,
-                    "en_retard": 0,
-                    "a_temps": 0
-                },
-                "by_category": {},
-                "by_batiment": {},
-                "by_periodicite": {},
-                "by_responsable": {},
-                "anomalies": 0
-            }
+            return empty_response
         
         today = datetime.now(timezone.utc).date()
         
-        # Statistiques globales
         realises = [i for i in items if i.get("status") == SurveillanceItemStatus.REALISE.value]
         planifies = [i for i in items if i.get("status") == SurveillanceItemStatus.PLANIFIE.value]
         a_planifier = [i for i in items if i.get("status") == SurveillanceItemStatus.PLANIFIER.value]
         
-        # Calculer les items en retard et à temps
         en_retard = 0
         a_temps = 0
         for item in items:
@@ -887,30 +890,45 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
                 except:
                     pass
         
-        # Compter les anomalies (items avec commentaires mentionnant des problèmes)
+        # Statistiques d'écart : écart moyen + % dans les temps (tolérance ±8%)
+        ecarts = []
+        dans_les_temps = 0
+        dans_les_temps_total = 0
+        for item in realises:
+            ecart = item.get("ecart_jours")
+            if ecart is not None:
+                ecarts.append(ecart)
+                dans_les_temps_total += 1
+                tolerance = calculate_tolerance_days(item.get("periodicite", "1 an"))
+                if abs(ecart) <= tolerance:
+                    dans_les_temps += 1
+        
+        ecart_moyen = round(sum(ecarts) / len(ecarts), 1) if ecarts else None
+        pourcentage_dans_les_temps = round((dans_les_temps / dans_les_temps_total * 100), 1) if dans_les_temps_total > 0 else 0
+        
+        # Anomalies
         anomalies = 0
         for item in items:
-            commentaire = item.get("commentaire", "") or ""
-            commentaire = commentaire.lower()
-            if any(keyword in commentaire for keyword in ["anomalie", "problème", "défaut", "dysfonctionnement", "intervention", "réparation"]):
+            commentaire = (item.get("commentaire") or "").lower()
+            if any(kw in commentaire for kw in ["anomalie", "problème", "défaut", "dysfonctionnement", "intervention", "réparation"]):
                 anomalies += 1
         
-        # Par catégorie (dynamique - récupère toutes les catégories existantes)
+        # Par catégorie
         by_category = {}
-        categories = list(set([i.get("category") for i in items if i.get("category")]))
-        for cat in categories:
+        for cat in set(i.get("category") for i in items if i.get("category")):
             cat_items = [i for i in items if i.get("category") == cat]
-            cat_realises = len([i for i in cat_items if i.get("status") == SurveillanceItemStatus.REALISE.value])
+            cat_realises = [i for i in cat_items if i.get("status") == SurveillanceItemStatus.REALISE.value]
+            cat_ecarts = [i.get("ecart_jours") for i in cat_realises if i.get("ecart_jours") is not None]
             by_category[cat] = {
                 "total": len(cat_items),
-                "realises": cat_realises,
-                "pourcentage": round((cat_realises / len(cat_items) * 100) if cat_items else 0, 1)
+                "realises": len(cat_realises),
+                "pourcentage": round((len(cat_realises) / len(cat_items) * 100) if cat_items else 0, 1),
+                "ecart_moyen": round(sum(cat_ecarts) / len(cat_ecarts), 1) if cat_ecarts else None
             }
         
         # Par bâtiment
         by_batiment = {}
-        batiments = set([i.get("batiment", "Non spécifié") for i in items])
-        for bat in batiments:
+        for bat in set(i.get("batiment", "Non spécifié") for i in items):
             bat_items = [i for i in items if i.get("batiment") == bat]
             bat_realises = len([i for i in bat_items if i.get("status") == SurveillanceItemStatus.REALISE.value])
             by_batiment[bat] = {
@@ -921,8 +939,7 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
         
         # Par périodicité
         by_periodicite = {}
-        periodicites = set([i.get("periodicite", "Non spécifié") for i in items])
-        for per in periodicites:
+        for per in set(i.get("periodicite", "Non spécifié") for i in items):
             per_items = [i for i in items if i.get("periodicite") == per]
             per_realises = len([i for i in per_items if i.get("status") == SurveillanceItemStatus.REALISE.value])
             by_periodicite[per] = {
@@ -950,7 +967,11 @@ async def get_rapport_stats(current_user: dict = Depends(get_current_user)):
                 "a_planifier": len(a_planifier),
                 "pourcentage_realisation": round((len(realises) / total * 100), 1),
                 "en_retard": en_retard,
-                "a_temps": a_temps
+                "a_temps": a_temps,
+                "ecart_moyen": ecart_moyen,
+                "dans_les_temps": dans_les_temps,
+                "dans_les_temps_total": dans_les_temps_total,
+                "pourcentage_dans_les_temps": pourcentage_dans_les_temps
             },
             "by_category": by_category,
             "by_batiment": by_batiment,
