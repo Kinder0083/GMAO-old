@@ -1,44 +1,49 @@
-# GMAO IRIS - PRD (Product Requirements Document)
+# GMAO Iris - Product Requirements Document
 
-## Problème Original
-Application GMAO full-stack avec React/FastAPI/MongoDB, assistant IA "Adria" et modules Surveillance/Fournisseurs.
+## Problème original
+Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack avec React, FastAPI et MongoDB. L'application gère la maintenance industrielle incluant les ordres de travail, la maintenance préventive, le plan de surveillance réglementaire, les capteurs IoT, le MES, et bien plus.
 
 ## Architecture
 - **Frontend**: React + Shadcn/UI + TailwindCSS
 - **Backend**: FastAPI (Python)
-- **Database**: MongoDB
-- **IA**: Gemini 2.5 Flash (via emergentintegrations)
+- **Base de données**: MongoDB
+- **IA**: Gemini 2.5 Flash via emergentintegrations
+- **Authentification**: JWT + Google OAuth
 
-## Comptes de Test
-- Admin: admin@test.com / Admin123!
-- Technicien: technicien@test.com / Technicien123!
+## Fonctionnalités principales
+- Tableau de bord
+- Ordres de travail (CRUD + IA)
+- Maintenance préventive
+- Plan de Surveillance réglementaire (avec IA)
+- Gestion des équipements
+- Inventaire
+- Capteurs IoT / MQTT
+- MES (Manufacturing Execution System)
+- Chat en temps réel
+- Système d'alertes et notifications
+- Import/Export de données
+- Sauvegarde/Restauration
+- Gestion des rôles et permissions (RBAC)
 
-## Système de mise à jour
-### Flux de mise à jour (corrigé Feb 2026)
-1. Backup MongoDB (mongodump)
-2. Sauvegarde des fichiers .env (backend + frontend)
-3. `git fetch origin` + `git reset --hard origin/main` (remplace l'ancien `git pull`)
-4. Restauration des fichiers .env
-5. `pip install -r requirements.txt` (via venv)
-6. `yarn install` + `yarn build` (frontend)
-7. Redémarrage services (supervisorctl + nginx reload)
+## Fonctionnalité récente : Correspondance Intelligente du Plan de Surveillance (Fév 2026)
 
-### Pourquoi git reset --hard au lieu de git pull?
-- Emergent "Save to Github" peut réécrire l'historique Git (force push)
-- `git pull` tente une fusion → retourne "Already up to date" même si les fichiers sont différents
-- `git reset --hard` écrase le code local = code distant garanti
+### Exigences
+1. **Logique de correspondance (Matching)**: Lors de l'analyse d'un nouveau rapport, l'IA recherche une occurrence planifiée existante correspondante (basée sur catégorie, type, exécutant, bâtiment, date)
+2. **Mise à jour si correspondance**: Si correspondance trouvée → statut "Réalisé", date réelle, calcul écart_jours, génération prochaine occurrence
+3. **Fenêtre de tolérance**: ±8% de la périodicité (ex: 7j pour 90j, 29j pour 365j)
+4. **Gestion de l'ambiguïté**: Si confiance moyenne → proposer les options à l'utilisateur
+5. **Création si pas de correspondance**: Comportement classique de création
+6. **Colonne "Écart (jours)"**: Affichée dans toutes les vues (Liste, Grille, Liste groupée)
+7. **Icône robot (correspondance manuelle)**: Clic → upload rapport → IA analyse et met à jour l'occurrence spécifique
 
-### Journal de mise à jour
-- Chaque étape enregistrée: commande, stdout/stderr, code retour, durée
-- Résumé avec compteurs (OK/warnings/erreurs)
-- Frontend affiche les logs dans un terminal-like
+### Implémentation
+- Backend: `surveillance_routes.py` - fonctions `find_matching_occurrence`, `calculate_tolerance_days`, endpoints `create-batch-from-ai`, `analyze-report-for-occurrence`, `confirm-match`
+- Frontend: `ListView.jsx`, `ListViewGrouped.jsx`, `GridView.jsx` (colonne Écart + icône Bot), `ManualMatchDialog.jsx` (nouveau), `SurveillanceAIExtract.jsx` (gestion matched/ambiguous)
+- API: `analyzeReportForItem`, `confirmMatch` ajoutés à `surveillanceAPI`
 
-## Ce qui a été implémenté
-- [x] Ordres de Travail (CRUD), Assistant Adria (CREATE/MODIFY/CLOSE/ASSIGN_OT)
-- [x] Plan de Surveillance: CRUD, import IA PDF, contrôles récurrents, WebSocket
-- [x] Fournisseurs: modèle enrichi (12 champs), extraction IA (Excel/PDF/images), formulaire 4 onglets
-- [x] Système de mise à jour: git fetch+reset, journal détaillé, sauvegarde .env
+### Status: TERMINÉ ET TESTÉ ✅ (19 Fév 2026)
+- Backend: 10/10 tests passés
+- Frontend: 100% vérifications UI passées
 
 ## Backlog
-- P2: Adria - Clôture OT + résumé d'intervention en commande vocale
-- P2: Validation robustesse extraction IA (PDF complexe 8+ contrôles)
+- P2: Refactoring de `create_batch_from_ai` (décomposition en fonctions plus petites)
