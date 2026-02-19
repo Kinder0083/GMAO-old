@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Edit, Trash2, CheckCircle, Paperclip } from 'lucide-react';
+import { Edit, Trash2, CheckCircle, Paperclip, Bot } from 'lucide-react';
 import CompleteSurveillanceDialog from './CompleteSurveillanceDialog';
 import RecurrenceIndicator from './RecurrenceIndicator';
+import ManualMatchDialog from './ManualMatchDialog';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -26,6 +27,7 @@ const getStatusLabel = (status) => {
 
 function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear, trends }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
+  const [matchDialog, setMatchDialog] = useState({ open: false, item: null });
 
   if (loading) return <div className="text-center p-4">Chargement...</div>;
 
