@@ -452,7 +452,7 @@ export const surveillanceAPI = {
   getStats: (annee) => api.get('/surveillance/stats', { params: annee ? { annee } : {} }).then(res => res.data),
   getAlerts: () => api.get('/surveillance/alerts').then(res => res.data),
   getBadgeStats: () => api.get('/surveillance/badge-stats').then(res => res.data),
-  getRapportStats: () => api.get('/surveillance/rapport-stats').then(res => res.data),
+  getRapportStats: (annee) => api.get('/surveillance/rapport-stats', { params: annee ? { annee } : {} }).then(res => res.data),
   
   // Années disponibles
   getAvailableYears: () => api.get('/surveillance/available-years').then(res => res.data),
