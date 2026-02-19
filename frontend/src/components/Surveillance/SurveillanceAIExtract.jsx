@@ -116,7 +116,36 @@ function SurveillanceAIExtract({ open, onClose }) {
     setSelectedControles([]);
     setResult(null);
     setSourceFile(null);
+    setAmbiguousProcessing(false);
     onClose(shouldRefresh);
+  };
+
+  const handleAmbiguousDecision = async (ambItem, action) => {
+    setAmbiguousProcessing(true);
+    try {
+      await surveillanceAPI.confirmMatch({
+        action, // "match" ou "create_new"
+        item_id: ambItem.candidate?.id,
+        ctrl: ambItem.ctrl,
+        document_info: extractedData?.document_info || {},
+        report_date: ambItem.report_date,
+        periodicite: ambItem.periodicite,
+        prochain_controle: ambItem.prochain_controle,
+        source_file: sourceFile,
+      });
+      // Retirer l'item résolu de la liste
+      setResult(prev => ({
+        ...prev,
+        ambiguous_items: prev.ambiguous_items.filter(a => a !== ambItem),
+        matched_count: action === 'match' ? (prev.matched_count || 0) + 1 : prev.matched_count,
+        created_count: action === 'create_new' ? (prev.created_count || 0) + 1 : prev.created_count,
+      }));
+      toast({ title: 'OK', description: action === 'match' ? 'Correspondance confirmée' : 'Nouveau contrôle créé' });
+    } catch (error) {
+      toast({ title: 'Erreur', description: error.response?.data?.detail || 'Erreur lors de la confirmation', variant: 'destructive' });
+    } finally {
+      setAmbiguousProcessing(false);
+    }
   };
 
   const getResultBadge = (resultat) => {
