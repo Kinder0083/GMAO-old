@@ -124,6 +124,16 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
           }}
         />
       )}
+      {matchDialog.open && (
+        <ManualMatchDialog
+          open={matchDialog.open}
+          item={matchDialog.item}
+          onClose={(refresh) => {
+            setMatchDialog({ open: false, item: null });
+            if (refresh && onRefresh) onRefresh();
+          }}
+        />
+      )}
     </>
   );
 }
