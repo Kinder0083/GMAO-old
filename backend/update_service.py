@@ -797,16 +797,27 @@ class UpdateService:
                 restart_script.write(f"""#!/bin/bash
 # Redémarrage post-mise-à-jour GMAO Iris
 sleep 3
-supervisorctl restart gmao-iris-backend 2>/dev/null || \\
-/usr/bin/supervisorctl restart gmao-iris-backend 2>/dev/null || \\
-sudo supervisorctl restart gmao-iris-backend 2>/dev/null || \\
-supervisorctl restart all 2>/dev/null || \\
-sudo supervisorctl restart all 2>/dev/null
+
+# Tenter supervisorctl
+supervisorctl restart gmao-iris-backend 2>/dev/null && echo "supervisorctl OK" || \\
+/usr/bin/supervisorctl restart gmao-iris-backend 2>/dev/null && echo "supervisorctl (abs) OK" || \\
+sudo supervisorctl restart gmao-iris-backend 2>/dev/null && echo "sudo supervisorctl OK" || \\
+supervisorctl restart all 2>/dev/null && echo "supervisorctl all OK" || \\
+sudo supervisorctl restart all 2>/dev/null && echo "sudo supervisorctl all OK" || true
+
+# Tenter systemctl
+sudo systemctl restart gmao-iris-backend 2>/dev/null && echo "systemctl backend OK" || \\
+sudo systemctl restart gmao-iris 2>/dev/null && echo "systemctl gmao-iris OK" || \\
+sudo systemctl restart gmao 2>/dev/null && echo "systemctl gmao OK" || true
+
 sleep 5
+
+# Recharger nginx
 nginx -s reload 2>/dev/null || \\
 sudo nginx -s reload 2>/dev/null || \\
 sudo systemctl reload nginx 2>/dev/null || \\
-sudo service nginx reload 2>/dev/null
+sudo service nginx reload 2>/dev/null || true
+
 rm -f {restart_script.name}
 """)
                 restart_script.close()
