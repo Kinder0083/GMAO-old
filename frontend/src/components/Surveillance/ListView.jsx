@@ -51,7 +51,7 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">Aucun contrôle trouvé</TableCell>
+                <TableCell colSpan={9} className="text-center">Aucun contrôle trouvé</TableCell>
               </TableRow>
             ) : (
               items.map((item) => (
