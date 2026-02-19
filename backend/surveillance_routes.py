@@ -1623,11 +1623,16 @@ async def create_batch_from_ai(
         
         created_items = []
         created_work_orders = []
+        matched_items = []
         errors = []
         
         for ctrl_index, ctrl in enumerate(controles):
           try:
             derniere_visite = ctrl.get("derniere_visite") or document_info.get("date_intervention")
+            periodicite_raw = ctrl.get("periodicite") or "Non déterminée"
+            
+            # Chercher une occurrence existante qui correspond
+            matched_occurrence = await find_matching_occurrence(ctrl, document_info, db)
             periodicite_raw = ctrl.get("periodicite") or "Non déterminée"
             
             # Normaliser la périodicité (nettoyer les références réglementaires)
