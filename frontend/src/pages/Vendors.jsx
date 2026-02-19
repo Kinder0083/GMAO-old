@@ -30,6 +30,8 @@ const Vendors = () => {
   const [viewMode, setViewMode] = useState('list'); // 'grid' ou 'list'
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const [aiExtractOpen, setAiExtractOpen] = useState(false);
+  const [prefillData, setPrefillData] = useState(null);
 
   // Utiliser le hook temps réel
   const { 
