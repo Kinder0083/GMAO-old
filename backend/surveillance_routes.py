@@ -1624,23 +1624,13 @@ async def create_batch_from_ai(
 ):
     """
     Crée plusieurs contrôles de surveillance à partir des données extraites par l'IA.
+    Gère le matching intelligent (mise à jour d'occurrences existantes) et la création.
     Crée automatiquement un bon de travail curatif pour chaque non-conformité.
     """
     try:
         controles = items_data.get("controles", [])
         document_info = items_data.get("document_info", {})
-        
-        # Préparer la pièce jointe source si fournie
-        source_file = items_data.get("source_file")
-        source_attachment = None
-        if source_file and source_file.get("url"):
-            source_attachment = {
-                "id": source_file.get("id", str(uuid.uuid4())),
-                "filename": source_file.get("filename", "document.pdf"),
-                "url": source_file.get("url"),
-                "size": source_file.get("size", 0),
-                "uploaded_at": datetime.now(timezone.utc).isoformat()
-            }
+        source_attachment = _prepare_source_attachment(items_data.get("source_file"))
         
         created_items = []
         created_work_orders = []
@@ -1651,134 +1641,19 @@ async def create_batch_from_ai(
         for ctrl_index, ctrl in enumerate(controles):
           try:
             derniere_visite = ctrl.get("derniere_visite") or document_info.get("date_intervention")
-            periodicite_raw = ctrl.get("periodicite") or "Non déterminée"
-            
-            # Chercher une occurrence existante qui correspond
-            matched_occurrence = await find_matching_occurrence(ctrl, document_info, db)
-            periodicite_raw = ctrl.get("periodicite") or "Non déterminée"
-            
-            # Normaliser la périodicité (nettoyer les références réglementaires)
-            # "Annuelle (réf. Arrêtés du 5 mars)" → "1 an"
-            periodicite = periodicite_raw
-            p_lower = periodicite_raw.lower().strip()
-            if any(w in p_lower for w in ['annuel', 'annual']):
-                if 'bi' in p_lower or 'biennal' in p_lower:
-                    periodicite = "2 ans"
-                else:
-                    periodicite = "1 an"
-            elif 'semestriel' in p_lower:
-                periodicite = "6 mois"
-            elif 'trimestriel' in p_lower:
-                periodicite = "3 mois"
-            elif 'bimestriel' in p_lower:
-                periodicite = "2 mois"
-            elif 'mensuel' in p_lower:
-                periodicite = "1 mois"
-            elif 'hebdomadaire' in p_lower:
-                periodicite = "1 semaine"
-            elif 'quotidien' in p_lower:
-                periodicite = "1 jour"
-            
-            # Calculer prochain_controle = derniere_visite + periodicite
-            # C'est la date du PROCHAIN contrôle à effectuer
-            prochain_controle = None
-            if derniere_visite and periodicite:
-                try:
-                    from dateutil.relativedelta import relativedelta
-                    base_date = datetime.fromisoformat(derniere_visite)
-                    period_lower = periodicite.lower().strip()
-                    
-                    # Normaliser la périodicité textuelle AVANT d'extraire les chiffres
-                    # "Annuelle" → 12 mois, "Semestrielle" → 6 mois, "Trimestrielle" → 3 mois, etc.
-                    normalized = None
-                    if any(w in period_lower for w in ['annuel', 'annual']):
-                        # Extraire le nombre d'années si explicite (ex: "2 ans", "bi-annuel")
-                        if 'bi' in period_lower or 'biennal' in period_lower:
-                            normalized = ('years', 2)
-                        else:
-                            normalized = ('years', 1)
-                    elif 'semestriel' in period_lower:
-                        normalized = ('months', 6)
-                    elif 'trimestriel' in period_lower:
-                        normalized = ('months', 3)
-                    elif 'bimestriel' in period_lower:
-                        normalized = ('months', 2)
-                    elif 'mensuel' in period_lower:
-                        normalized = ('months', 1)
-                    elif 'hebdomadaire' in period_lower:
-                        normalized = ('weeks', 1)
-                    elif 'quotidien' in period_lower:
-                        normalized = ('days', 1)
-                    
-                    if normalized:
-                        unit, num = normalized
-                        if unit == 'years':
-                            next_date = base_date + relativedelta(years=num)
-                        elif unit == 'months':
-                            next_date = base_date + relativedelta(months=num)
-                        elif unit == 'weeks':
-                            next_date = base_date + timedelta(weeks=num)
-                        else:
-                            next_date = base_date + timedelta(days=num)
-                        prochain_controle = next_date.strftime("%Y-%m-%d")
-                    else:
-                        # Format numérique simple: "1 an", "6 mois", "3 mois", "5 ans"
-                        # Extraire UNIQUEMENT le premier nombre suivi d'une unité
-                        import re
-                        match_an = re.search(r'(\d+)\s*an', period_lower)
-                        match_mois = re.search(r'(\d+)\s*mois', period_lower)
-                        match_sem = re.search(r'(\d+)\s*semaine', period_lower)
-                        match_jour = re.search(r'(\d+)\s*jour', period_lower)
-                        
-                        if match_an:
-                            next_date = base_date + relativedelta(years=int(match_an.group(1)))
-                            prochain_controle = next_date.strftime("%Y-%m-%d")
-                        elif match_mois:
-                            next_date = base_date + relativedelta(months=int(match_mois.group(1)))
-                            prochain_controle = next_date.strftime("%Y-%m-%d")
-                        elif match_sem:
-                            next_date = base_date + timedelta(weeks=int(match_sem.group(1)))
-                            prochain_controle = next_date.strftime("%Y-%m-%d")
-                        elif match_jour:
-                            next_date = base_date + timedelta(days=int(match_jour.group(1)))
-                            prochain_controle = next_date.strftime("%Y-%m-%d")
-                        else:
-                            # Fallback: 1 an par défaut
-                            next_date = base_date + relativedelta(years=1)
-                            prochain_controle = next_date.strftime("%Y-%m-%d")
-                            logger.warning(f"Périodicité non reconnue '{periodicite}', fallback 1 an")
-                except Exception as e:
-                    logger.warning(f"Erreur calcul prochain contrôle: {e}")
-            
-            # L'année = année de la dernière visite (quand le contrôle a été FAIT)
-            # Pas l'année du prochain contrôle
+            periodicite = _normalize_periodicite(ctrl.get("periodicite") or "Non déterminée")
+            prochain_controle = _calculate_next_control_date(derniere_visite, periodicite)
             annee = get_year_from_date_str(derniere_visite) if derniere_visite else datetime.now().year
             if not annee:
                 annee = datetime.now().year
+            commentaire = _build_control_comment(ctrl)
+            resultat = _map_resultat(ctrl.get("resultat"))
             
-            # Construire le commentaire avec anomalies
-            commentaire_parts = []
-            if ctrl.get("anomalies"):
-                commentaire_parts.append(f"ANOMALIES DÉTECTÉES:\n{ctrl['anomalies']}")
-            if ctrl.get("equipements_concernes"):
-                commentaire_parts.append(f"Équipements: {ctrl['equipements_concernes']}")
-            commentaire = "\n\n".join(commentaire_parts) if commentaire_parts else None
+            # Chercher une occurrence existante qui correspond
+            matched_occurrence = await find_matching_occurrence(ctrl, document_info, db)
             
-            # Déterminer le résultat
-            resultat_map = {
-                "CONFORME": "Conforme",
-                "NON_CONFORME": "Non conforme",
-                "AVEC_RESERVES": "Avec réserves"
-            }
-            resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
-            
-            groupe_id = str(uuid.uuid4())
-            
-            # ==========================================
-            # CAS 1: Occurrence existante trouvée → mise à jour
-            # ==========================================
+            # CAS AMBIGUÏTÉ: confiance moyenne → demander à l'utilisateur
             if matched_occurrence and matched_occurrence.get("_match_confidence") == "medium":
-                # Confiance moyenne → ajouter à la liste d'ambiguïté pour décision utilisateur
                 ambiguous_items.append({
                     "ctrl_index": ctrl_index,
                     "ctrl": ctrl,
@@ -1797,265 +1672,45 @@ async def create_batch_from_ai(
                     "periodicite": periodicite,
                     "prochain_controle": prochain_controle,
                 })
-                continue  # Ne pas créer automatiquement, attendre la décision de l'utilisateur
+                continue
             
+            # CAS MATCH: haute confiance → mise à jour automatique
             if matched_occurrence and matched_occurrence.get("_match_confidence") == "high":
-                # Calculer l'écart en jours entre date prévue et date réelle
-                ecart_jours = None
-                try:
-                    date_prevue = datetime.fromisoformat(matched_occurrence["prochain_controle"]).date()
-                    date_reelle = datetime.fromisoformat(derniere_visite).date()
-                    ecart_jours = (date_reelle - date_prevue).days  # + = retard, - = avance
-                except Exception:
-                    pass
-                
-                # Préparer la mise à jour
-                update_data = {
-                    "status": SurveillanceItemStatus.REALISE.value,
-                    "derniere_visite": derniere_visite,
-                    "date_realisation": derniere_visite,
-                    "prochain_controle": prochain_controle,
-                    "ecart_jours": ecart_jours,
-                    "resultat_controle": resultat,
-                    "numero_rapport": document_info.get("numero_rapport"),
-                    "organisme_controle": document_info.get("organisme_controle"),
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                    "updated_by": current_user.get("id")
-                }
-                if commentaire:
-                    update_data["commentaire"] = commentaire
-                if ctrl.get("references_reglementaires"):
-                    update_data["reference_reglementaire"] = ctrl.get("references_reglementaires")
-                if source_attachment:
-                    update_data["$push"] = {"attachments": source_attachment}
-                
-                # Séparer $push des $set
-                set_data = {k: v for k, v in update_data.items() if k != "$push"}
-                update_query = {"$set": set_data}
-                if "$push" in update_data:
-                    update_query["$push"] = update_data["$push"]
-                
-                await db.surveillance_items.update_one(
-                    {"id": matched_occurrence["id"]},
-                    update_query
+                match_result = await _update_matched_occurrence(
+                    matched_occurrence, ctrl, document_info, derniere_visite,
+                    prochain_controle, periodicite, resultat, commentaire,
+                    source_attachment, current_user
                 )
-                
-                # Récupérer l'item mis à jour
-                updated_item = await db.surveillance_items.find_one(
-                    {"id": matched_occurrence["id"]}, {"_id": 0}
-                )
-                
-                matched_items.append({
-                    **updated_item,
-                    "_matched_from": matched_occurrence["id"],
-                    "_ecart_jours": ecart_jours,
-                    "_match_score": matched_occurrence.get("_match_score"),
-                    "_action": "updated_occurrence"
-                })
-                
-                # Générer la nouvelle occurrence future
-                if derniere_visite and periodicite:
-                    # Supprimer les anciennes occurrences futures du même groupe
-                    group_id = matched_occurrence.get("groupe_controle_id")
-                    if group_id:
-                        # Supprimer les futures occurrences non réalisées de ce groupe
-                        # qui sont APRÈS la date du contrôle qu'on vient de réaliser
-                        await db.surveillance_items.delete_many({
-                            "groupe_controle_id": group_id,
-                            "status": {"$in": [SurveillanceItemStatus.PLANIFIER.value, SurveillanceItemStatus.PLANIFIE.value]},
-                            "id": {"$ne": matched_occurrence["id"]}
-                        })
-                    
-                    # Régénérer les occurrences futures
-                    base_for_recurring = updated_item or matched_occurrence
-                    base_for_recurring["groupe_controle_id"] = group_id or str(uuid.uuid4())
-                    recurring = generate_recurring_controls(base_for_recurring, derniere_visite, periodicite)
-                    if recurring:
-                        for r in recurring:
-                            r["created_by"] = current_user.get("id")
-                            r["updated_by"] = current_user.get("id")
-                        await db.surveillance_items.insert_many(recurring)
-                        logger.info(f"✅ {len(recurring)} nouvelle(s) occurrence(s) régénérée(s) pour {matched_occurrence.get('classe_type')}")
-                
-                logger.info(f"✅ Occurrence matchée et mise à jour: {matched_occurrence['id'][:8]} (écart: {ecart_jours}j)")
-                
-                # Audit
-                await audit_service.log_action(
-                    user_id=current_user["id"],
-                    user_name=f"{current_user['prenom']} {current_user['nom']}",
-                    user_email=current_user["email"],
-                    action=ActionType.UPDATE,
-                    entity_type=EntityType.SURVEILLANCE,
-                    entity_id=matched_occurrence["id"],
-                    entity_name=f"Plan surveillance (IA match): {matched_occurrence.get('classe_type')}"
-                )
-                
-                continue  # Passer au contrôle suivant
+                matched_items.append(match_result)
+                continue
             
-            # ==========================================
-            # CAS 2: Pas de correspondance → création classique
-            # ==========================================
-            
-            # Créer l'item de surveillance (RÉALISÉ)
-            # prochain_controle = derniere_visite + periodicite (date du PROCHAIN contrôle)
-            # L'affichage dans le frontend utilise derniere_visite pour les items REALISE
-            item = SurveillanceItem(
-                classe_type=ctrl.get("classe_type", ""),
-                category=ctrl.get("category", "AUTRE"),
-                batiment=ctrl.get("batiment") or "",
-                periodicite=ctrl.get("periodicite", "Non déterminée"),
-                responsable=SurveillanceResponsible.EXTERNE,
-                executant=ctrl.get("executant", document_info.get("organisme_controle", "")),
-                description=ctrl.get("description"),
-                derniere_visite=derniere_visite,
-                prochain_controle=prochain_controle,
-                status=SurveillanceItemStatus.REALISE,
-                date_realisation=derniere_visite,
-                commentaire=commentaire,
-                reference_reglementaire=ctrl.get("references_reglementaires"),
-                numero_rapport=document_info.get("numero_rapport"),
-                organisme_controle=document_info.get("organisme_controle"),
-                resultat_controle=resultat,
-                attachments=[source_attachment] if source_attachment else [],
-                annee=annee,
-                groupe_controle_id=groupe_id,
-                created_by=current_user.get("id"),
-                updated_by=current_user.get("id")
+            # CAS CRÉATION: pas de correspondance → nouveau contrôle
+            item_dict = await _create_new_surveillance_item(
+                ctrl, document_info, derniere_visite, prochain_controle,
+                periodicite, resultat, commentaire, source_attachment,
+                annee, current_user
             )
-            
-            item_dict = item.model_dump()
-            await db.surveillance_items.insert_one(item_dict)
-            
-            if "_id" in item_dict:
-                del item_dict["_id"]
-            
             created_items.append(item_dict)
             
-            # Générer les contrôles récurrents futurs à partir de la date du contrôle réalisé
-            # generate_recurring_controls part de start_date + periodicite et va jusqu'à fin N+1
-            if derniere_visite and periodicite:
-                recurring = generate_recurring_controls(item_dict, derniere_visite, periodicite)
-                if recurring:
-                    for r in recurring:
-                        r["created_by"] = current_user.get("id")
-                        r["updated_by"] = current_user.get("id")
-                    await db.surveillance_items.insert_many(recurring)
-                    logger.info(f"✅ {len(recurring)} contrôle(s) récurrent(s) créé(s) pour {item.classe_type}")
-            
-            # Audit
-            await audit_service.log_action(
-                user_id=current_user["id"],
-                user_name=f"{current_user['prenom']} {current_user['nom']}",
-                user_email=current_user["email"],
-                action=ActionType.CREATE,
-                entity_type=EntityType.SURVEILLANCE,
-                entity_id=item.id,
-                entity_name=f"Plan surveillance (IA): {item.classe_type}"
-            )
-            
-            # Si non-conformité, créer automatiquement un bon de travail curatif
+            # BT curatif si non-conformité
             if ctrl.get("resultat") in ("NON_CONFORME", "AVEC_RESERVES") and ctrl.get("anomalies"):
-                from bson import ObjectId as BsonObjectId
-                
-                wo_count = await db.work_orders.count_documents({})
-                wo_numero = str(5800 + wo_count + 1)
-                
-                wo_dict = {
-                    "_id": BsonObjectId(),
-                    "titre": f"[Curatif] {ctrl.get('classe_type', 'Contrôle')} - Non-conformité",
-                    "description": f"Non-conformité détectée lors du contrôle réglementaire.\n\n"
-                                   f"Organisme: {document_info.get('organisme_controle', 'N/A')}\n"
-                                   f"Date du contrôle: {ctrl.get('derniere_visite', 'N/A')}\n"
-                                   f"Rapport: {document_info.get('numero_rapport', 'N/A')}\n\n"
-                                   f"ANOMALIES:\n{ctrl.get('anomalies', '')}",
-                    "statut": "OUVERT",
-                    "priorite": "HAUTE",
-                    "categorie": "TRAVAUX_CURATIF",
-                    "equipement_id": None,
-                    "assigne_a_id": None,
-                    "emplacement_id": None,
-                    "dateLimite": None,
-                    "tempsEstime": None,
-                    "tempsReel": None,
-                    "createdBy": current_user.get("id"),
-                    "numero": wo_numero,
-                    "dateCreation": datetime.now(timezone.utc),
-                    "dateTermine": None,
-                    "attachments": [],
-                    "comments": [],
-                    "parts_used": [],
-                    "service": None,
-                    "surveillance_item_id": item.id
-                }
-                wo_dict["id"] = str(wo_dict["_id"])
-                
-                await db.work_orders.insert_one(wo_dict)
-                
-                # Audit du bon de travail
-                await audit_service.log_action(
-                    user_id=current_user["id"],
-                    user_name=f"{current_user['prenom']} {current_user['nom']}",
-                    user_email=current_user["email"],
-                    action=ActionType.CREATE,
-                    entity_type=EntityType.WORK_ORDER,
-                    entity_id=wo_dict["id"],
-                    entity_name=wo_dict["titre"],
-                    details=f"BT curatif #{wo_numero} créé auto depuis contrôle IA"
-                )
-                
-                created_work_orders.append({
-                    "id": wo_dict["id"],
-                    "numero": wo_numero,
-                    "titre": wo_dict["titre"],
-                    "anomalies": ctrl.get("anomalies")
-                })
+                wo = await _create_curative_work_order(ctrl, document_info, item_dict["id"], current_user)
+                if wo:
+                    created_work_orders.append(wo)
             
             # Broadcast WebSocket
             if realtime_manager:
-                await realtime_manager.emit_event(
-                    "surveillance_plans",
-                    "created",
-                    item_dict,
-                    user_id=current_user["id"]
-                )
+                await realtime_manager.emit_event("surveillance_plans", "created", item_dict, user_id=current_user["id"])
+                
           except Exception as ctrl_error:
             logger.error(f"Erreur création contrôle {ctrl_index} ({ctrl.get('classe_type', '?')}): {ctrl_error}")
             errors.append(f"Contrôle {ctrl_index + 1} ({ctrl.get('classe_type', '?')[:30]}): {str(ctrl_error)}")
         
-        # Archiver automatiquement l'analyse IA (Phase 1)
-        result_counts = {"CONFORME": 0, "NON_CONFORME": 0, "AVEC_RESERVES": 0}
-        categories_set = set()
-        for ctrl in controles:
-            r = ctrl.get("resultat", "")
-            if r in result_counts:
-                result_counts[r] += 1
-            cat = ctrl.get("category")
-            if cat:
-                categories_set.add(cat)
-        
-        history_entry = AIAnalysisHistory(
-            filename=items_data.get("filename", "document.pdf"),
-            file_size=items_data.get("file_size"),
-            organisme_controle=document_info.get("organisme_controle"),
-            date_intervention=document_info.get("date_intervention"),
-            numero_rapport=document_info.get("numero_rapport"),
-            site_controle=document_info.get("site_controle"),
-            controles_count=len(created_items),
-            conformes_count=result_counts["CONFORME"],
-            non_conformes_count=result_counts["NON_CONFORME"],
-            avec_reserves_count=result_counts["AVEC_RESERVES"],
-            created_item_ids=[item["id"] for item in created_items],
-            created_work_order_ids=[wo["id"] for wo in created_work_orders],
-            raw_extracted_data=items_data,
-            categories=list(categories_set),
-            analyzed_by=current_user.get("id"),
-            analyzed_by_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        # Archiver l'analyse IA
+        history_entry = await _archive_ai_analysis(
+            items_data, document_info, controles,
+            created_items, created_work_orders, matched_items, current_user
         )
-        
-        history_dict = history_entry.model_dump()
-        await db.ai_analysis_history.insert_one(history_dict)
-        if "_id" in history_dict:
-            del history_dict["_id"]
         
         return {
             "success": True,
