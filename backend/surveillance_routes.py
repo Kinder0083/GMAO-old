@@ -1624,6 +1624,7 @@ async def create_batch_from_ai(
         created_items = []
         created_work_orders = []
         matched_items = []
+        ambiguous_items = []
         errors = []
         
         for ctrl_index, ctrl in enumerate(controles):
