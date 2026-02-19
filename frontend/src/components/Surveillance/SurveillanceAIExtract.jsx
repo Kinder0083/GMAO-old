@@ -493,6 +493,17 @@ function SurveillanceAIExtract({ open, onClose }) {
           {step === 'done' && (
             <Button onClick={handleClose} data-testid="close-btn">Fermer</Button>
           )}
+          {step === 'ambiguous' && (
+            <>
+              {result?.ambiguous_items?.length === 0 ? (
+                <Button onClick={handleClose} data-testid="close-ambiguous-btn">Fermer</Button>
+              ) : (
+                <Button variant="outline" onClick={() => { setStep('done'); }} data-testid="skip-ambiguous-btn">
+                  Terminer sans résoudre
+                </Button>
+              )}
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
