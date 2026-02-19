@@ -580,6 +580,22 @@ class UpdateService:
                         )
                     
                     if git_available:
+                        # PROTECTION: Sauvegarder les fichiers .env avant reset --hard
+                        env_backups = {}
+                        for env_path in [
+                            git_dir / "backend" / ".env",
+                            git_dir / "frontend" / ".env"
+                        ]:
+                            if env_path.exists():
+                                try:
+                                    env_backups[str(env_path)] = env_path.read_text()
+                                    self._log_step(update_history, "3/6 - Sauvegarde .env",
+                                                  f"backup {env_path.name}", status="success")
+                                except Exception as e:
+                                    self._log_step(update_history, "3/6 - Sauvegarde .env",
+                                                  f"backup {env_path.name}",
+                                                  stderr=str(e), status="warning")
+                        
                         # ÉTAPE 1: git fetch origin (récupérer les derniers commits)
                         success, stdout, stderr = await self._run_command(
                             update_history, "3/6 - Git fetch (récupération des commits)",
