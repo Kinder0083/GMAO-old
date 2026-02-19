@@ -547,113 +547,75 @@ class UpdateService:
             
             if git_available:
                 try:
-                    # CRITIQUE: Désactiver le git hook post-merge AVANT le pull
-                    post_merge_hook = git_dir / ".git" / "hooks" / "post-merge"
-                    post_merge_disabled = git_dir / ".git" / "hooks" / "post-merge.disabled"
-                    hook_was_disabled = False
-                    if post_merge_hook.exists():
-                        try:
-                            os.rename(str(post_merge_hook), str(post_merge_disabled))
-                            hook_was_disabled = True
-                            self._log_step(update_history, "3/6 - Désactivation hook post-merge", 
-                                          "mv post-merge post-merge.disabled", status="success")
-                        except Exception as e:
-                            self._log_step(update_history, "3/6 - Désactivation hook post-merge", 
-                                          "mv post-merge post-merge.disabled",
-                                          stderr=str(e), status="warning")
+                    # APPROCHE NUCLÉAIRE : reproduire exactement le processus SSH qui fonctionne
+                    # rm -rf .git && git init && git remote add && git fetch && git reset --hard
                     
-                    # Vérifier les modifications locales
+                    # CRITIQUE : Sauvegarder les fichiers .env AVANT toute opération
+                    env_backups = {}
+                    for env_path in [
+                        git_dir / "backend" / ".env",
+                        git_dir / "frontend" / ".env"
+                    ]:
+                        if env_path.exists():
+                            try:
+                                env_backups[str(env_path)] = env_path.read_text()
+                                self._log_step(update_history, "3/6 - Sauvegarde .env",
+                                              f"backup {env_path.name}", status="success")
+                            except Exception as e:
+                                self._log_step(update_history, "3/6 - Sauvegarde .env",
+                                              f"backup {env_path.name}",
+                                              stderr=str(e), status="warning")
+                    
+                    # Supprimer complètement le dossier .git
+                    git_path = git_dir / ".git"
+                    if git_path.exists():
+                        shutil.rmtree(str(git_path))
+                        self._log_step(update_history, "3/6 - Suppression .git",
+                                      "rm -rf .git", status="success")
+                    
+                    # git init
                     success, stdout, stderr = await self._run_command(
-                        update_history, "3/6 - Git status (modifications locales)",
-                        ["git", "status", "--porcelain"],
-                        cwd=str(git_dir)
+                        update_history, "3/6 - git init",
+                        ["git", "init"],
+                        cwd=str(git_dir), timeout=10
                     )
-                    
                     if not success:
                         git_available = False
-                    elif stdout.strip():
-                        # Stash les modifications locales
-                        await self._run_command(
-                            update_history, "3/6 - Git stash (sauvegarde modifications locales)",
-                            ["git", "stash"],
-                            cwd=str(git_dir)
-                        )
                     
+                    # git remote add origin
                     if git_available:
-                        # PROTECTION: Sauvegarder les fichiers .env avant reset --hard
-                        env_backups = {}
-                        for env_path in [
-                            git_dir / "backend" / ".env",
-                            git_dir / "frontend" / ".env"
-                        ]:
-                            if env_path.exists():
-                                try:
-                                    env_backups[str(env_path)] = env_path.read_text()
-                                    self._log_step(update_history, "3/6 - Sauvegarde .env",
-                                                  f"backup {env_path.name}", status="success")
-                                except Exception as e:
-                                    self._log_step(update_history, "3/6 - Sauvegarde .env",
-                                                  f"backup {env_path.name}",
-                                                  stderr=str(e), status="warning")
-                        
-                        # ÉTAPE 1: git fetch origin (récupérer les derniers commits)
+                        github_url = f"https://github.com/{self.github_user}/{self.github_repo}.git"
                         success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - Git fetch (récupération des commits)",
-                            ["git", "fetch", "origin"],
+                            update_history, "3/6 - git remote add",
+                            ["git", "remote", "add", "origin", github_url],
+                            cwd=str(git_dir), timeout=10
+                        )
+                        if not success:
+                            git_available = False
+                    
+                    # git fetch origin main
+                    if git_available:
+                        success, stdout, stderr = await self._run_command(
+                            update_history, "3/6 - git fetch origin main",
+                            ["git", "fetch", "origin", self.github_branch],
                             cwd=str(git_dir), timeout=120
                         )
-                        
                         if not success:
-                            if any(msg in stderr for msg in [
-                                "No remote", "no remote", "not a git repository",
-                                "does not appear to be a git repository",
-                                "'origin' does not appear", "Could not resolve host"
-                            ]):
-                                git_available = False
-                            else:
-                                # Réactiver le hook avant de quitter
-                                if hook_was_disabled and post_merge_disabled.exists():
-                                    try:
-                                        os.rename(str(post_merge_disabled), str(post_merge_hook))
-                                    except Exception:
-                                        pass
-                                
-                                update_history["errors"].append(f"Git fetch échoué: {stderr[:300]}")
-                                
-                                return {
-                                    "success": False,
-                                    "message": "Échec du téléchargement de la mise à jour",
-                                    "error": stderr,
-                                    "history_id": update_history["id"]
-                                }
+                            git_available = False
+                            update_history["errors"].append(f"Git fetch échoué: {stderr[:300]}")
                     
+                    # git reset --hard origin/main
                     if git_available:
-                        # ÉTAPE 2: git reset --hard origin/main (écraser le code local)
-                        # C'est la clé : garantit que le code local = code distant
-                        # Sans tentative de fusion qui échoue silencieusement
                         success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - Git reset --hard (synchronisation forcée)",
+                            update_history, "3/6 - git reset --hard (synchronisation forcée)",
                             ["git", "reset", "--hard", f"origin/{self.github_branch}"],
                             cwd=str(git_dir), timeout=30
                         )
-                        
                         if not success:
-                            if hook_was_disabled and post_merge_disabled.exists():
-                                try:
-                                    os.rename(str(post_merge_disabled), str(post_merge_hook))
-                                except Exception:
-                                    pass
-                            
+                            git_available = False
                             update_history["errors"].append(f"Git reset échoué: {stderr[:300]}")
-                            
-                            return {
-                                "success": False,
-                                "message": "Échec de la synchronisation du code",
-                                "error": stderr,
-                                "history_id": update_history["id"]
-                            }
                         else:
-                            # Récupérer la liste des fichiers modifiés par le reset
+                            # Récupérer la liste des fichiers modifiés
                             diff_success, diff_out, _ = await self._run_command(
                                 update_history, "3/6 - Git diff (fichiers modifiés)",
                                 ["git", "diff", "--name-status", "HEAD~1", "HEAD"],
@@ -675,27 +637,18 @@ class UpdateService:
                                     len(update_history["files_added"]) + 
                                     len(update_history["files_deleted"])
                                 )
-                            
-                            # RESTAURATION: Remettre les fichiers .env sauvegardés
-                            for env_file_path, env_content in env_backups.items():
-                                try:
-                                    Path(env_file_path).write_text(env_content)
-                                    self._log_step(update_history, "3/6 - Restauration .env",
-                                                  f"restore {Path(env_file_path).name}", status="success")
-                                except Exception as e:
-                                    self._log_step(update_history, "3/6 - Restauration .env",
-                                                  f"restore {Path(env_file_path).name}",
-                                                  stderr=str(e), status="error")
-                                    update_history["errors"].append(f".env perdu: {env_file_path}")
                     
-                    # Réactiver le git hook post-merge
-                    if hook_was_disabled and post_merge_disabled.exists():
+                    # RESTAURATION : Remettre les fichiers .env sauvegardés
+                    for env_file_path, env_content in env_backups.items():
                         try:
-                            os.rename(str(post_merge_disabled), str(post_merge_hook))
-                            self._log_step(update_history, "3/6 - Réactivation hook post-merge",
-                                          "mv post-merge.disabled post-merge", status="success")
-                        except Exception:
-                            pass
+                            Path(env_file_path).write_text(env_content)
+                            self._log_step(update_history, "3/6 - Restauration .env",
+                                          f"restore {Path(env_file_path).name}", status="success")
+                        except Exception as e:
+                            self._log_step(update_history, "3/6 - Restauration .env",
+                                          f"restore {Path(env_file_path).name}",
+                                          stderr=str(e), status="error")
+                            update_history["errors"].append(f".env perdu: {env_file_path}")
                     
                 except Exception as e:
                     self._log_step(update_history, "3/6 - Erreur Git inattendue", str(e),
