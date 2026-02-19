@@ -124,24 +124,27 @@ class TestVendorsAPI:
             assert "categorie" in test_vendor or test_vendor.get("categorie") is None
             assert "sous_traitant" in test_vendor or test_vendor.get("sous_traitant") is None
     
-    def test_03_get_vendor_by_id(self):
-        """Test getting single vendor by ID with all new fields"""
+    def test_03_get_vendor_by_id_via_list(self):
+        """Test getting vendor by ID via filtering list (no single-item GET endpoint)"""
         vendor_id = getattr(TestVendorsAPI, 'created_vendor_id', None)
         if not vendor_id:
             pytest.skip("No vendor created to test")
         
-        response = self.session.get(f"{BASE_URL}/api/vendors/{vendor_id}")
+        # GET all vendors and filter by ID
+        response = self.session.get(f"{BASE_URL}/api/vendors")
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         
-        data = response.json()
-        assert data["id"] == vendor_id
+        vendors = response.json()
+        vendor = next((v for v in vendors if v.get("id") == vendor_id), None)
+        
+        assert vendor is not None, f"Vendor {vendor_id} not found in list"
         
         # Verify all enriched fields are present
-        assert data.get("pays") == TEST_VENDOR_DATA["pays"]
-        assert data.get("ville") == TEST_VENDOR_DATA["ville"]
-        assert data.get("categorie") == TEST_VENDOR_DATA["categorie"]
-        print(f"GET vendor by ID successful: {data.get('nom')}")
+        assert vendor.get("pays") == TEST_VENDOR_DATA["pays"]
+        assert vendor.get("ville") == TEST_VENDOR_DATA["ville"]
+        assert vendor.get("categorie") == TEST_VENDOR_DATA["categorie"]
+        print(f"GET vendor by ID via list successful: {vendor.get('nom')}")
     
     def test_04_update_vendor_with_new_fields(self):
         """Test updating vendor with new enriched fields"""
