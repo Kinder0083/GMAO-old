@@ -98,6 +98,136 @@ def get_year_from_date_str(date_str: str) -> Optional[int]:
             return None
 
 
+def periodicite_to_days(periodicite: str) -> int:
+    """Convertit une périodicité texte en nombre de jours approximatif."""
+    months = parse_periodicite_to_months(periodicite)
+    return int(months * 30.44)  # 1 mois ≈ 30.44 jours
+
+
+def calculate_tolerance_days(periodicite: str) -> int:
+    """
+    Calcule la tolérance en jours = floor(periodicite_en_jours * 0.08)
+    Exemples:
+        3 mois (90j) → 7 jours
+        6 mois (180j) → 14 jours
+        1 an (365j) → 29 jours
+        2 ans (730j) → 58 jours
+    """
+    import math
+    days = periodicite_to_days(periodicite)
+    return int(math.floor(days * 0.08))
+
+
+async def find_matching_occurrence(ctrl: dict, document_info: dict, db_instance) -> Optional[dict]:
+    """
+    Cherche une occurrence PLANIFIER existante qui correspond au contrôle extrait par l'IA.
+    
+    Critères de correspondance:
+    - Même catégorie
+    - Classe/type similaire (contenance de mots-clés communs)
+    - Même exécutant ou organisme
+    - Même bâtiment (si renseigné)
+    - Date dans la tolérance ±8% de la périodicité
+    
+    Retourne l'occurrence trouvée ou None.
+    """
+    category = ctrl.get("category", "AUTRE")
+    classe_type = (ctrl.get("classe_type") or "").strip().lower()
+    executant = (ctrl.get("executant") or document_info.get("organisme_controle") or "").strip().lower()
+    batiment = (ctrl.get("batiment") or "").strip().lower()
+    derniere_visite = ctrl.get("derniere_visite") or document_info.get("date_intervention")
+    
+    if not derniere_visite or not classe_type:
+        return None
+    
+    try:
+        date_realisation = datetime.fromisoformat(derniere_visite).date()
+    except Exception:
+        return None
+    
+    # Chercher les occurrences non réalisées de la même catégorie
+    query = {
+        "category": category,
+        "status": {"$in": [SurveillanceItemStatus.PLANIFIER.value, SurveillanceItemStatus.PLANIFIE.value]},
+        "prochain_controle": {"$ne": None, "$exists": True}
+    }
+    
+    candidates = await db_instance.surveillance_items.find(query, {"_id": 0}).to_list(length=500)
+    
+    if not candidates:
+        return None
+    
+    best_match = None
+    best_score = 0
+    
+    for candidate in candidates:
+        score = 0
+        
+        # 1. Correspondance de classe/type (mots-clés communs)
+        cand_classe = (candidate.get("classe_type") or "").strip().lower()
+        if not cand_classe:
+            continue
+        
+        # Calculer la similarité par mots communs
+        words_ctrl = set(w for w in classe_type.split() if len(w) > 2)
+        words_cand = set(w for w in cand_classe.split() if len(w) > 2)
+        if words_ctrl and words_cand:
+            common = words_ctrl & words_cand
+            similarity = len(common) / max(len(words_ctrl), len(words_cand))
+            if similarity < 0.3:
+                continue  # Trop différent
+            score += similarity * 40  # Max 40 points
+        elif classe_type == cand_classe:
+            score += 40
+        else:
+            continue
+        
+        # 2. Correspondance exécutant/organisme
+        cand_executant = (candidate.get("executant") or "").strip().lower()
+        cand_organisme = (candidate.get("organisme_controle") or "").strip().lower()
+        if executant and (executant in cand_executant or executant in cand_organisme or 
+                          cand_executant in executant or cand_organisme in executant):
+            score += 20
+        
+        # 3. Correspondance bâtiment
+        cand_batiment = (candidate.get("batiment") or "").strip().lower()
+        if batiment and cand_batiment:
+            if batiment == cand_batiment:
+                score += 20
+            elif batiment in cand_batiment or cand_batiment in batiment:
+                score += 10
+        elif not batiment and not cand_batiment:
+            score += 10  # Les deux sans bâtiment = ok
+        
+        # 4. Correspondance de date (dans la tolérance ±8%)
+        try:
+            cand_date = datetime.fromisoformat(candidate["prochain_controle"]).date()
+            cand_periodicite = candidate.get("periodicite", "1 an")
+            tolerance = calculate_tolerance_days(cand_periodicite)
+            ecart = abs((date_realisation - cand_date).days)
+            
+            if ecart <= tolerance:
+                score += 20  # Dans la tolérance parfaite
+            elif ecart <= tolerance * 2:
+                score += 10  # Proche mais hors tolérance stricte
+            else:
+                continue  # Trop loin en date
+        except Exception:
+            continue
+        
+        if score > best_score:
+            best_score = score
+            best_match = candidate
+    
+    # Seuil minimum de confiance: 60/100
+    if best_match and best_score >= 60:
+        best_match["_match_score"] = best_score
+        best_match["_match_confidence"] = "high" if best_score >= 80 else "medium"
+        return best_match
+    
+    return None
+
+
 def generate_recurring_controls(base_item_dict: dict, start_date_str: str, periodicite: str) -> list:
     """Génère tous les contrôles récurrents de start_date jusqu'à fin N+1.
     Retourne une liste de dicts prêts à être insérés en DB.
