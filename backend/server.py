@@ -9471,6 +9471,7 @@ RESET_COLLECTIONS = {
     "sensors": "Capteurs MQTT",
     "chat_messages": "Messages Chat Live",
     "users": "Utilisateurs",
+    "surveillance_items": "Plan de surveillance",
 }
 
 @api_router.delete("/admin/reset/{section}",

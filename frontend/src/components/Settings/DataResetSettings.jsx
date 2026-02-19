@@ -18,6 +18,7 @@ const SECTIONS = [
   { key: 'purchase_requests', label: "Demandes d'achat", color: 'pink' },
   { key: 'sensors', label: 'Capteurs MQTT', color: 'lime' },
   { key: 'chat_messages', label: 'Messages Chat Live', color: 'sky' },
+  { key: 'surveillance_items', label: 'Plan de surveillance', color: 'yellow' },
   { key: 'users', label: 'Utilisateurs (sauf admin actuel)', color: 'red' },
 ];
 
