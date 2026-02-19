@@ -171,6 +171,7 @@ function SurveillanceAIExtract({ open, onClose }) {
             {step === 'extracting' && "Analyse en cours..."}
             {step === 'review' && "Contrôles détectés"}
             {step === 'creating' && "Création en cours..."}
+            {step === 'ambiguous' && "Correspondances à confirmer"}
             {step === 'done' && "Création terminée"}
           </DialogTitle>
         </DialogHeader>
