@@ -264,6 +264,7 @@ def generate_recurring_controls(base_item_dict: dict, start_date_str: str, perio
             "status": "PLANIFIER",
             "date_realisation": None,
             "derniere_visite": None,
+            "ecart_jours": None,
             "alerte_envoyee": False,
             "email_rappel_envoye": False,
             "numero_rapport": None,
