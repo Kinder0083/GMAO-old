@@ -675,6 +675,18 @@ class UpdateService:
                                     len(update_history["files_added"]) + 
                                     len(update_history["files_deleted"])
                                 )
+                            
+                            # RESTAURATION: Remettre les fichiers .env sauvegardés
+                            for env_file_path, env_content in env_backups.items():
+                                try:
+                                    Path(env_file_path).write_text(env_content)
+                                    self._log_step(update_history, "3/6 - Restauration .env",
+                                                  f"restore {Path(env_file_path).name}", status="success")
+                                except Exception as e:
+                                    self._log_step(update_history, "3/6 - Restauration .env",
+                                                  f"restore {Path(env_file_path).name}",
+                                                  stderr=str(e), status="error")
+                                    update_history["errors"].append(f".env perdu: {env_file_path}")
                     
                     # Réactiver le git hook post-merge
                     if hook_was_disabled and post_merge_disabled.exists():
