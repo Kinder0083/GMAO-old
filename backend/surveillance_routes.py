@@ -2037,6 +2037,227 @@ async def create_batch_from_ai(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Matching manuel (icône robot) ====================
+@router.post("/items/{item_id}/analyze-report")
+async def analyze_report_for_occurrence(
+    item_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyse un rapport PDF/Excel/image via IA et met à jour l'occurrence spécifiée.
+    Utilisé depuis l'icône robot sur chaque occurrence À PLANIFIER.
+    """
+    import tempfile
+    import json as json_mod
+    
+    # Vérifier que l'item existe et est bien une occurrence non réalisée
+    item = await db.surveillance_items.find_one({"id": item_id}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item non trouvé")
+    
+    if item.get("status") == SurveillanceItemStatus.REALISE.value:
+        raise HTTPException(status_code=400, detail="Cet item est déjà réalisé")
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+        
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé LLM non configurée")
+        
+        ext = os.path.splitext(file.filename)[1].lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        # Préparer le contenu pour l'IA
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"report_match_{uuid.uuid4().hex[:8]}",
+            system_message=f"""Tu analyses un rapport de contrôle pour mettre à jour un contrôle planifié.
+
+Le contrôle planifié est:
+- Type: {item.get('classe_type')}
+- Catégorie: {item.get('category')}
+- Bâtiment: {item.get('batiment', 'Non spécifié')}
+- Date prévue: {item.get('prochain_controle')}
+- Périodicité: {item.get('periodicite')}
+
+Extrais du document:
+1. La date de réalisation du contrôle
+2. Le résultat (CONFORME, NON_CONFORME, AVEC_RESERVES)
+3. L'organisme de contrôle
+4. Le numéro de rapport
+5. Les anomalies éventuelles
+6. Les observations
+
+Réponds UNIQUEMENT en JSON:
+{{
+  "date_realisation": "YYYY-MM-DD",
+  "resultat": "CONFORME|NON_CONFORME|AVEC_RESERVES",
+  "organisme_controle": "string ou null",
+  "numero_rapport": "string ou null",
+  "anomalies": "string ou null",
+  "observations": "string ou null",
+  "corresponds_to_planned": true ou false
+}}
+
+corresponds_to_planned = true si le rapport correspond bien au contrôle planifié ci-dessus."""
+        ).with_model("gemini", "gemini-2.5-flash")
+        
+        # Envoyer le fichier ou le texte
+        spreadsheet_formats = {".xlsx", ".xls", ".csv"}
+        
+        if ext in spreadsheet_formats:
+            import openpyxl
+            text_content = ""
+            try:
+                wb = openpyxl.load_workbook(tmp_path, data_only=True)
+                for sheet_name in wb.sheetnames:
+                    ws = wb[sheet_name]
+                    text_content += f"=== {sheet_name} ===\n"
+                    for row in ws.iter_rows(values_only=False):
+                        row_texts = [str(c.value).strip() for c in row if c.value is not None]
+                        if row_texts:
+                            text_content += " | ".join(row_texts) + "\n"
+            except Exception:
+                with open(tmp_path, 'r', errors='replace') as f:
+                    text_content = f.read()
+            
+            response = await chat.send_message(
+                UserMessage(text=f"Analyse ce rapport:\n\n{text_content[:15000]}")
+            )
+        else:
+            mime_map = {".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+            response = await chat.send_message(
+                UserMessage(
+                    text="Analyse ce rapport de contrôle.",
+                    file_contents=[FileContentWithMimeType(file_path=tmp_path, mime_type=mime_map.get(ext, "application/octet-stream"))]
+                )
+            )
+        
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+        
+        # Parser la réponse
+        response_text = response.strip()
+        if response_text.startswith("```"):
+            response_text = response_text.split("\n", 1)[1] if "\n" in response_text else response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        
+        extracted = json_mod.loads(response_text.strip())
+        
+        if not extracted.get("corresponds_to_planned", True):
+            return {
+                "success": False,
+                "message": "L'IA estime que ce rapport ne correspond pas au contrôle planifié",
+                "extracted": extracted
+            }
+        
+        date_realisation = extracted.get("date_realisation")
+        if not date_realisation:
+            raise HTTPException(status_code=422, detail="L'IA n'a pas pu extraire la date de réalisation")
+        
+        # Calculer l'écart
+        ecart_jours = None
+        try:
+            date_prevue = datetime.fromisoformat(item["prochain_controle"]).date()
+            date_reelle = datetime.fromisoformat(date_realisation).date()
+            ecart_jours = (date_reelle - date_prevue).days
+        except Exception:
+            pass
+        
+        # Calculer le prochain contrôle
+        periodicite = item.get("periodicite", "1 an")
+        prochain = None
+        try:
+            from dateutil.relativedelta import relativedelta
+            months = parse_periodicite_to_months(periodicite)
+            base = datetime.fromisoformat(date_realisation)
+            next_date = add_months_to_date(base, months)
+            prochain = next_date.strftime("%Y-%m-%d")
+        except Exception:
+            pass
+        
+        # Résultat
+        resultat_map = {"CONFORME": "Conforme", "NON_CONFORME": "Non conforme", "AVEC_RESERVES": "Avec réserves"}
+        resultat = resultat_map.get(extracted.get("resultat"), extracted.get("resultat"))
+        
+        # Upload le fichier en pièce jointe
+        source_attachment = {
+            "id": str(uuid.uuid4()),
+            "filename": file.filename,
+            "uploaded_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Mettre à jour l'occurrence
+        update_fields = {
+            "status": SurveillanceItemStatus.REALISE.value,
+            "derniere_visite": date_realisation,
+            "date_realisation": date_realisation,
+            "prochain_controle": prochain or item.get("prochain_controle"),
+            "ecart_jours": ecart_jours,
+            "resultat_controle": resultat,
+            "numero_rapport": extracted.get("numero_rapport"),
+            "organisme_controle": extracted.get("organisme_controle"),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user.get("id")
+        }
+        
+        if extracted.get("anomalies"):
+            update_fields["commentaire"] = f"ANOMALIES:\n{extracted['anomalies']}"
+        if extracted.get("observations"):
+            existing = update_fields.get("commentaire", "")
+            update_fields["commentaire"] = (existing + f"\n\nOBSERVATIONS:\n{extracted['observations']}").strip()
+        
+        await db.surveillance_items.update_one(
+            {"id": item_id},
+            {"$set": update_fields, "$push": {"attachments": source_attachment}}
+        )
+        
+        # Régénérer les occurrences futures
+        group_id = item.get("groupe_controle_id")
+        if group_id and date_realisation and periodicite:
+            await db.surveillance_items.delete_many({
+                "groupe_controle_id": group_id,
+                "status": {"$in": [SurveillanceItemStatus.PLANIFIER.value, SurveillanceItemStatus.PLANIFIE.value]},
+                "id": {"$ne": item_id}
+            })
+            
+            updated_item = await db.surveillance_items.find_one({"id": item_id}, {"_id": 0})
+            if updated_item:
+                recurring = generate_recurring_controls(updated_item, date_realisation, periodicite)
+                if recurring:
+                    for r in recurring:
+                        r["created_by"] = current_user.get("id")
+                    await db.surveillance_items.insert_many(recurring)
+        
+        # Émettre l'événement temps réel
+        await realtime_manager.emit_event("surveillance_plans", "updated", update_fields, exclude_user=current_user.get("id"))
+        
+        return {
+            "success": True,
+            "message": f"Occurrence mise à jour en RÉALISÉ (écart: {ecart_jours:+d}j)" if ecart_jours is not None else "Occurrence mise à jour en RÉALISÉ",
+            "item_id": item_id,
+            "ecart_jours": ecart_jours,
+            "extracted": extracted
+        }
+    
+    except json_mod.JSONDecodeError as e:
+        raise HTTPException(status_code=422, detail=f"L'IA n'a pas retourné un JSON valide: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur analyse rapport pour occurrence: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # ==================== Historique des analyses IA (Phase 1 & 2) ====================
 
 @router.get("/ai/history")
