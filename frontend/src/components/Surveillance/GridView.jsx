@@ -71,6 +71,18 @@ function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
                           <p className="text-blue-600"><strong>Date du contrôle:</strong> {new Date(dateStr).toLocaleDateString('fr-FR')}</p>
                         ) : null;
                       })()}
+                      {item.ecart_jours != null && (
+                        <p data-testid={`ecart-grid-${item.id}`}>
+                          <strong>Écart:</strong>{' '}
+                          <span className={
+                            item.ecart_jours <= 0 ? 'text-emerald-600 font-semibold' :
+                            item.ecart_jours <= 7 ? 'text-amber-600 font-semibold' :
+                            'text-red-600 font-semibold'
+                          }>
+                            {item.ecart_jours > 0 ? '+' : ''}{item.ecart_jours}j
+                          </span>
+                        </p>
+                      )}
                       {item.piece_jointe_url && (
                         <div className="flex items-center gap-1 text-gray-500">
                           <Paperclip className="h-3 w-3" />
