@@ -387,15 +387,103 @@ class UpdateService:
             }
 
 
+    def _log_step(self, update_history: Dict, step_name: str, command: str, 
+                  stdout: str = "", stderr: str = "", return_code: int = 0,
+                  status: str = "success", duration_ms: int = 0):
+        """
+        Enregistre une étape détaillée dans le journal de mise à jour.
+        Chaque entrée contient : commande, sortie, erreurs, code retour, durée.
+        """
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "step": step_name,
+            "command": command,
+            "stdout": stdout[-5000:] if len(stdout) > 5000 else stdout,
+            "stderr": stderr[-5000:] if len(stderr) > 5000 else stderr,
+            "return_code": return_code,
+            "status": status,
+            "duration_ms": duration_ms
+        }
+        update_history["logs"].append(log_entry)
+        
+        # Log aussi dans le logger serveur
+        if status == "error":
+            logger.error(f"[MAJ] {step_name}: ERREUR (code {return_code}) - {stderr[:200]}")
+        elif status == "warning":
+            logger.warning(f"[MAJ] {step_name}: AVERTISSEMENT - {stderr[:200] if stderr else stdout[:200]}")
+        else:
+            logger.info(f"[MAJ] {step_name}: OK ({duration_ms}ms)")
+
+    async def _run_command(self, update_history: Dict, step_name: str, 
+                           cmd: list, cwd: str = None, env: dict = None,
+                           timeout: int = 300) -> tuple:
+        """
+        Exécute une commande et enregistre automatiquement le résultat dans le journal.
+        Retourne (success: bool, stdout: str, stderr: str)
+        """
+        import time
+        cmd_str = " ".join(str(c) for c in cmd)
+        start = time.time()
+        
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=cwd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env
+            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                process.communicate(), timeout=timeout
+            )
+            
+            duration_ms = int((time.time() - start) * 1000)
+            stdout_str = stdout_bytes.decode(errors='replace')
+            stderr_str = stderr_bytes.decode(errors='replace')
+            
+            status = "success" if process.returncode == 0 else "error"
+            self._log_step(
+                update_history, step_name, cmd_str,
+                stdout=stdout_str, stderr=stderr_str,
+                return_code=process.returncode, status=status,
+                duration_ms=duration_ms
+            )
+            
+            return (process.returncode == 0, stdout_str, stderr_str)
+            
+        except asyncio.TimeoutError:
+            duration_ms = int((time.time() - start) * 1000)
+            self._log_step(
+                update_history, step_name, cmd_str,
+                stderr=f"TIMEOUT après {timeout}s", return_code=-1,
+                status="error", duration_ms=duration_ms
+            )
+            return (False, "", f"TIMEOUT après {timeout}s")
+            
+        except FileNotFoundError as e:
+            duration_ms = int((time.time() - start) * 1000)
+            self._log_step(
+                update_history, step_name, cmd_str,
+                stderr=f"Commande introuvable: {str(e)}", return_code=-2,
+                status="warning", duration_ms=duration_ms
+            )
+            return (False, "", f"Commande introuvable: {str(e)}")
+            
+        except Exception as e:
+            duration_ms = int((time.time() - start) * 1000)
+            self._log_step(
+                update_history, step_name, cmd_str,
+                stderr=str(e), return_code=-3,
+                status="error", duration_ms=duration_ms
+            )
+            return (False, "", str(e))
+
     async def apply_update(self, version: str) -> Dict:
         """
-        Applique une mise à jour système
-        Args:
-            version: Version à installer
-        Returns:
-            Dict avec success, message, et détails
+        Applique une mise à jour système.
+        Chaque commande et son résultat sont enregistrés dans le journal détaillé.
         """
-        # Créer l'entrée d'historique
+        # Créer l'entrée d'historique avec journal structuré
         update_history = {
             "id": str(uuid.uuid4()),
             "version_before": self.current_version,
@@ -408,6 +496,8 @@ class UpdateService:
             "files_deleted": [],
             "total_files_changed": 0,
             "logs": [],
+            "warnings": [],
+            "errors": [],
             "triggered_by": "manual",
             "backup_created": False,
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -415,7 +505,7 @@ class UpdateService:
         
         try:
             logger.info(f"🚀 Début de l'application de la mise à jour vers {version}")
-            update_history["logs"].append(f"Début de la mise à jour vers {version}")
+            self._log_step(update_history, "DÉBUT", f"Mise à jour {self.current_version} → {version}", status="success")
             
             # 1. Créer un backup de la base de données
             logger.info("📦 Étape 1/5: Création du backup de la base de données...")
