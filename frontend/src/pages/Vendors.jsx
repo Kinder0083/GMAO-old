@@ -2,12 +2,26 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Search, Building, Mail, Phone, MapPin, Pencil, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
+import { Plus, Search, Building, Mail, Phone, MapPin, Pencil, Trash2, LayoutGrid, List, Sparkles, Globe, CreditCard } from 'lucide-react';
 import VendorFormDialog from '../components/Vendors/VendorFormDialog';
+import VendorAIExtract from '../components/Vendors/VendorAIExtract';
 import { vendorsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { useVendors } from '../hooks/useVendors';
+
+const CATEGORIE_LABELS = {
+  MAINTENANCE: 'Maintenance', FOURNITURES: 'Fournitures', SERVICES: 'Services',
+  EQUIPEMENTS: 'Équipements', SOUS_TRAITANCE: 'Sous-traitance', ENERGIE: 'Énergie',
+  INFORMATIQUE: 'Informatique', LOGISTIQUE: 'Logistique', NETTOYAGE: 'Nettoyage',
+  SECURITE: 'Sécurité', AUTRE: 'Autre'
+};
+
+const CONDITIONS_LABELS = {
+  '30J_NET': '30j net', '30J_FDM': '30j FDM', '45J_FDM': '45j FDM',
+  '60J_FDM': '60j FDM', '90J_FDM': '90j FDM'
+};
 
 const Vendors = () => {
   const { toast } = useToast();
