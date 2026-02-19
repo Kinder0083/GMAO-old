@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Edit, Trash2, CheckCircle } from 'lucide-react';
+import { Edit, Trash2, CheckCircle, Bot } from 'lucide-react';
 import CompleteSurveillanceDialog from './CompleteSurveillanceDialog';
 import RecurrenceIndicator from './RecurrenceIndicator';
+import ManualMatchDialog from './ManualMatchDialog';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -26,6 +27,7 @@ const getStatusLabel = (status) => {
 
 function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear, trends }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
+  const [matchDialog, setMatchDialog] = useState({ open: false, item: null });
 
   if (loading) return <div className="text-center p-4">Chargement...</div>;
 
