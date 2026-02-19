@@ -4983,6 +4983,7 @@ async def extract_vendor_from_document(
     """
     Analyse un document (Excel, PDF, image) via IA et extrait les informations
     pour créer une fiche fournisseur.
+    Supporte: PDF, images, Excel (converti en texte avant envoi à l'IA)
     """
     import tempfile
     import json as json_mod
@@ -5001,24 +5002,12 @@ async def extract_vendor_from_document(
             tmp.write(content)
             tmp_path = tmp.name
 
-        mime_map = {
-            ".pdf": "application/pdf",
-            ".png": "image/png",
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".webp": "image/webp",
-            ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            ".xls": "application/vnd.ms-excel",
-            ".csv": "text/csv",
-            ".doc": "application/msword",
-            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        }
-        mime_type = mime_map.get(ext, "application/octet-stream")
-
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"vendor_extract_{uuid.uuid4().hex[:8]}",
-            system_message="""Tu es un assistant spécialisé dans l'extraction d'informations fournisseurs à partir de documents administratifs et commerciaux.
+        # Formats supportés nativement par Gemini (fichier binaire)
+        native_formats = {".pdf", ".png", ".jpg", ".jpeg", ".webp"}
+        # Formats à convertir en texte
+        spreadsheet_formats = {".xlsx", ".xls", ".csv"}
+        
+        system_prompt = """Tu es un assistant spécialisé dans l'extraction d'informations fournisseurs à partir de documents administratifs et commerciaux.
 
 Analyse le document fourni et extrais TOUTES les informations relatives au fournisseur.
 Le document peut être un formulaire de création fournisseur, un devis, une facture, un bon de commande, un contrat, ou tout autre document commercial.
@@ -5027,43 +5016,89 @@ Réponds UNIQUEMENT avec un JSON valide, sans texte autour ni backticks.
 
 Format attendu:
 {
-  "nom": "string - Nom de la société/entreprise",
-  "contact": "string - Nom du contact principal (Prénom Nom)",
-  "contact_fonction": "string - Fonction/poste du contact ou null",
-  "email": "string - Email du contact ou de l'entreprise ou null",
-  "telephone": "string - Numéro de téléphone ou null",
-  "adresse": "string - Adresse complète (rue) ou null",
-  "code_postal": "string - Code postal ou null",
-  "ville": "string - Ville ou null",
-  "pays": "string - Code pays (FR, DE, LU, etc.) ou null",
-  "specialite": "string - Domaine d'activité/spécialité déduit du document",
-  "tva_intra": "string - N° TVA intracommunautaire ou null",
-  "siret": "string - N° SIRET/SIREN ou numéro d'enregistrement ou null",
-  "conditions_paiement": "string parmi: 30J_NET, 30J_FDM, 45J_FDM, 60J_FDM, 90J_FDM ou null",
-  "devise": "string - EUR, USD, GBP, etc. ou null",
-  "categorie": "string parmi: MAINTENANCE, FOURNITURES, SERVICES, EQUIPEMENTS, SOUS_TRAITANCE, ENERGIE, INFORMATIQUE, LOGISTIQUE, NETTOYAGE, SECURITE, AUTRE ou null",
-  "sous_traitant": "boolean - true si c'est un sous-traitant, false sinon",
-  "site_web": "string - URL du site web ou null",
-  "notes": "string - Informations complémentaires utiles extraites du document (références, observations, etc.) ou null",
-  "confidence": "number 0-1 - niveau de confiance dans l'extraction"
+  "nom": "Nom de la société/entreprise",
+  "contact": "Nom du contact principal (Prénom Nom) ou null",
+  "contact_fonction": "Fonction/poste du contact ou null",
+  "email": "Email du contact ou de l'entreprise ou null",
+  "telephone": "Numéro de téléphone ou null",
+  "adresse": "Adresse complète (rue) ou null",
+  "code_postal": "Code postal ou null",
+  "ville": "Ville ou null",
+  "pays": "Code pays (FR, DE, LU, etc.) ou null",
+  "specialite": "Domaine d'activité/spécialité déduit du document",
+  "tva_intra": "N° TVA intracommunautaire ou null",
+  "siret": "N° SIRET/SIREN ou numéro d'enregistrement ou null",
+  "conditions_paiement": "valeur parmi: 30J_NET, 30J_FDM, 45J_FDM, 60J_FDM, 90J_FDM ou null",
+  "devise": "EUR, USD, GBP, etc. ou null",
+  "categorie": "valeur parmi: MAINTENANCE, FOURNITURES, SERVICES, EQUIPEMENTS, SOUS_TRAITANCE, ENERGIE, INFORMATIQUE, LOGISTIQUE, NETTOYAGE, SECURITE, AUTRE ou null",
+  "sous_traitant": false,
+  "site_web": "URL du site web ou null",
+  "notes": "Informations complémentaires utiles extraites du document ou null",
+  "confidence": 0.8
 }
 
 RÈGLES:
 - Si une information n'est pas trouvée, mets null
-- Pour le nom de société, cherche en priorité: raison sociale, nom commercial, dénomination
+- Pour le nom de société, cherche: raison sociale, nom commercial, dénomination
 - Pour le contact, cherche: interlocuteur, responsable, signataire
 - Déduis la spécialité et la catégorie à partir du contenu du document
-- Le champ conditions_paiement doit correspondre à l'une des valeurs listées
-- Le champ categorie doit correspondre à l'une des valeurs listées
+- Le champ conditions_paiement doit correspondre EXACTEMENT à une des valeurs listées
+- Le champ categorie doit correspondre EXACTEMENT à une des valeurs listées
 - Extrais le maximum d'informations possibles"""
+
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"vendor_extract_{uuid.uuid4().hex[:8]}",
+            system_message=system_prompt
         ).with_model("gemini", "gemini-2.5-flash")
 
-        response = await chat.send_message(
-            UserMessage(
-                text="Analyse ce document et extrais les informations du fournisseur. Réponds uniquement en JSON.",
-                file_contents=[FileContentWithMimeType(file_path=tmp_path, mime_type=mime_type)]
+        if ext in spreadsheet_formats:
+            # Convertir Excel/CSV en texte pour l'envoyer à Gemini
+            text_content = ""
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(tmp_path, data_only=True)
+                for sheet_name in wb.sheetnames:
+                    ws = wb[sheet_name]
+                    text_content += f"=== Feuille: {sheet_name} ===\n"
+                    for row in ws.iter_rows(values_only=False):
+                        row_texts = []
+                        for cell in row:
+                            if cell.value is not None:
+                                row_texts.append(f"{str(cell.value).strip()}")
+                        if any(t for t in row_texts):
+                            text_content += " | ".join(row_texts) + "\n"
+                    text_content += "\n"
+            except Exception:
+                # Fallback: lire comme CSV
+                try:
+                    with open(tmp_path, 'r', encoding='utf-8', errors='replace') as f:
+                        text_content = f.read()
+                except Exception:
+                    text_content = "Impossible de lire le fichier"
+
+            response = await chat.send_message(
+                UserMessage(
+                    text=f"Voici le contenu extrait d'un document fournisseur ({file.filename}). Analyse-le et extrais les informations du fournisseur. Réponds uniquement en JSON.\n\n---\n{text_content[:15000]}"
+                )
             )
-        )
+        else:
+            # Formats natifs (PDF, images) — envoi direct du fichier
+            mime_map = {
+                ".pdf": "application/pdf",
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+            }
+            mime_type = mime_map.get(ext, "application/octet-stream")
+            
+            response = await chat.send_message(
+                UserMessage(
+                    text="Analyse ce document et extrais les informations du fournisseur. Réponds uniquement en JSON.",
+                    file_contents=[FileContentWithMimeType(file_path=tmp_path, mime_type=mime_type)]
+                )
+            )
 
         # Nettoyer le fichier temporaire
         try:
@@ -5075,9 +5110,9 @@ RÈGLES:
         response_text = response.strip()
         if response_text.startswith("```"):
             response_text = response_text.split("\n", 1)[1] if "\n" in response_text else response_text[3:]
-            if response_text.endswith("```"):
-                response_text = response_text[:-3]
-            response_text = response_text.strip()
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
 
         extracted_data = json_mod.loads(response_text)
 
