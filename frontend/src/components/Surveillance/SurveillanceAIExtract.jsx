@@ -4,19 +4,20 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { ScrollArea } from '../ui/scroll-area';
-import { FileUp, Loader2, Check, X, AlertTriangle, FileText, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileUp, Loader2, Check, X, AlertTriangle, FileText, Wrench, ChevronDown, ChevronUp, Bot, ArrowRight } from 'lucide-react';
 import { surveillanceAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 
 function SurveillanceAIExtract({ open, onClose }) {
   const { toast } = useToast();
-  const [step, setStep] = useState('upload'); // upload | extracting | review | creating | done
+  const [step, setStep] = useState('upload'); // upload | extracting | review | creating | done | ambiguous
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
   const [selectedControles, setSelectedControles] = useState([]);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [result, setResult] = useState(null);
+  const [ambiguousProcessing, setAmbiguousProcessing] = useState(false);
 
   const [sourceFile, setSourceFile] = useState(null);
 
