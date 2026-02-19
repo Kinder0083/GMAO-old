@@ -9567,6 +9567,21 @@ async def check_llm_versions_job():
     except Exception as e:
         logger.error(f"❌ Erreur vérification versions LLM: {e}")
 
+
+@app.on_event("startup")
+async def fix_surveillance_ecart_data():
+    """Correction de données : reset ecart_jours pour les items non réalisés."""
+    try:
+        result = await db.surveillance_items.update_many(
+            {"status": {"$in": ["PLANIFIER", "PLANIFIE"]}, "ecart_jours": {"$ne": None}},
+            {"$set": {"ecart_jours": None}}
+        )
+        if result.modified_count > 0:
+            logger.info(f"🔧 Correction données: ecart_jours réinitialisé pour {result.modified_count} item(s) non réalisé(s)")
+    except Exception as e:
+        logger.warning(f"Correction ecart_jours ignorée: {e}")
+
+
 @app.on_event("startup")
 async def startup_scheduler():
     """Démarre le scheduler au démarrage de l'application"""
