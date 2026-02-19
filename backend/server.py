@@ -4973,6 +4973,131 @@ async def delete_vendor(vendor_id: str, current_user: dict = Depends(require_per
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# ==================== VENDOR AI EXTRACT ====================
+@api_router.post("/vendors/ai/extract",
+    summary="Extraire les informations fournisseur d'un document via IA", tags=["Fournisseurs"])
+async def extract_vendor_from_document(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_permission("vendors", "edit"))
+):
+    """
+    Analyse un document (Excel, PDF, image) via IA et extrait les informations
+    pour créer une fiche fournisseur.
+    """
+    import tempfile
+    import json as json_mod
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé LLM non configurée")
+
+        ext = os.path.splitext(file.filename)[1].lower()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        mime_map = {
+            ".pdf": "application/pdf",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp",
+            ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".xls": "application/vnd.ms-excel",
+            ".csv": "text/csv",
+            ".doc": "application/msword",
+            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
+        mime_type = mime_map.get(ext, "application/octet-stream")
+
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"vendor_extract_{uuid.uuid4().hex[:8]}",
+            system_message="""Tu es un assistant spécialisé dans l'extraction d'informations fournisseurs à partir de documents administratifs et commerciaux.
+
+Analyse le document fourni et extrais TOUTES les informations relatives au fournisseur.
+Le document peut être un formulaire de création fournisseur, un devis, une facture, un bon de commande, un contrat, ou tout autre document commercial.
+
+Réponds UNIQUEMENT avec un JSON valide, sans texte autour ni backticks.
+
+Format attendu:
+{
+  "nom": "string - Nom de la société/entreprise",
+  "contact": "string - Nom du contact principal (Prénom Nom)",
+  "contact_fonction": "string - Fonction/poste du contact ou null",
+  "email": "string - Email du contact ou de l'entreprise ou null",
+  "telephone": "string - Numéro de téléphone ou null",
+  "adresse": "string - Adresse complète (rue) ou null",
+  "code_postal": "string - Code postal ou null",
+  "ville": "string - Ville ou null",
+  "pays": "string - Code pays (FR, DE, LU, etc.) ou null",
+  "specialite": "string - Domaine d'activité/spécialité déduit du document",
+  "tva_intra": "string - N° TVA intracommunautaire ou null",
+  "siret": "string - N° SIRET/SIREN ou numéro d'enregistrement ou null",
+  "conditions_paiement": "string parmi: 30J_NET, 30J_FDM, 45J_FDM, 60J_FDM, 90J_FDM ou null",
+  "devise": "string - EUR, USD, GBP, etc. ou null",
+  "categorie": "string parmi: MAINTENANCE, FOURNITURES, SERVICES, EQUIPEMENTS, SOUS_TRAITANCE, ENERGIE, INFORMATIQUE, LOGISTIQUE, NETTOYAGE, SECURITE, AUTRE ou null",
+  "sous_traitant": "boolean - true si c'est un sous-traitant, false sinon",
+  "site_web": "string - URL du site web ou null",
+  "notes": "string - Informations complémentaires utiles extraites du document (références, observations, etc.) ou null",
+  "confidence": "number 0-1 - niveau de confiance dans l'extraction"
+}
+
+RÈGLES:
+- Si une information n'est pas trouvée, mets null
+- Pour le nom de société, cherche en priorité: raison sociale, nom commercial, dénomination
+- Pour le contact, cherche: interlocuteur, responsable, signataire
+- Déduis la spécialité et la catégorie à partir du contenu du document
+- Le champ conditions_paiement doit correspondre à l'une des valeurs listées
+- Le champ categorie doit correspondre à l'une des valeurs listées
+- Extrais le maximum d'informations possibles"""
+        ).with_model("gemini", "gemini-2.5-flash")
+
+        response = await chat.send_message_async(
+            UserMessage(
+                text="Analyse ce document et extrais les informations du fournisseur. Réponds uniquement en JSON.",
+                files=[FileContentWithMimeType(file_path=tmp_path, mime_type=mime_type)]
+            )
+        )
+
+        # Nettoyer le fichier temporaire
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+
+        # Parser la réponse JSON
+        response_text = response.text.strip()
+        if response_text.startswith("```"):
+            response_text = response_text.split("\n", 1)[1] if "\n" in response_text else response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+        extracted_data = json_mod.loads(response_text)
+
+        return {
+            "success": True,
+            "extracted_data": extracted_data,
+            "source_filename": file.filename
+        }
+
+    except json_mod.JSONDecodeError as e:
+        logger.error(f"Erreur parsing JSON IA: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"L'IA n'a pas retourné un JSON valide: {str(e)}")
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Module IA non disponible (emergentintegrations)")
+    except Exception as e:
+        logger.error(f"Erreur extraction IA fournisseur: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'analyse IA: {str(e)}")
+
+
+
 # ==================== PURCHASE HISTORY ROUTES ====================
 @api_router.get("/purchase-history/grouped", tags=["Historique Achats"])
 async def get_purchase_history_grouped(current_user: dict = Depends(require_permission("purchaseHistory", "view"))):
