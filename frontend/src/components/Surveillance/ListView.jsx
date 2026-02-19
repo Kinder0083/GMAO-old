@@ -43,6 +43,7 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
               <TableHead>Périodicité</TableHead>
               <TableHead>Responsable</TableHead>
               <TableHead>Date du contrôle</TableHead>
+              <TableHead>Écart</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
