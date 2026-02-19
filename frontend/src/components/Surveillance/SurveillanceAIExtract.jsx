@@ -357,6 +357,30 @@ function SurveillanceAIExtract({ open, onClose }) {
               </div>
               <p className="text-center font-medium" data-testid="creation-success">{result.message}</p>
               
+              {/* Occurrences mises à jour (matched) */}
+              {result.matched_items?.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3" data-testid="matched-items-info">
+                  <p className="font-medium text-blue-800 text-sm flex items-center gap-1 mb-2">
+                    <Bot className="h-4 w-4" /> Occurrences existantes mises à jour :
+                  </p>
+                  {result.matched_items.map((item) => (
+                    <div key={item.id} className="text-xs text-blue-700 ml-5 flex items-center gap-2 mb-1">
+                      <ArrowRight className="h-3 w-3" />
+                      <span>{item.classe_type}</span>
+                      {item._ecart_jours != null && (
+                        <Badge className={
+                          item._ecart_jours <= 0 ? 'bg-emerald-600 text-white text-[10px]' :
+                          item._ecart_jours <= 7 ? 'bg-amber-500 text-white text-[10px]' :
+                          'bg-red-500 text-white text-[10px]'
+                        }>
+                          {item._ecart_jours > 0 ? '+' : ''}{item._ecart_jours}j
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               {result.work_orders_created?.length > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3" data-testid="work-orders-created">
                   <p className="font-medium text-amber-800 text-sm flex items-center gap-1 mb-2">
@@ -370,6 +394,79 @@ function SurveillanceAIExtract({ open, onClose }) {
                 </div>
               )}
             </div>
+          )}
+
+          {/* STEP: Ambiguous - résolution des correspondances incertaines */}
+          {step === 'ambiguous' && result && (
+            <ScrollArea className="h-[55vh] pr-2">
+              <div className="space-y-4">
+                {/* Résumé des actions automatiques */}
+                {(result.matched_count > 0 || result.created_count > 0) && (
+                  <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                    <p className="font-medium mb-1">Actions automatiques effectuées :</p>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      {result.matched_count > 0 && <p>{result.matched_count} occurrence(s) mise(s) à jour automatiquement</p>}
+                      {result.created_count > 0 && <p>{result.created_count} contrôle(s) créé(s)</p>}
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="font-medium text-amber-800 text-sm flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    {result.ambiguous_items?.length} correspondance(s) incertaine(s) - votre décision est requise
+                  </p>
+                </div>
+
+                {result.ambiguous_items?.map((ambItem, idx) => (
+                  <div key={idx} className="border rounded-lg p-4 space-y-3" data-testid={`ambiguous-item-${idx}`}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{ambItem.ctrl?.classe_type}</p>
+                        <Badge variant="outline" className="text-xs mt-1">{ambItem.ctrl?.category}</Badge>
+                      </div>
+                      <Badge className="bg-amber-500 text-white text-xs">Score: {ambItem.candidate?.match_score}/100</Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      {/* Rapport analysé */}
+                      <div className="bg-blue-50 rounded p-2">
+                        <p className="font-medium text-blue-800 mb-1">Rapport analysé</p>
+                        <p>Date : <strong>{ambItem.report_date || 'N/A'}</strong></p>
+                        <p>Type : <strong>{ambItem.ctrl?.classe_type}</strong></p>
+                      </div>
+                      {/* Occurrence planifiée candidate */}
+                      <div className="bg-green-50 rounded p-2">
+                        <p className="font-medium text-green-800 mb-1">Occurrence planifiée</p>
+                        <p>Date prévue : <strong>{ambItem.candidate?.prochain_controle ? new Date(ambItem.candidate.prochain_controle).toLocaleDateString('fr-FR') : 'N/A'}</strong></p>
+                        <p>Type : <strong>{ambItem.candidate?.classe_type}</strong></p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleAmbiguousDecision(ambItem, 'create_new')}
+                        disabled={ambiguousProcessing}
+                        data-testid={`create-new-btn-${idx}`}
+                      >
+                        Créer un nouveau
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => handleAmbiguousDecision(ambItem, 'match')}
+                        disabled={ambiguousProcessing}
+                        data-testid={`confirm-match-btn-${idx}`}
+                      >
+                        {ambiguousProcessing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
+                        Confirmer la correspondance
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </div>
 
