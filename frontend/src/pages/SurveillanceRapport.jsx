@@ -188,7 +188,25 @@ const SurveillanceRapport = () => {
           <p className="text-gray-600 mt-1">Statistiques et indicateurs de performance</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 font-medium">Mode :</span>
+          <Button
+            variant="outline" size="sm"
+            onClick={handleExportPDF}
+            disabled={!stats || exporting !== null}
+            data-testid="export-pdf-btn"
+          >
+            {exporting === 'pdf' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileDown className="h-4 w-4 mr-1" />}
+            PDF
+          </Button>
+          <Button
+            variant="outline" size="sm"
+            onClick={handleExportExcel}
+            disabled={!stats || exporting !== null}
+            data-testid="export-excel-btn"
+          >
+            {exporting === 'excel' ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileSpreadsheet className="h-4 w-4 mr-1" />}
+            Excel
+          </Button>
+          <span className="text-sm text-gray-600 font-medium ml-2">Mode :</span>
           <Select value={displayMode} onValueChange={setDisplayMode}>
             <SelectTrigger className="w-44" data-testid="display-mode-select">
               <SelectValue />
