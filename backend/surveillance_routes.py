@@ -1617,6 +1617,346 @@ Voici les principales périodicités réglementaires françaises:
         return {"success": False, "error": f"Erreur lors de l'extraction: {str(e)}"}
 
 
+# ==================== Fonctions utilitaires pour create_batch_from_ai ====================
+
+def _normalize_periodicite(raw: str) -> str:
+    """Normalise une périodicité brute en format standard.
+    Ex: 'Annuelle (réf. Arrêtés du 5 mars)' → '1 an'
+    """
+    p = raw.lower().strip()
+    if any(w in p for w in ['annuel', 'annual']):
+        return "2 ans" if ('bi' in p or 'biennal' in p) else "1 an"
+    if 'semestriel' in p: return "6 mois"
+    if 'trimestriel' in p: return "3 mois"
+    if 'bimestriel' in p: return "2 mois"
+    if 'mensuel' in p: return "1 mois"
+    if 'hebdomadaire' in p: return "1 semaine"
+    if 'quotidien' in p: return "1 jour"
+    return raw
+
+
+def _calculate_next_control_date(derniere_visite: str, periodicite: str) -> Optional[str]:
+    """Calcule la date du prochain contrôle = dernière visite + périodicité."""
+    if not derniere_visite or not periodicite:
+        return None
+    try:
+        from dateutil.relativedelta import relativedelta
+        import re
+        base_date = datetime.fromisoformat(derniere_visite)
+        p = periodicite.lower().strip()
+        
+        # Table de correspondance textuelle
+        text_map = {
+            'annuel': ('years', 1), 'annual': ('years', 1),
+            'semestriel': ('months', 6), 'trimestriel': ('months', 3),
+            'bimestriel': ('months', 2), 'mensuel': ('months', 1),
+            'hebdomadaire': ('weeks', 1), 'quotidien': ('days', 1),
+        }
+        for keyword, (unit, num) in text_map.items():
+            if keyword in p:
+                if keyword in ('annuel', 'annual') and ('bi' in p or 'biennal' in p):
+                    unit, num = 'years', 2
+                delta = relativedelta(years=num) if unit == 'years' else \
+                        relativedelta(months=num) if unit == 'months' else \
+                        timedelta(weeks=num) if unit == 'weeks' else timedelta(days=num)
+                return (base_date + delta).strftime("%Y-%m-%d")
+        
+        # Format numérique: "1 an", "6 mois", "3 semaines", "5 jours"
+        patterns = [
+            (r'(\d+)\s*an', 'years'), (r'(\d+)\s*mois', 'months'),
+            (r'(\d+)\s*semaine', 'weeks'), (r'(\d+)\s*jour', 'days'),
+        ]
+        for pattern, unit in patterns:
+            m = re.search(pattern, p)
+            if m:
+                n = int(m.group(1))
+                delta = relativedelta(years=n) if unit == 'years' else \
+                        relativedelta(months=n) if unit == 'months' else \
+                        timedelta(weeks=n) if unit == 'weeks' else timedelta(days=n)
+                return (base_date + delta).strftime("%Y-%m-%d")
+        
+        # Fallback: 1 an
+        logger.warning(f"Périodicité non reconnue '{periodicite}', fallback 1 an")
+        return (base_date + relativedelta(years=1)).strftime("%Y-%m-%d")
+    except Exception as e:
+        logger.warning(f"Erreur calcul prochain contrôle: {e}")
+        return None
+
+
+def _build_control_comment(ctrl: dict) -> Optional[str]:
+    """Construit le commentaire à partir des anomalies et équipements."""
+    parts = []
+    if ctrl.get("anomalies"):
+        parts.append(f"ANOMALIES DÉTECTÉES:\n{ctrl['anomalies']}")
+    if ctrl.get("equipements_concernes"):
+        parts.append(f"Équipements: {ctrl['equipements_concernes']}")
+    return "\n\n".join(parts) if parts else None
+
+
+_RESULTAT_MAP = {"CONFORME": "Conforme", "NON_CONFORME": "Non conforme", "AVEC_RESERVES": "Avec réserves"}
+
+def _map_resultat(resultat: Optional[str]) -> Optional[str]:
+    """Mappe un code résultat IA vers un libellé lisible."""
+    return _RESULTAT_MAP.get(resultat, resultat)
+
+
+def _prepare_source_attachment(source_file: Optional[dict]) -> Optional[dict]:
+    """Prépare la pièce jointe source si fournie."""
+    if not source_file or not source_file.get("url"):
+        return None
+    return {
+        "id": source_file.get("id", str(uuid.uuid4())),
+        "filename": source_file.get("filename", "document.pdf"),
+        "url": source_file.get("url"),
+        "size": source_file.get("size", 0),
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+
+
+async def _update_matched_occurrence(
+    matched: dict, ctrl: dict, document_info: dict,
+    derniere_visite: str, prochain_controle: str, periodicite: str,
+    resultat: str, commentaire: Optional[str],
+    source_attachment: Optional[dict], current_user: dict
+) -> dict:
+    """Met à jour une occurrence planifiée existante qui correspond au rapport analysé.
+    Calcule l'écart, met à jour l'item, régénère les occurrences futures, et logge l'audit.
+    """
+    # Calculer l'écart en jours
+    ecart_jours = None
+    try:
+        date_prevue = datetime.fromisoformat(matched["prochain_controle"]).date()
+        date_reelle = datetime.fromisoformat(derniere_visite).date()
+        ecart_jours = (date_reelle - date_prevue).days
+    except Exception:
+        pass
+    
+    # Préparer la mise à jour
+    set_data = {
+        "status": SurveillanceItemStatus.REALISE.value,
+        "derniere_visite": derniere_visite,
+        "date_realisation": derniere_visite,
+        "prochain_controle": prochain_controle,
+        "ecart_jours": ecart_jours,
+        "resultat_controle": resultat,
+        "numero_rapport": document_info.get("numero_rapport"),
+        "organisme_controle": document_info.get("organisme_controle"),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user.get("id")
+    }
+    if commentaire:
+        set_data["commentaire"] = commentaire
+    if ctrl.get("references_reglementaires"):
+        set_data["reference_reglementaire"] = ctrl["references_reglementaires"]
+    
+    update_query = {"$set": set_data}
+    if source_attachment:
+        update_query["$push"] = {"attachments": source_attachment}
+    
+    await db.surveillance_items.update_one({"id": matched["id"]}, update_query)
+    
+    # Récupérer l'item mis à jour
+    updated_item = await db.surveillance_items.find_one({"id": matched["id"]}, {"_id": 0})
+    
+    # Régénérer les occurrences futures
+    group_id = matched.get("groupe_controle_id")
+    if derniere_visite and periodicite:
+        if group_id:
+            await db.surveillance_items.delete_many({
+                "groupe_controle_id": group_id,
+                "status": {"$in": [SurveillanceItemStatus.PLANIFIER.value, SurveillanceItemStatus.PLANIFIE.value]},
+                "id": {"$ne": matched["id"]}
+            })
+        base = updated_item or matched
+        base["groupe_controle_id"] = group_id or str(uuid.uuid4())
+        recurring = generate_recurring_controls(base, derniere_visite, periodicite)
+        if recurring:
+            for r in recurring:
+                r["created_by"] = current_user.get("id")
+                r["updated_by"] = current_user.get("id")
+            await db.surveillance_items.insert_many(recurring)
+            logger.info(f"✅ {len(recurring)} occurrence(s) régénérée(s) pour {matched.get('classe_type')}")
+    
+    logger.info(f"✅ Occurrence matchée: {matched['id'][:8]} (écart: {ecart_jours}j)")
+    
+    # Audit
+    await audit_service.log_action(
+        user_id=current_user["id"],
+        user_name=f"{current_user['prenom']} {current_user['nom']}",
+        user_email=current_user["email"],
+        action=ActionType.UPDATE,
+        entity_type=EntityType.SURVEILLANCE,
+        entity_id=matched["id"],
+        entity_name=f"Plan surveillance (IA match): {matched.get('classe_type')}"
+    )
+    
+    return {
+        **(updated_item or {}),
+        "_matched_from": matched["id"],
+        "_ecart_jours": ecart_jours,
+        "_match_score": matched.get("_match_score"),
+        "_action": "updated_occurrence"
+    }
+
+
+async def _create_new_surveillance_item(
+    ctrl: dict, document_info: dict,
+    derniere_visite: str, prochain_controle: str, periodicite: str,
+    resultat: str, commentaire: Optional[str],
+    source_attachment: Optional[dict], annee: int, current_user: dict
+) -> dict:
+    """Crée un nouvel item de surveillance (réalisé) + occurrences récurrentes futures."""
+    groupe_id = str(uuid.uuid4())
+    
+    item = SurveillanceItem(
+        classe_type=ctrl.get("classe_type", ""),
+        category=ctrl.get("category", "AUTRE"),
+        batiment=ctrl.get("batiment") or "",
+        periodicite=ctrl.get("periodicite", "Non déterminée"),
+        responsable=SurveillanceResponsible.EXTERNE,
+        executant=ctrl.get("executant", document_info.get("organisme_controle", "")),
+        description=ctrl.get("description"),
+        derniere_visite=derniere_visite,
+        prochain_controle=prochain_controle,
+        status=SurveillanceItemStatus.REALISE,
+        date_realisation=derniere_visite,
+        commentaire=commentaire,
+        reference_reglementaire=ctrl.get("references_reglementaires"),
+        numero_rapport=document_info.get("numero_rapport"),
+        organisme_controle=document_info.get("organisme_controle"),
+        resultat_controle=resultat,
+        attachments=[source_attachment] if source_attachment else [],
+        annee=annee,
+        groupe_controle_id=groupe_id,
+        created_by=current_user.get("id"),
+        updated_by=current_user.get("id")
+    )
+    
+    item_dict = item.model_dump()
+    await db.surveillance_items.insert_one(item_dict)
+    item_dict.pop("_id", None)
+    
+    # Générer les récurrences futures
+    if derniere_visite and periodicite:
+        recurring = generate_recurring_controls(item_dict, derniere_visite, periodicite)
+        if recurring:
+            for r in recurring:
+                r["created_by"] = current_user.get("id")
+                r["updated_by"] = current_user.get("id")
+            await db.surveillance_items.insert_many(recurring)
+            logger.info(f"✅ {len(recurring)} récurrence(s) créée(s) pour {item.classe_type}")
+    
+    # Audit
+    await audit_service.log_action(
+        user_id=current_user["id"],
+        user_name=f"{current_user['prenom']} {current_user['nom']}",
+        user_email=current_user["email"],
+        action=ActionType.CREATE,
+        entity_type=EntityType.SURVEILLANCE,
+        entity_id=item.id,
+        entity_name=f"Plan surveillance (IA): {item.classe_type}"
+    )
+    
+    return item_dict
+
+
+async def _create_curative_work_order(
+    ctrl: dict, document_info: dict,
+    surveillance_item_id: str, current_user: dict
+) -> Optional[dict]:
+    """Crée un bon de travail curatif pour une non-conformité détectée."""
+    try:
+        from bson import ObjectId as BsonObjectId
+        
+        wo_count = await db.work_orders.count_documents({})
+        wo_numero = str(5800 + wo_count + 1)
+        
+        wo_dict = {
+            "_id": BsonObjectId(),
+            "titre": f"[Curatif] {ctrl.get('classe_type', 'Contrôle')} - Non-conformité",
+            "description": (
+                f"Non-conformité détectée lors du contrôle réglementaire.\n\n"
+                f"Organisme: {document_info.get('organisme_controle', 'N/A')}\n"
+                f"Date du contrôle: {ctrl.get('derniere_visite', 'N/A')}\n"
+                f"Rapport: {document_info.get('numero_rapport', 'N/A')}\n\n"
+                f"ANOMALIES:\n{ctrl.get('anomalies', '')}"
+            ),
+            "statut": "OUVERT", "priorite": "HAUTE", "categorie": "TRAVAUX_CURATIF",
+            "equipement_id": None, "assigne_a_id": None, "emplacement_id": None,
+            "dateLimite": None, "tempsEstime": None, "tempsReel": None,
+            "createdBy": current_user.get("id"), "numero": wo_numero,
+            "dateCreation": datetime.now(timezone.utc), "dateTermine": None,
+            "attachments": [], "comments": [], "parts_used": [],
+            "service": None, "surveillance_item_id": surveillance_item_id
+        }
+        wo_dict["id"] = str(wo_dict["_id"])
+        
+        await db.work_orders.insert_one(wo_dict)
+        
+        await audit_service.log_action(
+            user_id=current_user["id"],
+            user_name=f"{current_user['prenom']} {current_user['nom']}",
+            user_email=current_user["email"],
+            action=ActionType.CREATE,
+            entity_type=EntityType.WORK_ORDER,
+            entity_id=wo_dict["id"],
+            entity_name=wo_dict["titre"],
+            details=f"BT curatif #{wo_numero} créé auto depuis contrôle IA"
+        )
+        
+        return {
+            "id": wo_dict["id"], "numero": wo_numero,
+            "titre": wo_dict["titre"], "anomalies": ctrl.get("anomalies")
+        }
+    except Exception as e:
+        logger.error(f"Erreur création BT curatif: {e}")
+        return None
+
+
+async def _archive_ai_analysis(
+    items_data: dict, document_info: dict, controles: list,
+    created_items: list, created_work_orders: list, matched_items: list,
+    current_user: dict
+) -> AIAnalysisHistory:
+    """Archive l'analyse IA dans l'historique."""
+    result_counts = {"CONFORME": 0, "NON_CONFORME": 0, "AVEC_RESERVES": 0}
+    categories_set = set()
+    for ctrl in controles:
+        r = ctrl.get("resultat", "")
+        if r in result_counts:
+            result_counts[r] += 1
+        cat = ctrl.get("category")
+        if cat:
+            categories_set.add(cat)
+    
+    entry = AIAnalysisHistory(
+        filename=items_data.get("filename", "document.pdf"),
+        file_size=items_data.get("file_size"),
+        organisme_controle=document_info.get("organisme_controle"),
+        date_intervention=document_info.get("date_intervention"),
+        numero_rapport=document_info.get("numero_rapport"),
+        site_controle=document_info.get("site_controle"),
+        controles_count=len(created_items) + len(matched_items),
+        conformes_count=result_counts["CONFORME"],
+        non_conformes_count=result_counts["NON_CONFORME"],
+        avec_reserves_count=result_counts["AVEC_RESERVES"],
+        created_item_ids=[item["id"] for item in created_items],
+        created_work_order_ids=[wo["id"] for wo in created_work_orders],
+        raw_extracted_data=items_data,
+        categories=list(categories_set),
+        analyzed_by=current_user.get("id"),
+        analyzed_by_name=f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+    )
+    
+    entry_dict = entry.model_dump()
+    await db.ai_analysis_history.insert_one(entry_dict)
+    if "_id" in entry_dict:
+        del entry_dict["_id"]
+    
+    return entry
+
+
+
 @router.post("/ai/create-batch")
 async def create_batch_from_ai(
     items_data: dict,
