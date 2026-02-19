@@ -1752,6 +1752,106 @@ async def create_batch_from_ai(
             
             groupe_id = str(uuid.uuid4())
             
+            # ==========================================
+            # CAS 1: Occurrence existante trouvée → mise à jour
+            # ==========================================
+            if matched_occurrence and matched_occurrence.get("_match_confidence") == "high":
+                # Calculer l'écart en jours entre date prévue et date réelle
+                ecart_jours = None
+                try:
+                    date_prevue = datetime.fromisoformat(matched_occurrence["prochain_controle"]).date()
+                    date_reelle = datetime.fromisoformat(derniere_visite).date()
+                    ecart_jours = (date_reelle - date_prevue).days  # + = retard, - = avance
+                except Exception:
+                    pass
+                
+                # Préparer la mise à jour
+                update_data = {
+                    "status": SurveillanceItemStatus.REALISE.value,
+                    "derniere_visite": derniere_visite,
+                    "date_realisation": derniere_visite,
+                    "prochain_controle": prochain_controle,
+                    "ecart_jours": ecart_jours,
+                    "resultat_controle": resultat,
+                    "numero_rapport": document_info.get("numero_rapport"),
+                    "organisme_controle": document_info.get("organisme_controle"),
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": current_user.get("id")
+                }
+                if commentaire:
+                    update_data["commentaire"] = commentaire
+                if ctrl.get("references_reglementaires"):
+                    update_data["reference_reglementaire"] = ctrl.get("references_reglementaires")
+                if source_attachment:
+                    update_data["$push"] = {"attachments": source_attachment}
+                
+                # Séparer $push des $set
+                set_data = {k: v for k, v in update_data.items() if k != "$push"}
+                update_query = {"$set": set_data}
+                if "$push" in update_data:
+                    update_query["$push"] = update_data["$push"]
+                
+                await db.surveillance_items.update_one(
+                    {"id": matched_occurrence["id"]},
+                    update_query
+                )
+                
+                # Récupérer l'item mis à jour
+                updated_item = await db.surveillance_items.find_one(
+                    {"id": matched_occurrence["id"]}, {"_id": 0}
+                )
+                
+                matched_items.append({
+                    **updated_item,
+                    "_matched_from": matched_occurrence["id"],
+                    "_ecart_jours": ecart_jours,
+                    "_match_score": matched_occurrence.get("_match_score"),
+                    "_action": "updated_occurrence"
+                })
+                
+                # Générer la nouvelle occurrence future
+                if derniere_visite and periodicite:
+                    # Supprimer les anciennes occurrences futures du même groupe
+                    group_id = matched_occurrence.get("groupe_controle_id")
+                    if group_id:
+                        # Supprimer les futures occurrences non réalisées de ce groupe
+                        # qui sont APRÈS la date du contrôle qu'on vient de réaliser
+                        await db.surveillance_items.delete_many({
+                            "groupe_controle_id": group_id,
+                            "status": {"$in": [SurveillanceItemStatus.PLANIFIER.value, SurveillanceItemStatus.PLANIFIE.value]},
+                            "id": {"$ne": matched_occurrence["id"]}
+                        })
+                    
+                    # Régénérer les occurrences futures
+                    base_for_recurring = updated_item or matched_occurrence
+                    base_for_recurring["groupe_controle_id"] = group_id or str(uuid.uuid4())
+                    recurring = generate_recurring_controls(base_for_recurring, derniere_visite, periodicite)
+                    if recurring:
+                        for r in recurring:
+                            r["created_by"] = current_user.get("id")
+                            r["updated_by"] = current_user.get("id")
+                        await db.surveillance_items.insert_many(recurring)
+                        logger.info(f"✅ {len(recurring)} nouvelle(s) occurrence(s) régénérée(s) pour {matched_occurrence.get('classe_type')}")
+                
+                logger.info(f"✅ Occurrence matchée et mise à jour: {matched_occurrence['id'][:8]} (écart: {ecart_jours}j)")
+                
+                # Audit
+                await audit_service.log_action(
+                    user_id=current_user["id"],
+                    user_name=f"{current_user['prenom']} {current_user['nom']}",
+                    user_email=current_user["email"],
+                    action=ActionType.UPDATE,
+                    entity_type=EntityType.SURVEILLANCE,
+                    entity_id=matched_occurrence["id"],
+                    entity_name=f"Plan surveillance (IA match): {matched_occurrence.get('classe_type')}"
+                )
+                
+                continue  # Passer au contrôle suivant
+            
+            # ==========================================
+            # CAS 2: Pas de correspondance → création classique
+            # ==========================================
+            
             # Créer l'item de surveillance (RÉALISÉ)
             # prochain_controle = derniere_visite + periodicite (date du PROCHAIN contrôle)
             # L'affichage dans le frontend utilise derniere_visite pour les items REALISE
