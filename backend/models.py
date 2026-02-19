@@ -1589,6 +1589,7 @@ class SurveillanceItem(BaseModel):
     # Gestion par année et récurrence
     annee: Optional[int] = None  # Année du contrôle (ex: 2026)
     groupe_controle_id: Optional[str] = None  # Lien entre contrôles récurrents
+    ecart_jours: Optional[int] = None  # Écart en jours entre date prévue et date réelle (+ = retard, - = avance)
 
 class SurveillanceItemCreate(BaseModel):
     classe_type: str
