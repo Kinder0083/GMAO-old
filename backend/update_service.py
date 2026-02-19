@@ -535,29 +535,19 @@ class UpdateService:
             # 3. Télécharger la mise à jour depuis GitHub
             logger.info(f"📥 Étape 3/5: Téléchargement de la version {version}...")
             
-            # Utiliser git pull pour récupérer les changements
             git_dir = self.app_root
-            
             git_available = False
             
-            try:
-                # Vérifier si Git est disponible et configuré
-                git_version = await asyncio.create_subprocess_exec(
-                    "git", "--version",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                await git_version.communicate()
-                git_available = (git_version.returncode == 0)
-            except FileNotFoundError:
-                logger.warning("⚠️ Git n'est pas installé sur ce système")
-                git_available = False
+            # Vérifier si Git est disponible
+            success, _, _ = await self._run_command(
+                update_history, "3/6 - Vérification Git",
+                ["git", "--version"]
+            )
+            git_available = success
             
             if git_available:
                 try:
                     # CRITIQUE: Désactiver le git hook post-merge AVANT le pull
-                    # Sinon le hook exécute post-update.sh qui restart le backend
-                    # pendant que update_service.py est encore en train de tourner
                     post_merge_hook = git_dir / ".git" / "hooks" / "post-merge"
                     post_merge_disabled = git_dir / ".git" / "hooks" / "post-merge.disabled"
                     hook_was_disabled = False
@@ -565,85 +555,105 @@ class UpdateService:
                         try:
                             os.rename(str(post_merge_hook), str(post_merge_disabled))
                             hook_was_disabled = True
-                            logger.info("🔒 Git hook post-merge désactivé temporairement")
+                            self._log_step(update_history, "3/6 - Désactivation hook post-merge", 
+                                          "mv post-merge post-merge.disabled", status="success")
                         except Exception as e:
-                            logger.warning(f"⚠️ Impossible de désactiver le hook: {e}")
+                            self._log_step(update_history, "3/6 - Désactivation hook post-merge", 
+                                          "mv post-merge post-merge.disabled",
+                                          stderr=str(e), status="warning")
                     
-                    # Vérifier s'il y a des modifications locales
-                    git_check = await asyncio.create_subprocess_exec(
-                        "git", "status", "--porcelain",
-                        cwd=git_dir,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
+                    # Vérifier les modifications locales
+                    success, stdout, stderr = await self._run_command(
+                        update_history, "3/6 - Git status (modifications locales)",
+                        ["git", "status", "--porcelain"],
+                        cwd=str(git_dir)
                     )
-                    check_stdout, check_stderr = await git_check.communicate()
                     
-                    if git_check.returncode != 0:
-                        logger.warning(f"⚠️ Git status a échoué: {check_stderr.decode()}")
+                    if not success:
                         git_available = False
-                    elif check_stdout.decode().strip():
-                        logger.warning("⚠️ Modifications locales détectées")
+                    elif stdout.strip():
                         # Stash les modifications locales
-                        stash_process = await asyncio.create_subprocess_exec(
-                            "git", "stash",
-                            cwd=git_dir,
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE
+                        await self._run_command(
+                            update_history, "3/6 - Git stash (sauvegarde modifications locales)",
+                            ["git", "stash"],
+                            cwd=str(git_dir)
                         )
-                        await stash_process.communicate()
                     
                     if git_available:
-                        # Git pull
-                        pull_process = await asyncio.create_subprocess_exec(
-                            "git", "pull", "origin", self.github_branch,
-                            cwd=git_dir,
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE
+                        # Git pull — l'opération principale
+                        success, stdout, stderr = await self._run_command(
+                            update_history, "3/6 - Git pull (téléchargement code)",
+                            ["git", "pull", "origin", self.github_branch],
+                            cwd=str(git_dir), timeout=120
                         )
                         
-                        pull_stdout, pull_stderr = await asyncio.wait_for(pull_process.communicate(), timeout=120)
-                        
-                        if pull_process.returncode != 0:
-                            error_msg = pull_stderr.decode()
-                            logger.warning(f"⚠️ Git pull a échoué: {error_msg}")
-                            # Vérifier si c'est un problème de configuration Git (non bloquant)
-                            if ("No remote" in error_msg or "no remote" in error_msg or 
-                                "not a git repository" in error_msg or 
-                                "does not appear to be a git repository" in error_msg or
-                                "'origin' does not appear" in error_msg or
-                                "Could not resolve host" in error_msg):
-                                logger.info("ℹ️ Git non configuré ou réseau indisponible - CONTINUE sans Git")
+                        if not success:
+                            if any(msg in stderr for msg in [
+                                "No remote", "no remote", "not a git repository",
+                                "does not appear to be a git repository",
+                                "'origin' does not appear", "Could not resolve host"
+                            ]):
                                 git_available = False
                             else:
-                                # Erreur Git réelle (permissions, conflit, etc.)
-                                logger.error(f"❌ Échec du git pull: {error_msg}")
+                                # Réactiver le hook avant de quitter
+                                if hook_was_disabled and post_merge_disabled.exists():
+                                    try:
+                                        os.rename(str(post_merge_disabled), str(post_merge_hook))
+                                    except Exception:
+                                        pass
+                                
+                                # Collecter les erreurs dans le résumé
+                                update_history["errors"].append(f"Git pull échoué: {stderr[:300]}")
+                                
                                 return {
                                     "success": False,
                                     "message": "Échec du téléchargement de la mise à jour",
-                                    "error": error_msg
+                                    "error": stderr,
+                                    "history_id": update_history["id"]
                                 }
                         else:
-                            logger.info("✅ Mise à jour téléchargée via Git")
+                            # Récupérer la liste des fichiers modifiés par le pull
+                            diff_success, diff_out, _ = await self._run_command(
+                                update_history, "3/6 - Git diff (fichiers modifiés)",
+                                ["git", "diff", "--name-status", "HEAD~1", "HEAD"],
+                                cwd=str(git_dir), timeout=10
+                            )
+                            if diff_success and diff_out.strip():
+                                for line in diff_out.strip().split('\n'):
+                                    parts = line.split('\t', 1)
+                                    if len(parts) == 2:
+                                        status_code, filename = parts
+                                        if status_code.startswith('M'):
+                                            update_history["files_modified"].append(filename)
+                                        elif status_code.startswith('A'):
+                                            update_history["files_added"].append(filename)
+                                        elif status_code.startswith('D'):
+                                            update_history["files_deleted"].append(filename)
+                                update_history["total_files_changed"] = (
+                                    len(update_history["files_modified"]) + 
+                                    len(update_history["files_added"]) + 
+                                    len(update_history["files_deleted"])
+                                )
                     
                     # Réactiver le git hook post-merge
                     if hook_was_disabled and post_merge_disabled.exists():
                         try:
                             os.rename(str(post_merge_disabled), str(post_merge_hook))
-                            logger.info("🔓 Git hook post-merge réactivé")
+                            self._log_step(update_history, "3/6 - Réactivation hook post-merge",
+                                          "mv post-merge.disabled post-merge", status="success")
                         except Exception:
                             pass
                     
-                except asyncio.TimeoutError:
-                    logger.warning("⚠️ Timeout Git - CONTINUE sans Git")
-                    git_available = False
                 except Exception as e:
-                    logger.warning(f"⚠️ Erreur Git ({str(e)}) - CONTINUE sans Git")
+                    self._log_step(update_history, "3/6 - Erreur Git inattendue", str(e),
+                                  stderr=str(e), status="warning")
                     git_available = False
             
             if not git_available:
-                logger.warning("⚠️ Mise à jour Git non disponible")
-                logger.info("ℹ️ Les dépendances seront réinstallées et les services redémarrés")
-                logger.info("ℹ️ Pour mettre à jour le code, utilisez 'git pull' manuellement ou réinstallez depuis GitHub")
+                update_history["warnings"].append("Git non disponible - code non mis à jour")
+                self._log_step(update_history, "3/6 - Git indisponible", 
+                              "Les dépendances seront réinstallées et les services redémarrés",
+                              status="warning")
             
             # 4. Installer les dépendances
             logger.info("📦 Étape 4/5: Installation des dépendances...")
