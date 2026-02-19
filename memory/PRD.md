@@ -1,50 +1,42 @@
 # GMAO IRIS - PRD (Product Requirements Document)
 
 ## Problème Original
-Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack avec React/FastAPI/MongoDB, dotée d'un assistant IA "Adria" et d'un module de Plan de Surveillance réglementaire.
+Application GMAO full-stack avec React/FastAPI/MongoDB, assistant IA "Adria" et modules Surveillance/Fournisseurs.
 
 ## Architecture
 - **Frontend**: React + Shadcn/UI + TailwindCSS
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
-- **IA**: Gemini (via emergentintegrations) pour Adria et extraction PDF
-- **Temps réel**: WebSocket via RealtimeManager (broadcast par entité)
+- **IA**: Gemini 2.5 Flash (via emergentintegrations)
 
 ## Comptes de Test
 - Admin: admin@test.com / Admin123!
 - Technicien: technicien@test.com / Technicien123!
 
-## Logique Métier du Plan de Surveillance
-
-### Champs clés
-- `derniere_visite` : date où le contrôle a été réalisé
-- `prochain_controle` : date du PROCHAIN contrôle = derniere_visite + periodicite
-- `status` : A PLANIFIER (défaut) | PLANIFIE | REALISE
-- `annee` : année de derniere_visite (pour le tri par onglets)
-- `duree_rappel_echeance` : jours avant prochain_controle pour déclencher l'alerte (paramétrable, défaut 30)
-
-### Règles
-1. Un item créé par l'IA depuis un PDF a le statut REALISE
-2. Un item créé manuellement a le statut A PLANIFIER par défaut
-3. `check-due-dates` ne change JAMAIS les statuts — notification uniquement
-4. Les alertes ne se déclenchent que EN DÉCOMPTE (avant prochain_controle, pas après)
-5. Le frontend affiche `derniere_visite` pour les items REALISE et `prochain_controle` pour les autres
-6. La page utilise WebSocket (useSurveillancePlan hook) pour la synchronisation temps réel
-
 ## Ce qui a été implémenté
-- [x] Ordres de Travail (CRUD complet)
-- [x] Assistant Adria : CREATE_OT, MODIFY_OT, CLOSE_OT, ASSIGN_OT
-- [x] Refactoring AIChatWidget.jsx en 3 fichiers
-- [x] Plan de Surveillance : CRUD, import IA, contrôles récurrents
-- [x] **FIX (Feb 2026)**: prochain_controle = derniere_visite + periodicite
-- [x] **FIX (Feb 2026)**: check-due-dates ne change plus les statuts (notification uniquement, décompte avant la date)
-- [x] **FIX (Feb 2026)**: WebSocket temps réel activé sur la page Surveillance
-- [x] **FIX (Feb 2026)**: Colonne "Date du Contrôle" dans les 3 vues avec affichage conditionnel
-- [x] **FIX (Feb 2026)**: emergentintegrations retiré de requirements.txt (bloquait le déploiement Proxmox)
-- [x] **FEATURE (Feb 2026)**: Journal de mise à jour détaillé - chaque commande, sortie, code retour, durée
-- [x] **FEATURE (Feb 2026)**: Frontend du journal mis à jour pour afficher les logs structurés (terminal-like)
-- [x] Script verify_deployment.sh créé pour diagnostic de déploiement
+
+### Plan de Surveillance
+- [x] CRUD complet, import IA PDF, contrôles récurrents
+- [x] check-due-dates = notification uniquement (PAS de changement de statut)
+- [x] WebSocket temps réel via useSurveillancePlan hook
+- [x] Colonne "Date du Contrôle" avec affichage conditionnel
+
+### Fournisseurs (NOUVEAU - Feb 2026)
+- [x] Modèle enrichi: 12 nouveaux champs (pays, ville, code_postal, tva_intra, siret, conditions_paiement, devise, categorie, sous_traitant, contact_fonction, site_web, notes)
+- [x] Formulaire en 4 onglets (Société, Contact, Adresse, Commercial)
+- [x] Extraction IA depuis documents (Excel, PDF, images) via Gemini
+- [x] Dialog d'import IA avec prévisualisation et pré-remplissage du formulaire
+- [x] Vue grille et liste enrichies (badges catégorie, sous-traitant, localisation)
+
+### Système de mise à jour
+- [x] Journal détaillé: commande, stdout/stderr, code retour, durée par étape
+- [x] emergentintegrations retiré de requirements.txt (fix déploiement Proxmox)
+- [x] Script verify_deployment.sh pour diagnostic
+
+### Assistant Adria
+- [x] CREATE_OT, MODIFY_OT, CLOSE_OT, ASSIGN_OT
+- [x] Refactoring en 3 fichiers (UI, handlers, voice hook)
 
 ## Backlog
 - P2: Adria - Clôture OT + résumé d'intervention en une commande vocale
-- P2: Validation robustesse extraction IA (test avec PDF complexe 8+ contrôles)
+- P2: Validation robustesse extraction IA (PDF complexe 8+ contrôles)
