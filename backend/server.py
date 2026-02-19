@@ -5058,7 +5058,7 @@ RÈGLES:
 - Extrais le maximum d'informations possibles"""
         ).with_model("gemini", "gemini-2.5-flash")
 
-        response = await chat.send_message_async(
+        response = await chat.send_message(
             UserMessage(
                 text="Analyse ce document et extrais les informations du fournisseur. Réponds uniquement en JSON.",
                 files=[FileContentWithMimeType(file_path=tmp_path, mime_type=mime_type)]
