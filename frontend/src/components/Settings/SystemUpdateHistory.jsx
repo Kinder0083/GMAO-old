@@ -235,32 +235,112 @@ const SystemUpdateHistory = () => {
                     {isExpanded && (
                       <div className="p-4 border-t bg-white">
                         <div className="space-y-4">
-                          {/* Message de mise à jour */}
-                          {update.update_message && (
-                            <div>
-                              <h4 className="font-medium text-gray-700 mb-2">Message:</h4>
-                              <p className="text-sm text-gray-600">{update.update_message}</p>
+                          {/* Résumé rapide */}
+                          {update.summary && (
+                            <div className="flex gap-3 flex-wrap">
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                                {update.summary.successful_steps} OK
+                              </Badge>
+                              {update.summary.warning_steps > 0 && (
+                                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                                  {update.summary.warning_steps} avertissement(s)
+                                </Badge>
+                              )}
+                              {update.summary.error_steps > 0 && (
+                                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                                  {update.summary.error_steps} erreur(s)
+                                </Badge>
+                              )}
+                              {update.summary.files_changed > 0 && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                                  {update.summary.files_changed} fichier(s) modifié(s)
+                                </Badge>
+                              )}
                             </div>
                           )}
 
-                          {/* Erreur si échec */}
-                          {!isSuccess && update.error_message && (
+                          {/* Avertissements */}
+                          {update.warnings && update.warnings.length > 0 && (
+                            <div className="bg-yellow-50 border border-yellow-300 rounded p-3">
+                              <h4 className="font-medium text-yellow-800 mb-2">Avertissements:</h4>
+                              {update.warnings.map((w, idx) => (
+                                <p key={idx} className="text-sm text-yellow-700">{w}</p>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Erreurs */}
+                          {update.errors && update.errors.length > 0 && (
+                            <div className="bg-red-50 border border-red-300 rounded p-3">
+                              <h4 className="font-medium text-red-800 mb-2">Erreurs:</h4>
+                              {update.errors.map((e, idx) => (
+                                <p key={idx} className="text-sm text-red-700">{e}</p>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Erreur legacy */}
+                          {!isSuccess && update.error_message && !update.errors?.length && (
                             <div className="bg-red-100 border border-red-300 rounded p-3">
                               <h4 className="font-medium text-red-800 mb-2">Erreur:</h4>
                               <p className="text-sm text-red-700 font-mono">{update.error_message}</p>
                             </div>
                           )}
 
-                          {/* Logs */}
+                          {/* Journal détaillé */}
                           {update.logs && update.logs.length > 0 && (
                             <div>
-                              <h4 className="font-medium text-gray-700 mb-2">Logs:</h4>
-                              <div className="bg-gray-100 rounded p-3 max-h-60 overflow-y-auto">
-                                {update.logs.map((log, idx) => (
-                                  <div key={idx} className="text-xs text-gray-700 font-mono mb-1">
-                                    {log}
-                                  </div>
-                                ))}
+                              <h4 className="font-medium text-gray-700 mb-2">Journal détaillé:</h4>
+                              <div className="bg-gray-900 rounded p-3 max-h-[500px] overflow-y-auto">
+                                {update.logs.map((log, idx) => {
+                                  // Support ancien format (string) et nouveau (objet structuré)
+                                  if (typeof log === 'string') {
+                                    return (
+                                      <div key={idx} className="text-xs text-gray-300 font-mono mb-1 py-0.5">
+                                        {log}
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  const statusColor = log.status === 'success' 
+                                    ? 'text-green-400' 
+                                    : log.status === 'warning' 
+                                      ? 'text-yellow-400' 
+                                      : 'text-red-400';
+                                  const statusIcon = log.status === 'success' ? '✓' : log.status === 'warning' ? '⚠' : '✗';
+                                  
+                                  return (
+                                    <div key={idx} className="mb-2 border-b border-gray-800 pb-2 last:border-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`text-xs font-bold ${statusColor}`}>{statusIcon}</span>
+                                        <span className="text-xs text-blue-300 font-mono font-semibold">{log.step}</span>
+                                        {log.duration_ms > 0 && (
+                                          <span className="text-xs text-gray-500 ml-auto">{log.duration_ms}ms</span>
+                                        )}
+                                        {log.return_code !== 0 && log.return_code !== undefined && (
+                                          <span className="text-xs text-red-400 ml-1">code:{log.return_code}</span>
+                                        )}
+                                      </div>
+                                      {log.command && log.command !== 'N/A (placeholder)' && (
+                                        <div className="text-xs text-gray-400 font-mono mt-0.5 pl-5">
+                                          $ {log.command}
+                                        </div>
+                                      )}
+                                      {log.stdout && log.status !== 'success' && (
+                                        <pre className="text-xs text-gray-400 font-mono mt-0.5 pl-5 whitespace-pre-wrap max-h-24 overflow-y-auto">
+                                          {log.stdout.substring(0, 1000)}
+                                        </pre>
+                                      )}
+                                      {log.stderr && (
+                                        <pre className={`text-xs font-mono mt-0.5 pl-5 whitespace-pre-wrap max-h-32 overflow-y-auto ${
+                                          log.status === 'error' ? 'text-red-400' : 'text-yellow-400'
+                                        }`}>
+                                          {log.stderr.substring(0, 2000)}
+                                        </pre>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -273,9 +353,13 @@ const SystemUpdateHistory = () => {
                               </h4>
                               <div className="bg-gray-100 rounded p-3 max-h-40 overflow-y-auto">
                                 {update.files_modified.map((file, idx) => (
-                                  <div key={idx} className="text-xs text-gray-700 font-mono">
-                                    {file}
-                                  </div>
+                                  <div key={idx} className="text-xs text-gray-700 font-mono">M {file}</div>
+                                ))}
+                                {update.files_added?.map((file, idx) => (
+                                  <div key={`a-${idx}`} className="text-xs text-green-700 font-mono">A {file}</div>
+                                ))}
+                                {update.files_deleted?.map((file, idx) => (
+                                  <div key={`d-${idx}`} className="text-xs text-red-700 font-mono">D {file}</div>
                                 ))}
                               </div>
                             </div>
