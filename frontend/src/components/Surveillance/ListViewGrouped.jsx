@@ -157,6 +157,7 @@ function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentY
                   <TableHead>Périodicité</TableHead>
                   <TableHead>Responsable</TableHead>
                   <TableHead>Date du contrôle</TableHead>
+                  <TableHead>Écart</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
