@@ -74,6 +74,17 @@ function ListView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
                       return dateStr ? new Date(dateStr).toLocaleDateString('fr-FR') : '-';
                     })()}
                   </TableCell>
+                  <TableCell data-testid={`ecart-${item.id}`}>
+                    {item.ecart_jours != null ? (
+                      <Badge className={
+                        item.ecart_jours <= 0 ? 'bg-emerald-600 text-white' :
+                        item.ecart_jours <= 7 ? 'bg-amber-500 text-white' :
+                        'bg-red-500 text-white'
+                      }>
+                        {item.ecart_jours > 0 ? '+' : ''}{item.ecart_jours}j
+                      </Badge>
+                    ) : '-'}
+                  </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(item.status)}>{getStatusLabel(item.status)}</Badge>
                   </TableCell>
