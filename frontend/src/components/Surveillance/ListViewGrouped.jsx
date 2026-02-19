@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Edit, Trash2, CheckCircle, Eye, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, CheckCircle, Eye, ChevronRight, Bot } from 'lucide-react';
 import CompleteSurveillanceDialog from './CompleteSurveillanceDialogNew';
 import HistoryDialog from './HistoryDialog';
 import RecurrenceIndicator from './RecurrenceIndicator';
+import ManualMatchDialog from './ManualMatchDialog';
 import { CATEGORY_ICONS } from './CategoryOrderDialog';
 import api from '../../services/api';
 
@@ -34,6 +35,7 @@ const getCategoryIcon = (category) => {
 function ListViewGrouped({ items, loading, onEdit, onDelete, onRefresh, currentYear, onNavigateToYear, trends }) {
   const [completeDialog, setCompleteDialog] = useState({ open: false, item: null });
   const [historyDialog, setHistoryDialog] = useState({ open: false, control: null });
+  const [matchDialog, setMatchDialog] = useState({ open: false, item: null });
   const [groupedItems, setGroupedItems] = useState({});
   const [categoryOrder, setCategoryOrder] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState(new Set());
