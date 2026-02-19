@@ -227,7 +227,11 @@ export const vendorsAPI = {
   getById: (id) => api.get(`/vendors/${id}`),
   create: (data) => api.post('/vendors', data),
   update: (id, data) => api.put(`/vendors/${id}`, data),
-  delete: (id) => api.delete(`/vendors/${id}`)
+  delete: (id) => api.delete(`/vendors/${id}`),
+  aiExtract: (formData) => api.post('/vendors/ai/extract', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000
+  })
 };
 
 // ==================== PURCHASE HISTORY ====================
