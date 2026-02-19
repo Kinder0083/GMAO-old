@@ -193,6 +193,7 @@ const Vendors = () => {
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <p className="text-xs text-gray-600 mb-1">Contact principal</p>
                     <p className="font-medium text-gray-900">{vendor.contact}</p>
+                    {vendor.contact_fonction && <p className="text-xs text-gray-500">{vendor.contact_fonction}</p>}
                   </div>
 
                   {/* Email */}
@@ -214,7 +215,31 @@ const Vendors = () => {
                   {/* Address */}
                   <div className="flex items-start gap-2 text-sm text-gray-700">
                     <MapPin size={16} className="text-gray-500 mt-0.5" />
-                    <span className="flex-1">{vendor.adresse}</span>
+                    <span className="flex-1">
+                      {vendor.adresse}
+                      {vendor.code_postal || vendor.ville ? `, ${[vendor.code_postal, vendor.ville].filter(Boolean).join(' ')}` : ''}
+                      {vendor.pays ? ` (${vendor.pays})` : ''}
+                    </span>
+                  </div>
+
+                  {/* Extra info badges */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {vendor.categorie && (
+                      <Badge variant="outline" className="text-xs">{CATEGORIE_LABELS[vendor.categorie] || vendor.categorie}</Badge>
+                    )}
+                    {vendor.conditions_paiement && (
+                      <Badge variant="outline" className="text-xs bg-gray-50">
+                        <CreditCard size={10} className="mr-1" />{CONDITIONS_LABELS[vendor.conditions_paiement] || vendor.conditions_paiement}
+                      </Badge>
+                    )}
+                    {vendor.sous_traitant && (
+                      <Badge className="text-xs bg-orange-100 text-orange-700">Sous-traitant</Badge>
+                    )}
+                    {vendor.site_web && (
+                      <a href={vendor.site_web.startsWith('http') ? vendor.site_web : `https://${vendor.site_web}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline">
+                        <Globe size={10} />Web
+                      </a>
+                    )}
                   </div>
 
                   {/* Actions */}
