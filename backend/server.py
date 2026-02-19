@@ -5061,7 +5061,7 @@ RÈGLES:
         response = await chat.send_message(
             UserMessage(
                 text="Analyse ce document et extrais les informations du fournisseur. Réponds uniquement en JSON.",
-                files=[FileContentWithMimeType(file_path=tmp_path, mime_type=mime_type)]
+                file_contents=[FileContentWithMimeType(file_path=tmp_path, mime_type=mime_type)]
             )
         )
 
@@ -5071,8 +5071,8 @@ RÈGLES:
         except Exception:
             pass
 
-        # Parser la réponse JSON
-        response_text = response.text.strip()
+        # Parser la réponse JSON (response est un string directement)
+        response_text = response.strip()
         if response_text.startswith("```"):
             response_text = response_text.split("\n", 1)[1] if "\n" in response_text else response_text[3:]
             if response_text.endswith("```"):
