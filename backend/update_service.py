@@ -580,10 +580,10 @@ class UpdateService:
                         )
                     
                     if git_available:
-                        # Git pull — l'opération principale
+                        # ÉTAPE 1: git fetch origin (récupérer les derniers commits)
                         success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - Git pull (téléchargement code)",
-                            ["git", "pull", "origin", self.github_branch],
+                            update_history, "3/6 - Git fetch (récupération des commits)",
+                            ["git", "fetch", "origin"],
                             cwd=str(git_dir), timeout=120
                         )
                         
@@ -602,8 +602,7 @@ class UpdateService:
                                     except Exception:
                                         pass
                                 
-                                # Collecter les erreurs dans le résumé
-                                update_history["errors"].append(f"Git pull échoué: {stderr[:300]}")
+                                update_history["errors"].append(f"Git fetch échoué: {stderr[:300]}")
                                 
                                 return {
                                     "success": False,
@@ -611,8 +610,34 @@ class UpdateService:
                                     "error": stderr,
                                     "history_id": update_history["id"]
                                 }
+                    
+                    if git_available:
+                        # ÉTAPE 2: git reset --hard origin/main (écraser le code local)
+                        # C'est la clé : garantit que le code local = code distant
+                        # Sans tentative de fusion qui échoue silencieusement
+                        success, stdout, stderr = await self._run_command(
+                            update_history, "3/6 - Git reset --hard (synchronisation forcée)",
+                            ["git", "reset", "--hard", f"origin/{self.github_branch}"],
+                            cwd=str(git_dir), timeout=30
+                        )
+                        
+                        if not success:
+                            if hook_was_disabled and post_merge_disabled.exists():
+                                try:
+                                    os.rename(str(post_merge_disabled), str(post_merge_hook))
+                                except Exception:
+                                    pass
+                            
+                            update_history["errors"].append(f"Git reset échoué: {stderr[:300]}")
+                            
+                            return {
+                                "success": False,
+                                "message": "Échec de la synchronisation du code",
+                                "error": stderr,
+                                "history_id": update_history["id"]
+                            }
                         else:
-                            # Récupérer la liste des fichiers modifiés par le pull
+                            # Récupérer la liste des fichiers modifiés par le reset
                             diff_success, diff_out, _ = await self._run_command(
                                 update_history, "3/6 - Git diff (fichiers modifiés)",
                                 ["git", "diff", "--name-status", "HEAD~1", "HEAD"],
