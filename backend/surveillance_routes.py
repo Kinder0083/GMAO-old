@@ -2099,7 +2099,6 @@ async def analyze_report_for_occurrence(
     """
     import tempfile
     import json as json_mod
-    import os
     
     # Vérifier que l'item existe et est bien une occurrence non réalisée
     item = await db.surveillance_items.find_one({"id": item_id}, {"_id": 0})
