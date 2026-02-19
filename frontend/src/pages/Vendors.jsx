@@ -67,9 +67,12 @@ const Vendors = () => {
   };
 
   const filteredVendors = vendors.filter(vendor => {
-    return vendor.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           vendor.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           vendor.specialite.toLowerCase().includes(searchTerm.toLowerCase());
+    const search = searchTerm.toLowerCase();
+    return (vendor.nom || '').toLowerCase().includes(search) ||
+           (vendor.contact || '').toLowerCase().includes(search) ||
+           (vendor.specialite || '').toLowerCase().includes(search) ||
+           (vendor.categorie || '').toLowerCase().includes(search) ||
+           (vendor.ville || '').toLowerCase().includes(search);
   });
 
   // Calculer les fournisseurs créés ce mois
