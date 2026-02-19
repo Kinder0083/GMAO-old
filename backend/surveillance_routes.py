@@ -1626,12 +1626,18 @@ def _normalize_periodicite(raw: str) -> str:
     p = raw.lower().strip()
     if any(w in p for w in ['annuel', 'annual']):
         return "2 ans" if ('bi' in p or 'biennal' in p) else "1 an"
-    if 'semestriel' in p: return "6 mois"
-    if 'trimestriel' in p: return "3 mois"
-    if 'bimestriel' in p: return "2 mois"
-    if 'mensuel' in p: return "1 mois"
-    if 'hebdomadaire' in p: return "1 semaine"
-    if 'quotidien' in p: return "1 jour"
+    if 'semestriel' in p:
+        return "6 mois"
+    if 'trimestriel' in p:
+        return "3 mois"
+    if 'bimestriel' in p:
+        return "2 mois"
+    if 'mensuel' in p:
+        return "1 mois"
+    if 'hebdomadaire' in p:
+        return "1 semaine"
+    if 'quotidien' in p:
+        return "1 jour"
     return raw
 
 
