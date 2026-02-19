@@ -516,37 +516,17 @@ class UpdateService:
             mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017/cmms')
             
             # Exécuter mongodump
-            try:
-                dump_cmd = [
-                    "mongodump",
-                    f"--uri={mongo_url}",
-                    f"--out={backup_path}"
-                ]
-                
-                dump_process = await asyncio.create_subprocess_exec(
-                    *dump_cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                
-                stdout, stderr = await asyncio.wait_for(dump_process.communicate(), timeout=120)
-                
-                if dump_process.returncode != 0:
-                    logger.warning(f"⚠️ Échec du backup (non bloquant): {stderr.decode()[:200]}")
-                    update_history["logs"].append(f"Backup échoué (non bloquant): {stderr.decode()[:200]}")
-                    update_history["backup_created"] = False
-                else:
-                    logger.info(f"✅ Backup créé: {backup_path}")
-                    update_history["logs"].append(f"Backup créé: {backup_path}")
-                    update_history["backup_created"] = True
-                    update_history["backup_path"] = str(backup_path)
-                
-            except asyncio.TimeoutError:
-                logger.warning("⚠️ Timeout lors du backup (non bloquant, on continue)")
-                update_history["backup_created"] = False
-            except FileNotFoundError:
-                logger.warning("⚠️ mongodump non installé (non bloquant, on continue)")
-                update_history["backup_created"] = False
+            success, stdout, stderr = await self._run_command(
+                update_history, "1/6 - Backup MongoDB (mongodump)",
+                ["mongodump", f"--uri={mongo_url}", f"--out={backup_path}"],
+                timeout=120
+            )
+            update_history["backup_created"] = success
+            if success:
+                update_history["backup_path"] = str(backup_path)
+            else:
+                self._log_step(update_history, "1/6 - Backup MongoDB", "mongodump",
+                              stderr="Backup échoué (non bloquant, on continue)", status="warning")
             
             # 2. Exporter les données en Excel
             logger.info("📊 Étape 2/5: Export des données en Excel...")
