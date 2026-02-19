@@ -353,7 +353,7 @@ const SurveillanceRapport = () => {
           {displayMode === 'cards' && <CardsDisplay stats={stats} />}
           {displayMode === 'table' && <TableDisplay stats={stats} />}
           {displayMode === 'charts' && <ChartsDisplay stats={stats} categoryChartData={categoryChartData} batimentChartData={batimentChartData} periodiciteChartData={periodiciteChartData} />}
-        </>
+        </div>
       )}
     </div>
   );
