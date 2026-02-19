@@ -91,7 +91,12 @@ function SurveillanceAIExtract({ open, onClose }) {
       const result = await surveillanceAPI.createBatchFromAI(selectedData);
       if (result.success) {
         setResult(result);
-        setStep('done');
+        // S'il y a des items ambigus, montrer l'étape de résolution
+        if (result.ambiguous_items?.length > 0) {
+          setStep('ambiguous');
+        } else {
+          setStep('done');
+        }
       } else {
         toast({ title: 'Erreur', description: 'Échec de la création', variant: 'destructive' });
         setStep('review');
