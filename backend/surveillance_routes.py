@@ -2283,6 +2283,164 @@ corresponds_to_planned = true si le rapport correspond bien au contrôle planifi
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== Confirmation d'une correspondance ambiguë ====================
+
+@router.post("/ai/confirm-match")
+async def confirm_ambiguous_match(
+    match_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Confirme manuellement une correspondance ambiguë détectée par l'IA.
+    L'utilisateur choisit de matcher le rapport à l'occurrence planifiée proposée,
+    ou de créer un nouveau contrôle.
+    """
+    try:
+        action = match_data.get("action")  # "match" ou "create_new"
+        item_id = match_data.get("item_id")  # ID de l'occurrence planifiée
+        ctrl = match_data.get("ctrl", {})
+        document_info = match_data.get("document_info", {})
+        report_date = match_data.get("report_date")
+        periodicite = match_data.get("periodicite", "1 an")
+        prochain_controle = match_data.get("prochain_controle")
+        source_file = match_data.get("source_file")
+        
+        if action == "match" and item_id:
+            # Matcher : mettre à jour l'occurrence existante
+            item = await db.surveillance_items.find_one({"id": item_id}, {"_id": 0})
+            if not item:
+                raise HTTPException(status_code=404, detail="Occurrence non trouvée")
+            
+            # Calculer l'écart
+            ecart_jours = None
+            try:
+                date_prevue = datetime.fromisoformat(item["prochain_controle"]).date()
+                date_reelle = datetime.fromisoformat(report_date).date()
+                ecart_jours = (date_reelle - date_prevue).days
+            except Exception:
+                pass
+            
+            # Résultat
+            resultat_map = {"CONFORME": "Conforme", "NON_CONFORME": "Non conforme", "AVEC_RESERVES": "Avec réserves"}
+            resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
+            
+            # Commentaire
+            commentaire_parts = []
+            if ctrl.get("anomalies"):
+                commentaire_parts.append(f"ANOMALIES DÉTECTÉES:\n{ctrl['anomalies']}")
+            if ctrl.get("equipements_concernes"):
+                commentaire_parts.append(f"Équipements: {ctrl['equipements_concernes']}")
+            commentaire = "\n\n".join(commentaire_parts) if commentaire_parts else None
+            
+            update_data = {
+                "status": SurveillanceItemStatus.REALISE.value,
+                "derniere_visite": report_date,
+                "date_realisation": report_date,
+                "prochain_controle": prochain_controle,
+                "ecart_jours": ecart_jours,
+                "resultat_controle": resultat,
+                "numero_rapport": document_info.get("numero_rapport"),
+                "organisme_controle": document_info.get("organisme_controle"),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get("id")
+            }
+            if commentaire:
+                update_data["commentaire"] = commentaire
+            
+            await db.surveillance_items.update_one({"id": item_id}, {"$set": update_data})
+            
+            # Régénérer les occurrences futures
+            group_id = item.get("groupe_controle_id")
+            if group_id and report_date and periodicite:
+                await db.surveillance_items.delete_many({
+                    "groupe_controle_id": group_id,
+                    "status": {"$in": [SurveillanceItemStatus.PLANIFIER.value, SurveillanceItemStatus.PLANIFIE.value]},
+                    "id": {"$ne": item_id}
+                })
+                updated_item = await db.surveillance_items.find_one({"id": item_id}, {"_id": 0})
+                if updated_item:
+                    recurring = generate_recurring_controls(updated_item, report_date, periodicite)
+                    if recurring:
+                        for r in recurring:
+                            r["created_by"] = current_user.get("id")
+                        await db.surveillance_items.insert_many(recurring)
+            
+            return {
+                "success": True,
+                "action": "matched",
+                "item_id": item_id,
+                "ecart_jours": ecart_jours,
+                "message": f"Occurrence mise à jour (écart: {ecart_jours:+d}j)" if ecart_jours is not None else "Occurrence mise à jour"
+            }
+        
+        elif action == "create_new":
+            # Créer un nouveau contrôle
+            groupe_id = str(uuid.uuid4())
+            annee = get_year_from_date_str(report_date) if report_date else datetime.now().year
+            
+            resultat_map = {"CONFORME": "Conforme", "NON_CONFORME": "Non conforme", "AVEC_RESERVES": "Avec réserves"}
+            resultat = resultat_map.get(ctrl.get("resultat"), ctrl.get("resultat"))
+            
+            commentaire_parts = []
+            if ctrl.get("anomalies"):
+                commentaire_parts.append(f"ANOMALIES DÉTECTÉES:\n{ctrl['anomalies']}")
+            if ctrl.get("equipements_concernes"):
+                commentaire_parts.append(f"Équipements: {ctrl['equipements_concernes']}")
+            commentaire = "\n\n".join(commentaire_parts) if commentaire_parts else None
+            
+            new_item = SurveillanceItem(
+                classe_type=ctrl.get("classe_type", ""),
+                category=ctrl.get("category", "AUTRE"),
+                batiment=ctrl.get("batiment") or "",
+                periodicite=periodicite,
+                responsable=SurveillanceResponsible.EXTERNE,
+                executant=ctrl.get("executant", document_info.get("organisme_controle", "")),
+                description=ctrl.get("description"),
+                derniere_visite=report_date,
+                prochain_controle=prochain_controle,
+                status=SurveillanceItemStatus.REALISE,
+                date_realisation=report_date,
+                commentaire=commentaire,
+                reference_reglementaire=ctrl.get("references_reglementaires"),
+                numero_rapport=document_info.get("numero_rapport"),
+                organisme_controle=document_info.get("organisme_controle"),
+                resultat_controle=resultat,
+                annee=annee or datetime.now().year,
+                groupe_controle_id=groupe_id,
+                created_by=current_user.get("id"),
+                updated_by=current_user.get("id")
+            )
+            
+            item_dict = new_item.model_dump()
+            await db.surveillance_items.insert_one(item_dict)
+            if "_id" in item_dict:
+                del item_dict["_id"]
+            
+            # Générer récurrences
+            if report_date and periodicite:
+                recurring = generate_recurring_controls(item_dict, report_date, periodicite)
+                if recurring:
+                    for r in recurring:
+                        r["created_by"] = current_user.get("id")
+                    await db.surveillance_items.insert_many(recurring)
+            
+            return {
+                "success": True,
+                "action": "created",
+                "item": item_dict,
+                "message": "Nouveau contrôle créé"
+            }
+        
+        else:
+            raise HTTPException(status_code=400, detail="Action invalide. Utilisez 'match' ou 'create_new'.")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur confirmation match: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 # ==================== Historique des analyses IA (Phase 1 & 2) ====================
 
