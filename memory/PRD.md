@@ -1,7 +1,7 @@
 # GMAO Iris - Product Requirements Document
 
 ## Problème original
-Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack avec React, FastAPI et MongoDB. L'application gère la maintenance industrielle incluant les ordres de travail, la maintenance préventive, le plan de surveillance réglementaire, les capteurs IoT, le MES, et bien plus.
+Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack avec React, FastAPI et MongoDB.
 
 ## Architecture
 - **Frontend**: React + Shadcn/UI + TailwindCSS
@@ -11,39 +11,31 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack av
 - **Authentification**: JWT + Google OAuth
 
 ## Fonctionnalités principales
-- Tableau de bord
-- Ordres de travail (CRUD + IA)
-- Maintenance préventive
-- Plan de Surveillance réglementaire (avec IA)
-- Gestion des équipements
-- Inventaire
-- Capteurs IoT / MQTT
-- MES (Manufacturing Execution System)
-- Chat en temps réel
-- Système d'alertes et notifications
-- Import/Export de données
-- Sauvegarde/Restauration
-- Gestion des rôles et permissions (RBAC)
+- Tableau de bord, Ordres de travail, Maintenance préventive, Plan de Surveillance, Équipements, Inventaire, Capteurs IoT/MQTT, MES, Chat, Alertes, Import/Export, Sauvegarde, RBAC
 
-## Fonctionnalité récente : Correspondance Intelligente du Plan de Surveillance (Fév 2026)
+## Fonctionnalités récentes (Fév 2026)
 
-### Exigences
-1. **Logique de correspondance (Matching)**: Lors de l'analyse d'un nouveau rapport, l'IA recherche une occurrence planifiée existante correspondante (basée sur catégorie, type, exécutant, bâtiment, date)
-2. **Mise à jour si correspondance**: Si correspondance trouvée → statut "Réalisé", date réelle, calcul écart_jours, génération prochaine occurrence
-3. **Fenêtre de tolérance**: ±8% de la périodicité (ex: 7j pour 90j, 29j pour 365j)
-4. **Gestion de l'ambiguïté**: Si confiance moyenne → proposer les options à l'utilisateur
-5. **Création si pas de correspondance**: Comportement classique de création
-6. **Colonne "Écart (jours)"**: Affichée dans toutes les vues (Liste, Grille, Liste groupée)
-7. **Icône robot (correspondance manuelle)**: Clic → upload rapport → IA analyse et met à jour l'occurrence spécifique
+### 1. Correspondance Intelligente du Plan de Surveillance - TERMINÉ ✅
+- Matching IA (scoring multicritères, tolérance ±8%)
+- Gestion ambiguïté (haute confiance = auto, moyenne = choix utilisateur)
+- Colonne "Écart (jours)" dans les 3 vues
+- Icône robot pour correspondance manuelle
+- Endpoints: `create-batch-from-ai`, `analyze-report`, `confirm-match`
 
-### Implémentation
-- Backend: `surveillance_routes.py` - fonctions `find_matching_occurrence`, `calculate_tolerance_days`, endpoints `create-batch-from-ai`, `analyze-report-for-occurrence`, `confirm-match`
-- Frontend: `ListView.jsx`, `ListViewGrouped.jsx`, `GridView.jsx` (colonne Écart + icône Bot), `ManualMatchDialog.jsx` (nouveau), `SurveillanceAIExtract.jsx` (gestion matched/ambiguous)
-- API: `analyzeReportForItem`, `confirmMatch` ajoutés à `surveillanceAPI`
+### 2. Rapport Surveillance enrichi - TERMINÉ ✅
+- Onglets d'années (filtrage par année)
+- KPI: Taux réalisation, En retard, Dans les temps ±8%, Écart moyen
+- Écart moyen par catégorie dans les vues cartes et tableau
 
-### Status: TERMINÉ ET TESTÉ ✅ (19 Fév 2026)
-- Backend: 10/10 tests passés
-- Frontend: 100% vérifications UI passées
+### 3. Export PDF/Excel du Rapport Surveillance - TERMINÉ ✅
+- Export PDF visuel (html2canvas + jsPDF, multi-pages)
+- Export Excel structuré (4 onglets: Synthèse, Catégories, Bâtiments, Périodicités)
+- Filtré par l'année sélectionnée
+
+### 4. Suppression du Plan de Surveillance - TERMINÉ ✅
+- Bouton "Plan de surveillance" ajouté dans Paramètres Spéciaux > Réinitialisation des données
+- Confirmation obligatoire (taper CONFIRMER)
+- Backend: `surveillance_items` ajouté à `RESET_COLLECTIONS`
 
 ## Backlog
 - P2: Refactoring de `create_batch_from_ai` (décomposition en fonctions plus petites)
