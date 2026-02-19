@@ -93,9 +93,14 @@ function GridView({ items, loading, onEdit, onDelete, onRefresh, currentYear, on
                     <div className="flex justify-between">
                       <div className="flex gap-1">
                         {item.status !== 'REALISE' && (
-                          <Button size="sm" variant="ghost" onClick={() => setCompleteDialog({ open: true, item })}>
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => setMatchDialog({ open: true, item })} title="Correspondance IA" data-testid={`robot-btn-grid-${item.id}`}>
+                              <Bot className="h-4 w-4 text-violet-600" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setCompleteDialog({ open: true, item })}>
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                         <Button size="sm" variant="ghost" onClick={() => onEdit(item)}>
                           <Edit className="h-4 w-4" />
