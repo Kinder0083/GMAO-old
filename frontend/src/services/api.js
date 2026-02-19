@@ -509,6 +509,19 @@ export const surveillanceAPI = {
   // Création batch depuis IA
   createBatchFromAI: (data) => api.post('/surveillance/ai/create-batch', data).then(res => res.data),
   
+  // Analyse de rapport pour une occurrence spécifique (icône robot)
+  analyzeReportForItem: (itemId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/surveillance/items/${itemId}/analyze-report`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    }).then(res => res.data);
+  },
+  
+  // Confirmer une correspondance ambiguë
+  confirmMatch: (data) => api.post('/surveillance/ai/confirm-match', data).then(res => res.data),
+  
   // Historique des analyses IA
   getAIHistory: (params) => api.get('/surveillance/ai/history', { params }).then(res => res.data),
   getAIHistoryDetail: (id) => api.get(`/surveillance/ai/history/${id}`).then(res => res.data),
