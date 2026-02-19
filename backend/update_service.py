@@ -759,7 +759,7 @@ class UpdateService:
                     except Exception:
                         pass
             
-            # 5. Mettre à jour version.json avec la nouvelle version
+            # 5. Mettre à jour version.json
             logger.info("📝 Étape 5/6: Mise à jour du fichier version.json...")
             try:
                 version_file = self.app_root / "updates" / "version.json"
@@ -772,14 +772,13 @@ class UpdateService:
                     with open(version_file, 'w') as f:
                         json_mod.dump(version_data, f, indent=2, ensure_ascii=False)
                     self.current_version = version
-                    logger.info(f"✅ version.json mis à jour: {version}")
+                    self._log_step(update_history, "5/6 - Mise à jour version.json",
+                                  f"version.json → {version}", status="success")
             except Exception as e:
-                logger.warning(f"⚠️ Impossible de mettre à jour version.json: {str(e)}")
+                self._log_step(update_history, "5/6 - Mise à jour version.json",
+                              f"Écriture version.json", stderr=str(e), status="warning")
             
-            # 6. Planifier le redémarrage des services (APRÈS l'envoi de la réponse HTTP)
-            # CRITIQUE: On ne doit PAS restart le backend de manière synchrone
-            # car ça tuerait le processus avant que la réponse HTTP ne soit envoyée.
-            # On utilise un script détaché qui attend 3 secondes.
+            # 6. Planifier le redémarrage des services
             logger.info("🔄 Étape 6/6: Planification du redémarrage des services...")
             
             try:
@@ -791,56 +790,63 @@ class UpdateService:
                 )
                 restart_script.write(f"""#!/bin/bash
 # Redémarrage post-mise-à-jour GMAO Iris
-# Attend que la réponse HTTP soit envoyée au frontend
-
 sleep 3
-
-# Redémarrer le backend uniquement (pas all, pour éviter de tuer nginx)
 supervisorctl restart gmao-iris-backend 2>/dev/null || \\
 /usr/bin/supervisorctl restart gmao-iris-backend 2>/dev/null || \\
 sudo supervisorctl restart gmao-iris-backend 2>/dev/null || \\
 supervisorctl restart all 2>/dev/null || \\
 sudo supervisorctl restart all 2>/dev/null
-
-# Attendre que le backend redémarre
 sleep 5
-
-# Recharger nginx pour servir les nouveaux fichiers frontend
 nginx -s reload 2>/dev/null || \\
 sudo nginx -s reload 2>/dev/null || \\
 sudo systemctl reload nginx 2>/dev/null || \\
 sudo service nginx reload 2>/dev/null
-
-# Nettoyage
 rm -f {restart_script.name}
 """)
                 restart_script.close()
                 os.chmod(restart_script.name, 0o755)
                 
-                # Lancer le script en arrière-plan (détaché)
                 sp.Popen(
                     ['/bin/bash', restart_script.name],
-                    stdout=sp.DEVNULL,
-                    stderr=sp.DEVNULL,
+                    stdout=sp.DEVNULL, stderr=sp.DEVNULL,
                     start_new_session=True
                 )
                 
-                logger.info(f"✅ Redémarrage planifié dans 3 secondes")
+                self._log_step(update_history, "6/6 - Redémarrage planifié",
+                              f"bash {restart_script.name}", status="success")
                     
             except Exception as e:
-                logger.warning(f"⚠️ Impossible de planifier le redémarrage: {str(e)}")
-                logger.info("ℹ️ Veuillez redémarrer manuellement: supervisorctl restart gmao-iris-backend && sudo nginx -s reload")
+                self._log_step(update_history, "6/6 - Redémarrage planifié",
+                              "supervisorctl restart", stderr=str(e), status="warning")
+                update_history["warnings"].append(f"Redémarrage auto échoué: {str(e)}")
             
-            # Mise à jour réussie
-            logger.info(f"✨ Mise à jour vers {version} terminée avec succès")
+            # RÉSUMÉ FINAL
+            logger.info(f"✨ Mise à jour vers {version} terminée")
             
-            # Enregistrer le succès dans l'historique
+            # Compter les avertissements et erreurs
+            warning_steps = [l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "warning"]
+            error_steps = [l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "error"]
+            
+            # Déterminer le statut final
+            has_critical_errors = len(update_history["errors"]) > 0
+            
             update_history["completed_at"] = datetime.now(timezone.utc).isoformat()
-            update_history["status"] = "success"
-            update_history["success"] = True
+            update_history["status"] = "success_with_warnings" if (warning_steps or update_history["warnings"]) else "success"
+            if has_critical_errors:
+                update_history["status"] = "partial_failure"
+            update_history["success"] = not has_critical_errors
             update_history["backup_path"] = str(backup_path)
-            update_history["backup_created"] = True
-            update_history["logs"].append(f"Mise à jour vers {version} terminée avec succès")
+            
+            # Résumé lisible
+            update_history["summary"] = {
+                "total_steps": len(update_history["logs"]),
+                "successful_steps": len([l for l in update_history["logs"] if isinstance(l, dict) and l.get("status") == "success"]),
+                "warning_steps": len(warning_steps),
+                "error_steps": len(error_steps),
+                "warnings": update_history["warnings"],
+                "errors": update_history["errors"],
+                "files_changed": update_history["total_files_changed"]
+            }
             
             # Calculer la durée
             start_time = datetime.fromisoformat(update_history["started_at"])
@@ -850,17 +856,18 @@ rm -f {restart_script.name}
             # Sauvegarder dans la base de données
             try:
                 await self.db.system_update_history.insert_one(update_history)
-                logger.info("✅ Historique de mise à jour enregistré")
+                logger.info("✅ Journal de mise à jour complet enregistré en base de données")
             except Exception as e:
-                logger.error(f"❌ Erreur lors de l'enregistrement de l'historique: {str(e)}")
+                logger.error(f"❌ Erreur lors de l'enregistrement du journal: {str(e)}")
             
             return {
-                "success": True,
-                "message": f"Mise à jour vers {version} appliquée avec succès",
+                "success": not has_critical_errors,
+                "message": f"Mise à jour vers {version} {'terminée avec succès' if not has_critical_errors else 'terminée avec des erreurs'}",
                 "version": version,
                 "backup_path": str(backup_path),
                 "timestamp": datetime.now().isoformat(),
-                "history_id": update_history["id"]
+                "history_id": update_history["id"],
+                "summary": update_history["summary"]
             }
             
         except Exception as e:
