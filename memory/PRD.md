@@ -10,9 +10,6 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack av
 - **IA**: Gemini 2.5 Flash via emergentintegrations
 - **Authentification**: JWT + Google OAuth
 
-## Fonctionnalités principales
-- Tableau de bord, Ordres de travail, Maintenance préventive, Plan de Surveillance, Équipements, Inventaire, Capteurs IoT/MQTT, MES, Chat, Alertes, Import/Export, Sauvegarde, RBAC
-
 ## Fonctionnalités récentes (Fév 2026)
 
 ### 1. Correspondance Intelligente du Plan de Surveillance - TERMINÉ ✅
@@ -20,22 +17,22 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack av
 - Gestion ambiguïté (haute confiance = auto, moyenne = choix utilisateur)
 - Colonne "Écart (jours)" dans les 3 vues
 - Icône robot pour correspondance manuelle
-- Endpoints: `create-batch-from-ai`, `analyze-report`, `confirm-match`
 
 ### 2. Rapport Surveillance enrichi - TERMINÉ ✅
 - Onglets d'années (filtrage par année)
 - KPI: Taux réalisation, En retard, Dans les temps ±8%, Écart moyen
-- Écart moyen par catégorie dans les vues cartes et tableau
 
 ### 3. Export PDF/Excel du Rapport Surveillance - TERMINÉ ✅
-- Export PDF visuel (html2canvas + jsPDF, multi-pages)
-- Export Excel structuré (4 onglets: Synthèse, Catégories, Bâtiments, Périodicités)
-- Filtré par l'année sélectionnée
+- Export PDF visuel (html2canvas + jsPDF)
+- Export Excel structuré (4 onglets)
 
 ### 4. Suppression du Plan de Surveillance - TERMINÉ ✅
-- Bouton "Plan de surveillance" ajouté dans Paramètres Spéciaux > Réinitialisation des données
-- Confirmation obligatoire (taper CONFIRMER)
-- Backend: `surveillance_items` ajouté à `RESET_COLLECTIONS`
+- Bouton dans Paramètres Spéciaux > Réinitialisation des données
+
+### 5. Refactoring create_batch_from_ai - TERMINÉ ✅
+- Décomposition en 8 fonctions spécialisées
+- Fonction principale réduite de ~450 à ~100 lignes
+- Aucune régression (tous endpoints fonctionnels)
 
 ## Backlog
-- P2: Refactoring de `create_batch_from_ai` (décomposition en fonctions plus petites)
+- Aucune tâche en attente
