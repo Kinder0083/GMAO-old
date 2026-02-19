@@ -90,13 +90,20 @@ const Vendors = () => {
           <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
           <p className="text-gray-600 mt-1">Gérez vos fournisseurs et sous-traitants</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
-          setSelectedVendor(null);
-          setFormDialogOpen(true);
-        }}>
-          <Plus size={20} className="mr-2" />
-          Nouveau fournisseur
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50" onClick={() => setAiExtractOpen(true)} data-testid="vendor-ai-btn">
+            <Sparkles size={18} className="mr-2" />
+            Analyse IA
+          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
+            setSelectedVendor(null);
+            setPrefillData(null);
+            setFormDialogOpen(true);
+          }} data-testid="vendor-new-btn">
+            <Plus size={20} className="mr-2" />
+            Nouveau fournisseur
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
