@@ -166,6 +166,8 @@ const SystemUpdateHistory = () => {
               {history.map((update) => {
                 const isExpanded = expandedId === update.id;
                 const isSuccess = update.success;
+                const hasWarnings = update.status === 'success_with_warnings';
+                const isPartialFailure = update.status === 'partial_failure';
 
                 return (
                   <div
@@ -192,9 +194,9 @@ const SystemUpdateHistory = () => {
                             </h3>
                             <Badge
                               variant={isSuccess ? 'default' : 'destructive'}
-                              className={isSuccess ? 'bg-green-600' : 'bg-red-600'}
+                              className={isSuccess && !hasWarnings ? 'bg-green-600' : hasWarnings ? 'bg-yellow-600' : isPartialFailure ? 'bg-orange-600' : 'bg-red-600'}
                             >
-                              {isSuccess ? 'Succès' : 'Échec'}
+                              {isSuccess && !hasWarnings ? 'Succès' : hasWarnings ? 'Succès avec avertissements' : isPartialFailure ? 'Partiel' : 'Échec'}
                             </Badge>
                           </div>
 
