@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { AlertCircle, TrendingUp, BarChart3, Table2, Grid3X3, PieChart, Clock, CalendarDays } from 'lucide-react';
+import { AlertCircle, TrendingUp, BarChart3, Table2, Grid3X3, PieChart, Clock, CalendarDays, FileDown, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { surveillanceAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 const SurveillanceRapport = () => {
   const { toast } = useToast();
