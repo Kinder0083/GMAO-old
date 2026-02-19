@@ -2040,13 +2040,16 @@ async def create_batch_from_ai(
             "success": True,
             "created_count": len(created_items),
             "matched_count": len(matched_items),
+            "ambiguous_count": len(ambiguous_items),
             "created_items": created_items,
             "matched_items": matched_items,
+            "ambiguous_items": ambiguous_items,
             "work_orders_created": created_work_orders,
             "analysis_id": history_entry.id,
             "errors": errors if errors else None,
             "message": (
                 (f"{len(matched_items)} occurrence(s) mise(s) à jour, " if matched_items else "") +
+                (f"{len(ambiguous_items)} correspondance(s) à confirmer, " if ambiguous_items else "") +
                 f"{len(created_items)} contrôle(s) créé(s)" + 
                 (f", {len(created_work_orders)} bon(s) de travail curatif(s)" if created_work_orders else "") +
                 (f" ({len(errors)} erreur(s))" if errors else "")
