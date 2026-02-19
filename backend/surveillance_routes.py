@@ -2016,13 +2016,18 @@ async def create_batch_from_ai(
         return {
             "success": True,
             "created_count": len(created_items),
+            "matched_count": len(matched_items),
             "created_items": created_items,
+            "matched_items": matched_items,
             "work_orders_created": created_work_orders,
             "analysis_id": history_entry.id,
             "errors": errors if errors else None,
-            "message": f"{len(created_items)} contrôle(s) créé(s)" + 
-                       (f", {len(created_work_orders)} bon(s) de travail curatif(s) créé(s)" if created_work_orders else "") +
-                       (f" ({len(errors)} erreur(s))" if errors else "")
+            "message": (
+                (f"{len(matched_items)} occurrence(s) mise(s) à jour, " if matched_items else "") +
+                f"{len(created_items)} contrôle(s) créé(s)" + 
+                (f", {len(created_work_orders)} bon(s) de travail curatif(s)" if created_work_orders else "") +
+                (f" ({len(errors)} erreur(s))" if errors else "")
+            )
         }
     
     except Exception as e:
