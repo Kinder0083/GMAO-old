@@ -283,13 +283,13 @@ const Vendors = () => {
                       Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
+                      Email / Tél
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Téléphone
+                      Localisation
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Spécialité
+                      Catégorie
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -304,26 +304,40 @@ const Vendors = () => {
                           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center mr-3">
                             <Building size={20} className="text-white" />
                           </div>
-                          <div className="font-medium text-gray-900">{vendor.nom}</div>
+                          <div>
+                            <div className="font-medium text-gray-900">{vendor.nom}</div>
+                            <div className="text-xs text-gray-500">{vendor.specialite}</div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {vendor.contact}
+                        <div>{vendor.contact}</div>
+                        {vendor.contact_fonction && <div className="text-xs text-gray-400">{vendor.contact_fonction}</div>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        <a href={`mailto:${vendor.email}`} className="hover:text-blue-600">
+                        <a href={`mailto:${vendor.email}`} className="hover:text-blue-600 block">
                           {vendor.email}
                         </a>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        <a href={`tel:${vendor.telephone}`} className="hover:text-blue-600">
+                        <a href={`tel:${vendor.telephone}`} className="hover:text-blue-600 text-xs text-gray-500">
                           {vendor.telephone}
                         </a>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {vendor.ville || vendor.pays ? (
+                          <span>{[vendor.ville, vendor.pays].filter(Boolean).join(', ')}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                          {vendor.specialite}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {vendor.categorie && (
+                            <Badge variant="outline" className="text-xs">{CATEGORIE_LABELS[vendor.categorie] || vendor.categorie}</Badge>
+                          )}
+                          {vendor.sous_traitant && (
+                            <Badge className="text-xs bg-orange-100 text-orange-700">ST</Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                         <div className="flex justify-end gap-2">
