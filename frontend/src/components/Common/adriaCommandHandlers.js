@@ -144,7 +144,20 @@ export const handleCreateOT = async (actionData) => {
   }
 
   if (actionData.categorie) otPayload.categorie = actionData.categorie;
-  const userId = await resolveUserId(actionData.assigne_a);
+
+  // Résolution de l'assignation
+  let userId = await resolveUserId(actionData.assigne_a);
+  // Fallback: si l'IA n'a pas inclus assigne_a mais que l'utilisateur courant est identifiable
+  if (!userId && !actionData.assigne_a) {
+    // Auto-assigner à l'utilisateur courant si disponible
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (currentUser?.id) {
+        userId = currentUser.id;
+        console.log('[Adria] Auto-assignation à l\'utilisateur courant:', currentUser.prenom, currentUser.nom);
+      }
+    } catch (e) { /* ignore */ }
+  }
   if (userId) otPayload.assigne_a_id = userId;
 
   const otResponse = await (workOrdersAPI || api.workOrders).create(otPayload);
