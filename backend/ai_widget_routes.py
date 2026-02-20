@@ -41,7 +41,7 @@ async def _get_llm_key():
     return key
 
 
-WIDGET_GENERATION_PROMPT = """Tu es un expert en creation de widgets pour un dashboard de GMAO (Gestion de Maintenance Assistee par Ordinateur).
+WIDGET_GENERATION_PROMPT = """Tu es un expert en creation de widgets pour un dashboard de GMAO (Fonctionnement des Services Assistee par Ordinateur).
 
 L'utilisateur te decrit un widget qu'il souhaite creer. Tu dois generer la configuration JSON exacte pour le creer.
 

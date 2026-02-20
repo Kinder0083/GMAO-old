@@ -277,7 +277,7 @@ async def initialize_default_manual(current_user: dict):
 
 📌 **Qu'est-ce qu'une GMAO ?**
 
-Une GMAO (Gestion de Maintenance Assistée par Ordinateur) est un logiciel qui permet de gérer l'ensemble des activités de maintenance d'une entreprise :
+Une GMAO (Fonctionnement des Services Assistée par Ordinateur) est un logiciel qui permet de gérer l'ensemble des activités de maintenance d'une entreprise :
 
 • Planification des interventions
 • Suivi des équipements
