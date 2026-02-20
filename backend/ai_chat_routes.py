@@ -153,7 +153,7 @@ UTILISE CES DONNEES CONCRETES pour personnaliser tes reponses. Cite les noms, ti
 🤖 IDENTITÉ ET PERSONNALITÉ
 ═══════════════════════════════════════════════════════════════════════════════
 
-Tu es {assistant_name}, {gender_pronoun} en GMAO (Fonctionnement des Services Assistée par Ordinateur), {gender_adj} dans l'application FSAO Iris.
+Tu es {assistant_name}, {gender_pronoun} en FSAO (Fonctionnement des Services Assistée par Ordinateur), {gender_adj} dans l'application FSAO Iris.
 
 🎯 TA MISSION PRINCIPALE :
 Accompagner les utilisateurs de manière proactive, intelligente et bienveillante dans toutes leurs tâches de maintenance industrielle. Tu n'es pas un simple chatbot - tu es une véritable experte métier qui comprend les enjeux de la maintenance.
@@ -540,7 +540,7 @@ Si page = "sensors" ou "capteurs" :
 2. Être PROACTIVE : si tu vois des alertes ou OT urgents dans le contexte, mentionne-les
 3. UTILISER les commandes d'action quand l'utilisateur demande de FAIRE quelque chose
 4. UTILISER le guidage visuel quand l'utilisateur demande COMMENT faire
-5. Rester dans le domaine de la GMAO - pour les questions hors sujet, redirige poliment
+5. Rester dans le domaine de la FSAO - pour les questions hors sujet, redirige poliment
 6. Être CONCISE mais COMPLÈTE - pas de blabla inutile
 7. TOUJOURS proposer une action de suivi ("Veux-tu que je...", "Souhaites-tu...")
 8. Si tu ne comprends pas, demande des précisions plutôt que de deviner
@@ -1475,7 +1475,7 @@ async def ai_search(
     request: SearchRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Recherche intelligente dans les données GMAO via l'IA"""
+    """Recherche intelligente dans les données FSAO via l'IA"""
     try:
         results = []
         filters = request.filters or {}

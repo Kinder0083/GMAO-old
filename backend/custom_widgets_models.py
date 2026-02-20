@@ -28,7 +28,7 @@ class DataSourceType(str, Enum):
 
 
 class GmaoDataType(str, Enum):
-    """Types de données GMAO disponibles"""
+    """Types de données FSAO disponibles"""
     # Interventions
     WORK_ORDERS_COUNT = "work_orders_count"
     WORK_ORDERS_BY_STATUS = "work_orders_by_status"
@@ -123,7 +123,7 @@ class ExcelDataSource(BaseModel):
 
 
 class GmaoDataSource(BaseModel):
-    """Configuration pour source de données GMAO"""
+    """Configuration pour source de données FSAO"""
     data_type: GmaoDataType
     service_filter: Optional[str] = None  # Filtrer par service
     status_filter: Optional[List[str]] = None  # Filtrer par statut

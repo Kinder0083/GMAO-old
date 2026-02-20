@@ -700,10 +700,10 @@ async def restore_backup(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_admin_user)
 ):
-    """Restaurer une sauvegarde complète depuis un fichier ZIP de backup GMAO"""
+    """Restaurer une sauvegarde complète depuis un fichier ZIP de backup FSAO"""
     try:
         if not file.filename.endswith('.zip'):
-            raise HTTPException(status_code=400, detail="Le fichier doit être un ZIP de sauvegarde GMAO")
+            raise HTTPException(status_code=400, detail="Le fichier doit être un ZIP de sauvegarde FSAO")
 
         content = await file.read()
         restored_files = 0
@@ -714,7 +714,7 @@ async def restore_backup(
             zf_test = zipfile.ZipFile(io.BytesIO(content), 'r')
             if 'data.xlsx' not in zf_test.namelist():
                 zf_test.close()
-                raise HTTPException(status_code=400, detail="ZIP invalide : le fichier data.xlsx est manquant. Ce n'est pas un backup GMAO valide.")
+                raise HTTPException(status_code=400, detail="ZIP invalide : le fichier data.xlsx est manquant. Ce n'est pas un backup FSAO valide.")
             zf_test.close()
         except zipfile.BadZipFile:
             raise HTTPException(status_code=400, detail="Le fichier ZIP est corrompu ou invalide")

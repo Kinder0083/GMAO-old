@@ -73,7 +73,7 @@ async def parse_automation_request(
         equip_text = "\n".join([f"  - id:{e.get('id','?')} | {e.get('nom','')} ({e.get('reference','')})" for e in equipments[:20]]) or "  Aucun equipement"
         users_text = "\n".join([f"  - id:{u.get('id','?')} | {u.get('prenom','')} {u.get('nom','')} | {u.get('email','')} | service:{u.get('service','')}" for u in users]) or "  Aucun utilisateur"
 
-        prompt = f"""Tu es un systeme d'automatisation GMAO. L'utilisateur demande de configurer une automatisation en langage naturel. Analyse sa demande et traduis-la en configuration structuree.
+        prompt = f"""Tu es un systeme d'automatisation FSAO. L'utilisateur demande de configurer une automatisation en langage naturel. Analyse sa demande et traduis-la en configuration structuree.
 
 DEMANDE DE L'UTILISATEUR : "{message}"
 
@@ -140,7 +140,7 @@ Si un capteur/equipement n'est pas trouve, indique-le dans la description.
 """
 
         LlmChat, UserMessage, key = await _get_llm()
-        chat = LlmChat(api_key=key, session_id=f"automation_parse_{uuid.uuid4().hex[:6]}", system_message="Tu es un moteur d'automatisation GMAO. Reponds UNIQUEMENT en JSON valide.")
+        chat = LlmChat(api_key=key, session_id=f"automation_parse_{uuid.uuid4().hex[:6]}", system_message="Tu es un moteur d'automatisation FSAO. Reponds UNIQUEMENT en JSON valide.")
         chat.with_model("gemini", "gemini-2.5-flash")
         response = await chat.send_message(UserMessage(text=prompt))
         result = json.loads(clean_json(response))

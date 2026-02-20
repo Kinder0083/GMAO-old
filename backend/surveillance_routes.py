@@ -2832,7 +2832,7 @@ async def send_surveillance_reminder_email(user_email: str, user_name: str, item
                     <p>Merci de prendre les dispositions nécessaires pour planifier ce contrôle dans les délais.</p>
                     
                     <p style="color: #64748b; font-size: 12px; margin-top: 30px;">
-                        Ce message est généré automatiquement par le système GMAO.<br>
+                        Ce message est généré automatiquement par le système FSAO.<br>
                         Merci de ne pas répondre à cet email.
                     </p>
                 </div>

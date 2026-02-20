@@ -1,5 +1,5 @@
 """
-Service pour récupérer les données GMAO pour les widgets personnalisés
+Service pour récupérer les données FSAO pour les widgets personnalisés
 """
 import logging
 from typing import Optional, Dict, Any, List, Union
@@ -17,7 +17,7 @@ def init_gmao_data_service(db: AsyncIOMotorDatabase):
     """Initialise le service avec la base de données"""
     global _db
     _db = db
-    logger.info("Service données GMAO initialisé")
+    logger.info("Service données FSAO initialisé")
 
 
 def parse_relative_date(date_str: str) -> datetime:
@@ -77,10 +77,10 @@ async def get_gmao_data(
     **kwargs
 ) -> Union[float, Dict, List]:
     """
-    Récupère les données GMAO selon le type demandé
+    Récupère les données FSAO selon le type demandé
     
     Args:
-        data_type: Type de données GMAO (voir GmaoDataType enum)
+        data_type: Type de données FSAO (voir GmaoDataType enum)
         service_filter: Filtrer par service
         status_filter: Filtrer par statut(s)
         date_from: Date de début (relative ou ISO)
@@ -153,7 +153,7 @@ async def get_gmao_data(
     
     handler = handlers.get(data_type)
     if not handler:
-        raise ValueError(f"Type de données GMAO inconnu: {data_type}")
+        raise ValueError(f"Type de données FSAO inconnu: {data_type}")
     
     return await handler(
         service_filter=service_filter,
@@ -596,7 +596,7 @@ async def _get_users_by_service(**kwargs):
 # === Fonction utilitaire pour lister les données disponibles ===
 
 def get_available_gmao_data_types() -> List[Dict[str, Any]]:
-    """Retourne la liste des types de données GMAO disponibles avec leur description"""
+    """Retourne la liste des types de données FSAO disponibles avec leur description"""
     return [
         # Ordres de travail
         {"type": "work_orders_count", "label": "Nombre d'ordres de travail", "category": "Interventions", "returns": "number"},

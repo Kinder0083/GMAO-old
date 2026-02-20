@@ -258,7 +258,7 @@ async def send_improvement_request_email_to_manager(
                         <a href="{FRONTEND_URL}" style="color: #1976d2;">FSAO Iris</a> pour traiter cette demande.
                     </p>
                     <p style="color: #aaa; font-size: 10px; margin: 10px 0 0 0; text-align: center;">
-                        Cet email a été envoyé automatiquement par le système GMAO. Ne pas répondre à cet email.
+                        Cet email a été envoyé automatiquement par le système FSAO. Ne pas répondre à cet email.
                     </p>
                 </div>
             </div>
@@ -368,7 +368,7 @@ async def send_validation_notification_email(
                 <!-- Pied de page -->
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
                     <p style="color: #aaa; font-size: 10px; margin: 0; text-align: center;">
-                        Cet email a été envoyé automatiquement par le système GMAO.
+                        Cet email a été envoyé automatiquement par le système FSAO.
                     </p>
                 </div>
             </div>

@@ -66,7 +66,7 @@ async def send_demande_email(demande: dict):
             </p>
         </div>
         <div class="footer">
-            <p>Ce message a été envoyé automatiquement par le système GMAO.</p>
+            <p>Ce message a été envoyé automatiquement par le système FSAO.</p>
         </div>
     </div>
 </body>
@@ -192,7 +192,7 @@ async def send_report_request_email(demande: dict, report: dict):
             </div>
         </div>
         <div class="footer">
-            <p>Ce message a été envoyé automatiquement par le système GMAO.</p>
+            <p>Ce message a été envoyé automatiquement par le système FSAO.</p>
         </div>
     </div>
 </body>
@@ -735,7 +735,7 @@ async def send_end_maintenance_email(demande: dict, equipement_noms: list):
             </p>
         </div>
         <div class="footer">
-            <p>Ce message a été envoyé automatiquement par le système GMAO.</p>
+            <p>Ce message a été envoyé automatiquement par le système FSAO.</p>
         </div>
     </div>
 </body>

@@ -168,7 +168,7 @@ Genere en JSON :
 }}"""
 
         LlmChat, UserMessage, key = await _get_llm()
-        chat = LlmChat(api_key=key, session_id=f"ai_report_{end_date.strftime('%Y%m%d')}", system_message="Tu es un expert GMAO/QHSE. Reponds UNIQUEMENT en JSON valide.")
+        chat = LlmChat(api_key=key, session_id=f"ai_report_{end_date.strftime('%Y%m%d')}", system_message="Tu es un expert FSAO/QHSE. Reponds UNIQUEMENT en JSON valide.")
         chat.with_model("gemini", "gemini-2.5-flash")
         response = await chat.send_message(UserMessage(text=prompt))
         result = json.loads(clean_json_response(response))

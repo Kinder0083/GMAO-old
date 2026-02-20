@@ -179,7 +179,7 @@ Reponds en JSON avec cette structure exacte :
 }}"""
 
         LlmChat, UserMessage, key = await _get_llm()
-        chat = LlmChat(api_key=key, session_id=f"ai_wo_diagnostic_{work_order_id}", system_message="Tu es un expert en maintenance industrielle GMAO. Reponds UNIQUEMENT en JSON valide.")
+        chat = LlmChat(api_key=key, session_id=f"ai_wo_diagnostic_{work_order_id}", system_message="Tu es un expert en maintenance industrielle FSAO. Reponds UNIQUEMENT en JSON valide.")
         chat.with_model("gemini", "gemini-2.5-flash")
         response = await chat.send_message(UserMessage(text=prompt))
         result = json.loads(clean_json_response(response))
@@ -267,7 +267,7 @@ Reponds en JSON :
 }}"""
 
         LlmChat, UserMessage, key = await _get_llm()
-        chat = LlmChat(api_key=key, session_id=f"ai_wo_summary_{work_order_id}", system_message="Tu es un expert GMAO. Reponds UNIQUEMENT en JSON valide.")
+        chat = LlmChat(api_key=key, session_id=f"ai_wo_summary_{work_order_id}", system_message="Tu es un expert FSAO. Reponds UNIQUEMENT en JSON valide.")
         chat.with_model("gemini", "gemini-2.5-flash")
         response = await chat.send_message(UserMessage(text=prompt))
         result = json.loads(clean_json_response(response))

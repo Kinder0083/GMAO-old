@@ -41,7 +41,7 @@ async def _get_llm_key():
     return key
 
 
-WIDGET_GENERATION_PROMPT = """Tu es un expert en creation de widgets pour un dashboard de GMAO (Fonctionnement des Services Assistee par Ordinateur).
+WIDGET_GENERATION_PROMPT = """Tu es un expert en creation de widgets pour un dashboard de FSAO (Fonctionnement des Services Assistee par Ordinateur).
 
 L'utilisateur te decrit un widget qu'il souhaite creer. Tu dois generer la configuration JSON exacte pour le creer.
 
@@ -54,7 +54,7 @@ L'utilisateur te decrit un widget qu'il souhaite creer. Tu dois generer la confi
 - "donut" : Donut (comme pie_chart mais avec trou central)
 - "table" : Tableau de donnees
 
-=== SOURCES DE DONNEES GMAO DISPONIBLES ===
+=== SOURCES DE DONNEES FSAO DISPONIBLES ===
 Chaque source a un "data_type" parmi:
 
 Interventions (OT):

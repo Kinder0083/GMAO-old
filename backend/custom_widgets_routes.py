@@ -354,7 +354,7 @@ async def refresh_widget_data(widget_id: str):
 
 @router.get("/data-types/gmao")
 async def get_gmao_data_types(current_user: dict = Depends(get_current_user)):
-    """Retourne la liste des types de données GMAO disponibles"""
+    """Retourne la liste des types de données FSAO disponibles"""
     return get_available_gmao_data_types()
 
 

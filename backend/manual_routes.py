@@ -275,7 +275,7 @@ async def initialize_default_manual(current_user: dict):
             "title": "Bienvenue dans FSAO Iris",
             "content": """FSAO Iris est votre solution complète de gestion de maintenance assistée par ordinateur.
 
-📌 **Qu'est-ce qu'une GMAO ?**
+📌 **Qu'est-ce qu'une FSAO ?**
 
 Une GMAO (Fonctionnement des Services Assistée par Ordinateur) est un logiciel qui permet de gérer l'ensemble des activités de maintenance d'une entreprise :
 

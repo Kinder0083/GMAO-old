@@ -1,5 +1,5 @@
 """
-Configuration OpenAPI/Swagger enrichie pour GMAO Atlas
+Configuration OpenAPI/Swagger enrichie pour FSAO Atlas
 """
 
 # Description principale de l'API
