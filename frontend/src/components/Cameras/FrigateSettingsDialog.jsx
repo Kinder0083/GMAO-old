@@ -540,7 +540,7 @@ const FrigateSettingsDialog = ({ open, onOpenChange, onSettingsChange }) => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-xs text-gray-500">
-                    Associez un nom de caméra (affiché dans GMAO) à un stream go2rtc
+                    Associez un nom de caméra (affiché dans FSAO) à un stream go2rtc
                   </p>
                   
                   {/* Liste des mappings existants */}

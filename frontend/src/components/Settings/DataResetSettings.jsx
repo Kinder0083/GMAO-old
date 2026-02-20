@@ -70,7 +70,7 @@ const DataResetSettings = () => {
       const data = response.data;
       const total = Object.values(data.details).reduce((sum, v) => sum + v, 0);
       toast({
-        title: 'GMAO réinitialisée',
+        title: 'FSAO réinitialisée',
         description: `${total} élément(s) supprimé(s) au total`,
       });
     } catch (error) {

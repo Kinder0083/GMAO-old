@@ -257,7 +257,7 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><Bot size={20} /></div>
             <div>
               <h3 className="font-semibold text-sm">{aiName}</h3>
-              {!minimized && <p className="text-xs text-purple-200">{aiGender === 'female' ? 'Assistante' : 'Assistant'} GMAO</p>}
+              {!minimized && <p className="text-xs text-purple-200">{aiGender === 'female' ? 'Assistante' : 'Assistant'} FSAO</p>}
             </div>
           </div>
           <div className="flex items-center gap-1">

@@ -117,7 +117,7 @@ const CustomWidgetEditor = () => {
       const response = await api.get('/custom-widgets/data-types/gmao');
       setGmaoDataTypes(response.data);
     } catch (error) {
-      console.error('Erreur chargement types GMAO:', error);
+      console.error('Erreur chargement types FSAO:', error);
     }
   };
 
@@ -726,7 +726,7 @@ const DataSourceEditor = ({
   const sourceType = SOURCE_TYPES.find(t => t.value === source.type);
   const Icon = sourceType?.icon || Database;
 
-  // Grouper les types GMAO par catégorie
+  // Grouper les types FSAO par catégorie
   const gmaoCategories = gmaoDataTypes.reduce((acc, dt) => {
     if (!acc[dt.category]) acc[dt.category] = [];
     acc[dt.category].push(dt);
