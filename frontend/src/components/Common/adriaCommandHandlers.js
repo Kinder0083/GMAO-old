@@ -116,12 +116,33 @@ export const handleCreateOT = async (actionData) => {
     description: otDesc,
     priorite: (actionData.priorite || 'NORMALE').toUpperCase(),
     statut: 'OUVERT',
+    dateLimite: new Date().toISOString(),
   };
+
+  // Résolution équipement + emplacement automatique
   const eqId = await resolveEquipmentId(actionData.equipement_nom);
-  if (eqId) otPayload.equipement_id = eqId;
+  if (eqId) {
+    otPayload.equipement_id = eqId;
+    // Récupérer l'emplacement de l'équipement
+    try {
+      const eqResponse = await api.get(`/equipments/${eqId}`);
+      const eq = eqResponse.data;
+      if (eq?.emplacement_id) {
+        otPayload.emplacement_id = eq.emplacement_id;
+        otPayload.emplacement = eq.emplacement;
+      }
+    } catch (e) {
+      console.warn('Impossible de récupérer l\'emplacement:', e);
+    }
+  }
+
+  // Temps estimé : valeur fournie ou 120 min (2h) par défaut
   if (actionData.tempsEstime || actionData.temps_estime) {
     otPayload.tempsEstime = parseFloat(actionData.tempsEstime || actionData.temps_estime);
+  } else {
+    otPayload.tempsEstime = 120;
   }
+
   if (actionData.categorie) otPayload.categorie = actionData.categorie;
   const userId = await resolveUserId(actionData.assigne_a);
   if (userId) otPayload.assigne_a_id = userId;
