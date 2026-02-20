@@ -1,164 +1,203 @@
-<analysis>Analyse de l'historique des messages LLM et résumé pour le prochain agent.
-
-**original_problem_statement:**
-L'utilisateur a signalé une série de bugs critiques et de problèmes de logique dans la fonctionnalité Plan de Surveillance lors de la création de contrôles via l'analyse IA d'un document PDF. Les problèmes principaux sont :
-1.  **Date de contrôle incorrecte** : Un contrôle réalisé en 2026 est affiché dans l'interface utilisateur avec la date de 2027. La colonne affiche la date du *prochain* contrôle au lieu de la date de *réalisation*.
-2.  **Erreurs de création en masse** : Lors de l'analyse d'un rapport contenant plusieurs contrôles (par ex. 8), l'IA n'en crée qu'un seul et retourne des erreurs pour les 7 autres.
-3.  **Titre de colonne incorrect** : L'utilisateur a demandé de renommer la colonne Prochain contrôle en Date du Contrôle, mais le changement n'a pas été appliqué partout.
-4.  **Statistiques de réalisation erronées** : Un contrôle créé avec le statut Réalisé n'était pas comptabilisé dans le pourcentage de réalisation, car le calcul dépendait d'une date future.
-
-Auparavant dans la session, l'agent a corrigé un bug où l'assistant IA Adria ne sauvegardait pas l'équipement et la priorité lors de la création d'un Ordre de Travail (OT), et a implémenté plusieurs nouvelles fonctionnalités pour Adria : la modification d'OTs, l'assignation de techniciens, et la clôture d'OTs avec temps et pièces en une seule commande. Un refactoring majeur du composant  a également été effectué.
+<analysis>**original_problem_statement:**
+L'utilisateur a demandé une série d'améliorations et de corrections de bugs :
+1.  **Fonctionnalité Principale (Terminée):** Implémenter une logique de correspondance intelligente pour le Plan de Surveillance. L'IA doit mettre à jour les contrôles récurrents existants au lieu de créer des doublons, calculer un écart, et permettre une correspondance manuelle.
+2.  **Amélioration (Terminée):** Refondre la page Rapport Surveillance pour y inclure des onglets de navigation par année et des indicateurs de performance clés (KPIs) sur le respect des délais (écart moyen, taux de respect).
+3.  **Fonctionnalité (Terminée):** Ajouter une fonction d'export PDF et Excel à la page Rapport Surveillance.
+4.  **Fonctionnalité (Terminée):** Ajouter un bouton pour réinitialiser complètement les données du Plan de Surveillance dans les paramètres.
+5.  **Refactoring (Terminé):** Décomposer la fonction monolithique  en fonctions plus petites et plus maintenables.
+6.  **Bug Critique (Corrigé):** Le script de mise à jour de l'application via l'interface utilisateur échouait sur le serveur Proxmox de l'utilisateur, le forçant à utiliser un processus manuel complexe en SSH.
+7.  **Bugs Divers (Corrigés):**
+    *   Erreur  lors de la correspondance manuelle.
+    *   Les nouvelles occurrences de contrôle héritaient incorrectement de la valeur  de leur parent.
+    *   L'assistant IA Adria ne propageait pas le champ Emplacement et n'utilisait pas de valeurs par défaut pour les ordres de travail (OT).
+8.  **Bug en cours de résolution:** L'assistant IA Adria confirme l'assignation d'un OT à un technicien, mais ne l'effectue pas réellement.
 
 **User's preferred language**: French
 
 **what currently exists?**
-L'application est une plateforme full-stack (React/FastAPI/MongoDB) de GMAO avec des fonctionnalités d'IA avancées. La session a vu l'ajout de nombreuses capacités à l'assistant Adria (modification, assignation, clôture d'OTs) et un refactoring majeur du code du widget de chat.
-
-Cependant, la fonctionnalité d'importation IA pour le Plan de Surveillance est actuellement dans un état critique et bogué. L'agent a effectué plusieurs tentatives de correction, résolvant des problèmes sous-jacents de parsing de périodicité, de gestion des valeurs  (), et de génération de contrôles récurrents. Le problème principal restant est une incohérence logique fondamentale entre la date stockée en base de données et celle attendue par l'utilisateur dans l'affichage.
+L'application GMAO (React/FastAPI/MongoDB) est fonctionnelle. La logique de correspondance intelligente pour le Plan de Surveillance est entièrement implémentée, testée et validée par l'utilisateur. La page de rapport a été améliorée avec des filtres par année et des exports. Plusieurs bugs critiques liés au déploiement, à la logique métier et à l'assistant IA ont été résolus. Un refactoring majeur du code de traitement IA a été effectué pour améliorer la maintenabilité. L'agent est actuellement en train de déboguer le dernier bug signalé concernant l'assistant IA Adria.
 
 **Last working item**:
--   **Last item agent was working:** Correction d'un bug fondamental et récurrent dans le Plan de Surveillance. L'utilisateur a signalé que pour un contrôle *réalisé* en 2026, l'interface affichait une date en 2027. L'agent a finalement identifié que la cause principale était que le backend assignait  au champ  de l'enregistrement de base, au lieu d'y mettre la . Le travail s'est arrêté alors que l'agent commençait à implémenter la correction finale dans .
+-   **Last item agent was working:** L'agent est en train de déboguer un bug avec l'assistant IA Adria. Lorsque l'utilisateur demande à Adria d'assigner un Ordre de Travail (OT) existant à un technicien, l'IA confirme l'action mais la base de données n'est pas mise à jour. L'agent a identifié que le problème ne venait pas de la logique frontend de base (qui définit les valeurs par défaut) et a commencé à investiguer le flux de mise à jour d'un OT, suspectant un problème dans la résolution de l'ID de l'utilisateur ou dans l'endpoint de mise à jour backend.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** both. D'abord, un test backend avec  pour vérifier que la création d'un item via le batch IA avec le statut  stocke bien  dans le champ . Ensuite, le testing agent pour un test E2E complet, en demandant à l'IA d'analyser le PDF, de créer les contrôles, et en vérifiant dans le rapport du testing agent que l'item affiché dans l'UI a la bonne date (2026) et que les statistiques de réalisation sont correctes.
+-   **Which testing method agent to use?** backend testing agent. Utiliser  pour simuler l'appel de l'API de mise à jour d'un OT () avec une charge utile contenant  et vérifier si l'objet  est correctement peuplé dans la base de données.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   Issue 1: La date affichée pour les contrôles créés par IA est incorrecte (P0)
--   Issue 2: Le renommage de la colonne UI Prochain contrôle est incomplet (P1)
--   Issue 3: La robustesse de l'extraction IA pour plusieurs contrôles reste à valider (P2)
+-   Issue 1: L'assignation d'un technicien à un OT via Adria ne fonctionne pas (P0)
+-   Issue 2: L'interface utilisateur ne se rafraîchit pas automatiquement après une correspondance manuelle (P1)
 
 **Issues Detail:**
--   **Issue 1: Date de contrôle incorrecte dans le Plan de Surveillance**
-    -   **Attempted fixes:** De nombreuses tentatives ont été faites, en modifiant la logique de calcul de l'année (), en changeant la date affichée dans le frontend, et en supprimant une condition de date dans le calcul des statistiques. La dernière analyse de l'agent a conclu que le problème est à la source : la valeur écrite dans le champ  de la base de données est erronée pour les items .
+-   **Issue 1: L'assignation d'un technicien à un OT via Adria ne fonctionne pas**
+    -   **Attempted fixes:** L'agent a précédemment corrigé des problèmes avec Adria concernant les valeurs par défaut et le champ emplacement. Pour le bug actuel, l'agent a examiné le code frontend () et a commencé à inspecter le code backend ().
     -   **Next debug checklist:**
-        1.  Ouvrir .
-        2.  Localiser la fonction .
-        3.  Dans la boucle , trouver la section où l'item est créé.
-        4.  **Modifier la ligne** qui calcule . Assurer que si , alors  est défini sur , et non .
-        5.  S'assurer que la fonction  est toujours appelée avec la date de base correcte pour générer les occurrences futures.
-    -   **Why fix this issue and what will be achieved with the fix?** C'est le bug principal qui empêche la fonctionnalité d'être utilisable. Le corriger alignera enfin le comportement de l'application avec la logique métier de l'utilisateur, qui est que la date d'un contrôle réalisé est la date à laquelle il a été fait, pas la date du prochain.
+        1.  **Backend ()**: Examiner en détail l'endpoint  ().
+        2.  Vérifier comment le champ  reçu dans la charge utile est traité.
+        3.  Hypothèse : L'endpoint se contente de stocker l'ID mais ne récupère pas et n'intègre pas l'objet utilisateur complet () dans le champ  de l'OT, ce qui est nécessaire pour l'affichage frontend. Le fix consisterait à ajouter une recherche de l'utilisateur par son ID et à mettre à jour l'objet complet.
+    -   **Why fix this issue and what will be achieved with the fix?** Corriger ce bug rendra l'assistant IA Adria pleinement fonctionnel pour la gestion des OT, ce qui est une fonctionnalité clé pour l'utilisateur.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None.
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Backend
+    -   **Blocked on other issue:** None
 
--   **Issue 2: Renommage de la colonne UI incomplet**
-    -   **Attempted fixes:** L'agent a modifié certains fichiers frontend mais en a manqué d'autres.
+-   **Issue 2: L'interface utilisateur ne se rafraîchit pas automatiquement après une correspondance manuelle**
+    -   **Attempted fixes:** None. Ce bug a été identifié par l'utilisateur mais l'agent ne l'a pas encore traité.
     -   **Next debug checklist:**
-        1.  Faire un  pour trouver toutes les occurrences.
-        2.  Modifier , , et  pour remplacer Prochain contrôle par Date du Contrôle.
-        3.  Modifier également la logique d'affichage dans ces fichiers pour afficher  si , sinon .
-    -   **Why fix this issue and what will be achieved with the fix?** C'est une demande explicite de l'utilisateur pour améliorer la clarté de l'interface. Le faire résoudra une confusion majeure pour l'utilisateur.
+        1.  **Frontend (, , etc.)**: Identifier la fonction qui gère le succès de la correspondance manuelle dans .
+        2.  Après l'appel API réussi, il faut déclencher une actualisation des données de la page principale.
+        3.  Solution : Passer une fonction de rappel  depuis les vues parentes vers , qui déclenchera le  des données du plan de surveillance.
+    -   **Why fix this issue and what will be achieved with the fix?** Améliore l'expérience utilisateur en fournissant un retour visuel immédiat après une action, évitant la confusion et la nécessité de rafraîchir manuellement la page.
     -   **Status:** NOT STARTED
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on other issue:** None.
-
--   **Issue 3: Robustesse de l'extraction IA**
-    -   **Attempted fixes:** L'agent a amélioré le prompt IA et a rendu le backend plus robuste aux données manquantes () et aux formats de périodicité non standards.
-    -   **Next debug checklist:**
-        1.  Une fois les issues 1 et 2 résolues, relancer un test E2E complet avec le fichier PDF de l'utilisateur qui contient 8 contrôles ().
-        2.  Vérifier la réponse du backend : est-ce que 8 items ont été créés avec succès, sans erreur ?
-        3.  Si des erreurs persistent, analyser les logs et le payload pour identifier le contrôle qui échoue et pourquoi (probablement un cas limite de données non encore géré).
-    -   **Why fix this issue and what will be achieved with the fix?** Assurer que la fonctionnalité d'IA est fiable et peut traiter des documents réels complexes, ce qui est la valeur ajoutée principale de cette feature.
-    -   **Status:** TESTING PENDING
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** Issue 1.
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Frontend
+    -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   None.
+-   Aucune.
 
 **Upcoming and Future Tasks**
--   **Future Tasks:**
-    -   (P2) Implémenter une suggestion précédente : permettre à Adria de clôturer un OT et de générer un résumé de l'intervention en une seule commande vocale (par ex. Termine lOT Bioci 1, ça a pris 2h, jai changé le filtre). L'utilisateur avait demandé de garder cette idée dans un coin pour plus tard.
+-   Aucune tâche future n'a été demandée pour le moment. La priorité est de résoudre les deux bugs en suspens.
 
 **Completed work in this session**
--   **Bug Fix:** Adria - Création d'OT : l'équipement et la priorité sont maintenant correctement sauvegardés.
--   **Feature:** Adria - Modification d'OT : implémentation de la commande .
--   **Feature:** Adria - Assignation de technicien : Adria peut maintenant assigner un utilisateur à un OT.
--   **Feature:** Adria - Clôture d'OT : implémentation de la commande  pour ajouter temps, pièces et changer le statut.
--   **Refactoring:** Le composant  (plus de 1300 lignes) a été divisé en trois fichiers logiques :  (UI),  (logique métier), et  (hook vocal).
--   **Documentation:** Mise à jour du  et du manuel utilisateur en base de données pour refléter les nouvelles capacités d'Adria.
--   **Bug Fix (In Progress):** Multiples itérations de corrections sur le Plan de Surveillance pour améliorer la robustesse du backend (gestion des erreurs, parsing de dates/périodicité) et corriger la logique de création des contrôles récurrents.
+-   **Feature:** Implémentation complète de la logique de correspondance intelligente pour le Plan de Surveillance.
+-   **Feature:** Refonte de la page Rapport Surveillance avec filtres par année et nouveaux KPIs.
+-   **Feature:** Ajout de l'export PDF/Excel à la page de rapport.
+-   **Feature:** Ajout d'une option pour réinitialiser les données du Plan de Surveillance.
+-   **Refactor:** Refactoring majeur de la fonction  dans .
+-   **Bug Fix (Critical):** Correction du script de mise à jour de l'application pour le rendre fiable sur le serveur de l'utilisateur.
+-   **Bug Fix:** Correction de l'erreur  dans .
+-   **Bug Fix:** Correction du bug d'héritage de la valeur  pour les contrôles récurrents.
+-   **Bug Fix:** Correction du bug de l'assistant IA Adria qui n'appliquait pas les valeurs par défaut ni le champ Emplacement lors de la création d'OT.
 
 **Earlier issues found/mentioned but not fixed**
--   Le renommage de la colonne Prochain contrôle en Date du Contrôle sur toutes les vues du Plan de Surveillance a été demandé mais seulement partiellement exécuté.
+-   **Issue 1: L'interface utilisateur ne se rafraîchit pas automatiquement après une correspondance manuelle.**
+    -   **Debug checklist:** Analyser le  et les composants parents (, etc.) pour implémenter un mécanisme de rappel () qui déclenche une actualisation des données.
+    -   **Why to solve this issue and what will be achieved with this?** Pour améliorer l'UX et éviter que l'utilisateur ne pense que son action a échoué.
+    -   **Should Test frontend/backend/both after fix:** Frontend
+    -   **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
--   N/A
+-   None.
 
 **Code Architecture**
-
+git
 
 **Key Technical Concepts**
--   **State Inconsistency Debugging:** Le problème principal de la session a été de traquer une incohérence entre l'état de la base de données, la logique frontend et l'attente de l'utilisateur, spécifiquement sur le sens du champ .
--   **Robust Data Parsing:** Création de logiques de parsing robustes pour gérer des formats de texte non structurés (périodicité, bâtiment, dates) provenant de l'IA et éviter les crashs.
--   **Component Refactoring:** Division d'un grand composant React monolithique en un composant de présentation et des hooks/fichiers de logique métier séparés pour améliorer la lisibilité et la maintenabilité.
--   **Recurring Item Generation:** Implémentation d'une logique complexe pour générer une série d'enregistrements futurs (contrôles récurrents) à partir d'un seul événement de base, en respectant des règles métier précises (jusqu'à N+1).
+-   **Logique métier complexe**: Algorithme de correspondance avec fenêtre de tolérance dynamique, gestion de l'ambiguïté, et mise à jour/création conditionnelle d'entités.
+-   **Refactoring de code**: Décomposition d'une fonction monolithique en fonctions utilitaires spécialisées pour améliorer la lisibilité et la maintenabilité.
+-   **Scripts de déploiement robustes**: Fiabilisation d'un script de mise à jour usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
+           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
+           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
+           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
+           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
+           <command> [<args>]
+
+These are common Git commands used in various situations:
+
+start a working area (see also: git help tutorial)
+   clone     Clone a repository into a new directory
+   init      Create an empty Git repository or reinitialize an existing one
+
+work on the current change (see also: git help everyday)
+   add       Add file contents to the index
+   mv        Move or rename a file, a directory, or a symlink
+   restore   Restore working tree files
+   rm        Remove files from the working tree and from the index
+
+examine the history and state (see also: git help revisions)
+   bisect    Use binary search to find the commit that introduced a bug
+   diff      Show changes between commits, commit and working tree, etc
+   grep      Print lines matching a pattern
+   log       Show commit logs
+   show      Show various types of objects
+   status    Show the working tree status
+
+grow, mark and tweak your common history
+   branch    List, create, or delete branches
+   commit    Record changes to the repository
+   merge     Join two or more development histories together
+   rebase    Reapply commits on top of another base tip
+   reset     Reset current HEAD to the specified state
+   switch    Switch branches
+   tag       Create, list, delete or verify a tag object signed with GPG
+
+collaborate (see also: git help workflows)
+   fetch     Download objects and refs from another repository
+   pull      Fetch from and integrate with another repository or a local branch
+   push      Update remote refs along with associated objects
+
+'git help -a' and 'git help -g' list available subcommands and some
+concept guides. See 'git help <command>' or 'git help <concept>'
+to read about a specific subcommand or concept.
+See 'git help git' for an overview of the system. en adoptant une approche nucléaire (, Reinitialized existing Git repository in /app/.git/) pour éviter les états corrompus.
+-   **Migration de données**: Implémentation d'un script de correction de données qui s'exécute une seule fois au démarrage de l'application pour nettoyer les incohérences passées.
+-   **Débogage d'interactions IA-Frontend-Backend**: Analyse du flux complet depuis l'intention de l'utilisateur dans le chat jusqu'à la mise à jour de la base de données, pour identifier que le point de défaillance se situait dans la logique frontend appelant le mauvais endpoint ou omettant des données.
 
 **key DB schema**
--   **surveillance_items:** Contient les champs cruciaux au cœur du bug :  (int),  (datetime),  (datetime),  (str: REALISE, PLANIFIER, A PLANIFIER). La logique de leur remplissage est ce qui a été débattu et corrigé.
+-   **surveillance_items:** champ  (Optional[int]) utilisé pour calculer l'écart entre la date prévue et la date de réalisation.
+-   **work_orders:** contient les champs  et . Le bug actuel est probablement lié à la non-synchronisation de ces deux champs lors d'une mise à jour.
+-   **users:** contient uid=0(root) gid=0(root) groups=0(root), ,  utilisés pour peupler le champ  des OT.
 
 **All files of reference**
--   : Fichier principal à corriger pour le bug de date.
--   : Fichier où la logique de calcul des statistiques a été corrigée et où le titre de colonne doit être changé.
--   : Autre vue à corriger (titre de colonne).
--   : Autre vue à corriger (titre de colonne).
--   : Le nouveau fichier contenant toute la logique métier des commandes Adria.
--   : Le fichier de test de l'utilisateur qui a révélé tous les bugs du plan de surveillance.
+-   : Fichier clé pour le débogage du bug actuel (assignation d'OT).
+-   : Contient la logique frontend des actions de l'IA Adria.
+-   : Contient toute la logique métier complexe du Plan de Surveillance.
+-   : Page entièrement refactorisée pour les rapports annuels.
+-   : Fichier à modifier pour le bug de rafraîchissement de l'UI.
+-   : Contient le script de mise à jour de l'application.
 
 **Areas that need refactoring**:
--   Le refactoring majeur a déjà été fait sur . Aucune autre zone de refactoring immédiate n'est nécessaire.
+-   Le refactoring de , suggéré dans le précédent handover, a été **complété** avec succès.
 
 **key api endpoints**
--   : Endpoint utilisé par l'IA pour créer des contrôles, c'est la source de tous les bugs récents.
--   : (Nouveau) Endpoint pour la modification d'OTs.
--   : Endpoint utilisé par la commande .
+-   : Endpoint de mise à jour d'un OT, **au cœur du bug actuel**.
+-   : Endpoint backend pour Adria (corrigé).
+-   : Endpoint principal pour la logique de correspondance (refactorisé et terminé).
+-   : Endpoint pour la confirmation manuelle d'une correspondance (terminé).
+-   : Endpoint des KPIs pour la page de rapport (modifié pour inclure le filtre par année).
+-   : Nouvel endpoint pour la suppression des données du plan de surveillance (terminé).
 
 **Critical Info for New Agent**
 -   **Vous devez répondre en français.**
--   **Priorité absolue :** Fixez le bug de la date dans le Plan de Surveillance en modifiant  pour que  soit égal à  pour un item . C'est la clé de tout.
--   **Deuxième priorité :** Corrigez l'interface. Renommez la colonne Prochain contrôle en Date du Contrôle dans **tous** les fichiers de vue concernés (, , ) et ajustez la valeur affichée pour qu'elle corresponde à la date de réalisation pour les items terminés.
--   L'utilisateur est très attentif aux détails et a signalé les mêmes problèmes plusieurs fois. Soyez extrêmement rigoureux dans vos tests et vérifiez que chaque aspect des demandes de l'utilisateur est bien couvert avant de conclure. Ne vous fiez pas à une seule méthode de test.
--   La logique de génération des contrôles récurrents est complexe et a été définie précisément par l'utilisateur (Message 289). Ne la modifiez pas sans être certain de comprendre toutes les implications.
+-   La priorité absolue (P0) est de corriger le bug d'assignation de technicien via l'assistant IA Adria. L'hypothèse la plus probable est que le backend () ne peuple pas l'objet  lors d'une mise à jour via .
+-   N'oubliez pas de traiter ensuite le bug UX (P1) : le manque de rafraîchissement automatique après une correspondance manuelle dans le plan de surveillance.
+-   L'application a subi de nombreuses modifications profondes et positives dans cette session. Prenez le temps de relire les fichiers de référence pour bien comprendre l'état actuel avant de coder.
 
 **documents and test reports created in this job**
-De nombreux rapports de test ont été générés. Les plus pertinents pour la suite sont :
--   : Validation du refactoring de .
--   : Premier fix (échoué) du bug  du plan de surveillance.
--   : Test du fix de la logique de récurrence.
--   : Validation des derniers correctifs sur la robustesse du .
+-   
+-   
+-   
+-    (mis à jour à chaque )
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** Rapporte que le problème de date est *toujours* présent. Fournit des captures d'écran montrant clairement que la date affichée est 2027 au lieu de 2026. (PENDING)
-2.  **User:** Signale que l'IA ne crée qu'un seul contrôle sur 8, que la date est fausse (2027), et que l'intitulé de la colonne n'a pas été changé. (PENDING)
-3.  **User:** Indique que les stats de réalisation ne s'incrémentent pas et que l'intitulé de colonne est source de confusion. Demande que la colonne s'appelle Date du contrôle et que le statut seul pilote les stats. (Partiellement traité)
-4.  **User:** Rapporte que les contrôles sont enregistrés avec un an d'avance (2027 au lieu de 2026). (Traité, mais le fix a introduit un autre problème)
-5.  **User:** Explique en détail la logique attendue pour la génération des contrôles récurrents (avec onglets par année et génération jusqu'à N+1), car l'agent avait mal interprété. (Traité)
-6.  **User:** Signale que les contrôles créés par IA n'apparaissent pas. (Traité, c'était le bug )
-7.  **User:** Approuve la suggestion de refactoriser  et de mettre à jour la documentation. (COMPLETED)
-8.  **User:** Approuve la suggestion d'implémenter la clôture d'OT par Adria. (COMPLETED)
-9.  **User:** Approuve la suggestion de permettre à Adria d'assigner des techniciens. (COMPLETED)
-10. **User:** Rapporte le bug initial et majeur du Plan de Surveillance. (PENDING)
+1.  **User (LATEST):** Signale que bien qu'Adria confirme l'assignation d'un OT à un technicien, l'OT n'est pas réellement mis à jour. (EN COURS)
+2.  **Agent:** Confirme que le fix pour les valeurs par défaut d'Adria fonctionne.
+3.  **User:** Signale que les valeurs par défaut pour les OT créés par Adria n'apparaissent toujours pas. (RESOLU)
+4.  **Agent:** Résume la correction du bug  vs uid=0(root) gid=0(root) groups=0(root) et le crash serveur pour la création d'OT par Adria.
+5.  **Agent:** Débogue un crash serveur lié à  au lieu de . (RESOLU)
+6.  **User:** Demande de corriger deux problèmes avec Adria : le champ Emplacement qui n'apparaît pas dans la liste des OT et l'absence de valeurs par défaut (priorité, date, temps). (RESOLU)
+7.  **Agent:** Confirme la correction du bug d'héritage de  et l'ajout d'une migration de données.
+8.  **User:** Signale un bug critique via des captures d'écran : la nouvelle occurrence (2027) hérite de l'écart de l'ancienne (2026), et l'UI ne se rafraîchit pas après une correspondance manuelle. (PARTIELLEMENT RESOLU)
+9.  **Agent:** Confirme la correction de l'erreur .
+10. **User:** Signale l'erreur  lors d'une correspondance manuelle. (RESOLU)
 
 **Project Health Check:**
--   **Broken:** Oui. La fonctionnalité clé Plan de Surveillance est inutilisable en l'état à cause d'une erreur de logique fondamentale.
--   **Mocked:** N/A.
+-   **Broken**: Non. L'application est globalement stable et les fonctionnalités majeures sont opérationnelles. Seuls des bugs spécifiques à l'assistant IA et un bug UX mineur persistent.
+-   **Mocked**: N/A.
 
 **3rd Party Integrations**
--   **Gemini Pro (via ):** Utilisé pour l'assistant Adria et pour l'analyse des documents PDF du plan de surveillance.
+-   **Gemini Pro (via ):** Utilisé pour l'analyse de documents (Plan de Surveillance, Fournisseurs) et pour l'assistant IA Adria.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES.
--   **Troubleshoot agent used after agent stuck in loop:** NO.
--   **Test files created:** None.
--   **Known regressions:** La logique de date dans le Plan de Surveillance a régressé plusieurs fois au cours des tentatives de correction.
+-   **Testing agent used after significant changes**: YES (utilisé 3 fois avec succès après chaque lot de fonctionnalités).
+-   **Troubleshoot agent used after agent stuck in loop**: NO
+-   **Test files created**: []
+-   **Known regressions**: []
 
 **Credentials to test flow:**
 -   **Admin (Profile: Direction):**  / 
 -   **Non-Admin (Profile: Maintenance):**  / 
 
 **What agent forgot to execute**
--   L'agent a oublié d'appliquer le renommage de la colonne Prochain contrôle en Date du Contrôle à tous les fichiers de vue pertinents (, ), ne le faisant que dans un seul fichier. C'est une cause directe de la frustration de l'utilisateur dans son dernier message.</analysis>
+-   L'agent a identifié le bug UX du non-rafraîchissement de l'interface après une correspondance manuelle (Message 259) mais ne l'a pas encore corrigé. Ce bug a été ajouté à la liste des problèmes en attente (Issue 2).</analysis>
