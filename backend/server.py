@@ -1372,8 +1372,8 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         if wo_update.statut == WorkOrderStatus.TERMINE and "dateTermine" not in update_data:
             update_data["dateTermine"] = datetime.utcnow()
         
-        # Utiliser le bon filtre selon le format de l'ID
-        wo_filter = {"id": existing_wo.get("id")} if existing_wo.get("id") else {"_id": existing_wo.get("_id")}
+        # Utiliser _id (toujours présent) pour le filtre MongoDB
+        wo_filter = {"_id": existing_wo["_id"]}
         
         await db.work_orders.update_one(
             wo_filter,
