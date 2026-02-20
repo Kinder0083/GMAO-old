@@ -36,7 +36,7 @@ const SpecialSettings = () => {
             <h1 className="text-3xl font-bold text-gray-900">Paramètres système</h1>
           </div>
           <p className="text-gray-600">
-            Configuration avancée de l'application GMAO Iris
+            Configuration avancée de l'application FSAO Iris
           </p>
         </div>
 

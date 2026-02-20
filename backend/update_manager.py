@@ -1,5 +1,5 @@
 """
-Gestionnaire de mise à jour GMAO Iris
+Gestionnaire de mise à jour FSAO Iris
 """
 import os
 import subprocess

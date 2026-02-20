@@ -1,5 +1,5 @@
 """
-Tests for Contracts (Contrats) API - GMAO Iris
+Tests for Contracts (Contrats) API - FSAO Iris
 Tests CRUD operations, stats, alerts, file upload/download
 """
 import pytest

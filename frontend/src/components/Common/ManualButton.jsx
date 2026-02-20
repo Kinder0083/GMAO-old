@@ -792,7 +792,7 @@ const ManualButton = () => {
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-3 text-xl">
                 <BookOpen size={28} className="text-blue-600" />
-                <span>Manuel Utilisateur - GMAO Iris</span>
+                <span>Manuel Utilisateur - FSAO Iris</span>
               </DialogTitle>
               <div className="flex items-center gap-2">
                 {isAdmin && (

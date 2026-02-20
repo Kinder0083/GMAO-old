@@ -195,7 +195,7 @@ const AnalyticsChecklistsPage = () => {
         pdf.setPage(i);
         pdf.setFontSize(8);
         pdf.setTextColor(156, 163, 175);
-        pdf.text(`GMAO Iris - Analytics Checklists | Page ${i}/${pageCount}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+        pdf.text(`FSAO Iris - Analytics Checklists | Page ${i}/${pageCount}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
       }
       
       // Télécharger le PDF

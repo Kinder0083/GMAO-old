@@ -1490,7 +1490,7 @@ class SMTPConfig(BaseModel):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from_email: str = ""
-    smtp_from_name: str = "GMAO Iris"
+    smtp_from_name: str = "FSAO Iris"
     smtp_use_tls: bool = True
     frontend_url: str = ""
     backend_url: str = ""
@@ -3407,7 +3407,7 @@ class WeeklyReportSettings(BaseModel):
     enabled: bool = True
     default_timezone: str = "Europe/Paris"
     sender_email: Optional[str] = None
-    sender_name: str = "GMAO Iris - Rapports"
+    sender_name: str = "FSAO Iris - Rapports"
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     class Config:

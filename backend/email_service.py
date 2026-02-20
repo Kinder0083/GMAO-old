@@ -1,5 +1,5 @@
 """
-Service d'envoi d'emails pour GMAO Iris
+Service d'envoi d'emails pour FSAO Iris
 Support SMTP externe avec authentification (Gmail, SendGrid, etc.)
 """
 
@@ -42,7 +42,7 @@ SMTP_PORT = int(os.environ.get('SMTP_PORT', '25'))
 SMTP_USERNAME = os.environ.get('SMTP_USERNAME') or os.environ.get('SMTP_USER', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 SMTP_SENDER_EMAIL = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('SMTP_FROM', 'noreply@gmao-iris.com')
-SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'GMAO Iris')
+SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'FSAO Iris')
 SMTP_USE_TLS = (os.environ.get('SMTP_USE_TLS') or os.environ.get('SMTP_TLS', 'false')).lower() == 'true'
 APP_URL = os.environ.get('APP_URL', 'http://localhost')
 
@@ -232,7 +232,7 @@ def send_email_with_attachment(
 
 def send_invitation_email(to_email: str, token: str, role: str) -> bool:
     """
-    Envoie un email d'invitation à rejoindre GMAO Iris
+    Envoie un email d'invitation à rejoindre FSAO Iris
     
     Args:
         to_email: Email du destinataire
@@ -251,7 +251,7 @@ def send_invitation_email(to_email: str, token: str, role: str) -> bool:
     }
     role_label = role_labels.get(role, role)
     
-    subject = "Invitation à rejoindre GMAO Iris"
+    subject = "Invitation à rejoindre FSAO Iris"
     
     # Version HTML
     html_content = f"""
@@ -302,11 +302,11 @@ def send_invitation_email(to_email: str, token: str, role: str) -> bool:
     <body>
         <div class="container">
             <div class="header">
-                <h1>🔧 GMAO Iris</h1>
+                <h1>🔧 FSAO Iris</h1>
             </div>
             <div class="content">
                 <h2>Bonjour,</h2>
-                <p>Vous avez été invité(e) à rejoindre <strong>GMAO Iris</strong> en tant que <strong>{role_label}</strong>.</p>
+                <p>Vous avez été invité(e) à rejoindre <strong>FSAO Iris</strong> en tant que <strong>{role_label}</strong>.</p>
                 
                 <p>Pour compléter votre inscription, cliquez sur le bouton ci-dessous :</p>
                 
@@ -321,11 +321,11 @@ def send_invitation_email(to_email: str, token: str, role: str) -> bool:
                 
                 <p><strong>⚠️ Important :</strong> Ce lien expire dans 7 jours.</p>
                 
-                <p>Cordialement,<br>L'équipe GMAO Iris</p>
+                <p>Cordialement,<br>L'équipe FSAO Iris</p>
             </div>
             <div class="footer">
                 <p>Ceci est un email automatique, merci de ne pas y répondre.</p>
-                <p>© 2025 GMAO Iris - Tous droits réservés</p>
+                <p>© 2025 FSAO Iris - Tous droits réservés</p>
             </div>
         </div>
     </body>
@@ -336,7 +336,7 @@ def send_invitation_email(to_email: str, token: str, role: str) -> bool:
     text_content = f"""
 Bonjour,
 
-Vous avez été invité(e) à rejoindre GMAO Iris en tant que {role_label}.
+Vous avez été invité(e) à rejoindre FSAO Iris en tant que {role_label}.
 
 Pour compléter votre inscription, cliquez sur le lien ci-dessous :
 {invitation_link}
@@ -344,11 +344,11 @@ Pour compléter votre inscription, cliquez sur le lien ci-dessous :
 Ce lien expire dans 7 jours.
 
 Cordialement,
-L'équipe GMAO Iris
+L'équipe FSAO Iris
 
 ---
 Ceci est un email automatique, merci de ne pas y répondre.
-© 2025 GMAO Iris - Tous droits réservés
+© 2025 FSAO Iris - Tous droits réservés
     """
     
     return send_email(to_email, subject, html_content, text_content)
@@ -366,7 +366,7 @@ def send_password_reset_email(to_email: str, prenom: str, reset_url: str) -> boo
     Returns:
         bool: True si envoi réussi, False sinon
     """
-    subject = "Réinitialisation de votre mot de passe - GMAO Iris"
+    subject = "Réinitialisation de votre mot de passe - FSAO Iris"
     
     html_content = f"""
 <!DOCTYPE html>
@@ -391,7 +391,7 @@ def send_password_reset_email(to_email: str, prenom: str, reset_url: str) -> boo
         <div class="content">
             <p>Bonjour {prenom},</p>
             
-            <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte GMAO Iris.</p>
+            <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte FSAO Iris.</p>
             
             <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
             
@@ -413,11 +413,11 @@ def send_password_reset_email(to_email: str, prenom: str, reset_url: str) -> boo
                 <a href="{reset_url}" style="color: #4F46E5; word-break: break-all;">{reset_url}</a>
             </p>
             
-            <p>Cordialement,<br>L'équipe GMAO Iris</p>
+            <p>Cordialement,<br>L'équipe FSAO Iris</p>
         </div>
         <div class="footer">
             <p>Ceci est un email automatique, merci de ne pas y répondre.</p>
-            <p>© 2025 GMAO Iris - Tous droits réservés</p>
+            <p>© 2025 FSAO Iris - Tous droits réservés</p>
         </div>
     </div>
 </body>
@@ -427,7 +427,7 @@ def send_password_reset_email(to_email: str, prenom: str, reset_url: str) -> boo
     text_content = f"""
 Bonjour {prenom},
 
-Vous avez demandé la réinitialisation de votre mot de passe pour votre compte GMAO Iris.
+Vous avez demandé la réinitialisation de votre mot de passe pour votre compte FSAO Iris.
 
 Cliquez sur le lien ci-dessous pour créer un nouveau mot de passe :
 {reset_url}
@@ -438,11 +438,11 @@ Cliquez sur le lien ci-dessous pour créer un nouveau mot de passe :
 - Ne partagez jamais ce lien avec personne
 
 Cordialement,
-L'équipe GMAO Iris
+L'équipe FSAO Iris
 
 ---
 Ceci est un email automatique, merci de ne pas y répondre.
-© 2025 GMAO Iris - Tous droits réservés
+© 2025 FSAO Iris - Tous droits réservés
     """
     
     return send_email(to_email, subject, html_content, text_content)
@@ -460,7 +460,7 @@ def send_account_created_email(to_email: str, temp_password: str, prenom: str) -
     Returns:
         bool: True si envoi réussi
     """
-    subject = "Votre compte GMAO Iris a été créé"
+    subject = "Votre compte FSAO Iris a été créé"
     
     # Version HTML
     html_content = f"""
@@ -517,11 +517,11 @@ def send_account_created_email(to_email: str, temp_password: str, prenom: str) -
     <body>
         <div class="container">
             <div class="header">
-                <h1>🔧 GMAO Iris</h1>
+                <h1>🔧 FSAO Iris</h1>
             </div>
             <div class="content">
                 <h2>Bonjour {prenom},</h2>
-                <p>Votre compte GMAO Iris a été créé avec succès !</p>
+                <p>Votre compte FSAO Iris a été créé avec succès !</p>
                 
                 <div class="credentials">
                     <p><strong>Vos identifiants de connexion :</strong></p>
@@ -535,11 +535,11 @@ def send_account_created_email(to_email: str, temp_password: str, prenom: str) -
                     <a href="{APP_URL}" class="button">Se connecter</a>
                 </div>
                 
-                <p>Cordialement,<br>L'équipe GMAO Iris</p>
+                <p>Cordialement,<br>L'équipe FSAO Iris</p>
             </div>
             <div class="footer">
                 <p>Ceci est un email automatique, merci de ne pas y répondre.</p>
-                <p>© 2025 GMAO Iris - Tous droits réservés</p>
+                <p>© 2025 FSAO Iris - Tous droits réservés</p>
             </div>
         </div>
     </body>
@@ -550,7 +550,7 @@ def send_account_created_email(to_email: str, temp_password: str, prenom: str) -
     text_content = f"""
 Bonjour {prenom},
 
-Votre compte GMAO Iris a été créé avec succès !
+Votre compte FSAO Iris a été créé avec succès !
 
 Vos identifiants de connexion :
 Email : {to_email}
@@ -561,11 +561,11 @@ Mot de passe temporaire : {temp_password}
 Connectez-vous sur : {APP_URL}
 
 Cordialement,
-L'équipe GMAO Iris
+L'équipe FSAO Iris
 
 ---
 Ceci est un email automatique, merci de ne pas y répondre.
-© 2025 GMAO Iris - Tous droits réservés
+© 2025 FSAO Iris - Tous droits réservés
     """
     
     return send_email(to_email, subject, html_content, text_content)
@@ -584,7 +584,7 @@ def init_email_service():
     SMTP_USERNAME = os.environ.get('SMTP_USER', os.environ.get('SMTP_USERNAME', ''))
     SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
     SMTP_SENDER_EMAIL = os.environ.get('SMTP_FROM_EMAIL', os.environ.get('SMTP_SENDER_EMAIL', 'noreply@gmao-iris.com'))
-    SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'GMAO Iris')
+    SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'FSAO Iris')
     SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
     
     logger.info(f"📧 Service email réinitialisé : {SMTP_SERVER}:{SMTP_PORT}")
@@ -602,7 +602,7 @@ def send_test_email(to_email: str) -> bool:
     Returns:
         bool: True si envoi réussi, False sinon
     """
-    subject = "🧪 Test de configuration SMTP - GMAO Iris"
+    subject = "🧪 Test de configuration SMTP - FSAO Iris"
     
     html_content = f"""
 <!DOCTYPE html>
@@ -670,7 +670,7 @@ def send_test_email(to_email: str) -> bool:
             <p><strong>Date d'envoi :</strong> {datetime.now().strftime("%d/%m/%Y à %H:%M")}</p>
         </div>
         
-        <p>Vous pouvez maintenant utiliser les fonctionnalités d'envoi d'email de GMAO Iris en toute confiance :</p>
+        <p>Vous pouvez maintenant utiliser les fonctionnalités d'envoi d'email de FSAO Iris en toute confiance :</p>
         <ul>
             <li>Notifications de demandes d'intervention</li>
             <li>Alertes de maintenance préventive</li>
@@ -679,15 +679,15 @@ def send_test_email(to_email: str) -> bool:
         </ul>
     </div>
     <div class="footer">
-        Ceci est un email de test automatique envoyé depuis GMAO Iris.<br>
-        © 2025 GMAO Iris - Tous droits réservés
+        Ceci est un email de test automatique envoyé depuis FSAO Iris.<br>
+        © 2025 FSAO Iris - Tous droits réservés
     </div>
 </body>
 </html>
     """
     
     text_content = f"""
-🧪 Test SMTP - GMAO Iris
+🧪 Test SMTP - FSAO Iris
 
 ✅ Félicitations !
 Si vous recevez cet email, cela signifie que votre configuration SMTP fonctionne correctement.
@@ -696,11 +696,11 @@ Si vous recevez cet email, cela signifie que votre configuration SMTP fonctionne
 Destinataire : {to_email}
 Date d'envoi : {datetime.now().strftime("%d/%m/%Y à %H:%M")}
 
-Vous pouvez maintenant utiliser les fonctionnalités d'envoi d'email de GMAO Iris.
+Vous pouvez maintenant utiliser les fonctionnalités d'envoi d'email de FSAO Iris.
 
 ---
-Ceci est un email de test automatique envoyé depuis GMAO Iris.
-© 2025 GMAO Iris - Tous droits réservés
+Ceci est un email de test automatique envoyé depuis FSAO Iris.
+© 2025 FSAO Iris - Tous droits réservés
     """
     
     return send_email(to_email, subject, html_content, text_content)
@@ -722,7 +722,7 @@ def send_critical_nc_alert_email(
     """
     Envoie un email d'alerte pour les non-conformités critiques détectées par l'IA.
     """
-    subject = f"ALERTE NC Critique - {service_name} - GMAO Iris"
+    subject = f"ALERTE NC Critique - {service_name} - FSAO Iris"
 
     patterns_html = ""
     for p in critical_patterns:
@@ -777,7 +777,7 @@ def send_critical_nc_alert_email(
     <div class="container">
         <div class="header">
             <h1 style="margin:0;">ALERTE Non-Conformites Critiques</h1>
-            <p style="margin:5px 0 0;opacity:0.9;">Analyse IA - GMAO Iris</p>
+            <p style="margin:5px 0 0;opacity:0.9;">Analyse IA - FSAO Iris</p>
         </div>
         <div class="content">
             <p>Bonjour <strong>{responsable_name}</strong>,</p>
@@ -819,17 +819,17 @@ def send_critical_nc_alert_email(
 
             {"<h3 class='section-title'>Actions correctives suggerees par l'IA</h3><ul style='background:#fff;padding:20px 20px 20px 35px;border-radius:8px;border:1px solid #e5e7eb;'>" + wo_html + "</ul>" if wo_html else ""}
 
-            <p style="margin-top:25px;">Connectez-vous a GMAO Iris pour consulter le rapport complet et creer les ordres de travail curatifs.</p>
+            <p style="margin-top:25px;">Connectez-vous a FSAO Iris pour consulter le rapport complet et creer les ordres de travail curatifs.</p>
 
             <div style="text-align:center;margin:25px 0;">
                 <a href="{APP_URL}" style="display:inline-block;padding:12px 30px;background:#dc2626;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Voir le rapport complet</a>
             </div>
 
-            <p>Cordialement,<br>GMAO Iris - Systeme d'Alertes Automatiques</p>
+            <p>Cordialement,<br>FSAO Iris - Systeme d'Alertes Automatiques</p>
         </div>
         <div class="footer">
-            <p>Ceci est un email automatique genere par l'analyse IA de GMAO Iris.</p>
-            <p>&copy; 2025 GMAO Iris - Tous droits reserves</p>
+            <p>Ceci est un email automatique genere par l'analyse IA de FSAO Iris.</p>
+            <p>&copy; 2025 FSAO Iris - Tous droits reserves</p>
         </div>
     </div>
 </body>
@@ -837,7 +837,7 @@ def send_critical_nc_alert_email(
     """
 
     text_content = f"""
-ALERTE Non-Conformites Critiques - GMAO Iris
+ALERTE Non-Conformites Critiques - FSAO Iris
 
 Bonjour {responsable_name},
 
@@ -850,10 +850,10 @@ Statistiques:
 - Non-conformites: {stats.get('total_non_conformities',0)}
 - Patterns critiques: {len(critical_patterns)}
 
-Connectez-vous a GMAO Iris pour consulter le rapport complet.
+Connectez-vous a FSAO Iris pour consulter le rapport complet.
 
 Cordialement,
-GMAO Iris
+FSAO Iris
     """
 
     return send_email(to_email, subject, html_content, text_content)

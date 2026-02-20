@@ -1,5 +1,5 @@
 """
-Test Import/Export Module - GMAO Iris
+Test Import/Export Module - FSAO Iris
 Tests for export/import endpoints including new modules (M.E.S., cameras, reports, etc.)
 """
 import pytest

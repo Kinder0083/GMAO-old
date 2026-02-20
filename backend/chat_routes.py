@@ -1231,7 +1231,7 @@ async def transfer_by_email(
         email_body = f"""
 Bonjour {recipient_name},
 
-{sender_name} vous a partagé un fichier depuis le Chat Live de GMAO Iris :
+{sender_name} vous a partagé un fichier depuis le Chat Live de FSAO Iris :
 
 Fichier : {attachment.get("original_filename")}
 Taille : {attachment.get("file_size") // 1024} KB
@@ -1241,7 +1241,7 @@ Taille : {attachment.get("file_size") // 1024} KB
 Le fichier est joint à cet email.
 
 Cordialement,
-GMAO Iris
+FSAO Iris
         """
         
         try:

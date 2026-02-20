@@ -83,7 +83,7 @@ const RestoreTab = () => {
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-600 space-y-2">
             <p className="font-medium text-gray-900">Comment utiliser cette fonctionnalité :</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>Sélectionnez un fichier <strong>.zip</strong> généré par les sauvegardes automatiques de GMAO Iris</li>
+              <li>Sélectionnez un fichier <strong>.zip</strong> généré par les sauvegardes automatiques de FSAO Iris</li>
               <li>Le ZIP doit contenir un fichier <strong>data.xlsx</strong> (données) et éventuellement un dossier <strong>uploads/</strong> (fichiers joints)</li>
               <li>Choisissez le mode de restauration puis cliquez sur "Restaurer"</li>
             </ul>

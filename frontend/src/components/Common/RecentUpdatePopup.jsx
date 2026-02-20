@@ -67,7 +67,7 @@ const RecentUpdatePopup = () => {
             Nouvelle mise à jour installée !
           </DialogTitle>
           <DialogDescription>
-            GMAO Iris a été mis à jour le {appliedDate}
+            FSAO Iris a été mis à jour le {appliedDate}
           </DialogDescription>
         </DialogHeader>
 

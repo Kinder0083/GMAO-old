@@ -258,7 +258,7 @@ async def initialize_default_manual(current_user: dict):
         chapter1 = {
             "id": "ch-001",
             "title": "🚀 Guide de Démarrage",
-            "description": "Premiers pas avec GMAO Iris",
+            "description": "Premiers pas avec FSAO Iris",
             "icon": "Rocket",
             "order": 1,
             "sections": ["sec-001-01", "sec-001-02"],
@@ -272,8 +272,8 @@ async def initialize_default_manual(current_user: dict):
         section1_1 = {
             "id": "sec-001-01",
             "chapter_id": "ch-001",
-            "title": "Bienvenue dans GMAO Iris",
-            "content": """GMAO Iris est votre solution complète de gestion de maintenance assistée par ordinateur.
+            "title": "Bienvenue dans FSAO Iris",
+            "content": """FSAO Iris est votre solution complète de gestion de maintenance assistée par ordinateur.
 
 📌 **Qu'est-ce qu'une GMAO ?**
 
@@ -285,7 +285,7 @@ Une GMAO (Gestion de Maintenance Assistée par Ordinateur) est un logiciel qui p
 • Traçabilité des actions
 • Analyse des performances
 
-🎯 **Objectifs de GMAO Iris :**
+🎯 **Objectifs de FSAO Iris :**
 
 1. **Optimiser** la maintenance préventive et curative
 2. **Réduire** les temps d'arrêt des équipements
@@ -318,11 +318,11 @@ Une GMAO (Gestion de Maintenance Assistée par Ordinateur) est un logiciel qui p
             "id": "sec-001-02",
             "chapter_id": "ch-001",
             "title": "Connexion et Navigation",
-            "content": """📱 **Se Connecter à GMAO Iris**
+            "content": """📱 **Se Connecter à FSAO Iris**
 
 1. **Accéder à l'application**
    • Ouvrez votre navigateur web (Chrome, Firefox, Edge, Safari)
-   • Saisissez l'URL de GMAO Iris
+   • Saisissez l'URL de FSAO Iris
    • Bookmark la page pour un accès rapide
 
 2. **Première Connexion**
@@ -404,7 +404,7 @@ Le M.E.S. (Manufacturing Execution System) est un module de suivi de production 
 1. Un capteur (contact sec) est installé sur la machine
 2. Chaque impulsion (1/0) = 1 coup = 1 produit fabriqué
 3. Le capteur envoie les données via MQTT
-4. GMAO Iris reçoit et analyse les données en temps réel
+4. FSAO Iris reçoit et analyse les données en temps réel
 5. Les métriques et alertes sont mises à jour automatiquement
 
 📊 **Indicateurs disponibles**
@@ -625,8 +625,8 @@ async def export_manual_pdf(
             leftMargin=2*cm,
             topMargin=2*cm,
             bottomMargin=2*cm,
-            title="Manuel Utilisateur GMAO Iris",
-            author="GMAO Iris"
+            title="Manuel Utilisateur FSAO Iris",
+            author="FSAO Iris"
         )
         
         # Styles
@@ -682,7 +682,7 @@ async def export_manual_pdf(
         # Page de garde
         story.append(Spacer(1, 3*cm))
         story.append(Paragraph("Manuel Utilisateur", title_style))
-        story.append(Paragraph("GMAO Iris", title_style))
+        story.append(Paragraph("FSAO Iris", title_style))
         story.append(Spacer(1, 1*cm))
         story.append(Paragraph(f"Version {manual_content['version']}", styles['Normal']))
         story.append(Paragraph(f"Généré le {datetime.now(timezone.utc).strftime('%d/%m/%Y à %H:%M')}", styles['Normal']))
@@ -1047,7 +1047,7 @@ Le M.E.S. (Manufacturing Execution System) est un module de suivi de production 
 1. Un capteur (contact sec) est installé sur la machine
 2. Chaque impulsion (1/0) = 1 coup = 1 produit fabriqué
 3. Le capteur envoie les données via MQTT
-4. GMAO Iris reçoit et analyse les données en temps réel
+4. FSAO Iris reçoit et analyse les données en temps réel
 5. Les métriques et alertes sont mises à jour automatiquement""",
                 "order": 1,
                 "level": "beginner",

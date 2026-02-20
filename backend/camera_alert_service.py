@@ -177,12 +177,12 @@ async def send_camera_offline_alert(
                     </table>
                     
                     <p style="color: #666; margin-top: 20px;">
-                        Cette alerte a été générée automatiquement par le système de surveillance GMAO Iris.
+                        Cette alerte a été générée automatiquement par le système de surveillance FSAO Iris.
                         Veuillez vérifier l'état de la caméra et sa connexion réseau.
                     </p>
                 </div>
                 <div style="background-color: #f8f8f8; padding: 15px; text-align: center; font-size: 12px; color: #888;">
-                    GMAO Iris - Système de Gestion de Maintenance
+                    FSAO Iris - Système de Gestion de Maintenance
                 </div>
             </div>
         </body>
@@ -246,7 +246,7 @@ async def send_camera_back_online_alert(
                     </p>
                 </div>
                 <div style="background-color: #f8f8f8; padding: 15px; text-align: center; font-size: 12px; color: #888;">
-                    GMAO Iris - Système de Gestion de Maintenance
+                    FSAO Iris - Système de Gestion de Maintenance
                 </div>
             </div>
         </body>

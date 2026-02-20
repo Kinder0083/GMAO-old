@@ -1,5 +1,5 @@
 """
-Service de sauvegarde automatique pour GMAO Iris
+Service de sauvegarde automatique pour FSAO Iris
 Gère l'exécution des backups, le stockage local/Google Drive et le nettoyage
 """
 import io
@@ -355,14 +355,14 @@ async def _send_backup_email(schedule: dict, status: str, file_size: int = 0, mo
 
     if status == "success":
         size_mb = round(file_size / (1024 * 1024), 2)
-        subject = "GMAO Iris - Sauvegarde automatique réussie"
+        subject = "FSAO Iris - Sauvegarde automatique réussie"
         html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #059669; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
                 <h2 style="margin: 0;">Sauvegarde réussie</h2>
             </div>
             <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
-                <p>La sauvegarde automatique de GMAO Iris s'est terminée avec succès.</p>
+                <p>La sauvegarde automatique de FSAO Iris s'est terminée avec succès.</p>
                 <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
                     <tr><td style="padding: 8px; color: #6b7280;">Date</td><td style="padding: 8px; font-weight: bold;">{now}</td></tr>
                     <tr><td style="padding: 8px; color: #6b7280;">Modules</td><td style="padding: 8px; font-weight: bold;">{module_count} modules</td></tr>
@@ -374,14 +374,14 @@ async def _send_backup_email(schedule: dict, status: str, file_size: int = 0, mo
         </div>
         """
     else:
-        subject = "GMAO Iris - ECHEC sauvegarde automatique"
+        subject = "FSAO Iris - ECHEC sauvegarde automatique"
         html = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
                 <h2 style="margin: 0;">Echec de sauvegarde</h2>
             </div>
             <div style="border: 1px solid #e5e7eb; border-top: none; padding: 20px; border-radius: 0 0 8px 8px;">
-                <p>La sauvegarde automatique de GMAO Iris a échoué.</p>
+                <p>La sauvegarde automatique de FSAO Iris a échoué.</p>
                 <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
                     <tr><td style="padding: 8px; color: #6b7280;">Date</td><td style="padding: 8px; font-weight: bold;">{now}</td></tr>
                     <tr><td style="padding: 8px; color: #6b7280;">Erreur</td><td style="padding: 8px; font-weight: bold; color: #dc2626;">{error_msg}</td></tr>

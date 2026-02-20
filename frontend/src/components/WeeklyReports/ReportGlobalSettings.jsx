@@ -18,7 +18,7 @@ const ReportGlobalSettings = ({ onSave }) => {
     enabled: true,
     default_timezone: 'Europe/Paris',
     sender_email: '',
-    sender_name: 'GMAO Iris - Rapports'
+    sender_name: 'FSAO Iris - Rapports'
   });
 
   useEffect(() => {
@@ -149,7 +149,7 @@ const ReportGlobalSettings = ({ onSave }) => {
             <Input
               value={settings.sender_name}
               onChange={(e) => setSettings(prev => ({ ...prev, sender_name: e.target.value }))}
-              placeholder="GMAO Iris - Rapports"
+              placeholder="FSAO Iris - Rapports"
             />
           </div>
 

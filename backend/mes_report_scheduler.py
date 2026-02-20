@@ -180,7 +180,7 @@ class MESReportScheduler:
             
             <p>Consultez le fichier joint pour les details complets.</p>
             <p style="color: #888; font-size: 12px; margin-top: 30px;">
-                Ce rapport a ete genere automatiquement par GMAO Iris.<br>
+                Ce rapport a ete genere automatiquement par FSAO Iris.<br>
                 Pour modifier ou desactiver ce rapport, connectez-vous a l'application.
             </p>
         </body>
@@ -350,7 +350,7 @@ class MESReportScheduler:
             return
         
         msg = MIMEMultipart()
-        msg['From'] = f"GMAO Iris <{sender_email}>"
+        msg['From'] = f"FSAO Iris <{sender_email}>"
         msg['To'] = recipient
         msg['Subject'] = subject
         

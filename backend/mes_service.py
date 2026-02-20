@@ -589,7 +589,7 @@ class MESService:
                         <td style="padding:8px 0;">{now_str}</td></tr>
                 </table>
             </div>
-            <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">GMAO Iris - Systeme M.E.S.</p>
+            <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:16px;">FSAO Iris - Systeme M.E.S.</p>
         </div>
         """
         subject = f"[M.E.S.] {alert_label} - {equipment_name}"

@@ -266,7 +266,7 @@ class PurchaseRequestService:
                     
                     <p style="color: #666; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px;">
                         Ce lien est valable pendant 7 jours. Si vous ne pouvez pas cliquer sur les boutons, 
-                        vous pouvez vous connecter à GMAO Iris pour traiter cette demande.
+                        vous pouvez vous connecter à FSAO Iris pour traiter cette demande.
                     </p>
                 </div>
             </body>

@@ -1,5 +1,5 @@
 """
-Service de gestion des mises à jour GMAO Iris
+Service de gestion des mises à jour FSAO Iris
 VERSION CORRIGÉE - Détection automatique des chemins
 """
 import os
@@ -795,7 +795,7 @@ class UpdateService:
                     mode='w', suffix='.sh', prefix='gmao_restart_', dir='/tmp', delete=False
                 )
                 restart_script.write(f"""#!/bin/bash
-# Redémarrage post-mise-à-jour GMAO Iris
+# Redémarrage post-mise-à-jour FSAO Iris
 sleep 3
 
 # Tenter supervisorctl

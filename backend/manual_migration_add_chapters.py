@@ -151,7 +151,7 @@ NEW_SECTIONS = [
         "title": "Presentation du module Cameras",
         "content": """**Module Cameras RTSP/ONVIF**
 
-Le module Cameras permet de visualiser et gerer vos cameras de surveillance industrielle directement depuis GMAO Iris.
+Le module Cameras permet de visualiser et gerer vos cameras de surveillance industrielle directement depuis FSAO Iris.
 
 **Fonctionnalites principales :**
 - Visualisation en temps reel des flux RTSP
@@ -610,7 +610,7 @@ Depuis la sidebar, cliquez sur **Analytics Checklists**.""",
         "title": "Presentation de la Personnalisation",
         "content": """**Personnalisation de l'interface**
 
-La page Personnalisation permet d'adapter l'interface de GMAO Iris a vos preferences.
+La page Personnalisation permet d'adapter l'interface de FSAO Iris a vos preferences.
 
 **Sections disponibles :**
 - **Organisation des menus** : Reorganisez, masquez ou groupez les menus
@@ -1093,7 +1093,7 @@ Cliquez sur **"Imprimer le rapport"** pour ouvrir la fenetre d'impression du nav
         "title": "Visite guidee adaptee a votre profil",
         "content": """**La visite guidee personnalisee**
 
-Lors de votre premiere connexion, GMAO Iris vous propose une visite guidee interactive pour decouvrir les fonctionnalites essentielles. Cette visite est **automatiquement adaptee a votre profil** (service).
+Lors de votre premiere connexion, FSAO Iris vous propose une visite guidee interactive pour decouvrir les fonctionnalites essentielles. Cette visite est **automatiquement adaptee a votre profil** (service).
 
 **Les profils disponibles :**
 

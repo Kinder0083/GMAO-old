@@ -4452,7 +4452,7 @@ async def get_smtp_config(current_user: dict = Depends(get_current_admin_user)):
             smtp_user=os.environ.get('SMTP_USER', ''),
             smtp_password='****' if os.environ.get('SMTP_PASSWORD') else '',  # Masquer le mot de passe
             smtp_from_email=os.environ.get('SMTP_FROM_EMAIL', ''),
-            smtp_from_name=os.environ.get('SMTP_FROM_NAME', 'GMAO Iris'),
+            smtp_from_name=os.environ.get('SMTP_FROM_NAME', 'FSAO Iris'),
             smtp_use_tls=os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true',
             frontend_url=os.environ.get('FRONTEND_URL', ''),
             backend_url=os.environ.get('BACKEND_URL', '')
@@ -4695,7 +4695,7 @@ async def submit_support_request(
                 <!-- Pied de page -->
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
                     <p style="color: #aaa; font-size: 10px; margin: 0; text-align: center;">
-                        Demande envoyée le {date_display} depuis GMAO Iris - Centre d'aide
+                        Demande envoyée le {date_display} depuis FSAO Iris - Centre d'aide
                     </p>
                 </div>
             </div>
@@ -4823,7 +4823,7 @@ async def request_help(
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🆘 Demande d'Aide - GMAO Iris</h1>
+                    <h1>🆘 Demande d'Aide - FSAO Iris</h1>
                     <p style="margin: 5px 0;">ID: {request_id}</p>
                 </div>
                 
@@ -4854,7 +4854,7 @@ async def request_help(
                 </div>
                 
                 <div class="footer">
-                    <p>Cette demande d'aide a été générée automatiquement par GMAO Iris</p>
+                    <p>Cette demande d'aide a été générée automatiquement par FSAO Iris</p>
                     <p>Pour répondre à l'utilisateur, envoyez un email à: {user_email}</p>
                 </div>
             </div>

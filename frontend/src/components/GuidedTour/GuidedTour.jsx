@@ -8,7 +8,7 @@ import { X, ChevronLeft, ChevronRight, SkipForward } from 'lucide-react';
 // ========================================================
 const COMMON_INTRO = (serviceName) => ({
   target: 'body',
-  title: 'Bienvenue sur GMAO Iris !',
+  title: 'Bienvenue sur FSAO Iris !',
   content: serviceName
     ? `Cette visite est adaptee a votre profil ${serviceName}. Decouvrez les modules essentiels pour votre activite.`
     : 'Cette visite guidee va vous presenter les principales fonctionnalites de l\'application.',
@@ -57,8 +57,8 @@ const COMMON_OUTRO = (serviceName) => ({
   target: 'body',
   title: 'Visite terminee !',
   content: serviceName
-    ? `Vous etes pret a utiliser GMAO Iris avec votre profil ${serviceName}.`
-    : 'Vous etes maintenant pret a utiliser GMAO Iris.',
+    ? `Vous etes pret a utiliser FSAO Iris avec votre profil ${serviceName}.`
+    : 'Vous etes maintenant pret a utiliser FSAO Iris.',
   subContent: 'Vous pouvez relancer cette visite a tout moment depuis Parametres > Visite guidee.',
   placement: 'center',
   isOutro: true

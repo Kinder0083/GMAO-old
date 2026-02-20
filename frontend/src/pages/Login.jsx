@@ -94,11 +94,11 @@ const Login = () => {
           <div className="inline-flex items-center justify-center mb-6">
             <img 
               src="/logo-iris.png" 
-              alt="GMAO Iris" 
+              alt="FSAO Iris" 
               className="w-60 h-60 object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">GMAO Iris</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">FSAO Iris</h1>
           <p className="text-gray-600 mb-6">Gestion de Maintenance Assistée par Ordinateur</p>
           <p className="text-sm text-gray-500 mb-1">Concepteur: Grèg</p>
           <p className="text-sm text-gray-500 mb-6">Version {version}</p>
@@ -162,7 +162,7 @@ const Login = () => {
         </Card>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          © 2025 GMAO Iris - Tous droits réservés
+          © 2025 FSAO Iris - Tous droits réservés
         </p>
       </div>
       

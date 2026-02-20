@@ -185,7 +185,7 @@ const DEFAULT_CONFIG = {
   icon: '❓',
   description: 'Comment puis-je vous aider ?',
   quickActions: [
-    { label: 'Guide général', question: 'Présente-moi les fonctionnalités principales de GMAO Iris' },
+    { label: 'Guide général', question: 'Présente-moi les fonctionnalités principales de FSAO Iris' },
     { label: 'Créer un OT', question: 'Comment créer un ordre de travail ?' },
     { label: 'Contacter le support', question: 'Comment contacter le support technique ?' },
   ],

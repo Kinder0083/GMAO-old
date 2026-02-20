@@ -109,7 +109,7 @@ const HIGHLIGHT_STYLES = {
 // Guides prédéfinis pour les tutoriels avancés
 const PREDEFINED_GUIDES = {
   'explorer-dashboard': [
-    { route: '/dashboard', message: '📊 Bienvenue sur le Tableau de Bord GMAO Iris !', delay: 500 },
+    { route: '/dashboard', message: '📊 Bienvenue sur le Tableau de Bord FSAO Iris !', delay: 500 },
     { highlight: '.dashboard-stats, .stats-grid, [data-testid="stats"]', message: '📈 Ces cartes affichent les statistiques clés en temps réel', arrowPosition: 'bottom' },
     { highlight: '.recent-work-orders, [data-testid="recent-ot"]', message: '📋 Ici vous voyez les derniers ordres de travail', arrowPosition: 'left' },
     { message: '✅ Vous pouvez maintenant explorer le tableau de bord !' }

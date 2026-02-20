@@ -801,7 +801,7 @@ async def _send_contract_alert_email(alerts):
             return
 
         html = """
-        <h2>Alertes Contrats - GMAO Iris</h2>
+        <h2>Alertes Contrats - FSAO Iris</h2>
         <table style="border-collapse: collapse; width: 100%;">
         <tr style="background: #f3f4f6;">
             <th style="padding: 8px; border: 1px solid #e5e7eb; text-align: left;">Type</th>
@@ -823,7 +823,7 @@ async def _send_contract_alert_email(alerts):
             """
         html += "</table>"
 
-        subject = f"[GMAO Iris] {len(alerts)} alerte(s) contrat(s)"
+        subject = f"[FSAO Iris] {len(alerts)} alerte(s) contrat(s)"
         for admin in admins:
             email = admin.get("email")
             if email:

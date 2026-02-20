@@ -532,7 +532,7 @@ def generate_html_report(report_data: Dict[str, Any]) -> str:
         
         <!-- Footer -->
         <div style="margin-top: 40px; padding: 20px; background: #f1f5f9; border-radius: 8px; text-align: center; color: #64748b; font-size: 12px;">
-            <p style="margin: 0;">Rapport généré automatiquement par GMAO Iris</p>
+            <p style="margin: 0;">Rapport généré automatiquement par FSAO Iris</p>
             <p style="margin: 5px 0 0 0;">{report_data.get('generated_at', '')}</p>
         </div>
         

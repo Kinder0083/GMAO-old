@@ -1,5 +1,5 @@
 """
-Test AI Button Visibility - GMAO Iris
+Test AI Button Visibility - FSAO Iris
 Focuses on verifying AI features work correctly:
 1. AI Work Order Diagnostic
 2. AI Work Order Summary

@@ -217,7 +217,7 @@ const UpdateNotificationBadge = () => {
               Mise à jour disponible
             </DialogTitle>
             <DialogDescription>
-              Une nouvelle version de GMAO Iris est disponible
+              Une nouvelle version de FSAO Iris est disponible
             </DialogDescription>
           </DialogHeader>
 

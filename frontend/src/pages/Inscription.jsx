@@ -186,7 +186,7 @@ const Inscription = () => {
           </div>
           <CardTitle className="text-2xl text-center">Nouvelle Inscription</CardTitle>
           <CardDescription className="text-center">
-            Complétez votre profil pour rejoindre GMAO Iris
+            Complétez votre profil pour rejoindre FSAO Iris
           </CardDescription>
         </CardHeader>
         <CardContent>

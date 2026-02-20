@@ -1,5 +1,5 @@
 """
-Test Automations Module - Points 5 et 6 GMAO Iris
+Test Automations Module - Points 5 et 6 FSAO Iris
 Tests CRUD /api/automations/ endpoints + Adria enriched context
 """
 import pytest

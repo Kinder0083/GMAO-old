@@ -255,7 +255,7 @@ async def send_improvement_request_email_to_manager(
                 <div style="background: #f5f5f5; padding: 15px; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none;">
                     <p style="color: #888; font-size: 11px; margin: 0; text-align: center;">
                         Ces liens sont valables pendant <strong>7 jours</strong>. Passé ce délai, veuillez vous connecter à 
-                        <a href="{FRONTEND_URL}" style="color: #1976d2;">GMAO Iris</a> pour traiter cette demande.
+                        <a href="{FRONTEND_URL}" style="color: #1976d2;">FSAO Iris</a> pour traiter cette demande.
                     </p>
                     <p style="color: #aaa; font-size: 10px; margin: 10px 0 0 0; text-align: center;">
                         Cet email a été envoyé automatiquement par le système GMAO. Ne pas répondre à cet email.
