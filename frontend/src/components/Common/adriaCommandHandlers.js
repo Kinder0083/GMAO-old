@@ -75,17 +75,25 @@ export const resolveInventoryParts = async (pieces) => {
   }
 };
 
-/** Chercher un OT par référence ou titre */
+/** Chercher un OT par référence ou titre - priorité: numero exact > numero partiel > id > titre */
 export const findWorkOrder = async (reference) => {
   const searchRef = (reference || '').replace('#', '').trim();
   if (!searchRef) return null;
   const res = await workOrdersAPI.getAll();
   const list = res.data || [];
-  return list.find(wo =>
-    wo.id?.includes(searchRef) ||
-    wo.numero?.includes(searchRef) ||
-    wo.titre?.toLowerCase().includes(searchRef.toLowerCase())
-  ) || null;
+  // Priorité 1: numéro exact
+  const exactNumero = list.find(wo => wo.numero === searchRef);
+  if (exactNumero) return exactNumero;
+  // Priorité 2: numéro contient
+  const partialNumero = list.find(wo => wo.numero?.includes(searchRef));
+  if (partialNumero) return partialNumero;
+  // Priorité 3: id contient
+  const idMatch = list.find(wo => wo.id?.includes(searchRef));
+  if (idMatch) return idMatch;
+  // Priorité 4: titre contient
+  const titreMatch = list.find(wo => wo.titre?.toLowerCase().includes(searchRef.toLowerCase()));
+  if (titreMatch) return titreMatch;
+  return null;
 };
 
 /** Parser un temps au format flexible (2h, 1h30, 2h30min, 1.5) → {hours, minutes} */
