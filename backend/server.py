@@ -1191,6 +1191,14 @@ async def get_work_order(wo_id: str, current_user: dict = Depends(require_permis
             raise HTTPException(status_code=404, detail="Ordre de travail non trouvé")
         
         wo = serialize_doc(wo)
+        
+        # Normaliser statut/priorite
+        VALID_STATUTS = {"OUVERT", "EN_COURS", "EN_ATTENTE", "TERMINE"}
+        STATUT_MAP = {"en_attente": "EN_ATTENTE", "en_cours": "EN_COURS", "ouvert": "OUVERT", "termine": "TERMINE"}
+        raw_statut = wo.get("statut", "")
+        if raw_statut and raw_statut not in VALID_STATUTS:
+            wo["statut"] = STATUT_MAP.get(raw_statut.lower(), raw_statut.upper() if raw_statut.upper() in VALID_STATUTS else "EN_ATTENTE")
+        
         if wo.get("assigne_a_id"):
             wo["assigneA"] = await get_user_by_id(wo["assigne_a_id"])
         if wo.get("emplacement_id"):
@@ -1201,18 +1209,14 @@ async def get_work_order(wo_id: str, current_user: dict = Depends(require_permis
         # Ajouter le nom du créateur
         if wo.get("createdBy"):
             try:
-                # Essayer de chercher par ObjectId
                 creator = await db.users.find_one({"_id": ObjectId(wo["createdBy"])})
                 if creator:
                     wo["createdByName"] = f"{creator.get('prenom', '')} {creator.get('nom', '')}".strip()
                 else:
-                    # Sinon essayer par le champ id (UUID)
                     creator = await db.users.find_one({"id": wo["createdBy"]})
                     if creator:
                         wo["createdByName"] = f"{creator.get('prenom', '')} {creator.get('nom', '')}".strip()
-            except Exception as e:
-                # Si ça échoue, laisser vide
-                logger.error(f"Erreur lors de la recherche du créateur {wo.get('createdBy')}: {e}")
+            except Exception:
                 pass
         
         # Ajouter un numero par défaut si manquant
