@@ -31,21 +31,19 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) full-stack av
 
 ### 5. Refactoring create_batch_from_ai - TERMINÉ
 - Décomposition en 8 fonctions spécialisées
-- Fonction principale réduite de ~450 à ~100 lignes
 
 ### 6. Bug Fix: Assignation OT via Adria - TERMINÉ (Fév 2026)
-- Cause racine: `update_work_order` utilisait `{"id": ...}` au lieu de `{"_id": ...}` pour le filtre MongoDB
-- Documents MongoDB sans champ `id` (seulement `_id`) n'étaient pas mis à jour
-- Fix: wo_filter utilise désormais `{"_id": existing_wo["_id"]}` 
+- **Cause racine 1**: `update_work_order` utilisait `{"id": ...}` au lieu de `{"_id": ...}` pour le filtre MongoDB → updates silencieusement ignorés
+- **Cause racine 2**: L'IA confirmait l'assignation dans le texte mais n'incluait pas `assigne_a` dans la commande JSON
+- **Fix 3 couches**: (1) Prompt IA avec REGLE CRITIQUE obligeant l'inclusion de `assigne_a`, (2) Fallback frontend auto-assignation depuis localStorage, (3) Backend utilise `_id` pour le filtre
+- **Testé**: 10/10 backend + frontend validés
 
 ### 7. Bug Fix: Crash GET /work-orders - TERMINÉ (Fév 2026)
-- Cause: Certains OT avaient `statut: "en_attente"` (minuscules) au lieu de `"EN_ATTENTE"`
-- Fix: Normalisation du statut en majuscules avant validation Pydantic
-- Migration des données existantes effectuée
+- Cause: Statuts en minuscules dans MongoDB
+- Fix: Normalisation + migration des données
 
 ### 8. Bug Fix: Rafraîchissement UI après correspondance manuelle - TERMINÉ (Fév 2026)
 - SurveillanceAIExtract: Ajout de `hasChanges` pour tracker les modifications
-- Le dialog déclenche maintenant le refresh même si fermé pendant la résolution des ambiguïtés
 
 ## Backlog
 - Aucune tâche en attente
