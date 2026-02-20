@@ -1397,6 +1397,15 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         wo = await db.work_orders.find_one(wo_filter)
         wo = serialize_doc(wo)
         
+        # Normaliser statut
+        VALID_STATUTS = {"OUVERT", "EN_COURS", "EN_ATTENTE", "TERMINE"}
+        STATUT_MAP = {"en_attente": "EN_ATTENTE", "en_cours": "EN_COURS", "ouvert": "OUVERT", "termine": "TERMINE"}
+        raw_statut = wo.get("statut", "")
+        if raw_statut and raw_statut not in VALID_STATUTS:
+            wo["statut"] = STATUT_MAP.get(raw_statut.lower(), raw_statut.upper() if raw_statut.upper() in VALID_STATUTS else "EN_ATTENTE")
+        if "numero" not in wo or not wo["numero"]:
+            wo["numero"] = "N/A"
+        
         if wo.get("assigne_a_id"):
             wo["assigneA"] = await get_user_by_id(wo["assigne_a_id"])
         if wo.get("emplacement_id"):
