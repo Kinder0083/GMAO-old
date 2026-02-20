@@ -1248,7 +1248,7 @@ async def ai_create_work_order(
                     {"nom": {"$regex": request.equipement_nom, "$options": "i"}},
                     {"reference": {"$regex": request.equipement_nom, "$options": "i"}}
                 ]
-            })
+            }, {"_id": 0})
             if equipement:
                 equipement_id = equipement.get("id")
                 equipement_data = {
