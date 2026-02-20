@@ -1240,6 +1240,8 @@ async def ai_create_work_order(
         # Chercher l'équipement si un nom est fourni
         equipement_id = None
         equipement_data = None
+        emplacement_id = None
+        emplacement_data = None
         if request.equipement_nom:
             equipement = await db.equipments.find_one({
                 "$or": [
@@ -1254,6 +1256,19 @@ async def ai_create_work_order(
                     "nom": equipement.get("nom"),
                     "reference": equipement.get("reference")
                 }
+                # Récupérer l'emplacement de l'équipement
+                if equipement.get("emplacement_id"):
+                    emplacement_id = equipement["emplacement_id"]
+                    emplacement_data = equipement.get("emplacement")
+                    if not emplacement_data:
+                        loc = await db.locations.find_one({"id": emplacement_id})
+                        if loc:
+                            emplacement_data = {"id": emplacement_id, "nom": loc.get("nom", "")}
+        
+        # Valeurs par défaut
+        priorite = (request.priorite or "NORMALE").upper()
+        date_limite = datetime.now(timezone.utc)
+        temps_estime_default = 120  # 2h00 par défaut
         
         # Parser le temps estimé
         temps_estime_minutes = None
