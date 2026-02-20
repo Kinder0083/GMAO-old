@@ -1105,10 +1105,23 @@ async def get_work_orders(
     
     work_orders = await db.work_orders.find(query).to_list(1000)
     
+    # Mapping statut/priorite valides
+    VALID_STATUTS = {"OUVERT", "EN_COURS", "EN_ATTENTE", "TERMINE"}
+    STATUT_MAP = {"en_attente": "EN_ATTENTE", "en_cours": "EN_COURS", "ouvert": "OUVERT", "termine": "TERMINE"}
+    VALID_PRIORITES = {"URGENTE", "HAUTE", "MOYENNE", "NORMALE", "BASSE", "AUCUNE"}
+    
     # Populate references
     for wo in work_orders:
         # Serialiser le document pour convertir tous les types non JSON
         wo = serialize_doc(wo)
+        
+        # Normaliser statut et priorite en majuscules
+        raw_statut = wo.get("statut", "")
+        if raw_statut and raw_statut not in VALID_STATUTS:
+            wo["statut"] = STATUT_MAP.get(raw_statut.lower(), raw_statut.upper() if raw_statut.upper() in VALID_STATUTS else "EN_ATTENTE")
+        raw_prio = wo.get("priorite", "")
+        if raw_prio and raw_prio.upper() in VALID_PRIORITES and raw_prio not in VALID_PRIORITES:
+            wo["priorite"] = raw_prio.upper()
         
         # S'assurer que attachments existe et convertir les ObjectId
         if "attachments" not in wo:
