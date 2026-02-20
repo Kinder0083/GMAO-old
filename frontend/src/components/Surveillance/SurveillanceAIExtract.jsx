@@ -18,6 +18,7 @@ function SurveillanceAIExtract({ open, onClose }) {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [result, setResult] = useState(null);
   const [ambiguousProcessing, setAmbiguousProcessing] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const [sourceFile, setSourceFile] = useState(null);
 
