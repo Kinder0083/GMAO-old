@@ -1248,22 +1248,24 @@ async def ai_create_work_order(
                     {"nom": {"$regex": request.equipement_nom, "$options": "i"}},
                     {"reference": {"$regex": request.equipement_nom, "$options": "i"}}
                 ]
-            }, {"_id": 0})
+            })
             if equipement:
-                equipement_id = equipement.get("id")
+                eq_id = str(equipement.get("_id", "")) if equipement.get("_id") else equipement.get("id")
+                equipement_id = eq_id
                 equipement_data = {
-                    "id": equipement.get("id"),
+                    "id": eq_id,
                     "nom": equipement.get("nom"),
                     "reference": equipement.get("reference")
                 }
                 # Récupérer l'emplacement de l'équipement
-                if equipement.get("emplacement_id"):
-                    emplacement_id = equipement["emplacement_id"]
+                emp_id = equipement.get("emplacement_id")
+                if emp_id:
+                    emplacement_id = str(emp_id)
                     emplacement_data = equipement.get("emplacement")
                     if not emplacement_data:
-                        loc = await db.locations.find_one({"id": emplacement_id})
+                        loc = await db.locations.find_one({"_id": emp_id})
                         if loc:
-                            emplacement_data = {"id": emplacement_id, "nom": loc.get("nom", "")}
+                            emplacement_data = {"id": str(emp_id), "nom": loc.get("nom", "")}
         
         # Valeurs par défaut
         priorite = (request.priorite or "NORMALE").upper()
