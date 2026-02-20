@@ -110,7 +110,7 @@ function SurveillanceAIExtract({ open, onClose }) {
   };
 
   const handleClose = () => {
-    const shouldRefresh = step === 'done';
+    const shouldRefresh = step === 'done' || hasChanges;
     setStep('upload');
     setFile(null);
     setExtractedData(null);
@@ -118,6 +118,7 @@ function SurveillanceAIExtract({ open, onClose }) {
     setResult(null);
     setSourceFile(null);
     setAmbiguousProcessing(false);
+    setHasChanges(false);
     onClose(shouldRefresh);
   };
 
