@@ -191,11 +191,29 @@ export const handleModifyOT = async (actionData) => {
   if (mods.titre) updatePayload.titre = mods.titre;
   if (mods.categorie) updatePayload.categorie = mods.categorie.toUpperCase();
   if (mods.tempsEstime) updatePayload.tempsEstime = parseFloat(mods.tempsEstime);
+  if (mods.dateLimite) updatePayload.dateLimite = mods.dateLimite;
   const eqId = await resolveEquipmentId(mods.equipement_nom);
   if (eqId) updatePayload.equipement_id = eqId;
-  const userId = await resolveUserId(mods.assigne_a);
+  let userId = await resolveUserId(mods.assigne_a);
+  if (!userId && mods.assigne_a) {
+    // Fallback: essayer avec le nom complet
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const currentName = `${currentUser?.prenom || ''} ${currentUser?.nom || ''}`.trim().toLowerCase();
+      if (currentName && mods.assigne_a.toLowerCase().includes(currentName.split(' ')[0])) {
+        userId = currentUser.id;
+      }
+    } catch (e) { /* ignore */ }
+  }
   if (userId) updatePayload.assigne_a_id = userId;
 
+  // Vérifier que le payload n'est pas vide
+  if (Object.keys(updatePayload).length === 0) {
+    console.warn('[Adria] handleModifyOT: aucune modification détectée dans', mods);
+    return { success: false, message: `Je n'ai pas pu identifier les modifications à appliquer. Pouvez-vous reformuler votre demande ?` };
+  }
+
+  console.log('[Adria] handleModifyOT: updating OT', matchedWo.id, 'with', updatePayload);
   await workOrdersAPI.update(matchedWo.id, updatePayload);
   window.dispatchEvent(new CustomEvent('gmao-data-refresh', { detail: { entity: 'work_orders', action: 'updated' } }));
   const modDetails = Object.entries(updatePayload).map(([k, v]) => `${k}: ${v}`).join(', ');
