@@ -1290,7 +1290,7 @@ async def ai_create_work_order(
             "description": request.description or f"Créé automatiquement par l'assistant IA",
             "type_maintenance": request.type_maintenance.upper(),
             "priorite": priorite,
-            "statut": "en_attente",
+            "statut": "EN_ATTENTE",
             "equipement_id": equipement_id,
             "equipement": equipement_data,
             "emplacement_id": emplacement_id,
