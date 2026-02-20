@@ -4,7 +4,7 @@ Configuration OpenAPI/Swagger enrichie pour FSAO Atlas
 
 # Description principale de l'API
 API_DESCRIPTION = """
-# GMAO Atlas - API de Fonctionnement des Services Assistee par Ordinateur
+# FSAO Atlas - API de Fonctionnement des Services Assistee par Ordinateur
 
 Systeme complet de gestion de maintenance industrielle avec module **M.E.S.** (Manufacturing Execution System).
 

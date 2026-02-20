@@ -386,7 +386,7 @@ Formules : l'utilisateur peut demander des calculs entre sources (ex: "taux = te
 Exemples :
 - "Cree un camembert des OT par priorite" → [[CREATE_WIDGET:{{"description": "Camembert (pie_chart) montrant la repartition des ordres de travail par priorite"}}]]
 - "Ajoute une jauge du taux de disponibilite des equipements" → [[CREATE_WIDGET:{{"description": "Jauge montrant le taux de disponibilite des equipements en pourcentage"}}]]
-- "Cree un widget avec la formule : taux resolution = OT termines / OT total * 100" → [[CREATE_WIDGET:{{"description": "Widget de type jauge avec formule mathematique : taux de resolution = nombre d'OT termines divise par nombre total d'OT multiplie par 100. Necessite 2 sources GMAO (work_orders_count avec status_filter TERMINE et work_orders_count total) et une source formule."}}]]
+- "Cree un widget avec la formule : taux resolution = OT termines / OT total * 100" → [[CREATE_WIDGET:{{"description": "Widget de type jauge avec formule mathematique : taux de resolution = nombre d'OT termines divise par nombre total d'OT multiplie par 100. Necessite 2 sources FSAO (work_orders_count avec status_filter TERMINE et work_orders_count total) et une source formule."}}]]
 - "Montre l'evolution de la temperature du capteur Salle Machines en courbe" → [[CREATE_WIDGET:{{"description": "Graphique en lignes (line_chart) montrant l'historique du capteur de temperature de la Salle des Machines"}}]]
 - "Cree un indicateur du nombre de pieces en rupture de stock" → [[CREATE_WIDGET:{{"description": "Widget valeur simple montrant le nombre d'articles en rupture de stock dans l'inventaire"}}]]
 

@@ -2795,7 +2795,7 @@ async def send_surveillance_reminder_email(user_email: str, user_name: str, item
         msg = MIMEMultipart()
         msg['From'] = smtp_user
         msg['To'] = user_email
-        msg['Subject'] = f"[GMAO] Rappel - Contrôle à venir : {classe_type}"
+        msg['Subject'] = f"[FSAO] Rappel - Contrôle à venir : {classe_type}"
         
         # Corps du message HTML
         body = f"""

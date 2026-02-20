@@ -23,7 +23,7 @@ class DataSourceType(str, Enum):
     """Types de sources de données"""
     MANUAL = "manual"         # Valeur entrée manuellement
     EXCEL = "excel"           # Fichier Excel via SMB/CIFS
-    GMAO = "gmao"             # Données de l'application GMAO
+    GMAO = "gmao"             # Données de l'application FSAO
     FORMULA = "formula"       # Résultat d'une formule
 
 

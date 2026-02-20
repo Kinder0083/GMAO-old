@@ -131,7 +131,7 @@ async def send_improvement_request_email_to_manager(
                     {attachments_list}
                 </ul>
                 <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">
-                    Les pièces jointes sont accessibles dans l'application GMAO.
+                    Les pièces jointes sont accessibles dans l'application FSAO.
                 </p>
             </div>
             """
@@ -266,7 +266,7 @@ async def send_improvement_request_email_to_manager(
         </html>
         """
         
-        subject = f"[GMAO] 💡 Demande d'amélioration à valider: {request_data.get('titre', 'Sans titre')}"
+        subject = f"[FSAO] 💡 Demande d'amélioration à valider: {request_data.get('titre', 'Sans titre')}"
         
         # Envoyer l'email
         send_email(
@@ -376,7 +376,7 @@ async def send_validation_notification_email(
         </html>
         """
         
-        subject = f"[GMAO] Votre demande d'amélioration a été {status_label.lower()}: {request_data.get('titre', 'Sans titre')}"
+        subject = f"[FSAO] Votre demande d'amélioration a été {status_label.lower()}: {request_data.get('titre', 'Sans titre')}"
         
         send_email(
             to_email=creator["email"],

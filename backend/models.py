@@ -1752,7 +1752,7 @@ class PresquAccidentItem(BaseModel):
     categorie_incident: Optional[str] = None  # Catégorie/type d'incident
     
     # Équipement concerné
-    equipement_id: Optional[str] = None  # ID équipement lié (depuis la base GMAO)
+    equipement_id: Optional[str] = None  # ID équipement lié (depuis la base FSAO)
     equipement_nom: Optional[str] = None  # Nom de l'équipement (dénormalisé)
     
     # Personnes

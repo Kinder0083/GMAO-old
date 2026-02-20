@@ -158,7 +158,7 @@ class MESReportScheduler:
             logger.warning(f"[MES Report Scheduler] Pas de destinataires pour {report.get('name')}")
             return
         
-        subject = f"[GMAO] {report.get('name', 'Rapport M.E.S.')} - {date_from.strftime('%d/%m/%Y')} au {date_to.strftime('%d/%m/%Y')}"
+        subject = f"[FSAO] {report.get('name', 'Rapport M.E.S.')} - {date_from.strftime('%d/%m/%Y')} au {date_to.strftime('%d/%m/%Y')}"
         
         # Build HTML body
         summary = report_data.get("summary", {})

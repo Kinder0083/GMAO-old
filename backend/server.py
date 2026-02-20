@@ -53,7 +53,7 @@ audit_service = AuditService(db)
 
 # Create the main app (docs desactivees par defaut, servies manuellement avec auth)
 app = FastAPI(
-    title="GMAO Atlas API",
+    title="FSAO Atlas API",
     description=API_DESCRIPTION,
     version="2.2.0",
     openapi_tags=OPENAPI_TAGS,
@@ -61,7 +61,7 @@ app = FastAPI(
     redoc_url=None,
     openapi_url="/api/openapi.json",
     contact={
-        "name": "GMAO Atlas Support",
+        "name": "FSAO Atlas Support",
         "email": "support@gmao-atlas.fr"
     },
     license_info={
@@ -88,7 +88,7 @@ def verify_docs_credentials(credentials: HTTPBasicCredentials = Depends(docs_sec
 async def custom_swagger_ui(credentials: HTTPBasicCredentials = Depends(verify_docs_credentials)):
     return get_swagger_ui_html(
         openapi_url="/api/openapi.json",
-        title="GMAO Atlas - Documentation API",
+        title="FSAO Atlas - Documentation API",
         swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
     )
 
@@ -96,7 +96,7 @@ async def custom_swagger_ui(credentials: HTTPBasicCredentials = Depends(verify_d
 async def custom_redoc(credentials: HTTPBasicCredentials = Depends(verify_docs_credentials)):
     return get_redoc_html(
         openapi_url="/api/openapi.json",
-        title="GMAO Atlas - Documentation API (ReDoc)",
+        title="FSAO Atlas - Documentation API (ReDoc)",
         redoc_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
     )
 
