@@ -21,7 +21,7 @@ const RestoreTab = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.name.endsWith('.zip')) {
-      toast({ title: 'Format invalide', description: 'Veuillez sélectionner un fichier ZIP de sauvegarde GMAO', variant: 'destructive' });
+      toast({ title: 'Format invalide', description: 'Veuillez sélectionner un fichier ZIP de sauvegarde FSAO', variant: 'destructive' });
       event.target.value = '';
       return;
     }

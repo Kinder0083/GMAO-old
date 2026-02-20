@@ -981,7 +981,7 @@ export const customWidgetsAPI = {
   getDashboardConfig: () => api.get('/custom-widgets/dashboard/config').then(res => res.data),
   updateDashboardConfig: (data) => api.put('/custom-widgets/dashboard/config', data).then(res => res.data),
 
-  // Types de données GMAO
+  // Types de données FSAO
   getGmaoDataTypes: () => api.get('/custom-widgets/data-types/gmao').then(res => res.data),
 
   // Tests et validations

@@ -94,7 +94,7 @@ const DataResetSettings = () => {
           <RotateCcw className="h-5 w-5 text-red-600" />
           <div>
             <h2 className="text-lg font-semibold text-red-900">Réinitialisation des données</h2>
-            <p className="text-sm text-red-600">Supprimer les données par section ou réinitialiser toute la GMAO</p>
+            <p className="text-sm text-red-600">Supprimer les données par section ou réinitialiser toute la FSAO</p>
           </div>
         </div>
       </div>
@@ -149,14 +149,14 @@ const DataResetSettings = () => {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
                 <h3 className="text-lg font-semibold text-red-900">
-                  {confirmTarget === 'all' ? 'Réinitialiser TOUTE la GMAO' : 'Confirmer la suppression'}
+                  {confirmTarget === 'all' ? 'Réinitialiser TOUTE la FSAO' : 'Confirmer la suppression'}
                 </h3>
               </div>
             </div>
             <div className="px-6 py-4 space-y-4">
               <p className="text-sm text-gray-600">
                 {confirmTarget === 'all'
-                  ? 'Vous allez supprimer TOUTES les données de la GMAO (sauf votre compte admin). Cette action est irréversible.'
+                  ? 'Vous allez supprimer TOUTES les données de la FSAO (sauf votre compte admin). Cette action est irréversible.'
                   : `Vous allez supprimer toutes les données de la section "${SECTIONS.find(s => s.key === confirmTarget)?.label}". Cette action est irréversible.`
                 }
               </p>

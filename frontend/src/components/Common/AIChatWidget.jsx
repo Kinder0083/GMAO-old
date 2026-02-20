@@ -80,8 +80,8 @@ const AIChatWidget = ({ isOpen, onClose, initialContext = null, initialQuestion 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const greeting = aiGender === 'female'
-        ? `Bonjour ! Je suis ${aiName}, votre assistante GMAO. Comment puis-je vous aider aujourd'hui ?`
-        : `Bonjour ! Je suis ${aiName}, votre assistant GMAO. Comment puis-je vous aider aujourd'hui ?`;
+        ? `Bonjour ! Je suis ${aiName}, votre assistante FSAO. Comment puis-je vous aider aujourd'hui ?`
+        : `Bonjour ! Je suis ${aiName}, votre assistant FSAO. Comment puis-je vous aider aujourd'hui ?`;
       setMessages([{ role: 'assistant', content: greeting, timestamp: new Date().toISOString() }]);
       setHasProcessedInitialQuestion(false);
     }

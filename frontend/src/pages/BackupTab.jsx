@@ -158,7 +158,7 @@ const BackupTab = () => {
     try {
       setUploadingToDrive(historyId);
       await axios.post(`${backend_url}/api/backup/drive/upload/${historyId}`, {}, { headers: authHeaders });
-      toast({ title: 'Upload réussi', description: 'Backup uploadé dans le dossier "Backup GMAO" sur Google Drive' });
+      toast({ title: 'Upload réussi', description: 'Backup uploadé dans le dossier "Backup FSAO" sur Google Drive' });
       loadBackupData();
     } catch (error) {
       toast({ title: 'Erreur', description: formatErrorMessage(error, 'Impossible d\'uploader vers Google Drive'), variant: 'destructive' });

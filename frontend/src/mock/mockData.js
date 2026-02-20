@@ -1,4 +1,4 @@
-// Données mockées pour l'application GMAO
+// Données mockées pour l'application FSAO
 
 export const mockUsers = [
   { id: '1', nom: 'Martin', prenom: 'Sophie', email: 'sophie.martin@example.com', role: 'ADMIN', telephone: '06 12 34 56 78', statut: 'actif' },

@@ -1119,7 +1119,7 @@ function PresquAccidentList() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500 mt-1">Associez un equipement de la GMAO si l'incident est lie a une machine ou installation</p>
+                <p className="text-xs text-gray-500 mt-1">Associez un equipement de la FSAO si l'incident est lie a une machine ou installation</p>
               </div>
             </fieldset>
 

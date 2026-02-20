@@ -33,7 +33,7 @@ const WIDGET_TYPES = [
 const SOURCE_TYPES = [
   { value: 'manual', label: 'Valeur manuelle', icon: Settings, description: 'Entrez une valeur fixe' },
   { value: 'excel', label: 'Fichier Excel', icon: FileSpreadsheet, description: 'Lecture depuis un fichier Excel sur le réseau' },
-  { value: 'gmao', label: 'Données GMAO', icon: Database, description: 'Données de l\'application' },
+  { value: 'gmao', label: 'Données FSAO', icon: Database, description: 'Données de l\'application' },
   { value: 'formula', label: 'Formule', icon: Calculator, description: 'Calcul basé sur d\'autres sources' },
 ];
 
@@ -103,7 +103,7 @@ const CustomWidgetEditor = () => {
   const [testResult, setTestResult] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
 
-  // Charger les types de données GMAO
+  // Charger les types de données FSAO
   useEffect(() => {
     loadGmaoDataTypes();
     loadSensorsAndMeters();
@@ -913,7 +913,7 @@ const DataSourceEditor = ({
       {source.type === 'gmao' && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Type de données GMAO</Label>
+            <Label>Type de données FSAO</Label>
             <Select
               value={source.gmao_config?.data_type || ''}
               onValueChange={(value) => onUpdate({
