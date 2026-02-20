@@ -142,6 +142,7 @@ function SurveillanceAIExtract({ open, onClose }) {
         matched_count: action === 'match' ? (prev.matched_count || 0) + 1 : prev.matched_count,
         created_count: action === 'create_new' ? (prev.created_count || 0) + 1 : prev.created_count,
       }));
+      setHasChanges(true);
       toast({ title: 'OK', description: action === 'match' ? 'Correspondance confirmée' : 'Nouveau contrôle créé' });
     } catch (error) {
       toast({ title: 'Erreur', description: error.response?.data?.detail || 'Erreur lors de la confirmation', variant: 'destructive' });
