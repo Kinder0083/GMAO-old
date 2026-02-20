@@ -198,7 +198,7 @@ async def download_backup(history_id: str, current_user: dict = Depends(get_curr
 
 # --- Upload manuel vers Google Drive ---
 
-GDRIVE_FOLDER_NAME = "Backup GMAO"
+GDRIVE_FOLDER_NAME = "Backup FSAO"
 
 
 async def _get_drive_service():
@@ -253,7 +253,7 @@ async def _get_or_create_gdrive_folder(service, folder_name: str) -> str:
 
 @router.post("/drive/upload/{history_id}")
 async def upload_backup_to_drive(history_id: str, current_user: dict = Depends(get_current_admin_user)):
-    """Uploader manuellement un backup existant vers Google Drive dans le dossier 'Backup GMAO'"""
+    """Uploader manuellement un backup existant vers Google Drive dans le dossier 'Backup FSAO'"""
     from googleapiclient.http import MediaFileUpload
 
     entry = await db.backup_history.find_one({"_id": ObjectId(history_id)})

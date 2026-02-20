@@ -155,7 +155,7 @@ class DataSource(BaseModel):
     # Pour source Excel
     excel_config: Optional[ExcelDataSource] = None
     
-    # Pour source GMAO
+    # Pour source FSAO
     gmao_config: Optional[GmaoDataSource] = None
     
     # Pour formule

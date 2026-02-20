@@ -733,7 +733,7 @@ const DataSourceEditor = ({
     return acc;
   }, {});
 
-  // Trouver le type GMAO sélectionné pour vérifier s'il nécessite une sélection supplémentaire
+  // Trouver le type FSAO sélectionné pour vérifier s'il nécessite une sélection supplémentaire
   const selectedGmaoType = gmaoDataTypes.find(dt => dt.type === source.gmao_config?.data_type);
   const requiresSensorSelection = selectedGmaoType?.requires_selection === 'sensor';
   const requiresMeterSelection = selectedGmaoType?.requires_selection === 'meter';

@@ -249,9 +249,9 @@ async def _upload_to_gdrive(file_bytes: bytes, filename: str, schedule: dict) ->
 
     folder_id = schedule.get("google_drive_folder_id")
 
-    # Si pas de dossier spécifié, utiliser/créer le dossier "Backup GMAO"
+    # Si pas de dossier spécifié, utiliser/créer le dossier "Backup FSAO"
     if not folder_id:
-        folder_name = "Backup GMAO"
+        folder_name = "Backup FSAO"
         query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
         results = service.files().list(q=query, spaces='drive', fields='files(id)').execute()
         existing = results.get('files', [])

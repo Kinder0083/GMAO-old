@@ -4704,7 +4704,7 @@ async def submit_support_request(
         """
         
         # Envoyer l'email à tous les admins
-        subject = f"[GMAO Support] {request.subject} - {user_name or user_email}"
+        subject = f"[FSAO Support] {request.subject} - {user_name or user_email}"
         
         for admin_email in admin_emails:
             try:
