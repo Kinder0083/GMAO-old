@@ -1,6 +1,6 @@
-# GMAO Iris
+# FSAO Iris
 
-Application de Gestion de Maintenance Assistee par Ordinateur (GMAO) complete et auto-hebergee.
+Application de Fonctionnement des Services Assistee par Ordinateur (FSAO) complete et auto-hebergee.
 
 **Version :** 1.6.0
 **Concepteur :** Greg
@@ -10,7 +10,7 @@ Application de Gestion de Maintenance Assistee par Ordinateur (GMAO) complete et
 
 ## Presentation
 
-GMAO Iris est une application web full-stack concue pour gerer l'ensemble du cycle de maintenance industrielle : ordres de travail, equipements, maintenance preventive, inventaire, surveillance, M.E.S., cameras, chat en temps reel, et bien plus. Elle integre desormais une couche d'**intelligence artificielle** pour l'analyse automatique des donnees QHSE. Elle se deploie sur un serveur Proxmox LXC en une commande et dispose d'un systeme de mise a jour integre.
+FSAO Iris est une application web full-stack concue pour gerer l'ensemble du cycle de maintenance industrielle et du fonctionnement des services : ordres de travail, equipements, maintenance preventive, inventaire, surveillance, M.E.S., cameras, chat en temps reel, et bien plus. Elle integre une couche d'**intelligence artificielle** pour l'analyse automatique des donnees QHSE. Elle se deploie sur un serveur Proxmox LXC en une commande et dispose d'un systeme de mise a jour integre.
 
 ---
 
@@ -18,7 +18,7 @@ GMAO Iris est une application web full-stack concue pour gerer l'ensemble du cyc
 
 ### Intelligence Artificielle (IA)
 
-GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automatiser et enrichir les processus QHSE.
+FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automatiser et enrichir les processus QHSE.
 
 #### IA - Checklists et Maintenance
 - **Generation automatique de checklists** : Upload d'un document technique, l'IA genere un template de checklist complet
@@ -36,11 +36,11 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 #### IA - Assistant (Adria)
 - Assistant IA conversationnel integre (personnalisable : nom, genre, modele LLM)
 - **Memoire de conversation** : Adria se souvient du contexte des echanges precedents
-- **Contexte enrichi** : Requetes dynamiques vers les donnees GMAO (OT, equipements, alertes, inventaire) pour des reponses factuelles
+- **Contexte enrichi** : Requetes dynamiques vers les donnees FSAO (OT, equipements, alertes, inventaire) pour des reponses factuelles
 - **Creation d'OT par IA** : "Cree un OT urgent pour reparer la pompe P-001" - Adria cree l'OT automatiquement avec titre, description, priorite, categorie et equipement lie
-- **Modification d'OT par IA** : "Passe l'OT #5801 en priorite haute" ou "Assigne l'OT reparation pompe a Axel" - Adria modifie l'OT existant (priorite, statut, equipement, assignation, categorie)
+- **Auto-assignation intelligente** : Lors de la creation d'un OT, Adria assigne automatiquement l'OT a l'utilisateur connecte. Si un nom de technicien est specifie ("assigne-le a Axel"), l'IA resout le nom et assigne au bon utilisateur
+- **Modification d'OT par IA** : "Ajoute la description suivante a l'OT 5864 : essais tirage personnel" ou "Passe l'OT #5801 en priorite haute" - Adria modifie l'OT existant (description, priorite, statut, equipement, assignation, categorie). La recherche d'OT priorise le numero exact avant l'ID ou le titre
 - **Cloture d'OT par IA** : "Termine l'OT Bioci 1, ca a pris 2h, j'ai change le filtre" - Adria cloture l'OT en une seule commande : ajout du temps passe, enregistrement des pieces utilisees (avec deduction stock automatique), commentaire de cloture, passage au statut TERMINE
-- **Assignation de technicien par IA** : "Cree un OT pour la Bioci 1 et assigne-le a Axel" - Adria resout le nom du technicien et lie l'OT au bon utilisateur
 - **Creation de Widgets IA** : "Cree un camembert des OT par priorite" - Adria genere et cree des widgets sur le Dashboard Service
 - **Support des formules mathematiques** : "Cree une jauge taux resolution = OT termines / total * 100" - L'IA genere les sources de donnees et les formules ($references, IF, ROUND, SUM, AVG)
 - **Automatisations IA** : Configuration de regles automatiques en langage naturel (alertes capteurs, rappels maintenance, escalades, seuils inventaire)
@@ -81,9 +81,12 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 
 ### Surveillance et securite
 - Plan de surveillance avec suivi des controles periodiques (onglets par annee, generation automatique des controles recurrents)
-- Rapports de surveillance (3 modes : cartes, tableau, graphiques)
+- **Correspondance intelligente** : L'IA analyse les rapports de controle et met a jour les controles existants au lieu de creer des doublons. Calcul automatique de l'ecart (jours) entre date prevue et date de realisation
+- **Correspondance manuelle** : En cas d'ambiguite, l'utilisateur peut confirmer ou creer un nouveau controle
+- Rapports de surveillance (3 modes : cartes, tableau, graphiques) avec filtrage par annee et KPIs (taux de realisation, ecart moyen, respect des delais)
+- Export PDF et Excel des rapports de surveillance
 - Gestion des presqu'accidents avec formulaire enrichi (7 sections : identification, description, personnes, evaluation risque, equipement, actions, pieces jointes)
-- Champs presqu'accidents : categorie d'incident, equipement lie GMAO, mesures immediates, type lesion potentielle, temoins, conditions, facteurs contributifs
+- Champs presqu'accidents : categorie d'incident, equipement lie FSAO, mesures immediates, type lesion potentielle, temoins, conditions, facteurs contributifs
 - Integration cameras (snapshots, alertes via Frigate/MQTT)
 - Autorisations particulieres (formulaires et suivi)
 
@@ -166,7 +169,7 @@ GMAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 ## Architecture technique
 
 ```
-gmao-iris/
+fsao-iris/
 ├── backend/                    # API FastAPI (Python 3.11+)
 │   ├── server.py               # Point d'entree principal (~9000 lignes)
 │   ├── models.py               # Modeles Pydantic
@@ -194,8 +197,8 @@ gmao-iris/
 │   │   ├── components/         # Composants reutilisables
 │   │   │   ├── ui/             # Shadcn/UI
 │   │   │   ├── chat/           # Chat temps reel
-│   │   │   ├── backup/         # (reserve)
-│   │   │   └── import/         # (reserve)
+│   │   │   ├── Common/         # Composants communs (AIChatWidget, adriaCommandHandlers)
+│   │   │   └── Surveillance/   # Plan de surveillance (ManualMatchDialog, SurveillanceAIExtract)
 │   │   └── hooks/              # Hooks React personnalises
 │   ├── public/                 # Assets statiques
 │   ├── nginx.conf              # Config Nginx production
@@ -222,7 +225,7 @@ gmao-iris/
 | Serveur web | Nginx (reverse proxy, SSL, static files)         |
 | Process     | Supervisor                                       |
 | Deploiement | Proxmox LXC (Debian 12)                         |
-| IA          | Emergent LLM (Gemini 2.5 Flash) - assistant, analyse QHSE, generation documents |
+| IA          | Emergent LLM (Gemini 2.5 Flash) - assistant Adria, analyse QHSE, generation documents |
 
 ---
 
@@ -260,7 +263,7 @@ sudo bash gmao-ssl-gdrive-setup.sh
 ```
 
 Ce script interactif :
-1. Demande votre nom de domaine (ex: `gmaoiris.duckdns.org`)
+1. Demande votre nom de domaine (ex: `fsaoiris.duckdns.org`)
 2. Verifie la resolution DNS
 3. Installe Certbot et genere un certificat SSL Let's Encrypt
 4. Configure Nginx avec HTTPS (redirection HTTP, proxy API, WebSocket)
@@ -306,7 +309,7 @@ SMTP_PORT=587
 SMTP_USERNAME=votre-email@gmail.com
 SMTP_PASSWORD=<mot_de_passe_application>
 SMTP_SENDER_EMAIL=votre-email@gmail.com
-SMTP_FROM_NAME=GMAO Iris
+SMTP_FROM_NAME=FSAO Iris
 SMTP_USE_TLS=true
 
 # Google Drive (optionnel - pour sauvegardes cloud)
@@ -354,7 +357,7 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 1. Allez dans **APIs & Services > Identifiants**
 2. Cliquez sur **"Creer des identifiants" > "ID client OAuth"**
 3. Type d'application : **Application Web**
-4. Nom : `GMAO Iris` (ou autre)
+4. Nom : `FSAO Iris` (ou autre)
 5. **URI de redirection autorisee** : ajoutez exactement :
    ```
    https://votre-domaine.com/api/backup/drive/callback
@@ -374,13 +377,13 @@ Pour utiliser Google Drive comme destination de sauvegarde :
    ```
 
 **Etape 6 : Connecter depuis l'application**
-1. Dans GMAO Iris : **Import/Export > Sauvegardes Automatiques**
+1. Dans FSAO Iris : **Import/Export > Sauvegardes Automatiques**
 2. Cliquez sur **"Connecter Google Drive"**
 3. Autorisez l'acces dans la fenetre Google
 4. Vous devriez voir le statut **"Connecte"** en vert
 
 **Comportement des sauvegardes Google Drive :**
-- Les sauvegardes sont automatiquement stockees dans un dossier **"Backup GMAO"** sur Google Drive
+- Les sauvegardes sont automatiquement stockees dans un dossier **"Backup FSAO"** sur Google Drive
 - Le dossier est cree automatiquement s'il n'existe pas
 - Vous pouvez egalement uploader manuellement un backup existant vers Google Drive via l'icone d'upload dans l'historique des sauvegardes
 
@@ -414,6 +417,7 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | POST | `/api/auth/login` | Authentification |
 | GET | `/api/auth/me` | Profil utilisateur |
 | GET | `/api/work-orders` | Ordres de travail |
+| PUT | `/api/work-orders/{id}` | Modifier un OT (statut, assignation, description...) |
 | GET | `/api/equipments` | Equipements |
 | GET | `/api/preventive-maintenance` | Maintenance preventive |
 | GET | `/api/inventory` | Inventaire |
@@ -426,6 +430,7 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | GET | `/api/backup/drive/status` | Statut connexion Google Drive |
 | GET | `/api/version` | Version de l'application |
 | POST | `/api/updates/broadcast-warning` | Avertissement avant MAJ |
+| POST | `/api/ai/chat` | Chat avec l'assistante IA Adria |
 | POST | `/api/ai/checklist/generate-from-doc` | IA : generer checklist depuis document |
 | POST | `/api/ai/maintenance/generate-from-doc` | IA : generer plan maintenance depuis document |
 | POST | `/api/ai-maintenance/analyze-nonconformities` | IA : analyser non-conformites checklists |
@@ -434,6 +439,9 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | POST | `/api/ai-presqu-accident/find-similar` | IA : detection incidents similaires |
 | POST | `/api/ai-presqu-accident/analyze-trends` | IA : analyse tendances presqu'accidents |
 | POST | `/api/ai-presqu-accident/generate-report` | IA : rapport synthese QHSE |
+| POST | `/api/surveillance/create-batch-from-ai` | Correspondance intelligente Plan de Surveillance |
+| POST | `/api/surveillance/confirm-match` | Confirmation manuelle d'une correspondance |
+| GET | `/api/surveillance/rapport-stats` | KPIs du rapport de surveillance |
 | WS | `/ws/chat/` | Chat temps reel |
 | WS | `/ws/whiteboard/` | Tableau d'affichage |
 | WS | `/api/ws/realtime/{entity}` | Notifications temps reel |
@@ -477,13 +485,13 @@ cd /opt/gmao-iris && ./update.sh
 - Destinations : local, Google Drive, ou les deux
 - Les heures des planifications utilisent le fuseau horaire configure dans Parametres > Fuseau horaire
 - Upload manuel vers Google Drive : cliquez sur l'icone d'upload a cote d'un backup dans l'historique
-- Les fichiers sont stockes dans le dossier **"Backup GMAO"** sur Google Drive
+- Les fichiers sont stockes dans le dossier **"Backup FSAO"** sur Google Drive
 - Icone disquette dans le header : **vert** = backup recent reussi, **rouge** = echec, **gris** = aucun ou ancien
 
 **Via la ligne de commande :**
 ```bash
 # Backup MongoDB
-mongodump --db gmao_iris --out /backup/gmao-$(date +%Y%m%d)
+mongodump --db gmao_iris --out /backup/fsao-$(date +%Y%m%d)
 
 # Snapshot Proxmox (depuis le host)
 vzdump <CTID> --mode snapshot --compress zstd
