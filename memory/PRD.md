@@ -1,31 +1,50 @@
 # FSAO Iris - Product Requirements Document
 
-## Problème original
-Application FSAO (Fonctionnement des Services Assistée par Ordinateur) full-stack avec React, FastAPI et MongoDB.
+## Probleme original
+Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stack avec React, FastAPI et MongoDB.
 
 ## Architecture
 - **Frontend**: React + Shadcn/UI + TailwindCSS
 - **Backend**: FastAPI (Python)
-- **Base de données**: MongoDB (gmao_iris)
+- **Base de donnees**: MongoDB (gmao_iris)
 - **IA**: Gemini 2.5 Flash via emergentintegrations
 - **Authentification**: JWT + Google OAuth
-- **Dépôt GitHub**: https://github.com/Kinder0083/GMAO (le repo garde le nom GMAO)
+- **Depot GitHub**: https://github.com/Kinder0083/GMAO (le repo garde le nom GMAO)
+- **Notifications push**: Expo Push Service (notifications.py)
 
-## Fonctionnalités implémentées
+## Fonctionnalites implementees
 
-### 1-9. Voir sessions précédentes (tout TERMINÉ)
+### 1-9. Voir sessions precedentes (tout TERMINE)
 
-### 10. Renommage GMAO → FSAO - TERMINÉ (Fév 2026)
-- Textes utilisateur renommés partout (frontend, backend, prompts IA, docs)
-- Noms techniques préservés : DB gmao_iris, services gmao-iris-backend, repo GitHub GMAO
+### 10. Renommage GMAO -> FSAO - TERMINE (Fev 2026)
+- Textes utilisateur renommes partout (frontend, backend, prompts IA, docs)
+- Noms techniques preserves : DB gmao_iris, services gmao-iris-backend, repo GitHub GMAO
 
-### 11. Bug Fix: Script de mise à jour cassé - TERMINÉ (Fév 2026)
-- **Cause racine** : Le renommage global GMAO → FSAO a aussi changé `self.github_repo = "GMAO"` en `"FSAO"` dans update_service.py (ligne 23)
-- Le script de mise à jour pointait vers `https://github.com/Kinder0083/FSAO` au lieu de `https://github.com/Kinder0083/GMAO.git`
-- **Fix** : Restauration de `self.github_repo = "GMAO"` (nom réel du dépôt GitHub)
+### 11. Bug Fix: Script de mise a jour casse - TERMINE (Fev 2026)
+- **Cause racine** : Le renommage global GMAO -> FSAO a aussi change `self.github_repo = "GMAO"` en `"FSAO"` dans update_service.py
+- **Fix** : Restauration de `self.github_repo = "GMAO"` (nom reel du depot GitHub)
+
+### 12. Notifications push mobile - TERMINE (Fev 2026)
+- Nouveau fichier `backend/notifications.py` : service Expo Push
+- 3 endpoints API : `/api/push-notifications/register`, `/unregister`, `/test`
+- Declencheurs automatiques integres dans :
+  - Creation d'OT avec assignation -> notification au technicien assigne
+  - Mise a jour d'OT : changement de statut -> notification createur + assigne
+  - Mise a jour d'OT : reassignation -> notification au nouveau assigne
+  - Equipement passe HORS_SERVICE -> notification tous techniciens et admins
+  - Messages prives dans le chat -> notification aux destinataires
+- Index MongoDB crees au demarrage sur `device_tokens`
+- Tests: 17/17 passes (iteration_58.json)
+
+### 13. Mise a jour documentation - TERMINE (Fev 2026)
+- README.md mis a jour : notifications push, architecture, endpoints API, collections MongoDB
+- manual_default_content.json : mot-cle "fsao" ajoute
 
 ## Backlog
-- Aucune tâche en attente
+- Aucune tache en attente
+
+## Taches futures
+- Notifications push via PWA (reporte par l'utilisateur)
 
 ## Credentials
 - Admin: admin@test.com / Admin123!
