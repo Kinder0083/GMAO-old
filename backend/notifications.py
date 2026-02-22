@@ -337,7 +337,7 @@ async def test_notification_for_user(
     if not tokens:
         raise HTTPException(
             status_code=404,
-            detail="Aucun appareil mobile enregistre pour cet utilisateur"
+            detail=f"Aucun appareil mobile enregistre pour cet utilisateur. L'utilisateur doit d'abord installer l'application mobile et s'y connecter."
         )
 
     result = await send_expo_push_notification(
