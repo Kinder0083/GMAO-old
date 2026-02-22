@@ -1269,6 +1269,19 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
     if wo.get("equipement_id"):
         wo["equipement"] = await get_equipment_by_id(wo["equipement_id"])
     
+    # Notification push si un utilisateur est assigne
+    if wo_create.assigne_a_id and wo_create.assigne_a_id != current_user.get("id"):
+        from notifications import notify_work_order_assigned
+        asyncio.create_task(
+            notify_work_order_assigned(
+                db=db,
+                work_order_id=wo.get("id", ""),
+                work_order_title=wo_create.titre,
+                work_order_numero=numero,
+                assigned_user_id=wo_create.assigne_a_id
+            )
+        )
+    
     # Émettre événement temps réel
     from realtime_manager import realtime_manager
     from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
