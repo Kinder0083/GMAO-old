@@ -346,6 +346,19 @@ async def create_message(
     # Sauvegarder
     await db.chat_messages.insert_one(chat_message)
     
+    # Notification push pour messages prives
+    if message_data.recipient_ids:
+        import asyncio
+        from notifications import notify_chat_message
+        asyncio.create_task(
+            notify_chat_message(
+                db=db,
+                sender_name=user_name,
+                message_preview=message_data.message,
+                recipient_user_ids=message_data.recipient_ids
+            )
+        )
+    
     # Créer une copie propre pour la réponse (sans _id MongoDB)
     response_message = {
         "id": chat_message["id"],
