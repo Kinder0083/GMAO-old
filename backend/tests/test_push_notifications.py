@@ -302,7 +302,7 @@ class TestPushNotificationsFeature:
     # TEST: Equipment Status Change (Notification Trigger)
     # ============================================
     def test_16_equipment_status_change_no_error(self):
-        """PATCH /api/equipments/{id}/status - Status change to EN_PANNE doesn't cause server error"""
+        """PATCH /api/equipments/{id}/status - Status change doesn't cause server error"""
         headers = self.get_admin_headers()
         
         # First get an equipment ID
@@ -318,19 +318,22 @@ class TestPushNotificationsFeature:
         eq_id = test_eq.get("id")
         original_status = test_eq.get("statut")
         
-        # Try changing status to EN_PANNE (this triggers push notification)
+        # Try changing status to HORS_SERVICE (valid status that triggers notification logic path)
+        # Note: Valid statuses are: OPERATIONNEL, EN_FONCTIONNEMENT, A_LARRET, EN_MAINTENANCE, HORS_SERVICE, EN_CT, DEGRADE, ALERTE_S_EQUIP
         response = requests.patch(
             f"{BASE_URL}/api/equipments/{eq_id}/status",
-            params={"statut": "EN_PANNE"},
+            params={"statut": "HORS_SERVICE"},
             headers=headers
         )
         
         # Accept 200 or requires_confirmation response
         assert response.status_code == 200
-        print(f"✓ Equipment status change to EN_PANNE doesn't cause server error")
+        data = response.json()
+        print(f"✓ Equipment status change to HORS_SERVICE doesn't cause server error")
+        print(f"  Response: {data.get('message', data.get('statut', 'OK'))}")
         
         # Restore original status if possible
-        if original_status and original_status != "EN_PANNE":
+        if original_status and original_status != "HORS_SERVICE":
             requests.patch(
                 f"{BASE_URL}/api/equipments/{eq_id}/status",
                 params={"statut": original_status, "force": "true"},
