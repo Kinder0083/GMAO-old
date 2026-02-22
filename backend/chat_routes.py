@@ -826,6 +826,20 @@ async def create_message_with_files(
     # Sauvegarder
     await db.chat_messages.insert_one(chat_message)
     
+    # Notification push pour messages prives avec fichiers
+    if recipient_ids_list:
+        import asyncio
+        from notifications import notify_chat_message
+        sender_display = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip()
+        asyncio.create_task(
+            notify_chat_message(
+                db=db,
+                sender_name=sender_display,
+                message_preview=message if message else "Fichier partage",
+                recipient_user_ids=recipient_ids_list
+            )
+        )
+    
     # Créer copie propre pour broadcast
     clean_message = {k: v for k, v in chat_message.items() if k != "_id"}
     
