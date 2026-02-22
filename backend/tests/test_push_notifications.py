@@ -299,6 +299,46 @@ class TestPushNotificationsFeature:
         print(f"✓ Legacy notifications read endpoint works: status={response.status_code}")
     
     # ============================================
+    # TEST: Equipment Status Change (Notification Trigger)
+    # ============================================
+    def test_16_equipment_status_change_no_error(self):
+        """PATCH /api/equipments/{id}/status - Status change to EN_PANNE doesn't cause server error"""
+        headers = self.get_admin_headers()
+        
+        # First get an equipment ID
+        eq_resp = requests.get(f"{BASE_URL}/api/equipments", headers=headers)
+        if eq_resp.status_code != 200:
+            pytest.skip("Could not get equipments list")
+        
+        equipments = eq_resp.json()
+        if not equipments:
+            pytest.skip("No equipments found")
+        
+        test_eq = equipments[0]
+        eq_id = test_eq.get("id")
+        original_status = test_eq.get("statut")
+        
+        # Try changing status to EN_PANNE (this triggers push notification)
+        response = requests.patch(
+            f"{BASE_URL}/api/equipments/{eq_id}/status",
+            params={"statut": "EN_PANNE"},
+            headers=headers
+        )
+        
+        # Accept 200 or requires_confirmation response
+        assert response.status_code == 200
+        print(f"✓ Equipment status change to EN_PANNE doesn't cause server error")
+        
+        # Restore original status if possible
+        if original_status and original_status != "EN_PANNE":
+            requests.patch(
+                f"{BASE_URL}/api/equipments/{eq_id}/status",
+                params={"statut": original_status, "force": "true"},
+                headers=headers
+            )
+            print(f"  Restored original status: {original_status}")
+    
+    # ============================================
     # TEST: Cleanup
     # ============================================
     def test_99_cleanup_test_data(self):
