@@ -1426,6 +1426,45 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         if wo.get("equipement_id"):
             wo["equipement"] = await get_equipment_by_id(wo["equipement_id"])
         
+        # Notifications push
+        from notifications import notify_work_order_assigned, notify_work_order_status_changed
+        
+        # Notification si changement d'assignation
+        if "assigne_a_id" in update_data and update_data.get("assigne_a_id"):
+            new_assigne = update_data["assigne_a_id"]
+            old_assigne = existing_wo.get("assigne_a_id")
+            if new_assigne != old_assigne and new_assigne != current_user.get("id"):
+                asyncio.create_task(
+                    notify_work_order_assigned(
+                        db=db,
+                        work_order_id=wo.get("id", ""),
+                        work_order_title=existing_wo.get("titre", ""),
+                        work_order_numero=existing_wo.get("numero", ""),
+                        assigned_user_id=new_assigne
+                    )
+                )
+        
+        # Notification si changement de statut
+        if "statut" in update_data and existing_wo.get("statut") != update_data["statut"]:
+            notify_ids = []
+            if existing_wo.get("createdBy"):
+                notify_ids.append(str(existing_wo["createdBy"]))
+            if existing_wo.get("assigne_a_id"):
+                notify_ids.append(str(existing_wo["assigne_a_id"]))
+            notify_ids = list(set(notify_ids) - {str(current_user.get("id"))})
+            if notify_ids:
+                asyncio.create_task(
+                    notify_work_order_status_changed(
+                        db=db,
+                        work_order_id=wo.get("id", ""),
+                        work_order_title=existing_wo.get("titre", ""),
+                        work_order_numero=existing_wo.get("numero", ""),
+                        old_status=existing_wo.get("statut", ""),
+                        new_status=update_data["statut"],
+                        notify_user_ids=notify_ids
+                    )
+                )
+        
         # Émettre événement temps réel
         from realtime_manager import realtime_manager
         from realtime_events import EntityType as RealtimeEntityType, EventType as RealtimeEventType
