@@ -276,8 +276,9 @@ class TestPushNotificationsFeature:
         response = requests.get(f"{BASE_URL}/api/notifications/count", headers=headers)
         assert response.status_code == 200
         data = response.json()
-        assert "count" in data
-        print(f"✓ Legacy notifications count works: {data['count']} unread")
+        # API returns 'unread_count' field
+        assert "unread_count" in data
+        print(f"✓ Legacy notifications count works: {data['unread_count']} unread")
     
     def test_15_legacy_notifications_read(self):
         """PUT /api/notifications/{id}/read - Legacy endpoint still works"""
