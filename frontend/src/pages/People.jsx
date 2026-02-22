@@ -15,9 +15,7 @@ import { useToast } from '../hooks/use-toast';
 import { formatErrorMessage } from '../utils/errorFormatter';
 import { useRealtimeData } from '../hooks/useRealtimeData';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
-import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+import api from '../services/api';
 
 const People = () => {
   const navigate = useNavigate();
