@@ -1,203 +1,126 @@
 <analysis>**original_problem_statement:**
-L'utilisateur a demandé une série d'améliorations et de corrections de bugs :
-1.  **Fonctionnalité Principale (Terminée):** Implémenter une logique de correspondance intelligente pour le Plan de Surveillance. L'IA doit mettre à jour les contrôles récurrents existants au lieu de créer des doublons, calculer un écart, et permettre une correspondance manuelle.
-2.  **Amélioration (Terminée):** Refondre la page Rapport Surveillance pour y inclure des onglets de navigation par année et des indicateurs de performance clés (KPIs) sur le respect des délais (écart moyen, taux de respect).
-3.  **Fonctionnalité (Terminée):** Ajouter une fonction d'export PDF et Excel à la page Rapport Surveillance.
-4.  **Fonctionnalité (Terminée):** Ajouter un bouton pour réinitialiser complètement les données du Plan de Surveillance dans les paramètres.
-5.  **Refactoring (Terminé):** Décomposer la fonction monolithique  en fonctions plus petites et plus maintenables.
-6.  **Bug Critique (Corrigé):** Le script de mise à jour de l'application via l'interface utilisateur échouait sur le serveur Proxmox de l'utilisateur, le forçant à utiliser un processus manuel complexe en SSH.
-7.  **Bugs Divers (Corrigés):**
-    *   Erreur  lors de la correspondance manuelle.
-    *   Les nouvelles occurrences de contrôle héritaient incorrectement de la valeur  de leur parent.
-    *   L'assistant IA Adria ne propageait pas le champ Emplacement et n'utilisait pas de valeurs par défaut pour les ordres de travail (OT).
-8.  **Bug en cours de résolution:** L'assistant IA Adria confirme l'assignation d'un OT à un technicien, mais ne l'effectue pas réellement.
+L'utilisateur a demandé plusieurs corrections et mises à jour pour son application FSAO (anciennement GMAO) :
+1.  **Bugs Adria (Corrigés):** L'assistant IA Adria échouait dans plusieurs scénarios :
+    *   L'assignation d'un Ordre de Travail (OT) à un technicien ne fonctionnait pas lors de la mise à jour d'un OT existant.
+    *   L'assignation ne fonctionnait pas non plus lors de la création d'un nouvel OT.
+    *   La modification d'un OT (ex: ajout d'une description) échouait silencieusement.
+2.  **Bug UI (Corrigé):** L'interface utilisateur ne se rafraîchissait pas automatiquement après une correspondance manuelle ou assistée par l'IA dans le Plan de Surveillance.
+3.  **Bug Déploiement (Corrigé):** Le script de mise à jour automatique de l'application via l'interface utilisateur était cassé, forçant l'utilisateur à effectuer une mise à jour manuelle complexe via SSH. Ce problème était récurrent.
+4.  **Renommage Global (Terminé):** Remplacer toutes les occurrences textuelles de GMAO par FSAO et Gestion de Maintenance Assistée par Ordinateur par Fonctionnement des Services Assistée par Ordinateur dans toute l'application.
+5.  **Mise à jour de la documentation (En cours):** Mettre à jour les fichiers  et le manuel de l'application pour refléter tous les changements récents (nouveau nom, fonctionnement d'Adria, etc.).
 
 **User's preferred language**: French
 
 **what currently exists?**
-L'application GMAO (React/FastAPI/MongoDB) est fonctionnelle. La logique de correspondance intelligente pour le Plan de Surveillance est entièrement implémentée, testée et validée par l'utilisateur. La page de rapport a été améliorée avec des filtres par année et des exports. Plusieurs bugs critiques liés au déploiement, à la logique métier et à l'assistant IA ont été résolus. Un refactoring majeur du code de traitement IA a été effectué pour améliorer la maintenabilité. L'agent est actuellement en train de déboguer le dernier bug signalé concernant l'assistant IA Adria.
+L'application a été entièrement renommée de GMAO à FSAO au niveau de l'interface utilisateur. Tous les bugs signalés concernant l'assistant IA Adria (création, modification et assignation d'OT) ont été corrigés, testés et validés. Un bug critique qui provoquait un crash du serveur en raison de données incohérentes ( en minuscules) a été résolu avec une migration de données et une normalisation du code. Le bug récurrent du script de mise à jour a également été identifié et corrigé. L'application est stable et toutes les fonctionnalités de base sont opérationnelles.
 
 **Last working item**:
--   **Last item agent was working:** L'agent est en train de déboguer un bug avec l'assistant IA Adria. Lorsque l'utilisateur demande à Adria d'assigner un Ordre de Travail (OT) existant à un technicien, l'IA confirme l'action mais la base de données n'est pas mise à jour. L'agent a identifié que le problème ne venait pas de la logique frontend de base (qui définit les valeurs par défaut) et a commencé à investiguer le flux de mise à jour d'un OT, suspectant un problème dans la résolution de l'ID de l'utilisateur ou dans l'endpoint de mise à jour backend.
+-   **Last item agent was working:** L'agent a commencé à travailler sur la demande de mise à jour de la documentation. Il a examiné le contenu des fichiers  et  pour préparer les modifications.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** backend testing agent. Utiliser  pour simuler l'appel de l'API de mise à jour d'un OT () avec une charge utile contenant  et vérifier si l'objet  est correctement peuplé dans la base de données.
+-   **Which testing method agent to use?** NA. La tâche consiste à modifier des fichiers texte. Une relecture manuelle des fichiers après modification sera suffisante.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   Issue 1: L'assignation d'un technicien à un OT via Adria ne fonctionne pas (P0)
--   Issue 2: L'interface utilisateur ne se rafraîchit pas automatiquement après une correspondance manuelle (P1)
-
-**Issues Detail:**
--   **Issue 1: L'assignation d'un technicien à un OT via Adria ne fonctionne pas**
-    -   **Attempted fixes:** L'agent a précédemment corrigé des problèmes avec Adria concernant les valeurs par défaut et le champ emplacement. Pour le bug actuel, l'agent a examiné le code frontend () et a commencé à inspecter le code backend ().
-    -   **Next debug checklist:**
-        1.  **Backend ()**: Examiner en détail l'endpoint  ().
-        2.  Vérifier comment le champ  reçu dans la charge utile est traité.
-        3.  Hypothèse : L'endpoint se contente de stocker l'ID mais ne récupère pas et n'intègre pas l'objet utilisateur complet () dans le champ  de l'OT, ce qui est nécessaire pour l'affichage frontend. Le fix consisterait à ajouter une recherche de l'utilisateur par son ID et à mettre à jour l'objet complet.
-    -   **Why fix this issue and what will be achieved with the fix?** Corriger ce bug rendra l'assistant IA Adria pleinement fonctionnel pour la gestion des OT, ce qui est une fonctionnalité clé pour l'utilisateur.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Backend
-    -   **Blocked on other issue:** None
-
--   **Issue 2: L'interface utilisateur ne se rafraîchit pas automatiquement après une correspondance manuelle**
-    -   **Attempted fixes:** None. Ce bug a été identifié par l'utilisateur mais l'agent ne l'a pas encore traité.
-    -   **Next debug checklist:**
-        1.  **Frontend (, , etc.)**: Identifier la fonction qui gère le succès de la correspondance manuelle dans .
-        2.  Après l'appel API réussi, il faut déclencher une actualisation des données de la page principale.
-        3.  Solution : Passer une fonction de rappel  depuis les vues parentes vers , qui déclenchera le  des données du plan de surveillance.
-    -   **Why fix this issue and what will be achieved with the fix?** Améliore l'expérience utilisateur en fournissant un retour visuel immédiat après une action, évitant la confusion et la nécessité de rafraîchir manuellement la page.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend
-    -   **Blocked on other issue:** None
+-   Aucun problème en attente. Tous les bugs signalés ont été résolus.
 
 **In progress Task List**:
--   Aucune.
+-   **Task 1: Mettre à jour la documentation de l'application (P0)**
+    -   **Where to resume:** L'agent a déjà inspecté les fichiers  et . Il doit maintenant procéder aux modifications pour remplacer les anciennes références GMAO par FSAO et mettre à jour les descriptions des fonctionnalités, notamment celles de l'assistant Adria.
+    -   **What will be achieved with this?** La documentation de l'application sera alignée avec l'état actuel du produit, ce qui améliorera la clarté pour l'utilisateur.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** None
+    -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
--   Aucune tâche future n'a été demandée pour le moment. La priorité est de résoudre les deux bugs en suspens.
+-   **Future Tasks:**
+    -   Implémenter des notifications push pour les actions importantes (assignation d'OT, etc.) via une Progressive Web App (PWA). L'utilisateur a posé une question à ce sujet mais n'a pas souhaité lancer le développement pour le moment.
 
 **Completed work in this session**
--   **Feature:** Implémentation complète de la logique de correspondance intelligente pour le Plan de Surveillance.
--   **Feature:** Refonte de la page Rapport Surveillance avec filtres par année et nouveaux KPIs.
--   **Feature:** Ajout de l'export PDF/Excel à la page de rapport.
--   **Feature:** Ajout d'une option pour réinitialiser les données du Plan de Surveillance.
--   **Refactor:** Refactoring majeur de la fonction  dans .
--   **Bug Fix (Critical):** Correction du script de mise à jour de l'application pour le rendre fiable sur le serveur de l'utilisateur.
--   **Bug Fix:** Correction de l'erreur  dans .
--   **Bug Fix:** Correction du bug d'héritage de la valeur  pour les contrôles récurrents.
--   **Bug Fix:** Correction du bug de l'assistant IA Adria qui n'appliquait pas les valeurs par défaut ni le champ Emplacement lors de la création d'OT.
+-   **Bug Fix:** Correction du bug d'assignation d'OT via Adria lors de la **mise à jour** d'un OT existant. Le problème venait d'un filtre de recherche incorrect (uid=0(root) gid=0(root) groups=0(root) vs ) dans .
+-   **Bug Fix:** Correction d'un crash serveur causé par des statuts d'OT en minuscules (). Une migration de données a été exécutée et le code a été rendu plus robuste.
+-   **Bug Fix:** Correction du rafraîchissement de l'UI après une correspondance dans le Plan de Surveillance en ajoutant un état  dans  et .
+-   **Bug Fix:** Correction du bug d'assignation d'OT via Adria lors de la **création** d'un nouvel OT, en améliorant le prompt de l'IA () et en ajoutant une logique de fallback dans le frontend ().
+-   **Bug Fix:** Correction de l'échec de la modification d'un OT (ajout de description) par Adria, en améliorant la logique de recherche d'OT () dans .
+-   **Feature:** Renommage global de GMAO en FSAO dans toute l'interface utilisateur de l'application.
+-   **Bug Fix (Critical & Recurring):** Correction du script de mise à jour automatique () qui échouait car il pointait vers un nom de dépôt GitHub incorrect après le renommage.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: L'interface utilisateur ne se rafraîchit pas automatiquement après une correspondance manuelle.**
-    -   **Debug checklist:** Analyser le  et les composants parents (, etc.) pour implémenter un mécanisme de rappel () qui déclenche une actualisation des données.
-    -   **Why to solve this issue and what will be achieved with this?** Pour améliorer l'UX et éviter que l'utilisateur ne pense que son action a échoué.
-    -   **Should Test frontend/backend/both after fix:** Frontend
-    -   **Is recurring issue?** N
+-   Aucun.
 
 **Known issue recurrence from previous fork**
--   None.
+-   **Issue recurrence in previous fork:** Le script de mise à jour de l'application via l'interface utilisateur a de nouveau échoué.
+-   **Recurrence count:** Au moins 2 fois.
+-   **Status:** RESOLVED. L'agent a corrigé le nom du dépôt GitHub dans . Ce point nécessite une attention particulière lors de futures modifications pour s'assurer qu'il ne casse pas à nouveau.
 
 **Code Architecture**
-git
+
 
 **Key Technical Concepts**
--   **Logique métier complexe**: Algorithme de correspondance avec fenêtre de tolérance dynamique, gestion de l'ambiguïté, et mise à jour/création conditionnelle d'entités.
--   **Refactoring de code**: Décomposition d'une fonction monolithique en fonctions utilitaires spécialisées pour améliorer la lisibilité et la maintenabilité.
--   **Scripts de déploiement robustes**: Fiabilisation d'un script de mise à jour usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
-           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
-           <command> [<args>]
-
-These are common Git commands used in various situations:
-
-start a working area (see also: git help tutorial)
-   clone     Clone a repository into a new directory
-   init      Create an empty Git repository or reinitialize an existing one
-
-work on the current change (see also: git help everyday)
-   add       Add file contents to the index
-   mv        Move or rename a file, a directory, or a symlink
-   restore   Restore working tree files
-   rm        Remove files from the working tree and from the index
-
-examine the history and state (see also: git help revisions)
-   bisect    Use binary search to find the commit that introduced a bug
-   diff      Show changes between commits, commit and working tree, etc
-   grep      Print lines matching a pattern
-   log       Show commit logs
-   show      Show various types of objects
-   status    Show the working tree status
-
-grow, mark and tweak your common history
-   branch    List, create, or delete branches
-   commit    Record changes to the repository
-   merge     Join two or more development histories together
-   rebase    Reapply commits on top of another base tip
-   reset     Reset current HEAD to the specified state
-   switch    Switch branches
-   tag       Create, list, delete or verify a tag object signed with GPG
-
-collaborate (see also: git help workflows)
-   fetch     Download objects and refs from another repository
-   pull      Fetch from and integrate with another repository or a local branch
-   push      Update remote refs along with associated objects
-
-'git help -a' and 'git help -g' list available subcommands and some
-concept guides. See 'git help <command>' or 'git help <concept>'
-to read about a specific subcommand or concept.
-See 'git help git' for an overview of the system. en adoptant une approche nucléaire (, Reinitialized existing Git repository in /app/.git/) pour éviter les états corrompus.
--   **Migration de données**: Implémentation d'un script de correction de données qui s'exécute une seule fois au démarrage de l'application pour nettoyer les incohérences passées.
--   **Débogage d'interactions IA-Frontend-Backend**: Analyse du flux complet depuis l'intention de l'utilisateur dans le chat jusqu'à la mise à jour de la base de données, pour identifier que le point de défaillance se situait dans la logique frontend appelant le mauvais endpoint ou omettant des données.
+-   **AI Prompt Engineering:** Modification ciblée du prompt système de l'IA () pour obtenir un format de sortie JSON plus fiable et complet, en particulier pour l'assignation des OT.
+-   **Robust Frontend Logic:** Implémentation de logiques de filet de sécurité (fallback) dans le frontend () pour garantir l'exécution d'une commande même si la réponse de l'IA est incomplète (ex: auto-assignation à l'utilisateur courant).
+-   **Data Integrity & Migration:** Identification et correction de données invalides en base de données ( en minuscules) via un script de migration unique et ajout de code de normalisation pour prévenir de futurs crashs.
+-   **Debugging de Scripts de Déploiement:** Analyse des logs SSH fournis par l'utilisateur pour diagnostiquer un problème dans un script de déploiement () causé par une erreur de configuration (nom de dépôt incorrect).
+-   **Systematic Refactoring:** Utilisation de  et  pour effectuer un renommage global sur de nombreux fichiers, en faisant attention à ne modifier que le texte visible par l'utilisateur.
 
 **key DB schema**
--   **surveillance_items:** champ  (Optional[int]) utilisé pour calculer l'écart entre la date prévue et la date de réalisation.
--   **work_orders:** contient les champs  et . Le bug actuel est probablement lié à la non-synchronisation de ces deux champs lors d'une mise à jour.
--   **users:** contient uid=0(root) gid=0(root) groups=0(root), ,  utilisés pour peupler le champ  des OT.
+-   **work_orders:** Le champ  (dict) et  (str) sont maintenant correctement synchronisés à la création et à la mise à jour. Le champ  a été normalisé en majuscules (ex: ).
 
 **All files of reference**
--   : Fichier clé pour le débogage du bug actuel (assignation d'OT).
--   : Contient la logique frontend des actions de l'IA Adria.
--   : Contient toute la logique métier complexe du Plan de Surveillance.
--   : Page entièrement refactorisée pour les rapports annuels.
--   : Fichier à modifier pour le bug de rafraîchissement de l'UI.
--   : Contient le script de mise à jour de l'application.
+-   : À mettre à jour.
+-   : Manuel de l'application, à mettre à jour.
+-   : Contient la logique backend pour les OT.
+-   : Cœur de la logique frontend pour les commandes Adria.
+-   : Prompt système qui guide le comportement de l'IA Adria.
+-   : Script de mise à jour de l'application, point de défaillance récurrent qui a été corrigé.
 
 **Areas that need refactoring**:
--   Le refactoring de , suggéré dans le précédent handover, a été **complété** avec succès.
+-   Aucun besoin de refactoring identifié.
 
 **key api endpoints**
--   : Endpoint de mise à jour d'un OT, **au cœur du bug actuel**.
--   : Endpoint backend pour Adria (corrigé).
--   : Endpoint principal pour la logique de correspondance (refactorisé et terminé).
--   : Endpoint pour la confirmation manuelle d'une correspondance (terminé).
--   : Endpoint des KPIs pour la page de rapport (modifié pour inclure le filtre par année).
--   : Nouvel endpoint pour la suppression des données du plan de surveillance (terminé).
+-   : Corrigé pour gérer correctement la mise à jour de .
+-   : Corrigé pour gérer la création avec .
+-   : Corrigé pour ne pas crasher avec des données de statut invalides.
+-   : Endpoint de mise à jour, maintenant fonctionnel après correction du nom de repo dans .
 
 **Critical Info for New Agent**
 -   **Vous devez répondre en français.**
--   La priorité absolue (P0) est de corriger le bug d'assignation de technicien via l'assistant IA Adria. L'hypothèse la plus probable est que le backend () ne peuple pas l'objet  lors d'une mise à jour via .
--   N'oubliez pas de traiter ensuite le bug UX (P1) : le manque de rafraîchissement automatique après une correspondance manuelle dans le plan de surveillance.
--   L'application a subi de nombreuses modifications profondes et positives dans cette session. Prenez le temps de relire les fichiers de référence pour bien comprendre l'état actuel avant de coder.
+-   La tâche immédiate est de mettre à jour la documentation ( et ) pour refléter le changement de nom de GMAO à FSAO et les nouvelles capacités de l'assistant Adria.
+-   **Attention au script de mise à jour ()**: Il a été un point de défaillance récurrent. Toute modification future du nom du projet ou du dépôt GitHub doit être vérifiée avec une extrême attention dans ce fichier pour éviter de casser à nouveau le déploiement automatique.
 
 **documents and test reports created in this job**
 -   
 -   
--   
--    (mis à jour à chaque )
+-    (mis à jour par l'agent précédent)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** Signale que bien qu'Adria confirme l'assignation d'un OT à un technicien, l'OT n'est pas réellement mis à jour. (EN COURS)
-2.  **Agent:** Confirme que le fix pour les valeurs par défaut d'Adria fonctionne.
-3.  **User:** Signale que les valeurs par défaut pour les OT créés par Adria n'apparaissent toujours pas. (RESOLU)
-4.  **Agent:** Résume la correction du bug  vs uid=0(root) gid=0(root) groups=0(root) et le crash serveur pour la création d'OT par Adria.
-5.  **Agent:** Débogue un crash serveur lié à  au lieu de . (RESOLU)
-6.  **User:** Demande de corriger deux problèmes avec Adria : le champ Emplacement qui n'apparaît pas dans la liste des OT et l'absence de valeurs par défaut (priorité, date, temps). (RESOLU)
-7.  **Agent:** Confirme la correction du bug d'héritage de  et l'ajout d'une migration de données.
-8.  **User:** Signale un bug critique via des captures d'écran : la nouvelle occurrence (2027) hérite de l'écart de l'ancienne (2026), et l'UI ne se rafraîchit pas après une correspondance manuelle. (PARTIELLEMENT RESOLU)
-9.  **Agent:** Confirme la correction de l'erreur .
-10. **User:** Signale l'erreur  lors d'une correspondance manuelle. (RESOLU)
+1.  **User (LATEST):** Demande de mettre à jour le manuel et le  pour refléter tous les changements. (EN COURS)
+2.  **Agent:** Résume la correction du script de mise à jour.
+3.  **User:** Fournit des logs SSH montrant que la mise à jour automatique a encore échoué. (RESOLU)
+4.  **Agent:** Confirme que le renommage global est terminé et que l'application fonctionne.
+5.  **User:** Demande un renommage global de GMAO en FSAO. (TERMINÉ)
+6.  **Agent:** Confirme que le bug de modification de description par Adria est corrigé.
+7.  **User:** Signale que Adria confirme la modification d'une description d'OT mais ne l'applique pas. (RESOLU)
+8.  **Agent:** Répond que c'est compris.
+9.  **User:** Indique qu'il ne souhaite pas implémenter les notifications push pour le moment.
+10. **Agent:** Propose l'implémentation de notifications push via PWA.
 
 **Project Health Check:**
--   **Broken**: Non. L'application est globalement stable et les fonctionnalités majeures sont opérationnelles. Seuls des bugs spécifiques à l'assistant IA et un bug UX mineur persistent.
+-   **Broken**: Non. L'application est stable et les fonctionnalités critiques sont fonctionnelles.
 -   **Mocked**: N/A.
 
 **3rd Party Integrations**
--   **Gemini Pro (via ):** Utilisé pour l'analyse de documents (Plan de Surveillance, Fournisseurs) et pour l'assistant IA Adria.
+-   **Gemini Pro (via ):** Utilisé pour l'assistant IA Adria.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES (utilisé 3 fois avec succès après chaque lot de fonctionnalités).
+-   **Testing agent used after significant changes**: YES. Utilisé deux fois avec succès pour valider les corrections des bugs liés à Adria.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: []
--   **Known regressions**: []
+-   **Known regressions**: Aucune.
 
 **Credentials to test flow:**
 -   **Admin (Profile: Direction):**  / 
 -   **Non-Admin (Profile: Maintenance):**  / 
 
 **What agent forgot to execute**
--   L'agent a identifié le bug UX du non-rafraîchissement de l'interface après une correspondance manuelle (Message 259) mais ne l'a pas encore corrigé. Ce bug a été ajouté à la liste des problèmes en attente (Issue 2).</analysis>
+-   L'agent a initialement oublié de vérifier l'impact du renommage sur les scripts de déploiement, ce qui a cassé le script . Cependant, le problème a été rapidement identifié et corrigé une fois que l'utilisateur l'a signalé.</analysis>
