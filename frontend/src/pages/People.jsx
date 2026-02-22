@@ -35,12 +35,7 @@ const People = () => {
   const handleTestPushNotification = async (user) => {
     setPushTestLoading(user.id);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${BACKEND_URL}/api/push-notifications/test/${user.id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post(`/push-notifications/test/${user.id}`);
       toast({
         title: 'Notification envoyee',
         description: `Notification push envoyee a ${user.prenom} ${user.nom}`,
