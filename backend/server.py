@@ -2320,6 +2320,20 @@ async def update_equipment_status(
             # Arrondir à l'heure inférieure
             rounded_hour = now.replace(minute=0, second=0, microsecond=0)
             
+            # Notification push si equipement passe en panne
+            new_statut_value_check = statut.value if hasattr(statut, 'value') else statut
+            if new_statut_value_check == "EN_PANNE" and old_statut != "EN_PANNE":
+                from notifications import notify_equipment_alert
+                asyncio.create_task(
+                    notify_equipment_alert(
+                        db=db,
+                        equipment_id=eq_id,
+                        equipment_name=equipment.get("nom", ""),
+                        alert_type="PANNE",
+                        alert_message="L'equipement est en panne"
+                    )
+                )
+            
             # Enregistrer dans l'historique (upsert pour écraser si même heure)
             history_entry = {
                 "equipment_id": eq_id,
