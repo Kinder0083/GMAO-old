@@ -325,8 +325,35 @@ const People = () => {
           </div>
         ) : (
           filteredUsers.map((user) => (
-            <Card key={user.id} className="hover:shadow-xl transition-all duration-300">
+            <Card key={user.id} className="hover:shadow-xl transition-all duration-300 relative">
               <CardContent className="pt-6">
+                {/* Bouton test notification push - Admin uniquement */}
+                {isAdmin() && (
+                  <div className="absolute top-3 right-3">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`push-test-btn-${user.id}`}
+                            className="h-8 w-8 text-gray-400 hover:text-orange-500 hover:bg-orange-50"
+                            disabled={pushTestLoading === user.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTestPushNotification(user);
+                            }}
+                          >
+                            <BellRing size={16} className={pushTestLoading === user.id ? 'animate-pulse' : ''} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Tester la notification push</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )}
                 <div className="flex flex-col items-center text-center">
                   {/* Avatar */}
                   <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center mb-4 shadow-lg">
