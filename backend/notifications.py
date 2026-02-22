@@ -138,7 +138,7 @@ async def notify_work_order_status_changed(
         if tokens:
             await send_expo_push_notification(
                 push_tokens=tokens,
-                title=f"Statut BT modifie",
+                title="Statut BT modifie",
                 body=f"#{work_order_numero} -> {new_status_label}",
                 data={
                     "type": "work_order_status_changed",
