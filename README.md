@@ -617,6 +617,7 @@ Si les backups planifies ne s'executent pas a l'heure prevue :
 | `sensors` | Capteurs IoT |
 | `ai_analysis_history` | Historique des analyses IA (causes racines, tendances, rapports) |
 | `notifications` | Notifications in-app (inclut alertes IA critiques) |
+| `device_tokens` | Tokens push pour notifications mobiles (Expo) |
 | ... | Et 40+ autres collections |
 
 ---
