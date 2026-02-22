@@ -100,6 +100,7 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Tableau d'affichage collaboratif (Whiteboard, WebSocket)
 - Consignes inter-equipes avec acquittement
 - Notifications temps reel pour les ordres de travail et equipements
+- **Notifications push mobile** (Expo Push Service) : alertes automatiques envoyees sur les appareils mobiles lors de l'assignation d'un OT, changement de statut, panne equipement ou message prive
 
 ### Rapports et analytics
 - Tableaux de bord en temps reel
