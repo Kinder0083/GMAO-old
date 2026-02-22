@@ -27,18 +27,22 @@ Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stac
 ### 12. Notifications push mobile - TERMINE (Fev 2026)
 - Nouveau fichier `backend/notifications.py` : service Expo Push
 - 3 endpoints API : `/api/push-notifications/register`, `/unregister`, `/test`
-- Declencheurs automatiques integres dans :
-  - Creation d'OT avec assignation -> notification au technicien assigne
-  - Mise a jour d'OT : changement de statut -> notification createur + assigne
-  - Mise a jour d'OT : reassignation -> notification au nouveau assigne
-  - Equipement passe HORS_SERVICE -> notification tous techniciens et admins
-  - Messages prives dans le chat -> notification aux destinataires
-- Index MongoDB crees au demarrage sur `device_tokens`
+- Declencheurs automatiques integres dans creation/update OT, equipements HORS_SERVICE, chat prive
 - Tests: 17/17 passes (iteration_58.json)
 
 ### 13. Mise a jour documentation - TERMINE (Fev 2026)
-- README.md mis a jour : notifications push, architecture, endpoints API, collections MongoDB
-- manual_default_content.json : mot-cle "fsao" ajoute
+- README.md et manual_default_content.json mis a jour
+
+### 14. Bug Fix: Systeme de mise a jour en boucle - TERMINE (Fev 2026)
+- **Cause racine** : `update_manager.py` ligne 17 avait `self.github_repo = "FSAO"` au lieu de `"GMAO"` (meme bug recurrent que #11, cette fois dans un fichier different)
+- L'API GitHub retournait 404 car le repo "FSAO" n'existe pas, l'endpoint `/api/updates/check` retournait toujours `update_available: false`
+- **Fix** : Correction de `self.github_repo = "GMAO"` dans update_manager.py
+- **Fix additionnel** : Route en double `/api/updates/check` renommee en `/api/updates/check-version` pour eviter conflit entre update_manager et update_service
+
+## ATTENTION - Point de vigilance recurrent
+Le repo GitHub s'appelle **GMAO** (PAS FSAO). Tout renommage futur doit IMPERATIVEMENT verifier ces fichiers :
+- `backend/update_service.py` ligne 23 : `self.github_repo = "GMAO"`
+- `backend/update_manager.py` ligne 17 : `self.github_repo = "GMAO"`
 
 ## Backlog
 - Aucune tache en attente
