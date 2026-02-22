@@ -8097,6 +8097,84 @@ async def get_improvement_comments(imp_id: str, current_user: dict = Depends(req
 
 # ==================== NOTIFICATIONS ENDPOINTS ====================
 
+# --- Push Notifications (routes pour l'app mobile Expo) ---
+# Ces routes DOIVENT etre definies AVANT les routes /notifications/{notification_id}
+# pour eviter que "register", "unregister", "test" soient captures comme des IDs
+from notifications import (
+    send_expo_push_notification,
+    DeviceTokenCreate
+)
+
+@api_router.post("/notifications/register", tags=["Push Notifications"])
+async def mobile_register_device_token(
+    token_data: DeviceTokenCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Register a device push token (mobile app endpoint)."""
+    user_id = str(current_user["id"])
+    existing = await db.device_tokens.find_one({
+        "user_id": user_id,
+        "push_token": token_data.push_token
+    })
+    now = datetime.now(timezone.utc)
+    if existing:
+        await db.device_tokens.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {
+                "updated_at": now,
+                "is_active": True,
+                "platform": token_data.platform,
+                "device_name": token_data.device_name
+            }}
+        )
+        return {"message": "Token updated", "token_id": str(existing["_id"])}
+    token_doc = {
+        "user_id": user_id,
+        "push_token": token_data.push_token,
+        "platform": token_data.platform,
+        "device_name": token_data.device_name,
+        "created_at": now,
+        "updated_at": now,
+        "is_active": True
+    }
+    result = await db.device_tokens.insert_one(token_doc)
+    return {"message": "Token registered", "token_id": str(result.inserted_id)}
+
+@api_router.delete("/notifications/unregister", tags=["Push Notifications"])
+async def mobile_unregister_device_token(
+    push_token: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Unregister a device push token (mobile app endpoint)."""
+    user_id = str(current_user["id"])
+    result = await db.device_tokens.update_one(
+        {"user_id": user_id, "push_token": push_token},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Token not found")
+    return {"message": "Token unregistered"}
+
+@api_router.post("/notifications/test", tags=["Push Notifications"])
+async def mobile_test_notification(
+    current_user: dict = Depends(get_current_user),
+):
+    """Send a test notification to the current user (mobile app endpoint)."""
+    user_id = str(current_user["id"])
+    tokens_cursor = db.device_tokens.find({"user_id": user_id, "is_active": True})
+    tokens = [doc["push_token"] async for doc in tokens_cursor]
+    if not tokens:
+        raise HTTPException(status_code=404, detail="No registered devices")
+    result = await send_expo_push_notification(
+        push_tokens=tokens,
+        title="Test de notification",
+        body="Les notifications fonctionnent correctement !",
+        data={"type": "test"}
+    )
+    return result
+
+# --- Notifications in-app (routes existantes) ---
+
 @api_router.get("/notifications",
     summary="Lister les notifications", tags=["Notifications"])
 async def get_notifications(
