@@ -8743,10 +8743,10 @@ from update_service import UpdateService
 # Initialiser le service de mise à jour
 update_service = UpdateService(db)
 
-@api_router.get("/updates/check")
-async def check_updates(current_user: dict = Depends(get_current_admin_user)):
+@api_router.get("/updates/check-version")
+async def check_updates_version(current_user: dict = Depends(get_current_admin_user)):
     """
-    Vérifie si une mise à jour est disponible (Admin uniquement)
+    Vérifie si une mise à jour est disponible via version.json (Admin uniquement)
     """
     try:
         update_info = await update_service.check_for_updates()
