@@ -182,6 +182,7 @@ fsao-iris/
 │   ├── *_service.py            # 16 services metier
 │   ├── websocket_manager.py    # Chat WebSocket
 │   ├── realtime_manager.py     # Notifications temps reel
+│   ├── notifications.py        # Notifications push mobile (Expo)
 │   ├── whiteboard_manager.py   # Tableau d'affichage WebSocket
 │   ├── mqtt_manager.py         # Integration MQTT
 │   ├── backup_service.py       # Sauvegardes auto (local + Google Drive)
