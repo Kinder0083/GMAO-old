@@ -9232,6 +9232,10 @@ from contract_routes import router as contract_router, init_db as init_contract_
 init_contract_db(db, audit_service)
 api_router.include_router(contract_router)
 
+# Push Notifications routes
+from notifications import router as notifications_router
+api_router.include_router(notifications_router)
+
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 
