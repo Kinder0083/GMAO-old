@@ -32,6 +32,32 @@ const People = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [pushTestLoading, setPushTestLoading] = useState(null);
+
+  const handleTestPushNotification = async (user) => {
+    setPushTestLoading(user.id);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${BACKEND_URL}/api/push-notifications/test/${user.id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast({
+        title: 'Notification envoyee',
+        description: `Notification push envoyee a ${user.prenom} ${user.nom}`,
+      });
+    } catch (error) {
+      const msg = error.response?.data?.detail || 'Erreur lors de l\'envoi';
+      toast({
+        title: 'Echec',
+        description: msg,
+        variant: 'destructive',
+      });
+    } finally {
+      setPushTestLoading(null);
+    }
+  };
 
   // Fonction pour charger les utilisateurs depuis l'API
   const fetchUsers = useCallback(async () => {
