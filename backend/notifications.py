@@ -316,3 +316,35 @@ async def test_notification(
     )
 
     return result
+
+
+@router.post("/test/{user_id}")
+async def test_notification_for_user(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    db=Depends(get_database)
+):
+    """Send a test notification to a specific user (admin only)."""
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    tokens_cursor = db.device_tokens.find({
+        "user_id": user_id,
+        "is_active": True
+    })
+    tokens = [doc["push_token"] async for doc in tokens_cursor]
+
+    if not tokens:
+        raise HTTPException(
+            status_code=404,
+            detail="Aucun appareil mobile enregistre pour cet utilisateur"
+        )
+
+    result = await send_expo_push_notification(
+        push_tokens=tokens,
+        title="Test de notification",
+        body="Les notifications fonctionnent correctement !",
+        data={"type": "test"}
+    )
+
+    return result
