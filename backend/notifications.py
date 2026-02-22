@@ -229,7 +229,7 @@ async def notify_chat_message(
 # API ROUTER
 # ============================================
 
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
+router = APIRouter(prefix="/push-notifications", tags=["Push Notifications"])
 
 @router.post("/register")
 async def register_device_token(
