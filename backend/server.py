@@ -9679,6 +9679,17 @@ async def fix_surveillance_ecart_data():
 
 
 @app.on_event("startup")
+async def create_notification_indexes():
+    """Create MongoDB indexes for push notifications device_tokens collection."""
+    try:
+        await db.device_tokens.create_index([("user_id", 1), ("is_active", 1)])
+        await db.device_tokens.create_index([("push_token", 1)], unique=True)
+        logger.info("Indexes device_tokens crees avec succes")
+    except Exception as e:
+        logger.warning(f"Erreur creation indexes device_tokens: {e}")
+
+
+@app.on_event("startup")
 async def startup_scheduler():
     """Démarre le scheduler au démarrage de l'application"""
     try:
