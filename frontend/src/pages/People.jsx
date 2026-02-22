@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Search, Users as UsersIcon, Mail, Phone, Trash2, Settings, UserPlus, Edit, Shield, Wifi, WifiOff } from 'lucide-react';
+import { Plus, Search, Users as UsersIcon, Mail, Phone, Trash2, Settings, UserPlus, Edit, Shield, Wifi, WifiOff, BellRing } from 'lucide-react';
 import UserProfileDialog from '../components/Common/UserProfileDialog';
 import InviteMemberDialog from '../components/Common/InviteMemberDialog';
 import CreateMemberDialog from '../components/Common/CreateMemberDialog';
