@@ -443,6 +443,9 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | POST | `/api/surveillance/create-batch-from-ai` | Correspondance intelligente Plan de Surveillance |
 | POST | `/api/surveillance/confirm-match` | Confirmation manuelle d'une correspondance |
 | GET | `/api/surveillance/rapport-stats` | KPIs du rapport de surveillance |
+| POST | `/api/push-notifications/register` | Enregistrer un token push (mobile) |
+| DELETE | `/api/push-notifications/unregister` | Desactiver un token push |
+| POST | `/api/push-notifications/test` | Envoyer une notification push de test |
 | WS | `/ws/chat/` | Chat temps reel |
 | WS | `/ws/whiteboard/` | Tableau d'affichage |
 | WS | `/api/ws/realtime/{entity}` | Notifications temps reel |
