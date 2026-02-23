@@ -238,39 +238,32 @@ async def register_device_token(
     db=Depends(get_database)
 ):
     """Register a device push token for the current user."""
-    user_id = str(current_user["id"])
+    try:
+        user_id = str(current_user["id"])
+        now = datetime.now(timezone.utc)
 
-    existing = await db.device_tokens.find_one({
-        "user_id": user_id,
-        "push_token": token_data.push_token
-    })
-
-    now = datetime.now(timezone.utc)
-
-    if existing:
-        await db.device_tokens.update_one(
-            {"_id": existing["_id"]},
+        # Upsert: si le push_token existe deja, on met a jour
+        result = await db.device_tokens.update_one(
+            {"push_token": token_data.push_token},
             {"$set": {
-                "updated_at": now,
-                "is_active": True,
+                "user_id": user_id,
                 "platform": token_data.platform,
-                "device_name": token_data.device_name
-            }}
+                "device_name": token_data.device_name,
+                "updated_at": now,
+                "is_active": True
+            },
+            "$setOnInsert": {
+                "created_at": now
+            }},
+            upsert=True
         )
-        return {"message": "Token updated", "token_id": str(existing["_id"])}
 
-    token_doc = {
-        "user_id": user_id,
-        "push_token": token_data.push_token,
-        "platform": token_data.platform,
-        "device_name": token_data.device_name,
-        "created_at": now,
-        "updated_at": now,
-        "is_active": True
-    }
-
-    result = await db.device_tokens.insert_one(token_doc)
-    return {"message": "Token registered", "token_id": str(result.inserted_id)}
+        if result.upserted_id:
+            return {"message": "Token registered", "token_id": str(result.upserted_id)}
+        return {"message": "Token updated"}
+    except Exception as e:
+        logger.error(f"[PUSH REGISTER] ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/unregister")
 async def unregister_device_token(
