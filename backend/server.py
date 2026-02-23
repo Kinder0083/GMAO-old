@@ -8112,6 +8112,7 @@ async def mobile_register_device_token(
 ):
     """Register a device push token (mobile app endpoint)."""
     user_id = str(current_user["id"])
+    logger.info(f"[PUSH REGISTER] user_id={user_id}, token={token_data.push_token[:30]}..., platform={token_data.platform}")
     existing = await db.device_tokens.find_one({
         "user_id": user_id,
         "push_token": token_data.push_token
@@ -8127,6 +8128,7 @@ async def mobile_register_device_token(
                 "device_name": token_data.device_name
             }}
         )
+        logger.info(f"[PUSH REGISTER] Token updated for user {user_id}")
         return {"message": "Token updated", "token_id": str(existing["_id"])}
     token_doc = {
         "user_id": user_id,
@@ -8138,6 +8140,7 @@ async def mobile_register_device_token(
         "is_active": True
     }
     result = await db.device_tokens.insert_one(token_doc)
+    logger.info(f"[PUSH REGISTER] New token registered for user {user_id}: {str(result.inserted_id)}")
     return {"message": "Token registered", "token_id": str(result.inserted_id)}
 
 @api_router.delete("/notifications/unregister", tags=["Push Notifications"])
