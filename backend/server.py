@@ -8111,37 +8111,36 @@ async def mobile_register_device_token(
     current_user: dict = Depends(get_current_user),
 ):
     """Register a device push token (mobile app endpoint)."""
-    user_id = str(current_user["id"])
-    logger.info(f"[PUSH REGISTER] user_id={user_id}, token={token_data.push_token[:30]}..., platform={token_data.platform}")
-    existing = await db.device_tokens.find_one({
-        "user_id": user_id,
-        "push_token": token_data.push_token
-    })
-    now = datetime.now(timezone.utc)
-    if existing:
-        await db.device_tokens.update_one(
-            {"_id": existing["_id"]},
+    try:
+        user_id = str(current_user["id"])
+        logger.info(f"[PUSH REGISTER] user_id={user_id}, token={token_data.push_token[:30]}..., platform={token_data.platform}")
+        now = datetime.now(timezone.utc)
+
+        # Upsert: si le push_token existe deja (meme user ou user different), on met a jour
+        result = await db.device_tokens.update_one(
+            {"push_token": token_data.push_token},
             {"$set": {
-                "updated_at": now,
-                "is_active": True,
+                "user_id": user_id,
                 "platform": token_data.platform,
-                "device_name": token_data.device_name
-            }}
+                "device_name": token_data.device_name,
+                "updated_at": now,
+                "is_active": True
+            },
+            "$setOnInsert": {
+                "created_at": now
+            }},
+            upsert=True
         )
-        logger.info(f"[PUSH REGISTER] Token updated for user {user_id}")
-        return {"message": "Token updated", "token_id": str(existing["_id"])}
-    token_doc = {
-        "user_id": user_id,
-        "push_token": token_data.push_token,
-        "platform": token_data.platform,
-        "device_name": token_data.device_name,
-        "created_at": now,
-        "updated_at": now,
-        "is_active": True
-    }
-    result = await db.device_tokens.insert_one(token_doc)
-    logger.info(f"[PUSH REGISTER] New token registered for user {user_id}: {str(result.inserted_id)}")
-    return {"message": "Token registered", "token_id": str(result.inserted_id)}
+
+        if result.upserted_id:
+            logger.info(f"[PUSH REGISTER] New token registered for user {user_id}: {str(result.upserted_id)}")
+            return {"message": "Token registered", "token_id": str(result.upserted_id)}
+        else:
+            logger.info(f"[PUSH REGISTER] Token updated for user {user_id}")
+            return {"message": "Token updated"}
+    except Exception as e:
+        logger.error(f"[PUSH REGISTER] ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur enregistrement token: {str(e)}")
 
 @api_router.delete("/notifications/unregister", tags=["Push Notifications"])
 async def mobile_unregister_device_token(
