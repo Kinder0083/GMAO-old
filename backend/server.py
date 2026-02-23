@@ -8176,6 +8176,26 @@ async def mobile_test_notification(
     )
     return result
 
+@api_router.get("/notifications/devices", tags=["Push Notifications"])
+async def get_registered_devices(
+    current_user: dict = Depends(get_current_user),
+):
+    """Diagnostic: list all registered device tokens (admin: all users, other: own only)."""
+    if current_user.get("role") == "ADMIN":
+        cursor = db.device_tokens.find({}, {"_id": 0})
+    else:
+        cursor = db.device_tokens.find(
+            {"user_id": str(current_user["id"])}, {"_id": 0}
+        )
+    devices = []
+    async for doc in cursor:
+        if "created_at" in doc:
+            doc["created_at"] = doc["created_at"].isoformat()
+        if "updated_at" in doc:
+            doc["updated_at"] = doc["updated_at"].isoformat()
+        devices.append(doc)
+    return {"total": len(devices), "devices": devices}
+
 # --- Notifications in-app (routes existantes) ---
 
 @api_router.get("/notifications",
