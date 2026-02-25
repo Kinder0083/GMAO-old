@@ -131,7 +131,8 @@ class RealtimeManager:
                 continue
             
             try:
-                await websocket.send_json(message)
+                text = json.dumps(message, cls=DateTimeEncoder)
+                await websocket.send_text(text)
             except Exception as e:
                 logger.error(f"[Realtime] Erreur broadcast à {user_id}: {e}")
                 disconnected_users.append(user_id)
