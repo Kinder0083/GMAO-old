@@ -155,8 +155,11 @@ async def notify_work_order_status_changed(
                     "new_status": new_status
                 }
             )
+            logger.info(f"[PUSH NOTIFY] Status change send result: {result}")
+        else:
+            logger.info(f"[PUSH NOTIFY] No tokens found for status change, skipping")
     except Exception as e:
-        logger.error(f"Error in notify_work_order_status_changed: {e}")
+        logger.error(f"[PUSH NOTIFY] ERROR in notify_work_order_status_changed: {e}")
 
 async def notify_equipment_alert(
     db,
