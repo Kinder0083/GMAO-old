@@ -88,14 +88,16 @@ async def notify_work_order_assigned(
 ):
     """Send notification when a work order is assigned to a user."""
     try:
+        logger.info(f"[PUSH NOTIFY] notify_work_order_assigned called for user {assigned_user_id}")
         tokens_cursor = db.device_tokens.find({
             "user_id": assigned_user_id,
             "is_active": True
         })
         tokens = [doc["push_token"] async for doc in tokens_cursor]
+        logger.info(f"[PUSH NOTIFY] Found {len(tokens)} active tokens for user {assigned_user_id}")
 
         if tokens:
-            await send_expo_push_notification(
+            result = await send_expo_push_notification(
                 push_tokens=tokens,
                 title="Nouveau bon de travail assigne",
                 body=f"#{work_order_numero}: {work_order_title}",
@@ -105,8 +107,11 @@ async def notify_work_order_assigned(
                     "work_order_numero": work_order_numero
                 }
             )
+            logger.info(f"[PUSH NOTIFY] Send result: {result}")
+        else:
+            logger.info(f"[PUSH NOTIFY] No tokens found, skipping notification")
     except Exception as e:
-        logger.error(f"Error in notify_work_order_assigned: {e}")
+        logger.error(f"[PUSH NOTIFY] ERROR in notify_work_order_assigned: {e}")
 
 async def notify_work_order_status_changed(
     db,
