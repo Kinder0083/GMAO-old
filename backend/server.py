@@ -1432,10 +1432,13 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
         from notifications import notify_work_order_assigned, notify_work_order_status_changed
         
         # Notification si changement d'assignation
+        logger.info(f"[PUSH TRIGGER UPDATE] update_data keys={list(update_data.keys())}, assigne_a_id in update={update_data.get('assigne_a_id')}")
         if "assigne_a_id" in update_data and update_data.get("assigne_a_id"):
             new_assigne = update_data["assigne_a_id"]
             old_assigne = existing_wo.get("assigne_a_id")
-            if new_assigne != old_assigne and new_assigne != current_user.get("id"):
+            logger.info(f"[PUSH TRIGGER UPDATE] Assignation: old={old_assigne} -> new={new_assigne}, current={current_user.get('id')}")
+            if new_assigne != old_assigne:
+                logger.info(f"[PUSH TRIGGER UPDATE] Envoi notification assignation a {new_assigne}")
                 asyncio.create_task(
                     notify_work_order_assigned(
                         db=db,
@@ -1453,7 +1456,8 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
                 notify_ids.append(str(existing_wo["createdBy"]))
             if existing_wo.get("assigne_a_id"):
                 notify_ids.append(str(existing_wo["assigne_a_id"]))
-            notify_ids = list(set(notify_ids) - {str(current_user.get("id"))})
+            notify_ids = list(set(notify_ids))
+            logger.info(f"[PUSH TRIGGER UPDATE] Statut change: {existing_wo.get('statut')} -> {update_data['statut']}, notify_ids={notify_ids}")
             if notify_ids:
                 asyncio.create_task(
                     notify_work_order_status_changed(
