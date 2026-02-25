@@ -140,9 +140,10 @@ async def notify_work_order_status_changed(
             "is_active": True
         })
         tokens = [doc["push_token"] async for doc in tokens_cursor]
+        logger.info(f"[PUSH NOTIFY] Found {len(tokens)} active tokens for status change")
 
         if tokens:
-            await send_expo_push_notification(
+            result = await send_expo_push_notification(
                 push_tokens=tokens,
                 title="Statut BT modifie",
                 body=f"#{work_order_numero} -> {new_status_label}",
