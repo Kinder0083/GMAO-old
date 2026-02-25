@@ -1458,7 +1458,7 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
                 notify_ids.append(str(existing_wo["createdBy"]))
             if existing_wo.get("assigne_a_id"):
                 notify_ids.append(str(existing_wo["assigne_a_id"]))
-            notify_ids = list(set(notify_ids))
+            notify_ids = list(set(notify_ids) - {str(current_user.get("id"))})
             logger.info(f"[PUSH TRIGGER UPDATE] Statut change: {existing_wo.get('statut')} -> {update_data['statut']}, notify_ids={notify_ids}")
             if notify_ids:
                 asyncio.create_task(
