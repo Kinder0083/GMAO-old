@@ -1271,7 +1271,7 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
     
     # Notification push si un utilisateur est assigne
     logger.info(f"[PUSH TRIGGER CREATE] assigne_a_id={wo_create.assigne_a_id}, current_user_id={current_user.get('id')}")
-    if wo_create.assigne_a_id:
+    if wo_create.assigne_a_id and wo_create.assigne_a_id != current_user.get("id"):
         from notifications import notify_work_order_assigned
         logger.info(f"[PUSH TRIGGER CREATE] Envoi notification a {wo_create.assigne_a_id}")
         asyncio.create_task(
@@ -1283,6 +1283,8 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
                 assigned_user_id=wo_create.assigne_a_id
             )
         )
+    elif wo_create.assigne_a_id == current_user.get("id"):
+        logger.info(f"[PUSH TRIGGER CREATE] Auto-assignation, pas de notification")
     
     # Émettre événement temps réel
     from realtime_manager import realtime_manager
