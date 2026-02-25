@@ -124,6 +124,7 @@ async def notify_work_order_status_changed(
 ):
     """Send notification when a work order status changes."""
     try:
+        logger.info(f"[PUSH NOTIFY] notify_work_order_status_changed called for users {notify_user_ids}")
         status_labels = {
             "OUVERT": "Ouvert",
             "EN_COURS": "En cours",
