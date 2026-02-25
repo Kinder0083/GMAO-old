@@ -106,7 +106,8 @@ class RealtimeManager:
         """
         if entity_type in self.connections and user_id in self.connections[entity_type]:
             try:
-                await self.connections[entity_type][user_id].send_json(message)
+                text = json.dumps(message, cls=DateTimeEncoder)
+                await self.connections[entity_type][user_id].send_text(text)
             except Exception as e:
                 logger.error(f"[Realtime] Erreur envoi à {user_id}: {e}")
                 self.disconnect(entity_type, user_id)
