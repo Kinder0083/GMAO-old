@@ -7,9 +7,21 @@ from fastapi import WebSocket
 from typing import Dict, Set, Optional, Any
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
+from bson import ObjectId
+
 
 logger = logging.getLogger(__name__)
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """JSON encoder that handles datetime and ObjectId."""
+    def default(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
 
 # Entités dont les changements doivent notifier les badges du header
 HEADER_RELEVANT_ENTITIES = {
