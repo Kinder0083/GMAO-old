@@ -9933,6 +9933,7 @@ async def startup_scheduler():
         logger.info("   - Notifications PM: tous les jours à 07h00")
         logger.info("   - Rappels surveillance: tous les jours à 07h30")
         logger.info("   - Alertes contrats: tous les jours à 08h00")
+        logger.info("   - Nettoyage push tokens invalides: toutes les 20 min")
 
         # Charger les planifications de backup automatique
         try:
