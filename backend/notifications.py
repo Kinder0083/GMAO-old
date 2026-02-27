@@ -82,30 +82,55 @@ async def send_expo_push_notification(
             )
             result = response.json()
             logger.info(f"Push notification sent: {len(messages)} message(s)")
-            logger.info(f"Expo response data: {result.get('data', [])}")
 
-            # Store ticket IDs for receipt verification
+            # Process Expo response: store tickets + cleanup immediately rejected tokens
             use_db = db if db is not None else _db
             if use_db is not None:
                 tickets_data = result.get("data", [])
                 receipts_to_insert = []
+                tokens_to_remove = []
                 now = datetime.now(timezone.utc)
+
                 for i, ticket in enumerate(tickets_data):
+                    if i >= len(token_order):
+                        break
+                    push_token = token_order[i]
                     ticket_id = ticket.get("id")
-                    if ticket_id and i < len(token_order):
+                    ticket_status = ticket.get("status")
+
+                    if ticket_id and ticket_status == "ok":
+                        # Token accepted - store ticket for receipt verification
                         receipts_to_insert.append({
                             "ticket_id": ticket_id,
-                            "push_token": token_order[i],
-                            "status": ticket.get("status", "unknown"),
+                            "push_token": push_token,
+                            "status": "ok",
                             "created_at": now,
                             "checked": False
                         })
+                    elif ticket_status == "error":
+                        # Token immediately rejected - check if DeviceNotRegistered
+                        error_detail = ticket.get("details", {}).get("error", "")
+                        if error_detail == "DeviceNotRegistered":
+                            tokens_to_remove.append(push_token)
+                            logger.info(f"Token invalide (immediat): {push_token[:30]}...")
+
+                # Store receipts for valid tickets
                 if receipts_to_insert:
                     try:
                         await use_db.push_receipts.insert_many(receipts_to_insert)
                         logger.info(f"Stored {len(receipts_to_insert)} push receipt ticket(s)")
                     except Exception as e:
                         logger.warning(f"Failed to store push receipts: {e}")
+
+                # Immediately remove invalid tokens
+                if tokens_to_remove:
+                    try:
+                        del_result = await use_db.device_tokens.delete_many({
+                            "push_token": {"$in": tokens_to_remove}
+                        })
+                        logger.info(f"Supprime {del_result.deleted_count} token(s) invalide(s) immediatement")
+                    except Exception as e:
+                        logger.warning(f"Failed to remove invalid tokens: {e}")
 
             return {"success": True, "result": result}
     except Exception as e:
