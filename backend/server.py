@@ -9804,7 +9804,7 @@ async def fix_surveillance_ecart_data():
 
 @app.on_event("startup")
 async def create_notification_indexes():
-    """Create MongoDB indexes for push notifications device_tokens collection."""
+    """Create MongoDB indexes for push notifications collections."""
     try:
         # Supprimer l'ancien index unique s'il existe (cause des erreurs 500)
         try:
@@ -9813,9 +9813,11 @@ async def create_notification_indexes():
             pass
         await db.device_tokens.create_index([("user_id", 1), ("is_active", 1)])
         await db.device_tokens.create_index([("push_token", 1)])
-        logger.info("Indexes device_tokens crees avec succes")
+        await db.push_receipts.create_index([("checked", 1), ("created_at", 1)])
+        await db.push_receipts.create_index([("ticket_id", 1)])
+        logger.info("Indexes device_tokens et push_receipts crees avec succes")
     except Exception as e:
-        logger.warning(f"Erreur creation indexes device_tokens: {e}")
+        logger.warning(f"Erreur creation indexes: {e}")
 
 
 @app.on_event("startup")
