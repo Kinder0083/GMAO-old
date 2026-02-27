@@ -9913,6 +9913,15 @@ async def startup_scheduler():
             replace_existing=True
         )
         
+        # Configurer le nettoyage des push tokens invalides toutes les 20 minutes
+        scheduler.add_job(
+            check_push_receipts,
+            CronTrigger(minute='*/20'),  # Toutes les 20 minutes
+            id='push_receipts_check',
+            name='Verification recus push et nettoyage tokens invalides',
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("✅ Scheduler démarré:")
         logger.info("   - Vérification maintenances préventives: tous les jours à 00h00")
