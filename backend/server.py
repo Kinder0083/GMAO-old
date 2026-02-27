@@ -9407,7 +9407,8 @@ init_contract_db(db, audit_service)
 api_router.include_router(contract_router)
 
 # Push Notifications routes
-from notifications import router as push_notifications_router
+from notifications import router as push_notifications_router, set_db as set_notifications_db, check_push_receipts
+set_notifications_db(db)
 api_router.include_router(push_notifications_router)
 
 # WebSocket pour le tableau d'affichage
