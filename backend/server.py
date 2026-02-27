@@ -8194,7 +8194,8 @@ async def mobile_test_notification(
         push_tokens=tokens,
         title="Test de notification",
         body="Les notifications fonctionnent correctement !",
-        data={"type": "test"}
+        data={"type": "test"},
+        db=db
     )
     return result
 
