@@ -82,6 +82,7 @@ async def send_expo_push_notification(
             )
             result = response.json()
             logger.info(f"Push notification sent: {len(messages)} message(s)")
+            logger.info(f"Expo response data: {result.get('data', [])}")
 
             # Store ticket IDs for receipt verification
             use_db = db if db is not None else _db
