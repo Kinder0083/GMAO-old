@@ -1,6 +1,6 @@
 # notifications.py - Push Notifications Service for FSAO Mobile (Expo Push)
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from pydantic import BaseModel
 import httpx
@@ -30,15 +30,26 @@ class NotificationPayload(BaseModel):
 # ============================================
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+EXPO_RECEIPTS_URL = "https://exp.host/--/api/v2/push/getReceipts"
+
+# Reference to db, set at startup from server.py
+_db = None
+
+def set_db(database):
+    global _db
+    _db = database
 
 async def send_expo_push_notification(
     push_tokens: List[str],
     title: str,
     body: str,
-    data: Optional[dict] = None
+    data: Optional[dict] = None,
+    db=None
 ) -> dict:
-    """Send push notification via Expo Push Notification Service."""
+    """Send push notification via Expo Push Notification Service.
+    Stores ticket IDs for later receipt verification."""
     messages = []
+    token_order = []
     for token in push_tokens:
         if not token.startswith("ExponentPushToken"):
             continue
@@ -52,6 +63,7 @@ async def send_expo_push_notification(
         if data:
             message["data"] = data
         messages.append(message)
+        token_order.append(token)
 
     if not messages:
         return {"success": False, "error": "No valid tokens"}
@@ -70,10 +82,115 @@ async def send_expo_push_notification(
             )
             result = response.json()
             logger.info(f"Push notification sent: {len(messages)} message(s)")
+
+            # Store ticket IDs for receipt verification
+            use_db = db or _db
+            if use_db:
+                tickets_data = result.get("data", [])
+                receipts_to_insert = []
+                now = datetime.now(timezone.utc)
+                for i, ticket in enumerate(tickets_data):
+                    ticket_id = ticket.get("id")
+                    if ticket_id and i < len(token_order):
+                        receipts_to_insert.append({
+                            "ticket_id": ticket_id,
+                            "push_token": token_order[i],
+                            "status": ticket.get("status", "unknown"),
+                            "created_at": now,
+                            "checked": False
+                        })
+                if receipts_to_insert:
+                    try:
+                        await use_db.push_receipts.insert_many(receipts_to_insert)
+                        logger.info(f"Stored {len(receipts_to_insert)} push receipt ticket(s)")
+                    except Exception as e:
+                        logger.warning(f"Failed to store push receipts: {e}")
+
             return {"success": True, "result": result}
     except Exception as e:
         logger.error(f"Error sending push notification: {e}")
         return {"success": False, "error": str(e)}
+
+# ============================================
+# RECEIPT VERIFICATION (CRON TASK)
+# ============================================
+
+async def check_push_receipts():
+    """Verify Expo push receipts and remove invalid tokens.
+    Called by scheduler every 20 minutes."""
+    if not _db:
+        logger.warning("[PUSH RECEIPTS] No database reference")
+        return
+
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=15)
+        cursor = _db.push_receipts.find({
+            "checked": False,
+            "created_at": {"$lt": cutoff}
+        }).limit(1000)
+        pending = await cursor.to_list(1000)
+
+        if not pending:
+            return
+
+        ticket_ids = [r["ticket_id"] for r in pending]
+        token_map = {r["ticket_id"]: r["push_token"] for r in pending}
+
+        logger.info(f"[PUSH RECEIPTS] Checking {len(ticket_ids)} receipt(s)")
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                EXPO_RECEIPTS_URL,
+                json={"ids": ticket_ids},
+                headers={"Content-Type": "application/json"},
+                timeout=30.0
+            )
+            result = response.json()
+
+        receipts = result.get("data", {})
+        tokens_to_remove = set()
+        ok_count = 0
+        error_count = 0
+
+        for ticket_id, receipt in receipts.items():
+            receipt_status = receipt.get("status")
+            if receipt_status == "ok":
+                ok_count += 1
+            elif receipt_status == "error":
+                error_detail = receipt.get("details", {}).get("error", "")
+                push_token = token_map.get(ticket_id)
+                if error_detail == "DeviceNotRegistered" and push_token:
+                    tokens_to_remove.add(push_token)
+                    logger.info(f"[PUSH RECEIPTS] Token invalide: {push_token[:30]}...")
+                else:
+                    logger.warning(f"[PUSH RECEIPTS] Erreur ticket {ticket_id}: {error_detail}")
+                error_count += 1
+
+        # Remove invalid tokens from device_tokens collection
+        if tokens_to_remove:
+            result = await _db.device_tokens.delete_many({
+                "push_token": {"$in": list(tokens_to_remove)}
+            })
+            logger.info(f"[PUSH RECEIPTS] {result.deleted_count} token(s) invalide(s) supprime(s)")
+
+        # Mark all as checked
+        await _db.push_receipts.update_many(
+            {"ticket_id": {"$in": ticket_ids}},
+            {"$set": {"checked": True, "checked_at": datetime.now(timezone.utc)}}
+        )
+
+        # Clean up old checked receipts (older than 7 days)
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        cleanup = await _db.push_receipts.delete_many({
+            "checked": True,
+            "created_at": {"$lt": week_ago}
+        })
+
+        logger.info(f"[PUSH RECEIPTS] Done: {ok_count} ok, {error_count} errors, "
+                     f"{len(tokens_to_remove)} removed, {cleanup.deleted_count} old receipts cleaned")
+
+    except Exception as e:
+        logger.error(f"[PUSH RECEIPTS] ERROR: {e}")
 
 # ============================================
 # NOTIFICATION FUNCTIONS BY TYPE
@@ -105,11 +222,12 @@ async def notify_work_order_assigned(
                     "type": "work_order_assigned",
                     "work_order_id": work_order_id,
                     "work_order_numero": work_order_numero
-                }
+                },
+                db=db
             )
             logger.info(f"[PUSH NOTIFY] Send result: {result}")
         else:
-            logger.info(f"[PUSH NOTIFY] No tokens found, skipping notification")
+            logger.info("[PUSH NOTIFY] No tokens found, skipping notification")
     except Exception as e:
         logger.error(f"[PUSH NOTIFY] ERROR in notify_work_order_assigned: {e}")
 
@@ -153,11 +271,12 @@ async def notify_work_order_status_changed(
                     "work_order_numero": work_order_numero,
                     "old_status": old_status,
                     "new_status": new_status
-                }
+                },
+                db=db
             )
             logger.info(f"[PUSH NOTIFY] Status change send result: {result}")
         else:
-            logger.info(f"[PUSH NOTIFY] No tokens found for status change, skipping")
+            logger.info("[PUSH NOTIFY] No tokens found for status change, skipping")
     except Exception as e:
         logger.error(f"[PUSH NOTIFY] ERROR in notify_work_order_status_changed: {e}")
 
@@ -169,7 +288,7 @@ async def notify_equipment_alert(
     alert_message: str,
     notify_user_ids: Optional[List[str]] = None
 ):
-    """Send notification for equipment alerts. If notify_user_ids is None, notify all technicians and admins."""
+    """Send notification for equipment alerts."""
     try:
         if notify_user_ids is None:
             users_cursor = db.users.find({
@@ -201,10 +320,11 @@ async def notify_equipment_alert(
                     "type": "equipment_alert",
                     "equipment_id": equipment_id,
                     "alert_type": alert_type
-                }
+                },
+                db=db
             )
     except Exception as e:
-        logger.error(f"Error in notify_equipment_alert: {e}")
+        logger.error(f"[PUSH NOTIFY] ERROR in notify_equipment_alert: {e}")
 
 async def notify_chat_message(
     db,
@@ -226,14 +346,15 @@ async def notify_chat_message(
         if tokens:
             await send_expo_push_notification(
                 push_tokens=tokens,
-                title=f"{sender_name}",
+                title=sender_name,
                 body=message_preview,
                 data={
                     "type": "chat_message"
-                }
+                },
+                db=db
             )
     except Exception as e:
-        logger.error(f"Error in notify_chat_message: {e}")
+        logger.error(f"[PUSH NOTIFY] ERROR in notify_chat_message: {e}")
 
 # ============================================
 # API ROUTER
@@ -315,7 +436,8 @@ async def test_notification(
         push_tokens=tokens,
         title="Test de notification",
         body="Les notifications fonctionnent correctement !",
-        data={"type": "test"}
+        data={"type": "test"},
+        db=db
     )
 
     return result
@@ -340,14 +462,31 @@ async def test_notification_for_user(
     if not tokens:
         raise HTTPException(
             status_code=404,
-            detail=f"Aucun appareil mobile enregistre pour cet utilisateur. L'utilisateur doit d'abord installer l'application mobile et s'y connecter."
+            detail="Aucun appareil mobile enregistre pour cet utilisateur. L'utilisateur doit d'abord installer l'application mobile et s'y connecter."
         )
 
     result = await send_expo_push_notification(
         push_tokens=tokens,
         title="Test de notification",
         body="Les notifications fonctionnent correctement !",
-        data={"type": "test"}
+        data={"type": "test"},
+        db=db
     )
 
     return result
+
+
+@router.delete("/tokens/{user_id}")
+async def purge_user_tokens(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    db=Depends(get_database)
+):
+    """Purge all push tokens for a specific user (admin only)."""
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    result = await db.device_tokens.delete_many({"user_id": user_id})
+    return {
+        "message": f"{result.deleted_count} token(s) supprime(s) pour l'utilisateur {user_id}"
+    }
