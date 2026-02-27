@@ -84,8 +84,8 @@ async def send_expo_push_notification(
             logger.info(f"Push notification sent: {len(messages)} message(s)")
 
             # Store ticket IDs for receipt verification
-            use_db = db or _db
-            if use_db:
+            use_db = db if db is not None else _db
+            if use_db is not None:
                 tickets_data = result.get("data", [])
                 receipts_to_insert = []
                 now = datetime.now(timezone.utc)
