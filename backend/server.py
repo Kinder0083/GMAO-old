@@ -8118,13 +8118,28 @@ async def mobile_register_device_token(
     token_data: DeviceTokenCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Register a device push token (mobile app endpoint)."""
+    """Register a device push token (mobile app endpoint).
+    Un utilisateur + un appareil = un seul token actif.
+    Les anciens tokens du meme device_name sont desactives."""
     try:
         user_id = str(current_user["id"])
-        logger.info(f"[PUSH REGISTER] user_id={user_id}, token={token_data.push_token[:30]}..., platform={token_data.platform}")
+        logger.info(f"[PUSH REGISTER] user_id={user_id}, token={token_data.push_token[:30]}..., platform={token_data.platform}, device={token_data.device_name}")
         now = datetime.now(timezone.utc)
 
-        # Upsert: si le push_token existe deja (meme user ou user different), on met a jour
+        # Desactiver les anciens tokens du meme utilisateur + meme appareil
+        if token_data.device_name:
+            old_tokens = await db.device_tokens.update_many(
+                {
+                    "user_id": user_id,
+                    "device_name": token_data.device_name,
+                    "push_token": {"$ne": token_data.push_token}
+                },
+                {"$set": {"is_active": False, "updated_at": now}}
+            )
+            if old_tokens.modified_count > 0:
+                logger.info(f"[PUSH REGISTER] Desactive {old_tokens.modified_count} ancien(s) token(s) pour {token_data.device_name}")
+
+        # Upsert le nouveau token
         result = await db.device_tokens.update_one(
             {"push_token": token_data.push_token},
             {"$set": {
