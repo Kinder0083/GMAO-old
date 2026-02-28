@@ -61,10 +61,10 @@ class TestFilePreviewAPI:
     # === API HEALTH CHECK ===
     def test_01_api_accessible(self):
         """Verify backend API is accessible"""
-        # Try multiple endpoints - /api/health might not exist
-        response = requests.get(f"{BASE_URL}/api/users/me", headers={"Authorization": "Bearer invalid"})
-        # Should get 401/403 not connection error - means API is up
-        assert response.status_code in [401, 403, 422], f"Backend not accessible: {response.text}"
+        # Try login endpoint which should always work
+        response = requests.post(f"{BASE_URL}/api/auth/login", json={"email": "", "password": ""})
+        # Should get 401/422 not connection error - means API is up
+        assert response.status_code in [400, 401, 403, 422], f"Backend not accessible: {response.text}"
         print("✅ Backend API is accessible")
 
     def test_02_admin_auth_works(self, admin_token):
