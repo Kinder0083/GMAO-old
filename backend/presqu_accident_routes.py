@@ -679,9 +679,10 @@ async def get_attachments(
 async def download_attachment(
     item_id: str,
     attachment_id: str,
+    preview: bool = False,
     current_user: dict = Depends(get_current_user)
 ):
-    """Télécharger une pièce jointe"""
+    """Télécharger ou prévisualiser une pièce jointe"""
     from fastapi.responses import FileResponse
     import os
     
@@ -704,10 +705,12 @@ async def download_attachment(
         if not file_path or not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
         
+        disposition = "inline" if preview else "attachment"
         return FileResponse(
             path=file_path,
             filename=attachment.get("original_filename", attachment.get("filename")),
-            media_type=attachment.get("mime_type", "application/octet-stream")
+            media_type=attachment.get("mime_type", "application/octet-stream"),
+            content_disposition_type=disposition
         )
     except HTTPException:
         raise
