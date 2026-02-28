@@ -53,16 +53,17 @@ Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stac
 - manual_default_content.json : section "Joindre des Fichiers" enrichie + nouveau chapitre "Notifications Push Mobile"
 
 ## ATTENTION - Point de vigilance recurrent
-Le repo GitHub s'appelle **GMAO** (PAS FSAO). Tout renommage futur doit IMPERATIVEMENT verifier ces fichiers :
-- `backend/update_service.py` ligne 23 : `self.github_repo = "GMAO"`
-- `backend/update_manager.py` ligne 17 : `self.github_repo = "GMAO"`
+Le repo GitHub s'appelle **GMAO** (PAS FSAO). Le nom est maintenant centralise dans `backend/.env` :
+- `GITHUB_USER=Kinder0083`
+- `GITHUB_REPO=GMAO`
+- `GITHUB_BRANCH=main`
+Les fichiers `update_service.py` et `update_manager.py` lisent ces variables via `os.environ.get()`.
 
 ## Backlog
 - Aucune tache en attente
 
 ## Taches futures
 - Notifications push via PWA (reporte par l'utilisateur)
-- Centraliser le nom du depot GitHub (actuellement hardcode dans update_service.py et update_manager.py)
 
 ## Credentials
 - Admin: admin@test.com / Admin123!
