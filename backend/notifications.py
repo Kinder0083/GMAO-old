@@ -394,10 +394,23 @@ async def register_device_token(
     current_user: dict = Depends(get_current_user),
     db=Depends(get_database)
 ):
-    """Register a device push token for the current user."""
+    """Register a device push token for the current user.
+    Desactive automatiquement les anciens tokens du meme appareil."""
     try:
         user_id = str(current_user["id"])
         now = datetime.now(timezone.utc)
+
+        # Desactiver les anciens tokens du meme appareil/utilisateur
+        # (important lors du remplacement d'un APK avec nouveau sender ID)
+        if token_data.device_name:
+            await db.device_tokens.update_many(
+                {
+                    "user_id": user_id,
+                    "device_name": token_data.device_name,
+                    "push_token": {"$ne": token_data.push_token}
+                },
+                {"$set": {"is_active": False, "updated_at": now}}
+            )
 
         # Upsert: si le push_token existe deja, on met a jour
         result = await db.device_tokens.update_one(
@@ -416,7 +429,9 @@ async def register_device_token(
         )
 
         if result.upserted_id:
+            logger.info(f"[PUSH REGISTER] Nouveau token pour user {user_id} device {token_data.device_name}")
             return {"message": "Token registered", "token_id": str(result.upserted_id)}
+        logger.info(f"[PUSH REGISTER] Token mis a jour pour user {user_id}")
         return {"message": "Token updated"}
     except Exception as e:
         logger.error(f"[PUSH REGISTER] ERROR: {e}")
