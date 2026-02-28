@@ -3,6 +3,7 @@ import { Button } from '../ui/button';
 import { X, Download, File, Image, Video, FileText, Loader2, Paperclip, Eye } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { useConfirmDialog } from '../ui/confirm-dialog';
+import AttachmentGallery from './AttachmentGallery';
 
 /**
  * Composant générique pour afficher et gérer les pièces jointes
