@@ -16,6 +16,8 @@ class UpdateManager:
         self.github_user = os.environ.get("GITHUB_USER", "Kinder0083")
         self.github_repo = os.environ.get("GITHUB_REPO", "GMAO")
         self.github_branch = os.environ.get("GITHUB_BRANCH", "main")
+        # Centraliser le chemin de l'application
+        self.app_root = str(Path(__file__).parent.parent)
         self.current_commit = None
         self._load_version()
     
@@ -23,7 +25,7 @@ class UpdateManager:
         """Charge la version depuis updates/version.json"""
         try:
             # Chercher version.json dans plusieurs emplacements
-            for base in [Path(__file__).parent.parent, Path("/opt/gmao-iris")]:
+            for base in [Path(self.app_root), Path("/opt/gmao-iris")]:
                 vf = base / "updates" / "version.json"
                 if vf.exists():
                     with open(vf) as f:
