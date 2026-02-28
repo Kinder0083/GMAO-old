@@ -8228,6 +8228,257 @@ async def get_registered_devices(
         devices.append(doc)
     return {"total": len(devices), "devices": devices}
 
+
+@api_router.get("/notifications/diagnostic", tags=["Push Notifications"])
+async def push_notification_diagnostic(
+    current_user: dict = Depends(require_role("ADMIN")),
+):
+    """Diagnostic complet des notifications push.
+    Teste chaque token individuellement et retourne le resultat brut d'Expo."""
+    import httpx
+    
+    report = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "etapes": [],
+        "tokens_db": [],
+        "tokens_inactifs": [],
+        "receipts_recents": [],
+        "test_envoi": [],
+        "conclusion": "",
+        "actions_recommandees": []
+    }
+    
+    # ETAPE 1: Lister TOUS les tokens (actifs + inactifs)
+    all_tokens = []
+    async for doc in db.device_tokens.find({}, {"_id": 0}):
+        for k in ["created_at", "updated_at"]:
+            if k in doc and hasattr(doc[k], 'isoformat'):
+                doc[k] = doc[k].isoformat()
+        all_tokens.append(doc)
+    
+    actifs = [t for t in all_tokens if t.get("is_active")]
+    inactifs = [t for t in all_tokens if not t.get("is_active")]
+    
+    report["tokens_db"] = actifs
+    report["tokens_inactifs"] = inactifs
+    report["etapes"].append({
+        "etape": "1. Tokens en base",
+        "resultat": f"{len(actifs)} actif(s), {len(inactifs)} inactif(s), {len(all_tokens)} total",
+        "statut": "OK" if actifs else "ERREUR - Aucun token actif"
+    })
+    
+    if not actifs:
+        report["conclusion"] = "ECHEC: Aucun token actif en base. L'application mobile n'a pas enregistre de token, ou le systeme de nettoyage les a supprimes."
+        report["actions_recommandees"] = [
+            "1. Ouvrir l'application mobile et se connecter",
+            "2. Verifier que l'app appelle POST /api/notifications/register au demarrage",
+            "3. Revenir ici et relancer le diagnostic"
+        ]
+        return report
+    
+    # ETAPE 2: Tester chaque token actif individuellement avec Expo
+    for token_doc in actifs:
+        push_token = token_doc["push_token"]
+        test_result = {
+            "token": push_token[:40] + "..." if len(push_token) > 40 else push_token,
+            "user_id": token_doc.get("user_id"),
+            "device_name": token_doc.get("device_name"),
+            "platform": token_doc.get("platform"),
+        }
+        
+        try:
+            test_message = {
+                "to": push_token,
+                "title": "Diagnostic FSAO",
+                "body": "Test de diagnostic automatique",
+                "sound": "default",
+                "priority": "high",
+                "data": {"type": "diagnostic_test"}
+            }
+            
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://exp.host/--/api/v2/push/send",
+                    json=[test_message],
+                    headers={
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                    },
+                    timeout=15.0
+                )
+                expo_response = resp.json()
+            
+            test_result["expo_http_status"] = resp.status_code
+            test_result["expo_reponse_brute"] = expo_response
+            
+            # Analyser la reponse
+            tickets = expo_response.get("data", [])
+            if tickets:
+                ticket = tickets[0]
+                ticket_status = ticket.get("status")
+                ticket_id = ticket.get("id")
+                
+                test_result["ticket_status"] = ticket_status
+                test_result["ticket_id"] = ticket_id
+                
+                if ticket_status == "ok":
+                    test_result["verdict"] = "OK - Expo a accepte le message. Notification en cours de livraison."
+                    
+                    # Verifier le receipt immediatement (attendre 5s)
+                    if ticket_id:
+                        await asyncio.sleep(5)
+                        try:
+                            receipt_resp = await httpx.AsyncClient().post(
+                                "https://exp.host/--/api/v2/push/getReceipts",
+                                json={"ids": [ticket_id]},
+                                headers={"Content-Type": "application/json"},
+                                timeout=10.0
+                            )
+                            receipt_data = receipt_resp.json()
+                            receipt_info = receipt_data.get("data", {}).get(ticket_id, {})
+                            test_result["receipt_verification"] = receipt_info if receipt_info else "Pas encore disponible (normal, reessayer dans 15min)"
+                            
+                            if receipt_info.get("status") == "error":
+                                error_detail = receipt_info.get("details", {}).get("error", "")
+                                test_result["verdict"] = f"ECHEC LIVRAISON - Expo a accepte puis refuse: {error_detail}"
+                                if error_detail == "DeviceNotRegistered":
+                                    test_result["explication"] = "Le token n'est pas reconnu par FCM/APNs. L'app mobile doit etre recompiee avec les credentials Firebase."
+                        except Exception as e:
+                            test_result["receipt_verification"] = f"Erreur verification: {str(e)}"
+                    
+                elif ticket_status == "error":
+                    error_detail = ticket.get("details", {}).get("error", "")
+                    error_message = ticket.get("message", "")
+                    test_result["verdict"] = f"REFUSE PAR EXPO - {error_detail}: {error_message}"
+                    
+                    if error_detail == "DeviceNotRegistered":
+                        test_result["explication"] = "Token invalide. L'appareil n'est plus enregistre aupres de FCM."
+                    elif error_detail == "InvalidCredentials":
+                        test_result["explication"] = "Les credentials FCM du projet Expo sont invalides."
+                    elif error_detail == "MessageTooBig":
+                        test_result["explication"] = "Message trop gros (ne devrait pas arriver en diagnostic)."
+                    else:
+                        test_result["explication"] = f"Erreur Expo: {error_detail}"
+            else:
+                test_result["verdict"] = "REPONSE VIDE - Expo n'a retourne aucun ticket"
+                
+        except Exception as e:
+            test_result["verdict"] = f"ERREUR RESEAU - Impossible de contacter Expo: {str(e)}"
+        
+        report["test_envoi"].append(test_result)
+    
+    report["etapes"].append({
+        "etape": "2. Test envoi Expo",
+        "resultat": f"{len(report['test_envoi'])} token(s) teste(s)",
+        "statut": "Voir details dans test_envoi"
+    })
+    
+    # ETAPE 3: Verifier les receipts recents
+    recent_receipts = []
+    async for doc in db.push_receipts.find({}).sort("created_at", -1).limit(20):
+        for k in ["created_at", "checked_at"]:
+            if k in doc and hasattr(doc[k], 'isoformat'):
+                doc[k] = doc[k].isoformat()
+        doc.pop("_id", None)
+        recent_receipts.append(doc)
+    report["receipts_recents"] = recent_receipts
+    report["etapes"].append({
+        "etape": "3. Receipts recents",
+        "resultat": f"{len(recent_receipts)} receipt(s) en base",
+        "statut": "OK" if recent_receipts else "INFO - Aucun receipt (normal si aucune notif n'a ete envoyee)"
+    })
+    
+    # CONCLUSION
+    verdicts = [t.get("verdict", "") for t in report["test_envoi"]]
+    all_ok = all("OK" in v for v in verdicts)
+    all_device_not_registered = all("DeviceNotRegistered" in v for v in verdicts)
+    all_refused = all("REFUSE" in v or "ECHEC" in v for v in verdicts)
+    
+    if all_ok:
+        report["conclusion"] = "SUCCES: Toutes les notifications ont ete acceptees par Expo. Si vous ne les recevez toujours pas, le probleme est cote appareil (mode silencieux, batterie, permissions)."
+        report["actions_recommandees"] = [
+            "1. Verifier les permissions de notification sur l'appareil",
+            "2. Verifier que le mode 'Ne pas deranger' est desactive",
+            "3. Verifier l'optimisation batterie pour l'app FSAO",
+            "4. Forcer l'arret de l'app et la relancer"
+        ]
+    elif all_device_not_registered:
+        report["conclusion"] = "ECHEC: Tous les tokens sont rejetes avec DeviceNotRegistered. Les credentials Firebase (FCM) ne sont pas configurees dans le projet Expo."
+        report["actions_recommandees"] = [
+            "1. Verifier que google-services.json est present dans le projet mobile",
+            "2. Configurer la Server Key FCM dans Expo (expo push:android:upload)",
+            "3. Recompiler l'app avec eas build (pas juste expo start)",
+            "4. Reinstaller l'app sur l'appareil et se reconnecter",
+            "5. Relancer ce diagnostic"
+        ]
+    elif all_refused:
+        report["conclusion"] = "ECHEC: Toutes les notifications sont refusees par Expo. Voir les details dans test_envoi."
+        report["actions_recommandees"] = [
+            "Transmettre ce rapport complet au support technique"
+        ]
+    else:
+        report["conclusion"] = "RESULTAT MIXTE: Certains tokens fonctionnent, d'autres non. Voir les details."
+        report["actions_recommandees"] = [
+            "Purger les tokens invalides et reconnecter les appareils"
+        ]
+    
+    return report
+
+@api_router.post("/notifications/send-raw-test", tags=["Push Notifications"])
+async def send_raw_test_notification(
+    push_token: str = None,
+    user_id: str = None,
+    current_user: dict = Depends(require_role("ADMIN")),
+):
+    """Envoie un test brut a un token specifique ou a un utilisateur.
+    Retourne la reponse Expo complete sans filtrage."""
+    import httpx
+    
+    tokens = []
+    if push_token:
+        tokens = [push_token]
+    elif user_id:
+        async for doc in db.device_tokens.find({"user_id": user_id, "is_active": True}):
+            tokens.append(doc["push_token"])
+    else:
+        raise HTTPException(status_code=400, detail="Fournir push_token ou user_id")
+    
+    if not tokens:
+        return {"error": "Aucun token trouve", "tokens_trouves": 0}
+    
+    results = []
+    for token in tokens:
+        message = {
+            "to": token,
+            "title": "Test direct FSAO",
+            "body": f"Test envoye a {datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC",
+            "sound": "default",
+            "priority": "high",
+            "data": {"type": "test"}
+        }
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://exp.host/--/api/v2/push/send",
+                    json=[message],
+                    headers={"Accept": "application/json", "Content-Type": "application/json"},
+                    timeout=15.0
+                )
+            results.append({
+                "token": token[:40] + "...",
+                "http_status": resp.status_code,
+                "expo_response": resp.json()
+            })
+        except Exception as e:
+            results.append({
+                "token": token[:40] + "...",
+                "error": str(e)
+            })
+    
+    return {"tokens_testes": len(tokens), "resultats": results}
+
+
 # --- Notifications in-app (routes existantes) ---
 
 @api_router.get("/notifications",
