@@ -52,6 +52,15 @@ Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stac
 - README.md : ajout mention previsualisation pieces jointes, nettoyage tokens push
 - manual_default_content.json : section "Joindre des Fichiers" enrichie + nouveau chapitre "Notifications Push Mobile"
 
+### 17. Galerie de pieces jointes avec miniatures et lightbox - TERMINE (Fev 2026)
+- Nouveau composant `components/shared/AttachmentGallery.jsx` reutilisable
+- **Miniatures** : grille de miniatures cliquables dans la fiche (images = vraie preview, PDF/video/texte = icone stylisee)
+- **Lightbox** : overlay plein ecran (fond sombre, navigation fleches, compteur, nom de fichier, fermeture X/Escape/clic exterieur)
+- Support complet : images (img), PDF (iframe), videos (lecteur avec controles), texte (iframe)
+- Navigation clavier : Escape, ArrowLeft, ArrowRight
+- Integre dans tous les modules : OT, ameliorations, presqu'accidents, maintenance preventive, demandes d'arret (via shared + WO + Improvements AttachmentsList)
+- Tests: 8/8 backend + frontend 100% (iteration_60.json)
+
 ## ATTENTION - Point de vigilance recurrent
 Le repo GitHub s'appelle **GMAO** (PAS FSAO). Le nom est maintenant centralise dans `backend/.env` :
 - `GITHUB_USER=Kinder0083`
