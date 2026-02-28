@@ -11,6 +11,13 @@ const AttachmentsList = ({ improvementId, refreshTrigger }) => {
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [previewing, setPreviewing] = useState(null);
+
+  const isPreviewable = (mimeType) => {
+    if (!mimeType) return false;
+    return mimeType.startsWith('image/') || mimeType === 'application/pdf' || 
+           mimeType.startsWith('video/') || mimeType.startsWith('text/');
+  };
 
   useEffect(() => {
     if (improvementId) {
