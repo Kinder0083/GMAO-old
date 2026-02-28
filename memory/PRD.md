@@ -73,6 +73,13 @@ Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stac
 - Fonctions corrigees: get_current_commit, create_backup, apply_update, get_git_history, rollback_to_commit
 - Tests: API /api/updates/current et /api/updates/check fonctionnels (iteration_61.json)
 
+### 20. Bug Fix: Systeme de mise a jour - faux conflits Git - TERMINE (Fev 2026)
+- `git status --porcelain` listait TOUS les fichiers (y compris untracked: uploads/, venv/, tests/) → 52 "conflits" a chaque mise a jour
+- Fix: Utilisation de `git diff --name-status HEAD` (fichiers suivis uniquement) + fallback `git status -uno`
+- Ajout `.gitignore` automatique (methode `_ensure_gitignore`) pour exclure uploads/, venv/, tests/, etc.
+- Filtrage des fichiers non-critiques (.gitignore, yarn.lock) dans la detection de conflits
+- `.gitignore` recree apres `git reset --hard` dans le processus de mise a jour
+
 ## ATTENTION - Point de vigilance recurrent
 Le repo GitHub s'appelle **GMAO** (PAS FSAO). Le nom est maintenant centralise dans `backend/.env` :
 - `GITHUB_USER=Kinder0083`
