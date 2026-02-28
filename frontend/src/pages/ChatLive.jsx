@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Paperclip, Camera, Users, X, Lock, Download, FileText, ArrowRightCircle, Mail as MailIcon, AlertTriangle } from 'lucide-react';
+import { Send, Paperclip, Camera, Users, X, Lock, Download, FileText, ArrowRightCircle, Mail as MailIcon, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
