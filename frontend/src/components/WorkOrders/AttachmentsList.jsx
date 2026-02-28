@@ -141,11 +141,30 @@ const AttachmentsList = ({ workOrderId, refreshTrigger }) => {
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
+                {isPreviewable(attachment.mime_type) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePreview(attachment.id, attachment.mime_type)}
+                    disabled={previewing === attachment.id}
+                    className="h-8 w-8 p-0"
+                    data-testid={`wo-preview-btn-${attachment.id}`}
+                    title="Prévisualiser"
+                  >
+                    {previewing === attachment.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Eye size={16} />
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDownload(attachment.id, attachment.original_filename)}
                   className="h-8 w-8 p-0"
+                  data-testid={`wo-download-btn-${attachment.id}`}
+                  title="Télécharger"
                 >
                   <Download size={16} />
                 </Button>
