@@ -119,6 +119,27 @@ const AttachmentsList = ({
     }
   };
 
+  const handlePreview = async (attachmentId, mimeType) => {
+    if (!downloadFunction) return;
+    
+    try {
+      setPreviewing(attachmentId);
+      const response = await downloadFunction(itemId, attachmentId);
+      const blob = new Blob([response.data || response], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 120000);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de prévisualiser le fichier',
+        variant: 'destructive'
+      });
+    } finally {
+      setPreviewing(null);
+    }
+  };
+
   const getFileIcon = (mimeType) => {
     if (!mimeType) return <File size={18} className="text-gray-500" />;
     if (mimeType.startsWith('image/')) return <Image size={18} className="text-blue-600" />;
