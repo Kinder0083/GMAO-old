@@ -734,10 +734,12 @@ async def download_file(
         raise HTTPException(status_code=404, detail="Fichier physique non trouvé")
     
     from fastapi.responses import FileResponse
+    disposition = "inline" if preview else "attachment"
     return FileResponse(
         path=file_path,
         filename=attachment.get("original_filename"),
-        media_type=attachment.get("mime_type")
+        media_type=attachment.get("mime_type"),
+        content_disposition_type=disposition
     )
 
 
