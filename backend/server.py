@@ -8430,10 +8430,12 @@ async def push_notification_diagnostic(
 async def send_raw_test_notification(
     push_token: str = None,
     user_id: str = None,
-    current_user: dict = Depends(require_role("ADMIN")),
+    current_user: dict = Depends(get_current_user),
 ):
     """Envoie un test brut a un token specifique ou a un utilisateur.
     Retourne la reponse Expo complete sans filtrage."""
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin only")
     import httpx
     
     tokens = []
