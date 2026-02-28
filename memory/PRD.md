@@ -61,6 +61,18 @@ Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stac
 - Integre dans tous les modules : OT, ameliorations, presqu'accidents, maintenance preventive, demandes d'arret (via shared + WO + Improvements AttachmentsList)
 - Tests: 8/8 backend + frontend 100% (iteration_60.json)
 
+### 18. Bug Fix: Lightbox blob URLs revoquees prematurement - TERMINE (Fev 2026)
+- Le cleanup du useEffect dans AttachmentGallery.jsx revoquait les blob URLs a chaque changement de reference de `attachments`
+- Les miniatures restaient visibles (navigateur garde les images en memoire) mais le lightbox echouait car il creait un nouvel element img avec une URL revoquee
+- Fix: Separation du cleanup dans un useEffect a deps vides (unmount only) + ajout mountedRef pour eviter les mises a jour d'etat apres demontage
+- Tests: 15/15 passes (iteration_61.json)
+
+### 19. Bug Fix: Systeme de mise a jour - chemins hardcodes - TERMINE (Fev 2026)
+- 8 occurrences de `/opt/gmao-iris` hardcodees dans update_manager.py empechaient le systeme de fonctionner si l'installation etait dans un autre repertoire
+- Fix: Ajout de `self.app_root = str(Path(__file__).parent.parent)` et remplacement de toutes les occurrences
+- Fonctions corrigees: get_current_commit, create_backup, apply_update, get_git_history, rollback_to_commit
+- Tests: API /api/updates/current et /api/updates/check fonctionnels (iteration_61.json)
+
 ## ATTENTION - Point de vigilance recurrent
 Le repo GitHub s'appelle **GMAO** (PAS FSAO). Le nom est maintenant centralise dans `backend/.env` :
 - `GITHUB_USER=Kinder0083`
