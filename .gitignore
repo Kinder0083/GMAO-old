@@ -903,3 +903,7 @@ __pycache__/
 .env
 post-update.sh
 update.sh
+-e 
+# Environment files
+*.env
+*.env.*
