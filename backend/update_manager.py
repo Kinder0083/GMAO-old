@@ -396,7 +396,7 @@ class UpdateManager:
     async def rollback_to_commit(self, commit_hash: str) -> Dict:
         """Effectue un rollback Git vers un commit spécifique"""
         try:
-            app_root = "/opt/gmao-iris"
+            app_root = self.app_root
             
             # Vérifier si c'est un dépôt Git
             if not Path(f"{app_root}/.git").exists():
