@@ -221,3 +221,114 @@ Notifications.addNotificationResponseReceivedListener(response => {
 | `GET` | `/api/notifications/devices` | Lister les appareils enregistrés (admin: tous, autre: les siens) |
 
 Tous les endpoints nécessitent `Authorization: Bearer <JWT_TOKEN>`.
+
+---
+
+## PROBLEME IDENTIFIE — A CORRIGER EN PRIORITE
+
+### Diagnostic
+
+Le backend envoie correctement les notifications à l'API Expo Push. Cependant, **l'API Expo retourne l'erreur `DeviceNotRegistered`** pour tous les tokens enregistrés. Cela signifie que les tokens push générés par l'application mobile ne sont **pas valides** auprès de Firebase Cloud Messaging (FCM).
+
+### Cause probable
+
+L'application mobile n'a pas les **credentials FCM** (Firebase Cloud Messaging) correctement configurées. Sans cela, Expo génère des tokens push qui ne sont rattachés à aucun projet Firebase, et les serveurs de push (Google/Apple) refusent de délivrer les notifications.
+
+### Ce que l'agent mobile DOIT vérifier et corriger
+
+#### 1. Créer un projet Firebase (si pas déjà fait)
+- Aller sur https://console.firebase.google.com
+- Créer un projet (ou utiliser l'existant)
+- Ajouter une application Android avec le **bon package name** (celui dans `app.json` → `android.package`)
+- Télécharger le fichier `google-services.json`
+
+#### 2. Configurer les credentials dans le projet Expo
+- Placer `google-services.json` à la racine du projet mobile
+- Dans `app.json` ou `app.config.js`, ajouter :
+
+```json
+{
+  "expo": {
+    "android": {
+      "package": "com.votre.package",
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ]
+    ]
+  }
+}
+```
+
+#### 3. Configurer la Server Key FCM dans Expo (CRITIQUE)
+- Dans la console Firebase → Paramètres du projet → Cloud Messaging
+- Copier la **Server Key** (ou créer une clé V1)
+- Exécuter cette commande dans le projet mobile :
+
+```bash
+expo push:android:upload --api-key VOTRE_SERVER_KEY_FCM
+```
+
+Ou via l'API Expo :
+```bash
+curl -H "Authorization: Bearer VOTRE_EXPO_ACCESS_TOKEN" \
+     -H "Content-Type: application/json" \
+     -X POST https://exp.host/--/api/v2/push/setFcmV1Credentials \
+     -d '{"experienceId": "@votre-compte/votre-app", "credential": {"type": "service-account", ...}}'
+```
+
+**Sans cette étape, les tokens Expo ne sont PAS reliés à FCM et toutes les notifications échouent avec `DeviceNotRegistered`.**
+
+#### 4. Recompiler l'application
+Après avoir ajouté `google-services.json` et configuré les credentials :
+```bash
+eas build --platform android --profile preview
+```
+Ou pour un development build :
+```bash
+npx expo run:android
+```
+
+**Important :** Un simple `expo start` NE suffit PAS. Il faut une recompilation native (EAS Build ou `expo run:android`).
+
+#### 5. Tester
+Après installation de la nouvelle build :
+1. Se connecter dans l'app mobile
+2. Vérifier que le token est enregistré : `GET /api/notifications/devices`
+3. Envoyer un test : `POST /api/notifications/test`
+4. La notification DOIT apparaître sur l'appareil
+
+### Résumé du problème
+
+| Composant | Statut |
+|---|---|
+| Backend (envoi vers Expo API) | OK |
+| Expo Push Service | OK (retourne `DeviceNotRegistered`) |
+| Token push mobile | INVALIDE (pas relié à FCM) |
+| Configuration FCM dans Expo | MANQUANTE |
+| `google-services.json` | A VERIFIER |
+
+### Test rapide pour vérifier si FCM est configuré
+
+Dans l'app mobile, après login, exécuter :
+```javascript
+import * as Notifications from 'expo-notifications';
+const token = await Notifications.getExpoPushTokenAsync({
+  projectId: 'VOTRE_PROJECT_ID_EXPO'  // depuis app.json → extra.eas.projectId
+});
+console.log('Token:', token.data);
+// Si le token commence par "ExponentPushToken[" c'est OK
+// Mais il faut AUSSI que FCM soit configuré pour que ce token soit valide
+```
+
+Puis vérifier côté backend que le token est bien enregistré :
+```bash
+curl -X GET "https://VOTRE_DOMAINE/api/notifications/devices" \
+  -H "Authorization: Bearer VOTRE_JWT_TOKEN"
+```
