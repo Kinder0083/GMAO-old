@@ -1075,7 +1075,7 @@ const ChatLive = () => {
                               isOwnMessage ? 'bg-blue-500 border-blue-400' : 'bg-white border-gray-300'
                             }`}
                             onContextMenu={(e) => handleFileContextMenu(e, attachment, message.id)}
-                            onClick={() => downloadFile(attachment.id)}
+                            onClick={() => isPreviewable(attachment.mime_type) ? previewFile(attachment.id, attachment.mime_type) : downloadFile(attachment.id)}
                           >
                             <FileText className={`h-5 w-5 ${isOwnMessage ? 'text-white' : 'text-gray-600'}`} />
                             <div className="flex-1 min-w-0">
@@ -1086,7 +1086,11 @@ const ChatLive = () => {
                                 {formatFileSize(attachment.file_size)}
                               </div>
                             </div>
-                            <Download className={`h-4 w-4 ${isOwnMessage ? 'text-white' : 'text-gray-500'}`} />
+                            {isPreviewable(attachment.mime_type) ? (
+                              <Eye className={`h-4 w-4 ${isOwnMessage ? 'text-white' : 'text-gray-500'}`} />
+                            ) : (
+                              <Download className={`h-4 w-4 ${isOwnMessage ? 'text-white' : 'text-gray-500'}`} />
+                            )}
                           </div>
                         ))}
                       </div>
