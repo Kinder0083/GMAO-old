@@ -230,10 +230,38 @@ class UpdateService:
             }
 
     
+    def _ensure_gitignore(self):
+        """S'assure qu'un .gitignore existe avec les exclusions nécessaires"""
+        gitignore_path = self.app_root / ".gitignore"
+        required_patterns = [
+            "venv/", "backend/uploads/", "backend/tests/", 
+            "*.pyc", "__pycache__/", "node_modules/",
+            "frontend/build/", ".env", "*.log",
+            "backups/", "post-update.sh", "update.sh"
+        ]
+        
+        existing_patterns = set()
+        if gitignore_path.exists():
+            try:
+                existing_patterns = set(gitignore_path.read_text().strip().split('\n'))
+            except Exception:
+                pass
+        
+        missing = [p for p in required_patterns if p not in existing_patterns]
+        if missing:
+            try:
+                with open(gitignore_path, 'a') as f:
+                    if existing_patterns:
+                        f.write('\n')
+                    f.write('\n'.join(missing) + '\n')
+            except Exception:
+                pass
+
     def check_git_conflicts(self) -> Dict:
         """
         Vérifie s'il y a des modifications locales non commitées qui pourraient créer des conflits
         Retourne un dictionnaire avec le statut et la liste des fichiers modifiés
+        Ne considère QUE les fichiers suivis par Git (ignore les untracked)
         """
         try:
             # Vérifier que nous sommes dans un dépôt git
@@ -245,9 +273,13 @@ class UpdateService:
                     "message": "Pas de dépôt Git détecté (normal en environnement de production)"
                 }
             
-            # Exécuter git status --porcelain pour obtenir les fichiers modifiés
+            # S'assurer que .gitignore est à jour
+            self._ensure_gitignore()
+            
+            # Utiliser git diff pour ne voir que les fichiers SUIVIS modifiés
+            # (pas les fichiers untracked comme uploads/, venv/, etc.)
             result = subprocess.run(
-                ['git', 'status', '--porcelain'],
+                ['git', 'diff', '--name-status', 'HEAD'],
                 cwd=str(self.app_root),
                 capture_output=True,
                 text=True,
@@ -255,24 +287,34 @@ class UpdateService:
             )
             
             if result.returncode != 0:
-                logger.error(f"Erreur git status: {result.stderr}")
-                return {
-                    "success": False,
-                    "error": "Impossible d'exécuter git status",
-                    "details": result.stderr
-                }
+                # Fallback : git status sans les untracked
+                result = subprocess.run(
+                    ['git', 'status', '--porcelain', '-uno'],
+                    cwd=str(self.app_root),
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode != 0:
+                    logger.error(f"Erreur git status: {result.stderr}")
+                    return {
+                        "success": False,
+                        "error": "Impossible d'exécuter git status",
+                        "details": result.stderr
+                    }
             
             # Parser la sortie
             modified_files = []
             for line in result.stdout.strip().split('\n'):
                 if line.strip():
-                    # Format: XY filename
-                    status = line[:2]
-                    filename = line[3:].strip()
-                    modified_files.append({
-                        "file": filename,
-                        "status": status.strip()
-                    })
+                    status = line[:2].strip()
+                    filename = line[2:].strip() if '\t' not in line else line.split('\t', 1)[1].strip()
+                    # Ignorer les fichiers non importants
+                    if filename and not filename.startswith('backend/uploads/') and filename != 'venv/':
+                        modified_files.append({
+                            "file": filename,
+                            "status": status
+                        })
             
             has_conflicts = len(modified_files) > 0
             
