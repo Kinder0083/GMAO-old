@@ -97,11 +97,12 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Rapports M.E.S. planifies
 
 ### Communication et collaboration
-- Chat en temps reel (WebSocket)
+- Chat en temps reel (WebSocket) avec previsualisation des fichiers joints
 - Tableau d'affichage collaboratif (Whiteboard, WebSocket)
 - Consignes inter-equipes avec acquittement
 - Notifications temps reel pour les ordres de travail et equipements
 - **Notifications push mobile** (Expo Push Service) : alertes automatiques envoyees sur les appareils mobiles lors de l'assignation d'un OT, changement de statut, panne equipement ou message prive
+- **Nettoyage automatique des tokens push** : verification periodique des accuses de reception Expo et desactivation des tokens invalides
 
 ### Rapports et analytics
 - Tableaux de bord en temps reel
