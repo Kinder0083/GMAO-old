@@ -343,7 +343,7 @@ class UpdateManager:
     async def get_git_history(self, limit: int = 20) -> List[Dict]:
         """Récupère l'historique des commits Git (versions précédentes)"""
         try:
-            app_root = "/opt/gmao-iris"
+            app_root = self.app_root
             
             # Vérifier si c'est un dépôt Git
             if not Path(f"{app_root}/.git").exists():
