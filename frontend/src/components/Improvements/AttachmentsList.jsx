@@ -207,6 +207,7 @@ const AttachmentsList = ({ improvementId, refreshTrigger }) => {
           </CardContent>
         </Card>
       ))}
+      </div>
 
       {/* Confirm Dialog */}
       <ConfirmDialog />
