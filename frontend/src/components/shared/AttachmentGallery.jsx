@@ -7,8 +7,21 @@ const AttachmentGallery = ({ attachments, downloadFunction, itemId }) => {
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const urlsRef = useRef({});
+  const mountedRef = useRef(true);
 
   const getMime = (att) => att.mime_type || att.type || '';
+
+  // Cleanup only on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      Object.values(urlsRef.current).forEach(u => {
+        if (u && u !== 'loading') URL.revokeObjectURL(u);
+      });
+      urlsRef.current = {};
+    };
+  }, []);
 
   // Load image thumbnails
   useEffect(() => {
@@ -19,6 +32,7 @@ const AttachmentGallery = ({ attachments, downloadFunction, itemId }) => {
         try {
           urlsRef.current[att.id] = 'loading';
           const res = await downloadFunction(itemId, att.id);
+          if (!mountedRef.current) return;
           const blob = new Blob([res.data || res], { type: mime });
           const url = URL.createObjectURL(blob);
           urlsRef.current[att.id] = url;
@@ -28,11 +42,6 @@ const AttachmentGallery = ({ attachments, downloadFunction, itemId }) => {
         }
       }
     });
-    return () => {
-      Object.values(urlsRef.current).forEach(u => {
-        if (u && u !== 'loading') URL.revokeObjectURL(u);
-      });
-    };
   }, [attachments, downloadFunction, itemId]);
 
   const openLightbox = useCallback(async (index) => {
