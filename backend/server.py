@@ -3219,9 +3219,10 @@ async def get_pm_attachments(
 async def download_pm_attachment(
     pm_id: str,
     attachment_id: str,
+    preview: bool = False,
     current_user: dict = Depends(require_permission("preventiveMaintenance", "view"))
 ):
-    """Télécharger une pièce jointe d'une maintenance préventive"""
+    """Télécharger ou prévisualiser une pièce jointe d'une maintenance préventive"""
     import os
     
     try:
@@ -3243,10 +3244,12 @@ async def download_pm_attachment(
         if not file_path or not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
         
+        disposition = "inline" if preview else "attachment"
         return FileResponse(
             path=file_path,
             filename=attachment.get("original_filename", attachment.get("filename")),
-            media_type=attachment.get("mime_type", "application/octet-stream")
+            media_type=attachment.get("mime_type", "application/octet-stream"),
+            content_disposition_type=disposition
         )
     except HTTPException:
         raise
