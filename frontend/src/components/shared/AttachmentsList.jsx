@@ -196,6 +196,28 @@ const AttachmentsList = ({
             </p>
           </div>
           <div className="flex gap-1 flex-shrink-0">
+            {downloadFunction && isPreviewable(attachment.mime_type || attachment.type) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handlePreview(attachment.id, attachment.mime_type || attachment.type);
+                }}
+                disabled={previewing === attachment.id}
+                className="h-8 w-8 p-0"
+                title="Prévisualiser"
+                data-testid={`preview-btn-${attachment.id}`}
+              >
+                {previewing === attachment.id ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Eye size={14} />
+                )}
+              </Button>
+            )}
             {downloadFunction && (
               <Button
                 type="button"
