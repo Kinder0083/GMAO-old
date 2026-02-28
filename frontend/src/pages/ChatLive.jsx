@@ -736,6 +736,45 @@ const ChatLive = () => {
     }
   };
 
+  const previewFile = async (attachmentId, mimeType) => {
+    try {
+      const token = localStorage.getItem('token');
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      
+      const response = await fetch(`${backendUrl}/api/chat/download/${attachmentId}?preview=true`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur de prévisualisation');
+      }
+      
+      const blob = await response.blob();
+      const typedBlob = new Blob([blob], { type: mimeType || blob.type });
+      const url = window.URL.createObjectURL(typedBlob);
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 120000);
+      
+      setContextMenu(null);
+    } catch (error) {
+      console.error('Erreur prévisualisation:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de prévisualiser le fichier',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const isPreviewable = (mimeType) => {
+    if (!mimeType) return false;
+    return mimeType.startsWith('image/') || mimeType === 'application/pdf' || 
+           mimeType.startsWith('video/') || mimeType.startsWith('text/');
+  };
+
   // Ouvrir modal de transfert
   const openTransferModal = async (type, attachment) => {
     setContextMenu(null);
