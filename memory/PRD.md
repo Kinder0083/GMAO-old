@@ -39,6 +39,19 @@ Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stac
 - **Fix** : Correction de `self.github_repo = "GMAO"` dans update_manager.py
 - **Fix additionnel** : Route en double `/api/updates/check` renommee en `/api/updates/check-version` pour eviter conflit entre update_manager et update_service
 
+### 15. Previsualisation des pieces jointes dans le navigateur - TERMINE (Fev 2026)
+- **Backend** : Ajout du parametre `?preview=true` sur 6 endpoints de telechargement (work-orders, preventive-maintenance, improvements, chat, presqu-accidents, demandes-arret)
+- Quand `preview=true` : `Content-Disposition: inline` (affichage dans le navigateur)
+- Quand absent ou false : `Content-Disposition: attachment` (telechargement force)
+- **Frontend** : Ajout d'un bouton Eye (previsualiser) sur tous les composants AttachmentsList (WorkOrders, shared, Improvements)
+- **Chat** : Clic sur fichier previewable ouvre dans un nouvel onglet, menu contextuel avec option "Previsualiser"
+- Types previewables : image/*, application/pdf, video/*, text/*
+- Tests: 11/11 passes (iteration_59.json)
+
+### 16. Mise a jour documentation (P1) - TERMINE (Fev 2026)
+- README.md : ajout mention previsualisation pieces jointes, nettoyage tokens push
+- manual_default_content.json : section "Joindre des Fichiers" enrichie + nouveau chapitre "Notifications Push Mobile"
+
 ## ATTENTION - Point de vigilance recurrent
 Le repo GitHub s'appelle **GMAO** (PAS FSAO). Tout renommage futur doit IMPERATIVEMENT verifier ces fichiers :
 - `backend/update_service.py` ligne 23 : `self.github_repo = "GMAO"`
@@ -49,6 +62,7 @@ Le repo GitHub s'appelle **GMAO** (PAS FSAO). Tout renommage futur doit IMPERATI
 
 ## Taches futures
 - Notifications push via PWA (reporte par l'utilisateur)
+- Centraliser le nom du depot GitHub (actuellement hardcode dans update_service.py et update_manager.py)
 
 ## Credentials
 - Admin: admin@test.com / Admin123!
