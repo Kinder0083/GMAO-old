@@ -1487,9 +1487,20 @@ const ChatLive = () => {
           className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
+          {isPreviewable(contextMenu.attachment.mime_type) && (
+            <button
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => previewFile(contextMenu.attachment.id, contextMenu.attachment.mime_type)}
+              data-testid="chat-context-preview"
+            >
+              <Eye className="h-4 w-4" />
+              Prévisualiser
+            </button>
+          )}
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
             onClick={() => downloadFile(contextMenu.attachment.id)}
+            data-testid="chat-context-download"
           >
             <Download className="h-4 w-4" />
             Télécharger
