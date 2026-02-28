@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 class UpdateService:
     def __init__(self, db):
         self.db = db
-        self.github_user = "Kinder0083"
-        self.github_repo = "GMAO"
-        self.github_branch = "main"
+        self.github_user = os.environ.get("GITHUB_USER", "Kinder0083")
+        self.github_repo = os.environ.get("GITHUB_REPO", "GMAO")
+        self.github_branch = os.environ.get("GITHUB_BRANCH", "main")
         self.version_file_url = f"https://raw.githubusercontent.com/{self.github_user}/{self.github_repo}/{self.github_branch}/updates/version.json"
         
         # Détection automatique du répertoire racine
