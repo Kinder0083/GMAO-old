@@ -1,122 +1,139 @@
 #!/bin/bash
-# ============================================
-# Script de diagnostic complet - Notifications Push FSAO
-# A executer sur le serveur Proxmox en tant que root
-# ============================================
+# =============================================================
+# SCRIPT DE DIAGNOSTIC NOTIFICATIONS PUSH - FSAO Iris
+# Exécuter sur le serveur Proxmox : bash diagnostic_push.sh
+# =============================================================
 
-echo "================================================"
-echo "  DIAGNOSTIC NOTIFICATIONS PUSH FSAO"
-echo "  $(date)"
-echo "================================================"
+set -e
+
+# Configuration
+API_BASE="http://localhost:8001/api"
+ADMIN_EMAIL="admin@test.com"
+ADMIN_PASS="Admin123!"
+
+echo "============================================="
+echo "  DIAGNOSTIC NOTIFICATIONS PUSH - FSAO Iris"
+echo "============================================="
 echo ""
 
-# --- CONFIG ---
-# Remplacez par vos identifiants
-EMAIL="buenogy@gmail.com"
-PASSWORD="Admin2024!"
-SERVER_URL="http://82.66.41.98"
-
-echo "[1/8] LOGIN"
-echo "-------------------------------------------"
-LOGIN_RESPONSE=$(curl -s -X POST "$SERVER_URL/api/auth/login" \
+# 1. Login
+echo "[1/6] Connexion admin..."
+LOGIN_RESPONSE=$(curl -s -X POST "$API_BASE/auth/login" \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
-TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token','ECHEC'))" 2>/dev/null)
-USER_ID=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('user',{}).get('id','ECHEC'))" 2>/dev/null)
+  -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASS\"}")
 
-if [ "$TOKEN" = "ECHEC" ] || [ -z "$TOKEN" ]; then
-    echo "ERREUR: Login echoue!"
-    echo "$LOGIN_RESPONSE"
-    exit 1
+TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import sys,json;print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+
+if [ -z "$TOKEN" ]; then
+  echo "  ERREUR: Impossible de se connecter. Verifiez les credentials."
+  echo "  Response: $LOGIN_RESPONSE"
+  exit 1
 fi
-echo "OK - User ID: $USER_ID"
-echo "OK - Token: ${TOKEN:0:20}..."
+echo "  OK - Connecte"
 echo ""
 
-echo "[2/8] APPAREILS ENREGISTRES"
-echo "-------------------------------------------"
-DEVICES=$(curl -s "$SERVER_URL/api/notifications/devices" \
+# 2. Lister les tokens
+echo "[2/6] Tokens enregistres en base..."
+DEVICES=$(curl -s "$API_BASE/notifications/devices" \
   -H "Authorization: Bearer $TOKEN")
-echo "$DEVICES" | python3 -m json.tool 2>/dev/null || echo "$DEVICES"
+echo "$DEVICES" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+total = d.get('total', 0)
+devices = d.get('devices', [])
+print(f'  Total: {total} token(s)')
+for dev in devices:
+    status = 'ACTIF' if dev.get('is_active') else 'INACTIF'
+    token = dev.get('push_token', '?')[:40] + '...'
+    user = dev.get('user_id', '?')
+    device = dev.get('device_name', '?')
+    updated = dev.get('updated_at', '?')
+    print(f'  [{status}] User: {user} | Device: {device} | Token: {token} | MAJ: {updated}')
+"
 echo ""
 
-echo "[3/8] TOUS LES TOKENS EN BASE (via mongosh)"
-echo "-------------------------------------------"
-mongosh gmao_iris --quiet --eval "
-  var tokens = db.device_tokens.find().toArray();
-  print('Total tokens en base: ' + tokens.length);
-  tokens.forEach(function(t) {
-    print('  user_id: ' + t.user_id);
-    print('  push_token: ' + (t.push_token || '').substring(0, 40) + '...');
-    print('  is_active: ' + t.is_active);
-    print('  device_name: ' + t.device_name);
-    print('  platform: ' + t.platform);
-    print('  updated_at: ' + t.updated_at);
-    print('  ---');
-  });
-" 2>/dev/null || echo "mongosh non disponible, essai avec mongo..." && \
-mongo gmao_iris --quiet --eval "
-  var tokens = db.device_tokens.find().toArray();
-  print('Total tokens en base: ' + tokens.length);
-  tokens.forEach(function(t) {
-    print('  user_id: ' + t.user_id);
-    print('  push_token: ' + (t.push_token || '').substring(0, 40) + '...');
-    print('  is_active: ' + t.is_active);
-    print('  device_name: ' + t.device_name);
-    print('  platform: ' + t.platform);
-    print('  updated_at: ' + t.updated_at);
-    print('  ---');
-  });
-" 2>/dev/null
-echo ""
-
-echo "[4/8] INDEX SUR device_tokens"
-echo "-------------------------------------------"
-mongosh gmao_iris --quiet --eval "db.device_tokens.getIndexes().forEach(function(i){printjson(i)})" 2>/dev/null || \
-mongo gmao_iris --quiet --eval "db.device_tokens.getIndexes().forEach(function(i){printjson(i)})" 2>/dev/null
-echo ""
-
-echo "[5/8] PUSH RECEIPTS EN ATTENTE"
-echo "-------------------------------------------"
-mongosh gmao_iris --quiet --eval "
-  var count = db.push_receipts.countDocuments({checked: false});
-  var total = db.push_receipts.countDocuments({});
-  print('Total receipts: ' + total + ' (non verifies: ' + count + ')');
-" 2>/dev/null || \
-mongo gmao_iris --quiet --eval "
-  var count = db.push_receipts.count({checked: false});
-  var total = db.push_receipts.count({});
-  print('Total receipts: ' + total + ' (non verifies: ' + count + ')');
-" 2>/dev/null
-echo ""
-
-echo "[6/8] TEST ENVOI NOTIFICATION"
-echo "-------------------------------------------"
-echo "Envoi vers user $USER_ID..."
-TEST_RESULT=$(curl -s -X POST "$SERVER_URL/api/push-notifications/test/$USER_ID" \
+# 3. Diagnostic complet via l'endpoint
+echo "[3/6] Diagnostic complet (test envoi Expo)..."
+echo "  (peut prendre ~10 secondes...)"
+DIAG=$(curl -s --max-time 30 "$API_BASE/notifications/diagnostic" \
   -H "Authorization: Bearer $TOKEN")
-echo "$TEST_RESULT" | python3 -m json.tool 2>/dev/null || echo "$TEST_RESULT"
+
+echo "$DIAG" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+
+# Etapes
+for etape in d.get('etapes', []):
+    print(f'  {etape[\"etape\"]}: {etape[\"resultat\"]} [{etape[\"statut\"]}]')
+
+# Tests envoi
+tests = d.get('test_envoi', [])
+if tests:
+    print()
+    print('  --- Resultats par token ---')
+    for t in tests:
+        print(f'  Token: {t.get(\"token\",\"?\")}')
+        print(f'    Device: {t.get(\"device_name\",\"?\")} ({t.get(\"platform\",\"?\")})')
+        print(f'    Verdict: {t.get(\"verdict\",\"?\")}')
+        if t.get('explication'):
+            print(f'    Explication: {t[\"explication\"]}')
+        if t.get('receipt_verification'):
+            print(f'    Receipt: {t[\"receipt_verification\"]}')
+        print()
+
+# Conclusion
+print(f'  CONCLUSION: {d.get(\"conclusion\",\"?\")}')
+print()
+if d.get('actions_recommandees'):
+    print('  ACTIONS RECOMMANDEES:')
+    for a in d['actions_recommandees']:
+        print(f'    {a}')
+"
 echo ""
 
-echo "[7/8] LOGS PUSH RECENTS (derniere heure)"
-echo "-------------------------------------------"
-grep -E "PUSH|notif|receipt|invalide|Supprime|DeviceNotRegistered" /var/log/gmao-iris-backend.err.log 2>/dev/null | tail -30
+# 4. Verifier la connectivite vers Expo
+echo "[4/6] Test connectivite vers Expo Push API..."
+EXPO_TEST=$(curl -s -o /dev/null -w "%{http_code}" \
+  -X POST "https://exp.host/--/api/v2/push/send" \
+  -H "Content-Type: application/json" \
+  -d '[{"to":"ExponentPushToken[test_invalid]","title":"test","body":"test"}]' \
+  --max-time 10)
+if [ "$EXPO_TEST" = "200" ]; then
+  echo "  OK - Serveur Expo accessible (HTTP $EXPO_TEST)"
+else
+  echo "  ERREUR - Serveur Expo inaccessible (HTTP $EXPO_TEST)"
+  echo "  Verifiez que le serveur peut acceder a internet (DNS, firewall, proxy)"
+fi
 echo ""
 
-echo "[8/8] VERIFICATION CODE BACKEND"
-echo "-------------------------------------------"
-echo -n "notifications.py present: "
-test -f /opt/gmao-iris/backend/notifications.py && echo "OUI" || echo "NON"
-echo -n "check_push_receipts dans server.py: "
-grep -c "check_push_receipts" /opt/gmao-iris/backend/server.py 2>/dev/null
-echo -n "set_notifications_db dans server.py: "
-grep -c "set_notifications_db" /opt/gmao-iris/backend/server.py 2>/dev/null
-echo -n "realtime_manager DateTimeEncoder: "
-grep -c "DateTimeEncoder" /opt/gmao-iris/backend/realtime_manager.py 2>/dev/null
+# 5. Verifier les receipts en base
+echo "[5/6] Receipts push recents..."
+RECEIPTS=$(curl -s "$API_BASE/notifications/diagnostic" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+receipts = d.get('receipts_recents', [])
+print(f'  {len(receipts)} receipt(s) recent(s)')
+for r in receipts[:5]:
+    print(f'  Ticket: {r.get(\"ticket_id\",\"?\")[:20]}... | Status: {r.get(\"status\",\"?\")} | Checked: {r.get(\"checked\",\"?\")} | Date: {r.get(\"created_at\",\"?\")}')
+" 2>/dev/null)
+echo "$RECEIPTS"
 echo ""
 
-echo "================================================"
-echo "  FIN DU DIAGNOSTIC"
-echo "  Copiez-collez toute la sortie ci-dessus"
-echo "  et partagez-la pour analyse."
-echo "================================================"
+# 6. Verifier les logs backend recents
+echo "[6/6] Derniers logs push du backend..."
+if [ -f /var/log/supervisor/gmao-iris-backend.out.log ]; then
+  grep -i "PUSH\|push_token\|DeviceNotRegistered\|notification" /var/log/supervisor/gmao-iris-backend.out.log 2>/dev/null | tail -15
+elif [ -f /var/log/supervisor/gmao-iris-backend.err.log ]; then
+  grep -i "PUSH\|push_token\|DeviceNotRegistered\|notification" /var/log/supervisor/gmao-iris-backend.err.log 2>/dev/null | tail -15
+else
+  echo "  Fichier de log non trouve. Essayez: journalctl -u gmao-iris-backend | grep -i push | tail -15"
+fi
+echo ""
+
+echo "============================================="
+echo "  DIAGNOSTIC TERMINE"
+echo "============================================="
+echo ""
+echo "Si le probleme persiste, copiez-collez la sortie complete"
+echo "de ce script et envoyez-la a l'agent Emergent."
