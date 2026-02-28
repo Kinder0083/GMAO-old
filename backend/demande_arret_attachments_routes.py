@@ -110,9 +110,10 @@ async def get_attachments(
 async def download_attachment(
     demande_id: str,
     attachment_id: str,
+    preview: bool = False,
     current_user: dict = Depends(get_current_user)
 ):
-    """Télécharger une pièce jointe"""
+    """Télécharger ou prévisualiser une pièce jointe"""
     try:
         demande = await db.demandes_arret.find_one({"id": demande_id})
         if not demande:
@@ -132,10 +133,12 @@ async def download_attachment(
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
         
+        disposition = "inline" if preview else "attachment"
         return FileResponse(
             path=str(file_path),
             filename=attachment["filename"],
-            media_type=attachment.get("content_type", "application/octet-stream")
+            media_type=attachment.get("content_type", "application/octet-stream"),
+            content_disposition_type=disposition
         )
     except HTTPException:
         raise
