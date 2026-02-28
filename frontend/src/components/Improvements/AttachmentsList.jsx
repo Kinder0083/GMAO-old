@@ -84,6 +84,25 @@ const AttachmentsList = ({ improvementId, refreshTrigger }) => {
     }
   };
 
+  const handlePreview = async (attachmentId, mimeType) => {
+    try {
+      setPreviewing(attachmentId);
+      const response = await improvementsAPI.downloadAttachment(improvementId, attachmentId);
+      const blob = new Blob([response.data], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 120000);
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de prévisualiser le fichier',
+        variant: 'destructive'
+      });
+    } finally {
+      setPreviewing(null);
+    }
+  };
+
   const getFileIcon = (mimeType) => {
     if (mimeType.startsWith('image/')) return <Image size={20} className="text-blue-600" />;
     if (mimeType.startsWith('video/')) return <Video size={20} className="text-purple-600" />;
