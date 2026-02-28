@@ -8009,9 +8009,10 @@ async def get_improvement_attachments(
 async def download_improvement_attachment(
     imp_id: str, 
     attachment_id: str, 
+    preview: bool = False,
     current_user: dict = Depends(require_permission("improvements", "view"))
 ):
-    """Télécharger un fichier d'une amélioration"""
+    """Télécharger ou prévisualiser un fichier d'une amélioration"""
     imp = await db.improvements.find_one({"id": imp_id})
     if not imp:
         raise HTTPException(status_code=404, detail="Amélioration non trouvée")
@@ -8031,6 +8032,7 @@ async def download_improvement_attachment(
     if not file_path or not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
     
+    disposition = "inline" if preview else "attachment"
     return FileResponse(
         path=file_path,
         filename=attachment.get("filename", attachment.get("original_filename", "file")),
