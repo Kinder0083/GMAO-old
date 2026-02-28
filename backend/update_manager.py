@@ -13,9 +13,9 @@ from pathlib import Path
 class UpdateManager:
     def __init__(self, db):
         self.db = db
-        self.github_user = "Kinder0083"
-        self.github_repo = "GMAO"
-        self.github_branch = "main"
+        self.github_user = os.environ.get("GITHUB_USER", "Kinder0083")
+        self.github_repo = os.environ.get("GITHUB_REPO", "GMAO")
+        self.github_branch = os.environ.get("GITHUB_BRANCH", "main")
         self.current_commit = None
         self._load_version()
     
