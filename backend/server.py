@@ -8036,7 +8036,8 @@ async def download_improvement_attachment(
     return FileResponse(
         path=file_path,
         filename=attachment.get("filename", attachment.get("original_filename", "file")),
-        media_type=attachment.get("type", attachment.get("mime_type", "application/octet-stream"))
+        media_type=attachment.get("type", attachment.get("mime_type", "application/octet-stream")),
+        content_disposition_type=disposition
     )
 
 
