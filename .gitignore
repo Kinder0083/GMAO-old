@@ -894,3 +894,12 @@ test_reports/
 # Environment files
 *.env
 *.env.*
+
+venv/
+backend/uploads/
+backend/tests/
+*.pyc
+__pycache__/
+.env
+post-update.sh
+update.sh
