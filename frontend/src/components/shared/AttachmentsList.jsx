@@ -176,6 +176,13 @@ const AttachmentsList = ({
 
   return (
     <div className="space-y-2" data-testid="attachments-list">
+      {downloadFunction && (
+        <AttachmentGallery
+          attachments={attachments}
+          downloadFunction={downloadFunction}
+          itemId={itemId}
+        />
+      )}
       {attachments.map((attachment) => (
         <div 
           key={attachment.id} 
