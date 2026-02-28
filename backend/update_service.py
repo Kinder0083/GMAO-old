@@ -695,6 +695,9 @@ class UpdateService:
                                           stderr=str(e), status="error")
                             update_history["errors"].append(f".env perdu: {env_file_path}")
                     
+                    # Recréer .gitignore après le reset (peut avoir été écrasé)
+                    self._ensure_gitignore()
+                    
                 except Exception as e:
                     self._log_step(update_history, "3/6 - Erreur Git inattendue", str(e),
                                   stderr=str(e), status="warning")
