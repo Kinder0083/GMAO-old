@@ -47,7 +47,7 @@ class UpdateManager:
             import subprocess
             result = subprocess.run(
                 ['git', 'rev-parse', 'HEAD'],
-                cwd='/opt/gmao-iris',
+                cwd=self.app_root,
                 capture_output=True,
                 text=True,
                 timeout=5
