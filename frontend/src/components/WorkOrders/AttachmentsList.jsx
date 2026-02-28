@@ -124,8 +124,17 @@ const AttachmentsList = ({ workOrderId, refreshTrigger }) => {
     return <p className="text-sm text-gray-500">Aucune pièce jointe</p>;
   }
 
+  // Wrapper pour la galerie (format itemId, attachmentId)
+  const galleryDownload = (id, attachmentId) => workOrdersAPI.downloadAttachment(id, attachmentId);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <AttachmentGallery
+        attachments={attachments}
+        downloadFunction={galleryDownload}
+        itemId={workOrderId}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {attachments.map((attachment) => (
         <Card key={attachment.id} className="hover:shadow-md transition-shadow">
           <CardContent className="pt-4">
