@@ -5,6 +5,7 @@ import { X, Download, File, Image, Video, FileText, Eye, Loader2 } from 'lucide-
 import { workOrdersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { useConfirmDialog } from '../ui/confirm-dialog';
+import AttachmentGallery from '../shared/AttachmentGallery';
 
 const AttachmentsList = ({ workOrderId, refreshTrigger }) => {
   const { toast } = useToast();
