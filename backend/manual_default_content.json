@@ -642,6 +642,11 @@
       ],
       "created_at": "2026-02-14T14:48:44.227204+00:00",
       "updated_at": "2026-02-14T14:48:44.227204+00:00"
+    },
+    {
+      "id": "ch-036",
+      "title": "🔔 Notifications Push Mobile",
+      "order": 36
     }
   ],
   "sections": [
@@ -3080,6 +3085,12 @@
       "title": "Bonnes pratiques pour les responsables",
       "updated_at": "2026-01-31T22:40:05.642506+00:00",
       "video_url": null
+    },
+    {
+      "title": "Notifications Push Mobile",
+      "chapterId": "ch-036",
+      "content": "📱 **Notifications Push Mobile**\n\nFSAO Iris envoie des notifications push sur votre appareil mobile via l'application compagnon.\n\n**Types de notifications :**\n• 📋 **Ordres de travail** : Assignation, changement de statut, commentaire, cloture\n• 🔧 **Equipements** : Alerte panne, changement d'etat operationnel\n• 💬 **Chat** : Nouveau message prive ou mention\n• ⏰ **Rappels** : Maintenance preventive a venir\n\n**Fonctionnement :**\n1. Installez l'application mobile FSAO\n2. Connectez-vous avec vos identifiants\n3. Autorisez les notifications lors de la demande\n4. Les notifications arrivent automatiquement\n\n**Gestion des tokens :**\nLe systeme gere automatiquement les tokens d'appareil :\n• Un token est cree a chaque connexion sur l'application mobile\n• Les tokens invalides (appareil desinstalle, etc.) sont nettoyes automatiquement\n• Un meme utilisateur peut recevoir des notifications sur plusieurs appareils\n\n**Bonnes pratiques :**\n• Gardez l'application mobile a jour\n• Verifiez les parametres de notification de votre appareil\n• Deconnectez-vous proprement si vous changez d'appareil\n\n💡 **Note** : L'utilisateur qui effectue l'action ne recoit pas sa propre notification.",
+      "order": 1
     }
   ]
 }
