@@ -191,6 +191,7 @@ const AttachmentsList = ({ workOrderId, refreshTrigger }) => {
           </CardContent>
         </Card>
       ))}
+      </div>
 
       {/* Confirm Dialog */}
       <ConfirmDialog />
