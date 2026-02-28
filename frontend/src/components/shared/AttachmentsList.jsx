@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { X, Download, File, Image, Video, FileText, Loader2, Paperclip } from 'lucide-react';
+import { X, Download, File, Image, Video, FileText, Loader2, Paperclip, Eye } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { useConfirmDialog } from '../ui/confirm-dialog';
 
