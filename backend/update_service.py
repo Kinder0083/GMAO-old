@@ -589,6 +589,9 @@ class UpdateService:
             
             if git_available:
                 try:
+                    # S'assurer que .gitignore est à jour AVANT toute opération
+                    self._ensure_gitignore()
+                    
                     # APPROCHE NUCLÉAIRE : reproduire exactement le processus SSH qui fonctionne
                     # rm -rf .git && git init && git remote add && git fetch && git reset --hard
                     
