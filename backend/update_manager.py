@@ -248,7 +248,7 @@ class UpdateManager:
                 }
             
             # Lancer le script de mise à jour
-            script_path = "/opt/gmao-iris/scripts/update.sh"
+            script_path = f"{self.app_root}/scripts/update.sh"
             
             env = os.environ.copy()
             if github_token:
