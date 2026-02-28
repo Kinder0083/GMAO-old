@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { X, Download, File, Image, Video, FileText } from 'lucide-react';
+import { X, Download, File, Image, Video, FileText, Eye, Loader2 } from 'lucide-react';
 import { workOrdersAPI } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { useConfirmDialog } from '../ui/confirm-dialog';
