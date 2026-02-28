@@ -28,6 +28,13 @@ const AttachmentsList = ({
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
+  const [previewing, setPreviewing] = useState(null);
+
+  const isPreviewable = (mimeType) => {
+    if (!mimeType) return false;
+    return mimeType.startsWith('image/') || mimeType === 'application/pdf' || 
+           mimeType.startsWith('video/') || mimeType.startsWith('text/');
+  };
 
   useEffect(() => {
     if (localAttachments !== null) {
