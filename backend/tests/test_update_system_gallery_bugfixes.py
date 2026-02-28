@@ -88,16 +88,22 @@ class TestUpdateSystemEndpoints:
         assert response.status_code == 200, f"Failed: {response.text}"
         data = response.json()
         
-        # Response should be a list (may be empty if not a git repo)
-        assert isinstance(data, list), f"Expected list, got {type(data)}"
-        print(f"Git history entries: {len(data)}")
-        
-        # If there are commits, verify structure
-        if len(data) > 0:
-            commit = data[0]
-            assert "id" in commit or "short_id" in commit, "Commit missing id field"
-            if "message" in commit:
-                print(f"Latest commit: {commit.get('short_id')} - {commit.get('message')[:50]}")
+        # Response is wrapped: {"success": true, "commits": [...], "total": N}
+        if isinstance(data, dict):
+            assert "commits" in data or "success" in data, "Response missing expected fields"
+            commits = data.get("commits", [])
+            print(f"Git history entries: {len(commits)}")
+            
+            # If there are commits, verify structure
+            if len(commits) > 0:
+                commit = commits[0]
+                assert "id" in commit or "short_id" in commit, "Commit missing id field"
+                if "message" in commit:
+                    print(f"Latest commit: {commit.get('short_id', commit.get('id', '')[:7])} - {commit.get('message', '')[:50]}")
+        else:
+            # Direct list response
+            assert isinstance(data, list), f"Expected list or dict with commits, got {type(data)}"
+            print(f"Git history entries: {len(data)}")
 
 
 # ============================================
