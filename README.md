@@ -57,6 +57,7 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Creation, assignation, suivi et historique complet
 - Gestion des priorites, statuts et temps (estime vs reel)
 - Pieces jointes multiples (photos, videos, documents jusqu'a 25 Mo)
+- **Previsualisation des pieces jointes** : ouverture directe des fichiers (PDF, images, videos) dans le navigateur sans telechargement force
 - Filtrage avance par date, periode, statut, priorite
 - Templates d'ordres de travail reutilisables
 - Bons de travail generables en PDF
