@@ -1721,9 +1721,10 @@ async def get_attachments(wo_id: str, current_user: dict = Depends(require_permi
 async def download_attachment(
     wo_id: str,
     attachment_id: str,
+    preview: bool = False,
     current_user: dict = Depends(require_permission("workOrders", "view"))
 ):
-    """Télécharger une pièce jointe"""
+    """Télécharger ou prévisualiser une pièce jointe"""
     try:
         # Chercher par UUID (id) ou par ObjectId (_id)
         wo = await db.work_orders.find_one({"id": wo_id})
@@ -1755,10 +1756,12 @@ async def download_attachment(
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Fichier non trouvé sur le serveur")
         
+        disposition = "inline" if preview else "attachment"
         return FileResponse(
             path=file_path,
             filename=attachment.get("original_filename", attachment.get("filename", "file")),
-            media_type=attachment.get("mime_type", attachment.get("type", "application/octet-stream"))
+            media_type=attachment.get("mime_type", attachment.get("type", "application/octet-stream")),
+            content_disposition_type=disposition
         )
     except HTTPException:
         raise
