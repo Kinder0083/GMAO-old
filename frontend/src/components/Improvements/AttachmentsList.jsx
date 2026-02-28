@@ -142,6 +142,28 @@ const AttachmentsList = ({ improvementId, refreshTrigger }) => {
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
+                {isPreviewable(attachment.mime_type) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handlePreview(attachment.id, attachment.mime_type);
+                    }}
+                    disabled={previewing === attachment.id}
+                    className="h-8 w-8 p-0"
+                    title="Prévisualiser"
+                    data-testid={`imp-preview-btn-${attachment.id}`}
+                  >
+                    {previewing === attachment.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Eye size={16} />
+                    )}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -152,6 +174,8 @@ const AttachmentsList = ({ improvementId, refreshTrigger }) => {
                     handleDownload(attachment.id, attachment.original_filename);
                   }}
                   className="h-8 w-8 p-0"
+                  title="Télécharger"
+                  data-testid={`imp-download-btn-${attachment.id}`}
                 >
                   <Download size={16} />
                 </Button>
