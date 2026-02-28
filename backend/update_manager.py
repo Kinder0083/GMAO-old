@@ -195,7 +195,7 @@ class UpdateManager:
     async def create_backup(self) -> Dict:
         """Crée un backup de la base de données"""
         try:
-            backup_dir = Path("/opt/gmao-iris/backups")
+            backup_dir = Path(self.app_root) / "backups"
             backup_dir.mkdir(exist_ok=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
