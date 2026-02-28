@@ -703,11 +703,12 @@ async def upload_file(
 @router.get("/download/{attachment_id}")
 async def download_file(
     attachment_id: str,
+    preview: bool = False,
     current_user: dict = Depends(get_current_user),
 
 ):
     """
-    Télécharger un fichier joint
+    Télécharger ou prévisualiser un fichier joint
     """
     # Trouver le message contenant ce fichier
     message = await db.chat_messages.find_one({
