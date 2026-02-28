@@ -8231,10 +8231,12 @@ async def get_registered_devices(
 
 @api_router.get("/notifications/diagnostic", tags=["Push Notifications"])
 async def push_notification_diagnostic(
-    current_user: dict = Depends(require_role("ADMIN")),
+    current_user: dict = Depends(get_current_user),
 ):
     """Diagnostic complet des notifications push.
     Teste chaque token individuellement et retourne le resultat brut d'Expo."""
+    if current_user.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin only")
     import httpx
     
     report = {
