@@ -8,12 +8,16 @@ set -e
 
 # Configuration
 API_BASE="http://localhost:8001/api"
-ADMIN_EMAIL="admin@test.com"
-ADMIN_PASS="Admin123!"
 
 echo "============================================="
 echo "  DIAGNOSTIC NOTIFICATIONS PUSH - FSAO Iris"
 echo "============================================="
+echo ""
+
+# Demander les credentials
+read -p "Email admin: " ADMIN_EMAIL
+read -s -p "Mot de passe: " ADMIN_PASS
+echo ""
 echo ""
 
 # 1. Login
