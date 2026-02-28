@@ -305,12 +305,17 @@ class UpdateService:
             
             # Parser la sortie
             modified_files = []
+            # Fichiers à ignorer dans la détection de conflits
+            ignored_files = {'.gitignore', 'frontend/yarn.lock', 'package-lock.json', 'yarn.lock'}
             for line in result.stdout.strip().split('\n'):
                 if line.strip():
                     status = line[:2].strip()
                     filename = line[2:].strip() if '\t' not in line else line.split('\t', 1)[1].strip()
                     # Ignorer les fichiers non importants
-                    if filename and not filename.startswith('backend/uploads/') and filename != 'venv/':
+                    if (filename and 
+                        not filename.startswith('backend/uploads/') and 
+                        filename != 'venv/' and
+                        filename not in ignored_files):
                         modified_files.append({
                             "file": filename,
                             "status": status
