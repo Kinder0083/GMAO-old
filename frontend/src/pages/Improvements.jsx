@@ -43,6 +43,15 @@ const Improvements = () => {
     refresh: refreshImprovements 
   } = useImprovements();
 
+  // Appliquer le filtre "en retard" depuis la navigation (header)
+  useEffect(() => {
+    if (location.state?.filterOverdue) {
+      setFilterStatus('ALL');
+      setDateFilter('all');
+      setFilterOverdue(true);
+    }
+  }, [location.state]);
+
   // Gérer l'ouverture automatique d'un ordre via l'URL ?open=id
   useEffect(() => {
     const openImprovementId = searchParams.get('open');

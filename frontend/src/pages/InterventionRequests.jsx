@@ -72,8 +72,15 @@ const InterventionRequests = () => {
     const matchesSearch = req.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesPriority = filterPriority === 'ALL' || req.priorite === filterPriority;
-    return matchesSearch && matchesPriority;
+    const today = new Date(); today.setHours(23, 59, 59, 999);
+    const matchesOverdue = !filterOverdue || (req.date_echeance && new Date(req.date_echeance) < today && req.statut !== 'TERMINE' && req.statut !== 'ANNULE');
+    return matchesSearch && matchesPriority && matchesOverdue;
   });
+
+  // Appliquer le filtre "en retard" depuis la navigation (header)
+  useEffect(() => {
+    if (location.state?.filterOverdue) setFilterOverdue(true);
+  }, [location.state]);
 
   const getPriorityBadge = (priorite) => {
     const badges = {
