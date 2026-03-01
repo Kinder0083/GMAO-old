@@ -81,20 +81,25 @@ const Header = ({
         
         {/* Boutons Manuel, IA et Aide */}
         <div className="flex items-center gap-2">
-          <ManualButton />
-          <AIButton />
+          {/* Masqué sur mobile — visible sur desktop */}
+          <span className="hidden md:contents">
+            <ManualButton />
+            <AIButton />
+          </span>
           <HelpButton />
-          <HeaderClock />
+          <span className="hidden md:flex">
+            <HeaderClock />
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Icône Sauvegarde */}
-        <BackupStatusIcon />
-
-        {/* Icône Alertes Caméras */}
-        <CameraAlertIcon />
-        <MESAlertIcon />
+      <div className="flex items-center gap-1 md:gap-4">
+        {/* Icônes secondaires : masquées sur mobile */}
+        <span className="hidden md:contents">
+          <BackupStatusIcon />
+          <CameraAlertIcon />
+          <MESAlertIcon />
+        </span>
 
         {/* Icône Chat Live avec badge messages non lus */}
         {canViewChatLive && (
