@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fsao-iris-v1';
+const CACHE_NAME = 'fsao-iris-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Fichiers a mettre en cache pour le mode hors-ligne
