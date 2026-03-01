@@ -39,30 +39,38 @@ export function usePushNotifications() {
   }, []);
 
   const subscribe = useCallback(async () => {
-    if (subscribedRef.current) return;
+    if (subscribedRef.current) return { permissionGranted: true, subscribed: true };
+
+    // Etape 1 : demander la permission en premier (avant tout le reste)
+    let perm = Notification.permission;
+    if (perm === 'default') {
+      try {
+        perm = await Notification.requestPermission();
+      } catch (e) {
+        return { permissionGranted: false, error: 'permission_request_failed' };
+      }
+    }
+    setPermission(perm);
+    if (perm !== 'granted') {
+      return { permissionGranted: false, error: 'permission_denied' };
+    }
+
+    // Etape 2 : abonnement push (optionnel, la permission est deja accordee)
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) return { permissionGranted: true, subscribed: false, error: 'no_token' };
 
     try {
-      // Get VAPID key
       const keyResp = await fetch(`${API_URL}/api/web-push/vapid-key`);
+      if (!keyResp.ok) throw new Error(`vapid_key_error_${keyResp.status}`);
       const { publicKey } = await keyResp.json();
-      if (!publicKey) return;
+      if (!publicKey) throw new Error('no_vapid_key');
 
       const registration = await registerServiceWorker();
-      if (!registration) return;
+      if (!registration) throw new Error('sw_registration_failed');
 
-      // Wait for SW to be ready
       await navigator.serviceWorker.ready;
 
-      // Request permission
-      const perm = await Notification.requestPermission();
-      setPermission(perm);
-      if (perm !== 'granted') return;
-
-      // Check existing subscription
       let subscription = await registration.pushManager.getSubscription();
-      
       if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
@@ -70,27 +78,27 @@ export function usePushNotifications() {
         });
       }
 
-      // Send to backend
       const browser = navigator.userAgent.includes('Firefox') ? 'firefox' :
                       navigator.userAgent.includes('Edg') ? 'edge' :
                       navigator.userAgent.includes('Chrome') ? 'chrome' : 'other';
 
-      await fetch(`${API_URL}/api/web-push/subscribe`, {
+      const resp = await fetch(`${API_URL}/api/web-push/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          subscription: subscription.toJSON(),
-          browser
-        })
+        body: JSON.stringify({ subscription: subscription.toJSON(), browser })
       });
+      if (!resp.ok) throw new Error(`subscribe_backend_error_${resp.status}`);
 
       subscribedRef.current = true;
       setIsSubscribed(true);
+      return { permissionGranted: true, subscribed: true };
     } catch (e) {
-      console.error('[PWA] Push subscription failed:', e);
+      console.error('[PWA] Push subscription failed:', e.message);
+      // La permission est accordee meme si l'abonnement push a echoue
+      return { permissionGranted: true, subscribed: false, error: e.message };
     }
   }, [registerServiceWorker]);
 
