@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
+  Menu,
+  X,
   Bell,
   Package,
   Eye,
