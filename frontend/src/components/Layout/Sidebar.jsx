@@ -31,11 +31,13 @@ const Sidebar = ({
   preferences,
   getSidebarButtonStyle,
   handleSidebarButtonHover,
-  handleSidebarButtonLeave
+  handleSidebarButtonLeave,
+  onMobileClose
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [newMenuIds, setNewMenuIds] = useState([]);
+  const isMobile = window.innerWidth < 768;
 
   // Charger les badges "Nouveau"
   useEffect(() => {
