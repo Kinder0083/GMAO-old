@@ -847,6 +847,11 @@ async def create_message_with_files(
                 recipient_user_ids=recipient_ids_list
             )
         )
+        # Web Push PWA
+        from web_push import notify_chat_message_web
+        asyncio.create_task(
+            notify_chat_message_web(db, sender_display, message if message else "Fichier partage", recipient_ids_list, current_user.get("id"))
+        )
     
     # Créer copie propre pour broadcast
     clean_message = {k: v for k, v in chat_message.items() if k != "_id"}
