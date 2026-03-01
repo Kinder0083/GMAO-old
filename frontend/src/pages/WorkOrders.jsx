@@ -54,6 +54,19 @@ const WorkOrders = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
+  // Appliquer les filtres depuis la navigation (header notifications)
+  useEffect(() => {
+    if (location.state?.filterStatus) {
+      setFilterStatus(location.state.filterStatus);
+      setDateFilter('all');
+    }
+    if (location.state?.filterOverdue) {
+      setFilterStatus('OUVERT');
+      setDateFilter('all');
+      setFilterOverdue(true);
+    }
+  }, [location.state]);
+
   // Calculer les paramètres de date pour le hook
   const getDateFilters = useCallback(() => {
     const today = new Date();
