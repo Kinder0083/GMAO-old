@@ -8121,6 +8121,125 @@ from notifications import (
     send_expo_push_notification,
     DeviceTokenCreate
 )
+from web_push import (
+    send_web_push_to_user,
+    notify_work_order_assigned_web,
+    notify_work_order_status_changed_web,
+    notify_equipment_alert_web,
+    notify_chat_message_web
+)
+
+# ============================================================
+# WEB PUSH (PWA) - Endpoints
+# ============================================================
+
+@api_router.get("/web-push/vapid-key", tags=["Web Push PWA"])
+async def get_vapid_public_key():
+    """Retourne la cle publique VAPID pour l'abonnement push."""
+    key = os.environ.get("VAPID_PUBLIC_KEY")
+    if not key:
+        raise HTTPException(status_code=500, detail="VAPID key not configured")
+    return {"publicKey": key}
+
+@api_router.post("/web-push/subscribe", tags=["Web Push PWA"])
+async def web_push_subscribe(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Enregistre un abonnement web push pour l'utilisateur connecte."""
+    body = await request.json()
+    subscription = body.get("subscription")
+    browser = body.get("browser", "unknown")
+    
+    if not subscription or not subscription.get("endpoint"):
+        raise HTTPException(status_code=400, detail="Subscription invalide")
+    
+    user_id = str(current_user["id"])
+    now = datetime.now(timezone.utc)
+    
+    # Desactiver les anciens abonnements du meme navigateur
+    await db.web_push_subscriptions.update_many(
+        {"user_id": user_id, "browser": browser, "subscription.endpoint": {"$ne": subscription["endpoint"]}},
+        {"$set": {"is_active": False, "updated_at": now}}
+    )
+    
+    # Upsert l'abonnement
+    await db.web_push_subscriptions.update_one(
+        {"subscription.endpoint": subscription["endpoint"]},
+        {"$set": {
+            "user_id": user_id,
+            "subscription": subscription,
+            "browser": browser,
+            "is_active": True,
+            "updated_at": now
+        },
+        "$setOnInsert": {"created_at": now}},
+        upsert=True
+    )
+    
+    logger.info(f"[WEB PUSH] Abonnement enregistre pour user {user_id} ({browser})")
+    return {"message": "Abonnement enregistre", "status": "ok"}
+
+@api_router.post("/web-push/unsubscribe", tags=["Web Push PWA"])
+async def web_push_unsubscribe(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+):
+    """Desactive un abonnement web push."""
+    body = await request.json()
+    endpoint = body.get("endpoint")
+    
+    if endpoint:
+        await db.web_push_subscriptions.update_one(
+            {"subscription.endpoint": endpoint},
+            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}}
+        )
+    else:
+        await db.web_push_subscriptions.update_many(
+            {"user_id": str(current_user["id"])},
+            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    return {"message": "Desabonne"}
+
+@api_router.post("/web-push/test", tags=["Web Push PWA"])
+async def web_push_test(
+    current_user: dict = Depends(get_current_user),
+):
+    """Envoie une notification de test a l'utilisateur connecte."""
+    result = await send_web_push_to_user(
+        db, str(current_user["id"]),
+        title="Test de notification FSAO",
+        body="Les notifications PWA fonctionnent correctement !",
+        data={"type": "test"},
+        tag="test-notification"
+    )
+    return result
+
+@api_router.get("/web-push/subscriptions", tags=["Web Push PWA"])
+async def web_push_list_subscriptions(
+    current_user: dict = Depends(get_current_user),
+):
+    """Liste les abonnements web push."""
+    is_admin = current_user.get("role") == "ADMIN"
+    query = {} if is_admin else {"user_id": str(current_user["id"])}
+    
+    subs = []
+    async for doc in db.web_push_subscriptions.find(query, {"_id": 0}):
+        for k in ["created_at", "updated_at", "deactivated_at"]:
+            if k in doc and hasattr(doc[k], 'isoformat'):
+                doc[k] = doc[k].isoformat()
+        # Masquer les details de la subscription pour la securite
+        if "subscription" in doc:
+            doc["endpoint_preview"] = doc["subscription"].get("endpoint", "")[:60] + "..."
+            del doc["subscription"]
+        subs.append(doc)
+    
+    return {"total": len(subs), "subscriptions": subs}
+
+# ============================================================
+# EXPO PUSH (Mobile) - Endpoints existants
+# ============================================================
 
 @api_router.post("/notifications/register", tags=["Push Notifications"])
 async def mobile_register_device_token(
