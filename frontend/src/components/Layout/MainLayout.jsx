@@ -60,9 +60,20 @@ const MainLayout = () => {
     if (preferences?.sidebar_behavior === 'auto_collapse') {
       setSidebarOpen(false);
     } else if (preferences?.sidebar_behavior === 'always_open') {
-      setSidebarOpen(true);
+      setSidebarOpen(!mobileView);
     }
-  }, [location.pathname, preferences?.sidebar_behavior]);
+  }, [location.pathname, preferences?.sidebar_behavior, mobileView]);
+
+  // Gérer le redimensionnement (mobile <-> desktop)
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setMobileView(mobile);
+      if (mobile) setSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Gérer le clic en dehors de la sidebar en mode auto-collapse
   useEffect(() => {
