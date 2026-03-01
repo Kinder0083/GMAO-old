@@ -76,7 +76,7 @@ const Header = ({
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">G</span>
           </div>
-          <span className="font-semibold text-gray-800 text-lg">FSAO Iris</span>
+          <span className="hidden md:inline font-semibold text-gray-800 text-lg">FSAO Iris</span>
         </div>
         
         {/* Boutons Manuel, IA et Aide */}
