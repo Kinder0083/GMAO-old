@@ -34,17 +34,21 @@ const PWABanner = () => {
   };
 
   const handleEnableNotifications = async () => {
-    await subscribe();
+    const result = await subscribe();
     setShowNotifBanner(false);
-    if (Notification.permission === 'granted') {
-      toast({ title: 'Notifications activees', description: 'Vous recevrez les alertes en temps reel' });
-      // Test immediat
-      const result = await testNotification();
-      if (result?.sent > 0) {
-        toast({ title: 'Test envoye', description: 'Vous devriez recevoir une notification de test' });
+    if (result?.permissionGranted) {
+      if (result?.subscribed) {
+        toast({ title: 'Notifications activees', description: 'Vous recevrez les alertes en temps reel' });
+        const testResult = await testNotification();
+        if (testResult?.sent > 0) {
+          toast({ title: 'Test envoye', description: 'Vous devriez recevoir une notification de test dans quelques secondes' });
+        }
+      } else {
+        // Permission accordee mais abonnement push echoue (pas de HTTPS complet, etc.)
+        toast({ title: 'Permission accordee', description: `Abonnement push incomplet (${result?.error || 'inconnu'}). Verifiez la console pour les details.`, variant: 'destructive' });
       }
     } else {
-      toast({ title: 'Notifications refusees', description: 'Vous pouvez les activer dans les parametres du navigateur', variant: 'destructive' });
+      toast({ title: 'Notifications refusees', description: 'Verifiez les permissions du site dans les parametres de Brave > Parametres du site > Notifications', variant: 'destructive' });
     }
   };
 
