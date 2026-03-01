@@ -1454,6 +1454,10 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
                         assigned_user_id=new_assigne
                     )
                 )
+                # Web Push PWA
+                asyncio.create_task(
+                    notify_work_order_assigned_web(db, wo, new_assigne, current_user.get("id"))
+                )
         
         # Notification si changement de statut
         if "statut" in update_data and existing_wo.get("statut") != update_data["statut"]:
@@ -1475,6 +1479,10 @@ async def update_work_order(wo_id: str, wo_update: WorkOrderUpdate, current_user
                         new_status=update_data["statut"],
                         notify_user_ids=notify_ids
                     )
+                )
+                # Web Push PWA
+                asyncio.create_task(
+                    notify_work_order_status_changed_web(db, wo, existing_wo.get("statut", ""), update_data["statut"], current_user.get("id"))
                 )
         
         # Émettre événement temps réel
