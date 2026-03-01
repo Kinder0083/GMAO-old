@@ -1283,6 +1283,10 @@ async def create_work_order(wo_create: WorkOrderCreate, current_user: dict = Dep
                 assigned_user_id=wo_create.assigne_a_id
             )
         )
+        # Web Push PWA
+        asyncio.create_task(
+            notify_work_order_assigned_web(db, wo, wo_create.assigne_a_id, current_user.get("id"))
+        )
     elif wo_create.assigne_a_id == current_user.get("id"):
         logger.info(f"[PUSH TRIGGER CREATE] Auto-assignation, pas de notification")
     
