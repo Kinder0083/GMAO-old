@@ -272,6 +272,7 @@ const MainLayout = () => {
         getSidebarButtonStyle={getSidebarButtonStyle}
         handleSidebarButtonHover={handleSidebarButtonHover}
         handleSidebarButtonLeave={handleSidebarButtonLeave}
+        onMobileClose={() => setSidebarOpen(false)}
       />
 
       {/* Main Content */}
