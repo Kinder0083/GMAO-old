@@ -358,6 +358,11 @@ async def create_message(
                 recipient_user_ids=message_data.recipient_ids
             )
         )
+        # Web Push PWA
+        from web_push import notify_chat_message_web
+        asyncio.create_task(
+            notify_chat_message_web(db, user_name, message_data.message, message_data.recipient_ids, current_user.get("id"))
+        )
     
     # Créer une copie propre pour la réponse (sans _id MongoDB)
     response_message = {
