@@ -59,12 +59,17 @@ const Header = ({
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               data-testid="sidebar-toggle-btn"
             >
-              {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+              {/* Mobile : hamburger/X — Desktop : chevrons */}
+              <span className="md:hidden">
+                {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+              </span>
+              <span className="hidden md:inline">
+                {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+              </span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
-            <p className="font-medium">{sidebarOpen ? "Minimiser le menu" : "Agrandir le menu"}</p>
-            <p className="text-xs text-gray-300 mt-1">Raccourci pour ajuster l'espace de travail</p>
+            <p className="font-medium">{sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}</p>
           </TooltipContent>
         </Tooltip>
         <div className="flex items-center gap-2">
