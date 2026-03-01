@@ -23,12 +23,14 @@ import { usePreventiveMaintenance } from '../hooks/usePreventiveMaintenance';
 
 const PreventiveMaintenance = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
-  const [viewMode, setViewMode] = useState('tree'); // 'tree' par défaut (Arborescence), 'card'
+  const [viewMode, setViewMode] = useState('tree');
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [maintenanceToDelete, setMaintenanceToDelete] = useState(null);
   

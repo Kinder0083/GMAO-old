@@ -15,18 +15,20 @@ import { improvementRequestsAPI, improvementsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useImprovementRequests } from '../hooks/useImprovementRequests';
 import { useServiceManagerStatus } from '../hooks/useServiceManagerStatus';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AvatarInitials from '../components/ui/avatar-initials';
 import { formatTimeToHoursMinutes } from '../utils/timeFormat';
 
 const ImprovementRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const { isServiceManager } = useServiceManagerStatus();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
