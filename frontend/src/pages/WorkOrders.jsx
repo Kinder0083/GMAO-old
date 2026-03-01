@@ -57,11 +57,14 @@ const WorkOrders = () => {
   // Appliquer les filtres depuis la navigation (header notifications)
   useEffect(() => {
     if (location.state?.filterStatus) {
+      // Cloche OT : filtre par statut uniquement, supprimer le filtre de date
       setFilterStatus(location.state.filterStatus);
       setDateFilter('all');
+      setFilterOverdue(false);
     }
     if (location.state?.filterOverdue) {
-      setFilterStatus('OUVERT');
+      // Calendrier échéances : OTs avec dateLimite dépassée, tous statuts sauf TERMINE
+      setFilterStatus('ALL');
       setDateFilter('all');
       setFilterOverdue(true);
     }
