@@ -157,6 +157,7 @@ function App() {
                   <AINavigationProvider>
                     <AIContextMenuProvider>
                       <GuidedTour />
+                      <PWABanner />
                       <MainLayout />
                     </AIContextMenuProvider>
                   </AINavigationProvider>
