@@ -243,10 +243,11 @@ const Header = ({
           )}
         </div>
         
-        {/* Badge de mise à jour (Admin uniquement) */}
-        {isAdmin && <UpdateNotificationBadge />}
+        {/* Badge de mise à jour (Admin uniquement) — masqué sur mobile */}
+        {isAdmin && <span className="hidden md:contents"><UpdateNotificationBadge /></span>}
         
-        {/* Badge Plan de Surveillance */}
+        {/* Badge Plan de Surveillance — masqué sur mobile */}
+        <span className="hidden md:contents">
         <Tooltip>
           <TooltipTrigger asChild>
             <button 
