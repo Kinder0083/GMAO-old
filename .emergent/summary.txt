@@ -1,121 +1,144 @@
 <analysis>**original_problem_statement:**
-L'utilisateur a demandé plusieurs corrections et mises à jour pour son application FSAO (anciennement GMAO) :
-1.  **Bugs Adria (Corrigés):** L'assistant IA Adria échouait dans plusieurs scénarios :
-    *   L'assignation d'un Ordre de Travail (OT) à un technicien ne fonctionnait pas lors de la mise à jour d'un OT existant.
-    *   L'assignation ne fonctionnait pas non plus lors de la création d'un nouvel OT.
-    *   La modification d'un OT (ex: ajout d'une description) échouait silencieusement.
-2.  **Bug UI (Corrigé):** L'interface utilisateur ne se rafraîchissait pas automatiquement après une correspondance manuelle ou assistée par l'IA dans le Plan de Surveillance.
-3.  **Bug Déploiement (Corrigé):** Le script de mise à jour automatique de l'application via l'interface utilisateur était cassé, forçant l'utilisateur à effectuer une mise à jour manuelle complexe via SSH. Ce problème était récurrent.
-4.  **Renommage Global (Terminé):** Remplacer toutes les occurrences textuelles de GMAO par FSAO et Gestion de Maintenance Assistée par Ordinateur par Fonctionnement des Services Assistée par Ordinateur dans toute l'application.
-5.  **Mise à jour de la documentation (En cours):** Mettre à jour les fichiers  et le manuel de l'application pour refléter tous les changements récents (nouveau nom, fonctionnement d'Adria, etc.).
+L'utilisateur a demandé une série de fonctionnalités, corrections de bugs et améliorations pour son application FSAO :
+1.  **Prévisualisation des Pièces Jointes :** Permettre de visualiser les fichiers (PDF, images) dans le navigateur au lieu de forcer le téléchargement.
+2.  **Mise à jour de la documentation :** Mettre à jour  et le manuel de l'application.
+3.  **Refactoring du système de mise à jour :** Centraliser le nom du dépôt GitHub qui était codé en dur à plusieurs endroits, causant des bugs récurrents.
+4.  **Mode Galerie :** Implémenter un mode galerie pour visualiser toutes les images/PDFs d'un OT sous forme de carrousel.
+5.  **Correction Bug Lightbox :** Résoudre un bug où le clic sur une miniature dans la galerie n'ouvrait pas l'image en grand (lightbox) sans redémarrer le conteneur.
+6.  **Correction Bug Système de Mise à Jour :** Résoudre un bug où le système de mise à jour restait bloqué en boucle en détectant des fichiers non suivis (uploads, venv) comme des conflits.
+7.  **Débogage des Notifications Push Mobiles :** Résoudre le problème persistant des notifications non reçues sur l'application mobile.
+8.  **Implémentation PWA :** Après une grande frustration avec les notifications mobiles, l'utilisateur a demandé de transformer l'application web en Progressive Web App (PWA) pour utiliser les notifications web push comme alternative.
 
 **User's preferred language**: French
 
 **what currently exists?**
-L'application a été entièrement renommée de GMAO à FSAO au niveau de l'interface utilisateur. Tous les bugs signalés concernant l'assistant IA Adria (création, modification et assignation d'OT) ont été corrigés, testés et validés. Un bug critique qui provoquait un crash du serveur en raison de données incohérentes ( en minuscules) a été résolu avec une migration de données et une normalisation du code. Le bug récurrent du script de mise à jour a également été identifié et corrigé. L'application est stable et toutes les fonctionnalités de base sont opérationnelles.
+L'application est stable. Les fonctionnalités de prévisualisation des pièces jointes et de galerie sont implémentées et testées. Des bugs critiques et récurrents liés au système de mise à jour (chemins et nom de repo codés en dur, mauvaise détection des conflits) ont été résolus en profondeur. Des outils de diagnostic avancés pour les notifications push ont été créés et ont permis de confirmer que le problème venait de la configuration de l'application mobile.
+Suite à cela, une implémentation complète de la Progressive Web App (PWA) a été réalisée, incluant le backend (clés VAPID, endpoints de souscription, envoi de web push) et le frontend (service worker, manifest, bannière d'installation, logique de souscription). Le système est prêt à être testé par l'utilisateur.
 
 **Last working item**:
--   **Last item agent was working:** L'agent a commencé à travailler sur la demande de mise à jour de la documentation. Il a examiné le contenu des fichiers  et  pour préparer les modifications.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** NA. La tâche consiste à modifier des fichiers texte. Une relecture manuelle des fichiers après modification sera suffisante.
+-   **Last item agent was working:** L'agent a terminé l'implémentation de la fonctionnalité PWA (Progressive Web App) et des notifications web push pour contourner le problème des notifications mobiles. Cela a inclus la génération de clés VAPID, la création de fichiers (manifest.json, sw.js), la mise en place d'endpoints backend pour la souscription, l'intégration de l'envoi de web push aux déclencheurs existants (OT, chat), et la création d'une bannière de notification sur le frontend pour inviter l'utilisateur à installer l'application et à s'abonner aux notifications.
+-   **Status:** USER VERIFICATION PENDING
+-   **Agent Testing Done:** Y
+-   **Which testing method agent to use?** both. Le prochain agent doit d'abord guider l'utilisateur pour un test manuel complet (vérifier l'apparition de la bannière d'installation, l'installation effective, et la réception d'une notification test). Si des problèmes surviennent, le testing agent peut être utilisé pour re-valider le flux technique backend et frontend.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   Aucun problème en attente. Tous les bugs signalés ont été résolus.
+-   **Issue 1: Problème persistant des notifications push sur l'application mobile (P2 - DÉPRIORISÉ)**
+    -   **Attempted fixes:** Un diagnostic approfondi a été mené, incluant la création d'un script . Le diagnostic a confirmé à plusieurs reprises que le backend fonctionne correctement mais que l'API Expo retourne une erreur .
+    -   **Next debug checklist:** Le problème est confirmé comme étant côté application mobile (APK compilé sans les bonnes clés FCM intégrées). L'utilisateur a abandonné cette voie et a demandé de passer à une solution PWA. **NE PAS tenter de résoudre ce problème à moins que l'utilisateur ne le demande explicitement.**
+    -   **Why fix this issue and what will be achieved with the fix?** Résoudre ce problème débloquerait les notifications sur l'application native, mais ce n'est plus la priorité.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Mobile app
+    -   **Blocked on other issue:** Bloqué sur l'agent mobile qui doit fournir un APK correctement compilé.
 
 **In progress Task List**:
--   **Task 1: Mettre à jour la documentation de l'application (P0)**
-    -   **Where to resume:** L'agent a déjà inspecté les fichiers  et . Il doit maintenant procéder aux modifications pour remplacer les anciennes références GMAO par FSAO et mettre à jour les descriptions des fonctionnalités, notamment celles de l'assistant Adria.
-    -   **What will be achieved with this?** La documentation de l'application sera alignée avec l'état actuel du produit, ce qui améliorera la clarté pour l'utilisateur.
+-   **Task 1: Guider l'utilisateur pour tester et valider l'implémentation PWA (P0)**
+    -   **Where to resume:** Le code est entièrement implémenté et a passé les tests de l'agent testeur. La prochaine étape est de demander à l'utilisateur de tester sur son environnement de production.
+    -   **What will be achieved with this?** Valider que la PWA s'installe correctement et que les notifications web push sont bien reçues, offrant une solution de contournement fonctionnelle au problème des notifications mobiles.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** None
-    -   **Blocked on something:** None
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on something:** En attente des retours de test de l'utilisateur.
 
 **Upcoming and Future Tasks**
--   **Future Tasks:**
-    -   Implémenter des notifications push pour les actions importantes (assignation d'OT, etc.) via une Progressive Web App (PWA). L'utilisateur a posé une question à ce sujet mais n'a pas souhaité lancer le développement pour le moment.
+-   Aucune nouvelle tâche n'a été demandée. Les tâches futures mentionnées précédemment ont été soit complétées, soit sont en cours (PWA).
 
 **Completed work in this session**
--   **Bug Fix:** Correction du bug d'assignation d'OT via Adria lors de la **mise à jour** d'un OT existant. Le problème venait d'un filtre de recherche incorrect (uid=0(root) gid=0(root) groups=0(root) vs ) dans .
--   **Bug Fix:** Correction d'un crash serveur causé par des statuts d'OT en minuscules (). Une migration de données a été exécutée et le code a été rendu plus robuste.
--   **Bug Fix:** Correction du rafraîchissement de l'UI après une correspondance dans le Plan de Surveillance en ajoutant un état  dans  et .
--   **Bug Fix:** Correction du bug d'assignation d'OT via Adria lors de la **création** d'un nouvel OT, en améliorant le prompt de l'IA () et en ajoutant une logique de fallback dans le frontend ().
--   **Bug Fix:** Correction de l'échec de la modification d'un OT (ajout de description) par Adria, en améliorant la logique de recherche d'OT () dans .
--   **Feature:** Renommage global de GMAO en FSAO dans toute l'interface utilisateur de l'application.
--   **Bug Fix (Critical & Recurring):** Correction du script de mise à jour automatique () qui échouait car il pointait vers un nom de dépôt GitHub incorrect après le renommage.
+-   **Feature: Progressive Web App (PWA) & Web Push:** Implémentation complète de la PWA pour permettre l'installation de l'application et l'utilisation des notifications web push.
+-   **Feature: Prévisualisation des Pièces Jointes:** Modification des endpoints backend pour servir les fichiers avec .
+-   **Feature: Galerie de Pièces Jointes:** Ajout d'un composant  avec une vue carrousel/lightbox pour les images et PDF.
+-   **Bug Fix (Critique): Système de mise à jour en boucle:**
+    -   Création d'un fichier  à la racine pour exclure les répertoires , , etc.
+    -   Modification de  pour ignorer les fichiers non suivis () lors de la détection de conflits, résolvant la cause principale des échecs de mise à jour.
+-   **Bug Fix: Lightbox non fonctionnel:** Correction d'un bug dans  où les  étaient révoquées prématurément par un  cleanup.
+-   **Refactoring: Système de mise à jour :**
+    -   Centralisation des variables , ,  dans .
+    -   Suppression de 8 occurrences du chemin codé en dur  dans .
+-   **Feature: Outils de Diagnostic Push:** Création d'un endpoint  et d'un script  pour un diagnostic complet du flux de notification.
+-   **Improvement: Gestion des Tokens Mobiles:** La logique d'enregistrement () désactive désormais les anciens tokens du même appareil pour éviter les erreurs.
+-   **Documentation:** Mise à jour de  et  avec les nouvelles fonctionnalités.
 
 **Earlier issues found/mentioned but not fixed**
--   Aucun.
+-   Le problème des notifications push sur l'application mobile native reste non résolu, car il est bloqué par une mauvaise configuration côté mobile. L'utilisateur a décidé de contourner ce problème en implémentant la PWA.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Le script de mise à jour de l'application via l'interface utilisateur a de nouveau échoué.
--   **Recurrence count:** Au moins 2 fois.
--   **Status:** RESOLVED. L'agent a corrigé le nom du dépôt GitHub dans . Ce point nécessite une attention particulière lors de futures modifications pour s'assurer qu'il ne casse pas à nouveau.
+-   **Issue recurrence in previous fork:** Le script de mise à jour de l'application a de nouveau échoué en boucle.
+-   **Recurrence count:** 4+ fois.
+-   **Status:** RESOLVED. L'agent a effectué une correction en profondeur en ajoutant un  et en modifiant la logique de détection des conflits pour ignorer les fichiers non suivis. Cette solution est beaucoup plus robuste que les précédentes.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **AI Prompt Engineering:** Modification ciblée du prompt système de l'IA () pour obtenir un format de sortie JSON plus fiable et complet, en particulier pour l'assignation des OT.
--   **Robust Frontend Logic:** Implémentation de logiques de filet de sécurité (fallback) dans le frontend () pour garantir l'exécution d'une commande même si la réponse de l'IA est incomplète (ex: auto-assignation à l'utilisateur courant).
--   **Data Integrity & Migration:** Identification et correction de données invalides en base de données ( en minuscules) via un script de migration unique et ajout de code de normalisation pour prévenir de futurs crashs.
--   **Debugging de Scripts de Déploiement:** Analyse des logs SSH fournis par l'utilisateur pour diagnostiquer un problème dans un script de déploiement () causé par une erreur de configuration (nom de dépôt incorrect).
--   **Systematic Refactoring:** Utilisation de  et  pour effectuer un renommage global sur de nombreux fichiers, en faisant attention à ne modifier que le texte visible par l'utilisateur.
+-   **PWA (Progressive Web App):** Implémentation complète avec Service Worker (), Web App Manifest (), et une stratégie de cache  pour les ressources statiques.
+-   **Web Push Notifications:** Utilisation de clés VAPID et de la librairie  pour envoyer des notifications via le navigateur, en contournant l'écosystème mobile natif.
+-   **Débogage Git:** Analyse de la sortie de  M frontend/yarn.lock pour identifier que les fichiers non suivis () étaient la cause des échecs de mise à jour. La solution a été d'ajouter un  robuste.
+-   **Débogage React:** Correction d'un bug de cycle de vie dans  où la fonction de nettoyage révoquait prématurément des  nécessaires pour le composant lightbox.
 
 **key DB schema**
--   **work_orders:** Le champ  (dict) et  (str) sont maintenant correctement synchronisés à la création et à la mise à jour. Le champ  a été normalisé en majuscules (ex: ).
+-   **web_push_subscriptions:** (Nouvelle collection) 
+-   **device_tokens:** Le champ  est maintenant utilisé pour désactiver les anciens tokens d'un même appareil lors d'un nouvel enregistrement.
+
+**changes in tech stack**
+-   Ajout de la dépendance  au backend.
 
 **All files of reference**
--   : À mettre à jour.
--   : Manuel de l'application, à mettre à jour.
--   : Contient la logique backend pour les OT.
--   : Cœur de la logique frontend pour les commandes Adria.
--   : Prompt système qui guide le comportement de l'IA Adria.
--   : Script de mise à jour de l'application, point de défaillance récurrent qui a été corrigé.
+-    (pour le bug des mises à jour)
+-    (logique PWA)
+-    (intégration PWA)
+-    (service worker)
+-    (logique PWA frontend)
+-    (UI PWA)
+-    (bug lightbox)
+-    (outil de diagnostic)
 
 **Areas that need refactoring**:
--   Aucun besoin de refactoring identifié.
+-   Le système de mise à jour, un point faible récurrent, a été significativement renforcé. Il n'y a pas de nouvelles zones nécessitant un refactoring immédiat.
 
 **key api endpoints**
--   : Corrigé pour gérer correctement la mise à jour de .
--   : Corrigé pour gérer la création avec .
--   : Corrigé pour ne pas crasher avec des données de statut invalides.
--   : Endpoint de mise à jour, maintenant fonctionnel après correction du nom de repo dans .
+-   : Enregistre une souscription de notification web.
+-   : Supprime une souscription.
+-   : Fournit la clé publique VAPID au frontend.
+-   : Endpoint de diagnostic complet pour les notifications push.
 
 **Critical Info for New Agent**
 -   **Vous devez répondre en français.**
--   La tâche immédiate est de mettre à jour la documentation ( et ) pour refléter le changement de nom de GMAO à FSAO et les nouvelles capacités de l'assistant Adria.
--   **Attention au script de mise à jour ()**: Il a été un point de défaillance récurrent. Toute modification future du nom du projet ou du dépôt GitHub doit être vérifiée avec une extrême attention dans ce fichier pour éviter de casser à nouveau le déploiement automatique.
+-   **Le problème des notifications push sur l'application mobile est ABANDONNÉ.** L'utilisateur est très frustré par ce sujet. Ne tentez PAS de le déboguer ou d'en parler. La priorité absolue est la solution de contournement via la PWA.
+-   Votre première action doit être de **guider l'utilisateur pour tester la nouvelle fonctionnalité PWA**. Demandez-lui de se connecter à l'application, de chercher la bannière Installer, d'installer l'application, d'accepter les notifications, puis de déclencher un événement (ex: message de chat) pour vérifier la réception d'une notification web.
+-   Le bug très récurrent du système de mise à jour a été (probablement) définitivement corrigé en ignorant les fichiers non-suivis via un . L'utilisateur confirmera si cela fonctionne lors de sa prochaine mise à jour.
 
 **documents and test reports created in this job**
+-    (plusieurs itérations)
 -   
--   
--    (mis à jour par l'agent précédent)
+-    (mis à jour en profondeur avant d'être abandonné)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** Demande de mettre à jour le manuel et le  pour refléter tous les changements. (EN COURS)
-2.  **Agent:** Résume la correction du script de mise à jour.
-3.  **User:** Fournit des logs SSH montrant que la mise à jour automatique a encore échoué. (RESOLU)
-4.  **Agent:** Confirme que le renommage global est terminé et que l'application fonctionne.
-5.  **User:** Demande un renommage global de GMAO en FSAO. (TERMINÉ)
-6.  **Agent:** Confirme que le bug de modification de description par Adria est corrigé.
-7.  **User:** Signale que Adria confirme la modification d'une description d'OT mais ne l'applique pas. (RESOLU)
-8.  **Agent:** Répond que c'est compris.
-9.  **User:** Indique qu'il ne souhaite pas implémenter les notifications push pour le moment.
-10. **Agent:** Propose l'implémentation de notifications push via PWA.
+1.  **User (LATEST):** A donné son accord pour l'implémentation de la PWA après une série de questions/réponses pour comprendre ce que c'était.
+2.  **User:** A exprimé sa frustration finale avec les notifications mobiles et a demandé de pivoter vers la solution PWA.
+3.  **User:** A fourni la sortie du script , montrant que le nouveau token mobile était toujours rejeté avec .
+4.  **User:** A confirmé avoir installé un nouvel APK fourni par l'agent mobile.
+5.  **User:** A reçu la preuve de l'agent mobile que les credentials FCM étaient bien configurées dans Expo.
+6.  **User:** A transmis un prompt à l'agent mobile pour prouver que les credentials étaient configurées.
+7.  **User:** A indiqué qu'il ne pouvait pas exécuter la commande  car le code source mobile n'est pas sur son serveur.
+8.  **User:** A fourni le résultat du script de diagnostic qui montrait une erreur , confirmant le diagnostic du backend.
+9.  **User:** A demandé comment lire les logs du système de mise à jour, et a signalé que la mise à jour listait toujours les mêmes 52 fichiers.
+10. **User:** A signalé deux bugs critiques : 1/ Les mises à jour ne s'appliquent pas correctement. 2/ La lightbox de la galerie d'images ne fonctionne pas sans un redémarrage du conteneur.
 
 **Project Health Check:**
--   **Broken**: Non. L'application est stable et les fonctionnalités critiques sont fonctionnelles.
--   **Mocked**: N/A.
+-   **Broken**: La fonctionnalité de notification push de l'application mobile native est non fonctionnelle et sa résolution a été abandonnée au profit d'une solution PWA.
+-   **Mocked**: N/A
 
 **3rd Party Integrations**
+-   **Expo Push Notifications:** Utilisé pour l'envoi de notifications (partie mobile défaillante).
+-   **pywebpush:** (Nouveau) Utilisé pour l'envoi de notifications web push (PWA).
 -   **Gemini Pro (via ):** Utilisé pour l'assistant IA Adria.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES. Utilisé deux fois avec succès pour valider les corrections des bugs liés à Adria.
--   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: []
+-   **Testing agent used after significant changes**: YES. Utilisé à plusieurs reprises pour valider la prévisualisation, la galerie, les corrections de bugs et l'implémentation PWA.
+-   **Troubleshoot agent used after agent stuck in loop**: NO.
+-   **Test files created**:
+    -   
+    -    (créé par l'agent testeur)
 -   **Known regressions**: Aucune.
 
 **Credentials to test flow:**
@@ -123,4 +146,4 @@ L'application a été entièrement renommée de GMAO à FSAO au niveau de l'inte
 -   **Non-Admin (Profile: Maintenance):**  / 
 
 **What agent forgot to execute**
--   L'agent a initialement oublié de vérifier l'impact du renommage sur les scripts de déploiement, ce qui a cassé le script . Cependant, le problème a été rapidement identifié et corrigé une fois que l'utilisateur l'a signalé.</analysis>
+-   L'agent a été très méthodique et a corrigé les problèmes au fur et à mesure. Aucun oubli majeur n'est à signaler. Il a suivi les demandes de l'utilisateur, même lorsque celles-ci changeaient radicalement de direction (pivot vers PWA).</analysis>
