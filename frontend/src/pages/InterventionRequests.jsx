@@ -17,9 +17,11 @@ import { useNavigate } from 'react-router-dom';
 const InterventionRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('ALL');
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);

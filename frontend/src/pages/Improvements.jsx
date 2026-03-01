@@ -18,9 +18,11 @@ import { formatErrorMessage } from '../utils/errorFormatter';
 
 const Improvements = () => {
   const { toast } = useToast();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
