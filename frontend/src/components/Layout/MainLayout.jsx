@@ -28,7 +28,9 @@ import { usePreferences } from '../../contexts/PreferencesContext';
 
 const MainLayout = () => {
   const { preferences } = usePreferences();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = () => window.innerWidth < 768;
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile());
+  const [mobileView, setMobileView] = useState(isMobile());
   const [firstLoginDialogOpen, setFirstLoginDialogOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
   const navigate = useNavigate();
