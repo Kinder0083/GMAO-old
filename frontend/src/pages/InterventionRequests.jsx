@@ -73,7 +73,7 @@ const InterventionRequests = () => {
                          (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesPriority = filterPriority === 'ALL' || req.priorite === filterPriority;
     const today = new Date(); today.setHours(23, 59, 59, 999);
-    const matchesOverdue = !filterOverdue || (req.date_echeance && new Date(req.date_echeance) < today && req.statut !== 'TERMINE' && req.statut !== 'ANNULE');
+    const matchesOverdue = !filterOverdue || (req.date_limite_desiree && new Date(req.date_limite_desiree) < today && req.statut !== 'TERMINE' && req.statut !== 'ANNULE');
     return matchesSearch && matchesPriority && matchesOverdue;
   });
 

@@ -87,7 +87,7 @@ const ImprovementRequests = () => {
     const reqStatus = req.status || 'SOUMISE';
     const matchesStatus = filterStatus === 'ALL' || reqStatus === filterStatus;
     const today = new Date(); today.setHours(23, 59, 59, 999);
-    const matchesOverdue = !filterOverdue || (req.date_echeance && new Date(req.date_echeance) < today && reqStatus !== 'TERMINE' && reqStatus !== 'ANNULE');
+    const matchesOverdue = !filterOverdue || (req.date_limite_desiree && new Date(req.date_limite_desiree) < today && reqStatus !== 'TERMINE' && reqStatus !== 'ANNULE');
     return matchesSearch && matchesPriority && matchesStatus && matchesOverdue;
   });
 
