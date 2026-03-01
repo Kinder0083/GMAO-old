@@ -280,8 +280,9 @@ const WorkOrders = () => {
     const matchesStatus = filterStatus === 'ALL' || wo.statut === filterStatus;
     const today = new Date();
     today.setHours(23, 59, 59, 999);
+    // dateLimite est le champ correct dans la réponse API (pas date_echeance)
     const matchesOverdue = !filterOverdue || (
-      wo.date_echeance && new Date(wo.date_echeance) < today && wo.statut !== 'TERMINE'
+      wo.dateLimite && new Date(wo.dateLimite) < today && wo.statut !== 'TERMINE'
     );
     return matchesSearch && matchesStatus && matchesOverdue;
   });
