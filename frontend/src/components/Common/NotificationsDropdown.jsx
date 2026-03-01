@@ -123,13 +123,22 @@ const NotificationsDropdown = () => {
   };
 
   const handleNotificationClick = (notification) => {
-    if (notification.link) {
-      navigate(notification.link);
-      setIsOpen(false);
-    }
+    setIsOpen(false);
     if (!notification.read) {
       handleMarkAsRead(notification.id, { stopPropagation: () => {} });
     }
+    if (!notification.link) return;
+
+    // Construire la navigation avec état pour deep-link vers l'élément spécifique
+    const meta = notification.metadata || {};
+    const entityId = meta.work_order_id || meta.maintenance_id || meta.improvement_id ||
+                     meta.request_id || meta.entity_id || null;
+
+    const statePayload = entityId
+      ? { highlightId: entityId, openId: entityId }
+      : {};
+
+    navigate(notification.link, { state: statePayload });
   };
 
   const getNotificationIcon = (type, metadata) => {
