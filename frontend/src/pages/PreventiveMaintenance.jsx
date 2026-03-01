@@ -84,6 +84,11 @@ const PreventiveMaintenance = () => {
     loadChecklists();
   }, []);
 
+  // Appliquer le filtre "en retard" depuis la navigation (header)
+  useEffect(() => {
+    if (location.state?.filterOverdue) setFilterOverdue(true);
+  }, [location.state]);
+
   const loadChecklists = async () => {
     try {
       setLoadingChecklists(true);
