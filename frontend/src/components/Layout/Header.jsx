@@ -212,7 +212,7 @@ const Header = ({
                     <button
                       key={key}
                       onClick={() => {
-                        navigate(detail.route);
+                        navigate(detail.route, { state: { filterOverdue: true } });
                         setOverdueMenuOpen(false);
                       }}
                       className="w-full px-4 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between group"
@@ -343,7 +343,7 @@ const Header = ({
           <TooltipTrigger asChild>
             <button 
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
-              onClick={() => navigate('/work-orders')}
+              onClick={() => navigate('/work-orders', { state: { filterStatus: 'OUVERT', dateFilter: 'all' } })}
               data-testid="work-orders-btn"
             >
               <Bell size={20} className="text-gray-600" />
