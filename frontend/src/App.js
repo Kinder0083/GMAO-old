@@ -115,6 +115,19 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  // Register Service Worker for PWA
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      // Handle navigation messages from SW notification clicks
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'NAVIGATE') {
+          window.location.href = event.data.url;
+        }
+      });
+    }
+  }, []);
+
   return (
     <PreferencesProvider>
       <div className="App">
