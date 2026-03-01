@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "./App.css";
 import "./styles/preferences.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { AIContextMenuProvider } from "./contexts/AIContextMenuContext";
 import { AINavigationProvider } from "./contexts/AINavigationContext";
 import { GuidedTourProvider } from "./contexts/GuidedTourContext";
 import { GuidedTour } from "./components/GuidedTour";
+import PWABanner from "./components/shared/PWABanner";
 
 // Layout
 import MainLayout from "./components/Layout/MainLayout";
