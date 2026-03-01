@@ -87,9 +87,11 @@ const Sidebar = ({
       className="fixed top-16 bottom-0 text-white transition-all duration-300 z-20"
       style={{
         backgroundColor: preferences?.sidebar_bg_color || '#1f2937',
-        width: sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px',
+        width: sidebarOpen ? `${preferences?.sidebar_width || 256}px` : (isMobile ? '0px' : '80px'),
         left: preferences?.sidebar_position === 'right' ? 'auto' : 0,
-        right: preferences?.sidebar_position === 'right' ? 0 : 'auto'
+        right: preferences?.sidebar_position === 'right' ? 0 : 'auto',
+        overflow: (!sidebarOpen && isMobile) ? 'hidden' : 'visible',
+        transform: (!sidebarOpen && isMobile) ? 'translateX(-100%)' : 'translateX(0)'
       }}
     >
       <div className="p-4 space-y-1 h-full overflow-y-auto">
