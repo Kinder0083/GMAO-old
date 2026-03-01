@@ -65,6 +65,21 @@ const WorkOrders = () => {
       setDateFilter('all');
       setFilterOverdue(true);
     }
+    // Ouvrir un OT spécifique (depuis NotificationsDropdown)
+    if (location.state?.openId) {
+      const openSpecificWO = async () => {
+        try {
+          const response = await workOrdersAPI.getById(location.state.openId);
+          if (response?.data) {
+            setSelectedWorkOrder(response.data);
+            setDialogOpen(true);
+          }
+        } catch (e) {
+          // OT non trouvé, on ignore
+        }
+      };
+      openSpecificWO();
+    }
   }, [location.state]);
 
   // Calculer les paramètres de date pour le hook
