@@ -61,6 +61,10 @@ const Sidebar = ({
       }
     }
     navigate(item.path);
+    // Fermer la sidebar sur mobile après navigation
+    if (window.innerWidth < 768 && onMobileClose) {
+      onMobileClose();
+    }
   };
 
   // Grouper les menus par catégorie (exclure les items déplacés dans la section admin)
