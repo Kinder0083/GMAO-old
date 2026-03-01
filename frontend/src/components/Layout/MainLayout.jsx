@@ -277,14 +277,18 @@ const MainLayout = () => {
 
       {/* Main Content */}
       <div
-        className="transition-all duration-300"
+        className="transition-all duration-300 overflow-x-hidden"
         style={{
           marginLeft: mobileView ? 0 : (preferences?.sidebar_position === 'right' ? 0 : (sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px')),
-          marginRight: mobileView ? 0 : (preferences?.sidebar_position === 'right' ? (sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px') : 0)
+          marginRight: mobileView ? 0 : (preferences?.sidebar_position === 'right' ? (sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px') : 0),
+          maxWidth: mobileView ? '100vw' : 'none',
+          width: mobileView ? '100vw' : 'auto'
         }}
       >
-        <div className="p-4 pt-20">
-          <Outlet />
+        <div className="p-4 pt-20 overflow-x-hidden">
+          <div className="w-full max-w-full overflow-x-hidden">
+            <Outlet />
+          </div>
         </div>
       </div>
 
