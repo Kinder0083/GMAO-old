@@ -2356,6 +2356,10 @@ async def update_equipment_status(
                         alert_message="L'equipement est hors service"
                     )
                 )
+                # Web Push PWA
+                asyncio.create_task(
+                    notify_equipment_alert_web(db, equipment, "PANNE")
+                )
             
             # Enregistrer dans l'historique (upsert pour écraser si même heure)
             history_entry = {
