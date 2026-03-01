@@ -288,8 +288,10 @@ const Header = ({
             <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">Cliquez pour voir les contrôles en retard</p>
           </TooltipContent>
         </Tooltip>
+        </span>{/* fin hidden md:contents surveillance */}
         
-        {/* Badge Inventaire (Niveau bas + Rupture) */}
+        {/* Badge Inventaire — masqué sur mobile */}
+        <span className="hidden md:contents">
         <Tooltip>
           <TooltipTrigger asChild>
             <button 
@@ -328,11 +330,12 @@ const Header = ({
             <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">Cliquez pour voir les articles en alerte</p>
           </TooltipContent>
         </Tooltip>
+        </span>{/* fin hidden md:contents inventaire */}
         
-        {/* Alertes MQTT */}
-        <AlertNotifications />
+        {/* Alertes MQTT — masqué sur mobile */}
+        <span className="hidden md:contents"><AlertNotifications /></span>
         
-        {/* Notifications utilisateur (maintenances préventives, etc.) */}
+        {/* Notifications utilisateur */}
         <NotificationsDropdown />
         
         {/* Cloche OT en attente */}
