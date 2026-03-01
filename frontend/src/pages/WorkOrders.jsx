@@ -263,7 +263,12 @@ const WorkOrders = () => {
     const matchesSearch = wo.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (wo.numero && wo.numero.toString().includes(searchTerm));
     const matchesStatus = filterStatus === 'ALL' || wo.statut === filterStatus;
-    return matchesSearch && matchesStatus;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const matchesOverdue = !filterOverdue || (
+      wo.date_echeance && new Date(wo.date_echeance) < today && wo.statut !== 'TERMINE'
+    );
+    return matchesSearch && matchesStatus && matchesOverdue;
   });
 
   const getStatusBadge = (statut) => {
