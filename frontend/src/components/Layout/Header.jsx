@@ -381,15 +381,16 @@ const Header = ({
           <TooltipTrigger asChild>
             <button 
               onClick={() => navigate('/settings')}
-              className="flex items-center gap-3 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors cursor-pointer"
+              className="flex items-center gap-3 hover:bg-gray-100 rounded-lg px-2 md:px-3 py-2 transition-colors cursor-pointer"
               data-testid="user-profile-btn"
             >
-              <div className="text-right">
+              {/* Nom et rôle : masqués sur mobile */}
+              <div className="text-right hidden md:block">
                 <div className="text-sm font-medium text-gray-800">{user.nom}</div>
                 <div className="text-xs text-gray-500">{user.role}</div>
               </div>
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium text-xs md:text-sm">
                   {user.nom.split(' ').map(n => n[0]).join('')}
                 </span>
               </div>
