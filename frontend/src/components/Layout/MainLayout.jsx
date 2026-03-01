@@ -278,14 +278,22 @@ const MainLayout = () => {
       <div
         className="transition-all duration-300"
         style={{
-          marginLeft: preferences?.sidebar_position === 'right' ? 0 : (sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px'),
-          marginRight: preferences?.sidebar_position === 'right' ? (sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px') : 0
+          marginLeft: mobileView ? 0 : (preferences?.sidebar_position === 'right' ? 0 : (sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px')),
+          marginRight: mobileView ? 0 : (preferences?.sidebar_position === 'right' ? (sidebarOpen ? `${preferences?.sidebar_width || 256}px` : '80px') : 0)
         }}
       >
-        <div className="p-6 pt-20">
+        <div className="p-4 pt-20">
           <Outlet />
         </div>
       </div>
+
+      {/* Overlay mobile : ferme la sidebar en cliquant en dehors */}
+      {mobileView && sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-10"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       
       {/* Popups et modaux */}
       <FirstLoginPasswordDialog 
