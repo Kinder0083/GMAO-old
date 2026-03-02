@@ -1,98 +1,61 @@
 # FSAO Iris - Product Requirements Document
 
-## Probleme original
-Application FSAO (Fonctionnement des Services Assistee par Ordinateur) full-stack avec React, FastAPI et MongoDB.
+## Description
+Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pour la gestion des opérations de maintenance industrielle. Interface en français.
 
 ## Architecture
-- **Frontend**: React + Shadcn/UI + TailwindCSS
-- **Backend**: FastAPI (Python)
-- **Base de donnees**: MongoDB (gmao_iris)
-- **IA**: Gemini 2.5 Flash via emergentintegrations
-- **Authentification**: JWT + Google OAuth
-- **Depot GitHub**: https://github.com/Kinder0083/GMAO (le repo garde le nom GMAO)
-- **Notifications push**: Expo Push Service (notifications.py)
+- **Frontend**: React 18 + Tailwind CSS + Shadcn/UI
+- **Backend**: FastAPI (Python) + MongoDB
+- **Notifications**: Web Push (VAPID/pywebpush) + Expo Push Service
+- **PWA**: Service Worker, manifest.json, installation mobile
+- **IA**: Emergent LLM (Gemini 2.5 Flash) - assistant Adria, analyse QHSE
+- **Temps réel**: WebSocket (Chat Live, Whiteboard, notifications)
+- **Déploiement production**: Proxmox LXC (Debian 12) + Tailscale Funnel (HTTPS)
 
-## Fonctionnalites implementees
+## Fonctionnalités implémentées
 
-### 1-9. Voir sessions precedentes (tout TERMINE)
+### Core
+- Ordres de travail (CRUD, pièces jointes, galerie lightbox, templates, bons PDF)
+- Demandes d'intervention / amélioration
+- Améliorations (suivi complet)
+- Maintenance préventive (checklists, planification)
+- Gestion des équipements, inventaire, zones, compteurs
+- Plan de surveillance (contrôles qualité)
+- Presqu'accidents (analyse QHSE)
+- Chat Live (WebSocket temps réel)
+- Tableau d'affichage (Whiteboard)
+- Consignes inter-équipes
+- Dashboard service, rapports hebdomadaires
+- Système de permissions par rôle
+- Import/Export données
+- Sauvegarde planifiée
 
-### 10. Renommage GMAO -> FSAO - TERMINE (Fev 2026)
-- Textes utilisateur renommes partout (frontend, backend, prompts IA, docs)
-- Noms techniques preserves : DB gmao_iris, services gmao-iris-backend, repo GitHub GMAO
+### PWA & Mobile (Février 2026)
+- Installation sur écran d'accueil (Android/iOS)
+- Notifications push navigateur (Web Push VAPID/pywebpush)
+- Service Worker avec versionnement de cache
+- Interface responsive mobile (sidebar overlay, header adaptatif)
+- Viewport optimisé iOS (viewport-fit=cover)
 
-### 11. Bug Fix: Script de mise a jour casse - TERMINE (Fev 2026)
-- **Cause racine** : Le renommage global GMAO -> FSAO a aussi change `self.github_repo = "GMAO"` en `"FSAO"` dans update_service.py
-- **Fix** : Restauration de `self.github_repo = "GMAO"` (nom reel du depot GitHub)
+### Deep-linking depuis le header (Février 2026)
+- Navigation intelligente depuis les badges de notification
+- Filtres pré-appliqués (OT en attente, échéances dépassées, alertes stock, contrôles en retard)
+- Hook centralisé `useLocationStateFilter` (7 pages refactorisées)
 
-### 12. Notifications push mobile - TERMINE (Fev 2026)
-- Nouveau fichier `backend/notifications.py` : service Expo Push
-- 3 endpoints API : `/api/push-notifications/register`, `/unregister`, `/test`
-- Declencheurs automatiques integres dans creation/update OT, equipements HORS_SERVICE, chat prive
-- Tests: 17/17 passes (iteration_58.json)
+### Galerie de pièces jointes (Février 2026)
+- Lightbox plein ecran (images, PDF, vidéos, texte)
+- Navigation clavier
+- Miniatures cliquables
 
-### 13. Mise a jour documentation - TERMINE (Fev 2026)
-- README.md et manual_default_content.json mis a jour
-
-### 14. Bug Fix: Systeme de mise a jour en boucle - TERMINE (Fev 2026)
-- **Cause racine** : `update_manager.py` ligne 17 avait `self.github_repo = "FSAO"` au lieu de `"GMAO"` (meme bug recurrent que #11, cette fois dans un fichier different)
-- L'API GitHub retournait 404 car le repo "FSAO" n'existe pas, l'endpoint `/api/updates/check` retournait toujours `update_available: false`
-- **Fix** : Correction de `self.github_repo = "GMAO"` dans update_manager.py
-- **Fix additionnel** : Route en double `/api/updates/check` renommee en `/api/updates/check-version` pour eviter conflit entre update_manager et update_service
-
-### 15. Previsualisation des pieces jointes dans le navigateur - TERMINE (Fev 2026)
-- **Backend** : Ajout du parametre `?preview=true` sur 6 endpoints de telechargement (work-orders, preventive-maintenance, improvements, chat, presqu-accidents, demandes-arret)
-- Quand `preview=true` : `Content-Disposition: inline` (affichage dans le navigateur)
-- Quand absent ou false : `Content-Disposition: attachment` (telechargement force)
-- **Frontend** : Ajout d'un bouton Eye (previsualiser) sur tous les composants AttachmentsList (WorkOrders, shared, Improvements)
-- **Chat** : Clic sur fichier previewable ouvre dans un nouvel onglet, menu contextuel avec option "Previsualiser"
-- Types previewables : image/*, application/pdf, video/*, text/*
-- Tests: 11/11 passes (iteration_59.json)
-
-### 16. Mise a jour documentation (P1) - TERMINE (Fev 2026)
-- README.md : ajout mention previsualisation pieces jointes, nettoyage tokens push
-- manual_default_content.json : section "Joindre des Fichiers" enrichie + nouveau chapitre "Notifications Push Mobile"
-
-### 17. Galerie de pieces jointes avec miniatures et lightbox - TERMINE (Fev 2026)
-- Nouveau composant `components/shared/AttachmentGallery.jsx` reutilisable
-- **Miniatures** : grille de miniatures cliquables dans la fiche (images = vraie preview, PDF/video/texte = icone stylisee)
-- **Lightbox** : overlay plein ecran (fond sombre, navigation fleches, compteur, nom de fichier, fermeture X/Escape/clic exterieur)
-- Support complet : images (img), PDF (iframe), videos (lecteur avec controles), texte (iframe)
-- Navigation clavier : Escape, ArrowLeft, ArrowRight
-- Integre dans tous les modules : OT, ameliorations, presqu'accidents, maintenance preventive, demandes d'arret (via shared + WO + Improvements AttachmentsList)
-- Tests: 8/8 backend + frontend 100% (iteration_60.json)
-
-### 18. Bug Fix: Lightbox blob URLs revoquees prematurement - TERMINE (Fev 2026)
-- Le cleanup du useEffect dans AttachmentGallery.jsx revoquait les blob URLs a chaque changement de reference de `attachments`
-- Les miniatures restaient visibles (navigateur garde les images en memoire) mais le lightbox echouait car il creait un nouvel element img avec une URL revoquee
-- Fix: Separation du cleanup dans un useEffect a deps vides (unmount only) + ajout mountedRef pour eviter les mises a jour d'etat apres demontage
-- Tests: 15/15 passes (iteration_61.json)
-
-### 19. Bug Fix: Systeme de mise a jour - chemins hardcodes - TERMINE (Fev 2026)
-- 8 occurrences de `/opt/gmao-iris` hardcodees dans update_manager.py empechaient le systeme de fonctionner si l'installation etait dans un autre repertoire
-- Fix: Ajout de `self.app_root = str(Path(__file__).parent.parent)` et remplacement de toutes les occurrences
-- Fonctions corrigees: get_current_commit, create_backup, apply_update, get_git_history, rollback_to_commit
-- Tests: API /api/updates/current et /api/updates/check fonctionnels (iteration_61.json)
-
-### 20. Bug Fix: Systeme de mise a jour - faux conflits Git - TERMINE (Fev 2026)
-- `git status --porcelain` listait TOUS les fichiers (y compris untracked: uploads/, venv/, tests/) → 52 "conflits" a chaque mise a jour
-- Fix: Utilisation de `git diff --name-status HEAD` (fichiers suivis uniquement) + fallback `git status -uno`
-- Ajout `.gitignore` automatique (methode `_ensure_gitignore`) pour exclure uploads/, venv/, tests/, etc.
-- Filtrage des fichiers non-critiques (.gitignore, yarn.lock) dans la detection de conflits
-- `.gitignore` recree apres `git reset --hard` dans le processus de mise a jour
-
-## ATTENTION - Point de vigilance recurrent
-Le repo GitHub s'appelle **GMAO** (PAS FSAO). Le nom est maintenant centralise dans `backend/.env` :
-- `GITHUB_USER=Kinder0083`
-- `GITHUB_REPO=GMAO`
-- `GITHUB_BRANCH=main`
-Les fichiers `update_service.py` et `update_manager.py` lisent ces variables via `os.environ.get()`.
+## Credentials de test
+- Admin (Direction): admin@test.com / Admin123!
+- Technicien (Maintenance): technicien@test.com / Technicien123!
 
 ## Backlog
-- Aucune tache en attente
+- Aucune tâche en attente
 
-## Taches futures
-- Notifications push via PWA (reporte par l'utilisateur)
-
-## Credentials
-- Admin: admin@test.com / Admin123!
-- Technicien: technicien@test.com / Technicien123!
+## Notes techniques
+- L'environnement de production est sur Proxmox, géré par supervisor
+- Après chaque `git pull` avec changements frontend: `cd /opt/gmao-iris/frontend && yarn build`
+- Le cache du Service Worker est très persistant → rappeler de vider le cache mobile
+- URL production: https://gmao-iris.tail4d419a.ts.net (Tailscale Funnel)
