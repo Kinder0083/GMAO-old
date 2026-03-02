@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useLocationStateFilter } from '../hooks/useLocationStateFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import {
@@ -23,7 +24,6 @@ import { usePreventiveMaintenance } from '../hooks/usePreventiveMaintenance';
 
 const PreventiveMaintenance = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -85,9 +85,9 @@ const PreventiveMaintenance = () => {
   }, []);
 
   // Appliquer le filtre "en retard" depuis la navigation (header)
-  useEffect(() => {
-    if (location.state?.filterOverdue) setFilterOverdue(true);
-  }, [location.state]);
+  useLocationStateFilter({
+    filterOverdue: () => setFilterOverdue(true)
+  });
 
   const loadChecklists = async () => {
     try {

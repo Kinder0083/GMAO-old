@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocationStateFilter } from '../hooks/useLocationStateFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -13,7 +13,6 @@ import { useInventory } from '../hooks/useInventory';
 
 const Inventory = () => {
   const { toast } = useToast();
-  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAlert, setFilterAlert] = useState(false);
   const [filterEquipment, setFilterEquipment] = useState(''); // Filtre par équipement
@@ -48,16 +47,11 @@ const Inventory = () => {
     loadEquipments();
   }, []);
 
-  useEffect(() => {
-    // Vérifier si on doit afficher le filtre alerte
-    if (location.state?.filterAlert) {
-      setFilterAlert(true);
-    }
-    // Vérifier si on doit filtrer par équipement (depuis la page Équipements)
-    if (location.state?.filterEquipment) {
-      setFilterEquipment(location.state.filterEquipment);
-    }
-  }, [location]);
+  // Appliquer les filtres depuis la navigation (header)
+  useLocationStateFilter({
+    filterAlert: () => setFilterAlert(true),
+    filterEquipment: (value) => setFilterEquipment(value)
+  });
 
   // Construire la hiérarchie des équipements pour le filtre
   const equipmentOptions = useMemo(() => {

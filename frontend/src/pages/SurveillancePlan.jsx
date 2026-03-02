@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocationStateFilter } from '../hooks/useLocationStateFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -24,7 +24,6 @@ import CategoryOrderDialog from '../components/Surveillance/CategoryOrderDialog'
 function SurveillancePlan() {
   const { toast } = useToast();
   const { confirm, ConfirmDialog } = useConfirmDialog();
-  const location = useLocation();
   
   // Année sélectionnée
   const [availableYears, setAvailableYears] = useState([]);
@@ -139,15 +138,15 @@ function SurveillancePlan() {
   };
 
   // Détecter si on vient du badge "contrôles en retard"
-  useEffect(() => {
-    if (location.state?.showOverdueOnly) {
+  useLocationStateFilter({
+    showOverdueOnly: () => {
       setShowOverdueFilter(true);
       toast({
         title: 'Filtre activé',
         description: 'Affichage des contrôles en retard uniquement',
       });
     }
-  }, [location.state]);
+  });
 
   useEffect(() => {
     if (items) {

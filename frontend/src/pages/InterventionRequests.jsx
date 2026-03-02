@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocationStateFilter } from '../hooks/useLocationStateFilter';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 const InterventionRequests = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('ALL');
@@ -78,9 +77,9 @@ const InterventionRequests = () => {
   });
 
   // Appliquer le filtre "en retard" depuis la navigation (header)
-  useEffect(() => {
-    if (location.state?.filterOverdue) setFilterOverdue(true);
-  }, [location.state]);
+  useLocationStateFilter({
+    filterOverdue: () => setFilterOverdue(true)
+  });
 
   const getPriorityBadge = (priorite) => {
     const badges = {

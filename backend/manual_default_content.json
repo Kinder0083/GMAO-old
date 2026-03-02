@@ -645,8 +645,35 @@
     },
     {
       "id": "ch-036",
-      "title": "🔔 Notifications Push Mobile",
-      "order": 36
+      "title": "Notifications Push PWA",
+      "description": "Recevoir des notifications push sur mobile et desktop via le navigateur",
+      "icon": "Bell",
+      "order": 36,
+      "target_roles": [],
+      "target_modules": [],
+      "sections": [
+        "sec-036-01",
+        "sec-036-02",
+        "sec-036-03"
+      ],
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
+    },
+    {
+      "id": "ch-037",
+      "title": "Application Mobile (PWA)",
+      "description": "Installer et utiliser FSAO Iris comme application mobile",
+      "icon": "Smartphone",
+      "order": 37,
+      "target_roles": [],
+      "target_modules": [],
+      "sections": [
+        "sec-037-01",
+        "sec-037-02",
+        "sec-037-03"
+      ],
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
     }
   ],
   "sections": [
@@ -3087,10 +3114,100 @@
       "video_url": null
     },
     {
-      "title": "Notifications Push Mobile",
-      "chapterId": "ch-036",
-      "content": "📱 **Notifications Push Mobile**\n\nFSAO Iris envoie des notifications push sur votre appareil mobile via l'application compagnon.\n\n**Types de notifications :**\n• 📋 **Ordres de travail** : Assignation, changement de statut, commentaire, cloture\n• 🔧 **Equipements** : Alerte panne, changement d'etat operationnel\n• 💬 **Chat** : Nouveau message prive ou mention\n• ⏰ **Rappels** : Maintenance preventive a venir\n\n**Fonctionnement :**\n1. Installez l'application mobile FSAO\n2. Connectez-vous avec vos identifiants\n3. Autorisez les notifications lors de la demande\n4. Les notifications arrivent automatiquement\n\n**Gestion des tokens :**\nLe systeme gere automatiquement les tokens d'appareil :\n• Un token est cree a chaque connexion sur l'application mobile\n• Les tokens invalides (appareil desinstalle, etc.) sont nettoyes automatiquement\n• Un meme utilisateur peut recevoir des notifications sur plusieurs appareils\n\n**Bonnes pratiques :**\n• Gardez l'application mobile a jour\n• Verifiez les parametres de notification de votre appareil\n• Deconnectez-vous proprement si vous changez d'appareil\n\n💡 **Note** : L'utilisateur qui effectue l'action ne recoit pas sa propre notification.",
-      "order": 1
+      "id": "sec-036-01",
+      "chapter_id": "ch-036",
+      "title": "Presentation des notifications push",
+      "content": "**Notifications Push via le Navigateur (PWA)**\n\nFSAO Iris peut envoyer des notifications push directement dans votre navigateur, meme quand l'application n'est pas ouverte.\n\n**Types de notifications :**\n- Assignation d'un ordre de travail\n- Changement de statut d'un OT\n- Equipement signale en panne (HORS_SERVICE)\n- Nouveau message prive dans le Chat Live\n- Rappels de maintenance preventive\n\n**Pre-requis :**\n- Connexion HTTPS obligatoire\n- Navigateur compatible (Chrome, Firefox, Edge sur desktop et Android ; Safari sur iOS 16.4+)\n- Autorisation des notifications accordee dans le navigateur\n\n**Fonctionnement :**\nLes notifications utilisent le protocole Web Push avec des cles VAPID. Lorsqu'un evenement se produit (creation d'OT, panne equipement, etc.), le serveur envoie automatiquement une notification a tous les appareils abonnes de l'utilisateur concerne.\n\nL'utilisateur qui effectue l'action ne recoit pas sa propre notification.",
+      "order": 76,
+      "level": "beginner",
+      "keywords": ["notifications", "push", "pwa", "navigateur", "alertes"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": [],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-036-02",
+      "chapter_id": "ch-036",
+      "title": "Activer les notifications push",
+      "content": "**Comment activer les notifications push ?**\n\n**Etape 1 : Autoriser dans le navigateur**\n1. Accedez a FSAO Iris depuis votre navigateur\n2. Allez dans **Parametres** (icone profil en haut a droite)\n3. Section **Notifications Push**\n4. Cliquez sur **\"Activer les notifications\"**\n5. Le navigateur vous demandera d'autoriser les notifications → Cliquez **\"Autoriser\"**\n\n**Etape 2 : Verifier l'activation**\nUne fois active, vous verrez :\n- Un message de confirmation vert\n- Le bouton devient **\"Desactiver les notifications\"**\n- Vous pouvez envoyer une notification de test\n\n**Sur Android (Chrome) :**\n- La demande d'autorisation apparait automatiquement\n- Si vous avez refuse, allez dans Parametres du navigateur > Notifications > Autorisez le site\n\n**Sur iOS (Safari 16.4+) :**\n- Vous devez d'abord installer l'application sur l'ecran d'accueil (PWA)\n- Ensuite, ouvrez la PWA et activez les notifications\n- Verifiez aussi : Reglages iPhone > Notifications > Safari/PWA > Autorise\n\n**Depannage :**\n- Si le bouton d'activation ne fonctionne pas, verifiez que vous etes bien en HTTPS\n- Videz le cache du navigateur et rechargez la page\n- Sur certains navigateurs, les notifications push ne sont pas supportees en navigation privee",
+      "order": 77,
+      "level": "beginner",
+      "keywords": ["activer", "notifications", "autoriser", "configuration", "push"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": [],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-036-03",
+      "chapter_id": "ch-036",
+      "title": "Gestion des abonnements push",
+      "content": "**Gerer vos abonnements push**\n\n**Plusieurs appareils :**\nVous pouvez recevoir des notifications sur plusieurs appareils simultanement. Chaque appareil dispose de son propre abonnement :\n- PC de bureau (Chrome)\n- Telephone Android (Chrome)\n- iPhone (Safari PWA)\n- Tablette\n\n**Desactiver les notifications :**\n1. Accedez a **Parametres > Notifications Push**\n2. Cliquez sur **\"Desactiver les notifications\"**\n3. L'abonnement est supprime cote serveur\n\n**Changement d'appareil :**\nSi vous changez de telephone ou de navigateur, activez simplement les notifications sur le nouvel appareil. Les anciens abonnements sont automatiquement nettoyes lorsqu'ils ne sont plus valides.\n\n**Administrateurs - Configuration serveur :**\nPour activer les notifications push sur le serveur, les cles VAPID doivent etre configurees dans le fichier backend/.env :\n- VAPID_PUBLIC_KEY : Cle publique VAPID\n- VAPID_PRIVATE_KEY : Cle privee VAPID\n- VAPID_CLAIMS_EMAIL : Email de contact (format mailto:)\n\nCes cles peuvent etre generees avec la commande :\npython3 -c \"from py_vapid import Vapid; v = Vapid(); v.generate_keys(); print(v.public_key, v.private_key)\"",
+      "order": 78,
+      "level": "advanced",
+      "keywords": ["abonnement", "gestion", "vapid", "configuration", "multi-appareils"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": [],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-037-01",
+      "chapter_id": "ch-037",
+      "title": "Installer FSAO Iris sur mobile",
+      "content": "**Installer FSAO Iris comme application mobile (PWA)**\n\nFSAO Iris est une Progressive Web App (PWA). Cela signifie que vous pouvez l'installer sur votre telephone comme une application native, sans passer par un store.\n\n**Sur Android (Chrome) :**\n1. Ouvrez FSAO Iris dans Chrome\n2. Une banniere **\"Ajouter a l'ecran d'accueil\"** peut apparaitre automatiquement\n3. Si elle n'apparait pas, cliquez sur le menu (3 points) > **\"Installer l'application\"** ou **\"Ajouter a l'ecran d'accueil\"**\n4. Confirmez l'installation\n5. L'icone FSAO apparait sur votre ecran d'accueil\n\n**Sur iPhone / iPad (Safari) :**\n1. Ouvrez FSAO Iris dans **Safari** (obligatoire, ne fonctionne pas avec Chrome iOS)\n2. Appuyez sur le bouton **Partager** (icone carree avec fleche vers le haut)\n3. Faites defiler et appuyez sur **\"Sur l'ecran d'accueil\"**\n4. Donnez un nom (par defaut : FSAO Iris) et appuyez sur **\"Ajouter\"**\n5. L'icone apparait sur votre ecran d'accueil\n\n**Avantages de la PWA :**\n- Lancement rapide depuis l'ecran d'accueil\n- Interface plein ecran (sans barre d'adresse du navigateur)\n- Notifications push (apres activation)\n- Fonctionne partiellement hors-ligne (pages deja visitees)",
+      "order": 79,
+      "level": "beginner",
+      "keywords": ["installer", "pwa", "mobile", "android", "iphone", "ios", "ecran accueil"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": [],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-037-02",
+      "chapter_id": "ch-037",
+      "title": "Utiliser l'application mobile",
+      "content": "**Interface mobile optimisee**\n\nFSAO Iris s'adapte automatiquement aux ecrans mobiles :\n\n**Navigation mobile :**\n- Le menu lateral se transforme en **panneau overlay** : cliquez sur l'icone hamburger pour l'ouvrir\n- Cliquez en dehors du menu ou sur une option pour le fermer automatiquement\n- Le header affiche uniquement les icones essentielles : chat, echeances, notifications, OT en attente, profil\n\n**Icones du header sur mobile :**\nPour garder l'interface lisible, seules les icones les plus importantes sont visibles :\n- **Enveloppe** : Chat Live (avec badge messages non lus)\n- **Calendrier** : Echeances depassees (avec badges colores)\n- **Cloche** : Notifications utilisateur\n- **Cloche OT** : Ordres de travail en attente\n- **Avatar** : Acces aux parametres et deconnexion\n\n**Navigation intelligente :**\nCliquez sur les badges du header pour acceder directement aux elements filtres :\n- Badge orange echeances → Page des OT/ameliorations en retard\n- Badge bleu echeances → Maintenances preventives en retard\n- Badge inventaire → Articles en alerte de stock\n\n**Conseils :**\n- Utilisez le mode paysage pour les tableaux larges\n- Les formulaires s'adaptent en colonnes verticales sur mobile\n- Les graphiques et rapports restent consultables avec defilement horizontal",
+      "order": 80,
+      "level": "beginner",
+      "keywords": ["mobile", "responsive", "navigation", "header", "sidebar", "hamburger"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": [],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-037-03",
+      "chapter_id": "ch-037",
+      "title": "Depannage mobile",
+      "content": "**Problemes courants sur mobile**\n\n**La page deborde sur les cotes (iOS) :**\n- Fermez et rouvrez la PWA\n- Si le probleme persiste, supprimez la PWA de l'ecran d'accueil et reinstallez-la\n- Videz le cache Safari : Reglages > Safari > Effacer historique et donnees\n\n**La banniere d'installation n'apparait pas :**\n- Verifiez que vous etes bien en HTTPS\n- Sur Android Chrome : le site doit remplir les criteres PWA (manifest.json + Service Worker)\n- Sur iOS : il n'y a pas de banniere automatique, utilisez Partager > Sur l'ecran d'accueil\n- Si l'application est deja installee, la banniere ne s'affiche plus\n\n**L'application ne se met pas a jour :**\n- Fermez completement la PWA (pas juste la mettre en arriere-plan)\n- Rouvrez-la : le Service Worker detecte les mises a jour automatiquement\n- Si ca ne fonctionne pas, videz le cache du navigateur\n- En dernier recours, desinstallez et reinstallez la PWA\n\n**Les notifications ne fonctionnent pas sur mobile :**\n- Verifiez les autorisations : Parametres du telephone > Notifications > votre navigateur/PWA\n- Sur iOS : les notifications PWA necessitent iOS 16.4 minimum\n- Sur Android : verifiez que le navigateur n'est pas en mode economie de batterie\n- Reconnectez-vous a l'application et reactiver les notifications dans les Parametres",
+      "order": 81,
+      "level": "beginner",
+      "keywords": ["depannage", "mobile", "ios", "android", "cache", "mise a jour", "probleme"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": [],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-02-28T10:00:00.000000+00:00",
+      "updated_at": "2026-02-28T10:00:00.000000+00:00"
     }
   ]
 }

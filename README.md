@@ -2,7 +2,7 @@
 
 Application de Fonctionnement des Services Assistee par Ordinateur (FSAO) complete et auto-hebergee.
 
-**Version :** 1.6.0
+**Version :** 1.7.0
 **Concepteur :** Greg
 **Derniere mise a jour :** Fevrier 2026
 
@@ -58,6 +58,7 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Gestion des priorites, statuts et temps (estime vs reel)
 - Pieces jointes multiples (photos, videos, documents jusqu'a 25 Mo)
 - **Previsualisation des pieces jointes** : ouverture directe des fichiers (PDF, images, videos) dans le navigateur sans telechargement force
+- **Galerie de pieces jointes** : miniatures cliquables avec lightbox plein ecran (navigation clavier, support images/PDF/videos/texte)
 - Filtrage avance par date, periode, statut, priorite
 - Templates d'ordres de travail reutilisables
 - Bons de travail generables en PDF
@@ -96,12 +97,34 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Calcul automatique de cadence (par minute, via scheduler)
 - Rapports M.E.S. planifies
 
+### Progressive Web App (PWA)
+- **Installation sur l'ecran d'accueil** : FSAO Iris peut etre installe comme une application native
+  - **Android** : Via le navigateur Chrome, bouton "Ajouter a l'ecran d'accueil" ou banniere d'installation automatique
+  - **iOS** : Via Safari, bouton Partager → "Sur l'ecran d'accueil"
+- **Notifications push navigateur** (Web Push via VAPID/pywebpush) : alertes automatiques envoyees sur les appareils mobiles et desktop lors de l'assignation d'un OT, changement de statut, panne equipement ou message prive
+- **Fonctionnement hors-ligne partiel** : cache intelligent des ressources statiques via Service Worker
+- **Mise a jour automatique** : le Service Worker detecte les nouvelles versions et met a jour le cache
+
+### Interface mobile responsive
+- **Header adaptatif** : les icones secondaires (backup, cameras, M.E.S., alertes MQTT, surveillance, inventaire) sont masquees sur mobile pour ne garder que les icones essentielles (chat, echeances, notifications, OT, profil)
+- **Sidebar overlay** : sur les ecrans mobiles (< 768px), la sidebar se transforme en panneau superpose avec un fond sombre, au lieu de pousser le contenu
+- **Menu hamburger** : icone standard pour ouvrir/fermer la sidebar sur mobile
+- **Viewport optimise iOS** : support de `viewport-fit=cover` et prevention du defilement horizontal
+
+### Navigation intelligente depuis le header (deep-linking)
+- **Clic sur les badges du header** : redirige vers la page correspondante avec des filtres pre-appliques
+  - Cloche OT → page OT filtree sur le statut "OUVERT"
+  - Icone echeances (calendrier) → page correspondante filtree sur les elements en retard
+  - Icone surveillance (oeil) → plan de surveillance filtre sur les controles en retard
+  - Icone inventaire (package) → inventaire filtre sur les articles en alerte
+- **Ouverture directe** : les notifications in-app permettent d'ouvrir directement un OT specifique
+
 ### Communication et collaboration
 - Chat en temps reel (WebSocket) avec previsualisation des fichiers joints
 - Tableau d'affichage collaboratif (Whiteboard, WebSocket)
 - Consignes inter-equipes avec acquittement
 - Notifications temps reel pour les ordres de travail et equipements
-- **Notifications push mobile** (Expo Push Service) : alertes automatiques envoyees sur les appareils mobiles lors de l'assignation d'un OT, changement de statut, panne equipement ou message prive
+- **Notifications push mobile** : via PWA (Web Push VAPID) pour navigateurs et via Expo Push Service pour l'application mobile native
 - **Nettoyage automatique des tokens push** : verification periodique des accuses de reception Expo et desactivation des tokens invalides
 
 ### Rapports et analytics
@@ -228,6 +251,8 @@ fsao-iris/
 | Auth        | JWT + bcrypt                                     |
 | Serveur web | Nginx (reverse proxy, SSL, static files)         |
 | Process     | Supervisor                                       |
+| Notifications | Web Push (VAPID/pywebpush) + Expo Push          |
+| PWA         | Service Worker, manifest.json, installation mobile |
 | Deploiement | Proxmox LXC (Debian 12)                         |
 | IA          | Emergent LLM (Gemini 2.5 Flash) - assistant Adria, analyse QHSE, generation documents |
 
@@ -323,6 +348,11 @@ GOOGLE_DRIVE_REDIRECT_URI=https://votre-domaine.com/api/backup/drive/callback
 
 # IA (assistant chat)
 EMERGENT_LLM_KEY=sk-emergent-xxxx
+
+# Notifications Push PWA (Web Push VAPID)
+VAPID_PUBLIC_KEY=<cle_publique_VAPID>
+VAPID_PRIVATE_KEY=<cle_privee_VAPID>
+VAPID_CLAIMS_EMAIL=mailto:votre-email@domaine.com
 
 # Cameras (optionnel)
 CAMERA_ENCRYPTION_KEY=<cle_generee>
@@ -593,6 +623,30 @@ Si les backups planifies ne s'executent pas a l'heure prevue :
 3. Vous devriez voir : `[Backup] Fuseau horaire configure: GMT+X` au demarrage
 4. **Redemarrez le backend** apres avoir modifie le fuseau horaire : `supervisorctl restart gmao-iris-backend`
 
+### PWA : Banniere d'installation absente
+
+Si la banniere d'installation de la PWA n'apparait pas :
+1. **HTTPS obligatoire** : La PWA necessite une connexion HTTPS (via Tailscale Funnel, Let's Encrypt, etc.)
+2. **Navigateur compatible** : Chrome (Android), Safari (iOS). Firefox ne supporte pas l'installation PWA
+3. **Deja installe ?** : Si l'application est deja installee, la banniere ne s'affiche plus
+4. **Cache** : Videz le cache du navigateur (`Ctrl+Shift+Delete` ou parametres Safari)
+5. **Sur iOS** : Il n'y a pas de banniere automatique. Utilisez le bouton Partager → "Sur l'ecran d'accueil"
+
+### PWA : Notifications push non recues
+
+Si les notifications push ne fonctionnent pas :
+1. **Verifiez les cles VAPID** dans `backend/.env` (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CLAIMS_EMAIL`)
+2. **HTTPS obligatoire** : Les notifications Web Push ne fonctionnent qu'en HTTPS
+3. **Autorisez les notifications** : Le navigateur doit avoir autorise les notifications pour le site
+4. **Verifiez l'abonnement** : Dans Parametres > Notifications, verifiez que l'abonnement push est actif
+5. **Cache Service Worker** : Si le SW est ancien, videz le cache et rechargez. Le versionnement du cache dans `sw.js` force les mises a jour
+6. **Generez de nouvelles cles VAPID** si necessaire :
+   ```bash
+   cd /opt/gmao-iris/backend
+   source venv/bin/activate
+   python3 -c "from py_vapid import Vapid; v = Vapid(); v.generate_keys(); print('Public:', v.public_key); print('Private:', v.private_key)"
+   ```
+
 ---
 
 ## Collections MongoDB
@@ -660,4 +714,4 @@ Ce projet est sous licence Proprietaire.
 ---
 
 **Developpe par Greg**
-**Version 1.6.0 - Fevrier 2026**
+**Version 1.7.0 - Fevrier 2026**

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocationStateFilter } from '../hooks/useLocationStateFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -22,7 +23,6 @@ import { formatErrorMessage } from '../utils/errorFormatter';
 
 const WorkOrders = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { canEdit, canDelete } = usePermissions();
@@ -55,35 +55,29 @@ const WorkOrders = () => {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
   // Appliquer les filtres depuis la navigation (header notifications)
-  useEffect(() => {
-    if (location.state?.filterStatus) {
-      // Cloche OT : filtre par statut uniquement, supprimer le filtre de date
-      setFilterStatus(location.state.filterStatus);
+  useLocationStateFilter({
+    filterStatus: (value) => {
+      setFilterStatus(value);
       setDateFilter('all');
       setFilterOverdue(false);
-    }
-    if (location.state?.filterOverdue) {
-      // Calendrier échéances : OTs avec dateLimite dépassée, tous statuts sauf TERMINE
+    },
+    filterOverdue: () => {
       setFilterStatus('ALL');
       setDateFilter('all');
       setFilterOverdue(true);
-    }
-    // Ouvrir un OT spécifique (depuis NotificationsDropdown)
-    if (location.state?.openId) {
-      const openSpecificWO = async () => {
-        try {
-          const response = await workOrdersAPI.getById(location.state.openId);
-          if (response?.data) {
-            setSelectedWorkOrder(response.data);
-            setDialogOpen(true);
-          }
-        } catch (e) {
-          // OT non trouvé, on ignore
+    },
+    openId: async (id) => {
+      try {
+        const response = await workOrdersAPI.getById(id);
+        if (response?.data) {
+          setSelectedWorkOrder(response.data);
+          setDialogOpen(true);
         }
-      };
-      openSpecificWO();
+      } catch (e) {
+        // OT non trouvé, on ignore
+      }
     }
-  }, [location.state]);
+  });
 
   // Calculer les paramètres de date pour le hook
   const getDateFilters = useCallback(() => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocationStateFilter } from '../hooks/useLocationStateFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,7 +18,6 @@ import { formatErrorMessage } from '../utils/errorFormatter';
 
 const Improvements = () => {
   const { toast } = useToast();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
@@ -44,13 +43,13 @@ const Improvements = () => {
   } = useImprovements();
 
   // Appliquer le filtre "en retard" depuis la navigation (header)
-  useEffect(() => {
-    if (location.state?.filterOverdue) {
+  useLocationStateFilter({
+    filterOverdue: () => {
       setFilterStatus('ALL');
       setDateFilter('all');
       setFilterOverdue(true);
     }
-  }, [location.state]);
+  });
 
   // Gérer l'ouverture automatique d'un ordre via l'URL ?open=id
   useEffect(() => {
