@@ -7,7 +7,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { useToast } from '../../hooks/use-toast';
-import { Sparkles, Wrench, Bug, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Sparkles, Wrench, Bug, Plus, Pencil, Trash2, X, ThumbsUp, ThumbsDown } from 'lucide-react';
 import api from '../../services/api';
 
 const typeOptions = [
@@ -29,6 +29,7 @@ const ChangelogAdmin = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRelease, setEditingRelease] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] = useState({});
 
   const emptyEntry = { type: 'feature', title: '', description: '' };
   const [formData, setFormData] = useState({
@@ -41,6 +42,13 @@ const ChangelogAdmin = () => {
     try {
       const res = await api.get('/releases');
       setReleases(res.data.releases || []);
+      // Charger le résumé des feedbacks
+      try {
+        const fbRes = await api.get('/releases/feedback-summary');
+        setFeedbackSummary(fbRes.data.summary || {});
+      } catch {
+        // ignore si pas admin
+      }
     } catch (err) {
       console.error('Erreur chargement changelog:', err);
     } finally {
@@ -184,6 +192,22 @@ const ChangelogAdmin = () => {
                       </span>
                     ))}
                   </div>
+                  {/* Stats feedback */}
+                  {feedbackSummary[release.version] && (
+                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp size={13} className="text-emerald-500" />
+                        {feedbackSummary[release.version].up || 0}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ThumbsDown size={13} className="text-red-400" />
+                        {feedbackSummary[release.version].down || 0}
+                      </span>
+                      <span className="text-gray-400">
+                        {(feedbackSummary[release.version].up || 0) + (feedbackSummary[release.version].down || 0)} vote(s) au total
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

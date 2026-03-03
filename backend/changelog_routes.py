@@ -17,6 +17,7 @@ from server import db
 
 COLLECTION = "releases"
 USER_SEEN_COLLECTION = "releases_user_seen"
+FEEDBACK_COLLECTION = "releases_feedback"
 
 
 async def ensure_default_content():
@@ -136,3 +137,79 @@ async def delete_release(release_id: str, current_user: dict = Depends(get_curre
 
     await db[COLLECTION].delete_one({"id": release_id})
     return {"message": "Version supprimée"}
+
+
+@router.post("/feedback")
+async def submit_feedback(data: dict, current_user: dict = Depends(get_current_user)):
+    """Soumettre un vote (up/down) pour une entrée du changelog. Re-voter annule."""
+    version = data.get("version", "")
+    entry_index = data.get("entry_index")
+    vote = data.get("vote", "")  # "up" ou "down"
+    user_id = current_user.get("id", "")
+
+    if not version or entry_index is None or vote not in ("up", "down"):
+        raise HTTPException(status_code=400, detail="version, entry_index et vote (up/down) requis")
+
+    doc_filter = {
+        "user_id": user_id,
+        "version": version,
+        "entry_index": entry_index
+    }
+
+    existing = await db[FEEDBACK_COLLECTION].find_one(doc_filter)
+
+    if existing and existing.get("vote") == vote:
+        # Même vote → annuler (toggle off)
+        await db[FEEDBACK_COLLECTION].delete_one(doc_filter)
+        return {"status": "removed", "vote": None}
+    else:
+        # Nouveau vote ou changement de vote
+        await db[FEEDBACK_COLLECTION].update_one(
+            doc_filter,
+            {"$set": {
+                **doc_filter,
+                "vote": vote,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+        return {"status": "saved", "vote": vote}
+
+
+@router.get("/feedback/{version}")
+async def get_feedback_stats(version: str, current_user: dict = Depends(get_current_user)):
+    """Récupérer les stats de feedback + le vote de l'utilisateur pour une version."""
+    user_id = current_user.get("id", "")
+
+    # Tous les votes pour cette version
+    all_votes = await db[FEEDBACK_COLLECTION].find(
+        {"version": version}, {"_id": 0}
+    ).to_list(None)
+
+    # Agréger par entry_index
+    stats = {}
+    user_votes = {}
+    for v in all_votes:
+        idx = v["entry_index"]
+        if idx not in stats:
+            stats[idx] = {"up": 0, "down": 0}
+        stats[idx][v["vote"]] += 1
+        if v["user_id"] == user_id:
+            user_votes[idx] = v["vote"]
+
+    return {"stats": stats, "user_votes": user_votes}
+
+
+@router.get("/feedback-summary")
+async def get_feedback_summary(current_user: dict = Depends(get_current_admin_user)):
+    """Récupérer un résumé global des feedbacks par version (admin)."""
+    all_votes = await db[FEEDBACK_COLLECTION].find({}, {"_id": 0}).to_list(None)
+
+    summary = {}
+    for v in all_votes:
+        ver = v["version"]
+        if ver not in summary:
+            summary[ver] = {"up": 0, "down": 0}
+        summary[ver][v["vote"]] += 1
+
+    return {"summary": summary}
