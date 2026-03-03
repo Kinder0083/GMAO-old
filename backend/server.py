@@ -9673,6 +9673,10 @@ chat_cleanup_service = init_chat_cleanup_service(db)
 from manual_routes import router as manual_router
 api_router.include_router(manual_router)
 
+# Changelog "Quoi de neuf ?" (releases)
+from changelog_routes import router as releases_router
+api_router.include_router(releases_router)
+
 # Purchase Request routes
 from purchase_request_routes import router as purchase_request_router
 api_router.include_router(purchase_request_router)

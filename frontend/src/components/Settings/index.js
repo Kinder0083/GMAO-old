@@ -7,3 +7,4 @@ export { default as LlmKeysSettings } from './LlmKeysSettings';
 export { default as TimezoneSettings } from './TimezoneSettings';
 export { default as GuidedTourSettings } from './GuidedTourSettings';
 export { default as DataResetSettings } from './DataResetSettings';
+export { default as ChangelogAdmin } from './ChangelogAdmin';

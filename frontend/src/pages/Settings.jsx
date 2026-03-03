@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import ChangePasswordDialog from '../components/Common/ChangePasswordDialog';
 import SupportRequestDialog from '../components/Common/SupportRequestDialog';
-import { GuidedTourSettings } from '../components/Settings';
+import { GuidedTourSettings, ChangelogAdmin } from '../components/Settings';
 import { authAPI } from '../services/api';
 import api from '../services/api';
 import { formatErrorMessage } from '../utils/errorFormatter';
@@ -392,6 +392,11 @@ const Settings = () => {
           <GuidedTourSettings />
         </div>
       </div>
+
+      {/* Changelog Admin (visible uniquement pour les admins) */}
+      {JSON.parse(localStorage.getItem('user') || '{}').role === 'ADMIN' && (
+        <ChangelogAdmin />
+      )}
 
       {/* Save Button */}
       <div className="flex justify-end">

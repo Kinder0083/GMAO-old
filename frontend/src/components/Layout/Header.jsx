@@ -2,7 +2,7 @@
  * Composant Header pour l'en-tête de l'application
  * Extrait de MainLayout.jsx pour une meilleure modularité
  */
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -14,7 +14,8 @@ import {
   Eye,
   Mail,
   Settings,
-  Camera
+  Camera,
+  Gift
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
@@ -26,7 +27,9 @@ import AlertNotifications from '../Common/AlertNotifications';
 import NotificationsDropdown from '../Common/NotificationsDropdown';
 import CameraAlertIcon from '../Common/CameraAlertIcon';
 import BackupStatusIcon from '../Common/BackupStatusIcon';
+import ChangelogPanel from '../Common/ChangelogPanel';
 import MESAlertIcon from './MESAlertIcon';
+import api from '../../services/api';
 
 const Header = ({
   sidebarOpen,
@@ -47,6 +50,27 @@ const Header = ({
   inventoryStats
 }) => {
   const navigate = useNavigate();
+  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [hasNewRelease, setHasNewRelease] = useState(false);
+
+  const checkNewReleases = useCallback(async () => {
+    try {
+      const res = await api.get('/releases');
+      const { latest_version, last_seen_version } = res.data;
+      setHasNewRelease(latest_version && latest_version !== last_seen_version);
+    } catch {
+      // silently ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    checkNewReleases();
+  }, [checkNewReleases]);
+
+  const handleChangelogOpen = () => {
+    setChangelogOpen(true);
+    setHasNewRelease(false);
+  };
 
   return (
     <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center justify-between px-4">
@@ -338,6 +362,27 @@ const Header = ({
         {/* Notifications utilisateur */}
         <NotificationsDropdown />
         
+        {/* Bouton "Quoi de neuf ?" */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleChangelogOpen}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+              data-testid="whatsnew-btn"
+            >
+              <Gift size={20} className="text-gray-600" />
+              {hasNewRelease && (
+                <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-emerald-500 rounded-full text-white text-[9px] font-bold leading-none shadow-md">
+                  NEW
+                </span>
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+            <p className="font-medium">Quoi de neuf ?</p>
+          </TooltipContent>
+        </Tooltip>
+
         {/* Cloche OT en attente */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -411,6 +456,9 @@ const Header = ({
           </TooltipContent>
         </Tooltip>
       </div>
+
+      {/* Panneau latéral "Quoi de neuf ?" */}
+      <ChangelogPanel open={changelogOpen} onOpenChange={setChangelogOpen} />
     </div>
   );
 };
