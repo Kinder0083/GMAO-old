@@ -725,6 +725,14 @@ class UpdateService:
                 )
                 if not success:
                     update_history["warnings"].append(f"pip install échoué: {stderr[:200]}")
+                
+                # Installer emergentintegrations séparément (index privé)
+                await self._run_command(
+                    update_history, "4/6 - pip install emergentintegrations",
+                    [venv_pip, "install", "emergentintegrations",
+                     "--extra-index-url", "https://d33sy5i8bnduwe.cloudfront.net/simple/"],
+                    timeout=120
+                )
             
             # Frontend dependencies
             frontend_package = self.frontend_dir / "package.json"
