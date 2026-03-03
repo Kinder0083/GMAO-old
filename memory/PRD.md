@@ -10,43 +10,46 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - **PWA**: Service Worker, manifest.json, installation mobile
 - **IA**: Emergent LLM (Gemini 2.5 Flash) - assistant Adria, analyse QHSE
 - **Temps réel**: WebSocket (Chat Live, Whiteboard, notifications)
+- **QR Codes**: qrcode + Pillow (génération étiquettes)
 - **Déploiement production**: Proxmox LXC (Debian 12) + Tailscale Funnel (HTTPS)
 
 ## Fonctionnalités implémentées
 
 ### Core
-- Ordres de travail (CRUD, pièces jointes, galerie lightbox, templates, bons PDF)
-- Demandes d'intervention / amélioration
-- Améliorations (suivi complet)
-- Maintenance préventive (checklists, planification)
-- Gestion des équipements, inventaire, zones, compteurs
-- Plan de surveillance (contrôles qualité)
-- Presqu'accidents (analyse QHSE)
-- Chat Live (WebSocket temps réel)
-- Tableau d'affichage (Whiteboard)
-- Consignes inter-équipes
-- Dashboard service, rapports hebdomadaires
-- Système de permissions par rôle
-- Import/Export données
-- Sauvegarde planifiée
+- Ordres de travail, Demandes d'intervention/amélioration, Améliorations
+- Maintenance préventive, Équipements, Inventaire, Zones, Compteurs
+- Plan de surveillance, Presqu'accidents, Chat Live, Whiteboard
+- Consignes inter-équipes, Dashboard, Rapports, Permissions par rôle
+- Import/Export, Sauvegarde planifiée, Système de mise à jour intégré
 
 ### PWA & Mobile (Février 2026)
-- Installation sur écran d'accueil (Android/iOS)
-- Notifications push navigateur (Web Push VAPID/pywebpush)
-- Service Worker avec versionnement de cache
-- Interface responsive mobile (sidebar overlay, header adaptatif)
+- Installation PWA (Android/iOS), Notifications push (VAPID)
+- Interface responsive, Sidebar overlay mobile
 
-### Deep-linking depuis le header (Février 2026)
-- Navigation intelligente depuis les badges de notification
-- Hook centralisé `useLocationStateFilter` (7 pages refactorisées)
+### Deep-linking (Février 2026)
+- Navigation intelligente depuis les badges du header
+- Hook centralisé `useLocationStateFilter`
 
 ### Changelog "Quoi de neuf ?" (Mars 2026)
-- Badge "NEW" vert sur icône cadeau dans le header
-- Panneau latéral (Sheet) avec historique des versions
-- **Feedback pouce haut/bas** par entrée avec compteurs et toggle
-- Interface admin (Paramètres) pour CRUD + résumé des feedbacks
-- API: `/api/releases` (CRUD) + `/api/releases/feedback` + `/api/releases/feedback-summary`
-- Collections MongoDB: `releases`, `releases_user_seen`, `releases_feedback`
+- Badge "NEW" + panneau latéral + feedback pouce haut/bas
+- Interface admin CRUD + résumé feedbacks
+- API: `/api/releases`
+
+### QR Codes Équipements (Mars 2026)
+- **Page publique** `/qr/{equipmentId}` (sans auth pour lecture)
+  - Fiche équipement (nom, statut, emplacement, photo)
+  - 6 actions rapides avec panneaux inline expandables
+  - Dernier OT, Historique OT, KPI, Demande d'intervention, Signaler panne, Plan préventif
+  - Actions lecture = sans auth, Actions écriture = auth requise
+- **Boutons QR** sur la fiche équipement
+  - "Aperçu QR" : ouvre la page publique
+  - "Étiquette QR" : télécharge PNG (QR code + nom équipement) prêt à imprimer
+- **Admin actions QR** dans Paramètres
+  - Ajouter/modifier/supprimer des actions
+  - Activer/désactiver par toggle
+  - Type link/action, icône, flag auth requise
+- API: `/api/qr/public/*` (public), `/api/qr/*` (auth), `/api/qr/actions` (admin)
+- Collections MongoDB: `qr_actions_config`
 
 ## Credentials de test
 - Admin (Direction): admin@test.com / Admin123!
@@ -57,7 +60,7 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 
 ## Notes techniques
 - Environnement production: Proxmox, géré par supervisor
-- Après `git pull` frontend: `cd /opt/gmao-iris/frontend && yarn build`
-- Le cache du Service Worker est très persistant → vider le cache mobile
+- Système de mise à jour intégré (git pull + yarn build + restart automatique)
 - URL production: https://gmao-iris.tail4d419a.ts.net
-- Routes `/api/changelog` = mises à jour système (git). `/api/releases` = changelog admin
+- FRONTEND_URL dans backend/.env pour les URLs des QR codes
+- La dépendance `qrcode[pil]` doit être installée sur le serveur de production
