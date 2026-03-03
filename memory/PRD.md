@@ -43,9 +43,18 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Hook centralisé `useLocationStateFilter` (7 pages refactorisées)
 
 ### Galerie de pièces jointes (Février 2026)
-- Lightbox plein ecran (images, PDF, vidéos, texte)
+- Lightbox plein écran (images, PDF, vidéos, texte)
 - Navigation clavier
 - Miniatures cliquables
+
+### Changelog "Quoi de neuf ?" (Mars 2026)
+- Badge "NEW" vert sur l'icône cadeau dans le header quand de nouvelles versions sont disponibles
+- Panneau latéral (Sheet) affichant l'historique des versions avec badges par catégorie (Nouveau, Amélioration, Correction)
+- Le badge disparaît après consultation (mark-read)
+- Interface admin dans Paramètres pour créer/modifier/supprimer des versions
+- Contenu par défaut pré-rempli (3 versions : 1.7.0, 1.6.0, 1.5.0)
+- API: `/api/releases` (GET, POST, PUT, DELETE) + `/api/releases/mark-read`
+- Collections MongoDB: `releases`, `releases_user_seen`
 
 ## Credentials de test
 - Admin (Direction): admin@test.com / Admin123!
@@ -59,3 +68,4 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Après chaque `git pull` avec changements frontend: `cd /opt/gmao-iris/frontend && yarn build`
 - Le cache du Service Worker est très persistant → rappeler de vider le cache mobile
 - URL production: https://gmao-iris.tail4d419a.ts.net (Tailscale Funnel)
+- Les routes `/api/changelog` existantes sont pour les mises à jour système (git). Le nouveau changelog admin utilise `/api/releases`
