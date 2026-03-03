@@ -600,6 +600,12 @@ class UpdateService:
                     # APPROCHE NUCLÉAIRE : reproduire exactement le processus SSH qui fonctionne
                     # rm -rf .git && git init && git remote add && git fetch && git reset --hard
                     
+                    # Enrichir le PATH pour s'assurer que git/yarn/node sont trouvés
+                    git_env = os.environ.copy()
+                    for extra_path in ["/usr/local/bin", "/usr/bin", "/usr/local/sbin", "/usr/sbin"]:
+                        if extra_path not in git_env.get("PATH", ""):
+                            git_env["PATH"] = extra_path + ":" + git_env.get("PATH", "")
+                    
                     # CRITIQUE : Sauvegarder les fichiers .env AVANT toute opération
                     env_backups = {}
                     for env_path in [
@@ -627,7 +633,7 @@ class UpdateService:
                     success, stdout, stderr = await self._run_command(
                         update_history, "3/6 - git init",
                         ["git", "init"],
-                        cwd=str(git_dir), timeout=10
+                        cwd=str(git_dir), env=git_env, timeout=10
                     )
                     if not success:
                         git_available = False
@@ -638,55 +644,36 @@ class UpdateService:
                         success, stdout, stderr = await self._run_command(
                             update_history, "3/6 - git remote add",
                             ["git", "remote", "add", "origin", github_url],
-                            cwd=str(git_dir), timeout=10
+                            cwd=str(git_dir), env=git_env, timeout=10
                         )
                         if not success:
                             git_available = False
                     
-                    # git fetch origin main
+                    # git fetch origin main --depth=1 (télécharge uniquement le dernier commit)
                     if git_available:
                         success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - git fetch origin main",
-                            ["git", "fetch", "origin", self.github_branch],
-                            cwd=str(git_dir), timeout=120
+                            update_history, "3/6 - git fetch origin main --depth=1",
+                            ["git", "fetch", "--depth=1", "origin", self.github_branch],
+                            cwd=str(git_dir), env=git_env, timeout=300
                         )
                         if not success:
                             git_available = False
-                            update_history["errors"].append(f"Git fetch échoué: {stderr[:300]}")
+                            update_history["errors"].append(f"CRITIQUE: Git fetch échoué - le code n'a PAS été mis à jour. Détail: {stderr[:300]}")
                     
                     # git reset --hard origin/main
                     if git_available:
                         success, stdout, stderr = await self._run_command(
                             update_history, "3/6 - git reset --hard (synchronisation forcée)",
                             ["git", "reset", "--hard", f"origin/{self.github_branch}"],
-                            cwd=str(git_dir), timeout=30
+                            cwd=str(git_dir), env=git_env, timeout=30
                         )
                         if not success:
                             git_available = False
-                            update_history["errors"].append(f"Git reset échoué: {stderr[:300]}")
+                            update_history["errors"].append(f"CRITIQUE: Git reset échoué - le code n'a PAS été mis à jour. Détail: {stderr[:300]}")
                         else:
-                            # Récupérer la liste des fichiers modifiés
-                            diff_success, diff_out, _ = await self._run_command(
-                                update_history, "3/6 - Git diff (fichiers modifiés)",
-                                ["git", "diff", "--name-status", "HEAD~1", "HEAD"],
-                                cwd=str(git_dir), timeout=10
-                            )
-                            if diff_success and diff_out.strip():
-                                for line in diff_out.strip().split('\n'):
-                                    parts = line.split('\t', 1)
-                                    if len(parts) == 2:
-                                        status_code, filename = parts
-                                        if status_code.startswith('M'):
-                                            update_history["files_modified"].append(filename)
-                                        elif status_code.startswith('A'):
-                                            update_history["files_added"].append(filename)
-                                        elif status_code.startswith('D'):
-                                            update_history["files_deleted"].append(filename)
-                                update_history["total_files_changed"] = (
-                                    len(update_history["files_modified"]) + 
-                                    len(update_history["files_added"]) + 
-                                    len(update_history["files_deleted"])
-                                )
+                            self._log_step(update_history, "3/6 - Code synchronisé",
+                                          f"Le code est maintenant à jour avec origin/{self.github_branch}",
+                                          status="success")
                     
                     # RESTAURATION : Remettre les fichiers .env sauvegardés
                     for env_file_path, env_content in env_backups.items():
@@ -705,14 +692,15 @@ class UpdateService:
                     
                 except Exception as e:
                     self._log_step(update_history, "3/6 - Erreur Git inattendue", str(e),
-                                  stderr=str(e), status="warning")
+                                  stderr=str(e), status="error")
                     git_available = False
+                    update_history["errors"].append(f"CRITIQUE: Erreur Git - le code n'a PAS été mis à jour: {str(e)[:200]}")
             
             if not git_available:
-                update_history["warnings"].append("Git non disponible - code non mis à jour")
-                self._log_step(update_history, "3/6 - Git indisponible", 
-                              "Les dépendances seront réinstallées et les services redémarrés",
-                              status="warning")
+                update_history["errors"].append("CRITIQUE: Le code source n'a pas pu être mis à jour depuis GitHub")
+                self._log_step(update_history, "3/6 - ÉCHEC synchronisation code", 
+                              "Le code n'a PAS été mis à jour. Les dépendances seront réinstallées mais les nouvelles fonctionnalités ne seront pas disponibles.",
+                              status="error")
             
             # 4. Installer les dépendances
             logger.info("📦 Étape 4/5: Installation des dépendances...")
@@ -760,9 +748,21 @@ class UpdateService:
                 build_env = os.environ.copy()
                 build_env["CI"] = "false"
                 build_env["NODE_OPTIONS"] = "--max_old_space_size=1024"
-                for extra_path in ["/usr/local/bin", "/usr/bin"]:
+                for extra_path in ["/usr/local/bin", "/usr/bin", "/usr/local/sbin", "/usr/sbin"]:
                     if extra_path not in build_env.get("PATH", ""):
                         build_env["PATH"] = extra_path + ":" + build_env.get("PATH", "")
+                
+                # Charger les variables du frontend/.env dans l'environnement de build
+                frontend_env = self.frontend_dir / ".env"
+                if frontend_env.exists():
+                    try:
+                        for line in frontend_env.read_text().strip().split('\n'):
+                            line = line.strip()
+                            if line and not line.startswith('#') and '=' in line:
+                                key, value = line.split('=', 1)
+                                build_env[key.strip()] = value.strip()
+                    except Exception:
+                        pass
                 
                 # yarn install
                 success, stdout, stderr = await self._run_command(
@@ -899,12 +899,19 @@ rm -f {restart_script.name}
             
             # Déterminer le statut final
             has_critical_errors = len(update_history["errors"]) > 0
+            code_updated = git_available  # Le code a-t-il été réellement mis à jour ?
             
             update_history["completed_at"] = datetime.now(timezone.utc).isoformat()
-            update_history["status"] = "success_with_warnings" if (warning_steps or update_history["warnings"]) else "success"
+            update_history["code_updated"] = code_updated
+            
             if has_critical_errors:
                 update_history["status"] = "partial_failure"
-            update_history["success"] = not has_critical_errors
+            elif warning_steps or update_history["warnings"]:
+                update_history["status"] = "success_with_warnings"
+            else:
+                update_history["status"] = "success"
+                
+            update_history["success"] = code_updated and not has_critical_errors
             update_history["backup_path"] = str(backup_path)
             
             # Résumé lisible
@@ -930,9 +937,17 @@ rm -f {restart_script.name}
             except Exception as e:
                 logger.error(f"❌ Erreur lors de l'enregistrement du journal: {str(e)}")
             
+            if code_updated and not has_critical_errors:
+                result_msg = f"Mise à jour vers {version} terminée avec succès"
+            elif not code_updated:
+                result_msg = f"Mise à jour vers {version} ÉCHOUÉE - le code source n'a pas été mis à jour depuis GitHub"
+            else:
+                result_msg = f"Mise à jour vers {version} terminée avec des erreurs"
+
             return {
-                "success": not has_critical_errors,
-                "message": f"Mise à jour vers {version} {'terminée avec succès' if not has_critical_errors else 'terminée avec des erreurs'}",
+                "success": code_updated and not has_critical_errors,
+                "code_updated": code_updated,
+                "message": result_msg,
                 "version": version,
                 "backup_path": str(backup_path),
                 "timestamp": datetime.now().isoformat(),
