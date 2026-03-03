@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from dependencies import get_current_user, get_current_admin_user
 from datetime import datetime, timezone
-import qrcode
 import io
 import os
 import logging
@@ -157,6 +156,10 @@ async def get_qr_actions_public():
 @router.get("/equipment/{eq_id}/image")
 async def generate_qr_image(eq_id: str, current_user: dict = Depends(get_current_user)):
     """Générer le QR code d'un équipement (PNG)."""
+    try:
+        import qrcode
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Module qrcode non installé. Exécutez: pip install qrcode[pil]")
     from bson import ObjectId
     eq = await db.equipments.find_one({"_id": ObjectId(eq_id)})
     if not eq:
@@ -182,6 +185,10 @@ async def generate_qr_image(eq_id: str, current_user: dict = Depends(get_current
 @router.get("/equipment/{eq_id}/label")
 async def generate_qr_label(eq_id: str, current_user: dict = Depends(get_current_user)):
     """Générer une étiquette QR (PNG avec nom de l'équipement)."""
+    try:
+        import qrcode
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Module qrcode non installé. Exécutez: pip install qrcode[pil]")
     from bson import ObjectId
     from PIL import Image, ImageDraw, ImageFont
 
