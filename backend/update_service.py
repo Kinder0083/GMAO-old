@@ -773,6 +773,26 @@ class UpdateService:
                 if not success:
                     update_history["warnings"].append(f"yarn install échoué: {stderr[:200]}")
                 
+                # Bumper le CACHE_NAME du Service Worker pour forcer le rafraîchissement
+                sw_path = self.frontend_dir / "public" / "sw.js"
+                if sw_path.exists():
+                    try:
+                        import re
+                        import time
+                        sw_content = sw_path.read_text()
+                        new_cache = f"fsao-iris-v{int(time.time())}"
+                        sw_content = re.sub(
+                            r"const CACHE_NAME = '[^']+';",
+                            f"const CACHE_NAME = '{new_cache}';",
+                            sw_content
+                        )
+                        sw_path.write_text(sw_content)
+                        self._log_step(update_history, "4/6 - Service Worker mis à jour",
+                                      f"CACHE_NAME = '{new_cache}'", status="success")
+                    except Exception as e:
+                        self._log_step(update_history, "4/6 - SW update",
+                                      str(e), status="warning")
+                
                 # yarn build
                 success, stdout, stderr = await self._run_command(
                     update_history, "4/6 - yarn build (compilation frontend)",

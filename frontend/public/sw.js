@@ -15,21 +15,47 @@ self.addEventListener('install', (event) => {
       return cache.addAll(PRECACHE_URLS);
     })
   );
+  // Forcer l'activation immediate (ne pas attendre la fermeture des onglets)
   self.skipWaiting();
 });
 
-// Activation : nettoyage des anciens caches
+// Activation : nettoyage des anciens caches et rechargement des clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      const oldCaches = cacheNames.filter((name) => name !== CACHE_NAME);
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
+        oldCaches.map((name) => caches.delete(name))
+      ).then(() => {
+        // Si des anciens caches ont ete supprimes, c'est qu'il y a eu une mise a jour
+        if (oldCaches.length > 0) {
+          // Notifier TOUS les clients de se recharger
+          return self.clients.matchAll({ type: 'window' }).then((clients) => {
+            clients.forEach((client) => {
+              client.postMessage({ type: 'FORCE_RELOAD', reason: 'update' });
+            });
+          });
+        }
+      });
     })
   );
   self.clients.claim();
+});
+
+// Message : repondre aux demandes de nettoyage de cache
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then((cacheNames) => {
+        return Promise.all(cacheNames.map((name) => caches.delete(name)));
+      }).then(() => {
+        // Confirmer le nettoyage
+        if (event.source) {
+          event.source.postMessage({ type: 'CACHE_CLEARED' });
+        }
+      })
+    );
+  }
 });
 
 // Fetch : network-first, fallback vers cache ou page offline
@@ -39,10 +65,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Pour index.html et les navigations : TOUJOURS aller au reseau d'abord
+  // et ne PAS mettre en cache (pour eviter de servir une version perimee)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(OFFLINE_URL) || caches.match('/');
+      })
+    );
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Mettre en cache la reponse reussie
+        // Mettre en cache la reponse reussie (sauf index.html)
         if (response.status === 200) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -57,7 +94,6 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // Si c'est une navigation, afficher la page offline
           if (event.request.mode === 'navigate') {
             return caches.match(OFFLINE_URL);
           }

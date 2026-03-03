@@ -120,10 +120,15 @@ function App() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
-      // Handle navigation messages from SW notification clicks
+      // Handle messages from SW
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'NAVIGATE') {
           window.location.href = event.data.url;
+        }
+        // Après une mise à jour : le SW détecte un nouveau cache → forcer le rechargement
+        if (event.data?.type === 'FORCE_RELOAD') {
+          console.log('[SW] Mise à jour détectée, rechargement automatique...');
+          window.location.reload(true);
         }
       });
     }
