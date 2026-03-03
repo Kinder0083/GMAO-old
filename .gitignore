@@ -1003,3 +1003,7 @@ update.sh
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
