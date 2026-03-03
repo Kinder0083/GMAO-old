@@ -19,7 +19,7 @@ import Sidebar from './Sidebar';
 import { iconMap } from './menuConfig';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useOverdueItems } from '../../hooks/useOverdueItems';
-import { useWorkOrdersCount } from '../../hooks/useWorkOrdersCount';
+import { useBellCounts } from '../../hooks/useBellCounts';
 import { useSurveillanceBadge } from '../../hooks/useSurveillanceBadge';
 import { useInventoryStats } from '../../hooks/useInventoryStats';
 import { useChatUnreadCount } from '../../hooks/useChatUnreadCount';
@@ -40,7 +40,7 @@ const MainLayout = () => {
   const { canView, isAdmin } = usePermissions();
 
   // Hooks modulaires pour les données du header
-  const { workOrdersCount } = useWorkOrdersCount(user.id);
+  const bellCounts = useBellCounts();
   const {
     overdueCount,
     overdueDetails,
@@ -245,7 +245,7 @@ const MainLayout = () => {
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
         user={user}
         isAdmin={isAdmin()}
-        workOrdersCount={workOrdersCount}
+        bellCounts={bellCounts}
         chatUnreadCount={chatUnreadCount}
         canViewChatLive={canView('chatLive')}
         overdueCount={overdueCount}

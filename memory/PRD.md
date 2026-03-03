@@ -65,6 +65,11 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Endpoint de diagnostic `/api/qr/check-deps` pour vérifier les dépendances
 - Frontend affiche le message d'erreur exact du backend au lieu d'un message générique
 
+### Icône cloche multi-badges (Mars 2026)
+- 3 badges : Rouge (OT en attente), Violet (Améliorations), Vert (Maintenance préventive échue)
+- Endpoint `/api/bell-counts` pour compteurs efficaces côté serveur
+- Tooltip détaillé avec légende des couleurs
+
 ## Backlog
 - Validation en production : "Save to GitHub" puis mise à jour via le menu intégré
 

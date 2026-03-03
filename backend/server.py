@@ -462,6 +462,38 @@ async def get_version():
         "releaseDate": ""
     }
 
+
+@api_router.get("/bell-counts", tags=["Systeme"],
+    summary="Compteurs pour l'icône cloche du header",
+    description="Retourne les compteurs d'OT en attente, améliorations en attente et maintenances préventives échues."
+)
+async def get_bell_counts(current_user: dict = Depends(get_current_user)):
+    """Compteurs pour les badges de la cloche du header."""
+    now = datetime.utcnow()
+
+    # 1. Ordres de travail en attente (OUVERT ou EN_ATTENTE)
+    wo_count = await db.work_orders.count_documents({
+        "statut": {"$in": ["OUVERT", "EN_ATTENTE"]}
+    })
+
+    # 2. Améliorations en attente (non terminées / non annulées)
+    imp_count = await db.improvements.count_documents({
+        "statut": {"$in": ["OUVERT", "EN_ATTENTE", "EN_COURS"]}
+    })
+
+    # 3. Maintenances préventives planifiées mais pas encore réalisées (date dépassée)
+    pm_count = await db.preventive_maintenances.count_documents({
+        "statut": "ACTIF",
+        "prochaineMaintenance": {"$lte": now}
+    })
+
+    return {
+        "work_orders": wo_count,
+        "improvements": imp_count,
+        "preventive": pm_count
+    }
+
+
 @api_router.post("/auth/login", response_model=Token, tags=["Authentification"],
     summary="Connexion utilisateur",
     description="Authentifie un utilisateur et retourne un token JWT valide 7 jours. Le token doit etre inclus dans le header `Authorization: Bearer <token>` pour les requetes protegees.",

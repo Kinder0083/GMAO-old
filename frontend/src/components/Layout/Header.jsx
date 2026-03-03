@@ -36,7 +36,7 @@ const Header = ({
   onSidebarToggle,
   user,
   isAdmin,
-  workOrdersCount,
+  bellCounts,
   chatUnreadCount,
   canViewChatLive,
   overdueCount,
@@ -383,41 +383,60 @@ const Header = ({
           </TooltipContent>
         </Tooltip>
 
-        {/* Cloche OT en attente */}
+        {/* Cloche avec 3 badges : OT, Améliorations, Maintenance préventive */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button 
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
               onClick={() => navigate('/work-orders', { state: { filterStatus: 'OUVERT', dateFilter: 'all' } })}
-              data-testid="work-orders-btn"
+              data-testid="bell-btn"
             >
               <Bell size={20} className="text-gray-600" />
-              {workOrdersCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                  {workOrdersCount > 9 ? '9+' : workOrdersCount}
+              
+              {/* Badge ROUGE - Coin supérieur droit - OT en attente */}
+              {bellCounts.work_orders > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                  {bellCounts.work_orders > 9 ? '9+' : bellCounts.work_orders}
+                </span>
+              )}
+              
+              {/* Badge VIOLET - Coin supérieur gauche - Améliorations en attente */}
+              {bellCounts.improvements > 0 && (
+                <span className="absolute -top-1 -left-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                  {bellCounts.improvements > 9 ? '9+' : bellCounts.improvements}
+                </span>
+              )}
+              
+              {/* Badge VERT - Coin inférieur gauche - Maintenances préventives échues */}
+              {bellCounts.preventive > 0 && (
+                <span className="absolute -bottom-1 -left-1 w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                  {bellCounts.preventive > 9 ? '9+' : bellCounts.preventive}
                 </span>
               )}
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
-            <p className="font-medium mb-2">Ordres de travail</p>
-            <p className="text-xs text-gray-300 mb-3">
-              {workOrdersCount > 0 
-                ? `${workOrdersCount} ordre${workOrdersCount > 1 ? 's' : ''} en attente`
-                : 'Aucun ordre en attente'}
-            </p>
-            <div className="border-t border-gray-700 pt-2">
-              <p className="text-xs text-gray-400 font-medium mb-1">Types d'OT</p>
-              <div className="text-xs text-gray-400 ml-2 space-y-0.5">
-                <p>🔧 Corrective - Réparation suite panne</p>
-                <p>🛡️ Préventive - Maintenance planifiée</p>
-                <p>📈 Améliorative - Optimisation</p>
+            <p className="font-medium mb-2">Notifications activité</p>
+            <div className="space-y-2 text-sm mb-3">
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-gray-300">OT en attente:</span>
+                <span className="font-bold text-red-400">{bellCounts.work_orders}</span>
+              </div>
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-gray-300">Améliorations en attente:</span>
+                <span className="font-bold text-purple-400">{bellCounts.improvements}</span>
+              </div>
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-gray-300">Maintenance préventive échue:</span>
+                <span className="font-bold text-green-400">{bellCounts.preventive}</span>
               </div>
             </div>
-            <div className="border-t border-gray-700 pt-2 mt-2">
-              <p className="text-xs text-gray-400 font-medium mb-1">Statuts</p>
+            <div className="border-t border-gray-700 pt-2">
+              <p className="text-xs text-gray-400 font-medium mb-1">Badges couleur</p>
               <div className="text-xs text-gray-400 ml-2 space-y-0.5">
-                <p>⏳ En attente • 🔄 En cours • ✅ Terminé</p>
+                <p><span className="text-red-400 font-bold">●</span> Rouge — Ordres de travail en attente</p>
+                <p><span className="text-purple-400 font-bold">●</span> Violet — Améliorations en attente</p>
+                <p><span className="text-green-400 font-bold">●</span> Vert — Maintenances préventives échues</p>
               </div>
             </div>
           </TooltipContent>
