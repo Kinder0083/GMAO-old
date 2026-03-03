@@ -55,8 +55,13 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Admin (Direction): admin@test.com / Admin123!
 - Technicien (Maintenance): technicien@test.com / Technicien123!
 
+### Version dynamique (Mars 2026)
+- Endpoint `/api/version` retourne dynamiquement la dernière version depuis la collection `releases`
+- Page de login affiche la version en temps réel (plus de valeur codée en dur)
+- Fallback gracieux : version masquée si API indisponible
+
 ## Backlog
-- Aucune tâche en attente
+- Validation en production : "Save to GitHub" puis mise à jour via le menu intégré
 
 ## Notes techniques
 - Environnement production: Proxmox, géré par supervisor

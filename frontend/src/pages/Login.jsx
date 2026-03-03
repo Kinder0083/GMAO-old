@@ -21,7 +21,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [version, setVersion] = useState('1.5.0');
+  const [version, setVersion] = useState('');
 
   useEffect(() => {
     // Récupérer la version depuis l'API (sans authentification pour la page de login)
@@ -33,8 +33,8 @@ const Login = () => {
           setVersion(response.data.version);
         }
       } catch (error) {
-        // En cas d'erreur, garder la version par défaut
-        setVersion('1.5.0');
+        // En cas d'erreur, ne pas afficher de version
+        setVersion('');
       }
     };
     fetchVersion();
@@ -101,7 +101,7 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">FSAO Iris</h1>
           <p className="text-gray-600 mb-6">Fonctionnement des Services Assistée par Ordinateur</p>
           <p className="text-sm text-gray-500 mb-1">Concepteur: Grèg</p>
-          <p className="text-sm text-gray-500 mb-6">Version {version}</p>
+          {version && <p className="text-sm text-gray-500 mb-6">Version {version}</p>}
         </div>
 
         <Card className="shadow-xl border-0">

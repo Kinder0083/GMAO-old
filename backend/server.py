@@ -441,11 +441,25 @@ async def register(user_create: UserCreate):
     responses={200: {"description": "Version retournee avec succes", "content": {"application/json": {"example": {"version": "2.2.0", "versionName": "Documentation Enrichie", "releaseDate": "2025-01-18"}}}}}
 )
 async def get_version():
-    """Obtenir la version actuelle de l'application (endpoint public)"""
+    """Obtenir la version actuelle de l'application (endpoint public).
+    Retourne automatiquement la dernière version du changelog."""
+    try:
+        latest = await db.releases.find_one(
+            {}, {"_id": 0, "version": 1, "date": 1},
+            sort=[("date", -1)]
+        )
+        if latest:
+            return {
+                "version": latest.get("version", "1.0.0"),
+                "versionName": "",
+                "releaseDate": latest.get("date", "")
+            }
+    except Exception:
+        pass
     return {
-        "version": "1.5.0",
-        "versionName": "Rapport de Surveillance Avancé",
-        "releaseDate": "2025-01-18"
+        "version": "1.0.0",
+        "versionName": "",
+        "releaseDate": ""
     }
 
 @api_router.post("/auth/login", response_model=Token, tags=["Authentification"],
