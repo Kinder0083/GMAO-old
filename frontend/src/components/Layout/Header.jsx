@@ -15,7 +15,7 @@ import {
   Mail,
   Settings,
   Camera,
-  Gift
+  Sparkles
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import UpdateNotificationBadge from '../Common/UpdateNotificationBadge';
@@ -370,7 +370,7 @@ const Header = ({
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
               data-testid="whatsnew-btn"
             >
-              <Gift size={20} className="text-gray-600" />
+              <Sparkles size={20} className="text-gray-600" />
               {hasNewRelease && (
                 <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-emerald-500 rounded-full text-white text-[9px] font-bold leading-none shadow-md">
                   NEW
