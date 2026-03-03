@@ -60,6 +60,11 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Page de login affiche la version en temps réel (plus de valeur codée en dur)
 - Fallback gracieux : version masquée si API indisponible
 
+### Bug Fix QR Code (Mars 2026)
+- Lazy import robuste pour `PIL/Pillow` et `qrcode` avec messages d'erreur explicites
+- Endpoint de diagnostic `/api/qr/check-deps` pour vérifier les dépendances
+- Frontend affiche le message d'erreur exact du backend au lieu d'un message générique
+
 ## Backlog
 - Validation en production : "Save to GitHub" puis mise à jour via le menu intégré
 

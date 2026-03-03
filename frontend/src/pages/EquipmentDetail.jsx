@@ -73,6 +73,13 @@ const EquipmentDetail = () => {
   const handleDownloadQR = async () => {
     try {
       const response = await api.get(`/qr/equipment/${id}/label`, { responseType: 'blob' });
+      // Vérifier si la réponse est bien une image (pas un JSON d'erreur)
+      if (response.data.type && response.data.type.includes('application/json')) {
+        const text = await response.data.text();
+        const error = JSON.parse(text);
+        toast({ title: 'Erreur', description: error.detail || 'Erreur serveur', variant: 'destructive' });
+        return;
+      }
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -82,8 +89,11 @@ const EquipmentDetail = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
       toast({ title: 'QR Code téléchargé', description: 'Étiquette QR prête à imprimer' });
-    } catch {
-      toast({ title: 'Erreur', description: 'Impossible de générer le QR code', variant: 'destructive' });
+    } catch (err) {
+      const detail = err?.response?.data?.detail 
+        || (err?.response?.data instanceof Blob ? await err.response.data.text().then(t => { try { return JSON.parse(t).detail } catch { return t } }).catch(() => null) : null)
+        || 'Impossible de générer le QR code';
+      toast({ title: 'Erreur', description: detail, variant: 'destructive' });
     }
   };
 

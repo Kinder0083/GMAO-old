@@ -42,6 +42,27 @@ async def ensure_default_actions():
         })
 
 
+
+@router.get("/check-deps")
+async def check_qr_dependencies():
+    """Vérifier que les dépendances QR sont installées (endpoint de diagnostic)."""
+    result = {"qrcode": False, "pillow": False, "frontend_url": False}
+    try:
+        import qrcode
+        result["qrcode"] = True
+    except ImportError:
+        pass
+    try:
+        from PIL import Image
+        import PIL
+        result["pillow"] = True
+    except ImportError:
+        pass
+    result["frontend_url"] = bool(os.environ.get("FRONTEND_URL", ""))
+    result["all_ok"] = all([result["qrcode"], result["pillow"], result["frontend_url"]])
+    return result
+
+
 # ========== ROUTES PUBLIQUES (SANS AUTH) ==========
 
 @router.get("/public/equipment/{eq_id}")
@@ -160,26 +181,41 @@ async def generate_qr_image(eq_id: str, current_user: dict = Depends(get_current
         import qrcode
     except ImportError:
         raise HTTPException(status_code=500, detail="Module qrcode non installé. Exécutez: pip install qrcode[pil]")
+    try:
+        from PIL import Image
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Module Pillow non installé. Exécutez: pip install Pillow")
     from bson import ObjectId
-    eq = await db.equipments.find_one({"_id": ObjectId(eq_id)})
+
+    try:
+        eq = await db.equipments.find_one({"_id": ObjectId(eq_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID d'équipement invalide")
+
     if not eq:
         raise HTTPException(status_code=404, detail="Équipement non trouvé")
 
     frontend_url = os.environ.get("FRONTEND_URL", "").rstrip("/")
+    if not frontend_url:
+        raise HTTPException(status_code=500, detail="FRONTEND_URL non configuré dans le backend .env")
     qr_url = f"{frontend_url}/qr/{eq_id}"
 
-    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=4)
-    qr.add_data(qr_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
+    try:
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=4)
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    buf.seek(0)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
 
-    return StreamingResponse(buf, media_type="image/png", headers={
-        "Content-Disposition": f"inline; filename=qr_{eq.get('nom', eq_id)}.png"
-    })
+        return StreamingResponse(buf, media_type="image/png", headers={
+            "Content-Disposition": f"inline; filename=qr_{eq.get('nom', eq_id)}.png"
+        })
+    except Exception as e:
+        logger.error(f"Erreur génération QR image pour {eq_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération: {str(e)}")
 
 
 @router.get("/equipment/{eq_id}/label")
@@ -189,61 +225,74 @@ async def generate_qr_label(eq_id: str, current_user: dict = Depends(get_current
         import qrcode
     except ImportError:
         raise HTTPException(status_code=500, detail="Module qrcode non installé. Exécutez: pip install qrcode[pil]")
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Module Pillow non installé. Exécutez: pip install Pillow")
     from bson import ObjectId
-    from PIL import Image, ImageDraw, ImageFont
 
-    eq = await db.equipments.find_one({"_id": ObjectId(eq_id)})
+    try:
+        eq = await db.equipments.find_one({"_id": ObjectId(eq_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="ID d'équipement invalide")
+
     if not eq:
         raise HTTPException(status_code=404, detail="Équipement non trouvé")
 
     equipment_name = eq.get("nom", "Équipement")
     frontend_url = os.environ.get("FRONTEND_URL", "").rstrip("/")
+    if not frontend_url:
+        raise HTTPException(status_code=500, detail="FRONTEND_URL non configuré dans le backend .env")
     qr_url = f"{frontend_url}/qr/{eq_id}"
 
-    # Générer le QR code
-    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=3)
-    qr.add_data(qr_url)
-    qr.make(fit=True)
-    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
-
-    qr_width, qr_height = qr_img.size
-
-    # Créer l'étiquette avec le nom en dessous
-    label_padding = 20
-    text_height = 40
-    label_width = max(qr_width + label_padding * 2, 300)
-    label_height = qr_height + label_padding * 2 + text_height
-
-    label = Image.new("RGB", (label_width, label_height), "white")
-    draw = ImageDraw.Draw(label)
-
-    # Centrer le QR code
-    qr_x = (label_width - qr_width) // 2
-    label.paste(qr_img, (qr_x, label_padding))
-
-    # Ajouter le texte
     try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
-    except Exception:
-        font = ImageFont.load_default()
+        # Générer le QR code
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=3)
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
-    text_bbox = draw.textbbox((0, 0), equipment_name, font=font)
-    text_width = text_bbox[2] - text_bbox[0]
-    text_x = (label_width - text_width) // 2
-    text_y = qr_height + label_padding + 8
-    draw.text((text_x, text_y), equipment_name, fill="black", font=font)
+        qr_width, qr_height = qr_img.size
 
-    # Ajouter un cadre
-    draw.rectangle([(0, 0), (label_width - 1, label_height - 1)], outline="#cccccc", width=2)
+        # Créer l'étiquette avec le nom en dessous
+        label_padding = 20
+        text_height = 40
+        label_width = max(qr_width + label_padding * 2, 300)
+        label_height = qr_height + label_padding * 2 + text_height
 
-    buf = io.BytesIO()
-    label.save(buf, format="PNG")
-    buf.seek(0)
+        label = Image.new("RGB", (label_width, label_height), "white")
+        draw = ImageDraw.Draw(label)
 
-    safe_name = equipment_name.replace(" ", "_").replace("/", "-")
-    return StreamingResponse(buf, media_type="image/png", headers={
-        "Content-Disposition": f"attachment; filename=etiquette_qr_{safe_name}.png"
-    })
+        # Centrer le QR code
+        qr_x = (label_width - qr_width) // 2
+        label.paste(qr_img, (qr_x, label_padding))
+
+        # Ajouter le texte
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
+        except Exception:
+            font = ImageFont.load_default()
+
+        text_bbox = draw.textbbox((0, 0), equipment_name, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_x = (label_width - text_width) // 2
+        text_y = qr_height + label_padding + 8
+        draw.text((text_x, text_y), equipment_name, fill="black", font=font)
+
+        # Ajouter un cadre
+        draw.rectangle([(0, 0), (label_width - 1, label_height - 1)], outline="#cccccc", width=2)
+
+        buf = io.BytesIO()
+        label.save(buf, format="PNG")
+        buf.seek(0)
+
+        safe_name = equipment_name.replace(" ", "_").replace("/", "-")
+        return StreamingResponse(buf, media_type="image/png", headers={
+            "Content-Disposition": f"attachment; filename=etiquette_qr_{safe_name}.png"
+        })
+    except Exception as e:
+        logger.error(f"Erreur génération étiquette QR pour {eq_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération: {str(e)}")
 
 
 # ========== ADMIN : GESTION DES ACTIONS ==========
