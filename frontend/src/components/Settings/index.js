@@ -8,3 +8,4 @@ export { default as TimezoneSettings } from './TimezoneSettings';
 export { default as GuidedTourSettings } from './GuidedTourSettings';
 export { default as DataResetSettings } from './DataResetSettings';
 export { default as ChangelogAdmin } from './ChangelogAdmin';
+export { default as QRActionsAdmin } from './QRActionsAdmin';

@@ -73,6 +73,7 @@ import PurchaseRequestsArchives from "./pages/PurchaseRequestsArchives";
 import FormTemplatesPage from "./pages/FormTemplatesPage";
 import WorkOrderTemplatesPage from "./pages/WorkOrderTemplatesPage";
 import CustomWidgetEditor from "./pages/CustomWidgetEditor";
+import QREquipmentPage from "./pages/QREquipmentPage";
 import ServiceDashboard from "./pages/ServiceDashboard";
 import ServiceTeamView from "./pages/ServiceTeamView";
 import WeeklyReportsPage from "./pages/WeeklyReportsPage";
@@ -140,6 +141,7 @@ function App() {
           <Route path="/validate-improvement-request" element={<ValidateImprovementRequest />} />
           <Route path="/end-maintenance" element={<EndMaintenance />} />
           <Route path="/inscription" element={<Inscription />} />
+          <Route path="/qr/:equipmentId" element={<QREquipmentPage />} />
           {/* Route spéciale pour le Tableau d'affichage - plein écran sans menu */}
           <Route 
             path="/whiteboard" 

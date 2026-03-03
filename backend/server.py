@@ -9677,6 +9677,10 @@ api_router.include_router(manual_router)
 from changelog_routes import router as releases_router
 api_router.include_router(releases_router)
 
+# QR Codes équipements
+from qr_routes import router as qr_router
+api_router.include_router(qr_router)
+
 # Purchase Request routes
 from purchase_request_routes import router as purchase_request_router
 api_router.include_router(purchase_request_router)

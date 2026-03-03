@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Plus, Edit, Trash2, Package, MapPin, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Package, MapPin, Calendar, DollarSign, QrCode, Download } from 'lucide-react';
 import { equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import EquipmentFormDialog from '../components/Equipment/EquipmentFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
+import api from '../services/api';
 
 const EquipmentDetail = () => {
   const { id } = useParams();
@@ -67,6 +68,27 @@ const EquipmentDetail = () => {
   const handleDeleteChild = (child) => {
     setSelectedChild(child);
     setDeleteDialogOpen(true);
+  };
+
+  const handleDownloadQR = async () => {
+    try {
+      const response = await api.get(`/qr/equipment/${id}/label`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `qr_${equipment?.nom || id}.png`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast({ title: 'QR Code téléchargé', description: 'Étiquette QR prête à imprimer' });
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible de générer le QR code', variant: 'destructive' });
+    }
+  };
+
+  const handlePreviewQR = () => {
+    window.open(`/qr/${id}`, '_blank');
   };
 
   const handleDeleteConfirm = async () => {
@@ -139,9 +161,28 @@ const EquipmentDetail = () => {
             <p className="text-gray-600 mt-1">Détails de l'équipement</p>
           </div>
         </div>
-        <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(equipment.statut)}`}>
-          {getStatusLabel(equipment.statut)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(equipment.statut)}`}>
+            {getStatusLabel(equipment.statut)}
+          </span>
+          <Button
+            variant="outline"
+            onClick={handlePreviewQR}
+            className="hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+            data-testid="qr-preview-btn"
+          >
+            <QrCode size={18} className="mr-2" />
+            Aperçu QR
+          </Button>
+          <Button
+            onClick={handleDownloadQR}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            data-testid="qr-download-btn"
+          >
+            <Download size={18} className="mr-2" />
+            Étiquette QR
+          </Button>
+        </div>
       </div>
 
       {/* Informations principales */}
