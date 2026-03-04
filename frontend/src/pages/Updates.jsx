@@ -600,6 +600,20 @@ const Updates = () => {
                         {item.error_message && (
                           <p className="text-xs text-red-600 mt-1">{item.error_message}</p>
                         )}
+                        {item.summary?.errors?.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            {item.summary.errors.map((err, i) => (
+                              <p key={i} className="text-xs text-red-600">&#x274C; {err}</p>
+                            ))}
+                          </div>
+                        )}
+                        {item.summary?.warnings?.length > 0 && (
+                          <div className="mt-1 space-y-0.5">
+                            {item.summary.warnings.map((warn, i) => (
+                              <p key={i} className="text-xs text-orange-600">&#x26A0; {warn}</p>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {item.success && item.backup_path && item.version_after !== currentVersion && (

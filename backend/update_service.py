@@ -755,7 +755,7 @@ class UpdateService:
                 # Construire l'environnement pour yarn
                 build_env = os.environ.copy()
                 build_env["CI"] = "false"
-                build_env["NODE_OPTIONS"] = "--max_old_space_size=1024"
+                build_env["NODE_OPTIONS"] = "--max_old_space_size=2048"
                 for extra_path in ["/usr/local/bin", "/usr/bin", "/usr/local/sbin", "/usr/sbin"]:
                     if extra_path not in build_env.get("PATH", ""):
                         build_env["PATH"] = extra_path + ":" + build_env.get("PATH", "")

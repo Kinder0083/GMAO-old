@@ -9490,7 +9490,16 @@ async def apply_update(
         if result.get("success"):
             return result
         else:
-            raise HTTPException(status_code=500, detail=result.get("message"))
+            # Inclure le résumé détaillé des erreurs dans la réponse
+            summary = result.get("summary", {})
+            errors = summary.get("errors", [])
+            warnings = summary.get("warnings", [])
+            detail_msg = result.get("message", "Erreur inconnue")
+            if errors:
+                detail_msg += " | Erreurs: " + "; ".join(errors)
+            if warnings:
+                detail_msg += " | Avertissements: " + "; ".join(warnings)
+            raise HTTPException(status_code=500, detail=detail_msg)
             
     except Exception as e:
         logger.error(f"❌ Erreur application mise à jour: {str(e)}")
