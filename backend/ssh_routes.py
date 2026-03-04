@@ -74,12 +74,11 @@ async def ssh_websocket(websocket: WebSocket):
             return
 
         # 2. Vérifier le token JWT
+        from auth import SECRET_KEY, ALGORITHM
         from jose import jwt as jose_jwt
-        import os
         token = auth_data.get("token", "")
         try:
-            secret = os.environ.get("JWT_SECRET", os.environ.get("SECRET_KEY", ""))
-            payload = jose_jwt.decode(token, secret, algorithms=["HS256"])
+            payload = jose_jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             user_role = payload.get("role", "").upper()
             if user_role != "ADMIN":
                 await websocket.send_json({"type": "error", "data": "Accès réservé aux administrateurs"})
