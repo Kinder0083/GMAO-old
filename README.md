@@ -2,9 +2,9 @@
 
 Application de Fonctionnement des Services Assistee par Ordinateur (FSAO) complete et auto-hebergee.
 
-**Version :** 1.7.0
+**Version :** 1.8.0
 **Concepteur :** Greg
-**Derniere mise a jour :** Fevrier 2026
+**Derniere mise a jour :** Mars 2026
 
 ---
 
@@ -68,6 +68,7 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Suivi de l'etat operationnel, historique des maintenances
 - Gestion des garanties, couts et compteurs (metres)
 - Vues en liste et en arborescence
+- **QR Codes** : Generation de QR codes et d'etiquettes imprimables pour chaque equipement. Le scan d'un QR code mene a une page publique affichant les informations de l'equipement et des actions rapides configurables (creation d'OT, signalement, demande, etc.). Les actions sont gerees depuis l'interface d'administration (Parametres > Actions QR)
 
 ### Maintenance preventive
 - Planification recurrente (hebdomadaire, mensuel, trimestriel, annuel)
@@ -112,12 +113,24 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - **Viewport optimise iOS** : support de `viewport-fit=cover` et prevention du defilement horizontal
 
 ### Navigation intelligente depuis le header (deep-linking)
+- **Cloche multi-badges** : L'icone cloche du header affiche 3 badges colores independants :
+  - **Rouge** : nombre d'ordres de travail en attente (statut EN_ATTENTE)
+  - **Violet** : nombre d'ameliorations en attente
+  - **Vert** : nombre de maintenances preventives echues (date depassee)
+  - Cliquer sur la cloche ouvre un menu deroulant avec acces direct a chaque categorie, avec le filtre pre-applique
 - **Clic sur les badges du header** : redirige vers la page correspondante avec des filtres pre-appliques
-  - Cloche OT → page OT filtree sur le statut "OUVERT"
   - Icone echeances (calendrier) → page correspondante filtree sur les elements en retard
   - Icone surveillance (oeil) → plan de surveillance filtre sur les controles en retard
   - Icone inventaire (package) → inventaire filtre sur les articles en alerte
 - **Ouverture directe** : les notifications in-app permettent d'ouvrir directement un OT specifique
+
+### Journal des modifications ("Quoi de neuf ?")
+- Panneau lateral accessible depuis l'icone "Sparkles" dans le header
+- Badge "NEW" signalant les nouvelles versions non lues
+- Interface d'administration pour gerer les versions et leurs entrees (Parametres > Changelog)
+- Systeme de feedback utilisateur (pouce haut/bas) sur chaque version
+- Statistiques de vote visibles pour l'administrateur
+- La version affichee sur la page de connexion est automatiquement synchronisee avec le dernier numero de version du changelog
 
 ### Communication et collaboration
 - Chat en temps reel (WebSocket) avec previsualisation des fichiers joints
@@ -168,6 +181,9 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - Mise a jour en un clic depuis l'interface admin
 - Avertissement broadcast a tous les utilisateurs connectes avant MAJ
 - Script post-update automatique (dependances + rebuild frontend)
+- Messages d'erreur detailles en cas d'echec (etape exacte identifiee)
+- Historique des mises a jour avec erreurs et avertissements visibles
+- Endpoint de diagnostic `/api/qr/check-deps` pour verifier les dependances
 
 ### Autres
 - Demandes d'arret de maintenance avec workflow email
@@ -462,7 +478,16 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | POST | `/api/backup/drive/upload/{id}` | Upload manuel d'un backup vers Google Drive |
 | GET | `/api/backup/drive/connect` | Connexion OAuth Google Drive |
 | GET | `/api/backup/drive/status` | Statut connexion Google Drive |
-| GET | `/api/version` | Version de l'application |
+| GET | `/api/version` | Version de l'application (dynamique depuis changelog) |
+| GET | `/api/bell-counts` | Compteurs cloche header (OT, ameliorations, preventif) |
+| GET | `/api/releases` | Journal des modifications (changelog) |
+| POST | `/api/releases` | Ajouter une version au changelog (admin) |
+| POST | `/api/releases/{id}/vote` | Voter (pouce haut/bas) sur une version |
+| GET | `/api/qr/equipment/{id}/image` | Generer le QR code d'un equipement (PNG) |
+| GET | `/api/qr/equipment/{id}/label` | Generer une etiquette QR imprimable (PNG) |
+| GET | `/api/qr/page/{id}` | Donnees page publique QR d'un equipement |
+| GET | `/api/qractions` | Actions rapides configurees pour les pages QR |
+| GET | `/api/qr/check-deps` | Diagnostic des dependances QR |
 | POST | `/api/updates/broadcast-warning` | Avertissement avant MAJ |
 | POST | `/api/ai/chat` | Chat avec l'assistante IA Adria |
 | POST | `/api/ai/checklist/generate-from-doc` | IA : generer checklist depuis document |
@@ -668,6 +693,8 @@ Si les notifications push ne fonctionnent pas :
 | `presqu_accidents` | Presqu'accidents (enrichi: categorie, equipement, lesion, facteurs, temoins, conditions) |
 | `improvement_requests` | Demandes d'amelioration |
 | `purchase_requests` | Demandes d'achat |
+| `releases` | Journal des modifications (changelog, feedback) |
+| `qractions` | Actions rapides pour pages QR (label, url, icone, auth) |
 | `chat_messages` | Messages de chat |
 | `consignes` | Consignes inter-equipes |
 | `documentations` | Documents |
@@ -714,4 +741,4 @@ Ce projet est sous licence Proprietaire.
 ---
 
 **Developpe par Greg**
-**Version 1.7.0 - Fevrier 2026**
+**Version 1.8.0 - Mars 2026**

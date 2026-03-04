@@ -70,6 +70,11 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Endpoint `/api/bell-counts` pour compteurs efficaces côté serveur
 - Tooltip détaillé avec légende des couleurs
 
+### Documentation et Présentations (Mars 2026)
+- README.md mis à jour v1.8.0 avec QR Codes, changelog, cloche multi-badges
+- Manuel enrichi : 3 nouveaux chapitres (QR Codes, Changelog, Notifications Cloche)
+- 3 PDFs de présentation : Courte (5p), Moyenne (11p), Complète (15p)
+
 ## Backlog
 - Validation en production : "Save to GitHub" puis mise à jour via le menu intégré
 
