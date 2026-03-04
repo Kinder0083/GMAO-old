@@ -10,6 +10,7 @@ import paramiko
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
 from pydantic import BaseModel
 from dependencies import get_current_user
+from server import db
 
 router = APIRouter(prefix="/ssh", tags=["SSH Terminal"])
 logger = logging.getLogger(__name__)
@@ -73,19 +74,27 @@ async def ssh_websocket(websocket: WebSocket):
             await websocket.close()
             return
 
-        # 2. Vérifier le token JWT
+        # 2. Vérifier le token JWT et le rôle admin
         from auth import SECRET_KEY, ALGORITHM
         from jose import jwt as jose_jwt
+        from bson import ObjectId
         token = auth_data.get("token", "")
         try:
             payload = jose_jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            user_role = payload.get("role", "").upper()
+            user_id = payload.get("sub")
+            if not user_id:
+                raise ValueError("sub manquant")
+            # Récupérer le rôle depuis la base de données
+            user = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1})
+            if not user:
+                raise ValueError("Utilisateur introuvable")
+            user_role = user.get("role", "").upper()
             if user_role != "ADMIN":
                 await websocket.send_json({"type": "error", "data": "Accès réservé aux administrateurs"})
                 await websocket.close()
                 return
-        except Exception:
-            await websocket.send_json({"type": "error", "data": "Token invalide ou expiré"})
+        except Exception as e:
+            await websocket.send_json({"type": "error", "data": f"Token invalide ou expiré: {str(e)}"})
             await websocket.close()
             return
 
