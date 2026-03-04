@@ -433,7 +433,7 @@ const Header = ({
                 {/* OT en attente */}
                 <button
                   onClick={() => {
-                    navigate('/work-orders', { state: { filterStatus: 'OUVERT', dateFilter: 'all' } });
+                    navigate('/work-orders', { state: { filterStatus: 'EN_ATTENTE' } });
                     setBellMenuOpen(false);
                   }}
                   className="w-full px-4 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between group"
@@ -452,7 +452,7 @@ const Header = ({
                 {/* Améliorations en attente */}
                 <button
                   onClick={() => {
-                    navigate('/improvements', { state: { filterStatus: 'OUVERT', dateFilter: 'all' } });
+                    navigate('/improvements', { state: { filterStatus: 'EN_ATTENTE' } });
                     setBellMenuOpen(false);
                   }}
                   className="w-full px-4 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between group"

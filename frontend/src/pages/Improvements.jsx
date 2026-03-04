@@ -44,6 +44,11 @@ const Improvements = () => {
 
   // Appliquer le filtre "en retard" depuis la navigation (header)
   useLocationStateFilter({
+    filterStatus: (value) => {
+      setFilterStatus(value);
+      setDateFilter('all');
+      setFilterOverdue(false);
+    },
     filterOverdue: () => {
       setFilterStatus('ALL');
       setDateFilter('all');

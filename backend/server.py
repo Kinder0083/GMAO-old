@@ -471,14 +471,14 @@ async def get_bell_counts(current_user: dict = Depends(get_current_user)):
     """Compteurs pour les badges de la cloche du header."""
     now = datetime.utcnow()
 
-    # 1. Ordres de travail en attente (OUVERT ou EN_ATTENTE)
+    # 1. Ordres de travail en attente (statut EN_ATTENTE uniquement)
     wo_count = await db.work_orders.count_documents({
-        "statut": {"$in": ["OUVERT", "EN_ATTENTE"]}
+        "statut": "EN_ATTENTE"
     })
 
-    # 2. Améliorations en attente (non terminées / non annulées)
+    # 2. Améliorations en attente (statut EN_ATTENTE uniquement)
     imp_count = await db.improvements.count_documents({
-        "statut": {"$in": ["OUVERT", "EN_ATTENTE", "EN_COURS"]}
+        "statut": "EN_ATTENTE"
     })
 
     # 3. Maintenances préventives planifiées mais pas encore réalisées (date dépassée)
