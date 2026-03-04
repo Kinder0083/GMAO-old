@@ -775,7 +775,7 @@ class UpdateService:
                 # yarn install
                 success, stdout, stderr = await self._run_command(
                     update_history, "4/6 - yarn install (dépendances frontend)",
-                    ["yarn", "install"],
+                    ["yarn", "install", "--production=false"],
                     cwd=str(self.frontend_dir), env=build_env, timeout=300
                 )
                 if not success:
