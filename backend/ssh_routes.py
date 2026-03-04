@@ -110,47 +110,69 @@ async def ssh_websocket(websocket: WebSocket):
             await websocket.close()
             return
 
-        # 3. Connexion SSH (supporte password ET keyboard-interactive)
+        # 3. Connexion SSH avec diagnostic détaillé
         host = auth_data.get("host", "localhost")
         port = auth_data.get("port", 22)
         username = auth_data.get("username", "root")
         password = auth_data.get("password", "")
 
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
         try:
-            # Connexion transport bas niveau pour gérer tous les types d'auth
             transport = paramiko.Transport((host, port))
             transport.connect()
 
-            # Essayer d'abord l'authentification par mot de passe
-            auth_success = False
+            # Déterminer les méthodes d'auth autorisées par le serveur
+            allowed_methods = []
             try:
-                transport.auth_password(username, password)
-                auth_success = True
+                transport.auth_none(username)
+            except paramiko.BadAuthenticationType as e:
+                allowed_methods = list(e.allowed_types)
             except paramiko.AuthenticationException:
                 pass
 
-            # Si échec, essayer keyboard-interactive
+            logger.info(f"SSH auth methods for {username}@{host}: {allowed_methods}")
+
+            auth_success = False
+            auth_errors = []
+
+            # Méthode 1: password
+            if not auth_success:
+                try:
+                    transport.auth_password(username, password)
+                    auth_success = True
+                    logger.info("SSH auth via password: OK")
+                except paramiko.AuthenticationException as e:
+                    auth_errors.append(f"password: {e}")
+
+            # Méthode 2: keyboard-interactive
             if not auth_success:
                 try:
                     def kbd_handler(title, instructions, prompt_list):
                         return [password] * len(prompt_list)
                     transport.auth_interactive(username, kbd_handler)
                     auth_success = True
-                except paramiko.AuthenticationException:
-                    pass
+                    logger.info("SSH auth via keyboard-interactive: OK")
+                except paramiko.AuthenticationException as e:
+                    auth_errors.append(f"keyboard-interactive: {e}")
 
             if not auth_success:
                 transport.close()
-                await websocket.send_json({"type": "error", "data": "Authentification SSH échouée. Vérifiez l'identifiant et le mot de passe."})
+                # Message d'erreur détaillé pour aider l'utilisateur
+                msg = "Authentification SSH échouée."
+                if allowed_methods:
+                    msg += f" Méthodes autorisées par le serveur: {', '.join(allowed_methods)}."
+                if 'publickey' in allowed_methods and 'password' not in allowed_methods and 'keyboard-interactive' not in allowed_methods:
+                    msg += " Le serveur n'accepte QUE les clés SSH (pas de mot de passe). Modifiez /etc/ssh/sshd_config: PermitRootLogin yes, puis: systemctl restart sshd"
+                elif allowed_methods:
+                    msg += " Vérifiez l'identifiant et le mot de passe."
+                else:
+                    msg += " Impossible de déterminer les méthodes d'authentification."
+                logger.warning(f"SSH auth failed for {username}@{host}. Methods: {allowed_methods}. Errors: {auth_errors}")
+                await websocket.send_json({"type": "error", "data": msg})
                 await websocket.close()
                 return
 
-            ssh_client._transport = transport
-        except paramiko.AuthenticationException:
-            await websocket.send_json({"type": "error", "data": "Authentification SSH échouée. Vérifiez l'identifiant et le mot de passe."})
+        except paramiko.AuthenticationException as e:
+            await websocket.send_json({"type": "error", "data": f"Authentification SSH échouée: {str(e)}"})
             await websocket.close()
             return
         except Exception as e:
