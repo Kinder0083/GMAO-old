@@ -75,6 +75,11 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Manuel enrichi : 3 nouveaux chapitres (QR Codes, Changelog, Notifications Cloche)
 - 3 PDFs de présentation : Courte (5p), Moyenne (11p), Complète (15p)
 
+### Terminal SSH interactif (Mars 2026)
+- Backend paramiko + WebSocket pour vraie connexion SSH avec PTY
+- Frontend xterm.js (terminal complet type PuTTY)
+- Support vim, top, htop, couleurs ANSI, redimensionnement
+
 ## Backlog
 - Validation en production : "Save to GitHub" puis mise à jour via le menu intégré
 
