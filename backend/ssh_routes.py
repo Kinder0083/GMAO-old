@@ -34,18 +34,30 @@ async def ssh_connect_check(
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
 
     try:
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(
-            hostname=request.host,
-            port=request.port,
-            username=request.username,
-            password=request.password,
-            timeout=10,
-            allow_agent=False,
-            look_for_keys=False
-        )
-        client.close()
+        transport = paramiko.Transport((request.host, request.port))
+        transport.connect()
+
+        auth_success = False
+        try:
+            transport.auth_password(request.username, request.password)
+            auth_success = True
+        except paramiko.AuthenticationException:
+            pass
+
+        if not auth_success:
+            try:
+                def kbd_handler(title, instructions, prompt_list):
+                    return [request.password] * len(prompt_list)
+                transport.auth_interactive(request.username, kbd_handler)
+                auth_success = True
+            except paramiko.AuthenticationException:
+                pass
+
+        transport.close()
+
+        if not auth_success:
+            raise HTTPException(status_code=401, detail="Authentification échouée. Vérifiez l'identifiant et le mot de passe.")
+
         return {"status": "ok", "message": f"Connexion SSH réussie vers {request.username}@{request.host}:{request.port}"}
     except paramiko.AuthenticationException:
         raise HTTPException(status_code=401, detail="Authentification échouée. Vérifiez l'identifiant et le mot de passe.")
@@ -98,7 +110,7 @@ async def ssh_websocket(websocket: WebSocket):
             await websocket.close()
             return
 
-        # 3. Connexion SSH
+        # 3. Connexion SSH (supporte password ET keyboard-interactive)
         host = auth_data.get("host", "localhost")
         port = auth_data.get("port", 22)
         username = auth_data.get("username", "root")
@@ -108,13 +120,37 @@ async def ssh_websocket(websocket: WebSocket):
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         try:
-            ssh_client.connect(
-                hostname=host, port=port,
-                username=username, password=password,
-                timeout=10, allow_agent=False, look_for_keys=False
-            )
+            # Connexion transport bas niveau pour gérer tous les types d'auth
+            transport = paramiko.Transport((host, port))
+            transport.connect()
+
+            # Essayer d'abord l'authentification par mot de passe
+            auth_success = False
+            try:
+                transport.auth_password(username, password)
+                auth_success = True
+            except paramiko.AuthenticationException:
+                pass
+
+            # Si échec, essayer keyboard-interactive
+            if not auth_success:
+                try:
+                    def kbd_handler(title, instructions, prompt_list):
+                        return [password] * len(prompt_list)
+                    transport.auth_interactive(username, kbd_handler)
+                    auth_success = True
+                except paramiko.AuthenticationException:
+                    pass
+
+            if not auth_success:
+                transport.close()
+                await websocket.send_json({"type": "error", "data": "Authentification SSH échouée. Vérifiez l'identifiant et le mot de passe."})
+                await websocket.close()
+                return
+
+            ssh_client._transport = transport
         except paramiko.AuthenticationException:
-            await websocket.send_json({"type": "error", "data": "Authentification SSH échouée"})
+            await websocket.send_json({"type": "error", "data": "Authentification SSH échouée. Vérifiez l'identifiant et le mot de passe."})
             await websocket.close()
             return
         except Exception as e:
@@ -122,8 +158,10 @@ async def ssh_websocket(websocket: WebSocket):
             await websocket.close()
             return
 
-        # 4. Ouvrir un canal avec PTY
-        channel = ssh_client.invoke_shell(term="xterm-256color", width=120, height=40)
+        # 4. Ouvrir un canal avec PTY via le transport
+        channel = transport.open_session()
+        channel.get_pty(term="xterm-256color", width=120, height=40)
+        channel.invoke_shell()
         channel.settimeout(0.1)
 
         await websocket.send_json({"type": "connected", "data": f"Connecté à {username}@{host}:{port}"})
@@ -201,11 +239,11 @@ async def ssh_websocket(websocket: WebSocket):
                 channel.close()
             except Exception:
                 pass
-        if ssh_client:
-            try:
-                ssh_client.close()
-            except Exception:
-                pass
+        try:
+            if 'transport' in dir() and transport:
+                transport.close()
+        except Exception:
+            pass
         try:
             await websocket.close()
         except Exception:
