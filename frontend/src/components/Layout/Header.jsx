@@ -50,6 +50,7 @@ const Header = ({
   inventoryStats
 }) => {
   const navigate = useNavigate();
+  const [bellMenuOpen, setBellMenuOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [hasNewRelease, setHasNewRelease] = useState(false);
 
@@ -383,64 +384,128 @@ const Header = ({
           </TooltipContent>
         </Tooltip>
 
-        {/* Cloche avec 3 badges : OT, Améliorations, Maintenance préventive */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button 
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
-              onClick={() => navigate('/work-orders', { state: { filterStatus: 'OUVERT', dateFilter: 'all' } })}
-              data-testid="bell-btn"
-            >
-              <Bell size={20} className="text-gray-600" />
-              
-              {/* Badge ROUGE - Coin supérieur droit - OT en attente */}
-              {bellCounts.work_orders > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
-                  {bellCounts.work_orders > 9 ? '9+' : bellCounts.work_orders}
-                </span>
-              )}
-              
-              {/* Badge VIOLET - Coin supérieur gauche - Améliorations en attente */}
-              {bellCounts.improvements > 0 && (
-                <span className="absolute -top-1 -left-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
-                  {bellCounts.improvements > 9 ? '9+' : bellCounts.improvements}
-                </span>
-              )}
-              
-              {/* Badge VERT - Coin inférieur gauche - Maintenances préventives échues */}
-              {bellCounts.preventive > 0 && (
-                <span className="absolute -bottom-1 -left-1 w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
-                  {bellCounts.preventive > 9 ? '9+' : bellCounts.preventive}
-                </span>
-              )}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg max-w-xs">
-            <p className="font-medium mb-2">Notifications activité</p>
-            <div className="space-y-2 text-sm mb-3">
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-gray-300">OT en attente:</span>
-                <span className="font-bold text-red-400">{bellCounts.work_orders}</span>
+        {/* Cloche avec 3 badges et menu déroulant */}
+        <div className="relative">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={() => setBellMenuOpen(!bellMenuOpen)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                data-testid="bell-btn"
+              >
+                <Bell size={20} className="text-gray-600" />
+                
+                {/* Badge ROUGE - Coin supérieur droit - OT en attente */}
+                {bellCounts.work_orders > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                    {bellCounts.work_orders > 9 ? '9+' : bellCounts.work_orders}
+                  </span>
+                )}
+                
+                {/* Badge VIOLET - Coin supérieur gauche - Améliorations en attente */}
+                {bellCounts.improvements > 0 && (
+                  <span className="absolute -top-1 -left-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                    {bellCounts.improvements > 9 ? '9+' : bellCounts.improvements}
+                  </span>
+                )}
+                
+                {/* Badge VERT - Coin inférieur gauche - Maintenances préventives échues */}
+                {bellCounts.preventive > 0 && (
+                  <span className="absolute -bottom-1 -left-1 w-5 h-5 bg-green-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                    {bellCounts.preventive > 9 ? '9+' : bellCounts.preventive}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg">
+              <p className="font-medium">Notifications activité</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Menu déroulant de la cloche */}
+          {bellMenuOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div className="p-3 border-b border-gray-200">
+                <h3 className="font-semibold text-gray-800">Notifications activité</h3>
+                <p className="text-xs text-gray-500 mt-1">Accès rapide par catégorie</p>
               </div>
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-gray-300">Améliorations en attente:</span>
-                <span className="font-bold text-purple-400">{bellCounts.improvements}</span>
+              <div className="py-2">
+                {/* OT en attente */}
+                <button
+                  onClick={() => {
+                    navigate('/work-orders', { state: { filterStatus: 'OUVERT', dateFilter: 'all' } });
+                    setBellMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700 group-hover:text-red-600 font-medium">
+                      Ordres de travail en attente
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-red-500">
+                    {bellCounts.work_orders}
+                  </span>
+                </button>
+
+                {/* Améliorations en attente */}
+                <button
+                  onClick={() => {
+                    navigate('/improvements', { state: { filterStatus: 'OUVERT', dateFilter: 'all' } });
+                    setBellMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700 group-hover:text-purple-600 font-medium">
+                      Améliorations en attente
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-purple-500">
+                    {bellCounts.improvements}
+                  </span>
+                </button>
+
+                {/* Maintenances préventives échues */}
+                <button
+                  onClick={() => {
+                    navigate('/preventive-maintenance', { state: { filterOverdue: true } });
+                    setBellMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 bg-green-600 rounded-full"></div>
+                    <span className="text-sm text-gray-700 group-hover:text-green-600 font-medium">
+                      Maintenance préventive échue
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-green-600">
+                    {bellCounts.preventive}
+                  </span>
+                </button>
               </div>
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-gray-300">Maintenance préventive échue:</span>
-                <span className="font-bold text-green-400">{bellCounts.preventive}</span>
+              <div className="p-2 border-t border-gray-100">
+                <div className="px-3 py-2 text-xs text-gray-400 flex items-center gap-2">
+                  <span className="text-red-400 font-bold">●</span> Rouge — OT
+                  <span className="text-purple-400 font-bold ml-1">●</span> Violet — Améliorations
+                  <span className="text-green-400 font-bold ml-1">●</span> Vert — Préventif
+                </div>
               </div>
             </div>
-            <div className="border-t border-gray-700 pt-2">
-              <p className="text-xs text-gray-400 font-medium mb-1">Badges couleur</p>
-              <div className="text-xs text-gray-400 ml-2 space-y-0.5">
-                <p><span className="text-red-400 font-bold">●</span> Rouge — Ordres de travail en attente</p>
-                <p><span className="text-purple-400 font-bold">●</span> Violet — Améliorations en attente</p>
-                <p><span className="text-green-400 font-bold">●</span> Vert — Maintenances préventives échues</p>
+          )}
+
+          {/* Aucune notification */}
+          {bellMenuOpen && bellCounts.work_orders === 0 && bellCounts.improvements === 0 && bellCounts.preventive === 0 && (
+            <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div className="p-4 text-center">
+                <p className="text-sm text-gray-500">Aucune notification en attente</p>
               </div>
             </div>
-          </TooltipContent>
-        </Tooltip>
+          )}
+        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <button 
