@@ -96,6 +96,33 @@ def save_state(state):
         log.error(f"Impossible de sauvegarder l'etat: {e}")
 
 
+HISTORY_FILE = os.path.join(APP_ROOT, "health_recovery_history.json")
+
+
+def append_recovery_event(level, success, details=""):
+    """Ajoute un evenement de recuperation dans l'historique JSON."""
+    try:
+        history = []
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, "r") as f:
+                history = json.load(f)
+        level_names = {1: "SOFT", 2: "ROLLBACK", 3: "MEDIUM", 4: "HARD"}
+        event = {
+            "timestamp": datetime.now().isoformat(),
+            "level": level,
+            "level_name": level_names.get(level, f"NIVEAU {level}"),
+            "success": success,
+            "details": details
+        }
+        history.append(event)
+        # Garder les 100 derniers evenements
+        history = history[-100:]
+        with open(HISTORY_FILE, "w") as f:
+            json.dump(history, f, indent=2)
+    except Exception as e:
+        log.error(f"Impossible d'ecrire l'historique: {e}")
+
+
 # ─── Health Check ─────────────────────────────────────────────────
 
 def check_backend_health():
@@ -724,8 +751,10 @@ def run_health_check_and_recovery():
         # Desactiver maintenance
         deactivate_maintenance()
         state["maintenance_active"] = False
+        append_recovery_event(level, True, f"Recuperation reussie apres {failures} echec(s)")
     else:
         log.error(f"ECHEC recovery niveau {level}")
+        append_recovery_event(level, False, f"Echec recovery niveau {level}")
         if failures >= MAX_CONSECUTIVE_FAILURES:
             log.critical(
                 f"ALERTE: {MAX_CONSECUTIVE_FAILURES} echecs consecutifs. "

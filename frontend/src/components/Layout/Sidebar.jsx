@@ -15,7 +15,8 @@ import {
   Terminal,
   Palette,
   Folder,
-  Database
+  Database,
+  Activity
 } from 'lucide-react';
 import { iconMap } from './menuConfig';
 import api from '../../services/api';
@@ -260,6 +261,18 @@ const Sidebar = ({
               >
                 <Shield size={20} className="flex-shrink-0" />
                 {sidebarOpen && <span className="text-sm font-medium">Paramètres Spéciaux</span>}
+              </button>
+              <button
+                onClick={() => navigate('/system-health')}
+                data-testid="sidebar-system-health"
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${!sidebarOpen ? 'justify-center px-2' : ''}`}
+                style={getSidebarButtonStyle(location.pathname === '/system-health')}
+                onMouseEnter={(e) => handleSidebarButtonHover(e, location.pathname === '/system-health')}
+                onMouseLeave={(e) => handleSidebarButtonLeave(e, location.pathname === '/system-health')}
+                title={!sidebarOpen ? 'Santé Système' : ''}
+              >
+                <Activity size={20} className="flex-shrink-0" />
+                {sidebarOpen && <span className="text-sm font-medium">Santé Système</span>}
               </button>
               <button
                 onClick={() => navigate('/import-export')}

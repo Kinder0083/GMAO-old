@@ -57,6 +57,7 @@ import PresquAccidentList from "./pages/PresquAccidentList";
 import PresquAccidentRapport from "./pages/PresquAccidentRapport";
 import Documentations from "./pages/Documentations";
 import SSHTerminal from "./pages/SSHTerminal";
+import SystemHealth from "./pages/SystemHealth";
 import PoleDetails from "./pages/PoleDetails";
 import BonDeTravailForm from "./pages/BonDeTravailForm";
 import BonDeTravailView from "./pages/BonDeTravailView";
@@ -219,6 +220,7 @@ function App() {
             <Route path="autorisations-particulieres/new" element={<AutorisationParticuliereForm />} />
             <Route path="autorisations-particulieres/edit/:id" element={<AutorisationParticuliereForm />} />
             <Route path="ssh" element={<SSHTerminal />} />
+            <Route path="system-health" element={<SystemHealth />} />
             <Route path="personnalisation" element={<Personnalisation />} />
             <Route path="chat-live" element={<ChatLive />} />
             <Route path="mqtt-pubsub" element={<MQTTPubSub />} />

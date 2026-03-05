@@ -9542,8 +9542,11 @@ async def get_maintenance_status(current_user: dict = Depends(get_current_admin_
     try:
         flag_path = Path(update_service.app_root) / "maintenance.flag"
         state_path = Path(update_service.app_root) / "health_state.json"
+        history_path = Path(update_service.app_root) / "health_recovery_history.json"
         result = {
             "maintenance_active": flag_path.exists(),
+            "health_state": None,
+            "recovery_history": [],
         }
         if state_path.exists():
             import json as json_mod
@@ -9553,10 +9556,100 @@ async def get_maintenance_status(current_user: dict = Depends(get_current_admin_
                 "consecutive_failures": health_state.get("consecutive_failures", 0),
                 "last_check": health_state.get("last_check"),
                 "last_success": health_state.get("last_success"),
+                "last_failure": health_state.get("last_failure"),
                 "last_recovery_level": health_state.get("last_recovery_level", 0),
                 "total_recoveries": health_state.get("total_recoveries", 0),
             }
+        if history_path.exists():
+            import json as json_mod
+            with open(history_path) as f:
+                result["recovery_history"] = json_mod.load(f)
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/health/recovery-history")
+async def get_recovery_history(current_user: dict = Depends(get_current_admin_user)):
+    """Historique des récupérations automatiques (Admin uniquement)."""
+    try:
+        history_path = Path(update_service.app_root) / "health_recovery_history.json"
+        if history_path.exists():
+            import json as json_mod
+            with open(history_path) as f:
+                return json_mod.load(f)
+        return []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/health/force-check")
+async def force_health_check(current_user: dict = Depends(get_current_admin_user)):
+    """Lance un health check immédiat (Admin uniquement)."""
+    try:
+        import urllib.request
+        checks = {}
+        # Backend self-check
+        checks["backend"] = {"status": "ok", "message": "API opérationnelle"}
+        # MongoDB check
+        try:
+            await db.command("ping")
+            checks["mongodb"] = {"status": "ok", "message": "MongoDB connecté"}
+        except Exception as e:
+            checks["mongodb"] = {"status": "error", "message": str(e)}
+        # Disk usage
+        try:
+            import shutil
+            usage = shutil.disk_usage("/")
+            used_pct = round((usage.used / usage.total) * 100, 1)
+            free_gb = round(usage.free / (1024**3), 1)
+            checks["disk"] = {
+                "status": "ok" if used_pct < 90 else "warning",
+                "message": f"{used_pct}% utilisé, {free_gb} Go libre"
+            }
+        except Exception as e:
+            checks["disk"] = {"status": "error", "message": str(e)}
+        # Memory
+        try:
+            with open("/proc/meminfo") as f:
+                meminfo = f.read()
+            total = int([l for l in meminfo.split('\n') if 'MemTotal' in l][0].split()[1])
+            available = int([l for l in meminfo.split('\n') if 'MemAvailable' in l][0].split()[1])
+            used_pct = round(((total - available) / total) * 100, 1)
+            checks["memory"] = {
+                "status": "ok" if used_pct < 85 else "warning",
+                "message": f"{used_pct}% utilisé"
+            }
+        except Exception:
+            checks["memory"] = {"status": "unknown", "message": "Impossible de lire /proc/meminfo"}
+
+        overall = "ok"
+        for c in checks.values():
+            if c["status"] == "error":
+                overall = "error"
+                break
+            if c["status"] == "warning":
+                overall = "warning"
+        return {"overall": overall, "checks": checks, "timestamp": datetime.now(timezone.utc).isoformat()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/health/reset-failures")
+async def reset_failure_counter(current_user: dict = Depends(get_current_admin_user)):
+    """Remet à zéro le compteur d'échecs consécutifs (Admin uniquement)."""
+    try:
+        state_path = Path(update_service.app_root) / "health_state.json"
+        import json as json_mod
+        state = {}
+        if state_path.exists():
+            with open(state_path) as f:
+                state = json_mod.load(f)
+        state["consecutive_failures"] = 0
+        state["last_recovery_level"] = 0
+        with open(state_path, "w") as f:
+            json_mod.dump(state, f, indent=2)
+        return {"status": "ok", "message": "Compteur d'échecs remis à zéro"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
