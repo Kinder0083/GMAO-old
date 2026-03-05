@@ -1,75 +1,62 @@
 # FSAO Iris - Product Requirements Document
 
 ## Description
-Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pour la gestion des opérations de maintenance industrielle. Interface en français.
+Application GMAO complète pour la gestion de maintenance industrielle. Interface en français. Déployée sur Proxmox LXC.
 
 ## Architecture
 - **Frontend**: React 19 + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI (Python) + MongoDB
-- **Notifications**: Web Push (VAPID/pywebpush) + Expo Push Service
-- **PWA**: Service Worker, manifest.json, installation mobile
-- **IA**: Emergent LLM (Gemini 2.5 Flash) - assistant Adria, analyse QHSE
-- **Temps réel**: WebSocket (Chat Live, Whiteboard, notifications, SSH Terminal)
-- **QR Codes**: qrcode + Pillow (génération étiquettes)
-- **SSH Terminal**: xterm.js + WebSocket + PTY (binaires système)
-- **Déploiement production**: Proxmox LXC (Debian 12) + Tailscale Funnel (HTTPS)
+- **Temps réel**: WebSocket (Chat Live, Whiteboard, SSH Terminal)
+- **SSH Terminal**: xterm.js + WebSocket + PTY + Macros
+- **Déploiement**: Proxmox LXC (Debian 12) + Tailscale Funnel
 
 ## Fonctionnalités implémentées
 
-### Core
-- Ordres de travail, Demandes d'intervention/amélioration, Améliorations
-- Maintenance préventive, Équipements, Inventaire, Zones, Compteurs
-- Plan de surveillance, Presqu'accidents, Chat Live, Whiteboard
-- Consignes inter-équipes, Dashboard, Rapports, Permissions par rôle
-- Import/Export, Sauvegarde planifiée, Système de mise à jour intégré
+### Core GMAO
+- Ordres de travail, Demandes, Améliorations, Maintenance préventive
+- Équipements, Inventaire, Zones, Compteurs, Dashboard, Rapports
 
 ### Terminal SSH + Macros (Mars 2026)
-- Console interactive via xterm.js + WebSocket + PTY
-- Système de macros SSH : CRUD complet, panneau latéral, exécution séquentielle
-- Menu contextuel IA désactivé sur la page SSH (clic droit natif)
+- Console interactive xterm.js + WebSocket + PTY
+- Macros SSH : CRUD complet, exécution séquentielle
+- Menu contextuel IA désactivé sur page SSH
 
 ### Système de résilience (Mars 2026)
-- **Page de maintenance HTML** : logo IRIS, barre animée, auto-refresh 30s
-- **Health Check automatique** : surveillance toutes les 5 min via cron
+- **Page de maintenance HTML** avec auto-refresh + bypass admin (logo 5x ou lien "Administrateur?")
+- **Health Check automatique** (cron 5 min)
 - **Récupération 4 niveaux** : SOFT → ROLLBACK → MEDIUM → HARD
-- **API Maintenance** : `/api/maintenance/activate`, `/deactivate`, `/status`
-- **Intégration mise à jour** : activation auto de la maintenance avant MAJ
+- **Confirmation renforcée** : taper "MAINTENANCE" pour activer
+- **API** : `/api/maintenance/activate`, `/deactivate`, `/status`
 
 ### Panneau Santé du Système (Mars 2026)
-- **Page admin** `/system-health` accessible uniquement aux administrateurs
-- **4 cartes de santé temps réel** : Backend API, MongoDB, Disque, Mémoire
-- **État du Health Check** : dernière vérification, échecs, compteur récupérations
-- **Actions manuelles** : forcer health check, activer/désactiver maintenance, reset compteur
-- **Historique des récupérations** : tableau chronologique avec niveau et résultat
-- **Guide des 4 niveaux** de récupération avec code couleur
-- **Auto-refresh** toutes les 30 secondes
-- Menu sidebar "Santé Système" sous "Paramètres Spéciaux"
+- Page admin `/system-health` sous "Paramètres Spéciaux" dans la sidebar
+- 4 cartes santé temps réel : Backend API, MongoDB, Disque, Mémoire
+- État du Health Check + actions manuelles + historique récupérations
 
-### Présentations et Documentation PDF (Mars 2026)
-- 3 versions de présentation PDF + PDF README (28 pages)
+### Alertes Email (Mars 2026)
+- **6 types d'alertes** : Application en panne, Récupération réussie/échouée, Disque plein, Mémoire critique, Maintenance changée
+- **Seuils configurables** : Disque (%), Mémoire (%), Échecs consécutifs
+- **Fréquence** : 1 envoi max par type par 24h (cooldown)
+- **Destinataires multiples** avec ajout/suppression
+- **Bouton test** pour vérifier la configuration
+- **Intégration SMTP existant** de "Paramètres Spéciaux"
+- **API** : GET/PUT `/api/health/alerts-config`, POST `/api/health/alerts-test`, GET `/api/health/alerts-history`
 
-### Notifications cloche multi-badges (Mars 2026)
-- 3 badges (OT, améliorations, préventif échu) + menu déroulant
+### Documentation PDF (Mars 2026)
+- 3 présentations PDF + PDF README (28 pages)
 
 ## Fichiers clés
-- `frontend/src/pages/SystemHealth.jsx` - Panneau santé système
-- `frontend/src/pages/SSHTerminal.jsx` - Terminal SSH + Macros
-- `frontend/src/components/Layout/Sidebar.jsx` - Menu sidebar
-- `maintenance.html` - Page de maintenance statique
-- `health_recovery.py` - Script récupération 4 niveaux
-- `setup_health_check.sh` - Installation cron
-- `backend/update_service.py` - MaintenanceMode + UpdateService
+- `frontend/src/pages/SystemHealth.jsx` - Panneau santé + alertes
+- `backend/health_alert_service.py` - Service d'envoi d'alertes email
 - `backend/server.py` - API endpoints
+- `health_recovery.py` - Script 4 niveaux + envoi alertes
+- `maintenance.html` - Page maintenance + bypass admin
+- `setup_health_check.sh` - Installation cron
 
-## API Endpoints (nouveaux)
-- `GET /api/maintenance/status` - Statut maintenance + health state + historique
-- `POST /api/maintenance/activate` - Activer maintenance
-- `POST /api/maintenance/deactivate` - Désactiver maintenance
-- `POST /api/health/force-check` - Health check immédiat
-- `POST /api/health/reset-failures` - Reset compteur échecs
-- `GET /api/health/recovery-history` - Historique récupérations
-- CRUD `/api/ssh/macros` - Macros SSH
+## Collections MongoDB
+- `health_alerts_config` - Configuration des alertes (enabled, recipients, alerts, cooldown)
+- `ssh_macros` - Macros SSH
 
 ## Backlog
-- Stabilisation continue basée sur retours utilisateur
+- Stabilisation continue selon retours utilisateur
 - Améliorations application mobile native (Expo)
