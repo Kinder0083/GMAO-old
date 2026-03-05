@@ -100,7 +100,16 @@ export default function SystemHealth() {
   };
 
   const toggleMaintenance = async (activate) => {
-    if (!window.confirm(activate ? 'Activer la page de maintenance ?' : 'Désactiver la page de maintenance ?')) return;
+    if (activate) {
+      const msg = 'ATTENTION : Activer la maintenance rendra l\'application INACCESSIBLE pour tous les utilisateurs.\n\nLes utilisateurs verront une page de maintenance à la place de l\'application.\n\nPour désactiver, vous devrez :\n- Cliquer 5 fois sur le logo de la page maintenance\n- Ou vous connecter en SSH au serveur\n\nTapez "MAINTENANCE" pour confirmer :';
+      const input = window.prompt(msg);
+      if (input !== 'MAINTENANCE') {
+        toast({ title: 'Annulé', description: 'Activation de la maintenance annulée' });
+        return;
+      }
+    } else {
+      if (!window.confirm('Désactiver la page de maintenance et restaurer l\'accès normal ?')) return;
+    }
     setMaintenanceToggling(true);
     try {
       await api.post(activate ? '/maintenance/activate' : '/maintenance/deactivate', {});
@@ -284,7 +293,8 @@ export default function SystemHealth() {
               </Button>
               {!maintenanceActive ? (
                 <Button
-                  className="w-full justify-start gap-2" variant="outline" size="sm"
+                  className="w-full justify-start gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                  variant="outline" size="sm"
                   onClick={() => toggleMaintenance(true)} disabled={maintenanceToggling}
                   data-testid="activate-maintenance-btn"
                 >

@@ -19,7 +19,6 @@
             overflow: hidden;
         }
 
-        /* Animated background */
         .bg-grid {
             position: fixed;
             inset: 0;
@@ -42,10 +41,7 @@
             padding: 40px;
         }
 
-        /* Logo */
-        .logo-wrapper {
-            margin-bottom: 32px;
-        }
+        .logo-wrapper { margin-bottom: 32px; cursor: pointer; user-select: none; }
         .logo-wrapper img {
             height: 70px;
             width: auto;
@@ -58,7 +54,6 @@
             letter-spacing: -0.5px;
         }
 
-        /* Icon */
         .icon-container {
             width: 80px;
             height: 80px;
@@ -76,47 +71,24 @@
             50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.25); }
         }
         .gear-icon {
-            width: 40px;
-            height: 40px;
-            fill: none;
-            stroke: #3b82f6;
-            stroke-width: 2;
+            width: 40px; height: 40px;
+            fill: none; stroke: #3b82f6; stroke-width: 2;
             animation: spin 8s linear infinite;
         }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        h1 {
-            font-size: 26px;
-            font-weight: 700;
-            color: #f1f5f9;
-            margin-bottom: 12px;
-        }
-        .subtitle {
-            font-size: 16px;
-            color: #94a3b8;
-            line-height: 1.6;
-            margin-bottom: 32px;
-        }
+        h1 { font-size: 26px; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+        .subtitle { font-size: 16px; color: #94a3b8; line-height: 1.6; margin-bottom: 32px; }
 
-        /* Progress bar */
         .progress-container {
-            background: #1e293b;
-            border-radius: 8px;
-            height: 6px;
-            width: 100%;
-            overflow: hidden;
-            margin-bottom: 28px;
+            background: #1e293b; border-radius: 8px; height: 6px;
+            width: 100%; overflow: hidden; margin-bottom: 28px;
             border: 1px solid rgba(59, 130, 246, 0.1);
         }
         .progress-bar {
-            height: 100%;
-            width: 30%;
+            height: 100%; width: 30%;
             background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
-            background-size: 200% 100%;
-            border-radius: 8px;
+            background-size: 200% 100%; border-radius: 8px;
             animation: progress-sweep 2s ease-in-out infinite;
         }
         @keyframes progress-sweep {
@@ -125,45 +97,60 @@
             100% { width: 5%; margin-left: 95%; }
         }
 
-        /* Info box */
         .info-box {
             background: rgba(59, 130, 246, 0.08);
             border: 1px solid rgba(59, 130, 246, 0.15);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
+            border-radius: 12px; padding: 20px; margin-bottom: 24px;
         }
-        .info-box p {
-            font-size: 14px;
-            color: #94a3b8;
-            line-height: 1.6;
-        }
-        .info-box .highlight {
-            color: #60a5fa;
-            font-weight: 600;
-        }
+        .info-box p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+        .info-box .highlight { color: #60a5fa; font-weight: 600; }
 
-        /* Timer */
-        .timer {
-            font-size: 13px;
-            color: #64748b;
-        }
+        .timer { font-size: 13px; color: #64748b; }
         .timer .dot {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            background: #3b82f6;
-            border-radius: 50%;
-            margin-right: 6px;
+            display: inline-block; width: 6px; height: 6px;
+            background: #3b82f6; border-radius: 50%; margin-right: 6px;
             animation: blink 1.5s ease-in-out infinite;
         }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        /* Admin bypass panel */
+        .admin-panel {
+            display: none;
+            margin-top: 24px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+            padding: 20px;
         }
+        .admin-panel.visible { display: block; }
+        .admin-panel h3 { font-size: 14px; color: #f87171; margin-bottom: 12px; font-weight: 600; }
+        .admin-panel input {
+            width: 100%; padding: 10px 14px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: #1e293b; color: #e2e8f0; font-size: 14px;
+            margin-bottom: 8px; outline: none;
+        }
+        .admin-panel input:focus { border-color: #3b82f6; }
+        .admin-panel button {
+            width: 100%; padding: 10px; border-radius: 8px;
+            border: none; background: #ef4444; color: white;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .admin-panel button:hover { background: #dc2626; }
+        .admin-panel button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .admin-panel .msg {
+            font-size: 12px; margin-top: 8px; padding: 6px 10px;
+            border-radius: 6px;
+        }
+        .admin-panel .msg.error { color: #fca5a5; background: rgba(239, 68, 68, 0.15); }
+        .admin-panel .msg.success { color: #86efac; background: rgba(34, 197, 94, 0.15); }
+        .admin-hint {
+            font-size: 11px; color: #475569; margin-top: 16px;
+            cursor: pointer; user-select: none;
+        }
+        .admin-hint:hover { color: #64748b; }
 
-        /* Responsive */
         @media (max-width: 600px) {
             .container { padding: 24px 20px; }
             h1 { font-size: 22px; }
@@ -174,7 +161,7 @@
 <body>
     <div class="bg-grid"></div>
     <div class="container">
-        <div class="logo-wrapper">
+        <div class="logo-wrapper" id="logo-click" title="Cliquez 5 fois pour le panneau admin">
             <img src="/logo-iris.png" alt="FSAO Iris"
                  onerror="this.style.display='none'; document.getElementById('logo-text').style.display='block';">
             <div id="logo-text" class="logo-fallback" style="display:none;">FSAO Iris</div>
@@ -210,10 +197,25 @@
             Rafraichissement automatique...
             <span id="countdown">30</span>s
         </div>
+
+        <!-- Admin bypass panel (hidden by default, revealed by clicking logo 5 times) -->
+        <div class="admin-panel" id="admin-panel">
+            <h3>Panneau Administrateur</h3>
+            <input type="email" id="admin-email" placeholder="Email administrateur" autocomplete="email" />
+            <input type="password" id="admin-password" placeholder="Mot de passe" autocomplete="current-password" />
+            <button id="admin-deactivate" onclick="deactivateMaintenance()">
+                Désactiver la maintenance
+            </button>
+            <div id="admin-msg" class="msg" style="display:none;"></div>
+        </div>
+
+        <div class="admin-hint" id="admin-hint" onclick="revealAdmin()">
+            Administrateur ?
+        </div>
     </div>
 
     <script>
-        // Countdown timer
+        // Countdown
         let seconds = 30;
         const countdownEl = document.getElementById('countdown');
         setInterval(() => {
@@ -222,19 +224,108 @@
             countdownEl.textContent = seconds;
         }, 1000);
 
-        // Try to detect if app is back by fetching the API
+        // Auto-detect app is back
         async function checkHealth() {
             try {
                 const res = await fetch('/api/version', { signal: AbortSignal.timeout(5000) });
-                if (res.ok) {
-                    // App is back, redirect to login
-                    window.location.href = '/login';
-                }
-            } catch (e) {
-                // Still in maintenance
-            }
+                if (res.ok) { window.location.href = '/login'; }
+            } catch (e) {}
         }
         setInterval(checkHealth, 15000);
+
+        // Admin bypass - click logo 5 times
+        let clickCount = 0;
+        let clickTimer = null;
+        document.getElementById('logo-click').addEventListener('click', () => {
+            clickCount++;
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { clickCount = 0; }, 3000);
+            if (clickCount >= 5) {
+                document.getElementById('admin-panel').classList.add('visible');
+                document.getElementById('admin-hint').style.display = 'none';
+                clickCount = 0;
+            }
+        });
+
+        // Or click the hint text
+        function revealAdmin() {
+            document.getElementById('admin-panel').classList.add('visible');
+            document.getElementById('admin-hint').style.display = 'none';
+        }
+
+        // Deactivate maintenance via API
+        async function deactivateMaintenance() {
+            const btn = document.getElementById('admin-deactivate');
+            const msgEl = document.getElementById('admin-msg');
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+
+            if (!email || !password) {
+                showMsg('Veuillez remplir les deux champs', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Désactivation en cours...';
+            msgEl.style.display = 'none';
+
+            try {
+                // 1. Login to get token
+                const loginRes = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!loginRes.ok) {
+                    showMsg('Identifiants incorrects', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Désactiver la maintenance';
+                    return;
+                }
+
+                const loginData = await loginRes.json();
+                const token = loginData.access_token;
+
+                if (!token) {
+                    showMsg('Erreur: token non reçu', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Désactiver la maintenance';
+                    return;
+                }
+
+                // 2. Deactivate maintenance
+                const deactivateRes = await fetch('/api/maintenance/deactivate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: '{}'
+                });
+
+                if (deactivateRes.ok) {
+                    showMsg('Maintenance désactivée ! Redirection...', 'success');
+                    setTimeout(() => { window.location.href = '/login'; }, 2000);
+                } else {
+                    const err = await deactivateRes.json().catch(() => ({}));
+                    showMsg(err.detail || 'Erreur lors de la désactivation', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Désactiver la maintenance';
+                }
+            } catch (e) {
+                showMsg('Erreur réseau: ' + e.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Désactiver la maintenance';
+            }
+        }
+
+        function showMsg(text, type) {
+            const el = document.getElementById('admin-msg');
+            el.textContent = text;
+            el.className = 'msg ' + type;
+            el.style.display = 'block';
+        }
     </script>
 </body>
 </html>
