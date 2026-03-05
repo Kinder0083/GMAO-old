@@ -10143,6 +10143,11 @@ from contract_routes import router as contract_router, init_db as init_contract_
 init_contract_db(db, audit_service)
 api_router.include_router(contract_router)
 
+# Routes LOTO (Lockout/Tagout - Consignations de sécurité)
+from loto_routes import router as loto_router, init_loto_routes
+init_loto_routes(db)
+api_router.include_router(loto_router)
+
 # Push Notifications routes
 from notifications import router as push_notifications_router, set_db as set_notifications_db, check_push_receipts
 set_notifications_db(db)

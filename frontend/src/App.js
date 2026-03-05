@@ -79,6 +79,7 @@ import ServiceDashboard from "./pages/ServiceDashboard";
 import ServiceTeamView from "./pages/ServiceTeamView";
 import WeeklyReportsPage from "./pages/WeeklyReportsPage";
 import TeamManagementPage from "./pages/TeamManagementPage";
+import ConsignationsLOTO from "./pages/ConsignationsLOTO";
 import CamerasPage from "./pages/CamerasPage";
 import MESPage from "./pages/MESPage";
 import MESReportsPage from "./pages/MESReportsPage";
@@ -200,6 +201,7 @@ function App() {
             <Route path="planning-mprev" element={<PlanningMPrev />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="contrats" element={<Contracts />} />
+            <Route path="consignations-loto" element={<ConsignationsLOTO />} />
             <Route path="contrats/dashboard" element={<ContractsDashboard />} />
             <Route path="purchase-history" element={<PurchaseHistory />} />
             <Route path="purchase-requests" element={<PurchaseRequests />} />

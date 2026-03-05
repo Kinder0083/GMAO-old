@@ -68,6 +68,7 @@ class UserPermissions(BaseModel):
     weeklyReports: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Rapports Hebdomadaires - Rapports de service planifiés
     demandesArret: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Demandes d'arrêt - Gestion des demandes d'arrêt machine
     consignes: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Consignes - Gestion des consignes de sécurité
+    consignationsLoto: ModulePermission = ModulePermission(view=True, edit=True, delete=False)  # LOTO - Consignations Lockout/Tagout
     autorisationsParticulieres: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Autorisations Particulières - Gestion des autorisations spéciales
 
 # Fonction helper pour obtenir les permissions par défaut selon le rôle
