@@ -42,6 +42,15 @@ Application GMAO complète pour la gestion de maintenance industrielle. Interfac
 - **Intégration SMTP existant** de "Paramètres Spéciaux"
 - **API** : GET/PUT `/api/health/alerts-config`, POST `/api/health/alerts-test`, GET `/api/health/alerts-history`
 
+### Système LOTO (Lockout/Tagout) - Consignations de sécurité (Mars 2026)
+- **Fonctionnalité complète** : Gestion des consignations LOTO avec workflow 4 étapes (Demande → Consigné → Intervention → Déconsigné)
+- **Système de cadenas** : Pose/retrait par chaque intervenant, blocage de la déconsignation tant que des cadenas sont actifs
+- **Points d'isolation** : Définition et vérification obligatoire avant consignation (énergie zéro)
+- **Signatures électroniques** : Double mode (dessin tactile + code PIN)
+- **Liens** : Liaison avec OT, maintenances préventives et améliorations
+- **Traçabilité** : Historique complet avec horodatage de chaque action
+- **Fichiers** : `loto_routes.py`, `ConsignationsLOTO.jsx`, `SignaturePad.jsx`
+
 ### Correction cache navigateur persistant (Mars 2026)
 - **Bug** : Après chaque mise à jour ou connexion, l'utilisateur devait faire Ctrl+Maj+F5 pour voir le nouveau dashboard
 - **Cause racine** : Le Service Worker interceptait TOUTES les requêtes fetch et servait les fichiers depuis son propre cache (API Cache), même si NGINX envoyait les bons headers no-cache
