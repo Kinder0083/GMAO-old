@@ -42,6 +42,15 @@ Application GMAO complète pour la gestion de maintenance industrielle. Interfac
 - **Intégration SMTP existant** de "Paramètres Spéciaux"
 - **API** : GET/PUT `/api/health/alerts-config`, POST `/api/health/alerts-test`, GET `/api/health/alerts-history`
 
+### Correction cache navigateur persistant (Mars 2026)
+- **Bug** : Après chaque mise à jour ou connexion, l'utilisateur devait faire Ctrl+Maj+F5 pour voir le nouveau dashboard
+- **Cause racine** : Le Service Worker interceptait TOUTES les requêtes fetch et servait les fichiers depuis son propre cache (API Cache), même si NGINX envoyait les bons headers no-cache
+- **Solution** : 
+  1. `sw.js` simplifié : ne gère plus QUE les notifications push (zéro cache)
+  2. `App.js` : détecte automatiquement les mises à jour du SW et force le rechargement
+  3. `update_service.py` : change le timestamp du SW à chaque build pour forcer la détection
+- **Fichiers modifiés** : `sw.js`, `App.js`, `update_service.py`
+
 ### Correction PWA/Notifications persistantes (Mars 2026)
 - **Bug corrigé** : Les bannières d'installation PWA et de notifications apparaissaient à chaque connexion
 - **Solution** : Persistance du choix utilisateur dans localStorage (clés `pwa_install_dismissed_at`, `pwa_notif_dismissed_at`) avec expiration de 30 jours

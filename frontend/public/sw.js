@@ -1,123 +1,33 @@
-const CACHE_NAME = 'fsao-iris-v3';
-const OFFLINE_URL = '/offline.html';
+// Service Worker FSAO Iris - Notifications push uniquement (pas de cache)
+// Version: BUILD_TIMESTAMP
+// Ce SW ne met RIEN en cache. NGINX sert les fichiers statiques directement.
+// Cela élimine les problèmes de cache stale après les mises à jour.
 
-// Ne PAS mettre index.html en precache - il doit TOUJOURS venir du reseau
-const PRECACHE_URLS = [
-  '/offline.html',
-  '/logo-iris.png'
-];
-
-// Installation : pre-cache des fichiers essentiels (sauf index.html)
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS);
-    })
-  );
+// Installation : prise de contrôle immédiate
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-// Activation : nettoyage de TOUS les anciens caches
+// Activation : nettoyage de TOUS les anciens caches et prise de contrôle
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+        cacheNames.map((name) => caches.delete(name))
       );
-    }).then(() => {
-      // Notifier tous les clients de recharger
-      return self.clients.matchAll({ type: 'window' }).then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: 'FORCE_RELOAD', reason: 'update' });
-        });
-      });
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Message handler
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'CLEAR_CACHE') {
-    event.waitUntil(
-      caches.keys().then((cacheNames) => {
-        return Promise.all(cacheNames.map((name) => caches.delete(name)));
-      }).then(() => {
-        if (event.source) {
-          event.source.postMessage({ type: 'CACHE_CLEARED' });
-        }
-      })
-    );
-  }
-  // Forcer la mise a jour du service worker
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// Fetch : strategie differente selon le type de requete
-self.addEventListener('fetch', (event) => {
-  // Ignorer les requetes non-GET et les appels API
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
-    return;
-  }
-
-  // NAVIGATION (index.html) : TOUJOURS reseau d'abord, JAMAIS mettre en cache
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .catch(() => {
-          return caches.match(OFFLINE_URL) || new Response('Hors-ligne', { status: 503 });
-        })
-    );
-    return;
-  }
-
-  // sw.js et index.html : toujours reseau
-  const url = new URL(event.request.url);
-  if (url.pathname === '/sw.js' || url.pathname === '/index.html' || url.pathname === '/') {
-    event.respondWith(fetch(event.request, { cache: 'no-store' }));
-    return;
-  }
-
-  // Fichiers statiques AVEC hash (main.abc123.js) : cache-first (le hash change a chaque build)
-  // Fichiers SANS hash : network-first
-  const hasHash = /\.[a-f0-9]{8,}\./i.test(url.pathname);
-
-  if (hasHash) {
-    // Cache-first pour les fichiers hashes (ils sont immutables)
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          if (response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        });
-      }).catch(() => new Response('', { status: 503 }))
-    );
-  } else {
-    // Network-first pour les fichiers sans hash
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(event.request)
-            .then((cached) => cached || new Response('', { status: 503 }));
-        })
-    );
-  }
-});
+// PAS de listener 'fetch' - le SW ne met plus rien en cache
+// NGINX sert directement index.html et les fichiers statiques
 
 // Push notifications
 self.addEventListener('push', (event) => {

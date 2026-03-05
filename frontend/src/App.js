@@ -117,19 +117,29 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
-  // Register Service Worker for PWA
+  // Register Service Worker for PWA (notifications push uniquement)
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-      // Handle messages from SW
+      navigator.serviceWorker.register('/sw.js').then((registration) => {
+        // Vérifier les mises à jour du SW toutes les 60 secondes
+        setInterval(() => registration.update(), 60000);
+        // Quand un nouveau SW est détecté, forcer la prise de contrôle
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'activated') {
+                console.log('[SW] Nouveau Service Worker activé, rechargement...');
+                window.location.reload();
+              }
+            });
+          }
+        });
+      }).catch(() => {});
+      // Handle messages from SW (navigation depuis notification push)
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'NAVIGATE') {
           window.location.href = event.data.url;
-        }
-        // Après une mise à jour : le SW détecte un nouveau cache → forcer le rechargement
-        if (event.data?.type === 'FORCE_RELOAD') {
-          console.log('[SW] Mise à jour détectée, rechargement automatique...');
-          window.location.reload(true);
         }
       });
     }
