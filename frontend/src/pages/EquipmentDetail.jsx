@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Plus, Edit, Trash2, Package, MapPin, Calendar, DollarSign, QrCode, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Package, MapPin, Calendar, DollarSign, QrCode, Download, Shield } from 'lucide-react';
 import { equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import EquipmentFormDialog from '../components/Equipment/EquipmentFormDialog';
@@ -172,6 +172,11 @@ const EquipmentDetail = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {equipment.loto_active && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold bg-red-600 text-white animate-pulse" data-testid="loto-badge-detail">
+              <Shield size={16} /> CONSIGNE ({equipment.loto_numero || 'LOTO'})
+            </span>
+          )}
           <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(equipment.statut)}`}>
             {getStatusLabel(equipment.statut)}
           </span>

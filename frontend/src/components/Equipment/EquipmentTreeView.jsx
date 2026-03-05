@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
-import { ChevronRight, ChevronDown, Plus, Edit, Trash2, Eye, Cog } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Edit, Trash2, Eye, Cog, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import QuickStatusChanger from './QuickStatusChanger';
 
@@ -83,6 +83,11 @@ const EquipmentTreeNode = ({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-gray-900">{equipment.nom}</h3>
+                  {equipment.loto_active && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white animate-pulse" data-testid={`loto-badge-${equipment.id}`}>
+                      <Shield size={12} /> CONSIGNE
+                    </span>
+                  )}
                   <QuickStatusChanger 
                     equipment={equipment}
                     onStatusChange={onStatusChange}
