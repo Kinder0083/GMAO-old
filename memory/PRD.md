@@ -27,54 +27,38 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Installation PWA (Android/iOS), Notifications push (VAPID)
 - Interface responsive, Sidebar overlay mobile
 
-### Deep-linking (Février 2026)
-- Navigation intelligente depuis les badges du header
-- Hook centralisé `useLocationStateFilter`
-
-### Changelog "Quoi de neuf ?" (Mars 2026)
-- Badge "NEW" + panneau latéral + feedback pouce haut/bas
-- Interface admin CRUD + résumé feedbacks
-- API: `/api/releases`
-
-### QR Codes Équipements (Mars 2026)
-- Page publique `/qr/{equipmentId}` (sans auth pour lecture)
-- QR Codes et étiquettes imprimables
-- Actions rapides configurables
-
-### Terminal SSH (Mars 2026)
+### Terminal SSH + Macros (Mars 2026)
 - Console interactive via xterm.js + WebSocket + PTY
 - Connexion locale (login -f) et distante (ssh binaire)
-- Support complet des commandes interactives (vim, top, htop)
-- **Système de macros SSH** : CRUD complet pour enregistrer et exécuter des séquences de commandes
-  - API: GET/POST/PUT/DELETE `/api/ssh/macros`
-  - Panneau latéral avec liste des macros, couleurs, descriptions
-  - Dialogue de création/modification avec lignes de commandes éditables
-  - Exécution séquentielle des commandes dans le terminal connecté
+- Système de macros SSH : CRUD complet, panneau latéral, exécution séquentielle
 - Menu contextuel IA désactivé sur la page SSH (clic droit natif)
 
+### Système de résilience (Mars 2026)
+- **Page de maintenance HTML** : affichée pendant les mises à jour (logo IRIS, barre animée, auto-refresh 30s, détection auto du retour de l'app)
+- **Health Check automatique** : surveillance toutes les 5 min via cron
+- **Récupération 4 niveaux** :
+  - Niveau 1 SOFT : Restart des services
+  - Niveau 2 ROLLBACK : Retour au commit Git précédent
+  - Niveau 3 MEDIUM : Réinstallation des dépendances
+  - Niveau 4 HARD : Reset Git complet depuis GitHub
+- **API Maintenance** : `/api/maintenance/activate`, `/deactivate`, `/status`
+- **Intégration mise à jour** : activation auto de la maintenance avant MAJ, désactivation après
+
 ### Présentations et Documentation PDF (Mars 2026)
-- 3 versions de présentation PDF (courte, moyenne, complète) avec captures d'écran
-- PDF README Documentation (28 pages) avec captures d'écran et contenu complet du README.md
-- Fichiers: `/app/presentations/`
+- 3 versions de présentation PDF (courte, moyenne, complète)
+- PDF README Documentation (28 pages) avec captures d'écran
 
 ### Notifications cloche multi-badges (Mars 2026)
 - 3 badges (OT en attente, améliorations, préventif échu)
-- Menu déroulant avec navigation directe et filtres pré-appliqués
-- API: `/api/bell-counts`
+- Menu déroulant avec navigation directe
 
-## Backlog / Tâches futures
+## Fichiers clés (résilience)
+- `maintenance.html` - Page de maintenance HTML statique
+- `health_recovery.py` - Script health check + récupération 4 niveaux
+- `setup_health_check.sh` - Installation cron de surveillance
+- `backend/update_service.py` - MaintenanceMode + UpdateService intégré
+- `backend/server.py` - API endpoints maintenance
+
+## Backlog
 - Stabilisation continue basée sur les retours utilisateur
-- Améliorations de l'application mobile native (Expo) - notifications push
-- Améliorations UX diverses selon retours terrain
-
-## Fichiers clés
-- `backend/ssh_routes.py` - Terminal SSH + Macros CRUD
-- `frontend/src/pages/SSHTerminal.jsx` - UI Terminal + Panneau Macros
-- `frontend/src/contexts/AIContextMenuContext.jsx` - Menu contextuel IA (SSH exclu)
-- `presentations/generate_readme_pdf.py` - Générateur PDF README
-- `presentations/generate_pdfs.py` - Générateur présentations PDF
-- `backend/server.py` - Point d'entrée backend principal
-
-## Collections MongoDB
-- `ssh_macros` - Macros SSH (macro_id, name, description, commands, color, created_by, dates)
-- Plus 40+ autres collections existantes
+- Améliorations de l'application mobile native (Expo)
