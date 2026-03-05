@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import {
   Activity, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
   Shield, ShieldOff, Clock, HardDrive, Database, Cpu, Zap,
-  ChevronDown, ChevronUp, RotateCcw
+  ChevronDown, ChevronUp, RotateCcw, Mail, Plus, X, Send, Bell, BellOff
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import api from '../services/api';
@@ -75,6 +76,22 @@ export default function SystemHealth() {
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  // Alerts state
+  const [alertsConfig, setAlertsConfig] = useState(null);
+  const [alertsExpanded, setAlertsExpanded] = useState(true);
+  const [alertsSaving, setAlertsSaving] = useState(false);
+  const [alertsTesting, setAlertsTesting] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+
+  const ALERT_TYPES_CONFIG = [
+    { key: 'app_down', label: 'Application en panne', desc: 'Backend ne répond plus', icon: XCircle, color: '#ef4444', hasThreshold: true, thresholdLabel: 'Après X échec(s)', thresholdUnit: 'échec(s)', min: 1, max: 10 },
+    { key: 'recovery_success', label: 'Récupération réussie', desc: 'Système auto-réparé', icon: CheckCircle2, color: '#22c55e' },
+    { key: 'recovery_failed', label: 'Récupération échouée', desc: 'Intervention manuelle requise', icon: XCircle, color: '#dc2626' },
+    { key: 'disk_warning', label: 'Disque plein', desc: 'Espace disque critique', icon: HardDrive, color: '#f59e0b', hasThreshold: true, thresholdLabel: 'Seuil', thresholdUnit: '%', min: 50, max: 98 },
+    { key: 'memory_warning', label: 'Mémoire critique', desc: 'RAM presque pleine', icon: Cpu, color: '#f97316', hasThreshold: true, thresholdLabel: 'Seuil', thresholdUnit: '%', min: 50, max: 98 },
+    { key: 'maintenance_changed', label: 'Maintenance changée', desc: 'Activation/désactivation', icon: Shield, color: '#7c3aed' },
+  ];
+
   const fetchStatus = useCallback(async () => {
     try {
       const res = await api.get('/maintenance/status');
@@ -83,6 +100,15 @@ export default function SystemHealth() {
       console.error('Erreur fetch status:', e);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchAlertsConfig = useCallback(async () => {
+    try {
+      const res = await api.get('/health/alerts-config');
+      setAlertsConfig(res.data);
+    } catch (e) {
+      console.error('Erreur fetch alerts config:', e);
     }
   }, []);
 
@@ -134,8 +160,9 @@ export default function SystemHealth() {
 
   useEffect(() => {
     fetchStatus();
+    fetchAlertsConfig();
     runHealthCheck();
-  }, [fetchStatus]);
+  }, [fetchStatus, fetchAlertsConfig]);
 
   // Auto-refresh every 30s
   useEffect(() => {
@@ -143,6 +170,65 @@ export default function SystemHealth() {
     const interval = setInterval(() => { fetchStatus(); }, 30000);
     return () => clearInterval(interval);
   }, [autoRefresh, fetchStatus]);
+
+  // ──── Alert config management ────
+  const saveAlertsConfig = async (updatedConfig) => {
+    setAlertsSaving(true);
+    try {
+      await api.put('/health/alerts-config', updatedConfig);
+      setAlertsConfig(updatedConfig);
+      toast({ title: 'Configuration sauvegardée' });
+    } catch (e) {
+      toast({ title: 'Erreur', description: 'Impossible de sauvegarder', variant: 'destructive' });
+    } finally {
+      setAlertsSaving(false);
+    }
+  };
+
+  const toggleAlertsEnabled = () => {
+    const updated = { ...alertsConfig, enabled: !alertsConfig?.enabled };
+    saveAlertsConfig(updated);
+  };
+
+  const addRecipient = () => {
+    const email = newEmail.trim();
+    if (!email || !email.includes('@')) { toast({ title: 'Email invalide', variant: 'destructive' }); return; }
+    const recipients = [...(alertsConfig?.recipients || [])];
+    if (recipients.includes(email)) { toast({ title: 'Email déjà ajouté' }); return; }
+    recipients.push(email);
+    const updated = { ...alertsConfig, recipients };
+    saveAlertsConfig(updated);
+    setNewEmail('');
+  };
+
+  const removeRecipient = (email) => {
+    const recipients = (alertsConfig?.recipients || []).filter(e => e !== email);
+    saveAlertsConfig({ ...alertsConfig, recipients });
+  };
+
+  const toggleAlertType = (key) => {
+    const alerts = { ...(alertsConfig?.alerts || {}) };
+    alerts[key] = { ...alerts[key], enabled: !alerts[key]?.enabled };
+    saveAlertsConfig({ ...alertsConfig, alerts });
+  };
+
+  const updateAlertThreshold = (key, value) => {
+    const alerts = { ...(alertsConfig?.alerts || {}) };
+    alerts[key] = { ...alerts[key], threshold: parseInt(value) || 0 };
+    saveAlertsConfig({ ...alertsConfig, alerts });
+  };
+
+  const testAlerts = async () => {
+    setAlertsTesting(true);
+    try {
+      const res = await api.post('/health/alerts-test', {});
+      toast({ title: 'Email de test envoyé', description: res.data.message });
+    } catch (e) {
+      toast({ title: 'Erreur', description: e.response?.data?.detail || 'Échec envoi', variant: 'destructive' });
+    } finally {
+      setAlertsTesting(false);
+    }
+  };
 
   const hs = data?.health_state;
   const history = data?.recovery_history || [];
@@ -407,6 +493,135 @@ export default function SystemHealth() {
           </Card>
         </div>
       </div>
+
+      {/* ──── Alertes Email Section ──── */}
+      <Card data-testid="health-alerts-card">
+        <CardHeader className="py-3 px-4 border-b cursor-pointer select-none" onClick={() => setAlertsExpanded(e => !e)}>
+          <CardTitle className="text-sm flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Mail size={16} className="text-blue-600" />
+              Alertes Email
+              {alertsConfig?.enabled ? (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">ACTIF</span>
+              ) : (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">INACTIF</span>
+              )}
+            </span>
+            {alertsExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </CardTitle>
+        </CardHeader>
+        {alertsExpanded && (
+          <CardContent className="p-4 space-y-5">
+            {/* On/Off toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Activer les alertes email</p>
+                <p className="text-xs text-gray-500">Recevez des notifications en cas de problème (1 par jour max par type)</p>
+              </div>
+              <button
+                onClick={toggleAlertsEnabled}
+                disabled={alertsSaving}
+                className={`relative w-11 h-6 rounded-full transition-colors ${alertsConfig?.enabled ? 'bg-blue-600' : 'bg-gray-300'}`}
+                data-testid="alerts-toggle"
+              >
+                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${alertsConfig?.enabled ? 'left-[22px]' : 'left-0.5'}`} />
+              </button>
+            </div>
+
+            {/* Recipients */}
+            <div>
+              <p className="text-sm font-medium mb-2">Destinataires</p>
+              <div className="space-y-1.5 mb-2">
+                {(alertsConfig?.recipients || []).map((email) => (
+                  <div key={email} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5" data-testid={`alert-recipient-${email}`}>
+                    <Mail size={13} className="text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 flex-1 truncate">{email}</span>
+                    <button onClick={() => removeRecipient(email)} className="p-0.5 hover:bg-red-50 rounded" data-testid={`alert-remove-${email}`}>
+                      <X size={13} className="text-red-400" />
+                    </button>
+                  </div>
+                ))}
+                {(alertsConfig?.recipients || []).length === 0 && (
+                  <p className="text-xs text-gray-400 py-2">Aucun destinataire configuré</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                  placeholder="Ajouter un email..." className="text-sm"
+                  onKeyDown={e => e.key === 'Enter' && addRecipient()}
+                  data-testid="alert-add-email-input"
+                />
+                <Button size="sm" variant="outline" onClick={addRecipient} disabled={!newEmail.trim()} data-testid="alert-add-email-btn">
+                  <Plus size={14} />
+                </Button>
+              </div>
+            </div>
+
+            {/* Alert types */}
+            <div>
+              <p className="text-sm font-medium mb-2">Types d'alertes</p>
+              <div className="space-y-1">
+                {ALERT_TYPES_CONFIG.map(({ key, label, desc, icon: Icon, color, hasThreshold, thresholdLabel, thresholdUnit, min, max }) => {
+                  const alertConf = alertsConfig?.alerts?.[key] || {};
+                  const enabled = alertConf.enabled !== false;
+                  return (
+                    <div key={key} className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors" data-testid={`alert-type-${key}`}>
+                      <button
+                        onClick={() => toggleAlertType(key)}
+                        className={`flex-shrink-0 w-4 h-4 rounded border-2 transition-colors ${enabled ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}`}
+                        data-testid={`alert-toggle-${key}`}
+                      >
+                        {enabled && (
+                          <svg viewBox="0 0 12 12" className="w-full h-full">
+                            <path d="M2.5 6L5 8.5L9.5 3.5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                      <Icon size={15} style={{ color }} className="flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-sm ${enabled ? 'text-gray-800' : 'text-gray-400'}`}>{label}</span>
+                        <span className="text-[11px] text-gray-400 ml-2">{desc}</span>
+                      </div>
+                      {hasThreshold && enabled && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-[11px] text-gray-400">{thresholdLabel}:</span>
+                          <input
+                            type="number" min={min} max={max}
+                            value={alertConf.threshold || (key === 'app_down' ? 1 : key === 'disk_warning' ? 80 : 85)}
+                            onChange={e => updateAlertThreshold(key, e.target.value)}
+                            className="w-14 text-center text-xs border rounded px-1 py-0.5"
+                            data-testid={`alert-threshold-${key}`}
+                          />
+                          <span className="text-[11px] text-gray-400">{thresholdUnit}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Test button */}
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <Button
+                size="sm" variant="outline" className="gap-1.5"
+                onClick={testAlerts}
+                disabled={alertsTesting || !(alertsConfig?.recipients?.length > 0)}
+                data-testid="alerts-test-btn"
+              >
+                <Send size={13} />
+                {alertsTesting ? 'Envoi en cours...' : 'Envoyer un email de test'}
+              </Button>
+              {alertsConfig?.last_test_sent && (
+                <span className="text-[11px] text-gray-400">
+                  Dernier test : <TimeAgo dateStr={alertsConfig.last_test_sent} />
+                </span>
+              )}
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 }

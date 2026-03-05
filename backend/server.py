@@ -9653,6 +9653,117 @@ async def reset_failure_counter(current_user: dict = Depends(get_current_admin_u
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ──────── HEALTH ALERTS CONFIG ────────
+
+@api_router.get("/health/alerts-config")
+async def get_health_alerts_config(current_user: dict = Depends(get_current_admin_user)):
+    """Récupère la configuration des alertes santé système."""
+    config = await db.health_alerts_config.find_one({}, {"_id": 0})
+    if not config:
+        config = {
+            "enabled": False,
+            "recipients": [],
+            "cooldown_hours": 24,
+            "alerts": {
+                "app_down": {"enabled": True, "threshold": 1},
+                "recovery_success": {"enabled": True},
+                "recovery_failed": {"enabled": True},
+                "disk_warning": {"enabled": True, "threshold": 80},
+                "memory_warning": {"enabled": True, "threshold": 85},
+                "maintenance_changed": {"enabled": False},
+            },
+            "last_test_sent": None,
+        }
+    return config
+
+
+@api_router.put("/health/alerts-config")
+async def update_health_alerts_config(
+    config: dict,
+    current_user: dict = Depends(get_current_admin_user)
+):
+    """Met à jour la configuration des alertes santé système."""
+    try:
+        allowed_fields = ["enabled", "recipients", "cooldown_hours", "alerts"]
+        update_data = {k: v for k, v in config.items() if k in allowed_fields}
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["updated_by"] = current_user.get("name", current_user.get("email", ""))
+
+        await db.health_alerts_config.update_one(
+            {}, {"$set": update_data}, upsert=True
+        )
+        return {"status": "ok", "message": "Configuration des alertes mise à jour"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/health/alerts-test")
+async def test_health_alert(current_user: dict = Depends(get_current_admin_user)):
+    """Envoie un email de test pour vérifier la configuration des alertes."""
+    try:
+        config = await db.health_alerts_config.find_one({}, {"_id": 0})
+        if not config or not config.get("recipients"):
+            raise HTTPException(status_code=400, detail="Aucun destinataire configuré")
+
+        from health_alert_service import send_email, _build_html_email
+        recipients = config["recipients"]
+        admin_name = f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip() or current_user.get("email", "")
+        now_str = datetime.now().strftime("%d/%m/%Y à %H:%M")
+
+        details_html = f"""
+        <div style="background: #EFF6FF; border-left: 4px solid #2563EB; padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;">
+          <p style="margin: 0; color: #1E40AF; font-weight: 600;">Test de configuration réussi</p>
+          <p style="margin: 4px 0 0; color: #3B82F6; font-size: 13px;">Déclenché par : {admin_name}</p>
+        </div>
+        <p style="font-size: 14px; color: #334155;">
+          Si vous recevez cet email, les alertes de santé système sont correctement configurées.
+        </p>
+        <p style="font-size: 13px; color: #64748b;">
+          Les alertes actives vous notifieront automatiquement en cas de problème.
+        </p>
+        """
+        html = _build_html_email("[TEST] FSAO Iris - Alerte Système", "info", details_html, f"Date : {now_str}<br>")
+
+        sent = 0
+        errors = []
+        for email in recipients:
+            try:
+                ok = send_email(email.strip(), "[TEST] FSAO Iris - Test Alerte Système", html)
+                if ok:
+                    sent += 1
+                else:
+                    errors.append(email)
+            except Exception as e:
+                errors.append(f"{email}: {str(e)}")
+
+        # Update last test timestamp
+        await db.health_alerts_config.update_one(
+            {}, {"$set": {"last_test_sent": datetime.now(timezone.utc).isoformat()}}, upsert=True
+        )
+
+        if sent > 0:
+            return {"status": "ok", "message": f"Email de test envoyé à {sent} destinataire(s)", "sent": sent, "errors": errors}
+        raise HTTPException(status_code=500, detail=f"Échec d'envoi : {', '.join(errors)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/health/alerts-history")
+async def get_health_alerts_history(current_user: dict = Depends(get_current_admin_user)):
+    """Récupère l'historique des alertes envoyées."""
+    try:
+        history_path = Path(update_service.app_root) / "health_alert_history.json"
+        if history_path.exists():
+            import json as json_mod
+            with open(history_path) as f:
+                return json_mod.load(f)
+        return {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/updates/recent-info")
 async def get_recent_update_info(current_user: dict = Depends(get_current_user)):
     """

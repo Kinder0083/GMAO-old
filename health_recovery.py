@@ -46,6 +46,8 @@ GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main")
 
 MAX_CONSECUTIVE_FAILURES = 4  # Apres 4 echecs consecutifs, on passe au niveau Hard
 HEALTH_TIMEOUT = 10  # Timeout HTTP en secondes
+ALERT_HISTORY_FILE = os.path.join(APP_ROOT, "health_alert_history.json")
+ALERT_CONFIG_FILE = os.path.join(APP_ROOT, "health_alert_config_cache.json")
 
 # ─── Logging ─────────────────────────────────────────────────────
 
@@ -123,6 +125,138 @@ def append_recovery_event(level, success, details=""):
         log.error(f"Impossible d'ecrire l'historique: {e}")
 
 
+# ─── Email Alerts ─────────────────────────────────────────────────
+
+def _load_alert_config():
+    """Charge la config des alertes. Essaie d'abord l'API, puis le cache local."""
+    # Essayer de lire depuis l'API backend (si le backend tourne)
+    try:
+        req = urllib.request.Request(
+            HEALTH_URL.replace("/version", "/health/alerts-config"),
+            method="GET"
+        )
+        # On a besoin d'un token admin - on utilise le cache s'il existe
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                config = json.loads(resp.read())
+                # Mettre en cache
+                with open(ALERT_CONFIG_FILE, "w") as f:
+                    json.dump(config, f, indent=2)
+                return config
+    except Exception:
+        pass
+    # Fallback: lire le cache local
+    try:
+        if os.path.exists(ALERT_CONFIG_FILE):
+            with open(ALERT_CONFIG_FILE) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
+
+
+def _can_send_alert(alert_type, cooldown_hours=24):
+    """Verifie le cooldown pour un type d'alerte."""
+    try:
+        history = {}
+        if os.path.exists(ALERT_HISTORY_FILE):
+            with open(ALERT_HISTORY_FILE) as f:
+                history = json.load(f)
+        last_sent = history.get(alert_type)
+        if not last_sent:
+            return True
+        from datetime import timedelta
+        last_dt = datetime.fromisoformat(last_sent)
+        return (datetime.now() - last_dt) > timedelta(hours=cooldown_hours)
+    except Exception:
+        return True
+
+
+def _mark_alert_sent(alert_type):
+    """Marque une alerte comme envoyee."""
+    try:
+        history = {}
+        if os.path.exists(ALERT_HISTORY_FILE):
+            with open(ALERT_HISTORY_FILE) as f:
+                history = json.load(f)
+        history[alert_type] = datetime.now().isoformat()
+        with open(ALERT_HISTORY_FILE, "w") as f:
+            json.dump(history, f, indent=2)
+    except Exception:
+        pass
+
+
+def send_alert_via_backend(alert_type, extra_data=None):
+    """
+    Envoie une alerte email via le service backend (health_alert_service.py).
+    Utilise l'API interne ou importe directement le module si possible.
+    """
+    config = _load_alert_config()
+    if not config or not config.get("enabled"):
+        return
+    recipients = config.get("recipients", [])
+    if not recipients:
+        return
+    # Verifier si ce type d'alerte est active
+    alert_conf = config.get("alerts", {}).get(alert_type, {})
+    if not alert_conf.get("enabled", True):
+        return
+    cooldown = config.get("cooldown_hours", 24)
+    if not _can_send_alert(alert_type, cooldown):
+        log.info(f"[Alert] Cooldown actif pour {alert_type}")
+        return
+
+    # Tenter d'importer le service directement
+    try:
+        sys.path.insert(0, os.path.join(APP_ROOT, "backend"))
+        from health_alert_service import send_health_alert
+        ok = send_health_alert(alert_type, recipients, extra_data, cooldown)
+        if ok:
+            log.info(f"[Alert] Email {alert_type} envoye")
+            _mark_alert_sent(alert_type)
+        return
+    except ImportError:
+        log.warning("[Alert] Impossible d'importer health_alert_service, envoi direct")
+    except Exception as e:
+        log.error(f"[Alert] Erreur envoi alerte: {e}")
+
+    # Fallback: envoi direct via smtplib
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        env_file = os.path.join(APP_ROOT, "backend", ".env")
+        smtp_host = "localhost"
+        smtp_port = 25
+        smtp_from = "noreply@gmao-iris.com"
+        if os.path.exists(env_file):
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("SMTP_HOST=") or line.startswith("SMTP_SERVER="):
+                        smtp_host = line.split("=", 1)[1].strip().strip('"')
+                    elif line.startswith("SMTP_PORT="):
+                        smtp_port = int(line.split("=", 1)[1].strip())
+                    elif line.startswith("SMTP_FROM=") or line.startswith("SMTP_SENDER_EMAIL="):
+                        smtp_from = line.split("=", 1)[1].strip().strip('"')
+
+        level_names = {1: "SOFT", 2: "ROLLBACK", 3: "MEDIUM", 4: "HARD"}
+        subject = f"[ALERTE] FSAO Iris - {alert_type}"
+        body = f"Alerte systeme: {alert_type}\nDetails: {json.dumps(extra_data or {}, indent=2)}"
+
+        for email in recipients:
+            msg = MIMEText(body, "plain", "utf-8")
+            msg["Subject"] = subject
+            msg["From"] = f"FSAO Iris <{smtp_from}>"
+            msg["To"] = email
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
+            server.send_message(msg)
+            server.quit()
+            log.info(f"[Alert] Email direct envoye a {email}")
+        _mark_alert_sent(alert_type)
+    except Exception as e:
+        log.error(f"[Alert] Echec envoi direct: {e}")
+
+
 # ─── Health Check ─────────────────────────────────────────────────
 
 def check_backend_health():
@@ -187,9 +321,50 @@ def full_health_check():
     svc_ok = running > 0 and running == total
     details.append(f"Services: {running}/{total} running")
 
+    # 4. Verifier disque et memoire pour alertes
+    _check_resource_alerts()
+
     # Overall health: backend must respond
     healthy = backend_ok
     return healthy, details
+
+
+def _check_resource_alerts():
+    """Verifie les seuils disque et memoire et envoie des alertes si necessaire."""
+    config = _load_alert_config()
+    if not config or not config.get("enabled"):
+        return
+
+    alerts = config.get("alerts", {})
+
+    # Disque
+    disk_conf = alerts.get("disk_warning", {})
+    if disk_conf.get("enabled", True):
+        threshold = disk_conf.get("threshold", 80)
+        try:
+            import shutil
+            usage = shutil.disk_usage("/")
+            used_pct = round((usage.used / usage.total) * 100, 1)
+            free_gb = round(usage.free / (1024**3), 1)
+            if used_pct >= threshold:
+                send_alert_via_backend("disk_warning", {"used_pct": used_pct, "free_gb": free_gb})
+        except Exception:
+            pass
+
+    # Memoire
+    mem_conf = alerts.get("memory_warning", {})
+    if mem_conf.get("enabled", True):
+        threshold = mem_conf.get("threshold", 85)
+        try:
+            with open("/proc/meminfo") as f:
+                meminfo = f.read()
+            total = int([l for l in meminfo.split('\n') if 'MemTotal' in l][0].split()[1])
+            available = int([l for l in meminfo.split('\n') if 'MemAvailable' in l][0].split()[1])
+            used_pct = round(((total - available) / total) * 100, 1)
+            if used_pct >= threshold:
+                send_alert_via_backend("memory_warning", {"used_pct": used_pct})
+        except Exception:
+            pass
 
 
 # ─── Maintenance Mode ────────────────────────────────────────────
@@ -712,6 +887,9 @@ def run_health_check_and_recovery():
     failures = state["consecutive_failures"]
     log.warning(f"APPLICATION EN PANNE (echec consecutif #{failures})")
 
+    # Envoyer alerte email "app_down"
+    send_alert_via_backend("app_down", {"failures": failures, "details": details})
+
     # Activer la page de maintenance si pas deja fait
     if not state.get("maintenance_active"):
         if activate_maintenance():
@@ -752,9 +930,11 @@ def run_health_check_and_recovery():
         deactivate_maintenance()
         state["maintenance_active"] = False
         append_recovery_event(level, True, f"Recuperation reussie apres {failures} echec(s)")
+        send_alert_via_backend("recovery_success", {"level": level, "failures": failures})
     else:
         log.error(f"ECHEC recovery niveau {level}")
         append_recovery_event(level, False, f"Echec recovery niveau {level}")
+        send_alert_via_backend("recovery_failed", {"level": level, "failures": failures})
         if failures >= MAX_CONSECUTIVE_FAILURES:
             log.critical(
                 f"ALERTE: {MAX_CONSECUTIVE_FAILURES} echecs consecutifs. "
