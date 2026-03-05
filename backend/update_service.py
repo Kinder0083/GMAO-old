@@ -57,11 +57,12 @@ server {{
         alias {self.app_root}/frontend/public/logo-iris.png;
         access_log off;
     }}
-    location /api/version {{
-        proxy_pass http://127.0.0.1:8001/api/version;
+    location /api/ {{
+        proxy_pass http://127.0.0.1:8001/api/;
         proxy_connect_timeout 5s;
-        proxy_read_timeout 5s;
-        error_page 502 503 504 = @maintenance;
+        proxy_read_timeout 10s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
     }}
     location / {{
         root {self.app_root};

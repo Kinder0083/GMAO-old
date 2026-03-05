@@ -447,13 +447,14 @@ server {{
         access_log off;
     }}
 
-    # Health check endpoint (pour que le script de recovery puisse verifier)
-    location /api/version {{
-        proxy_pass http://127.0.0.1:8001/api/version;
+    # TOUTES les requetes API proxifiees vers le backend
+    # (necessaire pour le bypass admin et le health check)
+    location /api/ {{
+        proxy_pass http://127.0.0.1:8001/api/;
         proxy_connect_timeout 5s;
-        proxy_read_timeout 5s;
-        # Si le backend ne repond pas, renvoyer 503
-        error_page 502 503 504 = @maintenance;
+        proxy_read_timeout 10s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
     }}
 
     # Tout le reste -> page maintenance
