@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, LogOut, RefreshCw } from 'lucide-react';
 
 const UpdateWarningOverlay = () => {
-  const navigate = useNavigate();
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [warningData, setWarningData] = useState(null);
@@ -13,8 +11,9 @@ const UpdateWarningOverlay = () => {
   const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/login');
-  }, [navigate]);
+    // Rediriger vers la page de maintenance statique (pas le login React)
+    window.location.href = '/maintenance.html';
+  }, []);
 
   // Écouter les messages WebSocket du chat pour l'avertissement de MAJ
   useEffect(() => {
