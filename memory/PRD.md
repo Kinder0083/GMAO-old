@@ -42,6 +42,12 @@ Application GMAO complète pour la gestion de maintenance industrielle. Interfac
 - **Intégration SMTP existant** de "Paramètres Spéciaux"
 - **API** : GET/PUT `/api/health/alerts-config`, POST `/api/health/alerts-test`, GET `/api/health/alerts-history`
 
+### Correction PWA/Notifications persistantes (Mars 2026)
+- **Bug corrigé** : Les bannières d'installation PWA et de notifications apparaissaient à chaque connexion
+- **Solution** : Persistance du choix utilisateur dans localStorage (clés `pwa_install_dismissed_at`, `pwa_notif_dismissed_at`) avec expiration de 30 jours
+- **Vérification abonnement existant** : `usePWA.js` vérifie maintenant `pushManager.getSubscription()` au chargement pour détecter les abonnements push existants
+- **Fichiers modifiés** : `PWABanner.jsx`, `usePWA.js`
+
 ### Documentation PDF (Mars 2026)
 - 3 présentations PDF + PDF README (28 pages)
 
