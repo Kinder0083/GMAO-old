@@ -2,6 +2,7 @@
 SSH Terminal - WebSocket + PTY
 Utilise le binaire SSH du système pour une compatibilité maximale.
 Fonctionne exactement comme PuTTY.
++ Système de macros (CRUD) pour exécuter des commandes prédéfinies.
 """
 import asyncio
 import os
@@ -13,10 +14,13 @@ import termios
 import signal
 import logging
 import json
+from typing import List, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends
 from pydantic import BaseModel
 from dependencies import get_current_user
 from server import db
+from datetime import datetime, timezone
+from bson import ObjectId
 
 router = APIRouter(prefix="/ssh", tags=["SSH Terminal"])
 logger = logging.getLogger(__name__)
@@ -27,6 +31,102 @@ class SSHConnectRequest(BaseModel):
     port: int = 22
     username: str = "root"
     password: str = ""
+
+
+class MacroCreate(BaseModel):
+    name: str
+    description: str = ""
+    commands: List[str]
+    color: str = "#2563EB"
+
+
+class MacroUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    commands: Optional[List[str]] = None
+    color: Optional[str] = None
+
+
+# ──────────── MACROS CRUD ────────────
+
+@router.get("/macros")
+async def list_macros(current_user: dict = Depends(get_current_user)):
+    """Liste toutes les macros SSH."""
+    macros = await db.ssh_macros.find(
+        {}, {"_id": 0}
+    ).sort("name", 1).to_list(200)
+    return macros
+
+
+@router.post("/macros")
+async def create_macro(
+    macro: MacroCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Créer une nouvelle macro SSH."""
+    user_role = current_user.get("role", "").upper()
+    if user_role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+
+    doc = {
+        "macro_id": str(ObjectId()),
+        "name": macro.name.strip(),
+        "description": macro.description.strip(),
+        "commands": [c for c in macro.commands if c.strip()],
+        "color": macro.color,
+        "created_by": current_user.get("name", current_user.get("email", "")),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.ssh_macros.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@router.put("/macros/{macro_id}")
+async def update_macro(
+    macro_id: str,
+    macro: MacroUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Modifier une macro SSH existante."""
+    user_role = current_user.get("role", "").upper()
+    if user_role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+
+    existing = await db.ssh_macros.find_one({"macro_id": macro_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Macro introuvable")
+
+    updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if macro.name is not None:
+        updates["name"] = macro.name.strip()
+    if macro.description is not None:
+        updates["description"] = macro.description.strip()
+    if macro.commands is not None:
+        updates["commands"] = [c for c in macro.commands if c.strip()]
+    if macro.color is not None:
+        updates["color"] = macro.color
+
+    await db.ssh_macros.update_one({"macro_id": macro_id}, {"$set": updates})
+    updated = await db.ssh_macros.find_one({"macro_id": macro_id}, {"_id": 0})
+    return updated
+
+
+@router.delete("/macros/{macro_id}")
+async def delete_macro(
+    macro_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer une macro SSH."""
+    user_role = current_user.get("role", "").upper()
+    if user_role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+
+    result = await db.ssh_macros.delete_one({"macro_id": macro_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Macro introuvable")
+    return {"status": "ok", "message": "Macro supprimée"}
 
 
 @router.post("/connect")

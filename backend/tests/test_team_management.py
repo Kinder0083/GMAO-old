@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://qr-release-preview.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://notification-bell-1.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "admin@test.com"

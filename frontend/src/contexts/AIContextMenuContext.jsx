@@ -239,9 +239,9 @@ export const AIContextMenuProvider = ({ children }) => {
 
   // Gestionnaire de clic droit
   const handleContextMenu = useCallback((e) => {
-    // Ignorer si on est sur la page Chat Live - laisser le menu contextuel natif
-    if (window.location.pathname.includes('chat-live') || window.location.pathname.includes('chat')) {
-      return; // Ne pas intercepter le clic droit sur Chat Live
+    // Ignorer si on est sur la page Chat Live ou SSH Terminal - laisser le menu contextuel natif
+    if (window.location.pathname.includes('chat-live') || window.location.pathname.includes('chat') || window.location.pathname.includes('ssh')) {
+      return; // Ne pas intercepter le clic droit sur Chat Live et SSH Terminal
     }
     
     // Ignorer si c'est sur un input, textarea ou élément éditable
