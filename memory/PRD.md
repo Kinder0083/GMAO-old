@@ -23,42 +23,53 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - Consignes inter-équipes, Dashboard, Rapports, Permissions par rôle
 - Import/Export, Sauvegarde planifiée, Système de mise à jour intégré
 
-### PWA & Mobile (Février 2026)
-- Installation PWA (Android/iOS), Notifications push (VAPID)
-- Interface responsive, Sidebar overlay mobile
-
 ### Terminal SSH + Macros (Mars 2026)
 - Console interactive via xterm.js + WebSocket + PTY
-- Connexion locale (login -f) et distante (ssh binaire)
 - Système de macros SSH : CRUD complet, panneau latéral, exécution séquentielle
 - Menu contextuel IA désactivé sur la page SSH (clic droit natif)
 
 ### Système de résilience (Mars 2026)
-- **Page de maintenance HTML** : affichée pendant les mises à jour (logo IRIS, barre animée, auto-refresh 30s, détection auto du retour de l'app)
+- **Page de maintenance HTML** : logo IRIS, barre animée, auto-refresh 30s
 - **Health Check automatique** : surveillance toutes les 5 min via cron
-- **Récupération 4 niveaux** :
-  - Niveau 1 SOFT : Restart des services
-  - Niveau 2 ROLLBACK : Retour au commit Git précédent
-  - Niveau 3 MEDIUM : Réinstallation des dépendances
-  - Niveau 4 HARD : Reset Git complet depuis GitHub
+- **Récupération 4 niveaux** : SOFT → ROLLBACK → MEDIUM → HARD
 - **API Maintenance** : `/api/maintenance/activate`, `/deactivate`, `/status`
-- **Intégration mise à jour** : activation auto de la maintenance avant MAJ, désactivation après
+- **Intégration mise à jour** : activation auto de la maintenance avant MAJ
+
+### Panneau Santé du Système (Mars 2026)
+- **Page admin** `/system-health` accessible uniquement aux administrateurs
+- **4 cartes de santé temps réel** : Backend API, MongoDB, Disque, Mémoire
+- **État du Health Check** : dernière vérification, échecs, compteur récupérations
+- **Actions manuelles** : forcer health check, activer/désactiver maintenance, reset compteur
+- **Historique des récupérations** : tableau chronologique avec niveau et résultat
+- **Guide des 4 niveaux** de récupération avec code couleur
+- **Auto-refresh** toutes les 30 secondes
+- Menu sidebar "Santé Système" sous "Paramètres Spéciaux"
 
 ### Présentations et Documentation PDF (Mars 2026)
-- 3 versions de présentation PDF (courte, moyenne, complète)
-- PDF README Documentation (28 pages) avec captures d'écran
+- 3 versions de présentation PDF + PDF README (28 pages)
 
 ### Notifications cloche multi-badges (Mars 2026)
-- 3 badges (OT en attente, améliorations, préventif échu)
-- Menu déroulant avec navigation directe
+- 3 badges (OT, améliorations, préventif échu) + menu déroulant
 
-## Fichiers clés (résilience)
-- `maintenance.html` - Page de maintenance HTML statique
-- `health_recovery.py` - Script health check + récupération 4 niveaux
-- `setup_health_check.sh` - Installation cron de surveillance
-- `backend/update_service.py` - MaintenanceMode + UpdateService intégré
-- `backend/server.py` - API endpoints maintenance
+## Fichiers clés
+- `frontend/src/pages/SystemHealth.jsx` - Panneau santé système
+- `frontend/src/pages/SSHTerminal.jsx` - Terminal SSH + Macros
+- `frontend/src/components/Layout/Sidebar.jsx` - Menu sidebar
+- `maintenance.html` - Page de maintenance statique
+- `health_recovery.py` - Script récupération 4 niveaux
+- `setup_health_check.sh` - Installation cron
+- `backend/update_service.py` - MaintenanceMode + UpdateService
+- `backend/server.py` - API endpoints
+
+## API Endpoints (nouveaux)
+- `GET /api/maintenance/status` - Statut maintenance + health state + historique
+- `POST /api/maintenance/activate` - Activer maintenance
+- `POST /api/maintenance/deactivate` - Désactiver maintenance
+- `POST /api/health/force-check` - Health check immédiat
+- `POST /api/health/reset-failures` - Reset compteur échecs
+- `GET /api/health/recovery-history` - Historique récupérations
+- CRUD `/api/ssh/macros` - Macros SSH
 
 ## Backlog
-- Stabilisation continue basée sur les retours utilisateur
-- Améliorations de l'application mobile native (Expo)
+- Stabilisation continue basée sur retours utilisateur
+- Améliorations application mobile native (Expo)
