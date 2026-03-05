@@ -4,13 +4,14 @@
 Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pour la gestion des opérations de maintenance industrielle. Interface en français.
 
 ## Architecture
-- **Frontend**: React 18 + Tailwind CSS + Shadcn/UI
+- **Frontend**: React 19 + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI (Python) + MongoDB
 - **Notifications**: Web Push (VAPID/pywebpush) + Expo Push Service
 - **PWA**: Service Worker, manifest.json, installation mobile
 - **IA**: Emergent LLM (Gemini 2.5 Flash) - assistant Adria, analyse QHSE
-- **Temps réel**: WebSocket (Chat Live, Whiteboard, notifications)
+- **Temps réel**: WebSocket (Chat Live, Whiteboard, notifications, SSH Terminal)
 - **QR Codes**: qrcode + Pillow (génération étiquettes)
+- **SSH Terminal**: xterm.js + WebSocket + PTY (binaires système)
 - **Déploiement production**: Proxmox LXC (Debian 12) + Tailscale Funnel (HTTPS)
 
 ## Fonctionnalités implémentées
@@ -36,56 +37,44 @@ Application GMAO (Gestion de Maintenance Assistée par Ordinateur) complète pou
 - API: `/api/releases`
 
 ### QR Codes Équipements (Mars 2026)
-- **Page publique** `/qr/{equipmentId}` (sans auth pour lecture)
-  - Fiche équipement (nom, statut, emplacement, photo)
-  - 6 actions rapides avec panneaux inline expandables
-  - Dernier OT, Historique OT, KPI, Demande d'intervention, Signaler panne, Plan préventif
-  - Actions lecture = sans auth, Actions écriture = auth requise
-- **Boutons QR** sur la fiche équipement
-  - "Aperçu QR" : ouvre la page publique
-  - "Étiquette QR" : télécharge PNG (QR code + nom équipement) prêt à imprimer
-- **Admin actions QR** dans Paramètres
-  - Ajouter/modifier/supprimer des actions
-  - Activer/désactiver par toggle
-  - Type link/action, icône, flag auth requise
-- API: `/api/qr/public/*` (public), `/api/qr/*` (auth), `/api/qr/actions` (admin)
-- Collections MongoDB: `qr_actions_config`
+- Page publique `/qr/{equipmentId}` (sans auth pour lecture)
+- QR Codes et étiquettes imprimables
+- Actions rapides configurables
 
-## Credentials de test
-- Admin (Direction): admin@test.com / Admin123!
-- Technicien (Maintenance): technicien@test.com / Technicien123!
+### Terminal SSH (Mars 2026)
+- Console interactive via xterm.js + WebSocket + PTY
+- Connexion locale (login -f) et distante (ssh binaire)
+- Support complet des commandes interactives (vim, top, htop)
+- **Système de macros SSH** : CRUD complet pour enregistrer et exécuter des séquences de commandes
+  - API: GET/POST/PUT/DELETE `/api/ssh/macros`
+  - Panneau latéral avec liste des macros, couleurs, descriptions
+  - Dialogue de création/modification avec lignes de commandes éditables
+  - Exécution séquentielle des commandes dans le terminal connecté
+- Menu contextuel IA désactivé sur la page SSH (clic droit natif)
 
-### Version dynamique (Mars 2026)
-- Endpoint `/api/version` retourne dynamiquement la dernière version depuis la collection `releases`
-- Page de login affiche la version en temps réel (plus de valeur codée en dur)
-- Fallback gracieux : version masquée si API indisponible
+### Présentations et Documentation PDF (Mars 2026)
+- 3 versions de présentation PDF (courte, moyenne, complète) avec captures d'écran
+- PDF README Documentation (28 pages) avec captures d'écran et contenu complet du README.md
+- Fichiers: `/app/presentations/`
 
-### Bug Fix QR Code (Mars 2026)
-- Lazy import robuste pour `PIL/Pillow` et `qrcode` avec messages d'erreur explicites
-- Endpoint de diagnostic `/api/qr/check-deps` pour vérifier les dépendances
-- Frontend affiche le message d'erreur exact du backend au lieu d'un message générique
+### Notifications cloche multi-badges (Mars 2026)
+- 3 badges (OT en attente, améliorations, préventif échu)
+- Menu déroulant avec navigation directe et filtres pré-appliqués
+- API: `/api/bell-counts`
 
-### Icône cloche multi-badges (Mars 2026)
-- 3 badges : Rouge (OT en attente), Violet (Améliorations), Vert (Maintenance préventive échue)
-- Endpoint `/api/bell-counts` pour compteurs efficaces côté serveur
-- Tooltip détaillé avec légende des couleurs
+## Backlog / Tâches futures
+- Stabilisation continue basée sur les retours utilisateur
+- Améliorations de l'application mobile native (Expo) - notifications push
+- Améliorations UX diverses selon retours terrain
 
-### Documentation et Présentations (Mars 2026)
-- README.md mis à jour v1.8.0 avec QR Codes, changelog, cloche multi-badges
-- Manuel enrichi : 3 nouveaux chapitres (QR Codes, Changelog, Notifications Cloche)
-- 3 PDFs de présentation : Courte (5p), Moyenne (11p), Complète (15p)
+## Fichiers clés
+- `backend/ssh_routes.py` - Terminal SSH + Macros CRUD
+- `frontend/src/pages/SSHTerminal.jsx` - UI Terminal + Panneau Macros
+- `frontend/src/contexts/AIContextMenuContext.jsx` - Menu contextuel IA (SSH exclu)
+- `presentations/generate_readme_pdf.py` - Générateur PDF README
+- `presentations/generate_pdfs.py` - Générateur présentations PDF
+- `backend/server.py` - Point d'entrée backend principal
 
-### Terminal SSH interactif (Mars 2026)
-- Backend paramiko + WebSocket pour vraie connexion SSH avec PTY
-- Frontend xterm.js (terminal complet type PuTTY)
-- Support vim, top, htop, couleurs ANSI, redimensionnement
-
-## Backlog
-- Validation en production : "Save to GitHub" puis mise à jour via le menu intégré
-
-## Notes techniques
-- Environnement production: Proxmox, géré par supervisor
-- Système de mise à jour intégré (git pull + yarn build + restart automatique)
-- URL production: https://gmao-iris.tail4d419a.ts.net
-- FRONTEND_URL dans backend/.env pour les URLs des QR codes
-- La dépendance `qrcode[pil]` doit être installée sur le serveur de production
+## Collections MongoDB
+- `ssh_macros` - Macros SSH (macro_id, name, description, commands, color, created_by, dates)
+- Plus 40+ autres collections existantes
