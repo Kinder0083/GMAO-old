@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FSAO Iris - Maintenance en cours</title>
-    <meta http-equiv="refresh" content="30">
+    <!-- PAS de meta refresh : gere en JS avec pause quand le panneau admin est ouvert -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -20,61 +20,30 @@
         }
 
         .bg-grid {
-            position: fixed;
-            inset: 0;
+            position: fixed; inset: 0;
             background-image:
-                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+                linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
             background-size: 60px 60px;
             animation: gridMove 20s linear infinite;
         }
-        @keyframes gridMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(60px, 60px); }
-        }
+        @keyframes gridMove { 0% { transform: translate(0,0); } 100% { transform: translate(60px,60px); } }
 
-        .container {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            max-width: 520px;
-            padding: 40px;
-        }
+        .container { position: relative; z-index: 1; text-align: center; max-width: 520px; padding: 40px; }
 
-        .logo-wrapper { margin-bottom: 32px; cursor: pointer; user-select: none; }
-        .logo-wrapper img {
-            height: 70px;
-            width: auto;
-            filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
-        }
-        .logo-fallback {
-            font-size: 32px;
-            font-weight: 800;
-            color: #3b82f6;
-            letter-spacing: -0.5px;
-        }
+        .logo-wrapper { margin-bottom: 32px; }
+        .logo-wrapper img { height: 70px; width: auto; filter: drop-shadow(0 0 20px rgba(59,130,246,0.3)); }
+        .logo-fallback { font-size: 32px; font-weight: 800; color: #3b82f6; }
 
         .icon-container {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 28px;
+            width: 80px; height: 80px; margin: 0 auto 28px;
             background: linear-gradient(135deg, #1e3a5f, #1e293b);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(59,130,246,0.2);
             animation: pulse-glow 3s ease-in-out infinite;
         }
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.1); }
-            50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.25); }
-        }
-        .gear-icon {
-            width: 40px; height: 40px;
-            fill: none; stroke: #3b82f6; stroke-width: 2;
-            animation: spin 8s linear infinite;
-        }
+        @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 20px rgba(59,130,246,0.1); } 50% { box-shadow: 0 0 40px rgba(59,130,246,0.25); } }
+        .gear-icon { width: 40px; height: 40px; fill: none; stroke: #3b82f6; stroke-width: 2; animation: spin 8s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         h1 { font-size: 26px; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
@@ -83,7 +52,7 @@
         .progress-container {
             background: #1e293b; border-radius: 8px; height: 6px;
             width: 100%; overflow: hidden; margin-bottom: 28px;
-            border: 1px solid rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59,130,246,0.1);
         }
         .progress-bar {
             height: 100%; width: 30%;
@@ -91,77 +60,55 @@
             background-size: 200% 100%; border-radius: 8px;
             animation: progress-sweep 2s ease-in-out infinite;
         }
-        @keyframes progress-sweep {
-            0% { width: 5%; margin-left: 0; }
-            50% { width: 40%; margin-left: 30%; }
-            100% { width: 5%; margin-left: 95%; }
-        }
+        @keyframes progress-sweep { 0% { width:5%; margin-left:0; } 50% { width:40%; margin-left:30%; } 100% { width:5%; margin-left:95%; } }
 
         .info-box {
-            background: rgba(59, 130, 246, 0.08);
-            border: 1px solid rgba(59, 130, 246, 0.15);
+            background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15);
             border-radius: 12px; padding: 20px; margin-bottom: 24px;
         }
         .info-box p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
         .info-box .highlight { color: #60a5fa; font-weight: 600; }
 
         .timer { font-size: 13px; color: #64748b; }
-        .timer .dot {
-            display: inline-block; width: 6px; height: 6px;
-            background: #3b82f6; border-radius: 50%; margin-right: 6px;
-            animation: blink 1.5s ease-in-out infinite;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .timer .dot { display: inline-block; width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; margin-right: 6px; animation: blink 1.5s ease-in-out infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .timer.paused .dot { animation: none; background: #f59e0b; }
 
-        /* Admin bypass panel */
-        .admin-panel {
-            display: none;
-            margin-top: 24px;
-            background: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-        }
+        /* Admin Panel */
+        .admin-panel { display: none; margin-top: 24px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 20px; text-align: left; }
         .admin-panel.visible { display: block; }
-        .admin-panel h3 { font-size: 14px; color: #f87171; margin-bottom: 12px; font-weight: 600; }
+        .admin-panel h3 { font-size: 14px; color: #f87171; margin-bottom: 16px; font-weight: 600; text-align: center; }
+        .admin-panel label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
         .admin-panel input {
             width: 100%; padding: 10px 14px; border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: #1e293b; color: #e2e8f0; font-size: 14px;
-            margin-bottom: 8px; outline: none;
+            border: 1px solid rgba(255,255,255,0.1); background: #1e293b;
+            color: #e2e8f0; font-size: 14px; margin-bottom: 12px; outline: none;
         }
         .admin-panel input:focus { border-color: #3b82f6; }
+        .admin-panel .btn-row { display: flex; gap: 8px; }
         .admin-panel button {
-            width: 100%; padding: 10px; border-radius: 8px;
-            border: none; background: #ef4444; color: white;
-            font-size: 14px; font-weight: 600; cursor: pointer;
-            transition: background 0.2s;
+            flex: 1; padding: 10px; border-radius: 8px; border: none;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;
         }
-        .admin-panel button:hover { background: #dc2626; }
-        .admin-panel button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .admin-panel .msg {
-            font-size: 12px; margin-top: 8px; padding: 6px 10px;
-            border-radius: 6px;
-        }
-        .admin-panel .msg.error { color: #fca5a5; background: rgba(239, 68, 68, 0.15); }
-        .admin-panel .msg.success { color: #86efac; background: rgba(34, 197, 94, 0.15); }
-        .admin-hint {
-            font-size: 11px; color: #475569; margin-top: 16px;
-            cursor: pointer; user-select: none;
-        }
-        .admin-hint:hover { color: #64748b; }
+        .admin-panel .btn-deactivate { background: #ef4444; color: white; }
+        .admin-panel .btn-deactivate:hover { background: #dc2626; }
+        .admin-panel .btn-deactivate:disabled { opacity: 0.5; cursor: not-allowed; }
+        .admin-panel .btn-cancel { background: rgba(255,255,255,0.1); color: #94a3b8; }
+        .admin-panel .btn-cancel:hover { background: rgba(255,255,255,0.15); }
+        .admin-panel .msg { font-size: 12px; margin-top: 10px; padding: 8px 12px; border-radius: 6px; line-height: 1.5; }
+        .admin-panel .msg.error { color: #fca5a5; background: rgba(239,68,68,0.15); }
+        .admin-panel .msg.success { color: #86efac; background: rgba(34,197,94,0.15); }
+        .admin-panel .msg.info { color: #93c5fd; background: rgba(59,130,246,0.15); }
+        .admin-hint { font-size: 11px; color: #475569; margin-top: 16px; cursor: pointer; user-select: none; }
+        .admin-hint:hover { color: #64748b; text-decoration: underline; }
 
-        @media (max-width: 600px) {
-            .container { padding: 24px 20px; }
-            h1 { font-size: 22px; }
-            .subtitle { font-size: 14px; }
-        }
+        @media (max-width: 600px) { .container { padding: 24px 20px; } h1 { font-size: 22px; } .subtitle { font-size: 14px; } }
     </style>
 </head>
 <body>
     <div class="bg-grid"></div>
     <div class="container">
-        <div class="logo-wrapper" id="logo-click" title="Cliquez 5 fois pour le panneau admin">
+        <div class="logo-wrapper">
             <img src="/logo-iris.png" alt="FSAO Iris"
                  onerror="this.style.display='none'; document.getElementById('logo-text').style.display='block';">
             <div id="logo-text" class="logo-fallback" style="display:none;">FSAO Iris</div>
@@ -174,15 +121,13 @@
             </svg>
         </div>
 
-        <h1>Mise à jour en cours</h1>
+        <h1 id="main-title">Mise à jour en cours</h1>
         <p class="subtitle">
             L'application est en cours de maintenance.<br>
             Elle sera de nouveau disponible dans quelques minutes.
         </p>
 
-        <div class="progress-container">
-            <div class="progress-bar"></div>
-        </div>
+        <div class="progress-container"><div class="progress-bar"></div></div>
 
         <div class="info-box">
             <p>
@@ -192,93 +137,131 @@
             </p>
         </div>
 
-        <div class="timer">
+        <div class="timer" id="timer-display">
             <span class="dot"></span>
             Rafraichissement automatique...
             <span id="countdown">30</span>s
         </div>
 
-        <!-- Admin bypass panel (hidden by default, revealed by clicking logo 5 times) -->
+        <!-- Admin bypass panel -->
         <div class="admin-panel" id="admin-panel">
             <h3>Panneau Administrateur</h3>
-            <input type="email" id="admin-email" placeholder="Email administrateur" autocomplete="email" />
-            <input type="password" id="admin-password" placeholder="Mot de passe" autocomplete="current-password" />
-            <button id="admin-deactivate" onclick="deactivateMaintenance()">
-                Désactiver la maintenance
-            </button>
+            <label for="admin-email">Email</label>
+            <input type="email" id="admin-email" placeholder="votre-email@domaine.com" autocomplete="email" />
+            <label for="admin-password">Mot de passe</label>
+            <input type="password" id="admin-password" placeholder="Mot de passe de l'application" autocomplete="current-password" />
+            <div class="btn-row">
+                <button class="btn-cancel" onclick="hideAdmin()">Annuler</button>
+                <button class="btn-deactivate" id="admin-deactivate" onclick="deactivateMaintenance()">
+                    Désactiver la maintenance
+                </button>
+            </div>
             <div id="admin-msg" class="msg" style="display:none;"></div>
         </div>
 
         <div class="admin-hint" id="admin-hint" onclick="revealAdmin()">
-            Administrateur ?
+            Administrateur ? Cliquez ici pour désactiver la maintenance
         </div>
     </div>
 
     <script>
-        // Countdown
+        // ─── State ───
+        let adminPanelOpen = false;
+        let refreshPaused = false;
         let seconds = 30;
+
+        // ─── Countdown (pauses when admin panel is open) ───
         const countdownEl = document.getElementById('countdown');
+        const timerEl = document.getElementById('timer-display');
         setInterval(() => {
+            if (refreshPaused) return;
             seconds--;
-            if (seconds <= 0) seconds = 30;
             countdownEl.textContent = seconds;
+            if (seconds <= 0) {
+                seconds = 30;
+                window.location.reload();
+            }
         }, 1000);
 
-        // Auto-detect app is back
+        // ─── Auto-detect if app is back (only if admin panel is NOT open) ───
+        setInterval(() => {
+            if (adminPanelOpen) return;
+            checkHealth();
+        }, 15000);
+
         async function checkHealth() {
             try {
                 const res = await fetch('/api/version', { signal: AbortSignal.timeout(5000) });
-                if (res.ok) { window.location.href = '/login'; }
-            } catch (e) {}
+                if (res.ok) {
+                    const data = await res.json();
+                    // If we got valid JSON, the app is back
+                    if (data) window.location.href = '/login';
+                }
+            } catch (e) { /* still in maintenance */ }
         }
-        setInterval(checkHealth, 15000);
 
-        // Admin bypass - click logo 5 times
-        let clickCount = 0;
-        let clickTimer = null;
-        document.getElementById('logo-click').addEventListener('click', () => {
-            clickCount++;
-            clearTimeout(clickTimer);
-            clickTimer = setTimeout(() => { clickCount = 0; }, 3000);
-            if (clickCount >= 5) {
-                document.getElementById('admin-panel').classList.add('visible');
-                document.getElementById('admin-hint').style.display = 'none';
-                clickCount = 0;
-            }
-        });
-
-        // Or click the hint text
+        // ─── Admin Panel ───
         function revealAdmin() {
+            adminPanelOpen = true;
+            refreshPaused = true;
             document.getElementById('admin-panel').classList.add('visible');
             document.getElementById('admin-hint').style.display = 'none';
+            timerEl.classList.add('paused');
+            countdownEl.textContent = '--';
+            document.getElementById('admin-email').focus();
         }
 
-        // Deactivate maintenance via API
+        function hideAdmin() {
+            adminPanelOpen = false;
+            refreshPaused = false;
+            seconds = 30;
+            document.getElementById('admin-panel').classList.remove('visible');
+            document.getElementById('admin-hint').style.display = '';
+            timerEl.classList.remove('paused');
+            document.getElementById('admin-msg').style.display = 'none';
+        }
+
+        // ─── Deactivate maintenance ───
         async function deactivateMaintenance() {
             const btn = document.getElementById('admin-deactivate');
-            const msgEl = document.getElementById('admin-msg');
-            const email = document.getElementById('admin-email').value;
+            const email = document.getElementById('admin-email').value.trim();
             const password = document.getElementById('admin-password').value;
 
             if (!email || !password) {
-                showMsg('Veuillez remplir les deux champs', 'error');
+                showMsg('Veuillez remplir les deux champs.', 'error');
                 return;
             }
 
             btn.disabled = true;
-            btn.textContent = 'Désactivation en cours...';
-            msgEl.style.display = 'none';
+            btn.textContent = 'Connexion...';
+            showMsg('Tentative de connexion...', 'info');
 
             try {
-                // 1. Login to get token
+                // Step 1: Login
                 const loginRes = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email: email, password: password })
                 });
 
+                // Check if we got HTML back (= API not proxied)
+                const contentType = loginRes.headers.get('content-type') || '';
+                if (contentType.includes('text/html')) {
+                    showMsg(
+                        'L\'API n\'est pas accessible en mode maintenance. ' +
+                        'Connectez-vous en SSH au serveur et exécutez :\n\n' +
+                        'rm -f /opt/gmao-iris/maintenance.flag\n' +
+                        'Puis restaurez la config NGINX et faites : nginx -s reload',
+                        'error'
+                    );
+                    btn.disabled = false;
+                    btn.textContent = 'Désactiver la maintenance';
+                    return;
+                }
+
                 if (!loginRes.ok) {
-                    showMsg('Identifiants incorrects', 'error');
+                    const errData = await loginRes.json().catch(() => ({}));
+                    showMsg('Identifiants incorrects : ' + (errData.detail || 'erreur ' + loginRes.status), 'error');
                     btn.disabled = false;
                     btn.textContent = 'Désactiver la maintenance';
                     return;
@@ -288,33 +271,50 @@
                 const token = loginData.access_token;
 
                 if (!token) {
-                    showMsg('Erreur: token non reçu', 'error');
+                    showMsg('Erreur : le serveur n\'a pas renvoyé de token.', 'error');
                     btn.disabled = false;
                     btn.textContent = 'Désactiver la maintenance';
                     return;
                 }
 
-                // 2. Deactivate maintenance
+                showMsg('Authentification réussie. Désactivation en cours...', 'info');
+                btn.textContent = 'Désactivation...';
+
+                // Step 2: Deactivate
                 const deactivateRes = await fetch('/api/maintenance/deactivate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + token
                     },
-                    body: '{}'
+                    body: JSON.stringify({})
                 });
 
                 if (deactivateRes.ok) {
-                    showMsg('Maintenance désactivée ! Redirection...', 'success');
-                    setTimeout(() => { window.location.href = '/login'; }, 2000);
+                    showMsg('Maintenance désactivée avec succès ! Redirection dans 3 secondes...', 'success');
+                    btn.textContent = 'Redirection...';
+                    setTimeout(() => { window.location.href = '/login'; }, 3000);
                 } else {
-                    const err = await deactivateRes.json().catch(() => ({}));
-                    showMsg(err.detail || 'Erreur lors de la désactivation', 'error');
+                    const contentType2 = deactivateRes.headers.get('content-type') || '';
+                    if (contentType2.includes('text/html')) {
+                        showMsg(
+                            'L\'API de désactivation n\'est pas accessible.\n' +
+                            'Connectez-vous en SSH : rm -f /opt/gmao-iris/maintenance.flag && nginx -s reload',
+                            'error'
+                        );
+                    } else {
+                        const err = await deactivateRes.json().catch(() => ({}));
+                        showMsg('Erreur : ' + (err.detail || 'Code ' + deactivateRes.status), 'error');
+                    }
                     btn.disabled = false;
                     btn.textContent = 'Désactiver la maintenance';
                 }
             } catch (e) {
-                showMsg('Erreur réseau: ' + e.message, 'error');
+                showMsg(
+                    'Erreur réseau : ' + e.message + '\n\n' +
+                    'Solution SSH : rm -f /opt/gmao-iris/maintenance.flag && nginx -s reload',
+                    'error'
+                );
                 btn.disabled = false;
                 btn.textContent = 'Désactiver la maintenance';
             }
@@ -325,6 +325,8 @@
             el.textContent = text;
             el.className = 'msg ' + type;
             el.style.display = 'block';
+            // Auto-scroll to message
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     </script>
 </body>
