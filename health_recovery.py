@@ -414,26 +414,23 @@ def deactivate_maintenance():
 
 def _write_maintenance_nginx_conf():
     """Ecrit la configuration NGINX pour le mode maintenance."""
-    # Chercher le fichier de config NGINX actuel
     nginx_conf_path = _find_nginx_site_conf()
     if not nginx_conf_path:
         log.warning("Config NGINX non trouvee, tentative avec config par defaut")
         return
 
+    # Resoudre le symlink pour trouver le vrai fichier
+    real_conf = os.path.realpath(nginx_conf_path)
+
     # Sauvegarder la config actuelle si pas deja fait
-    backup_path = nginx_conf_path + ".backup_pre_maintenance"
+    backup_path = real_conf + ".backup_pre_maintenance"
     if not os.path.exists(backup_path):
         try:
             import shutil
-            shutil.copy2(nginx_conf_path, backup_path)
+            shutil.copy2(real_conf, backup_path)
             log.info(f"Config NGINX sauvegardee: {backup_path}")
         except Exception as e:
             log.error(f"Impossible de sauvegarder la config NGINX: {e}")
-
-    # Determiner le chemin du frontend build et du logo
-    frontend_build = os.path.join(APP_ROOT, "frontend", "build")
-    if not os.path.exists(frontend_build):
-        frontend_build = os.path.join(APP_ROOT, "frontend", "public")
 
     maintenance_conf = f"""# FSAO Iris - MODE MAINTENANCE (genere automatiquement)
 # Ne pas modifier - sera restaure automatiquement apres la maintenance
@@ -441,14 +438,11 @@ server {{
     listen 80;
     server_name _;
 
-    # Servir le logo depuis le frontend
     location /logo-iris.png {{
         alias {APP_ROOT}/frontend/public/logo-iris.png;
         access_log off;
     }}
 
-    # TOUTES les requetes API proxifiees vers le backend
-    # (necessaire pour le bypass admin et le health check)
     location /api/ {{
         proxy_pass http://127.0.0.1:8001/api/;
         proxy_connect_timeout 5s;
@@ -457,7 +451,6 @@ server {{
         proxy_set_header X-Real-IP $remote_addr;
     }}
 
-    # Tout le reste -> page maintenance
     location / {{
         root {APP_ROOT};
         try_files /maintenance.html =503;
@@ -471,9 +464,9 @@ server {{
 }}
 """
     try:
-        with open(nginx_conf_path, "w") as f:
+        with open(real_conf, "w") as f:
             f.write(maintenance_conf)
-        log.info(f"Config NGINX maintenance ecrite: {nginx_conf_path}")
+        log.info(f"Config NGINX maintenance ecrite: {real_conf}")
     except Exception as e:
         log.error(f"Impossible d'ecrire la config NGINX maintenance: {e}")
 
@@ -484,12 +477,31 @@ def _restore_normal_nginx_conf():
     if not nginx_conf_path:
         return
 
-    backup_path = nginx_conf_path + ".backup_pre_maintenance"
-    if os.path.exists(backup_path):
+    real_conf = os.path.realpath(nginx_conf_path)
+
+    # Chercher le backup dans tous les emplacements possibles
+    backup_candidates = [
+        real_conf + ".backup_pre_maintenance",
+        nginx_conf_path + ".backup_pre_maintenance",
+    ]
+    # Chercher aussi dans sites-enabled et sites-available
+    for d in ["/etc/nginx/sites-enabled", "/etc/nginx/sites-available", "/etc/nginx/conf.d"]:
+        if os.path.isdir(d):
+            for f in os.listdir(d):
+                if f.endswith(".backup_pre_maintenance"):
+                    backup_candidates.append(os.path.join(d, f))
+
+    backup_path = None
+    for bp in backup_candidates:
+        if os.path.exists(bp):
+            backup_path = bp
+            break
+
+    if backup_path:
         try:
             import shutil
-            shutil.copy2(backup_path, nginx_conf_path)
-            log.info(f"Config NGINX restauree depuis: {backup_path}")
+            shutil.copy2(backup_path, real_conf)
+            log.info(f"Config NGINX restauree: {backup_path} -> {real_conf}")
         except Exception as e:
             log.error(f"Impossible de restaurer la config NGINX: {e}")
     else:
@@ -499,12 +511,13 @@ def _restore_normal_nginx_conf():
 def _find_nginx_site_conf():
     """Trouve le fichier de configuration NGINX du site."""
     candidates = [
-        "/etc/nginx/sites-enabled/default",
         "/etc/nginx/sites-enabled/gmao-iris",
         "/etc/nginx/sites-enabled/fsao-iris",
+        "/etc/nginx/sites-enabled/default",
+        "/etc/nginx/sites-available/gmao-iris",
         "/etc/nginx/sites-available/default",
-        "/etc/nginx/conf.d/default.conf",
         "/etc/nginx/conf.d/gmao-iris.conf",
+        "/etc/nginx/conf.d/default.conf",
     ]
     for path in candidates:
         if os.path.exists(path):

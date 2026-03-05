@@ -26,16 +26,39 @@ class MaintenanceMode:
         self.maintenance_html = self.app_root / "maintenance.html"
 
     def _find_nginx_conf(self):
-        for path in [
-            "/etc/nginx/sites-enabled/default",
+        """Trouve le fichier de config NGINX actif. Résout les symlinks."""
+        candidates = [
             "/etc/nginx/sites-enabled/gmao-iris",
             "/etc/nginx/sites-enabled/fsao-iris",
+            "/etc/nginx/sites-enabled/default",
+            "/etc/nginx/sites-available/gmao-iris",
             "/etc/nginx/sites-available/default",
-            "/etc/nginx/conf.d/default.conf",
             "/etc/nginx/conf.d/gmao-iris.conf",
-        ]:
+            "/etc/nginx/conf.d/default.conf",
+        ]
+        for path in candidates:
             if os.path.exists(path):
                 return path
+        return None
+
+    def _find_backup(self, nginx_conf):
+        """Cherche le backup de la config NGINX dans tous les emplacements possibles."""
+        # Chercher le backup au même endroit que le fichier conf
+        backup = nginx_conf + ".backup_pre_maintenance"
+        if os.path.exists(backup):
+            return backup
+        # Si le conf est un symlink, chercher aussi au chemin résolu
+        if os.path.islink(nginx_conf):
+            real_path = os.path.realpath(nginx_conf)
+            backup_real = real_path + ".backup_pre_maintenance"
+            if os.path.exists(backup_real):
+                return backup_real
+        # Chercher dans tous les emplacements possibles
+        for d in ["/etc/nginx/sites-enabled", "/etc/nginx/sites-available", "/etc/nginx/conf.d"]:
+            if os.path.isdir(d):
+                for f in os.listdir(d):
+                    if f.endswith(".backup_pre_maintenance"):
+                        return os.path.join(d, f)
         return None
 
     def activate(self):
@@ -44,11 +67,13 @@ class MaintenanceMode:
             self.maintenance_flag.touch()
             nginx_conf = self._find_nginx_conf()
             if nginx_conf:
-                backup = nginx_conf + ".backup_pre_maintenance"
+                # Résoudre le symlink pour écrire dans le vrai fichier
+                real_conf = os.path.realpath(nginx_conf)
+                backup = real_conf + ".backup_pre_maintenance"
                 if not os.path.exists(backup):
-                    shutil.copy2(nginx_conf, backup)
+                    shutil.copy2(real_conf, backup)
                     logger.info(f"[Maintenance] Config NGINX sauvegardée: {backup}")
-                # Écrire la config maintenance
+                # Écrire la config maintenance dans le fichier réel
                 maint_conf = f"""# FSAO Iris - MODE MAINTENANCE
 server {{
     listen 80;
@@ -75,7 +100,7 @@ server {{
     }}
 }}
 """
-                with open(nginx_conf, "w") as f:
+                with open(real_conf, "w") as f:
                     f.write(maint_conf)
                 # Recharger NGINX
                 subprocess.run(["nginx", "-t"], capture_output=True, timeout=10)
@@ -99,10 +124,13 @@ server {{
                 self.maintenance_flag.unlink()
             nginx_conf = self._find_nginx_conf()
             if nginx_conf:
-                backup = nginx_conf + ".backup_pre_maintenance"
-                if os.path.exists(backup):
-                    shutil.copy2(backup, nginx_conf)
-                    logger.info(f"[Maintenance] Config NGINX restaurée depuis: {backup}")
+                real_conf = os.path.realpath(nginx_conf)
+                backup = self._find_backup(nginx_conf)
+                if backup:
+                    shutil.copy2(backup, real_conf)
+                    logger.info(f"[Maintenance] Config NGINX restaurée: {backup} -> {real_conf}")
+                else:
+                    logger.warning("[Maintenance] Aucun backup trouvé pour restaurer NGINX")
                 for cmd in [["nginx", "-s", "reload"], ["systemctl", "reload", "nginx"]]:
                     try:
                         r = subprocess.run(cmd, capture_output=True, timeout=10)
@@ -1012,14 +1040,15 @@ sudo service nginx reload 2>/dev/null || true
 # Désactiver la page de maintenance
 MFLAG="{str(self.app_root / 'maintenance.flag')}"
 NGINX_BACKUP=""
-for conf in /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/gmao-iris /etc/nginx/conf.d/default.conf; do
+for conf in /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/gmao-iris /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/gmao-iris.conf; do
     if [ -f "$conf.backup_pre_maintenance" ]; then
-        cp "$conf.backup_pre_maintenance" "$conf"
-        NGINX_BACKUP="$conf"
+        REAL_CONF=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
+        cp "$conf.backup_pre_maintenance" "$REAL_CONF"
+        NGINX_BACKUP="$REAL_CONF"
         break
     fi
 done
-[ -n "$NGINX_BACKUP" ] && (nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || true)
+[ -n "$NGINX_BACKUP" ] && (nginx -t 2>/dev/null && nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || true)
 rm -f "$MFLAG"
 echo "Page de maintenance désactivée"
 
