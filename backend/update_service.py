@@ -16,6 +16,106 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+
+class MaintenanceMode:
+    """Gestionnaire du mode maintenance NGINX pour les mises à jour."""
+
+    def __init__(self, app_root):
+        self.app_root = Path(app_root)
+        self.maintenance_flag = self.app_root / "maintenance.flag"
+        self.maintenance_html = self.app_root / "maintenance.html"
+
+    def _find_nginx_conf(self):
+        for path in [
+            "/etc/nginx/sites-enabled/default",
+            "/etc/nginx/sites-enabled/gmao-iris",
+            "/etc/nginx/sites-enabled/fsao-iris",
+            "/etc/nginx/sites-available/default",
+            "/etc/nginx/conf.d/default.conf",
+            "/etc/nginx/conf.d/gmao-iris.conf",
+        ]:
+            if os.path.exists(path):
+                return path
+        return None
+
+    def activate(self):
+        """Active la page de maintenance."""
+        try:
+            self.maintenance_flag.touch()
+            nginx_conf = self._find_nginx_conf()
+            if nginx_conf:
+                backup = nginx_conf + ".backup_pre_maintenance"
+                if not os.path.exists(backup):
+                    shutil.copy2(nginx_conf, backup)
+                    logger.info(f"[Maintenance] Config NGINX sauvegardée: {backup}")
+                # Écrire la config maintenance
+                maint_conf = f"""# FSAO Iris - MODE MAINTENANCE
+server {{
+    listen 80;
+    server_name _;
+    location /logo-iris.png {{
+        alias {self.app_root}/frontend/public/logo-iris.png;
+        access_log off;
+    }}
+    location /api/version {{
+        proxy_pass http://127.0.0.1:8001/api/version;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 5s;
+        error_page 502 503 504 = @maintenance;
+    }}
+    location / {{
+        root {self.app_root};
+        try_files /maintenance.html =503;
+    }}
+    error_page 503 @maintenance;
+    location @maintenance {{
+        root {self.app_root};
+        rewrite ^(.*)$ /maintenance.html break;
+    }}
+}}
+"""
+                with open(nginx_conf, "w") as f:
+                    f.write(maint_conf)
+                # Recharger NGINX
+                subprocess.run(["nginx", "-t"], capture_output=True, timeout=10)
+                for cmd in [["nginx", "-s", "reload"], ["systemctl", "reload", "nginx"]]:
+                    try:
+                        r = subprocess.run(cmd, capture_output=True, timeout=10)
+                        if r.returncode == 0:
+                            break
+                    except Exception:
+                        continue
+                logger.info("[Maintenance] Page de maintenance ACTIVÉE")
+            return True
+        except Exception as e:
+            logger.error(f"[Maintenance] Erreur activation: {e}")
+            return False
+
+    def deactivate(self):
+        """Désactive la page de maintenance et restaure NGINX."""
+        try:
+            if self.maintenance_flag.exists():
+                self.maintenance_flag.unlink()
+            nginx_conf = self._find_nginx_conf()
+            if nginx_conf:
+                backup = nginx_conf + ".backup_pre_maintenance"
+                if os.path.exists(backup):
+                    shutil.copy2(backup, nginx_conf)
+                    logger.info(f"[Maintenance] Config NGINX restaurée depuis: {backup}")
+                for cmd in [["nginx", "-s", "reload"], ["systemctl", "reload", "nginx"]]:
+                    try:
+                        r = subprocess.run(cmd, capture_output=True, timeout=10)
+                        if r.returncode == 0:
+                            break
+                    except Exception:
+                        continue
+                logger.info("[Maintenance] Page de maintenance DÉSACTIVÉE")
+            return True
+        except Exception as e:
+            logger.error(f"[Maintenance] Erreur désactivation: {e}")
+            return False
+
+
 class UpdateService:
     def __init__(self, db):
         self.db = db
@@ -26,12 +126,12 @@ class UpdateService:
         
         # Détection automatique du répertoire racine
         self.backend_dir = Path(__file__).parent.resolve()
-        # Le répertoire racine est le parent du backend
         self.app_root = self.backend_dir.parent
-        # Déduire le répertoire frontend
         self.frontend_dir = self.app_root / "frontend"
-        # Répertoire pour les backups
         self.backup_dir = self.app_root / "backups"
+        
+        # Gestionnaire de maintenance
+        self.maintenance = MaintenanceMode(self.app_root)
         
         logger.info(f"📂 Chemins détectés automatiquement:")
         logger.info(f"   - App root: {self.app_root}")
@@ -554,6 +654,15 @@ class UpdateService:
             logger.info(f"🚀 Début de l'application de la mise à jour vers {version}")
             self._log_step(update_history, "DÉBUT", f"Mise à jour {self.current_version} → {version}", status="success")
             
+            # 0. Activer la page de maintenance
+            logger.info("🔧 Étape 0: Activation de la page de maintenance...")
+            maintenance_activated = self.maintenance.activate()
+            self._log_step(
+                update_history, "0/7 - Page de maintenance",
+                "Activation page maintenance NGINX",
+                status="success" if maintenance_activated else "warning"
+            )
+            
             # 1. Créer un backup de la base de données
             logger.info("📦 Étape 1/5: Création du backup de la base de données...")
             backup_path = self.backup_dir / f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -898,6 +1007,20 @@ nginx -s reload 2>/dev/null || \\
 sudo nginx -s reload 2>/dev/null || \\
 sudo systemctl reload nginx 2>/dev/null || \\
 sudo service nginx reload 2>/dev/null || true
+
+# Désactiver la page de maintenance
+MFLAG="{str(self.app_root / 'maintenance.flag')}"
+NGINX_BACKUP=""
+for conf in /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/gmao-iris /etc/nginx/conf.d/default.conf; do
+    if [ -f "$conf.backup_pre_maintenance" ]; then
+        cp "$conf.backup_pre_maintenance" "$conf"
+        NGINX_BACKUP="$conf"
+        break
+    fi
+done
+[ -n "$NGINX_BACKUP" ] && (nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || true)
+rm -f "$MFLAG"
+echo "Page de maintenance désactivée"
 
 rm -f {restart_script.name}
 """)

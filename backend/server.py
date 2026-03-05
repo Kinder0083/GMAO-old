@@ -9307,7 +9307,7 @@ async def add_time_to_improvement(imp_id: str, time_data: AddTimeSpent, current_
 
 
 # ==================== UPDATE MANAGEMENT ENDPOINTS ====================
-from update_service import UpdateService
+from update_service import UpdateService, MaintenanceMode
 
 # Initialiser le service de mise à jour
 update_service = UpdateService(db)
@@ -9503,6 +9503,61 @@ async def apply_update(
             
     except Exception as e:
         logger.error(f"❌ Erreur application mise à jour: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/maintenance/activate")
+async def activate_maintenance_mode(current_user: dict = Depends(get_current_admin_user)):
+    """Active la page de maintenance NGINX (Admin uniquement)."""
+    try:
+        maintenance = MaintenanceMode(Path(update_service.app_root))
+        success = maintenance.activate()
+        if success:
+            return {"status": "ok", "message": "Page de maintenance activée", "maintenance_active": True}
+        raise HTTPException(status_code=500, detail="Échec de l'activation de la maintenance")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/maintenance/deactivate")
+async def deactivate_maintenance_mode(current_user: dict = Depends(get_current_admin_user)):
+    """Désactive la page de maintenance NGINX (Admin uniquement)."""
+    try:
+        maintenance = MaintenanceMode(Path(update_service.app_root))
+        success = maintenance.deactivate()
+        if success:
+            return {"status": "ok", "message": "Page de maintenance désactivée", "maintenance_active": False}
+        raise HTTPException(status_code=500, detail="Échec de la désactivation de la maintenance")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/maintenance/status")
+async def get_maintenance_status(current_user: dict = Depends(get_current_admin_user)):
+    """Vérifie si la page de maintenance est active (Admin uniquement)."""
+    try:
+        flag_path = Path(update_service.app_root) / "maintenance.flag"
+        state_path = Path(update_service.app_root) / "health_state.json"
+        result = {
+            "maintenance_active": flag_path.exists(),
+        }
+        if state_path.exists():
+            import json as json_mod
+            with open(state_path) as f:
+                health_state = json_mod.load(f)
+            result["health_state"] = {
+                "consecutive_failures": health_state.get("consecutive_failures", 0),
+                "last_check": health_state.get("last_check"),
+                "last_success": health_state.get("last_success"),
+                "last_recovery_level": health_state.get("last_recovery_level", 0),
+                "total_recoveries": health_state.get("total_recoveries", 0),
+            }
+        return result
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/updates/recent-info")
