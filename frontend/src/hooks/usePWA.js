@@ -24,6 +24,15 @@ export function usePushNotifications() {
     setIsSupported(supported);
     if (supported && 'Notification' in window) {
       setPermission(Notification.permission);
+      // Vérifier si un abonnement push existe déjà
+      navigator.serviceWorker.ready.then(registration => {
+        registration.pushManager.getSubscription().then(subscription => {
+          if (subscription) {
+            subscribedRef.current = true;
+            setIsSubscribed(true);
+          }
+        }).catch(() => {});
+      }).catch(() => {});
     }
   }, []);
 
