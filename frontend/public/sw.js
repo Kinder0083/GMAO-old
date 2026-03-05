@@ -1,138 +1,148 @@
-const CACHE_NAME = 'fsao-iris-v2';
+const CACHE_NAME = 'fsao-iris-v3';
 const OFFLINE_URL = '/offline.html';
 
-// Fichiers a mettre en cache pour le mode hors-ligne
+// Ne PAS mettre index.html en precache - il doit TOUJOURS venir du reseau
 const PRECACHE_URLS = [
-  '/',
   '/offline.html',
   '/logo-iris.png'
 ];
 
-// Installation : pre-cache des fichiers essentiels
+// Installation : pre-cache des fichiers essentiels (sauf index.html)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_URLS);
     })
   );
-  // Forcer l'activation immediate (ne pas attendre la fermeture des onglets)
   self.skipWaiting();
 });
 
-// Activation : nettoyage des anciens caches et rechargement des clients
+// Activation : nettoyage de TOUS les anciens caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      const oldCaches = cacheNames.filter((name) => name !== CACHE_NAME);
       return Promise.all(
-        oldCaches.map((name) => caches.delete(name))
-      ).then(() => {
-        // Si des anciens caches ont ete supprimes, c'est qu'il y a eu une mise a jour
-        if (oldCaches.length > 0) {
-          // Notifier TOUS les clients de se recharger
-          return self.clients.matchAll({ type: 'window' }).then((clients) => {
-            clients.forEach((client) => {
-              client.postMessage({ type: 'FORCE_RELOAD', reason: 'update' });
-            });
-          });
-        }
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    }).then(() => {
+      // Notifier tous les clients de recharger
+      return self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'FORCE_RELOAD', reason: 'update' });
+        });
       });
     })
   );
   self.clients.claim();
 });
 
-// Message : repondre aux demandes de nettoyage de cache
+// Message handler
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'CLEAR_CACHE') {
     event.waitUntil(
       caches.keys().then((cacheNames) => {
         return Promise.all(cacheNames.map((name) => caches.delete(name)));
       }).then(() => {
-        // Confirmer le nettoyage
         if (event.source) {
           event.source.postMessage({ type: 'CACHE_CLEARED' });
         }
       })
     );
   }
+  // Forcer la mise a jour du service worker
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
-// Fetch : network-first, fallback vers cache ou page offline
+// Fetch : strategie differente selon le type de requete
 self.addEventListener('fetch', (event) => {
   // Ignorer les requetes non-GET et les appels API
   if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
     return;
   }
 
-  // Pour index.html et les navigations : TOUJOURS aller au reseau d'abord
-  // et ne PAS mettre en cache (pour eviter de servir une version perimee)
+  // NAVIGATION (index.html) : TOUJOURS reseau d'abord, JAMAIS mettre en cache
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(OFFLINE_URL) || caches.match('/');
-      })
+      fetch(event.request, { cache: 'no-store' })
+        .catch(() => {
+          return caches.match(OFFLINE_URL) || new Response('Hors-ligne', { status: 503 });
+        })
     );
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Mettre en cache la reponse reussie (sauf index.html)
-        if (response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Hors-ligne : essayer le cache, sinon page offline
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          if (event.request.mode === 'navigate') {
-            return caches.match(OFFLINE_URL);
-          }
-          return new Response('', { status: 503, statusText: 'Offline' });
-        });
-      })
-  );
-});
-
-// Push : reception d'une notification push
-self.addEventListener('push', (event) => {
-  let data = {};
-  try {
-    data = event.data ? event.data.json() : {};
-  } catch (e) {
-    data = { title: 'FSAO Iris', body: event.data ? event.data.text() : 'Nouvelle notification' };
+  // sw.js et index.html : toujours reseau
+  const url = new URL(event.request.url);
+  if (url.pathname === '/sw.js' || url.pathname === '/index.html' || url.pathname === '/') {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
   }
 
-  const title = data.title || 'FSAO Iris';
-  const options = {
-    body: data.body || '',
-    icon: '/logo-iris.png',
-    badge: '/logo-iris.png',
-    tag: data.tag || 'fsao-notification',
-    data: data.data || {},
-    vibrate: [200, 100, 200],
-    requireInteraction: data.requireInteraction || false,
-    actions: data.actions || []
-  };
+  // Fichiers statiques AVEC hash (main.abc123.js) : cache-first (le hash change a chaque build)
+  // Fichiers SANS hash : network-first
+  const hasHash = /\.[a-f0-9]{8,}\./i.test(url.pathname);
 
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
+  if (hasHash) {
+    // Cache-first pour les fichiers hashes (ils sont immutables)
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      }).catch(() => new Response('', { status: 503 }))
+    );
+  } else {
+    // Network-first pour les fichiers sans hash
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request)
+            .then((cached) => cached || new Response('', { status: 503 }));
+        })
+    );
+  }
 });
 
-// Notification click : navigation vers la bonne page
+// Push notifications
+self.addEventListener('push', (event) => {
+  let data = { title: 'FSAO Iris', body: 'Nouvelle notification', type: 'general' };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch (e) {
+    if (event.data) data.body = event.data.text();
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/logo-iris.png',
+    badge: '/logo-iris.png',
+    vibrate: [100, 50, 100],
+    data: { type: data.type, url: data.url },
+    actions: [{ action: 'open', title: 'Ouvrir' }]
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+// Notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
   const data = event.notification.data || {};
   let targetUrl = '/';
 
@@ -148,13 +158,12 @@ self.addEventListener('notificationclick', (event) => {
       targetUrl = '/chat';
       break;
     default:
-      targetUrl = '/';
+      targetUrl = data.url || '/';
   }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Si une fenetre est deja ouverte, la focus et naviguer
         for (const client of clientList) {
           if ('focus' in client) {
             client.focus();
@@ -162,7 +171,6 @@ self.addEventListener('notificationclick', (event) => {
             return;
           }
         }
-        // Sinon ouvrir une nouvelle fenetre
         return self.clients.openWindow(targetUrl);
       })
   );
