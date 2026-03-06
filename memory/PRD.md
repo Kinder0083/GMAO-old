@@ -6,7 +6,7 @@ Application GMAO complete pour la gestion de maintenance industrielle. Interface
 ## Architecture
 - **Frontend**: React 19 + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI (Python) + MongoDB
-- **Temps reel**: WebSocket + realtime_manager (rooms par entite)
+- **Temps reel**: WebSocket + realtime_manager
 - **Deploiement**: Proxmox LXC (Debian 12) + Tailscale Funnel
 
 ## Fonctionnalites implementees
@@ -15,46 +15,42 @@ Application GMAO complete pour la gestion de maintenance industrielle. Interface
 - Ordres de travail, Demandes, Ameliorations, Maintenance preventive
 - Equipements, Inventaire, Zones, Compteurs, Dashboard, Rapports
 
-### Systeme LOTO (Lockout/Tagout) (Mars 2026)
-- Gestion des consignations LOTO avec workflow 4 etapes
-- Signatures electroniques, integration visuelle Header/OT/MP
-- Icone cadenas dans le header avec badges par statut (rouge=actif, jaune=demande, vert=deconsigne)
-- Menu deroulant avec navigation filtree (ACTIVE=CONSIGNE+INTERVENTION, DEMANDE, DECONSIGNE)
-- Emission WebSocket (realtime_manager) apres chaque operation CRUD/workflow
-- Polling fallback 60s pour la mise a jour des compteurs
+### Systeme LOTO (Mars 2026)
+- Workflow 4 etapes, signatures electroniques
+- Icone cadenas sans texte + menu deroulant avec navigation filtree
+- WebSocket via realtime_manager pour mise a jour temps reel
 
-### QR Code + IA Ameliore (Mars 2026)
-- Endpoint `/api/qr/public/equipment/{id}/ai-summary`
-- Resume IA genere par LLM configurable (Gemini/OpenAI/Claude)
-- Section "Analyse IA" sur la page QR publique
+### QR Code + IA (Mars 2026)
+- Resume IA par equipement via scan QR public
+- Modele IA configurable (Gemini/OpenAI/Claude) dans Personnalisation > IA
 
-### Choix du modele IA pour QR (Mars 2026)
-- 3 fournisseurs : Google Gemini, OpenAI GPT, Anthropic Claude
-- Configurable dans Personnalisation > IA (parametre systeme global)
-
-### Mode Hors-ligne Ameliore (Mars 2026)
-- Indicateur "En ligne"/"Hors ligne" positionne a cote de l'horloge
-- Cache IndexedDB automatique des reponses API GET
-- File d'attente de synchronisation pour mutations hors-ligne
+### Mode Hors-ligne (Mars 2026)
+- Indicateur En ligne/Hors ligne a cote de l'horloge
+- Cache IndexedDB + file de synchronisation mutations
 
 ### Correction systeme de mise a jour (Mars 2026)
-- version.json conditionnel (non modifie si git echoue)
-- Endpoint /api/updates/last-result pour verification post-MAJ
-- Script de redemarrage avec auto-detection des services
-- Detection de version robuste (fallback version.json)
+- version.json conditionnel, endpoint last-result, script restart intelligent
+
+### Organisation du Header (Mars 2026)
+- **Nouvel onglet** "Organisation du Header" dans Personnalisation (8 onglets total)
+- **19 icones configurables** : Manuel, Adria, Aide, Horloge, Statut en ligne, Sauvegarde, Cameras, M.E.S., Chat Live, Echeances, Mise a jour, Surveillance, Inventaire, MQTT, LOTO, Notifications, Quoi de neuf, Cloche, Profil
+- **Reorganisation** : Fleches haut/bas + drag-and-drop
+- **Persistance par utilisateur** : Stocke dans `user_preferences.header_icon_order`
+- **Header dynamique** : `renderIcon()` + `iconOrder` depuis preferences, zones gauche/droite respectees
+- **Profil toujours en dernier** : Exclu de la reorganisation
+- **Reinitialisation** : Bouton pour remettre l'ordre par defaut
+- **Fichiers** : `HeaderOrganizationSection.jsx`, `Header.jsx` (refactored), `Personnalisation.jsx`, `models.py`
 
 ## Fichiers cles
-- `backend/server.py` - API endpoints principal
-- `backend/loto_routes.py` - Routes LOTO + WebSocket emit
-- `backend/update_service.py` - Service MAJ robuste
-- `backend/qr_routes.py` - Routes QR + resume IA + ai-settings
-- `frontend/src/components/Layout/Header.jsx` - Header (OfflineIndicator + horloge)
-- `frontend/src/components/Common/LOTOHeaderIcon.jsx` - Cadenas + menu
-- `frontend/src/pages/ConsignationsLOTO.jsx` - Page LOTO avec filtre ACTIVE
-- `frontend/src/pages/QREquipmentPage.jsx` - Page QR publique + IA
-- `frontend/src/components/Personnalisation/AISection.jsx` - Parametres IA
-- `frontend/src/services/offlineDb.js` - IndexedDB
-- `frontend/src/hooks/useOnlineStatus.js` - Hook statut reseau
+- `frontend/src/components/Layout/Header.jsx` - Header dynamique avec renderIcon()
+- `frontend/src/components/Personnalisation/HeaderOrganizationSection.jsx` - Config header (HEADER_ICONS_REGISTRY)
+- `frontend/src/pages/Personnalisation.jsx` - 8 onglets dont Organisation du Header
+- `frontend/src/components/Common/LOTOHeaderIcon.jsx` - Cadenas + menu + WebSocket
+- `frontend/src/components/Common/OfflineIndicator.jsx` - Statut connexion
+- `backend/models.py` - header_icon_order dans UserPreferences*
+- `backend/server.py` - default_prefs avec header_icon_order
+- `backend/loto_routes.py` - LOTO CRUD + emit WebSocket
+- `backend/update_service.py` - MAJ robuste
 
 ## Backlog
 - Stabilisation continue selon retours utilisateur
