@@ -1,93 +1,85 @@
 # FSAO Iris - Product Requirements Document
 
 ## Description
-Application GMAO complète pour la gestion de maintenance industrielle. Interface en français. Déployée sur Proxmox LXC.
+Application GMAO complete pour la gestion de maintenance industrielle. Interface en francais. Deployee sur Proxmox LXC.
 
 ## Architecture
 - **Frontend**: React 19 + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI (Python) + MongoDB
-- **Temps réel**: WebSocket (Chat Live, Whiteboard, SSH Terminal)
+- **Temps reel**: WebSocket (Chat Live, Whiteboard, SSH Terminal)
 - **SSH Terminal**: xterm.js + WebSocket + PTY + Macros
-- **Déploiement**: Proxmox LXC (Debian 12) + Tailscale Funnel
+- **Deploiement**: Proxmox LXC (Debian 12) + Tailscale Funnel
 
-## Fonctionnalités implémentées
+## Fonctionnalites implementees
 
 ### Core GMAO
-- Ordres de travail, Demandes, Améliorations, Maintenance préventive
-- Équipements, Inventaire, Zones, Compteurs, Dashboard, Rapports
+- Ordres de travail, Demandes, Ameliorations, Maintenance preventive
+- Equipements, Inventaire, Zones, Compteurs, Dashboard, Rapports
 
 ### Terminal SSH + Macros (Mars 2026)
 - Console interactive xterm.js + WebSocket + PTY
-- Macros SSH : CRUD complet, exécution séquentielle
-- Menu contextuel IA désactivé sur page SSH
+- Macros SSH : CRUD complet, execution sequentielle
+- Menu contextuel IA desactive sur page SSH
 
-### Système de résilience (Mars 2026)
-- **Page de maintenance HTML** avec auto-refresh + bypass admin (logo 5x ou lien "Administrateur?")
-- **Health Check automatique** (cron 5 min)
-- **Récupération 4 niveaux** : SOFT → ROLLBACK → MEDIUM → HARD
-- **Confirmation renforcée** : taper "MAINTENANCE" pour activer
-- **API** : `/api/maintenance/activate`, `/deactivate`, `/status`
+### Systeme de resilience (Mars 2026)
+- Page de maintenance HTML avec auto-refresh + bypass admin
+- Health Check automatique (cron 5 min)
+- Recuperation 4 niveaux : SOFT > ROLLBACK > MEDIUM > HARD
+- Confirmation renforcee : taper "MAINTENANCE" pour activer
 
-### Panneau Santé du Système (Mars 2026)
-- Page admin `/system-health` sous "Paramètres Spéciaux" dans la sidebar
-- 4 cartes santé temps réel : Backend API, MongoDB, Disque, Mémoire
-- État du Health Check + actions manuelles + historique récupérations
+### Panneau Sante du Systeme (Mars 2026)
+- Page admin /system-health sous "Parametres Speciaux"
+- 4 cartes sante temps reel : Backend API, MongoDB, Disque, Memoire
 
 ### Alertes Email (Mars 2026)
-- **6 types d'alertes** : Application en panne, Récupération réussie/échouée, Disque plein, Mémoire critique, Maintenance changée
-- **Seuils configurables** : Disque (%), Mémoire (%), Échecs consécutifs
-- **Fréquence** : 1 envoi max par type par 24h (cooldown)
-- **Destinataires multiples** avec ajout/suppression
-- **Bouton test** pour vérifier la configuration
-- **Intégration SMTP existant** de "Paramètres Spéciaux"
-- **API** : GET/PUT `/api/health/alerts-config`, POST `/api/health/alerts-test`, GET `/api/health/alerts-history`
+- 6 types d'alertes configurables avec seuils et cooldown
 
-### Améliorations LOTO v2 (Mars 2026)
-- **Formulaire création** : Dropdown dynamique OT/MP/Améliorations, auto-remplissage équipement/motif/durée
-- **Header** : Icône cadenas avec badges rouge/jaune/vert et menu dropdown avec navigation filtrée
-- **Tables OT/MP/Améliorations** : Badge cadenas coloré avec tooltip (rouge=consigné, jaune=demande, vert=déconsigné)
-- **Équipements/Planning** : Badge "CONSIGNÉ" uniquement pour le statut rouge
-- **Fichiers** : `LOTOHeaderIcon.jsx`, `LOTOBadge.jsx`, modifications WorkOrders/PreventiveMaintenance/ImprovementRequests/PlanningMPrev
-
-### Système LOTO (Lockout/Tagout) - Consignations de sécurité (Mars 2026)
-- **Fonctionnalité complète** : Gestion des consignations LOTO avec workflow 4 étapes (Demande → Consigné → Intervention → Déconsigné)
-- **Système de cadenas** : Pose/retrait par chaque intervenant, blocage de la déconsignation tant que des cadenas sont actifs
-- **Points d'isolation** : Définition et vérification obligatoire avant consignation (énergie zéro)
-- **Signatures électroniques** : Double mode (dessin tactile + code PIN)
-- **Liens** : Liaison avec OT, maintenances préventives et améliorations
-- **Traçabilité** : Historique complet avec horodatage de chaque action
-- **Fichiers** : `loto_routes.py`, `ConsignationsLOTO.jsx`, `SignaturePad.jsx`
+### Systeme LOTO (Lockout/Tagout) - Consignations de securite (Mars 2026)
+- Gestion des consignations LOTO avec workflow 4 etapes
+- Systeme de cadenas, Points d'isolation, Signatures electroniques
+- Integration visuelle dans Header, OT, MP, Ameliorations
 
 ### Correction cache navigateur persistant (Mars 2026)
-- **Bug** : Après chaque mise à jour ou connexion, l'utilisateur devait faire Ctrl+Maj+F5 pour voir le nouveau dashboard
-- **Cause racine** : Le Service Worker interceptait TOUTES les requêtes fetch et servait les fichiers depuis son propre cache (API Cache), même si NGINX envoyait les bons headers no-cache
-- **Solution** : 
-  1. `sw.js` simplifié : ne gère plus QUE les notifications push (zéro cache)
-  2. `App.js` : détecte automatiquement les mises à jour du SW et force le rechargement
-  3. `update_service.py` : change le timestamp du SW à chaque build pour forcer la détection
-- **Fichiers modifiés** : `sw.js`, `App.js`, `update_service.py`
+- Middleware anti-cache backend + intercepteur frontend
+- SW simplifie pour notifications push uniquement
 
 ### Correction PWA/Notifications persistantes (Mars 2026)
-- **Bug corrigé** : Les bannières d'installation PWA et de notifications apparaissaient à chaque connexion
-- **Solution** : Persistance du choix utilisateur dans localStorage (clés `pwa_install_dismissed_at`, `pwa_notif_dismissed_at`) avec expiration de 30 jours
-- **Vérification abonnement existant** : `usePWA.js` vérifie maintenant `pushManager.getSubscription()` au chargement pour détecter les abonnements push existants
-- **Fichiers modifiés** : `PWABanner.jsx`, `usePWA.js`
+- Persistance choix utilisateur dans localStorage
 
-### Documentation PDF (Mars 2026)
-- 3 présentations PDF + PDF README (28 pages)
+### QR Code + IA Ameliore (Mars 2026)
+- **Endpoint IA** : `/api/qr/public/equipment/{id}/ai-summary` genere un resume IA complet
+- **Donnees analysees** : Fiche equipement, historique OT (20 derniers), KPI, maintenances preventives, consignations LOTO actives
+- **LLM** : Gemini 2.5 Flash via emergentintegrations (cle Emergent)
+- **Frontend** : Section "Analyse IA" sur la page QR avec loading, KPI chips, texte formate, bouton Actualiser
+- **Public** : Accessible sans authentification via scan QR code
+- **Fichiers** : `qr_routes.py` (endpoint), `QREquipmentPage.jsx` (UI)
 
-## Fichiers clés
-- `frontend/src/pages/SystemHealth.jsx` - Panneau santé + alertes
-- `backend/health_alert_service.py` - Service d'envoi d'alertes email
-- `backend/server.py` - API endpoints
-- `health_recovery.py` - Script 4 niveaux + envoi alertes
-- `maintenance.html` - Page maintenance + bypass admin
-- `setup_health_check.sh` - Installation cron
+### Mode Hors-ligne Ameliore (Mars 2026)
+- **Indicateur visuel** : Badge "En ligne" (vert) / "Hors ligne" (rouge clignotant) dans le header
+- **Cache IndexedDB** : Reponses API GET mises en cache automatiquement (excl. auth/chat/IA)
+- **File d'attente** : Mutations POST/PUT/DELETE queued quand hors-ligne, synchronisees au retour
+- **Synchronisation auto** : Service `offlineSync.js` ecoute l'evenement 'online' et rejoue les mutations
+- **Compteur** : Badge ambre avec nombre de mutations en attente de synchronisation
+- **Nettoyage** : Cache automatiquement purge apres 24h
+- **Fichiers** : `useOnlineStatus.js`, `offlineDb.js`, `offlineSync.js`, `OfflineIndicator.jsx`, `api.js` (intercepteurs)
+
+## Fichiers cles
+- `backend/server.py` - API endpoints principal
+- `backend/qr_routes.py` - Routes QR codes + resume IA
+- `backend/loto_routes.py` - Routes LOTO
+- `frontend/src/pages/QREquipmentPage.jsx` - Page QR avec IA
+- `frontend/src/components/Common/OfflineIndicator.jsx` - Indicateur connexion
+- `frontend/src/services/offlineDb.js` - IndexedDB pour cache offline
+- `frontend/src/services/offlineSync.js` - Synchronisation offline
+- `frontend/src/services/api.js` - Axios avec cache offline
 
 ## Collections MongoDB
-- `health_alerts_config` - Configuration des alertes (enabled, recipients, alerts, cooldown)
-- `ssh_macros` - Macros SSH
+- `health_alerts_config` - Configuration des alertes
+- `loto_procedures` - Consignations LOTO
+- `qr_actions_config` - Configuration actions QR
+- `user_preferences` - Preferences utilisateur (choix modele IA)
 
 ## Backlog
 - Stabilisation continue selon retours utilisateur
-- Améliorations application mobile native (Expo)
+- Ameliorations application mobile native (Expo)
+- Choix du modele IA configurable dans les parametres pour les resumes QR
