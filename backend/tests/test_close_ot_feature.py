@@ -12,7 +12,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://ssh-macros-health.preview.emergentagent.com"
+    BASE_URL = "https://loto-lockout.preview.emergentagent.com"
 
 # Test credentials
 TEST_EMAIL = "admin@test.com"
