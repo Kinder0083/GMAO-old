@@ -11,13 +11,16 @@ const api = axios.create({
   }
 });
 
-// Intercepteur pour ajouter le token JWT
+// Intercepteur pour ajouter le token JWT et empêcher le cache navigateur
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Anti-cache : forcer le navigateur à ne jamais utiliser de réponse en cache
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
     return config;
   },
   (error) => Promise.reject(error)

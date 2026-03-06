@@ -120,6 +120,12 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   // Register Service Worker for PWA (notifications push uniquement)
   useEffect(() => {
+    // Nettoyage complet de tous les anciens caches (SW ou autre)
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => caches.delete(name));
+      });
+    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').then((registration) => {
         // Vérifier les mises à jour du SW toutes les 60 secondes
