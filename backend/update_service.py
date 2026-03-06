@@ -919,6 +919,17 @@ class UpdateService:
                 if not success:
                     update_history["warnings"].append(f"yarn install échoué: {stderr[:200]}")
                 
+                # Vérification des dépendances critiques (ex: @babel/runtime)
+                babel_runtime = self.frontend_dir / "node_modules" / "@babel" / "runtime" / "helpers" / "esm"
+                if not babel_runtime.exists():
+                    self._log_step(update_history, "4/6 - Vérif dépendance @babel/runtime",
+                                  "Manquante - installation corrective...", status="warning")
+                    await self._run_command(
+                        update_history, "4/6 - Fix @babel/runtime",
+                        ["yarn", "add", "@babel/runtime"],
+                        cwd=str(self.frontend_dir), env=build_env, timeout=120
+                    )
+                
                 # Mettre a jour le timestamp du Service Worker pour forcer le navigateur à détecter un changement
                 sw_path = self.frontend_dir / "public" / "sw.js"
                 if sw_path.exists():
@@ -947,19 +958,89 @@ class UpdateService:
                 )
                 
                 if not success:
-                    update_history["errors"].append(f"yarn build échoué: {stderr[:300]}")
-                    # Restaurer le backup du build
-                    if build_backup.exists():
-                        try:
-                            if build_dir.exists():
-                                shutil.rmtree(str(build_dir))
-                            shutil.copytree(str(build_backup), str(build_dir))
-                            self._log_step(update_history, "4/6 - Restauration build frontend",
-                                          "cp -r build_backup/ build/", status="warning")
-                        except Exception as e:
-                            self._log_step(update_history, "4/6 - Restauration build frontend",
-                                          "cp -r build_backup/ build/",
-                                          stderr=str(e), status="error")
+                    # Analyser l'erreur pour identifier la cause
+                    build_error_msg = stderr[:500] if stderr else ""
+                    error_cause = "Erreur de compilation inconnue"
+                    error_fix = ""
+                    
+                    if "falls outside of the project src/" in build_error_msg or "@babel/runtime" in build_error_msg:
+                        error_cause = "Conflit de dépendances (@babel/runtime ou similaire)"
+                    elif "Module not found" in build_error_msg:
+                        error_cause = "Module manquant dans les dépendances"
+                    elif "out of memory" in build_error_msg.lower() or "heap" in build_error_msg.lower():
+                        error_cause = "Mémoire insuffisante pour la compilation"
+                    
+                    self._log_step(update_history, "4/6 - Diagnostic erreur build",
+                                  f"Cause: {error_cause}", status="warning")
+                    
+                    # Tentative de réparation automatique (sauf problème mémoire)
+                    if "mémoire" not in error_cause.lower():
+                        self._log_step(update_history, "4/6 - Réparation automatique",
+                                      "rm -rf node_modules && yarn install && yarn build", status="info")
+                        
+                        # Nettoyer node_modules
+                        node_modules = self.frontend_dir / "node_modules"
+                        if node_modules.exists():
+                            try:
+                                shutil.rmtree(str(node_modules))
+                            except Exception:
+                                await self._run_command(
+                                    update_history, "4/6 - Nettoyage node_modules",
+                                    ["rm", "-rf", str(node_modules)],
+                                    timeout=120
+                                )
+                        
+                        # Supprimer le yarn.lock pour forcer une résolution propre
+                        yarn_lock = self.frontend_dir / "yarn.lock"
+                        if yarn_lock.exists():
+                            try:
+                                yarn_lock.unlink()
+                            except Exception:
+                                pass
+                        
+                        # Réinstaller
+                        repair_ok, _, repair_err = await self._run_command(
+                            update_history, "4/6 - Réinstallation dépendances",
+                            ["yarn", "install", "--production=false"],
+                            cwd=str(self.frontend_dir), env=build_env, timeout=600
+                        )
+                        
+                        if repair_ok:
+                            # Retenter le build
+                            success, stdout, stderr = await self._run_command(
+                                update_history, "4/6 - Retry yarn build après réparation",
+                                ["yarn", "build"],
+                                cwd=str(self.frontend_dir), env=build_env, timeout=600
+                            )
+                            if success:
+                                self._log_step(update_history, "4/6 - Réparation réussie",
+                                              "Le build a réussi après nettoyage des dépendances", status="success")
+                            else:
+                                update_history["errors"].append(
+                                    f"Build échoué même après réparation. Cause: {error_cause}. "
+                                    f"Solution manuelle: ssh sur le serveur, cd frontend, rm -rf node_modules, yarn install, yarn add @babel/runtime, yarn build"
+                                )
+                        else:
+                            update_history["errors"].append(
+                                f"Réinstallation des dépendances échouée: {repair_err[:200]}"
+                            )
+                    else:
+                        update_history["errors"].append(f"Build échoué: {error_cause}")
+                    
+                    # Si toujours en échec, restaurer le backup
+                    if not success:
+                        update_history["errors"].append(f"yarn build échoué: {error_cause}")
+                        if build_backup.exists():
+                            try:
+                                if build_dir.exists():
+                                    shutil.rmtree(str(build_dir))
+                                shutil.copytree(str(build_backup), str(build_dir))
+                                self._log_step(update_history, "4/6 - Restauration build frontend",
+                                              "Build précédent restauré (l'ancienne version reste active)", status="warning")
+                            except Exception as e:
+                                self._log_step(update_history, "4/6 - Restauration build frontend",
+                                              "cp -r build_backup/ build/",
+                                              stderr=str(e), status="error")
                 else:
                     # Vérifier que index.html existe
                     index_html = build_dir / "index.html"
