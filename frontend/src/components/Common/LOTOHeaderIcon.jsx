@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip';
 import api from '../../services/api';
 
 const LOTOHeaderIcon = () => {
@@ -35,12 +35,11 @@ const LOTOHeaderIcon = () => {
   const activeCount = (stats.consigne || 0) + (stats.intervention || 0);
   const totalBadge = (stats.demande || 0) + activeCount;
 
-  if (totalBadge === 0 && (stats.deconsigne || 0) === 0) return null;
-
   return (
     <div className="relative" data-loto-menu data-testid="loto-header-icon">
-      <Tooltip>
-        <TooltipTrigger asChild>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
@@ -89,6 +88,7 @@ const LOTOHeaderIcon = () => {
           <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">Cliquez pour acceder aux consignations</p>
         </TooltipContent>
       </Tooltip>
+      </TooltipProvider>
 
       {/* Menu deroulant */}
       {menuOpen && (
