@@ -17,13 +17,15 @@ import {
   List,
   Download,
   Upload,
-  Bot
+  Bot,
+  PanelTop
 } from 'lucide-react';
 
 // Import des sections
 import AppearanceSection from '../components/Personnalisation/AppearanceSection';
 import SidebarSection from '../components/Personnalisation/SidebarSection';
 import MenuOrganizationSection from '../components/Personnalisation/MenuOrganizationSection';
+import HeaderOrganizationSection from '../components/Personnalisation/HeaderOrganizationSection';
 import DisplayPreferencesSection from '../components/Personnalisation/DisplayPreferencesSection';
 import DashboardSection from '../components/Personnalisation/DashboardSection';
 import NotificationsSection from '../components/Personnalisation/NotificationsSection';
@@ -144,6 +146,12 @@ const Personnalisation = () => {
       component: MenuOrganizationSection
     },
     {
+      id: 'header',
+      title: 'Organisation du Header',
+      icon: PanelTop,
+      component: HeaderOrganizationSection
+    },
+    {
       id: 'display',
       title: 'Préférences d\'Affichage',
       icon: Settings,
@@ -230,7 +238,7 @@ const Personnalisation = () => {
       {/* Content */}
       {viewMode === 'tabs' ? (
         <Tabs defaultValue="appearance" className="w-full">
-          <TabsList className="grid grid-cols-7 w-full">
+          <TabsList className="grid grid-cols-8 w-full">
             {sections.map((section) => {
               const Icon = section.icon;
               return (
