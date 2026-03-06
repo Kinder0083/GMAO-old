@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -60,30 +61,27 @@ export default function ConsignationsLOTO() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [tab, setTab] = useState('active');
+  const routeLocation = useLocation();
 
   // Appliquer le filtre depuis la navigation (header LOTO icon)
-  // Utilise un key unique pour re-appliquer le filtre a chaque navigation
+  // Réagit à chaque changement de location.state (même route, state différent)
   useEffect(() => {
-    try {
-      const navState = window.history.state?.usr;
-      if (navState?.filterStatus) {
-        const status = navState.filterStatus;
-        if (status === 'ACTIVE') {
-          // Filtre spécial : CONSIGNE + INTERVENTION
-          setFilterStatus('ACTIVE');
-          setTab('active');
-        } else if (status === 'DECONSIGNE') {
-          setFilterStatus('DECONSIGNE');
-          setTab('completed');
-        } else {
-          setFilterStatus(status);
-          setTab('all');
-        }
-        // Nettoyer le state pour eviter de re-appliquer le filtre a chaque re-render
-        window.history.replaceState({ ...window.history.state, usr: {} }, '');
-      }
-    } catch (e) { /* ignore */ }
-  });
+    const status = routeLocation.state?.filterStatus;
+    if (!status) return;
+
+    if (status === 'ACTIVE') {
+      setFilterStatus('ACTIVE');
+      setTab('active');
+    } else if (status === 'DECONSIGNE') {
+      setFilterStatus('DECONSIGNE');
+      setTab('completed');
+    } else {
+      setFilterStatus(status);
+      setTab('all');
+    }
+    // Nettoyer le state pour ne pas re-appliquer au retour arrière
+    window.history.replaceState({}, '');
+  }, [routeLocation.state]);
 
   const load = useCallback(async () => {
     try {
