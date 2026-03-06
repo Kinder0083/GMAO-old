@@ -9,6 +9,8 @@ import { AINavigationProvider } from "./contexts/AINavigationContext";
 import { GuidedTourProvider } from "./contexts/GuidedTourContext";
 import { GuidedTour } from "./components/GuidedTour";
 import PWABanner from "./components/shared/PWABanner";
+import { initOfflineSync } from "./services/offlineSync";
+import { cleanOldCache } from "./services/offlineDb";
 
 // Layout
 import MainLayout from "./components/Layout/MainLayout";
@@ -120,6 +122,11 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   // Register Service Worker for PWA (notifications push uniquement)
   useEffect(() => {
+    // Initialiser le service de synchronisation hors-ligne
+    const cleanupSync = initOfflineSync();
+    // Nettoyer le cache ancien au démarrage
+    cleanOldCache().catch(() => {});
+
     // Nettoyage complet de tous les anciens caches (SW ou autre)
     if ('caches' in window) {
       caches.keys().then(names => {
@@ -150,6 +157,10 @@ function App() {
         }
       });
     }
+
+    return () => {
+      if (cleanupSync) cleanupSync();
+    };
   }, []);
 
   return (

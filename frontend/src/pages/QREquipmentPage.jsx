@@ -3,14 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ClipboardList, History, BarChart3, PlusCircle, AlertTriangle, Calendar,
   MapPin, Wrench, Activity, ChevronRight, ArrowLeft, QrCode, Lock,
-  CheckCircle2, XCircle, Clock, AlertCircle
+  CheckCircle2, XCircle, Clock, AlertCircle, Sparkles, RefreshCw
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const iconMap = {
   ClipboardList, History, BarChart3, PlusCircle, AlertTriangle, Calendar,
-  MapPin, Wrench, Activity, QrCode, Lock, CheckCircle2, XCircle, Clock, AlertCircle
+  MapPin, Wrench, Activity, QrCode, Lock, CheckCircle2, XCircle, Clock, AlertCircle, Sparkles
 };
 
 const statusColors = {
@@ -24,7 +24,7 @@ const statusLabels = {
   EN_SERVICE: 'En service',
   HORS_SERVICE: 'Hors service',
   EN_MAINTENANCE: 'En maintenance',
-  EN_ATTENTE_PIECE: 'En attente pièce',
+  EN_ATTENTE_PIECE: 'En attente piece',
 };
 
 const priorityColors = {
@@ -57,6 +57,9 @@ const QREquipmentPage = () => {
   const [activePanel, setActivePanel] = useState(null);
   const [panelData, setPanelData] = useState(null);
   const [panelLoading, setPanelLoading] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -72,7 +75,7 @@ const QREquipmentPage = () => {
       setEquipment(eq);
       setActions(acts);
     } catch {
-      setError('Équipement non trouvé');
+      setError('Equipement non trouve');
     } finally {
       setLoading(false);
     }
@@ -80,7 +83,6 @@ const QREquipmentPage = () => {
 
   const handleAction = async (action) => {
     if (action.requires_auth) {
-      // Redirect to login then back
       const token = localStorage.getItem('token');
       if (!token) {
         navigate(`/login?redirect=/qr/${equipmentId}&action=${action.id}`);
@@ -118,6 +120,19 @@ const QREquipmentPage = () => {
     }
   };
 
+  const generateAiSummary = async () => {
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const data = await fetchPublic(`/equipment/${equipmentId}/ai-summary`);
+      setAiSummary(data);
+    } catch (err) {
+      setAiError("Impossible de generer le resume IA. Reessayez plus tard.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -131,8 +146,8 @@ const QREquipmentPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <QrCode size={48} className="text-gray-300 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-800 mb-2">Équipement introuvable</h1>
-          <p className="text-gray-500">Ce QR code ne correspond à aucun équipement.</p>
+          <h1 className="text-xl font-bold text-gray-800 mb-2">Equipement introuvable</h1>
+          <p className="text-gray-500">Ce QR code ne correspond a aucun equipement.</p>
         </div>
       </div>
     );
@@ -193,6 +208,90 @@ const QREquipmentPage = () => {
           </div>
         </div>
 
+        {/* AI Summary Section */}
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden" data-testid="qr-ai-section">
+          <button
+            onClick={aiSummary ? () => setAiSummary(null) : generateAiSummary}
+            disabled={aiLoading}
+            className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-indigo-50"
+            data-testid="qr-ai-trigger"
+          >
+            <div className={`p-2 rounded-lg ${aiSummary ? 'bg-indigo-100' : 'bg-gradient-to-br from-indigo-100 to-purple-100'}`}>
+              {aiLoading ? (
+                <RefreshCw size={18} className="text-indigo-600 animate-spin" />
+              ) : (
+                <Sparkles size={18} className="text-indigo-600" />
+              )}
+            </div>
+            <div className="flex-1">
+              <span className="text-sm font-semibold text-indigo-700">Analyse IA</span>
+              <p className="text-xs text-gray-400">
+                {aiLoading ? 'Analyse en cours...' : aiSummary ? 'Cliquer pour fermer' : 'Etat, historique et recommandations'}
+              </p>
+            </div>
+            <ChevronRight size={16} className={`text-gray-400 transition-transform ${aiSummary ? 'rotate-90' : ''}`} />
+          </button>
+
+          {aiLoading && (
+            <div className="px-4 pb-4" data-testid="qr-ai-loading">
+              <div className="bg-indigo-50 rounded-lg p-4 space-y-2">
+                <div className="h-3 bg-indigo-200/60 rounded animate-pulse w-3/4" />
+                <div className="h-3 bg-indigo-200/60 rounded animate-pulse w-full" />
+                <div className="h-3 bg-indigo-200/60 rounded animate-pulse w-5/6" />
+                <div className="h-3 bg-indigo-200/60 rounded animate-pulse w-2/3" />
+                <p className="text-xs text-indigo-400 pt-1">L'IA analyse les donnees de l'equipement...</p>
+              </div>
+            </div>
+          )}
+
+          {aiError && (
+            <div className="px-4 pb-4" data-testid="qr-ai-error">
+              <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-start gap-2">
+                <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-red-600">{aiError}</p>
+                  <button onClick={generateAiSummary} className="text-xs text-red-500 underline mt-1" data-testid="qr-ai-retry">Reessayer</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {aiSummary && !aiLoading && (
+            <div className="px-4 pb-4" data-testid="qr-ai-summary">
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-100">
+                {/* Mini KPI bar */}
+                {aiSummary.data && (
+                  <div className="flex gap-2 mb-3 pb-3 border-b border-indigo-100">
+                    <KpiChip label="OT total" value={aiSummary.data.total_work_orders} />
+                    <KpiChip label="OT ouverts" value={aiSummary.data.open_work_orders} color="amber" />
+                    <KpiChip label="Preventifs" value={aiSummary.data.preventive_plans} color="blue" />
+                    {aiSummary.data.active_loto > 0 && (
+                      <KpiChip label="LOTO" value={aiSummary.data.active_loto} color="red" />
+                    )}
+                  </div>
+                )}
+                {/* AI Text */}
+                <div className="prose prose-sm max-w-none text-gray-700 ai-summary-content" data-testid="qr-ai-text">
+                  <AiFormattedText text={aiSummary.summary} />
+                </div>
+                {/* Footer */}
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-indigo-100">
+                  <span className="text-xs text-indigo-400">
+                    {aiSummary.model} — {new Date(aiSummary.generated_at).toLocaleString('fr-FR')}
+                  </span>
+                  <button
+                    onClick={generateAiSummary}
+                    className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
+                    data-testid="qr-ai-refresh"
+                  >
+                    <RefreshCw size={12} /> Actualiser
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Actions */}
         <div className="space-y-2" data-testid="qr-actions-list">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">Actions rapides</h2>
@@ -243,9 +342,51 @@ const QREquipmentPage = () => {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 pt-4">
-          Propulsé par FSAO Iris
+          Propulse par FSAO Iris
         </p>
       </div>
+    </div>
+  );
+};
+
+// ========= KPI Chip =========
+const KpiChip = ({ label, value, color = 'indigo' }) => {
+  const colors = {
+    indigo: 'bg-indigo-100 text-indigo-700',
+    amber: 'bg-amber-100 text-amber-700',
+    blue: 'bg-blue-100 text-blue-700',
+    red: 'bg-red-100 text-red-700',
+  };
+  return (
+    <div className={`flex-1 text-center px-1.5 py-1 rounded-md ${colors[color]}`}>
+      <p className="text-sm font-bold">{value}</p>
+      <p className="text-[10px] leading-tight">{label}</p>
+    </div>
+  );
+};
+
+// ========= AI Formatted Text =========
+const AiFormattedText = ({ text }) => {
+  if (!text) return null;
+  // Convert markdown-like formatting to HTML
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, i) => {
+        if (!line.trim()) return <div key={i} className="h-1" />;
+        // Bold headers with **
+        let formatted = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // Handle bullet points
+        if (formatted.trim().startsWith('- ') || formatted.trim().startsWith('* ')) {
+          formatted = formatted.replace(/^(\s*)[*-]\s/, '$1');
+          return <p key={i} className="text-xs pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-indigo-400" dangerouslySetInnerHTML={{ __html: formatted }} />;
+        }
+        // Headers (lines with only bold text)
+        if (formatted.startsWith('<strong>') && formatted.endsWith('</strong>')) {
+          return <p key={i} className="text-xs font-semibold text-indigo-800 mt-2" dangerouslySetInnerHTML={{ __html: formatted }} />;
+        }
+        return <p key={i} className="text-xs" dangerouslySetInnerHTML={{ __html: formatted }} />;
+      })}
     </div>
   );
 };
@@ -253,7 +394,7 @@ const QREquipmentPage = () => {
 // ========= Sub-panels =========
 
 const LastWOPanel = ({ data }) => {
-  if (!data) return <p className="text-sm text-gray-500 text-center">Aucun ordre de travail trouvé</p>;
+  if (!data) return <p className="text-sm text-gray-500 text-center">Aucun ordre de travail trouve</p>;
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -265,11 +406,11 @@ const LastWOPanel = ({ data }) => {
       <div className="flex items-center gap-3 text-xs text-gray-500">
         {data.numero && <span>#{data.numero}</span>}
         {data.priorite && <span className={priorityColors[data.priorite]}>{data.priorite}</span>}
-        {data.assignee_name && <span>Assigné à: {data.assignee_name}</span>}
+        {data.assignee_name && <span>Assigne a: {data.assignee_name}</span>}
       </div>
       {data.date_creation && (
         <p className="text-xs text-gray-400">
-          Créé le {new Date(data.date_creation).toLocaleDateString('fr-FR')}
+          Cree le {new Date(data.date_creation).toLocaleDateString('fr-FR')}
         </p>
       )}
     </div>
@@ -303,9 +444,9 @@ const KPIPanel = ({ data }) => {
   const kpis = [
     { label: 'Total OT', value: data.total_work_orders, color: 'text-gray-900' },
     { label: 'OT ouverts', value: data.open_work_orders, color: 'text-amber-600' },
-    { label: 'OT terminés', value: data.closed_work_orders, color: 'text-emerald-600' },
+    { label: 'OT termines', value: data.closed_work_orders, color: 'text-emerald-600' },
     { label: 'Temps moy. (h)', value: data.avg_resolution_time_hours, color: 'text-blue-600' },
-    { label: 'Plans préventifs', value: data.total_preventive_plans, color: 'text-purple-600' },
+    { label: 'Plans preventifs', value: data.total_preventive_plans, color: 'text-purple-600' },
   ];
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -320,7 +461,7 @@ const KPIPanel = ({ data }) => {
 };
 
 const PreventivePlanPanel = ({ data }) => {
-  if (!data || data.length === 0) return <p className="text-sm text-gray-500 text-center">Aucun plan préventif</p>;
+  if (!data || data.length === 0) return <p className="text-sm text-gray-500 text-center">Aucun plan preventif</p>;
   return (
     <div className="space-y-2 max-h-64 overflow-y-auto">
       {data.map((plan, i) => (
@@ -328,7 +469,7 @@ const PreventivePlanPanel = ({ data }) => {
           <div className="min-w-0 flex-1">
             <p className="text-sm text-gray-800 truncate">{plan.titre || 'Plan sans titre'}</p>
             <p className="text-xs text-gray-400">
-              {plan.frequence && `Fréq: ${plan.frequence}`}
+              {plan.frequence && `Freq: ${plan.frequence}`}
               {plan.prochaine_execution && ` — Prochaine: ${new Date(plan.prochaine_execution).toLocaleDateString('fr-FR')}`}
             </p>
           </div>

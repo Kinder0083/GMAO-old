@@ -29,6 +29,7 @@ import LOTOHeaderIcon from '../Common/LOTOHeaderIcon';
 import CameraAlertIcon from '../Common/CameraAlertIcon';
 import BackupStatusIcon from '../Common/BackupStatusIcon';
 import ChangelogPanel from '../Common/ChangelogPanel';
+import OfflineIndicator from '../Common/OfflineIndicator';
 import MESAlertIcon from './MESAlertIcon';
 import api from '../../services/api';
 
@@ -360,6 +361,9 @@ const Header = ({
         
         {/* Alertes MQTT — masqué sur mobile */}
         <span className="hidden md:contents"><AlertNotifications /></span>
+        
+        {/* Indicateur en ligne/hors ligne */}
+        <OfflineIndicator />
         
         {/* Consignations LOTO */}
         <LOTOHeaderIcon />

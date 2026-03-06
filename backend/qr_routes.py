@@ -163,6 +163,153 @@ async def get_preventive_plan_public(eq_id: str):
     return checklists
 
 
+@router.get("/public/equipment/{eq_id}/ai-summary")
+async def get_equipment_ai_summary(eq_id: str):
+    """Générer un résumé IA complet d'un équipement : état, historique, prochaines maintenances."""
+    from bson import ObjectId
+    import uuid as _uuid
+
+    # 1. Récupérer l'équipement
+    try:
+        eq = await db.equipments.find_one({"_id": ObjectId(eq_id)}, {"_id": 0})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+    if not eq:
+        raise HTTPException(status_code=404, detail="Équipement non trouvé")
+
+    # 2. Récupérer l'emplacement
+    location_name = None
+    if eq.get("emplacement_id"):
+        try:
+            loc = await db.locations.find_one({"_id": ObjectId(eq["emplacement_id"])})
+            if loc:
+                location_name = loc.get("nom")
+        except Exception:
+            pass
+
+    # 3. Historique des OT (20 derniers)
+    wos = await db.work_orders.find(
+        {"equipement_id": eq_id},
+        {"_id": 0, "numero": 1, "titre": 1, "statut": 1, "priorite": 1, "date_creation": 1,
+         "date_cloture": 1, "temps_reel": 1, "assignee_name": 1, "categorie": 1, "description": 1}
+    ).sort("date_creation", -1).limit(20).to_list(20)
+
+    # 4. KPI
+    total_wos = await db.work_orders.count_documents({"equipement_id": eq_id})
+    open_wos = await db.work_orders.count_documents({"equipement_id": eq_id, "statut": {"$nin": ["TERMINE", "ANNULE"]}})
+    pipeline_avg = [
+        {"$match": {"equipement_id": eq_id, "statut": "TERMINE", "temps_reel": {"$gt": 0}}},
+        {"$group": {"_id": None, "avg": {"$avg": "$temps_reel"}}}
+    ]
+    avg_result = await db.work_orders.aggregate(pipeline_avg).to_list(1)
+    avg_time = round(avg_result[0]["avg"], 1) if avg_result else 0
+
+    # 5. Maintenances préventives
+    preventive = await db.preventive_checklists.find(
+        {"equipement_id": eq_id},
+        {"_id": 0, "titre": 1, "frequence": 1, "prochaine_execution": 1, "derniere_execution": 1, "statut": 1}
+    ).to_list(20)
+
+    # 6. Consignations LOTO actives
+    loto_active = await db.loto_procedures.find(
+        {"equipment_id": eq_id, "status": {"$in": ["DEMANDE", "CONSIGNE", "INTERVENTION"]}},
+        {"_id": 0, "status": 1, "motif": 1, "created_at": 1}
+    ).to_list(5)
+
+    # 7. Construire le prompt
+    wo_lines = []
+    for wo in wos[:10]:
+        line = f"- OT #{wo.get('numero','?')} : {wo.get('titre','Sans titre')} | Statut: {wo.get('statut','-')} | Priorité: {wo.get('priorite','-')} | Date: {wo.get('date_creation','?')}"
+        if wo.get('temps_reel'):
+            line += f" | Temps: {wo['temps_reel']}h"
+        wo_lines.append(line)
+
+    prev_lines = []
+    for p in preventive:
+        line = f"- {p.get('titre','Plan')} | Fréquence: {p.get('frequence','-')} | Prochaine: {p.get('prochaine_execution','Non planifiée')} | Dernière: {p.get('derniere_execution','Jamais')}"
+        prev_lines.append(line)
+
+    loto_lines = []
+    for l in loto_active:
+        loto_lines.append(f"- Statut: {l.get('status')} | Motif: {l.get('motif','-')}")
+
+    data_context = f"""FICHE ÉQUIPEMENT :
+- Nom : {eq.get('nom', 'Inconnu')}
+- Type : {eq.get('type', '-')}
+- Marque : {eq.get('marque', '-')} | Modèle : {eq.get('modele', '-')}
+- N° série : {eq.get('numero_serie', '-')}
+- Statut actuel : {eq.get('statut', '-')}
+- Emplacement : {location_name or '-'}
+- Service : {eq.get('service', '-')}
+- Date installation : {eq.get('date_installation', '-')}
+
+STATISTIQUES :
+- Total OT : {total_wos} | OT ouverts : {open_wos} | Temps moyen résolution : {avg_time}h
+
+DERNIERS ORDRES DE TRAVAIL ({len(wos)} récents) :
+{chr(10).join(wo_lines) if wo_lines else 'Aucun OT enregistré'}
+
+MAINTENANCES PRÉVENTIVES ({len(preventive)} plans) :
+{chr(10).join(prev_lines) if prev_lines else 'Aucun plan préventif'}
+
+CONSIGNATIONS LOTO ACTIVES :
+{chr(10).join(loto_lines) if loto_lines else 'Aucune consignation active'}"""
+
+    system_prompt = """Tu es un expert en maintenance industrielle (GMAO). 
+On te fournit la fiche complète d'un équipement avec son historique.
+Génère un résumé concis et structuré en français comprenant :
+1. **État actuel** : statut de l'équipement, consignations actives
+2. **Analyse de l'historique** : tendances des pannes, fréquence des interventions, types de problèmes récurrents
+3. **Prochaines maintenances** : échéances à venir, retards éventuels
+4. **Recommandations** : actions préventives suggérées, points d'attention
+
+Sois concis, factuel et utile. Utilise des puces et du gras pour la lisibilité. Ne dépasse pas 400 mots."""
+
+    # 8. Appeler le LLM
+    try:
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            global_key = await db.global_settings.find_one({"key": "EMERGENT_LLM_KEY"})
+            if global_key:
+                api_key = global_key.get("value")
+
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Clé API IA non configurée")
+
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"qr_ai_{eq_id}_{_uuid.uuid4().hex[:6]}",
+            system_message=system_prompt
+        )
+        chat.with_model("gemini", "gemini-2.5-flash")
+
+        user_msg = UserMessage(text=f"Voici les données de l'équipement. Génère le résumé IA.\n\n{data_context}")
+        response_text = await chat.send_message(user_msg)
+
+        return {
+            "equipment_id": eq_id,
+            "equipment_name": eq.get("nom", ""),
+            "summary": response_text,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "model": "gemini-2.5-flash",
+            "data": {
+                "total_work_orders": total_wos,
+                "open_work_orders": open_wos,
+                "avg_resolution_time": avg_time,
+                "preventive_plans": len(preventive),
+                "active_loto": len(loto_active)
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erreur génération résumé IA pour {eq_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur génération résumé IA: {str(e)}")
+
+
 @router.get("/public/actions")
 async def get_qr_actions_public():
     """Récupérer la liste des actions configurées (sans auth)."""

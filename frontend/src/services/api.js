@@ -1,7 +1,15 @@
 import axios from 'axios';
 import { BACKEND_URL } from '../utils/config';
+import { cacheApiResponse, getCachedResponse, addToSyncQueue } from './offlineDb';
 
 const API_BASE = `${BACKEND_URL}/api`;
+
+// URLs a exclure du cache offline (temps reel, auth, etc.)
+const CACHE_EXCLUDE_PATTERNS = ['/auth/', '/chat/', '/mqtt/', '/ai/chat', '/voice/', '/websocket'];
+const shouldCache = (url) => {
+  if (!url) return false;
+  return !CACHE_EXCLUDE_PATTERNS.some(p => url.includes(p));
+};
 
 // Axios instance avec intercepteurs
 const api = axios.create({
@@ -26,15 +34,53 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Intercepteur pour gérer les erreurs
+// Intercepteur pour gérer les réponses et le cache offline
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response) => {
+    // Cache les réponses GET réussies dans IndexedDB pour le mode hors-ligne
+    if (response.config.method === 'get' && shouldCache(response.config.url)) {
+      const cacheKey = response.config.url + (response.config.params ? '?' + new URLSearchParams(response.config.params).toString() : '');
+      cacheApiResponse(cacheKey, response.data).catch(() => {});
+    }
+    return response;
+  },
+  async (error) => {
+    // 401 → déconnexion
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
+
+    // Si hors-ligne (pas de réponse réseau)
+    if (!error.response && !navigator.onLine) {
+      const config = error.config;
+
+      // GET → servir depuis le cache IndexedDB
+      if (config.method === 'get' && shouldCache(config.url)) {
+        const cacheKey = config.url + (config.params ? '?' + new URLSearchParams(config.params).toString() : '');
+        const cached = await getCachedResponse(cacheKey);
+        if (cached) {
+          console.log('[Offline] Servi depuis le cache:', cacheKey);
+          return { data: cached, status: 200, statusText: 'OK (cache)', config, headers: {} };
+        }
+      }
+
+      // POST/PUT/DELETE → mettre en file d'attente de synchronisation
+      if (['post', 'put', 'delete', 'patch'].includes(config.method)) {
+        // Ne pas mettre en queue les uploads de fichiers ou les appels IA
+        const skipQueue = config.headers?.['Content-Type']?.includes('multipart') || config.url?.includes('/ai/');
+        if (!skipQueue) {
+          await addToSyncQueue(config.method, config.url, config.data, {
+            Authorization: config.headers?.Authorization
+          });
+          console.log('[Offline] Mutation mise en file d\'attente:', config.method, config.url);
+          return { data: { _offline_queued: true, message: 'Action enregistree, sera synchronisee au retour en ligne' }, status: 202, config, headers: {} };
+        }
+      }
+    }
+
     return Promise.reject(error);
   }
 );
