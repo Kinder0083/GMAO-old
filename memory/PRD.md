@@ -42,6 +42,13 @@ Application GMAO complète pour la gestion de maintenance industrielle. Interfac
 - **Intégration SMTP existant** de "Paramètres Spéciaux"
 - **API** : GET/PUT `/api/health/alerts-config`, POST `/api/health/alerts-test`, GET `/api/health/alerts-history`
 
+### Améliorations LOTO v2 (Mars 2026)
+- **Formulaire création** : Dropdown dynamique OT/MP/Améliorations, auto-remplissage équipement/motif/durée
+- **Header** : Icône cadenas avec badges rouge/jaune/vert et menu dropdown avec navigation filtrée
+- **Tables OT/MP/Améliorations** : Badge cadenas coloré avec tooltip (rouge=consigné, jaune=demande, vert=déconsigné)
+- **Équipements/Planning** : Badge "CONSIGNÉ" uniquement pour le statut rouge
+- **Fichiers** : `LOTOHeaderIcon.jsx`, `LOTOBadge.jsx`, modifications WorkOrders/PreventiveMaintenance/ImprovementRequests/PlanningMPrev
+
 ### Système LOTO (Lockout/Tagout) - Consignations de sécurité (Mars 2026)
 - **Fonctionnalité complète** : Gestion des consignations LOTO avec workflow 4 étapes (Demande → Consigné → Intervention → Déconsigné)
 - **Système de cadenas** : Pose/retrait par chaque intervenant, blocage de la déconsignation tant que des cadenas sont actifs
