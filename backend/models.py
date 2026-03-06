@@ -2403,6 +2403,9 @@ class UserPreferences(BaseModel):
     menu_categories: List[MenuCategory] = []
     menu_items: List[MenuItem] = []
     
+    # Organisation du header
+    header_icon_order: List[str] = []
+    
     # Préférences d'affichage
     default_home_page: str = "/dashboard"
     date_format: DateFormat = DateFormat.DD_MM_YYYY
@@ -2452,6 +2455,7 @@ class UserPreferencesCreate(BaseModel):
     sidebar_icon_color: Optional[str] = "#ffffff"
     menu_categories: Optional[List[MenuCategory]] = []
     menu_items: Optional[List[MenuItem]] = []
+    header_icon_order: Optional[List[str]] = []
     default_home_page: Optional[str] = "/dashboard"
     date_format: Optional[DateFormat] = DateFormat.DD_MM_YYYY
     time_format: Optional[TimeFormat] = TimeFormat.H24
@@ -2481,6 +2485,7 @@ class UserPreferencesUpdate(BaseModel):
     sidebar_icon_color: Optional[str] = None
     menu_categories: Optional[List[MenuCategory]] = None
     menu_items: Optional[List[MenuItem]] = None
+    header_icon_order: Optional[List[str]] = None
     default_home_page: Optional[str] = None
     date_format: Optional[DateFormat] = None
     time_format: Optional[TimeFormat] = None
