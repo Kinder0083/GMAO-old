@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip';
 import api from '../../services/api';
 
@@ -42,10 +42,11 @@ const LOTOHeaderIcon = () => {
           <TooltipTrigger asChild>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+            className="flex items-center gap-1 px-2 py-1 hover:bg-red-100 rounded-lg transition-colors relative border border-red-300 bg-red-50"
             data-testid="loto-header-btn"
           >
-            <Shield size={20} className="text-gray-600" />
+            <Lock size={18} className="text-red-600" />
+            <span className="text-xs font-bold text-red-600 hidden md:inline">LOTO</span>
 
             {/* Badge ROUGE - Coin sup. droit - Consignations actives (CONSIGNE + INTERVENTION) */}
             {activeCount > 0 && (
