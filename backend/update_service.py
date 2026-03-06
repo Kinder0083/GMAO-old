@@ -1065,24 +1065,29 @@ class UpdateService:
                     except Exception:
                         pass
             
-            # 5. Mettre à jour version.json
+            # 5. Mettre à jour version.json UNIQUEMENT si le code a été mis à jour
             logger.info("📝 Étape 5/6: Mise à jour du fichier version.json...")
-            try:
-                version_file = self.app_root / "updates" / "version.json"
-                if version_file.exists():
-                    import json as json_mod
-                    with open(version_file, 'r') as f:
-                        version_data = json_mod.load(f)
-                    version_data["version"] = version
-                    version_data["lastUpdate"] = datetime.now(timezone.utc).isoformat()
-                    with open(version_file, 'w') as f:
-                        json_mod.dump(version_data, f, indent=2, ensure_ascii=False)
-                    self.current_version = version
+            if not git_available:
+                self._log_step(update_history, "5/6 - version.json NON mis à jour",
+                              "Le code n'a pas été synchronisé depuis GitHub, version.json n'est PAS modifié.",
+                              status="warning")
+            else:
+                try:
+                    version_file = self.app_root / "updates" / "version.json"
+                    if version_file.exists():
+                        import json as json_mod
+                        with open(version_file, 'r') as f:
+                            version_data = json_mod.load(f)
+                        version_data["version"] = version
+                        version_data["lastUpdate"] = datetime.now(timezone.utc).isoformat()
+                        with open(version_file, 'w') as f:
+                            json_mod.dump(version_data, f, indent=2, ensure_ascii=False)
+                        self.current_version = version
+                        self._log_step(update_history, "5/6 - Mise à jour version.json",
+                                      f"version.json → {version}", status="success")
+                except Exception as e:
                     self._log_step(update_history, "5/6 - Mise à jour version.json",
-                                  f"version.json → {version}", status="success")
-            except Exception as e:
-                self._log_step(update_history, "5/6 - Mise à jour version.json",
-                              f"Écriture version.json", stderr=str(e), status="warning")
+                                  f"Écriture version.json", stderr=str(e), status="warning")
             
             # 6. Planifier le redémarrage des services
             logger.info("🔄 Étape 6/6: Planification du redémarrage des services...")
@@ -1096,19 +1101,54 @@ class UpdateService:
                 )
                 restart_script.write(f"""#!/bin/bash
 # Redémarrage post-mise-à-jour FSAO Iris
+LOG="/tmp/gmao_restart_$(date +%Y%m%d_%H%M%S).log"
+exec >> "$LOG" 2>&1
+echo "=== Redémarrage post MAJ : $(date) ==="
 sleep 3
 
-# Tenter supervisorctl
-supervisorctl restart gmao-iris-backend 2>/dev/null && echo "supervisorctl OK" || \\
-/usr/bin/supervisorctl restart gmao-iris-backend 2>/dev/null && echo "supervisorctl (abs) OK" || \\
-sudo supervisorctl restart gmao-iris-backend 2>/dev/null && echo "sudo supervisorctl OK" || \\
-supervisorctl restart all 2>/dev/null && echo "supervisorctl all OK" || \\
-sudo supervisorctl restart all 2>/dev/null && echo "sudo supervisorctl all OK" || true
+RESTARTED=0
 
-# Tenter systemctl
-sudo systemctl restart gmao-iris-backend 2>/dev/null && echo "systemctl backend OK" || \\
-sudo systemctl restart gmao-iris 2>/dev/null && echo "systemctl gmao-iris OK" || \\
-sudo systemctl restart gmao 2>/dev/null && echo "systemctl gmao OK" || true
+# Auto-détection des services via supervisorctl
+if command -v supervisorctl >/dev/null 2>&1; then
+    # Lister les services actifs et chercher ceux liés à gmao/backend/iris
+    SVCS=$(supervisorctl status 2>/dev/null | grep -iE 'backend|gmao|iris|uvicorn|fastapi' | awk '{{print $1}}')
+    if [ -n "$SVCS" ]; then
+        for SVC in $SVCS; do
+            echo "Redémarrage supervisorctl: $SVC"
+            supervisorctl restart "$SVC" 2>/dev/null && RESTARTED=1 && echo "OK: $SVC redémarré"
+            sudo supervisorctl restart "$SVC" 2>/dev/null && RESTARTED=1
+        done
+    else
+        # Fallback : redémarrer tout
+        echo "Aucun service backend trouvé, redémarrage complet supervisorctl"
+        supervisorctl restart all 2>/dev/null && RESTARTED=1
+        sudo supervisorctl restart all 2>/dev/null && RESTARTED=1
+    fi
+fi
+
+# Auto-détection des services via systemctl
+if [ "$RESTARTED" -eq 0 ] && command -v systemctl >/dev/null 2>&1; then
+    SVCS=$(systemctl list-units --type=service --state=running 2>/dev/null | grep -iE 'gmao|iris|backend|uvicorn|fastapi|gunicorn' | awk '{{print $1}}')
+    if [ -n "$SVCS" ]; then
+        for SVC in $SVCS; do
+            echo "Redémarrage systemctl: $SVC"
+            sudo systemctl restart "$SVC" 2>/dev/null && RESTARTED=1 && echo "OK: $SVC redémarré"
+        done
+    fi
+fi
+
+# Log le résultat
+if [ "$RESTARTED" -eq 0 ]; then
+    echo "AVERTISSEMENT: Aucun service backend n'a pu être redémarré !"
+    echo "Tentative kill du processus Python/uvicorn..."
+    # Dernier recours : trouver et killer le processus uvicorn
+    PIDS=$(pgrep -f 'uvicorn.*server:app' 2>/dev/null || pgrep -f 'uvicorn.*server' 2>/dev/null)
+    if [ -n "$PIDS" ]; then
+        echo "PIDs trouvés: $PIDS"
+        kill -HUP $PIDS 2>/dev/null || kill $PIDS 2>/dev/null
+        echo "Signal envoyé"
+    fi
+fi
 
 sleep 5
 
@@ -1132,6 +1172,7 @@ done
 [ -n "$NGINX_BACKUP" ] && (nginx -t 2>/dev/null && nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || true)
 rm -f "$MFLAG"
 echo "Page de maintenance désactivée"
+echo "=== Fin du redémarrage : $(date) ==="
 
 rm -f {restart_script.name}
 """)
@@ -1192,9 +1233,25 @@ rm -f {restart_script.name}
             end_time = datetime.fromisoformat(update_history["completed_at"])
             update_history["duration_seconds"] = (end_time - start_time).total_seconds()
             
-            # Sauvegarder dans la base de données
+            # Sauvegarder dans la base de données AVANT le redémarrage
             try:
                 await self.db.system_update_history.insert_one(update_history)
+                # Sauvegarder aussi un résumé rapide pour que le frontend puisse vérifier après reconnexion
+                await self.db.system_settings.update_one(
+                    {"key": "last_update_result"},
+                    {"$set": {
+                        "key": "last_update_result",
+                        "success": code_updated and not has_critical_errors,
+                        "code_updated": code_updated,
+                        "version_before": update_history["version_before"],
+                        "version_after": version if code_updated else update_history["version_before"],
+                        "history_id": update_history["id"],
+                        "errors": update_history["errors"],
+                        "warnings": update_history["warnings"],
+                        "completed_at": update_history["completed_at"]
+                    }},
+                    upsert=True
+                )
                 logger.info("✅ Journal de mise à jour complet enregistré en base de données")
             except Exception as e:
                 logger.error(f"❌ Erreur lors de l'enregistrement du journal: {str(e)}")

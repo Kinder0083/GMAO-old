@@ -64,14 +64,57 @@ const Updates = () => {
         
         if (response.status === 200) {
           const currentVersion = response.data.version;
-          setUpdateLogs(prev => [...prev, `✅ Backend disponible (version ${currentVersion}) !`]);
+          setUpdateLogs(prev => [...prev, `✅ Backend disponible (version ${currentVersion})`]);
+          
+          // Vérifier le résultat RÉEL de la mise à jour depuis la base de données
+          try {
+            const resultRes = await axios.get(`${BACKEND_URL}/api/updates/last-result`, {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 5000
+            });
+            
+            if (resultRes.data?.has_result) {
+              const result = resultRes.data;
+              if (result.success && result.code_updated) {
+                setUpdateLogs(prev => [...prev, `✅ Code source mis à jour avec succès`]);
+                toast({
+                  title: 'Mise à jour réussie',
+                  description: `Version ${result.version_after || currentVersion} installée. Rechargement...`
+                });
+              } else if (!result.code_updated) {
+                setUpdateLogs(prev => [...prev, `⚠️ ATTENTION : Le code source n'a PAS été mis à jour !`]);
+                if (result.errors?.length > 0) {
+                  result.errors.forEach(err => {
+                    setUpdateLogs(prev => [...prev, `❌ ${err}`]);
+                  });
+                }
+                toast({
+                  title: 'Mise à jour échouée',
+                  description: 'Le code n\'a pas pu être synchronisé depuis GitHub. Vérifiez les logs.',
+                  variant: 'destructive'
+                });
+                setUpdating(false);
+                return;
+              } else if (result.errors?.length > 0) {
+                setUpdateLogs(prev => [...prev, `⚠️ Mise à jour partielle avec erreurs :`]);
+                result.errors.forEach(err => {
+                  setUpdateLogs(prev => [...prev, `❌ ${err}`]);
+                });
+                toast({
+                  title: 'Mise à jour partielle',
+                  description: 'Des erreurs se sont produites. Vérifiez les détails.',
+                  variant: 'warning'
+                });
+                setUpdating(false);
+                return;
+              }
+            }
+          } catch (verifyError) {
+            // Impossible de vérifier - continuer quand même
+            setUpdateLogs(prev => [...prev, '⚠️ Impossible de vérifier le résultat de la mise à jour']);
+          }
+          
           setUpdateLogs(prev => [...prev, '🔄 Rechargement de la page...']);
-          
-          toast({
-            title: 'Succès',
-            description: 'Mise à jour appliquée avec succès. Rechargement...'
-          });
-          
           setTimeout(() => {
             window.location.reload();
           }, 2000);
@@ -316,15 +359,16 @@ const Updates = () => {
         } catch (error) {
           if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || 
               error.response?.status === 502 || error.response?.status === 503) {
-            setUpdateLogs(prev => [...prev, '🔄 Services en cours de redémarrage...']);
+            setUpdateLogs(prev => [...prev, '🔄 Connexion interrompue (services en cours de redémarrage)...']);
             setUpdateLogs(prev => [...prev, '⏳ Attente de la disponibilité du backend...']);
             const token = localStorage.getItem('token');
             await waitForBackendReady(token, latestVersion?.version);
           } else {
-            setUpdateLogs(prev => [...prev, `❌ Erreur: ${error.response?.data?.detail || error.message}`]);
+            const errorDetail = error.response?.data?.detail || error.message;
+            setUpdateLogs(prev => [...prev, `❌ Erreur: ${errorDetail}`]);
             toast({
-              title: 'Erreur',
-              description: formatErrorMessage(error, 'Échec de la mise à jour'),
+              title: 'Erreur de mise à jour',
+              description: formatErrorMessage(error, 'Échec de la mise à jour. Consultez les logs pour plus de détails.'),
               variant: 'destructive'
             });
             setUpdating(false);

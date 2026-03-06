@@ -9520,6 +9520,31 @@ async def apply_update(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/updates/last-result")
+async def get_last_update_result(current_user: dict = Depends(get_current_admin_user)):
+    """
+    Récupère le résultat de la dernière mise à jour depuis la base de données.
+    Permet au frontend de vérifier si la mise à jour a réellement réussi après un redémarrage.
+    """
+    try:
+        result = await db.system_settings.find_one({"key": "last_update_result"}, {"_id": 0})
+        if result:
+            return {
+                "has_result": True,
+                "success": result.get("success", False),
+                "code_updated": result.get("code_updated", False),
+                "version_before": result.get("version_before"),
+                "version_after": result.get("version_after"),
+                "errors": result.get("errors", []),
+                "warnings": result.get("warnings", []),
+                "completed_at": result.get("completed_at")
+            }
+        return {"has_result": False}
+    except Exception as e:
+        logger.error(f"❌ Erreur récupération résultat MAJ: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/maintenance/activate")
 async def activate_maintenance_mode(current_user: dict = Depends(get_current_admin_user)):
     """Active la page de maintenance NGINX (Admin uniquement)."""

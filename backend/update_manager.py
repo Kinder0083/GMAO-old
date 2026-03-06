@@ -76,7 +76,13 @@ class UpdateManager:
                         local_commit = await self.get_current_commit()
                         
                         # Vérifier si une mise à jour est disponible
-                        update_available = local_commit != remote_commit if local_commit else True
+                        if local_commit:
+                            update_available = local_commit != remote_commit
+                        else:
+                            # .git absent ou corrompu : comparer via version.json
+                            self._load_version()
+                            remote_version_str = f"latest-{remote_commit}"
+                            update_available = self.current_version != remote_version_str
                         
                         return {
                             "version": f"latest-{remote_commit}",
