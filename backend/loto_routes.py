@@ -17,12 +17,32 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/loto", tags=["LOTO - Consignations"])
 
 db = None
+_realtime_manager = None
 
 def init_loto_routes(database):
-    global db
+    global db, _realtime_manager
     db = database
+    try:
+        from realtime_manager import realtime_manager
+        _realtime_manager = realtime_manager
+    except ImportError:
+        pass
     logger.info("Routes LOTO initialisées")
     return router
+
+
+async def _emit_loto_event(action: str, data: dict = None):
+    """Émet un événement WebSocket pour mettre à jour les composants en temps réel."""
+    if _realtime_manager:
+        try:
+            await _realtime_manager.emit_event("loto", {
+                "type": "loto_update",
+                "action": action,
+                "data": data or {},
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as e:
+            logger.warning(f"Erreur emission WS LOTO: {e}")
 
 
 # ===== Pydantic Models =====
@@ -250,6 +270,7 @@ async def create_consignation(data: LOTOCreate, current_user: dict = Depends(get
 
     await db.loto_consignations.insert_one(doc)
     del doc["_id"]
+    await _emit_loto_event("create", {"id": doc["id"], "status": doc["status"]})
     return doc
 
 
@@ -272,6 +293,7 @@ async def update_consignation(loto_id: str, data: LOTOUpdate, current_user: dict
 
     await db.loto_consignations.update_one({"id": loto_id}, {"$set": update})
     updated = await db.loto_consignations.find_one({"id": loto_id}, {"_id": 0})
+    await _emit_loto_event("update", {"id": loto_id, "status": updated.get("status")})
     return updated
 
 
@@ -284,6 +306,7 @@ async def delete_consignation(loto_id: str, current_user: dict = Depends(get_cur
         raise HTTPException(400, "Suppression impossible : consignation active")
 
     await db.loto_consignations.delete_one({"id": loto_id})
+    await _emit_loto_event("delete", {"id": loto_id})
     return {"success": True, "message": "Consignation supprimée"}
 
 
@@ -394,6 +417,7 @@ async def execute_workflow(loto_id: str, action: WorkflowAction, current_user: d
     )
 
     updated = await db.loto_consignations.find_one({"id": loto_id}, {"_id": 0})
+    await _emit_loto_event("workflow", {"id": loto_id, "action": action.action, "status": updated.get("status")})
     return updated
 
 

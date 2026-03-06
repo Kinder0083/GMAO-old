@@ -62,15 +62,28 @@ export default function ConsignationsLOTO() {
   const [tab, setTab] = useState('active');
 
   // Appliquer le filtre depuis la navigation (header LOTO icon)
+  // Utilise un key unique pour re-appliquer le filtre a chaque navigation
   useEffect(() => {
     try {
       const navState = window.history.state?.usr;
       if (navState?.filterStatus) {
-        setFilterStatus(navState.filterStatus);
-        setTab('all');
+        const status = navState.filterStatus;
+        if (status === 'ACTIVE') {
+          // Filtre spécial : CONSIGNE + INTERVENTION
+          setFilterStatus('ACTIVE');
+          setTab('active');
+        } else if (status === 'DECONSIGNE') {
+          setFilterStatus('DECONSIGNE');
+          setTab('completed');
+        } else {
+          setFilterStatus(status);
+          setTab('all');
+        }
+        // Nettoyer le state pour eviter de re-appliquer le filtre a chaque re-render
+        window.history.replaceState({ ...window.history.state, usr: {} }, '');
       }
     } catch (e) { /* ignore */ }
-  }, []);
+  });
 
   const load = useCallback(async () => {
     try {
@@ -91,7 +104,9 @@ export default function ConsignationsLOTO() {
   const filtered = consignations.filter(c => {
     if (tab === 'active' && ['DECONSIGNE', 'ANNULE'].includes(c.status)) return false;
     if (tab === 'completed' && !['DECONSIGNE', 'ANNULE'].includes(c.status)) return false;
-    if (filterStatus !== 'all' && c.status !== filterStatus) return false;
+    // Filtre 'ACTIVE' = CONSIGNE + INTERVENTION
+    if (filterStatus === 'ACTIVE' && !['CONSIGNE', 'INTERVENTION'].includes(c.status)) return false;
+    if (filterStatus !== 'all' && filterStatus !== 'ACTIVE' && c.status !== filterStatus) return false;
     if (search) {
       const s = search.toLowerCase();
       return c.numero?.toLowerCase().includes(s) ||
@@ -160,6 +175,7 @@ export default function ConsignationsLOTO() {
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="ACTIVE">Consignes actives</SelectItem>
             {Object.entries(STATUS_CONFIG).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v.label}</SelectItem>
             ))}

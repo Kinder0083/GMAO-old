@@ -19,7 +19,37 @@ const LOTOHeaderIcon = () => {
   useEffect(() => {
     load();
     const interval = setInterval(load, 60000);
-    return () => clearInterval(interval);
+
+    // WebSocket temps reel pour LOTO
+    let ws = null;
+    try {
+      const token = localStorage.getItem('token');
+      const baseUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const wsUrl = baseUrl.replace(/^http/, 'ws') + '/api/ws/loto?token=' + (token || '');
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'loto_update' || data.type === 'stats_update') {
+            load();
+          }
+        } catch (e) { /* ignore parse errors */ }
+      };
+      ws.onerror = () => { /* fallback to polling */ };
+      ws.onclose = () => { /* reconnect handled by interval */ };
+    } catch (e) { /* WebSocket not available, fallback to polling */ }
+
+    // Ecouter aussi le realtime_manager via le WS existant
+    const handleRealtimeUpdate = (event) => {
+      if (event.detail?.entity === 'loto') load();
+    };
+    window.addEventListener('realtime-update', handleRealtimeUpdate);
+
+    return () => {
+      clearInterval(interval);
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+      window.removeEventListener('realtime-update', handleRealtimeUpdate);
+    };
   }, [load]);
 
   // Click outside to close
@@ -33,7 +63,6 @@ const LOTOHeaderIcon = () => {
   }, [menuOpen]);
 
   const activeCount = (stats.consigne || 0) + (stats.intervention || 0);
-  const totalBadge = (stats.demande || 0) + activeCount;
 
   return (
     <div className="relative" data-loto-menu data-testid="loto-header-icon">
@@ -42,13 +71,12 @@ const LOTOHeaderIcon = () => {
           <TooltipTrigger asChild>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-            className="flex items-center gap-1 px-2 py-1 hover:bg-red-100 rounded-lg transition-colors relative border border-red-300 bg-red-50"
+            className="p-2 hover:bg-red-100 rounded-lg transition-colors relative border border-red-300 bg-red-50"
             data-testid="loto-header-btn"
           >
             <Lock size={18} className="text-red-600" />
-            <span className="text-xs font-bold text-red-600 hidden md:inline">LOTO</span>
 
-            {/* Badge ROUGE - Coin sup. droit - Consignations actives (CONSIGNE + INTERVENTION) */}
+            {/* Badge ROUGE - Coin sup. droit - Consignations actives */}
             {activeCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md" data-testid="loto-badge-red">
                 {activeCount > 9 ? '9+' : activeCount}
@@ -62,7 +90,7 @@ const LOTOHeaderIcon = () => {
               </span>
             )}
 
-            {/* Badge VERT - Coin inf. gauche - Deconsignations recentes */}
+            {/* Badge VERT - Coin inf. gauche - Deconsignations */}
             {(stats.deconsigne || 0) > 0 && (
               <span className="absolute -bottom-1 -left-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md" data-testid="loto-badge-green">
                 {stats.deconsigne > 9 ? '9+' : stats.deconsigne}
@@ -100,7 +128,7 @@ const LOTOHeaderIcon = () => {
           </div>
           <div className="py-1">
             <button
-              onClick={() => { navigate('/consignations-loto', { state: { filterStatus: 'CONSIGNE' } }); setMenuOpen(false); }}
+              onClick={() => { navigate('/consignations-loto', { state: { filterStatus: 'ACTIVE' } }); setMenuOpen(false); }}
               className="w-full px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center justify-between group"
               data-testid="loto-menu-consigne"
             >
@@ -134,11 +162,13 @@ const LOTOHeaderIcon = () => {
             </button>
           </div>
           <div className="p-2 border-t border-gray-100">
-            <div className="px-3 py-1 text-xs text-gray-400 flex items-center gap-2">
-              <span className="text-red-400 font-bold">&#9679;</span> Consigne
-              <span className="text-yellow-400 font-bold ml-1">&#9679;</span> Demande
-              <span className="text-green-400 font-bold ml-1">&#9679;</span> Deconsigne
-            </div>
+            <button
+              onClick={() => { navigate('/consignations-loto'); setMenuOpen(false); }}
+              className="w-full text-center text-xs text-blue-600 hover:text-blue-700 py-1 font-medium"
+              data-testid="loto-menu-all"
+            >
+              Voir toutes les consignations
+            </button>
           </div>
         </div>
       )}

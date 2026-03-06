@@ -114,8 +114,9 @@ const Header = ({
             <AIButton />
           </span>
           <HelpButton />
-          <span className="hidden md:flex">
+          <span className="hidden md:flex items-center gap-2">
             <HeaderClock />
+            <OfflineIndicator />
           </span>
         </div>
       </div>
@@ -361,9 +362,6 @@ const Header = ({
         
         {/* Alertes MQTT — masqué sur mobile */}
         <span className="hidden md:contents"><AlertNotifications /></span>
-        
-        {/* Indicateur en ligne/hors ligne */}
-        <OfflineIndicator />
         
         {/* Consignations LOTO */}
         <LOTOHeaderIcon />
