@@ -8,7 +8,9 @@ import { Plus, Search, Filter, Eye, Pencil, Trash2, Calendar, ArrowUpDown, Paper
 import ImprovementDialog from '../components/Improvements/ImprovementDialog';
 import ImprovementFormDialog from '../components/Improvements/ImprovementFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
+import { LOTOBadge } from '../components/Common/LOTOBadge';
 import { improvementsAPI } from '../services/api';
+import api from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useImprovements } from '../hooks/useImprovements';
 import { useSearchParams } from 'react-router-dom';
@@ -27,6 +29,7 @@ const Improvements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedImprovement, setSelectedImprovement] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [lotoByLinked, setLotoByLinked] = useState({});
   
   // Filtres de date
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month, custom
@@ -41,6 +44,11 @@ const Improvements = () => {
     loading, 
     refresh: refreshImprovements 
   } = useImprovements();
+
+  // Charger les consignations LOTO liées
+  useEffect(() => {
+    api.get('/loto/by-linked').then(res => setLotoByLinked(res.data || {})).catch(() => {});
+  }, []);
 
   // Appliquer le filtre "en retard" depuis la navigation (header)
   useLocationStateFilter({
@@ -401,6 +409,7 @@ const Improvements = () => {
                           {wo.attachments && wo.attachments.length > 0 && (
                             <Paperclip size={14} className="text-gray-500" title={`${wo.attachments.length} pièce(s) jointe(s)`} />
                           )}
+                          <LOTOBadge lotoInfo={lotoByLinked[wo.id]} />
                         </div>
                       </td>
                       <td className="py-3 px-4">{getStatusBadge(wo.statut)}</td>

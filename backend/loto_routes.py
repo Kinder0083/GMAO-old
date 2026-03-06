@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from bson import ObjectId
 import base64
 
-from dependencies import get_current_user
+from dependencies import get_current_user, get_current_admin_user
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +18,12 @@ router = APIRouter(prefix="/loto", tags=["LOTO - Consignations"])
 
 db = None
 _realtime_manager = None
+_audit_service = None
 
-def init_loto_routes(database):
-    global db, _realtime_manager
+def init_loto_routes(database, audit_svc=None):
+    global db, _realtime_manager, _audit_service
     db = database
+    _audit_service = audit_svc
     try:
         from realtime_manager import realtime_manager
         _realtime_manager = realtime_manager
@@ -29,6 +31,31 @@ def init_loto_routes(database):
         pass
     logger.info("Routes LOTO initialisées")
     return router
+
+
+async def _log_loto_audit(user: dict, action_type: str, entity_id: str = None, entity_name: str = None, details: str = None):
+    """Log une action LOTO dans le journal d'audit."""
+    if not _audit_service:
+        return
+    try:
+        from models import ActionType, EntityType
+        action_map = {
+            "CREATE": ActionType.CREATE,
+            "UPDATE": ActionType.UPDATE,
+            "DELETE": ActionType.DELETE,
+        }
+        await _audit_service.log_action(
+            user_id=user.get("id", ""),
+            user_name=user.get("name", user.get("email", "")),
+            user_email=user.get("email", ""),
+            action=action_map.get(action_type, ActionType.UPDATE),
+            entity_type=EntityType.LOTO,
+            entity_id=entity_id,
+            entity_name=entity_name,
+            details=details
+        )
+    except Exception as e:
+        logger.warning(f"Erreur log audit LOTO: {e}")
 
 
 async def _emit_loto_event(action: str, data: dict = None):
@@ -271,6 +298,8 @@ async def create_consignation(data: LOTOCreate, current_user: dict = Depends(get
     await db.loto_consignations.insert_one(doc)
     del doc["_id"]
     await _emit_loto_event("create", {"id": doc["id"], "status": doc["status"]})
+    await _log_loto_audit(current_user, "CREATE", doc["id"], doc["numero"],
+                          f"Création consignation {doc['numero']} pour {data.equipement_nom}")
     return doc
 
 
@@ -298,15 +327,19 @@ async def update_consignation(loto_id: str, data: LOTOUpdate, current_user: dict
 
 
 @router.delete("/{loto_id}")
-async def delete_consignation(loto_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_consignation(loto_id: str, current_user: dict = Depends(get_current_admin_user)):
     doc = await db.loto_consignations.find_one({"id": loto_id})
     if not doc:
         raise HTTPException(404, "Consignation introuvable")
     if doc["status"] not in ["DEMANDE", "ANNULE", "DECONSIGNE"]:
         raise HTTPException(400, "Suppression impossible : consignation active")
 
+    numero = doc.get("numero", "")
+    equipement = doc.get("equipement_nom", "")
     await db.loto_consignations.delete_one({"id": loto_id})
     await _emit_loto_event("delete", {"id": loto_id})
+    await _log_loto_audit(current_user, "DELETE", loto_id, numero,
+                          f"Suppression consignation {numero} ({equipement})")
     return {"success": True, "message": "Consignation supprimée"}
 
 
@@ -418,6 +451,8 @@ async def execute_workflow(loto_id: str, action: WorkflowAction, current_user: d
 
     updated = await db.loto_consignations.find_one({"id": loto_id}, {"_id": 0})
     await _emit_loto_event("workflow", {"id": loto_id, "action": action.action, "status": updated.get("status")})
+    await _log_loto_audit(current_user, "UPDATE", loto_id, doc.get("numero", ""),
+                          f"{hist_entry['action']} - {hist_entry.get('details', '')} ({doc.get('equipement_nom', '')})")
     return updated
 
 
@@ -501,6 +536,9 @@ async def manage_cadenas(loto_id: str, data: CadenasAction, current_user: dict =
         raise HTTPException(400, f"Action cadenas inconnue: {data.action}")
 
     updated = await db.loto_consignations.find_one({"id": loto_id}, {"_id": 0})
+    action_label = "Cadenas posé" if data.action == "poser" else "Cadenas retiré"
+    await _log_loto_audit(current_user, "UPDATE", loto_id, doc.get("numero", ""),
+                          f"{action_label} par {user_nom} ({doc.get('equipement_nom', '')})")
     return updated
 
 

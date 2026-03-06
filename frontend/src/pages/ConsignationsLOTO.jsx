@@ -15,6 +15,7 @@ import {
   Cog, Trash2, Edit, Eye, KeyRound, LockKeyhole
 } from 'lucide-react';
 import api from '../services/api';
+import { usePermissions } from '../hooks/usePermissions';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -52,6 +53,7 @@ async function apiFetch(url, opts = {}) {
 // ===== Main Page =====
 export default function ConsignationsLOTO() {
   const { toast } = useToast();
+  const { isAdmin } = usePermissions();
   const location = window.location;
   const [consignations, setConsignations] = useState([]);
   const [stats, setStats] = useState(null);
@@ -61,6 +63,7 @@ export default function ConsignationsLOTO() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [tab, setTab] = useState('active');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const routeLocation = useLocation();
 
   // Appliquer le filtre depuis la navigation (header LOTO icon)
@@ -98,6 +101,17 @@ export default function ConsignationsLOTO() {
   }, [toast]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleDelete = async (id) => {
+    try {
+      await apiFetch(`/api/loto/${id}`, { method: 'DELETE' });
+      toast({ title: 'Supprime', description: 'Consignation supprimee avec succes' });
+      setDeleteConfirm(null);
+      load();
+    } catch (e) {
+      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    }
+  };
 
   const filtered = consignations.filter(c => {
     if (tab === 'active' && ['DECONSIGNE', 'ANNULE'].includes(c.status)) return false;
@@ -246,9 +260,18 @@ export default function ConsignationsLOTO() {
                     <td className="p-3 text-xs">{c.demandeur_nom}</td>
                     <td className="p-3 text-xs text-gray-500">{new Date(c.date_demande).toLocaleDateString('fr-FR')}</td>
                     <td className="p-3 text-right">
-                      <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setSelectedId(c.id); }}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setSelectedId(c.id); }} data-testid={`loto-view-${c.id}`}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        {isAdmin() && ['DEMANDE', 'ANNULE', 'DECONSIGNE'].includes(c.status) && (
+                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={e => { e.stopPropagation(); setDeleteConfirm(c); }}
+                            data-testid={`loto-delete-${c.id}`}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -260,6 +283,29 @@ export default function ConsignationsLOTO() {
 
       {/* Create Dialog */}
       {showCreate && <LOTOCreateDialog open={showCreate} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load(); }} />}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <DialogContent className="sm:max-w-md" data-testid="loto-delete-dialog">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" /> Confirmer la suppression
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-gray-600">
+              Etes-vous sur de vouloir supprimer la consignation <strong>{deleteConfirm.numero}</strong> ({deleteConfirm.equipement_nom}) ?
+              Cette action est irreversible.
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Annuler</Button>
+              <Button variant="destructive" onClick={() => handleDelete(deleteConfirm.id)} data-testid="loto-delete-confirm-btn">
+                <Trash2 className="w-4 h-4 mr-1" /> Supprimer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

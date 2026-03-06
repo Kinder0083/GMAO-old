@@ -10187,7 +10187,7 @@ api_router.include_router(contract_router)
 
 # Routes LOTO (Lockout/Tagout - Consignations de sécurité)
 from loto_routes import router as loto_router, init_loto_routes
-init_loto_routes(db)
+init_loto_routes(db, audit_service)
 api_router.include_router(loto_router)
 
 # Push Notifications routes

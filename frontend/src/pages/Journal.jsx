@@ -41,7 +41,8 @@ const Journal = () => {
     VENDOR: 'Fournisseur',
     INVENTORY: 'Inventaire',
     PREVENTIVE_MAINTENANCE: 'Maintenance préventive',
-    PURCHASE_HISTORY: 'Historique d\'achat'
+    PURCHASE_HISTORY: 'Historique d\'achat',
+    LOTO: 'Consignation LOTO'
   };
 
   useEffect(() => {

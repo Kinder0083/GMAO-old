@@ -1,5 +1,6 @@
 import React from 'react';
 import { Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const LOTO_STATUS_CONFIG = {
@@ -10,23 +11,34 @@ const LOTO_STATUS_CONFIG = {
 };
 
 export function LOTOBadge({ lotoInfo, size = 'sm' }) {
+  const navigate = useNavigate();
+
   if (!lotoInfo) return null;
 
   const cfg = LOTO_STATUS_CONFIG[lotoInfo.status] || LOTO_STATUS_CONFIG.DEMANDE;
   const iconSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
 
+  const handleClick = (e) => {
+    e.stopPropagation();
+    navigate('/consignations-loto', { state: { filterStatus: lotoInfo.status === 'CONSIGNE' || lotoInfo.status === 'INTERVENTION' ? 'ACTIVE' : lotoInfo.status } });
+  };
+
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color} cursor-help`} data-testid={`loto-badge-${lotoInfo.status?.toLowerCase()}`}>
+          <span
+            onClick={handleClick}
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color} cursor-pointer hover:opacity-80 transition-opacity`}
+            data-testid={`loto-badge-${lotoInfo.status?.toLowerCase()}`}
+          >
             <Shield className={iconSize} />
             {size !== 'sm' && <span className="text-xs font-semibold">{lotoInfo.numero}</span>}
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg max-w-xs">
           <p className="font-medium text-sm">{cfg.label}</p>
-          <p className="text-xs text-gray-300 mt-1">LOTO {lotoInfo.numero}</p>
+          <p className="text-xs text-gray-300 mt-1">LOTO {lotoInfo.numero} - Cliquer pour voir</p>
           {lotoInfo.equipement_nom && <p className="text-xs text-gray-400">{lotoInfo.equipement_nom}</p>}
         </TooltipContent>
       </Tooltip>
