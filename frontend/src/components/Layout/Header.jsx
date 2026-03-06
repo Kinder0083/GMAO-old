@@ -25,6 +25,7 @@ import AIButton from '../Common/AIButton';
 import ManualButton from '../Common/ManualButton';
 import AlertNotifications from '../Common/AlertNotifications';
 import NotificationsDropdown from '../Common/NotificationsDropdown';
+import LOTOHeaderIcon from '../Common/LOTOHeaderIcon';
 import CameraAlertIcon from '../Common/CameraAlertIcon';
 import BackupStatusIcon from '../Common/BackupStatusIcon';
 import ChangelogPanel from '../Common/ChangelogPanel';
@@ -359,6 +360,9 @@ const Header = ({
         
         {/* Alertes MQTT — masqué sur mobile */}
         <span className="hidden md:contents"><AlertNotifications /></span>
+        
+        {/* Consignations LOTO */}
+        <LOTOHeaderIcon />
         
         {/* Notifications utilisateur */}
         <NotificationsDropdown />

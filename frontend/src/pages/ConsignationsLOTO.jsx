@@ -51,6 +51,7 @@ async function apiFetch(url, opts = {}) {
 // ===== Main Page =====
 export default function ConsignationsLOTO() {
   const { toast } = useToast();
+  const location = window.location;
   const [consignations, setConsignations] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,17 @@ export default function ConsignationsLOTO() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [tab, setTab] = useState('active');
+
+  // Appliquer le filtre depuis la navigation (header LOTO icon)
+  useEffect(() => {
+    try {
+      const navState = window.history.state?.usr;
+      if (navState?.filterStatus) {
+        setFilterStatus(navState.filterStatus);
+        setTab('all');
+      }
+    } catch (e) { /* ignore */ }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -243,6 +255,8 @@ function LOTOCreateDialog({ open, onClose, onCreated }) {
   const { toast } = useToast();
   const [equipments, setEquipments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [linkedItems, setLinkedItems] = useState([]);
+  const [loadingLinked, setLoadingLinked] = useState(false);
   const [form, setForm] = useState({
     equipement_id: '', equipement_nom: '', emplacement: '',
     linked_type: '', linked_id: '', linked_numero: '',
@@ -268,6 +282,74 @@ function LOTOCreateDialog({ open, onClose, onCreated }) {
     };
     loadData();
   }, []);
+
+  // Charger les entités liées quand le type change
+  useEffect(() => {
+    if (!form.linked_type || form.linked_type === 'none') {
+      setLinkedItems([]);
+      return;
+    }
+    const loadLinked = async () => {
+      setLoadingLinked(true);
+      try {
+        let url = '';
+        if (form.linked_type === 'work_order') url = '/api/work-orders';
+        else if (form.linked_type === 'preventive_maintenance') url = '/api/preventive-maintenance';
+        else if (form.linked_type === 'improvement') url = '/api/improvement-requests';
+        if (!url) return;
+        const res = await fetch(`${API}${url}`, { headers: authHeaders() });
+        let data = await res.json();
+        if (!Array.isArray(data)) data = data.items || data.data || [];
+        // Filtrer par statut ouvert/en attente/en cours
+        const activeStatuses = ['EN_ATTENTE', 'EN_COURS', 'OUVERTE', 'OUVERT', 'PLANIFIEE', 'SOUMISE', 'VALIDEE', 'APPROUVEE', 'active', 'planned'];
+        const filtered = data.filter(item => {
+          const s = (item.statut || item.status || '').toUpperCase();
+          return activeStatuses.some(st => s.includes(st)) || !s || s === '';
+        });
+        setLinkedItems(filtered);
+      } catch (e) { console.error(e); }
+      finally { setLoadingLinked(false); }
+    };
+    loadLinked();
+  }, [form.linked_type]);
+
+  const handleLinkedSelect = (itemId) => {
+    const item = linkedItems.find(i => i.id === itemId);
+    if (!item) return;
+    const numero = item.numero || item.id?.slice(0, 8) || '';
+    let eqId = '', eqNom = '', motif = '', duree = '';
+    if (form.linked_type === 'work_order') {
+      eqId = item.equipement?.id || item.equipement_id || '';
+      eqNom = item.equipement?.nom || item.equipement_nom || '';
+      motif = item.titre || item.description || '';
+      duree = item.tempsEstime || item.duree_prevue || '';
+    } else if (form.linked_type === 'preventive_maintenance') {
+      eqId = item.equipement_id || '';
+      eqNom = item.equipement_nom || '';
+      motif = item.nom || item.description || '';
+      duree = item.duree_estimee || '';
+    } else if (form.linked_type === 'improvement') {
+      eqId = item.equipement_id || '';
+      eqNom = item.equipement_nom || '';
+      motif = item.titre || item.objet || item.description || '';
+    }
+    setForm(f => ({
+      ...f,
+      linked_id: itemId,
+      linked_numero: String(numero),
+      equipement_id: eqId || f.equipement_id,
+      equipement_nom: eqNom || f.equipement_nom,
+      motif: motif || f.motif,
+      duree_prevue_heures: duree ? String(duree) : f.duree_prevue_heures
+    }));
+  };
+
+  const getLinkedLabel = (item) => {
+    if (form.linked_type === 'work_order') return `#${item.numero || '?'} - ${item.titre || 'Sans titre'}`;
+    if (form.linked_type === 'preventive_maintenance') return `${item.nom || item.description || item.id?.slice(0,8)}`;
+    if (form.linked_type === 'improvement') return `${item.titre || item.objet || item.id?.slice(0,8)}`;
+    return item.id;
+  };
 
   const toggleEnergy = (id) => {
     setForm(f => ({
@@ -373,7 +455,7 @@ function LOTOCreateDialog({ open, onClose, onCreated }) {
           </div>
 
           {/* Link to WO/PM/Improvement */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Lie a (optionnel)</Label>
               <Select value={form.linked_type} onValueChange={v => setForm(f => ({ ...f, linked_type: v, linked_id: '', linked_numero: '' }))}>
@@ -387,12 +469,24 @@ function LOTOCreateDialog({ open, onClose, onCreated }) {
               </Select>
             </div>
             <div>
-              <Label>ID / Reference</Label>
-              <Input value={form.linked_id} onChange={e => setForm(f => ({ ...f, linked_id: e.target.value }))} placeholder="ID" />
-            </div>
-            <div>
-              <Label>Numero</Label>
-              <Input value={form.linked_numero} onChange={e => setForm(f => ({ ...f, linked_numero: e.target.value }))} placeholder="Ex: OT-5801" />
+              <Label>{form.linked_type === 'work_order' ? 'Ordre de travail' : form.linked_type === 'preventive_maintenance' ? 'Maintenance prev.' : form.linked_type === 'improvement' ? 'Amelioration' : 'Numero'}</Label>
+              {form.linked_type && form.linked_type !== 'none' ? (
+                <Select value={form.linked_id} onValueChange={handleLinkedSelect}>
+                  <SelectTrigger data-testid="loto-linked-select">
+                    <SelectValue placeholder={loadingLinked ? 'Chargement...' : 'Selectionner...'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {linkedItems.map(item => (
+                      <SelectItem key={item.id} value={item.id}>{getLinkedLabel(item)}</SelectItem>
+                    ))}
+                    {linkedItems.length === 0 && !loadingLinked && (
+                      <div className="px-3 py-2 text-sm text-gray-500">Aucun element ouvert/en cours</div>
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input disabled placeholder="Selectionnez un type" />
+              )}
             </div>
           </div>
 

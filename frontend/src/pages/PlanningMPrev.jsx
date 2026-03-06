@@ -618,6 +618,11 @@ const PlanningMPrev = () => {
           <span className={`truncate text-sm ${isChild ? 'text-gray-600' : ''}`} title={equipment.nom}>
             {equipment.nom}
           </span>
+          {equipment.loto_active && (
+            <span className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-red-100 text-red-600 text-[10px] font-bold flex-shrink-0" title={`LOTO ${equipment.loto_numero || ''} - Equipement consigne`}>
+              LOTO
+            </span>
+          )}
         </div>
         
         {/* Cellules des jours */}

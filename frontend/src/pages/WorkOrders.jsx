@@ -11,8 +11,10 @@ import WorkOrderFormDialog from '../components/WorkOrders/WorkOrderFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import ChecklistExecutionDialog from '../components/PreventiveMaintenance/ChecklistExecutionDialog';
 import TemplateSelectionDialog from '../components/WorkOrders/TemplateSelectionDialog';
+import { LOTOBadge } from '../components/Common/LOTOBadge';
 
 import { workOrdersAPI, checklistsAPI, workOrderTemplatesAPI } from '../services/api';
+import api from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useWorkOrders } from '../hooks/useWorkOrders';
 import { usePermissions } from '../hooks/usePermissions';
@@ -46,6 +48,7 @@ const WorkOrders = () => {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [hasTemplateAccess, setHasTemplateAccess] = useState(false);
   const [templateFormData, setTemplateFormData] = useState(null);
+  const [lotoByLinked, setLotoByLinked] = useState({});
   
   // Filtres de date
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month, custom
@@ -142,6 +145,8 @@ const WorkOrders = () => {
   useEffect(() => {
     refreshWorkOrders();
     checkTemplateAccess();
+    // Charger les consignations LOTO liées
+    api.get('/loto/by-linked').then(res => setLotoByLinked(res.data || {})).catch(() => {});
   }, [dateFilter, dateType, customStartDate, customEndDate]);
 
   // Vérifier si l'utilisateur a accès aux ordres type
@@ -565,6 +570,7 @@ const WorkOrders = () => {
                           {wo.attachments && wo.attachments.length > 0 && (
                             <Paperclip size={14} className="text-gray-500" title={`${wo.attachments.length} pièce(s) jointe(s)`} />
                           )}
+                          <LOTOBadge lotoInfo={lotoByLinked[wo.id]} />
                         </div>
                       </td>
                       <td className="py-3 px-4">{getStatusBadge(wo.statut)}</td>

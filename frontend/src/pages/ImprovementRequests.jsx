@@ -11,8 +11,10 @@ import ImprovementRequestFormDialog from '../components/ImprovementRequests/Impr
 import ConvertToImprovementDialog from '../components/ImprovementRequests/ConvertToImprovementDialog';
 import ImprovementRequestValidationDialog from '../components/ImprovementRequests/ImprovementRequestValidationDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
+import { LOTOBadge } from '../components/Common/LOTOBadge';
 
 import { improvementRequestsAPI, improvementsAPI } from '../services/api';
+import api from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useImprovementRequests } from '../hooks/useImprovementRequests';
 import { useServiceManagerStatus } from '../hooks/useServiceManagerStatus';
@@ -35,6 +37,7 @@ const ImprovementRequests = () => {
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [lotoByLinked, setLotoByLinked] = useState({});
 
   // Utiliser le hook temps réel
   const { 
@@ -42,6 +45,11 @@ const ImprovementRequests = () => {
     loading, 
     refresh: refreshRequests 
   } = useImprovementRequests();
+
+  // Charger les consignations LOTO liées
+  useEffect(() => {
+    api.get('/loto/by-linked').then(res => setLotoByLinked(res.data || {})).catch(() => {});
+  }, [requests]);
 
   const handleDelete = async (id) => {
     setItemToDelete(id);
@@ -252,7 +260,12 @@ const ImprovementRequests = () => {
                           <span className="text-gray-400 text-xs">-</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900 font-medium">{req.titre}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900 font-medium">
+                        <div className="flex items-center gap-2">
+                          {req.titre}
+                          <LOTOBadge lotoInfo={lotoByLinked[req.id]} />
+                        </div>
+                      </td>
                       <td className="py-3 px-4">{getStatusBadge(req.status || 'SOUMISE')}</td>
                       <td className="py-3 px-4">{getPriorityBadge(req.priorite)}</td>
                       <td className="py-3 px-4 text-sm text-gray-600">

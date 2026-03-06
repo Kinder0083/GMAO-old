@@ -17,7 +17,9 @@ import ChecklistFormDialog from '../components/PreventiveMaintenance/ChecklistFo
 import ChecklistExecutionDialog from '../components/PreventiveMaintenance/ChecklistExecutionDialog';
 import ChecklistHistoryView from '../components/PreventiveMaintenance/ChecklistHistoryView';
 import AIMaintenanceGenerator from '../components/AIMaintenanceGenerator';
+import { LOTOBadge } from '../components/Common/LOTOBadge';
 import { preventiveMaintenanceAPI, workOrdersAPI, checklistsAPI, equipmentsAPI } from '../services/api';
+import api from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
 import { usePreventiveMaintenance } from '../hooks/usePreventiveMaintenance';
@@ -48,6 +50,7 @@ const PreventiveMaintenance = () => {
   // États pour l'exécution et l'historique des checklists
   const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [lotoByLinked, setLotoByLinked] = useState({});
   const [aiMaintenanceOpen, setAiMaintenanceOpen] = useState(false);
   const [checklistToExecute, setChecklistToExecute] = useState(null);
   const [executionContext, setExecutionContext] = useState({});
@@ -58,6 +61,11 @@ const PreventiveMaintenance = () => {
     loading, 
     refresh: refreshMaintenance 
   } = usePreventiveMaintenance();
+
+  // Charger les consignations LOTO liées
+  useEffect(() => {
+    api.get('/loto/by-linked').then(res => setLotoByLinked(res.data || {})).catch(() => {});
+  }, [maintenance]);
 
   // Vérifier les permissions
   const canDelete = user?.permissions?.preventiveMaintenance?.delete === true;
@@ -411,7 +419,10 @@ const PreventiveMaintenance = () => {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-xl mb-2">{item.titre}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-xl mb-2">{item.titre}</CardTitle>
+                      <LOTOBadge lotoInfo={lotoByLinked[item.id]} size="md" />
+                    </div>
                     {getFrequencyBadge(item.frequence)}
                   </div>
                   <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">

@@ -167,6 +167,36 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
     }
 
 
+@router.get("/by-linked")
+async def get_loto_by_linked_ids(current_user: dict = Depends(get_current_user)):
+    """Retourne un dictionnaire {linked_id: {status, numero, id}} pour toutes les consignations."""
+    docs = await db.loto_consignations.find(
+        {"linked_id": {"$ne": None}},
+        {"_id": 0, "id": 1, "numero": 1, "status": 1, "linked_id": 1, "linked_type": 1, "equipement_nom": 1}
+    ).to_list(500)
+    result = {}
+    for d in docs:
+        lid = d.get("linked_id")
+        if lid:
+            existing = result.get(lid)
+            priority = {"CONSIGNE": 3, "INTERVENTION": 3, "DEMANDE": 2, "DECONSIGNE": 1, "ANNULE": 0}
+            if not existing or priority.get(d["status"], 0) > priority.get(existing["status"], 0):
+                result[lid] = {
+                    "id": d["id"],
+                    "numero": d["numero"],
+                    "status": d["status"],
+                    "linked_type": d.get("linked_type"),
+                    "equipement_nom": d.get("equipement_nom", "")
+                }
+    return result
+
+
+@router.get("/pin/check")
+async def check_pin(current_user: dict = Depends(get_current_user)):
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "loto_pin": 1})
+    return {"has_pin": bool(user and user.get("loto_pin"))}
+
+
 @router.get("/{loto_id}")
 async def get_consignation(loto_id: str, current_user: dict = Depends(get_current_user)):
     doc = await db.loto_consignations.find_one({"id": loto_id}, {"_id": 0})
@@ -489,9 +519,3 @@ async def set_pin(pin: dict, current_user: dict = Depends(get_current_user)):
         {"$set": {"loto_pin": code}}
     )
     return {"success": True, "message": "Code PIN LOTO défini"}
-
-
-@router.get("/pin/check")
-async def check_pin(current_user: dict = Depends(get_current_user)):
-    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "loto_pin": 1})
-    return {"has_pin": bool(user and user.get("loto_pin"))}
