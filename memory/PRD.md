@@ -25,7 +25,6 @@ Application GMAO complete pour la gestion de maintenance industrielle. Interface
 - Page de maintenance HTML avec auto-refresh + bypass admin
 - Health Check automatique (cron 5 min)
 - Recuperation 4 niveaux : SOFT > ROLLBACK > MEDIUM > HARD
-- Confirmation renforcee : taper "MAINTENANCE" pour activer
 
 ### Panneau Sante du Systeme (Mars 2026)
 - Page admin /system-health sous "Parametres Speciaux"
@@ -34,52 +33,48 @@ Application GMAO complete pour la gestion de maintenance industrielle. Interface
 ### Alertes Email (Mars 2026)
 - 6 types d'alertes configurables avec seuils et cooldown
 
-### Systeme LOTO (Lockout/Tagout) - Consignations de securite (Mars 2026)
+### Systeme LOTO (Lockout/Tagout) (Mars 2026)
 - Gestion des consignations LOTO avec workflow 4 etapes
 - Systeme de cadenas, Points d'isolation, Signatures electroniques
 - Integration visuelle dans Header, OT, MP, Ameliorations
 
 ### Correction cache navigateur persistant (Mars 2026)
 - Middleware anti-cache backend + intercepteur frontend
-- SW simplifie pour notifications push uniquement
-
-### Correction PWA/Notifications persistantes (Mars 2026)
-- Persistance choix utilisateur dans localStorage
 
 ### QR Code + IA Ameliore (Mars 2026)
-- **Endpoint IA** : `/api/qr/public/equipment/{id}/ai-summary` genere un resume IA complet
-- **Donnees analysees** : Fiche equipement, historique OT (20 derniers), KPI, maintenances preventives, consignations LOTO actives
-- **LLM** : Gemini 2.5 Flash via emergentintegrations (cle Emergent)
-- **Frontend** : Section "Analyse IA" sur la page QR avec loading, KPI chips, texte formate, bouton Actualiser
-- **Public** : Accessible sans authentification via scan QR code
-- **Fichiers** : `qr_routes.py` (endpoint), `QREquipmentPage.jsx` (UI)
+- Endpoint `/api/qr/public/equipment/{id}/ai-summary` genere un resume IA complet
+- Donnees analysees : Fiche equipement, historique OT, KPI, maintenances preventives, LOTO
+- Frontend : Section "Analyse IA" sur la page QR avec loading, KPI chips, texte formate
 
 ### Mode Hors-ligne Ameliore (Mars 2026)
-- **Indicateur visuel** : Badge "En ligne" (vert) / "Hors ligne" (rouge clignotant) dans le header
-- **Cache IndexedDB** : Reponses API GET mises en cache automatiquement (excl. auth/chat/IA)
-- **File d'attente** : Mutations POST/PUT/DELETE queued quand hors-ligne, synchronisees au retour
-- **Synchronisation auto** : Service `offlineSync.js` ecoute l'evenement 'online' et rejoue les mutations
-- **Compteur** : Badge ambre avec nombre de mutations en attente de synchronisation
-- **Nettoyage** : Cache automatiquement purge apres 24h
-- **Fichiers** : `useOnlineStatus.js`, `offlineDb.js`, `offlineSync.js`, `OfflineIndicator.jsx`, `api.js` (intercepteurs)
+- Indicateur visuel "En ligne"/"Hors ligne" dans le header
+- Cache IndexedDB automatique des reponses API GET
+- File d'attente de synchronisation pour les mutations hors-ligne
+- Synchronisation automatique au retour en ligne
+
+### Choix du modele IA pour QR (Mars 2026)
+- **3 fournisseurs** : Google Gemini, OpenAI GPT, Anthropic Claude
+- **Parametres systeme** : Configurable dans Personnalisation > IA > "Modele IA pour les resumes QR"
+- **Endpoints** : GET/PUT `/api/qr/ai-settings` (PUT = admin seulement)
+- **Validation** : Provider et modele valides verifies avant sauvegarde
+- **Integration** : L'endpoint ai-summary lit le modele configure depuis `system_settings`
+- **Fichiers** : `qr_routes.py` (QR_AI_PROVIDERS, endpoints), `AISection.jsx` (UI)
 
 ## Fichiers cles
 - `backend/server.py` - API endpoints principal
-- `backend/qr_routes.py` - Routes QR codes + resume IA
-- `backend/loto_routes.py` - Routes LOTO
+- `backend/qr_routes.py` - Routes QR codes + resume IA + ai-settings
+- `backend/ai_chat_routes.py` - Routes chatbot IA + LLM_PROVIDERS
 - `frontend/src/pages/QREquipmentPage.jsx` - Page QR avec IA
+- `frontend/src/components/Personnalisation/AISection.jsx` - Parametres IA + QR model
 - `frontend/src/components/Common/OfflineIndicator.jsx` - Indicateur connexion
 - `frontend/src/services/offlineDb.js` - IndexedDB pour cache offline
-- `frontend/src/services/offlineSync.js` - Synchronisation offline
-- `frontend/src/services/api.js` - Axios avec cache offline
 
 ## Collections MongoDB
-- `health_alerts_config` - Configuration des alertes
+- `system_settings` - Parametres systeme (dont qr_ai_settings)
 - `loto_procedures` - Consignations LOTO
 - `qr_actions_config` - Configuration actions QR
-- `user_preferences` - Preferences utilisateur (choix modele IA)
+- `user_preferences` - Preferences utilisateur (modele IA chatbot)
 
 ## Backlog
 - Stabilisation continue selon retours utilisateur
 - Ameliorations application mobile native (Expo)
-- Choix du modele IA configurable dans les parametres pour les resumes QR
