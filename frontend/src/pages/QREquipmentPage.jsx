@@ -277,7 +277,7 @@ const QREquipmentPage = () => {
                 {/* Footer */}
                 <div className="flex items-center justify-between mt-3 pt-2 border-t border-indigo-100">
                   <span className="text-xs text-indigo-400">
-                    {aiSummary.model} — {new Date(aiSummary.generated_at).toLocaleString('fr-FR')}
+                    {aiSummary.provider && `${aiSummary.provider}/`}{aiSummary.model} — {new Date(aiSummary.generated_at).toLocaleString('fr-FR')}
                   </span>
                   <button
                     onClick={generateAiSummary}

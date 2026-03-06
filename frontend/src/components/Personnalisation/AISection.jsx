@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useToast } from '../../hooks/use-toast';
-import { Bot, Sparkles, Save, RefreshCw } from 'lucide-react';
+import { Bot, Sparkles, Save, RefreshCw, QrCode } from 'lucide-react';
 import api from '../../services/api';
 
 const AISection = () => {
@@ -20,8 +20,15 @@ const AISection = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // QR AI settings (system-level)
+  const [qrProvider, setQrProvider] = useState('gemini');
+  const [qrModel, setQrModel] = useState('gemini-2.5-flash');
+  const [qrProviders, setQrProviders] = useState({});
+  const [savingQr, setSavingQr] = useState(false);
+
   useEffect(() => {
     loadProviders();
+    loadQrAiSettings();
   }, []);
 
   useEffect(() => {
@@ -43,6 +50,38 @@ const AISection = () => {
       console.error('Erreur chargement fournisseurs LLM:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadQrAiSettings = async () => {
+    try {
+      const res = await api.get('/qr/ai-settings');
+      setQrProvider(res.data.provider || 'gemini');
+      setQrModel(res.data.model || 'gemini-2.5-flash');
+      setQrProviders(res.data.providers || {});
+    } catch (error) {
+      console.error('Erreur chargement parametres QR IA:', error);
+    }
+  };
+
+  const handleQrProviderChange = (providerId) => {
+    setQrProvider(providerId);
+    const prov = qrProviders[providerId];
+    if (prov?.models?.length > 0) {
+      const def = prov.models.find(m => m.default) || prov.models[0];
+      setQrModel(def.id);
+    }
+  };
+
+  const handleSaveQr = async () => {
+    try {
+      setSavingQr(true);
+      await api.put('/qr/ai-settings', { provider: qrProvider, model: qrModel });
+      toast({ title: 'Succes', description: 'Modele IA pour les resumes QR mis a jour' });
+    } catch (error) {
+      toast({ title: 'Erreur', description: 'Impossible de sauvegarder', variant: 'destructive' });
+    } finally {
+      setSavingQr(false);
     }
   };
 
@@ -230,10 +269,77 @@ const AISection = () => {
           ) : (
             <>
               <Save className="mr-2" size={16} />
-              Sauvegarder les préférences IA
+              Sauvegarder les preferences IA
             </>
           )}
         </Button>
+
+        {/* ========== Modele IA pour QR Code ========== */}
+        <div className="pt-4 mt-4 border-t-2 border-dashed border-indigo-200" />
+
+        <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border border-indigo-200" data-testid="qr-ai-settings">
+          <h4 className="font-semibold text-indigo-800 flex items-center gap-2 mb-3">
+            <QrCode size={18} className="text-indigo-600" />
+            Modele IA pour les resumes QR
+          </h4>
+          <p className="text-xs text-gray-600 mb-4">
+            Ce modele est utilise lorsqu'un utilisateur scanne un QR code d'equipement et demande une analyse IA. Ce parametre est global (s'applique a tous les utilisateurs).
+          </p>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="qr-ai-provider" className="text-sm">Fournisseur</Label>
+              <select
+                id="qr-ai-provider"
+                value={qrProvider}
+                onChange={(e) => handleQrProviderChange(e.target.value)}
+                className="w-full px-3 py-2 border border-indigo-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm"
+                data-testid="qr-ai-provider-select"
+              >
+                {Object.values(qrProviders).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="qr-ai-model" className="text-sm">Modele</Label>
+              <select
+                id="qr-ai-model"
+                value={qrModel}
+                onChange={(e) => setQrModel(e.target.value)}
+                className="w-full px-3 py-2 border border-indigo-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm"
+                data-testid="qr-ai-model-select"
+              >
+                {qrProviders[qrProvider]?.models?.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} {m.default ? '(Recommande)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button
+              onClick={handleSaveQr}
+              disabled={savingQr}
+              size="sm"
+              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              data-testid="qr-ai-save-btn"
+            >
+              {savingQr ? (
+                <>
+                  <RefreshCw className="animate-spin mr-2" size={14} />
+                  Sauvegarde...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2" size={14} />
+                  Appliquer au QR Code
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

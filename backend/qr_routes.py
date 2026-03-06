@@ -63,6 +63,67 @@ async def check_qr_dependencies():
     return result
 
 
+# ========== PARAMÈTRES IA QR (SYSTÈME) ==========
+
+# Providers/modèles supportés pour QR IA (via Emergent key)
+QR_AI_PROVIDERS = {
+    "gemini": {
+        "id": "gemini", "name": "Google Gemini",
+        "models": [
+            {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "default": True},
+            {"id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro"},
+            {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite"},
+        ]
+    },
+    "openai": {
+        "id": "openai", "name": "OpenAI GPT",
+        "models": [
+            {"id": "gpt-4o", "name": "GPT-4o", "default": True},
+            {"id": "gpt-4o-mini", "name": "GPT-4o Mini"},
+        ]
+    },
+    "anthropic": {
+        "id": "anthropic", "name": "Anthropic Claude",
+        "models": [
+            {"id": "claude-4-sonnet-20250514", "name": "Claude 4 Sonnet", "default": True},
+            {"id": "claude-3-5-haiku-20241022", "name": "Claude 3.5 Haiku"},
+        ]
+    },
+}
+
+QR_AI_SETTINGS_KEY = "qr_ai_settings"
+
+
+@router.get("/ai-settings")
+async def get_qr_ai_settings():
+    """Récupérer les paramètres IA pour les résumés QR (public pour lecture)."""
+    settings = await db.system_settings.find_one({"key": QR_AI_SETTINGS_KEY}, {"_id": 0})
+    if settings:
+        return {"provider": settings.get("provider", "gemini"), "model": settings.get("model", "gemini-2.5-flash"), "providers": QR_AI_PROVIDERS}
+    return {"provider": "gemini", "model": "gemini-2.5-flash", "providers": QR_AI_PROVIDERS}
+
+
+@router.put("/ai-settings")
+async def update_qr_ai_settings(data: dict, current_user: dict = Depends(get_current_admin_user)):
+    """Mettre à jour les paramètres IA pour les résumés QR (admin uniquement)."""
+    provider = data.get("provider", "gemini")
+    model = data.get("model", "gemini-2.5-flash")
+
+    # Valider que le provider et le modèle existent
+    if provider not in QR_AI_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Fournisseur inconnu: {provider}")
+    valid_models = [m["id"] for m in QR_AI_PROVIDERS[provider]["models"]]
+    if model not in valid_models:
+        raise HTTPException(status_code=400, detail=f"Modèle inconnu pour {provider}: {model}")
+
+    await db.system_settings.update_one(
+        {"key": QR_AI_SETTINGS_KEY},
+        {"$set": {"key": QR_AI_SETTINGS_KEY, "provider": provider, "model": model, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    return {"provider": provider, "model": model, "message": "Paramètres IA QR mis à jour"}
+
+
 # ========== ROUTES PUBLIQUES (SANS AUTH) ==========
 
 @router.get("/public/equipment/{eq_id}")
@@ -265,7 +326,7 @@ Génère un résumé concis et structuré en français comprenant :
 
 Sois concis, factuel et utile. Utilise des puces et du gras pour la lisibilité. Ne dépasse pas 400 mots."""
 
-    # 8. Appeler le LLM
+    # 8. Appeler le LLM avec le modèle configuré
     try:
         api_key = os.environ.get("EMERGENT_LLM_KEY")
         if not api_key:
@@ -276,6 +337,16 @@ Sois concis, factuel et utile. Utilise des puces et du gras pour la lisibilité.
         if not api_key:
             raise HTTPException(status_code=500, detail="Clé API IA non configurée")
 
+        # Lire le modèle configuré dans les paramètres système
+        ai_settings = await db.system_settings.find_one({"key": QR_AI_SETTINGS_KEY}, {"_id": 0})
+        ai_provider = ai_settings.get("provider", "gemini") if ai_settings else "gemini"
+        ai_model = ai_settings.get("model", "gemini-2.5-flash") if ai_settings else "gemini-2.5-flash"
+
+        # Fallback si provider non supporté par Emergent
+        if ai_provider in ("deepseek", "mistral"):
+            ai_provider = "gemini"
+            ai_model = "gemini-2.5-flash"
+
         from emergentintegrations.llm.chat import LlmChat, UserMessage
 
         chat = LlmChat(
@@ -283,7 +354,7 @@ Sois concis, factuel et utile. Utilise des puces et du gras pour la lisibilité.
             session_id=f"qr_ai_{eq_id}_{_uuid.uuid4().hex[:6]}",
             system_message=system_prompt
         )
-        chat.with_model("gemini", "gemini-2.5-flash")
+        chat.with_model(ai_provider, ai_model)
 
         user_msg = UserMessage(text=f"Voici les données de l'équipement. Génère le résumé IA.\n\n{data_context}")
         response_text = await chat.send_message(user_msg)
@@ -293,7 +364,8 @@ Sois concis, factuel et utile. Utilise des puces et du gras pour la lisibilité.
             "equipment_name": eq.get("nom", ""),
             "summary": response_text,
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "model": "gemini-2.5-flash",
+            "model": ai_model,
+            "provider": ai_provider,
             "data": {
                 "total_work_orders": total_wos,
                 "open_work_orders": open_wos,
