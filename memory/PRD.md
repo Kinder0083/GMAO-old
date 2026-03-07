@@ -12,53 +12,57 @@ Application de GMAO complète incluant gestion des ordres de travail, maintenanc
 
 ## Fonctionnalités implémentées
 
+### WebSocket temps réel pour inventaire QR (7 mars 2026)
+- Broadcast automatique après mouvement de stock (ajout/retrait) via QR code
+- Broadcast automatique après signalement de besoin via QR code
+- Page Inventaire écoute les événements `inventory_update` et `inventory_restock_request`
+- Toast de notification en temps réel pour les autres utilisateurs connectés
+
+### Signalement de besoin → Demande d'Achat (7 mars 2026)
+- Le signalement de besoin via QR code crée automatiquement une Demande d'Achat (DA-YYYY-XXXXX)
+- Visible dans la page "Demandes d'Achat" par les administrateurs et le demandeur
+- Fix du bug ObjectId dans purchase_request_routes.py (sérialisation)
+
+### PWA installation corrigée (7 mars 2026)
+- Icônes carrées générées : 192x192 et 512x512 (l'ancien logo 1770x896 n'était pas carré)
+- manifest.json mis à jour avec 4 entrées d'icônes (any + maskable pour chaque taille)
+
 ### Système de mise à jour - Logs diagnostic (7 mars 2026)
-- **Endpoint `/api/updates/log`** : lecture des logs de mise à jour depuis le serveur
-- **Section "Logs du serveur (diagnostic)"** dans la page Mise à Jour
-- **Script bash corrigé** : reproduit exactement les commandes SSH de l'utilisateur
-  - Logs persistants dans `APP_ROOT/update_log.txt` (survit au reboot)
-  - Résultat JSON persistant dans `APP_ROOT/last_update_result.json`
-  - `reboot` à la fin (comme en SSH)
-  - Écriture résultat en pur bash (pas de dépendance python3)
-- **`check_and_save_update_result`** : cherche d'abord les fichiers persistants
+- Endpoint `/api/updates/log` pour lire les logs de mise à jour
+- Logs dans `/var/log/gmao-iris-update.log` (hors du dépôt git, survit au git reset + reboot)
+- Résultat dans `/var/log/gmao-iris-update-result.json`
+- Script bash reproduit exactement les commandes SSH de l'utilisateur
+- `reboot` avec fallback `sudo`
+- Section "Logs du serveur (diagnostic)" dans la page Mise à Jour
 
-### QR Codes articles d'inventaire (7 mars 2026)
-- **Page publique** `/qr-inventory/{itemId}` : fiche article, jauge de stock, actions rapides
-- **Ajout/Retrait** : boutons rapides (+1/+5/+10/+25/+50) + champ quantité libre + motif
-- **Historique des mouvements** : liste des entrées/sorties avec utilisateur, date, quantité
-- **Équipements associés** : liste des équipements utilisant cette pièce
-- **Signaler un besoin** : demande de réapprovisionnement
-- **Étiquette QR** : téléchargeable (PNG) avec nom + référence
-- Collections : `inventory_movements`, `inventory_restock_requests`
+### QR Codes articles d'inventaire
+- Page publique `/qr-inventory/{itemId}` : fiche article, jauge de stock, actions rapides
+- Ajout/Retrait via boutons rapides + champ quantité libre + motif
+- Historique des mouvements de stock
+- Signaler un besoin → crée une Demande d'Achat
 
-### Inventaire par service (7 mars 2026)
-- **Onglets par service** triés alphabétiquement
-- Onglet par défaut = service de l'utilisateur connecté (sinon "Non classé")
-- Admins/responsables : ajout/suppression d'onglets
-- **Partage inter-services** : même stock, badge violet
-- Migration automatique vers "Non classé"
-- Collections : `inventory_services`, champs `service_id` et `shared_service_ids` sur `inventory`
+### Inventaire par service
+- Onglets par service triés alphabétiquement
+- Onglet par défaut = service de l'utilisateur connecté
+- Gestion des services (ajout/suppression) par admins/responsables
+- Partage inter-services
 
-### Système de mise à jour (7 mars 2026 - Corrigé v2)
-- Script bash autonome via `nohup`, retour HTTP 202 immédiat
-- Résultats persistés dans fichier JSON dans APP_ROOT, lus au redémarrage
-- Logs persistants consultables depuis le frontend
-- Reboot du serveur à la fin (comme les commandes SSH manuelles)
-
-### LOTO (Consignation) - Complet
-- CRUD procédures LOTO avec workflow complet, cadenas multiples, journalisation, filtres
+### LOTO (Consignation)
+- CRUD procédures LOTO avec workflow complet
 
 ## Fichiers clés
-- `backend/update_service.py` : Service de mise à jour avec script bash et logs persistants
-- `backend/server.py` : Endpoints API principaux dont `/api/updates/log`
-- `backend/qr_inventory_routes.py` : Routes QR inventaire (public + auth)
+- `backend/update_service.py` : Service de mise à jour
+- `backend/server.py` : Endpoints API principaux
+- `backend/qr_inventory_routes.py` : Routes QR inventaire avec WebSocket broadcast
+- `backend/purchase_request_routes.py` : Routes demandes d'achat (fix ObjectId)
 - `frontend/src/pages/Updates.jsx` : Page mise à jour avec logs diagnostic
 - `frontend/src/pages/QRInventoryPage.jsx` : Page QR article
-- `frontend/src/pages/Inventory.jsx` : Page inventaire avec onglets + bouton QR
+- `frontend/src/pages/Inventory.jsx` : Inventaire avec onglets + WebSocket temps réel
+- `frontend/public/manifest.json` : PWA manifest avec icônes carrées
 
 ## Backlog
-- P0: **EN ATTENTE VALIDATION UTILISATEUR** - Système de mise à jour (logs + script corrigé)
-- P1: Scanner QR intégré dans l'inventaire (après validation P0)
+- P0: **EN ATTENTE VALIDATION** - Système de mise à jour (tester sur Proxmox)
+- P1: Scanner QR intégré dans l'inventaire
 - P2: Cadenas multiples LOTO
 - P3: Notifications push mobile (Expo) - dépriorisé
 
