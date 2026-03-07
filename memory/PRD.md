@@ -1,32 +1,52 @@
-# FSAO Iris - Product Requirements Document
+# FSAO Iris - GMAO (Gestion de Maintenance Assistée par Ordinateur)
 
 ## Description
-Application GMAO complete pour la gestion de maintenance industrielle. Interface en francais. Deployee sur Proxmox LXC.
+Application de GMAO complète incluant gestion des ordres de travail, maintenance préventive, améliorations, consignations LOTO, inventaire, équipements, zones, dashboard, journal d'audit, chat, système de mise à jour, import/export, sauvegardes, et plus.
 
 ## Architecture
-- **Frontend**: React 19 + Tailwind CSS + Shadcn/UI
-- **Backend**: FastAPI (Python) + MongoDB
-- **Temps reel**: WebSocket + realtime_manager + polling fallback
-- **Deploiement**: Proxmox LXC (Debian 12) + Tailscale Funnel
+- **Frontend**: React + Shadcn UI + Tailwind CSS
+- **Backend**: FastAPI + MongoDB (Motor async)
+- **Auth**: JWT
+- **Temps réel**: WebSockets
+- **LLM**: LiteLLM proxy
 
-## Systeme de mise a jour (reecrit Mars 2026)
-- **Script bash autonome** : apply_update() genere un script bash identique aux commandes SSH
-- Le script est lance en arriere-plan (Popen detache) et le processus Python n'est pas implique
-- Etapes du script : maintenance ON -> backup .env -> git reset --hard -> pip install via venv -> yarn build -> save result DB -> restart services -> maintenance OFF
-- Frontend poll /api/updates/last-result avec champ `in_progress` pour suivre l'etat
-- waitForBackendReady attend que le backend redemarre ET que in_progress=false
+## Fonctionnalités implémentées
 
-## Fonctionnalites LOTO
-- Workflow 4 etapes, cadenas multiples, signatures, journalisation audit
-- Suppression admin, icones cliquables temps reel, filtres avances
-- Inclus dans Import/Export et sauvegardes automatiques
-- Chapitre LOTO dans le manuel (ch-038)
+### LOTO (Consignation) - Complet
+- CRUD procédures LOTO
+- Workflow: DEMANDE → CONSIGNE → INTERVENTION → DECONSIGNE
+- Cadenas multiples (plusieurs utilisateurs)
+- Journalisation audit
+- Suppression admin
+- Icônes temps réel via WebSockets (OT, Améliorations, MP)
+- Remplissage automatique depuis OT
+- Filtres avancés (période, équipement)
 
-## Fichiers cles mise a jour
-- `backend/update_service.py` - apply_update() genere update.sh
-- `backend/update_manager.py` - Detection version GitHub (commit + version.json)
-- `backend/server.py` - /api/updates/last-result retourne in_progress
-- `frontend/src/pages/Updates.jsx` - waitForBackendReady poll in_progress
+### Système de mise à jour - Corrigé (7 mars 2026)
+- **Approche**: Script bash autonome exécuté via `nohup` en arrière-plan
+- **Endpoint**: `POST /api/updates/apply` → HTTP 202 immédiat
+- **Script**: Backup MongoDB, git init/fetch/reset, pip install, yarn build, restart services
+- **Résultats**: Fichier JSON `/tmp/gmao_update_result_*.json` lu au redémarrage par `check_and_save_update_result()`
+- **Frontend**: Timeout 30s, polling post-redémarrage
 
-## Problemes connus
-- WebSocket /api/ws/loto renvoie 403 (non bloquant)
+### Documentation
+- README.md à jour
+- Manuel utilisateur avec chapitres LOTO
+- Import/export incluant LOTO
+- Sauvegarde automatique incluant LOTO
+
+## Fichiers clés
+- `backend/update_service.py`: Service de mise à jour (script bash autonome)
+- `backend/server.py`: Endpoints API + startup events
+- `backend/loto_routes.py`: Routes LOTO
+- `frontend/src/pages/Updates.jsx`: Page mise à jour
+- `frontend/src/pages/ConsignationsLOTO.jsx`: Page LOTO
+- `frontend/src/components/Common/UpdateNotificationBadge.jsx`: Badge notification MAJ
+- `frontend/src/hooks/useLotoRealtime.js`: Hook WebSocket LOTO
+
+## Backlog
+- P2: Notifications push mobile (Expo) - dépriorisé
+- P3: Validation utilisateur sur environnement Proxmox
+
+## Credentials de test
+- Admin: buenogy@gmail.com / Admin2024!
