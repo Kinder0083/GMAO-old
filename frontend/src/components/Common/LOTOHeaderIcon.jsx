@@ -71,7 +71,7 @@ const LOTOHeaderIcon = () => {
           <TooltipTrigger asChild>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-            className="p-2 hover:bg-red-100 rounded-lg transition-colors relative border border-red-300 bg-red-50"
+            className="p-2 hover:bg-red-100 rounded-lg transition-colors relative"
             data-testid="loto-header-btn"
           >
             <Lock size={18} className="text-red-600" />
