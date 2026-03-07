@@ -326,43 +326,46 @@ const Updates = () => {
           }
           setUpdateLogs(prev => [...prev, '✅ Tous les utilisateurs ont été déconnectés']);
 
-          // Étape 3: Appliquer la mise à jour
-          const logMessages = [
-            '📦 Création du backup de la base de données...',
-            '📥 Téléchargement des dernières modifications...',
-            '🐍 Mise à jour du backend Python...',
-            '⚛️  Mise à jour du frontend React...',
-            '🔧 Compilation du frontend...',
-            '🔄 Redémarrage des services...'
-          ];
+          // Étape 3: Lancer la mise à jour (retour immédiat HTTP 202)
+          setUpdateLogs(prev => [...prev, '📦 Lancement de la mise à jour en arrière-plan...']);
 
-          for (let i = 0; i < logMessages.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setUpdateLogs(prev => [...prev, logMessages[i]]);
-          }
+          try {
+            const response = await axios.post(
+              `${BACKEND_URL}/api/updates/apply`,
+              {},
+              {
+                params: { version },
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 30000
+              }
+            );
 
-          const response = await axios.post(
-            `${BACKEND_URL}/api/updates/apply`,
-            {},
-            {
-              params: { version },
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 300000
+            if (response.data.accepted || response.data.success) {
+              setUpdateLogs(prev => [...prev, '✅ Script de mise à jour lancé avec succès']);
+              setUpdateLogs(prev => [...prev, '📥 Téléchargement et installation en cours...']);
+              setUpdateLogs(prev => [...prev, '⏳ Les services vont redémarrer automatiquement...']);
             }
-          );
-
-          if (response.data.success) {
-            setUpdateLogs(prev => [...prev, '✅ Mise à jour terminée avec succès !']);
-            setUpdateLogs(prev => [...prev, '⏳ Attente du redémarrage des services...']);
-            await waitForBackendReady(token, version);
+          } catch (applyError) {
+            if (applyError.code === 'ERR_NETWORK' || applyError.code === 'ECONNABORTED' ||
+                applyError.response?.status === 502 || applyError.response?.status === 503) {
+              setUpdateLogs(prev => [...prev, '🔄 Connexion interrompue (mise à jour en cours)...']);
+            } else {
+              throw applyError;
+            }
           }
+
+          // Attendre que le script ait le temps de s'exécuter
+          setUpdateLogs(prev => [...prev, '⏳ Attente de la fin de la mise à jour (60-120s)...']);
+          await new Promise(resolve => setTimeout(resolve, 10000));
+          setUpdateLogs(prev => [...prev, '⏳ Vérification de la disponibilité du backend...']);
+          await waitForBackendReady(token, version);
         } catch (error) {
           if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || 
               error.response?.status === 502 || error.response?.status === 503) {
             setUpdateLogs(prev => [...prev, '🔄 Connexion interrompue (services en cours de redémarrage)...']);
             setUpdateLogs(prev => [...prev, '⏳ Attente de la disponibilité du backend...']);
-            const token = localStorage.getItem('token');
-            await waitForBackendReady(token, latestVersion?.version);
+            const reconnToken = localStorage.getItem('token');
+            await waitForBackendReady(reconnToken, latestVersion?.version);
           } else {
             const errorDetail = error.response?.data?.detail || error.message;
             setUpdateLogs(prev => [...prev, `❌ Erreur: ${errorDetail}`]);

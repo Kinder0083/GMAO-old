@@ -1,5 +1,5 @@
 // Service Worker FSAO Iris - Notifications push uniquement (pas de cache)
-// Version: BUILD_TIMESTAMP
+// Version: 1772874752
 // Ce SW ne met RIEN en cache. NGINX sert les fichiers statiques directement.
 // Cela élimine les problèmes de cache stale après les mises à jour.
 

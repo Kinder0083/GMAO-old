@@ -662,683 +662,419 @@ class UpdateService:
 
     async def apply_update(self, version: str) -> Dict:
         """
-        Applique une mise à jour système.
-        Chaque commande et son résultat sont enregistrés dans le journal détaillé.
+        Applique une mise à jour via un script bash autonome.
+        Génère un script complet, l'exécute en arrière-plan (nohup),
+        et retourne immédiatement (HTTP 202).
         """
-        # Créer l'entrée d'historique avec journal structuré
-        update_history = {
-            "id": str(uuid.uuid4()),
-            "version_before": self.current_version,
-            "version_after": version,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "status": "in_progress",
-            "success": False,
-            "files_modified": [],
-            "files_added": [],
-            "files_deleted": [],
-            "total_files_changed": 0,
-            "logs": [],
-            "warnings": [],
-            "errors": [],
-            "triggered_by": "manual",
-            "backup_created": False,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+        import subprocess as sp
         
+        update_id = str(uuid.uuid4())
+        result_file = f"/tmp/gmao_update_result_{update_id}.json"
+        script_path = f"/tmp/gmao_update_{update_id}.sh"
+        log_path = f"/tmp/gmao_update_{update_id}.log"
+        
+        # Sauvegarder le statut in_progress dans la DB
         try:
-            logger.info(f"🚀 Début de l'application de la mise à jour vers {version}")
-            self._log_step(update_history, "DÉBUT", f"Mise à jour {self.current_version} → {version}", status="success")
-            
-            # 0. Activer la page de maintenance
-            logger.info("🔧 Étape 0: Activation de la page de maintenance...")
-            maintenance_activated = self.maintenance.activate()
-            self._log_step(
-                update_history, "0/7 - Page de maintenance",
-                "Activation page maintenance NGINX",
-                status="success" if maintenance_activated else "warning"
+            await self.db.system_settings.update_one(
+                {"key": "last_update_result"},
+                {"$set": {
+                    "key": "last_update_result",
+                    "in_progress": True,
+                    "success": False,
+                    "code_updated": False,
+                    "version_before": self.current_version,
+                    "version_after": version,
+                    "history_id": update_id,
+                    "started_at": datetime.now(timezone.utc).isoformat(),
+                    "errors": [],
+                    "warnings": [],
+                    "completed_at": None
+                }},
+                upsert=True
             )
-            
-            # 1. Créer un backup de la base de données
-            logger.info("📦 Étape 1/5: Création du backup de la base de données...")
-            backup_path = self.backup_dir / f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            backup_path.mkdir(parents=True, exist_ok=True)
-            
-            # Obtenir l'URL MongoDB
-            mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017/cmms')
-            
-            # Exécuter mongodump
-            success, stdout, stderr = await self._run_command(
-                update_history, "1/6 - Backup MongoDB (mongodump)",
-                ["mongodump", f"--uri={mongo_url}", f"--out={backup_path}"],
-                timeout=120
-            )
-            update_history["backup_created"] = success
-            if success:
-                update_history["backup_path"] = str(backup_path)
-            else:
-                self._log_step(update_history, "1/6 - Backup MongoDB", "mongodump",
-                              stderr="Backup échoué (non bloquant, on continue)", status="warning")
-            
-            # 2. Export des données (placeholder)
-            logger.info("📊 Étape 2/5: Export des données...")
-            self._log_step(update_history, "2/6 - Export données", "N/A (placeholder)", status="success")
-            
-            # 3. Télécharger la mise à jour depuis GitHub
-            logger.info(f"📥 Étape 3/5: Téléchargement de la version {version}...")
-            
-            git_dir = self.app_root
-            git_available = False
-            
-            # Vérifier si Git est disponible
-            success, _, _ = await self._run_command(
-                update_history, "3/6 - Vérification Git",
-                ["git", "--version"]
-            )
-            git_available = success
-            
-            if git_available:
-                try:
-                    # S'assurer que .gitignore est à jour AVANT toute opération
-                    self._ensure_gitignore()
-                    
-                    # APPROCHE NUCLÉAIRE : reproduire exactement le processus SSH qui fonctionne
-                    # rm -rf .git && git init && git remote add && git fetch && git reset --hard
-                    
-                    # Enrichir le PATH pour s'assurer que git/yarn/node sont trouvés
-                    git_env = os.environ.copy()
-                    for extra_path in ["/usr/local/bin", "/usr/bin", "/usr/local/sbin", "/usr/sbin"]:
-                        if extra_path not in git_env.get("PATH", ""):
-                            git_env["PATH"] = extra_path + ":" + git_env.get("PATH", "")
-                    
-                    # CRITIQUE : Sauvegarder les fichiers .env AVANT toute opération
-                    env_backups = {}
-                    for env_path in [
-                        git_dir / "backend" / ".env",
-                        git_dir / "frontend" / ".env"
-                    ]:
-                        if env_path.exists():
-                            try:
-                                env_backups[str(env_path)] = env_path.read_text()
-                                self._log_step(update_history, "3/6 - Sauvegarde .env",
-                                              f"backup {env_path.name}", status="success")
-                            except Exception as e:
-                                self._log_step(update_history, "3/6 - Sauvegarde .env",
-                                              f"backup {env_path.name}",
-                                              stderr=str(e), status="warning")
-                    
-                    # Supprimer complètement le dossier .git
-                    git_path = git_dir / ".git"
-                    if git_path.exists():
-                        shutil.rmtree(str(git_path))
-                        self._log_step(update_history, "3/6 - Suppression .git",
-                                      "rm -rf .git", status="success")
-                    
-                    # git init
-                    success, stdout, stderr = await self._run_command(
-                        update_history, "3/6 - git init",
-                        ["git", "init"],
-                        cwd=str(git_dir), env=git_env, timeout=10
-                    )
-                    if not success:
-                        git_available = False
-                    
-                    # git remote add origin
-                    if git_available:
-                        github_url = f"https://github.com/{self.github_user}/{self.github_repo}.git"
-                        success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - git remote add",
-                            ["git", "remote", "add", "origin", github_url],
-                            cwd=str(git_dir), env=git_env, timeout=10
-                        )
-                        if not success:
-                            git_available = False
-                    
-                    # git fetch origin main (télécharge le code complet)
-                    if git_available:
-                        success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - git fetch origin main",
-                            ["git", "fetch", "origin", self.github_branch],
-                            cwd=str(git_dir), env=git_env, timeout=300
-                        )
-                        if not success:
-                            git_available = False
-                            update_history["errors"].append(f"CRITIQUE: Git fetch échoué - le code n'a PAS été mis à jour. Détail: {stderr[:300]}")
-                    
-                    # git reset --hard origin/main
-                    if git_available:
-                        success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - git reset --hard (synchronisation forcée)",
-                            ["git", "reset", "--hard", f"origin/{self.github_branch}"],
-                            cwd=str(git_dir), env=git_env, timeout=30
-                        )
-                        if not success:
-                            git_available = False
-                            update_history["errors"].append(f"CRITIQUE: Git reset échoué - le code n'a PAS été mis à jour. Détail: {stderr[:300]}")
-                        else:
-                            # Logger les fichiers réellement modifiés par la mise à jour
-                            diff_success, diff_stdout, _ = await self._run_command(
-                                update_history, "3/6 - Fichiers modifiés par la MAJ",
-                                ["git", "diff", "--stat", "HEAD~1..HEAD"],
-                                cwd=str(git_dir), env=git_env, timeout=10
-                            )
-                            if diff_success and diff_stdout.strip():
-                                files_changed = [line.strip().split('|')[0].strip() for line in diff_stdout.strip().split('\n') if '|' in line]
-                                update_history["files_modified"] = files_changed
-                                update_history["total_files_changed"] = len(files_changed)
-                            
-                            self._log_step(update_history, "3/6 - Code synchronisé",
-                                          f"Le code est maintenant à jour avec origin/{self.github_branch}",
-                                          status="success")
-                    
-                    # RESTAURATION : Remettre les fichiers .env sauvegardés
-                    for env_file_path, env_content in env_backups.items():
-                        try:
-                            Path(env_file_path).write_text(env_content)
-                            self._log_step(update_history, "3/6 - Restauration .env",
-                                          f"restore {Path(env_file_path).name}", status="success")
-                        except Exception as e:
-                            self._log_step(update_history, "3/6 - Restauration .env",
-                                          f"restore {Path(env_file_path).name}",
-                                          stderr=str(e), status="error")
-                            update_history["errors"].append(f".env perdu: {env_file_path}")
-                    
-                    # Recréer .gitignore après le reset (peut avoir été écrasé)
-                    self._ensure_gitignore()
-                    
-                except Exception as e:
-                    self._log_step(update_history, "3/6 - Erreur Git inattendue", str(e),
-                                  stderr=str(e), status="error")
-                    git_available = False
-                    update_history["errors"].append(f"CRITIQUE: Erreur Git - le code n'a PAS été mis à jour: {str(e)[:200]}")
-            
-            if not git_available:
-                update_history["errors"].append("CRITIQUE: Le code source n'a pas pu être mis à jour depuis GitHub")
-                self._log_step(update_history, "3/6 - ÉCHEC synchronisation code", 
-                              "Le code n'a PAS été mis à jour. Les dépendances seront réinstallées mais les nouvelles fonctionnalités ne seront pas disponibles.",
-                              status="error")
-            
-            # 4. Installer les dépendances
-            logger.info("📦 Étape 4/5: Installation des dépendances...")
-            
-            # Backend dependencies
-            backend_req = self.backend_dir / "requirements.txt"
-            if backend_req.exists():
-                # Utiliser source venv/bin/activate && pip install (comme en SSH)
-                venv_activate_backend = self.backend_dir / "venv" / "bin" / "activate"
-                venv_activate_root = self.app_root / "venv" / "bin" / "activate"
-                
-                if venv_activate_root.exists():
-                    pip_cmd = ["bash", "-c", f"source {venv_activate_root} && pip install -r {backend_req}"]
-                elif venv_activate_backend.exists():
-                    pip_cmd = ["bash", "-c", f"source {venv_activate_backend} && pip install -r {backend_req}"]
-                else:
-                    pip_cmd = ["pip3", "install", "-r", str(backend_req)]
-                
-                success, stdout, stderr = await self._run_command(
-                    update_history, "4/6 - pip install (dépendances backend)",
-                    pip_cmd,
-                    timeout=300
-                )
-                if not success:
-                    update_history["warnings"].append(f"pip install échoué: {stderr[:200]}")
-                
-                # Installer emergentintegrations séparément (index privé)
-                if venv_activate_root.exists():
-                    ei_cmd = ["bash", "-c", f"source {venv_activate_root} && pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/"]
-                elif venv_activate_backend.exists():
-                    ei_cmd = ["bash", "-c", f"source {venv_activate_backend} && pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/"]
-                else:
-                    ei_cmd = ["pip3", "install", "emergentintegrations", "--extra-index-url", "https://d33sy5i8bnduwe.cloudfront.net/simple/"]
-                
-                await self._run_command(
-                    update_history, "4/6 - pip install emergentintegrations",
-                    ei_cmd,
-                    timeout=120
-                )
-            
-            # Frontend dependencies
-            frontend_package = self.frontend_dir / "package.json"
-            if frontend_package.exists():
-                # Sauvegarder le build existant
-                build_dir = self.frontend_dir / "build"
-                build_backup = self.frontend_dir / "build_backup"
-                if build_dir.exists():
-                    try:
-                        if build_backup.exists():
-                            shutil.rmtree(str(build_backup))
-                        shutil.copytree(str(build_dir), str(build_backup))
-                        self._log_step(update_history, "4/6 - Backup build frontend",
-                                      f"cp -r build/ build_backup/", status="success")
-                    except Exception as e:
-                        self._log_step(update_history, "4/6 - Backup build frontend",
-                                      f"cp -r build/ build_backup/",
-                                      stderr=str(e), status="warning")
-                
-                # Construire l'environnement pour yarn
-                build_env = os.environ.copy()
-                build_env["CI"] = "false"
-                build_env["NODE_OPTIONS"] = "--max_old_space_size=2048"
-                for extra_path in ["/usr/local/bin", "/usr/bin", "/usr/local/sbin", "/usr/sbin"]:
-                    if extra_path not in build_env.get("PATH", ""):
-                        build_env["PATH"] = extra_path + ":" + build_env.get("PATH", "")
-                
-                # Charger les variables du frontend/.env dans l'environnement de build
-                frontend_env = self.frontend_dir / ".env"
-                if frontend_env.exists():
-                    try:
-                        for line in frontend_env.read_text().strip().split('\n'):
-                            line = line.strip()
-                            if line and not line.startswith('#') and '=' in line:
-                                key, value = line.split('=', 1)
-                                build_env[key.strip()] = value.strip()
-                    except Exception:
-                        pass
-                
-                # yarn install
-                success, stdout, stderr = await self._run_command(
-                    update_history, "4/6 - yarn install (dépendances frontend)",
-                    ["yarn", "install", "--production=false"],
-                    cwd=str(self.frontend_dir), env=build_env, timeout=300
-                )
-                if not success:
-                    update_history["warnings"].append(f"yarn install échoué: {stderr[:200]}")
-                
-                # Vérification des dépendances critiques (ex: @babel/runtime)
-                babel_runtime = self.frontend_dir / "node_modules" / "@babel" / "runtime" / "helpers" / "esm"
-                if not babel_runtime.exists():
-                    self._log_step(update_history, "4/6 - Vérif dépendance @babel/runtime",
-                                  "Manquante - installation corrective...", status="warning")
-                    await self._run_command(
-                        update_history, "4/6 - Fix @babel/runtime",
-                        ["yarn", "add", "@babel/runtime"],
-                        cwd=str(self.frontend_dir), env=build_env, timeout=120
-                    )
-                
-                # Mettre a jour le timestamp du Service Worker pour forcer le navigateur à détecter un changement
-                sw_path = self.frontend_dir / "public" / "sw.js"
-                if sw_path.exists():
-                    try:
-                        import re
-                        import time
-                        sw_content = sw_path.read_text()
-                        new_timestamp = str(int(time.time()))
-                        sw_content = re.sub(
-                            r"// Version: .*",
-                            f"// Version: {new_timestamp}",
-                            sw_content
-                        )
-                        sw_path.write_text(sw_content)
-                        self._log_step(update_history, "4/6 - Service Worker mis à jour",
-                                      f"Version timestamp = {new_timestamp}", status="success")
-                    except Exception as e:
-                        self._log_step(update_history, "4/6 - SW update",
-                                      str(e), status="warning")
-                
-                # yarn build
-                success, stdout, stderr = await self._run_command(
-                    update_history, "4/6 - yarn build (compilation frontend)",
-                    ["yarn", "build"],
-                    cwd=str(self.frontend_dir), env=build_env, timeout=600
-                )
-                
-                if not success:
-                    # Analyser l'erreur pour identifier la cause
-                    build_error_msg = stderr[:500] if stderr else ""
-                    error_cause = "Erreur de compilation inconnue"
-                    error_fix = ""
-                    
-                    if "falls outside of the project src/" in build_error_msg or "@babel/runtime" in build_error_msg:
-                        error_cause = "Conflit de dépendances (@babel/runtime ou similaire)"
-                    elif "Module not found" in build_error_msg:
-                        error_cause = "Module manquant dans les dépendances"
-                    elif "out of memory" in build_error_msg.lower() or "heap" in build_error_msg.lower():
-                        error_cause = "Mémoire insuffisante pour la compilation"
-                    
-                    self._log_step(update_history, "4/6 - Diagnostic erreur build",
-                                  f"Cause: {error_cause}", status="warning")
-                    
-                    # Tentative de réparation automatique (sauf problème mémoire)
-                    if "mémoire" not in error_cause.lower():
-                        self._log_step(update_history, "4/6 - Réparation automatique",
-                                      "rm -rf node_modules && yarn install && yarn build", status="info")
-                        
-                        # Nettoyer node_modules
-                        node_modules = self.frontend_dir / "node_modules"
-                        if node_modules.exists():
-                            try:
-                                shutil.rmtree(str(node_modules))
-                            except Exception:
-                                await self._run_command(
-                                    update_history, "4/6 - Nettoyage node_modules",
-                                    ["rm", "-rf", str(node_modules)],
-                                    timeout=120
-                                )
-                        
-                        # Supprimer le yarn.lock pour forcer une résolution propre
-                        yarn_lock = self.frontend_dir / "yarn.lock"
-                        if yarn_lock.exists():
-                            try:
-                                yarn_lock.unlink()
-                            except Exception:
-                                pass
-                        
-                        # Réinstaller
-                        repair_ok, _, repair_err = await self._run_command(
-                            update_history, "4/6 - Réinstallation dépendances",
-                            ["yarn", "install", "--production=false"],
-                            cwd=str(self.frontend_dir), env=build_env, timeout=600
-                        )
-                        
-                        if repair_ok:
-                            # Retenter le build
-                            success, stdout, stderr = await self._run_command(
-                                update_history, "4/6 - Retry yarn build après réparation",
-                                ["yarn", "build"],
-                                cwd=str(self.frontend_dir), env=build_env, timeout=600
-                            )
-                            if success:
-                                self._log_step(update_history, "4/6 - Réparation réussie",
-                                              "Le build a réussi après nettoyage des dépendances", status="success")
-                            else:
-                                update_history["errors"].append(
-                                    f"Build échoué même après réparation. Cause: {error_cause}. "
-                                    f"Solution manuelle: ssh sur le serveur, cd frontend, rm -rf node_modules, yarn install, yarn add @babel/runtime, yarn build"
-                                )
-                        else:
-                            update_history["errors"].append(
-                                f"Réinstallation des dépendances échouée: {repair_err[:200]}"
-                            )
-                    else:
-                        update_history["errors"].append(f"Build échoué: {error_cause}")
-                    
-                    # Si toujours en échec, restaurer le backup
-                    if not success:
-                        update_history["errors"].append(f"yarn build échoué: {error_cause}")
-                        if build_backup.exists():
-                            try:
-                                if build_dir.exists():
-                                    shutil.rmtree(str(build_dir))
-                                shutil.copytree(str(build_backup), str(build_dir))
-                                self._log_step(update_history, "4/6 - Restauration build frontend",
-                                              "Build précédent restauré (l'ancienne version reste active)", status="warning")
-                            except Exception as e:
-                                self._log_step(update_history, "4/6 - Restauration build frontend",
-                                              "cp -r build_backup/ build/",
-                                              stderr=str(e), status="error")
-                else:
-                    # Vérifier que index.html existe
-                    index_html = build_dir / "index.html"
-                    if index_html.exists():
-                        self._log_step(update_history, "4/6 - Vérification build",
-                                      "test -f build/index.html", status="success")
-                    else:
-                        self._log_step(update_history, "4/6 - Vérification build",
-                                      "test -f build/index.html",
-                                      stderr="index.html manquant après le build!", status="error")
-                        update_history["errors"].append("index.html manquant après yarn build")
-                        if build_backup.exists():
-                            try:
-                                shutil.copytree(str(build_backup), str(build_dir))
-                            except Exception:
-                                pass
-                
-                # Nettoyer le backup
-                if build_backup.exists():
-                    try:
-                        shutil.rmtree(str(build_backup))
-                    except Exception:
-                        pass
-            
-            # 5. Mettre à jour version.json UNIQUEMENT si le code a été mis à jour
-            logger.info("📝 Étape 5/6: Mise à jour du fichier version.json...")
-            if not git_available:
-                self._log_step(update_history, "5/6 - version.json NON mis à jour",
-                              "Le code n'a pas été synchronisé depuis GitHub, version.json n'est PAS modifié.",
-                              status="warning")
-            else:
-                try:
-                    version_file = self.app_root / "updates" / "version.json"
-                    if version_file.exists():
-                        import json as json_mod
-                        with open(version_file, 'r') as f:
-                            version_data = json_mod.load(f)
-                        # Lire la version depuis le version.json qui vient de GitHub (git reset --hard)
-                        github_version = version_data.get("version", version)
-                        version_data["lastUpdate"] = datetime.now(timezone.utc).isoformat()
-                        with open(version_file, 'w') as f:
-                            json_mod.dump(version_data, f, indent=2, ensure_ascii=False)
-                        self.current_version = github_version
-                        self._log_step(update_history, "5/6 - version.json lu depuis GitHub",
-                                      f"version.json → {github_version}", status="success")
-                except Exception as e:
-                    self._log_step(update_history, "5/6 - Mise à jour version.json",
-                                  f"Écriture version.json", stderr=str(e), status="warning")
-            
-            # 6. Planifier le redémarrage des services
-            logger.info("🔄 Étape 6/6: Planification du redémarrage des services...")
-            
+        except Exception as e:
+            logger.error(f"Erreur sauvegarde statut in_progress: {e}")
+        
+        # Activer la maintenance AVANT le script
+        maintenance_activated = self.maintenance.activate()
+        logger.info(f"[MAJ] Maintenance {'activée' if maintenance_activated else 'non activée'}")
+        
+        # Sauvegarder les .env pour les injecter dans le script
+        env_backup_commands = ""
+        env_restore_commands = ""
+        for env_rel_path in ["backend/.env", "frontend/.env"]:
+            env_full = self.app_root / env_rel_path
+            var_name = f"ENV_BACKUP_{env_rel_path.replace('/', '_').replace('.', '_')}"
+            if env_full.exists():
+                env_backup_commands += f'{var_name}=$(cat "{env_full}")\n'
+            env_restore_commands += f"""
+if [ -n "${{{var_name}+x}}" ]; then
+    echo "${{{var_name}}}" > "{env_full}"
+    log_step "Restauration {env_rel_path}" "OK"
+fi
+"""
+        
+        # Variables d'environnement frontend pour le build
+        frontend_env_vars = ""
+        frontend_env_file = self.frontend_dir / ".env"
+        if frontend_env_file.exists():
             try:
-                import tempfile
-                import subprocess as sp
-                
-                restart_script = tempfile.NamedTemporaryFile(
-                    mode='w', suffix='.sh', prefix='gmao_restart_', dir='/tmp', delete=False
-                )
-                restart_script.write(f"""#!/bin/bash
-# Redémarrage post-mise-à-jour FSAO Iris
-LOG="/tmp/gmao_restart_$(date +%Y%m%d_%H%M%S).log"
-exec >> "$LOG" 2>&1
-echo "=== Redémarrage post MAJ : $(date) ==="
-sleep 3
+                for line in frontend_env_file.read_text().strip().split('\n'):
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        frontend_env_vars += f"export {line}\n"
+            except Exception:
+                pass
+        
+        # Déterminer le venv
+        venv_activate = ""
+        for venv_path in [self.app_root / "venv" / "bin" / "activate", self.backend_dir / "venv" / "bin" / "activate"]:
+            if venv_path.exists():
+                venv_activate = str(venv_path)
+                break
+        
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017/cmms')
+        
+        # Générer le script bash autonome
+        script_content = f"""#!/bin/bash
+# Script de mise à jour autonome FSAO Iris
+# {self.current_version} -> {version} | ID: {update_id}
+set -o pipefail
+APP_ROOT="{self.app_root}"
+BACKEND_DIR="{self.backend_dir}"
+FRONTEND_DIR="{self.frontend_dir}"
+BACKUP_DIR="{self.backup_dir}"
+GITHUB_USER="{self.github_user}"
+GITHUB_REPO="{self.github_repo}"
+GITHUB_BRANCH="{self.github_branch}"
+RESULT_FILE="{result_file}"
+LOG_FILE="{log_path}"
+VERSION_BEFORE="{self.current_version}"
+VERSION_AFTER="{version}"
+UPDATE_ID="{update_id}"
+MONGO_URL="{mongo_url}"
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+ERRORS=()
+WARNINGS=()
+CODE_UPDATED=false
+STEPS_OK=0
+STEPS_WARN=0
+STEPS_ERR=0
+
+log_step() {{
+    local ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    echo "[$ts] [$2] $1 ${{3:-}}"
+    case "$2" in
+        OK) ((STEPS_OK++)) ;;
+        WARN) ((STEPS_WARN++)); WARNINGS+=("$1: ${{3:-}}") ;;
+        ERR) ((STEPS_ERR++)); ERRORS+=("$1: ${{3:-}}") ;;
+    esac
+}}
+
+write_result() {{
+    local success=$1 code_updated=$2 message="$3"
+    local errors_json="[" warnings_json="["
+    for i in "${{!ERRORS[@]}}"; do
+        [ $i -gt 0 ] && errors_json+=","
+        errors_json+="\\"${{ERRORS[$i]//\\"/\\\\\\"}}\\"" 
+    done
+    errors_json+="]"
+    for i in "${{!WARNINGS[@]}}"; do
+        [ $i -gt 0 ] && warnings_json+=","
+        warnings_json+="\\"${{WARNINGS[$i]//\\"/\\\\\\"}}\\"" 
+    done
+    warnings_json+="]"
+    cat > "$RESULT_FILE" << JSONEOF
+{{
+    "update_id": "$UPDATE_ID",
+    "success": $success,
+    "code_updated": $code_updated,
+    "version_before": "$VERSION_BEFORE",
+    "version_after": "$VERSION_AFTER",
+    "message": "$message",
+    "started_at": "$START_TIME",
+    "completed_at": "$(date -u +\\"%Y-%m-%dT%H:%M:%SZ\\")",
+    "steps_ok": $STEPS_OK,
+    "steps_warn": $STEPS_WARN,
+    "steps_err": $STEPS_ERR,
+    "errors": $errors_json,
+    "warnings": $warnings_json
+}}
+JSONEOF
+    log_step "Résultat écrit" "OK" "$RESULT_FILE"
+}}
+
+START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "=== DEBUT MISE A JOUR: $VERSION_BEFORE -> $VERSION_AFTER ==="
+export PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$PATH"
+
+# 1/7 - Backup MongoDB
+log_step "1/7 - Backup MongoDB" "OK" "Début"
+BACKUP_PATH="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP_PATH"
+if command -v mongodump >/dev/null 2>&1; then
+    mongodump --uri="$MONGO_URL" --out="$BACKUP_PATH" 2>&1 && \\
+        log_step "1/7 - Backup MongoDB" "OK" "$BACKUP_PATH" || \\
+        log_step "1/7 - Backup MongoDB" "WARN" "mongodump échoué (non bloquant)"
+else
+    log_step "1/7 - Backup MongoDB" "WARN" "mongodump non disponible"
+fi
+
+# 2/7 - Sauvegarde .env
+{env_backup_commands}
+log_step "2/7 - Sauvegarde .env" "OK" "Fichiers .env sauvegardés"
+
+# 3/7 - Synchronisation Git
+cd "$APP_ROOT"
+if ! command -v git >/dev/null 2>&1; then
+    log_step "3/7 - Git" "ERR" "Git non installé"
+else
+    rm -rf "$APP_ROOT/.git" 2>/dev/null
+    log_step "3/7 - Suppression .git" "OK"
+    
+    git init 2>&1 && log_step "3/7 - git init" "OK" || log_step "3/7 - git init" "ERR" "Échec"
+    
+    GITHUB_URL="https://github.com/$GITHUB_USER/$GITHUB_REPO.git"
+    git remote add origin "$GITHUB_URL" 2>&1 && \\
+        log_step "3/7 - git remote add" "OK" "$GITHUB_URL" || \\
+        log_step "3/7 - git remote add" "ERR" "Échec"
+    
+    if git fetch origin "$GITHUB_BRANCH" 2>&1; then
+        log_step "3/7 - git fetch" "OK" "origin/$GITHUB_BRANCH"
+        if git reset --hard "origin/$GITHUB_BRANCH" 2>&1; then
+            log_step "3/7 - git reset --hard" "OK" "Code synchronisé"
+            CODE_UPDATED=true
+        else
+            log_step "3/7 - git reset" "ERR" "Échec synchronisation"
+        fi
+    else
+        log_step "3/7 - git fetch" "ERR" "Impossible de télécharger depuis GitHub"
+    fi
+fi
+
+# 4/7 - Restauration .env
+{env_restore_commands}
+
+# 5/7 - Dépendances backend
+if [ -f "$BACKEND_DIR/requirements.txt" ]; then
+    if [ -n "{venv_activate}" ] && [ -f "{venv_activate}" ]; then
+        source "{venv_activate}"
+        pip install -r "$BACKEND_DIR/requirements.txt" 2>&1 && \\
+            log_step "5/7 - pip install" "OK" || \\
+            log_step "5/7 - pip install" "WARN" "Certains paquets échoués"
+    else
+        pip3 install -r "$BACKEND_DIR/requirements.txt" 2>&1 && \\
+            log_step "5/7 - pip3 install" "OK" || \\
+            log_step "5/7 - pip3 install" "WARN" "Certains paquets échoués"
+    fi
+fi
+
+# 6/7 - Frontend
+if [ -f "$FRONTEND_DIR/package.json" ]; then
+    cd "$FRONTEND_DIR"
+    [ -d "build" ] && cp -r build build_backup 2>/dev/null
+    
+    export CI=false
+    export NODE_OPTIONS="--max_old_space_size=2048"
+    {frontend_env_vars}
+    
+    yarn install --production=false 2>&1 && \\
+        log_step "6/7 - yarn install" "OK" || \\
+        log_step "6/7 - yarn install" "WARN" "Certains paquets échoués"
+    
+    [ -f "public/sw.js" ] && sed -i "s|// Version: .*|// Version: $(date +%s)|" public/sw.js 2>/dev/null
+    
+    if yarn build 2>&1; then
+        if [ -f "build/index.html" ]; then
+            log_step "6/7 - yarn build" "OK" "Build réussi"
+        else
+            log_step "6/7 - yarn build" "ERR" "index.html manquant"
+            [ -d "build_backup" ] && rm -rf build && mv build_backup build
+        fi
+    else
+        log_step "6/7 - yarn build" "ERR" "Compilation échouée"
+        [ -d "build_backup" ] && rm -rf build && mv build_backup build && \\
+            log_step "6/7 - Restauration build" "WARN" "Build précédent restauré"
+    fi
+    rm -rf build_backup 2>/dev/null
+    cd "$APP_ROOT"
+fi
+
+# 7/7 - Écriture résultat et redémarrage
+if [ "$CODE_UPDATED" = true ] && [ ${{#ERRORS[@]}} -eq 0 ]; then
+    write_result "true" "true" "Mise à jour vers $VERSION_AFTER terminée avec succès"
+elif [ "$CODE_UPDATED" = true ]; then
+    write_result "false" "true" "Mise à jour partielle avec erreurs"
+else
+    write_result "false" "false" "Code source non mis à jour depuis GitHub"
+fi
+
+echo "=== FIN MISE A JOUR - Redémarrage... ==="
+sleep 2
 
 RESTARTED=0
-
-# Auto-détection des services via supervisorctl
 if command -v supervisorctl >/dev/null 2>&1; then
-    # Lister les services actifs et chercher ceux liés à gmao/backend/iris
     SVCS=$(supervisorctl status 2>/dev/null | grep -iE 'backend|gmao|iris|uvicorn|fastapi' | awk '{{print $1}}')
     if [ -n "$SVCS" ]; then
         for SVC in $SVCS; do
-            echo "Redémarrage supervisorctl: $SVC"
-            supervisorctl restart "$SVC" 2>/dev/null && RESTARTED=1 && echo "OK: $SVC redémarré"
+            supervisorctl restart "$SVC" 2>/dev/null && RESTARTED=1
             sudo supervisorctl restart "$SVC" 2>/dev/null && RESTARTED=1
         done
     else
-        # Fallback : redémarrer tout
-        echo "Aucun service backend trouvé, redémarrage complet supervisorctl"
         supervisorctl restart all 2>/dev/null && RESTARTED=1
         sudo supervisorctl restart all 2>/dev/null && RESTARTED=1
     fi
 fi
-
-# Auto-détection des services via systemctl
 if [ "$RESTARTED" -eq 0 ] && command -v systemctl >/dev/null 2>&1; then
     SVCS=$(systemctl list-units --type=service --state=running 2>/dev/null | grep -iE 'gmao|iris|backend|uvicorn|fastapi|gunicorn' | awk '{{print $1}}')
-    if [ -n "$SVCS" ]; then
-        for SVC in $SVCS; do
-            echo "Redémarrage systemctl: $SVC"
-            sudo systemctl restart "$SVC" 2>/dev/null && RESTARTED=1 && echo "OK: $SVC redémarré"
-        done
-    fi
+    for SVC in $SVCS; do
+        sudo systemctl restart "$SVC" 2>/dev/null && RESTARTED=1
+    done
 fi
-
-# Log le résultat
 if [ "$RESTARTED" -eq 0 ]; then
-    echo "AVERTISSEMENT: Aucun service backend n'a pu être redémarré !"
-    echo "Tentative kill du processus Python/uvicorn..."
-    # Dernier recours : trouver et killer le processus uvicorn
     PIDS=$(pgrep -f 'uvicorn.*server:app' 2>/dev/null || pgrep -f 'uvicorn.*server' 2>/dev/null)
-    if [ -n "$PIDS" ]; then
-        echo "PIDs trouvés: $PIDS"
-        kill -HUP $PIDS 2>/dev/null || kill $PIDS 2>/dev/null
-        echo "Signal envoyé"
-    fi
+    [ -n "$PIDS" ] && (kill -HUP $PIDS 2>/dev/null || kill $PIDS 2>/dev/null)
 fi
 
-sleep 5
+sleep 3
+nginx -s reload 2>/dev/null || sudo nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || true
 
-# Recharger nginx
-nginx -s reload 2>/dev/null || \\
-sudo nginx -s reload 2>/dev/null || \\
-sudo systemctl reload nginx 2>/dev/null || \\
-sudo service nginx reload 2>/dev/null || true
-
-# Désactiver la page de maintenance
-MFLAG="{str(self.app_root / 'maintenance.flag')}"
-NGINX_BACKUP=""
+MFLAG="{self.app_root}/maintenance.flag"
 for conf in /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/gmao-iris /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/gmao-iris.conf; do
     if [ -f "$conf.backup_pre_maintenance" ]; then
         REAL_CONF=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
         cp "$conf.backup_pre_maintenance" "$REAL_CONF"
-        NGINX_BACKUP="$REAL_CONF"
         break
     fi
 done
-[ -n "$NGINX_BACKUP" ] && (nginx -t 2>/dev/null && nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || true)
+nginx -t 2>/dev/null && nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || true
 rm -f "$MFLAG"
-echo "Page de maintenance désactivée"
-echo "=== Fin du redémarrage : $(date) ==="
 
-rm -f {restart_script.name}
-""")
-                restart_script.close()
-                os.chmod(restart_script.name, 0o755)
-                
-                sp.Popen(
-                    ['/bin/bash', restart_script.name],
-                    stdout=sp.DEVNULL, stderr=sp.DEVNULL,
-                    start_new_session=True
-                )
-                
-                self._log_step(update_history, "6/6 - Redémarrage planifié",
-                              f"bash {restart_script.name}", status="success")
-                    
-            except Exception as e:
-                self._log_step(update_history, "6/6 - Redémarrage planifié",
-                              "supervisorctl restart", stderr=str(e), status="warning")
-                update_history["warnings"].append(f"Redémarrage auto échoué: {str(e)}")
+echo "=== Mise à jour terminée : $(date) ==="
+rm -f "{script_path}"
+"""
+        
+        # Écrire et lancer le script
+        try:
+            with open(script_path, 'w') as f:
+                f.write(script_content)
+            os.chmod(script_path, 0o755)
             
-            # RÉSUMÉ FINAL
-            logger.info(f"✨ Mise à jour vers {version} terminée")
+            sp.Popen(
+                ['nohup', '/bin/bash', script_path],
+                stdout=open(log_path, 'a'),
+                stderr=sp.STDOUT,
+                start_new_session=True,
+                close_fds=True
+            )
             
-            # Compter les avertissements et erreurs
-            warning_steps = [entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "warning"]
-            error_steps = [entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "error"]
+            logger.info(f"[MAJ] Script lancé: {script_path} | Log: {log_path}")
             
-            # Déterminer le statut final
-            has_critical_errors = len(update_history["errors"]) > 0
-            code_updated = git_available  # Le code a-t-il été réellement mis à jour ?
-            
-            update_history["completed_at"] = datetime.now(timezone.utc).isoformat()
-            update_history["code_updated"] = code_updated
-            
-            if has_critical_errors:
-                update_history["status"] = "partial_failure"
-            elif warning_steps or update_history["warnings"]:
-                update_history["status"] = "success_with_warnings"
-            else:
-                update_history["status"] = "success"
-                
-            update_history["success"] = code_updated and not has_critical_errors
-            update_history["backup_path"] = str(backup_path)
-            
-            # Résumé lisible
-            update_history["summary"] = {
-                "total_steps": len(update_history["logs"]),
-                "successful_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "success"]),
-                "warning_steps": len(warning_steps),
-                "error_steps": len(error_steps),
-                "warnings": update_history["warnings"],
-                "errors": update_history["errors"],
-                "files_changed": update_history["total_files_changed"]
+            return {
+                "success": True,
+                "accepted": True,
+                "message": f"Mise à jour vers {version} lancée en arrière-plan. Les services redémarreront automatiquement.",
+                "update_id": update_id,
+                "log_path": log_path,
+                "result_file": result_file,
+                "version": version
             }
-            
-            # Calculer la durée
-            start_time = datetime.fromisoformat(update_history["started_at"])
-            end_time = datetime.fromisoformat(update_history["completed_at"])
-            update_history["duration_seconds"] = (end_time - start_time).total_seconds()
-            
-            # Sauvegarder dans la base de données AVANT le redémarrage
+        except Exception as e:
+            logger.error(f"Erreur lancement script: {e}")
+            self.maintenance.deactivate()
+            return {
+                "success": False,
+                "message": f"Impossible de lancer le script de mise à jour: {str(e)}",
+                "error": str(e)
+            }
+    
+    async def check_and_save_update_result(self):
+        """
+        Vérifie s'il existe un fichier de résultat de mise à jour
+        et le sauvegarde dans la base de données.
+        Appelée au démarrage du serveur.
+        """
+        import glob as glob_mod
+        result_files = glob_mod.glob("/tmp/gmao_update_result_*.json")
+        
+        for rf in result_files:
             try:
-                await self.db.system_update_history.insert_one(update_history)
-                # Sauvegarder aussi un résumé rapide pour que le frontend puisse vérifier après reconnexion
+                with open(rf, 'r') as f:
+                    result = json.load(f)
+                
+                update_id = result.get("update_id", "unknown")
+                logger.info(f"[MAJ] Résultat de mise à jour trouvé: {update_id}")
+                
+                log_file = rf.replace("_result_", "_update_").replace(".json", ".log")
+                log_content = ""
+                if os.path.exists(log_file):
+                    try:
+                        with open(log_file, 'r') as lf:
+                            log_content = lf.read()[-10000:]
+                    except Exception:
+                        pass
+                
+                history_entry = {
+                    "id": update_id,
+                    "version_before": result.get("version_before", ""),
+                    "version_after": result.get("version_after", ""),
+                    "started_at": result.get("started_at", ""),
+                    "completed_at": result.get("completed_at", ""),
+                    "status": "success" if result.get("success") else "failed",
+                    "success": result.get("success", False),
+                    "code_updated": result.get("code_updated", False),
+                    "errors": result.get("errors", []),
+                    "warnings": result.get("warnings", []),
+                    "logs": [{"step": "Script complet", "stdout": log_content, "status": "success" if result.get("success") else "error"}],
+                    "summary": {
+                        "total_steps": result.get("steps_ok", 0) + result.get("steps_warn", 0) + result.get("steps_err", 0),
+                        "successful_steps": result.get("steps_ok", 0),
+                        "warning_steps": result.get("steps_warn", 0),
+                        "error_steps": result.get("steps_err", 0),
+                        "errors": result.get("errors", []),
+                        "warnings": result.get("warnings", [])
+                    },
+                    "triggered_by": "manual",
+                    "created_at": result.get("started_at", "")
+                }
+                
+                try:
+                    start = datetime.fromisoformat(result["started_at"].replace("Z", "+00:00"))
+                    end = datetime.fromisoformat(result["completed_at"].replace("Z", "+00:00"))
+                    history_entry["duration_seconds"] = (end - start).total_seconds()
+                except Exception:
+                    history_entry["duration_seconds"] = 0
+                
+                await self.db.system_update_history.insert_one(history_entry)
+                
                 await self.db.system_settings.update_one(
                     {"key": "last_update_result"},
                     {"$set": {
                         "key": "last_update_result",
-                        "success": code_updated and not has_critical_errors,
-                        "code_updated": code_updated,
-                        "version_before": update_history["version_before"],
-                        "version_after": version if code_updated else update_history["version_before"],
-                        "history_id": update_history["id"],
-                        "errors": update_history["errors"],
-                        "warnings": update_history["warnings"],
-                        "completed_at": update_history["completed_at"]
+                        "in_progress": False,
+                        "success": result.get("success", False),
+                        "code_updated": result.get("code_updated", False),
+                        "version_before": result.get("version_before", ""),
+                        "version_after": result.get("version_after", ""),
+                        "history_id": update_id,
+                        "errors": result.get("errors", []),
+                        "warnings": result.get("warnings", []),
+                        "completed_at": result.get("completed_at", "")
                     }},
                     upsert=True
                 )
-                logger.info("✅ Journal de mise à jour complet enregistré en base de données")
+                
+                self._load_version()
+                logger.info(f"[MAJ] Résultat sauvegardé. Succès: {result.get('success')}")
+                
+                os.remove(rf)
+                if os.path.exists(log_file):
+                    try:
+                        os.rename(log_file, f"/tmp/gmao_update_{update_id}_archived.log")
+                    except Exception:
+                        pass
+                        
             except Exception as e:
-                logger.error(f"❌ Erreur lors de l'enregistrement du journal: {str(e)}")
-            
-            if code_updated and not has_critical_errors:
-                result_msg = f"Mise à jour vers {version} terminée avec succès"
-            elif not code_updated:
-                result_msg = f"Mise à jour vers {version} ÉCHOUÉE - le code source n'a pas été mis à jour depuis GitHub"
-            else:
-                result_msg = f"Mise à jour vers {version} terminée avec des erreurs"
-
-            return {
-                "success": code_updated and not has_critical_errors,
-                "code_updated": code_updated,
-                "message": result_msg,
-                "version": version,
-                "backup_path": str(backup_path),
-                "timestamp": datetime.now().isoformat(),
-                "history_id": update_history["id"],
-                "summary": update_history["summary"]
-            }
-            
-        except Exception as e:
-            logger.error(f"❌ Erreur lors de l'application de la mise à jour: {str(e)}")
-            
-            # Enregistrer l'échec dans l'historique avec journal complet
-            update_history["completed_at"] = datetime.now(timezone.utc).isoformat()
-            update_history["status"] = "failed"
-            update_history["success"] = False
-            update_history["error_message"] = str(e)
-            update_history["errors"].append(f"Erreur fatale: {str(e)}")
-            self._log_step(update_history, "ERREUR FATALE", "apply_update",
-                          stderr=str(e), status="error")
-            
-            # Calculer la durée
-            start_time = datetime.fromisoformat(update_history["started_at"])
-            end_time = datetime.fromisoformat(update_history["completed_at"])
-            update_history["duration_seconds"] = (end_time - start_time).total_seconds()
-            
-            # Résumé
-            update_history["summary"] = {
-                "total_steps": len(update_history["logs"]),
-                "successful_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "success"]),
-                "warning_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "warning"]),
-                "error_steps": len([entry for entry in update_history["logs"] if isinstance(entry, dict) and entry.get("status") == "error"]),
-                "warnings": update_history.get("warnings", []),
-                "errors": update_history.get("errors", []),
-                "files_changed": update_history.get("total_files_changed", 0)
-            }
-            
-            # Sauvegarder dans la base de données (même en cas d'échec)
-            try:
-                await self.db.system_update_history.insert_one(update_history)
-                logger.info("✅ Journal d'échec de mise à jour enregistré")
-            except Exception as db_error:
-                logger.error(f"❌ Erreur lors de l'enregistrement du journal: {str(db_error)}")
-            
-            return {
-                "success": False,
-                "message": "Erreur lors de l'application de la mise à jour",
-                "error": str(e),
-                "history_id": update_history["id"],
-                "summary": update_history.get("summary")
-            }
+                logger.error(f"[MAJ] Erreur lecture résultat {rf}: {e}")
 

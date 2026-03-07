@@ -9481,19 +9481,18 @@ async def broadcast_update_warning(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/updates/apply")
-async def apply_update(
+@api_router.post("/updates/apply", status_code=202)
+async def apply_update_endpoint(
     version: str,
     current_user: dict = Depends(get_current_admin_user)
 ):
     """
-    Applique une mise à jour (Admin uniquement)
-    Crée une sauvegarde complète, puis applique la MAJ et redémarre les services
+    Lance une mise à jour en arrière-plan (Admin uniquement).
+    Génère un script bash autonome et retourne immédiatement (HTTP 202).
     """
     try:
-        logger.info(f"🚀 Demande d'application de la mise à jour vers {version} par {current_user.get('email')}")
+        logger.info(f"[MAJ] Demande de mise à jour vers {version} par {current_user.get('email')}")
         
-        # Enregistrer dans l'audit
         await audit_service.log_action(
             user_id=current_user.get("id"),
             user_name=f"{current_user.get('prenom')} {current_user.get('nom')}",
@@ -9506,22 +9505,21 @@ async def apply_update(
         
         result = await update_service.apply_update(version)
         
-        if result.get("success"):
-            return result
+        if result.get("accepted") or result.get("success"):
+            return {
+                "accepted": True,
+                "success": True,
+                "message": result.get("message", "Mise à jour lancée en arrière-plan"),
+                "update_id": result.get("update_id"),
+                "version": version
+            }
         else:
-            # Inclure le résumé détaillé des erreurs dans la réponse
-            summary = result.get("summary", {})
-            errors = summary.get("errors", [])
-            warnings = summary.get("warnings", [])
-            detail_msg = result.get("message", "Erreur inconnue")
-            if errors:
-                detail_msg += " | Erreurs: " + "; ".join(errors)
-            if warnings:
-                detail_msg += " | Avertissements: " + "; ".join(warnings)
-            raise HTTPException(status_code=500, detail=detail_msg)
+            raise HTTPException(status_code=500, detail=result.get("message", "Erreur lors du lancement"))
             
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"❌ Erreur application mise à jour: {str(e)}")
+        logger.error(f"[MAJ] Erreur: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -10590,6 +10588,16 @@ async def create_notification_indexes():
         logger.info("Indexes device_tokens et push_receipts crees avec succes")
     except Exception as e:
         logger.warning(f"Erreur creation indexes: {e}")
+
+
+
+@app.on_event("startup")
+async def check_update_results_on_startup():
+    """Vérifie s'il existe des résultats de mise à jour non traités au démarrage."""
+    try:
+        await update_service.check_and_save_update_result()
+    except Exception as e:
+        logger.error(f"[MAJ] Erreur vérification résultats MAJ au démarrage: {e}")
 
 
 @app.on_event("startup")

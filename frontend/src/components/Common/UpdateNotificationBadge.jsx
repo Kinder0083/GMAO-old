@@ -119,32 +119,33 @@ const UpdateNotificationBadge = () => {
             }
           );
 
-          // Étape 2 : Attendre 32 secondes (30s countdown + 2s marge) puis appliquer la MAJ
+          // Étape 2 : Attendre 32 secondes (30s countdown + 2s marge) puis lancer la MAJ
           toast({
             title: '⏳ Avertissement envoyé',
-            description: 'La mise à jour sera appliquée dans 30 secondes après la déconnexion des utilisateurs...',
+            description: 'La mise à jour sera lancée dans 30 secondes après la déconnexion des utilisateurs...',
           });
 
           setTimeout(async () => {
             try {
-              const response = await axios.post(
+              await axios.post(
                 `${BACKEND_URL}/api/updates/apply`,
                 null,
                 {
                   params: { version },
                   headers: { Authorization: `Bearer ${token}` },
-                  timeout: 300000
+                  timeout: 30000
                 }
               );
 
-              if (response.data.success) {
-                toast({
-                  title: 'Mise à jour en cours',
-                  description: 'Les services redémarrent. Veuillez patienter...',
-                });
-              }
+              toast({
+                title: 'Mise à jour en cours',
+                description: 'Le script de mise à jour est lancé. Les services vont redémarrer...',
+              });
             } catch (applyError) {
-              console.error('Erreur application MAJ:', applyError);
+              // Erreur réseau = le serveur est en train de redémarrer (normal)
+              if (applyError.code !== 'ERR_NETWORK' && applyError.response?.status !== 502) {
+                console.error('Erreur application MAJ:', applyError);
+              }
             }
           }, 32000);
 
