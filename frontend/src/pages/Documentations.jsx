@@ -54,7 +54,7 @@ function Documentations() {
   const [openForm, setOpenForm] = useState(false);
   const [selectedPole, setSelectedPole] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewModeState] = useState(() => localStorage.getItem('docs_viewMode') || 'list');
+  const [viewMode, setViewModeState] = useState(() => localStorage.getItem('docs_viewMode') || 'cards');
   const setViewMode = (mode) => { localStorage.setItem('docs_viewMode', mode); setViewModeState(mode); };
   const [expandedBonsPoles, setExpandedBonsPoles] = useState(new Set()); // Pour les bons de travail
   const [expandedDocsPoles, setExpandedDocsPoles] = useState(new Set()); // Pour les documents
