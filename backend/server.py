@@ -10438,6 +10438,12 @@ from notifications import router as push_notifications_router, set_db as set_not
 set_notifications_db(db)
 api_router.include_router(push_notifications_router)
 
+# Routes Formation (Training)
+from training_routes import router as training_router, init_training_routes
+init_training_routes(db)
+api_router.include_router(training_router)
+
+
 # WebSocket pour le tableau d'affichage
 from fastapi import WebSocket, WebSocketDisconnect
 

@@ -79,6 +79,7 @@ const MODULES = [
   { key: 'demandesArret', label: 'Demandes d\'arrêt' },
   { key: 'consignes', label: 'Consignes' },
   { key: 'autorisationsParticulieres', label: 'Autorisations Particulières' },
+  { key: 'training', label: 'Formation' },
   { key: 'aiDashboard', label: 'Tableau de bord IA' },
   { key: 'aiAutomations', label: 'Automatisations IA' },
   { key: 'aiWidgets', label: 'Widgets IA (Adria)' },

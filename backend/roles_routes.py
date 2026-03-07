@@ -425,7 +425,7 @@ async def migrate_role_permissions(current_user: dict = Depends(get_current_user
     
     NEW_PERMISSION_KEYS = [
         "mes", "mesReports", "serviceDashboard", "weeklyReports",
-        "demandesArret", "consignes", "autorisationsParticulieres"
+        "demandesArret", "consignes", "autorisationsParticulieres", "training"
     ]
     
     roles = await db.roles.find({}).to_list(length=None)

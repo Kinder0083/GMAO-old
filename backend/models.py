@@ -70,6 +70,7 @@ class UserPermissions(BaseModel):
     consignes: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Consignes - Gestion des consignes de sécurité
     consignationsLoto: ModulePermission = ModulePermission(view=True, edit=True, delete=False)  # LOTO - Consignations Lockout/Tagout
     autorisationsParticulieres: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Autorisations Particulières - Gestion des autorisations spéciales
+    training: ModulePermission = ModulePermission(view=False, edit=False, delete=False)  # Formation - Module de formation et questionnaire nouveaux arrivants
 
 # Fonction helper pour obtenir les permissions par défaut selon le rôle
 def get_default_permissions_by_role(role: str) -> UserPermissions:
@@ -119,7 +120,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=True, delete=True),
             demandesArret=ModulePermission(view=True, edit=True, delete=True),
             consignes=ModulePermission(view=True, edit=True, delete=True),
-            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=True)
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=True),
+            training=ModulePermission(view=True, edit=True, delete=True)
         )
     
     # Rôle spécial AFFICHAGE : Uniquement accès au tableau d'affichage
@@ -162,7 +164,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=False, edit=False, delete=False),
             demandesArret=ModulePermission(view=False, edit=False, delete=False),
             consignes=ModulePermission(view=False, edit=False, delete=False),
-            autorisationsParticulieres=ModulePermission(view=False, edit=False, delete=False)
+            autorisationsParticulieres=ModulePermission(view=False, edit=False, delete=False),
+            training=ModulePermission(view=False, edit=False, delete=False)
         )
     
     # DIRECTEUR : Demande d'inter./Demandes d'amél. en visualisation et modification
@@ -203,7 +206,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=False, delete=False),
             demandesArret=ModulePermission(view=True, edit=True, delete=False),
             consignes=ModulePermission(view=True, edit=False, delete=False),
-            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False)
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False),
+            training=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # QHSE : Demande d'inter./Demandes d'amél. en visualisation et modification
@@ -245,7 +249,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=False, delete=False),
             demandesArret=ModulePermission(view=True, edit=True, delete=False),
             consignes=ModulePermission(view=True, edit=True, delete=False),
-            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False)
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False),
+            training=ModulePermission(view=True, edit=True, delete=False)
         )
     
     # LABO et ADV : Demande d'inter. en visualisation et modification
@@ -281,7 +286,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=False, edit=False, delete=False),
             demandesArret=ModulePermission(view=False, edit=False, delete=False),
             consignes=ModulePermission(view=True, edit=False, delete=False),
-            autorisationsParticulieres=ModulePermission(view=False, edit=False, delete=False)
+            autorisationsParticulieres=ModulePermission(view=False, edit=False, delete=False),
+            training=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # PROD (RSP_PROD et PROD) : Demande d'inter./Demandes d'amél./Ordres de travail/Améliorations/Equipement en visualisation et modification
@@ -317,7 +323,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=False, delete=False),
             demandesArret=ModulePermission(view=True, edit=True, delete=False),
             consignes=ModulePermission(view=True, edit=False, delete=False),
-            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False),
+            training=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # INDUS : Demande d'inter./Demandes d'amél./Ordres de travail/Améliorations/Equipement en visualisation et modification
@@ -358,7 +365,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=False, delete=False),
             demandesArret=ModulePermission(view=True, edit=True, delete=False),
             consignes=ModulePermission(view=True, edit=False, delete=False),
-            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False),
+            training=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # LOGISTIQUE : Même que PROD mais peut-être avec accès Fournisseurs
@@ -398,7 +406,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=False, delete=False),
             demandesArret=ModulePermission(view=True, edit=True, delete=False),
             consignes=ModulePermission(view=True, edit=False, delete=False),
-            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False),
+            training=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # TECHNICIEN : Permissions complètes sur les modules opérationnels
@@ -438,7 +447,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=True, delete=False),
             demandesArret=ModulePermission(view=True, edit=True, delete=True),
             consignes=ModulePermission(view=True, edit=True, delete=False),
-            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False)
+            autorisationsParticulieres=ModulePermission(view=True, edit=True, delete=False),
+            training=ModulePermission(view=True, edit=True, delete=False)
         )
     
     # VISUALISEUR : Visualisation uniquement sur tout
@@ -478,7 +488,8 @@ def get_default_permissions_by_role(role: str) -> UserPermissions:
             weeklyReports=ModulePermission(view=True, edit=False, delete=False),
             demandesArret=ModulePermission(view=True, edit=False, delete=False),
             consignes=ModulePermission(view=True, edit=False, delete=False),
-            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False)
+            autorisationsParticulieres=ModulePermission(view=True, edit=False, delete=False),
+            training=ModulePermission(view=True, edit=False, delete=False)
         )
     
     # Par défaut : permissions minimales

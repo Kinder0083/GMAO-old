@@ -45,7 +45,8 @@ import {
   FileBarChart,
   FileSignature,
   History,
-  TrendingUp
+  TrendingUp,
+  GraduationCap
 } from 'lucide-react';
 
 // Mapping des noms d'icônes vers les composants
@@ -93,7 +94,8 @@ export const iconMap = {
   'Radio': Radio,
   'Palette': Palette,
   'History': History,
-  'TrendingUp': TrendingUp
+  'TrendingUp': TrendingUp,
+  'GraduationCap': GraduationCap
 };
 
 // Liste par défaut des items du menu

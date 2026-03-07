@@ -87,6 +87,8 @@ import CamerasPage from "./pages/CamerasPage";
 import MESPage from "./pages/MESPage";
 import MESReportsPage from "./pages/MESReportsPage";
 import AnalyticsChecklistsPage from "./pages/AnalyticsChecklistsPage";
+import TrainingPage from "./pages/TrainingPage";
+import TrainingPublicPage from "./pages/TrainingPublicPage";
 
 // Protected Route Component with Token Validation
 const ProtectedRoute = ({ children }) => {
@@ -178,6 +180,7 @@ function App() {
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/qr/:equipmentId" element={<QREquipmentPage />} />
           <Route path="/qr-inventory/:itemId" element={<QRInventoryPage />} />
+          <Route path="/training-public/:token" element={<TrainingPublicPage />} />
           {/* Route spéciale pour le Tableau d'affichage - plein écran sans menu */}
           <Route 
             path="/whiteboard" 
@@ -268,6 +271,7 @@ function App() {
             <Route path="mes" element={<MESPage />} />
             <Route path="mes-reports" element={<MESReportsPage />} />
             <Route path="analytics/checklists" element={<AnalyticsChecklistsPage />} />
+            <Route path="training" element={<TrainingPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
