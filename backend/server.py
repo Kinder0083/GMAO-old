@@ -9536,13 +9536,14 @@ async def get_last_update_result(current_user: dict = Depends(get_current_admin_
                 "has_result": True,
                 "success": result.get("success", False),
                 "code_updated": result.get("code_updated", False),
+                "in_progress": result.get("in_progress", False),
                 "version_before": result.get("version_before"),
                 "version_after": result.get("version_after"),
                 "errors": result.get("errors", []),
                 "warnings": result.get("warnings", []),
                 "completed_at": result.get("completed_at")
             }
-        return {"has_result": False}
+        return {"has_result": False, "in_progress": False}
     except Exception as e:
         logger.error(f"❌ Erreur récupération résultat MAJ: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

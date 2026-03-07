@@ -9,38 +9,24 @@ Application GMAO complete pour la gestion de maintenance industrielle. Interface
 - **Temps reel**: WebSocket + realtime_manager + polling fallback
 - **Deploiement**: Proxmox LXC (Debian 12) + Tailscale Funnel
 
-## Fonctionnalites implementees
+## Systeme de mise a jour (reecrit Mars 2026)
+- **Script bash autonome** : apply_update() genere un script bash identique aux commandes SSH
+- Le script est lance en arriere-plan (Popen detache) et le processus Python n'est pas implique
+- Etapes du script : maintenance ON -> backup .env -> git reset --hard -> pip install via venv -> yarn build -> save result DB -> restart services -> maintenance OFF
+- Frontend poll /api/updates/last-result avec champ `in_progress` pour suivre l'etat
+- waitForBackendReady attend que le backend redemarre ET que in_progress=false
 
-### Core GMAO
-- Ordres de travail, Demandes, Ameliorations, Maintenance preventive
-- Equipements, Inventaire, Zones, Compteurs, Dashboard, Rapports
+## Fonctionnalites LOTO
+- Workflow 4 etapes, cadenas multiples, signatures, journalisation audit
+- Suppression admin, icones cliquables temps reel, filtres avances
+- Inclus dans Import/Export et sauvegardes automatiques
+- Chapitre LOTO dans le manuel (ch-038)
 
-### Systeme LOTO (Mars 2026)
-- Workflow 4 etapes, signatures electroniques
-- Cadenas multiples, Points d'isolation, Code PIN
-- Journalisation, Suppression admin, Icones cliquables temps reel
-- Filtres avances (Mois/Annee/Personnalisee/Equipement)
-- Remplissage auto OT, WS temps reel dans OT/Ameliorations/MP
-- **Inclus dans Import/Export** (module `loto-consignations`)
-- **Inclus dans les sauvegardes automatiques**
-- **Chapitre LOTO dans le manuel** (ch-038, 5 sections)
-- **Documente dans le README.md** (endpoints API, collection MongoDB)
-
-### Systeme de mise a jour (Mars 2026)
-- version.json semantique (1.6.0), exclusion fichiers runtime, git fetch complet
-
-### QR Code + IA, Mode Hors-ligne, Organisation du Header
-- Toutes les fonctionnalites precedentes restent en place
-
-## Fichiers cles
-- `README.md` - Documentation complete du projet
-- `backend/manual_default_content.json` - Contenu par defaut du manuel (ch-038 = LOTO)
-- `backend/import_export_routes.py` - Module export `loto-consignations`
-- `frontend/src/pages/importExportModules.js` - Module LOTO dans le frontend
-- `backend/backup_service.py` - Utilise EXPORT_MODULES (inclut LOTO auto)
+## Fichiers cles mise a jour
+- `backend/update_service.py` - apply_update() genere update.sh
+- `backend/update_manager.py` - Detection version GitHub (commit + version.json)
+- `backend/server.py` - /api/updates/last-result retourne in_progress
+- `frontend/src/pages/Updates.jsx` - waitForBackendReady poll in_progress
 
 ## Problemes connus
-- WebSocket /api/ws/loto renvoie 403 (non bloquant, le polling fonctionne)
-
-## Backlog
-- Aucune tache future definie
+- WebSocket /api/ws/loto renvoie 403 (non bloquant)
