@@ -12,7 +12,7 @@ import { SignaturePad } from '../components/shared/SignaturePad';
 import {
   Lock, Unlock, Plus, Search, Shield, AlertTriangle, CheckCircle,
   XCircle, Clock, User, Zap, Droplets, Wind, Flame, FlaskConical,
-  Cog, Trash2, Edit, Eye, KeyRound, LockKeyhole
+  Cog, Trash2, Edit, Eye, KeyRound, LockKeyhole, Calendar
 } from 'lucide-react';
 import api from '../services/api';
 import { usePermissions } from '../hooks/usePermissions';
@@ -66,6 +66,17 @@ export default function ConsignationsLOTO() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const routeLocation = useLocation();
 
+  // Filtres par période et équipement
+  const [periodFilter, setPeriodFilter] = useState('month'); // month, year, custom, all
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [filterEquipment, setFilterEquipment] = useState('all');
+
   // Appliquer le filtre depuis la navigation (header LOTO icon)
   // Réagit à chaque changement de location.state (même route, state différent)
   useEffect(() => {
@@ -113,12 +124,36 @@ export default function ConsignationsLOTO() {
     }
   };
 
+  // Liste unique des équipements (pour le filtre dropdown)
+  const uniqueEquipments = [...new Map(
+    consignations.map(c => [c.equipement_id, c.equipement_nom])
+  ).entries()]
+    .filter(([id, nom]) => id && nom)
+    .sort((a, b) => (a[1] || '').localeCompare(b[1] || ''));
+
   const filtered = consignations.filter(c => {
+    // Filtre onglet (active/terminées/toutes)
     if (tab === 'active' && ['DECONSIGNE', 'ANNULE'].includes(c.status)) return false;
     if (tab === 'completed' && !['DECONSIGNE', 'ANNULE'].includes(c.status)) return false;
-    // Filtre 'ACTIVE' = CONSIGNE + INTERVENTION
+    // Filtre statut
     if (filterStatus === 'ACTIVE' && !['CONSIGNE', 'INTERVENTION'].includes(c.status)) return false;
     if (filterStatus !== 'all' && filterStatus !== 'ACTIVE' && c.status !== filterStatus) return false;
+    // Filtre équipement
+    if (filterEquipment !== 'all' && c.equipement_id !== filterEquipment) return false;
+    // Filtre période
+    if (c.date_demande) {
+      const d = new Date(c.date_demande);
+      if (periodFilter === 'month' && selectedMonth) {
+        const [y, m] = selectedMonth.split('-').map(Number);
+        if (d.getFullYear() !== y || d.getMonth() + 1 !== m) return false;
+      } else if (periodFilter === 'year' && selectedYear) {
+        if (d.getFullYear() !== parseInt(selectedYear)) return false;
+      } else if (periodFilter === 'custom') {
+        if (customStartDate && d < new Date(customStartDate)) return false;
+        if (customEndDate && d > new Date(customEndDate + 'T23:59:59')) return false;
+      }
+    }
+    // Filtre recherche
     if (search) {
       const s = search.toLowerCase();
       return c.numero?.toLowerCase().includes(s) ||
@@ -165,34 +200,107 @@ export default function ConsignationsLOTO() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="active">En cours</TabsTrigger>
-            <TabsTrigger value="completed">Terminees</TabsTrigger>
-            <TabsTrigger value="all">Toutes</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            placeholder="Rechercher..."
-            className="pl-9"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            data-testid="loto-search"
-          />
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-3 items-center">
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList>
+              <TabsTrigger value="active">En cours</TabsTrigger>
+              <TabsTrigger value="completed">Terminees</TabsTrigger>
+              <TabsTrigger value="all">Toutes</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher..."
+              className="pl-9"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              data-testid="loto-search"
+            />
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40" data-testid="loto-status-filter"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous statuts</SelectItem>
+              <SelectItem value="ACTIVE">Consignes actives</SelectItem>
+              {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
-            <SelectItem value="ACTIVE">Consignes actives</SelectItem>
-            {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Filtres période + équipement */}
+        <div className="flex flex-wrap gap-3 items-end bg-gray-50 rounded-lg p-3 border">
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <Calendar className="w-4 h-4" /> Periode :
+          </div>
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="w-36" data-testid="loto-period-filter"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="month">Mois</SelectItem>
+              <SelectItem value="year">Annee</SelectItem>
+              <SelectItem value="custom">Personnalisee</SelectItem>
+              <SelectItem value="all">Tout afficher</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {periodFilter === 'month' && (
+            <Input
+              type="month"
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="w-44"
+              data-testid="loto-month-picker"
+            />
+          )}
+          {periodFilter === 'year' && (
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-28" data-testid="loto-year-picker"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 5 }, (_, i) => {
+                  const y = String(new Date().getFullYear() - i);
+                  return <SelectItem key={y} value={y}>{y}</SelectItem>;
+                })}
+              </SelectContent>
+            </Select>
+          )}
+          {periodFilter === 'custom' && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={customStartDate}
+                onChange={e => setCustomStartDate(e.target.value)}
+                className="w-36"
+                data-testid="loto-custom-start"
+              />
+              <span className="text-sm text-gray-500">au</span>
+              <Input
+                type="date"
+                value={customEndDate}
+                onChange={e => setCustomEndDate(e.target.value)}
+                className="w-36"
+                data-testid="loto-custom-end"
+              />
+            </div>
+          )}
+
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-sm text-gray-600">Equipement :</span>
+            <Select value={filterEquipment} onValueChange={setFilterEquipment}>
+              <SelectTrigger className="w-48" data-testid="loto-equipment-filter"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les equipements</SelectItem>
+                {uniqueEquipments.map(([id, nom]) => (
+                  <SelectItem key={id} value={id}>{nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <span className="text-xs text-gray-500">{filtered.length} resultat(s)</span>
+        </div>
       </div>
 
       {/* Table */}
@@ -382,12 +490,12 @@ function LOTOCreateDialog({ open, onClose, onCreated }) {
       eqId = item.equipement?.id || item.equipement_id || '';
       eqNom = item.equipement?.nom || item.equipement_nom || '';
       motif = item.titre || item.description || '';
-      duree = item.tempsEstime || item.duree_prevue || '';
+      duree = item.tempsEstime ?? item.duree_prevue ?? '';
     } else if (form.linked_type === 'preventive_maintenance') {
       eqId = item.equipement_id || '';
       eqNom = item.equipement_nom || '';
       motif = item.nom || item.description || '';
-      duree = item.duree_estimee || '';
+      duree = item.duree_estimee ?? '';
     } else if (form.linked_type === 'improvement') {
       eqId = item.equipement_id || '';
       eqNom = item.equipement_nom || '';
@@ -400,7 +508,7 @@ function LOTOCreateDialog({ open, onClose, onCreated }) {
       equipement_id: eqId || f.equipement_id,
       equipement_nom: eqNom || f.equipement_nom,
       motif: motif || f.motif,
-      duree_prevue_heures: duree ? String(duree) : f.duree_prevue_heures
+      duree_prevue_heures: duree !== '' && duree !== null && duree !== undefined ? String(duree) : f.duree_prevue_heures
     }));
   };
 

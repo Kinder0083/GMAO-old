@@ -9,6 +9,7 @@ import ImprovementDialog from '../components/Improvements/ImprovementDialog';
 import ImprovementFormDialog from '../components/Improvements/ImprovementFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { LOTOBadge } from '../components/Common/LOTOBadge';
+import { useLotoByLinked } from '../hooks/useLotoRealtime';
 import { improvementsAPI } from '../services/api';
 import api from '../services/api';
 import { useToast } from '../hooks/use-toast';
@@ -29,7 +30,7 @@ const Improvements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedImprovement, setSelectedImprovement] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
-  const [lotoByLinked, setLotoByLinked] = useState({});
+  const lotoByLinked = useLotoByLinked();
   
   // Filtres de date
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month, custom
@@ -44,11 +45,6 @@ const Improvements = () => {
     loading, 
     refresh: refreshImprovements 
   } = useImprovements();
-
-  // Charger les consignations LOTO liées
-  useEffect(() => {
-    api.get('/loto/by-linked').then(res => setLotoByLinked(res.data || {})).catch(() => {});
-  }, []);
 
   // Appliquer le filtre "en retard" depuis la navigation (header)
   useLocationStateFilter({

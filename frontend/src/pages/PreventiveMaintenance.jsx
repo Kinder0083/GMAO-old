@@ -18,6 +18,7 @@ import ChecklistExecutionDialog from '../components/PreventiveMaintenance/Checkl
 import ChecklistHistoryView from '../components/PreventiveMaintenance/ChecklistHistoryView';
 import AIMaintenanceGenerator from '../components/AIMaintenanceGenerator';
 import { LOTOBadge } from '../components/Common/LOTOBadge';
+import { useLotoByLinked } from '../hooks/useLotoRealtime';
 import { preventiveMaintenanceAPI, workOrdersAPI, checklistsAPI, equipmentsAPI } from '../services/api';
 import api from '../services/api';
 import { useToast } from '../hooks/use-toast';
@@ -50,7 +51,7 @@ const PreventiveMaintenance = () => {
   // États pour l'exécution et l'historique des checklists
   const [executionDialogOpen, setExecutionDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [lotoByLinked, setLotoByLinked] = useState({});
+  const lotoByLinked = useLotoByLinked();
   const [aiMaintenanceOpen, setAiMaintenanceOpen] = useState(false);
   const [checklistToExecute, setChecklistToExecute] = useState(null);
   const [executionContext, setExecutionContext] = useState({});
@@ -61,11 +62,6 @@ const PreventiveMaintenance = () => {
     loading, 
     refresh: refreshMaintenance 
   } = usePreventiveMaintenance();
-
-  // Charger les consignations LOTO liées
-  useEffect(() => {
-    api.get('/loto/by-linked').then(res => setLotoByLinked(res.data || {})).catch(() => {});
-  }, [maintenance]);
 
   // Vérifier les permissions
   const canDelete = user?.permissions?.preventiveMaintenance?.delete === true;

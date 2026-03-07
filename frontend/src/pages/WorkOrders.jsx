@@ -12,6 +12,7 @@ import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import ChecklistExecutionDialog from '../components/PreventiveMaintenance/ChecklistExecutionDialog';
 import TemplateSelectionDialog from '../components/WorkOrders/TemplateSelectionDialog';
 import { LOTOBadge } from '../components/Common/LOTOBadge';
+import { useLotoByLinked } from '../hooks/useLotoRealtime';
 
 import { workOrdersAPI, checklistsAPI, workOrderTemplatesAPI } from '../services/api';
 import api from '../services/api';
@@ -48,7 +49,7 @@ const WorkOrders = () => {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [hasTemplateAccess, setHasTemplateAccess] = useState(false);
   const [templateFormData, setTemplateFormData] = useState(null);
-  const [lotoByLinked, setLotoByLinked] = useState({});
+  const lotoByLinked = useLotoByLinked();
   
   // Filtres de date
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month, custom
@@ -145,8 +146,6 @@ const WorkOrders = () => {
   useEffect(() => {
     refreshWorkOrders();
     checkTemplateAccess();
-    // Charger les consignations LOTO liées
-    api.get('/loto/by-linked').then(res => setLotoByLinked(res.data || {})).catch(() => {});
   }, [dateFilter, dateType, customStartDate, customEndDate]);
 
   // Vérifier si l'utilisateur a accès aux ordres type
