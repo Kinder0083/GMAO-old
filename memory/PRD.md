@@ -1,49 +1,37 @@
-# FSAO Iris - GMAO (Gestion de Maintenance Assistee par Ordinateur)
+# FSAO Iris - GMAO
 
 ## Description
-Application de GMAO complete incluant gestion des ordres de travail, maintenance preventive, ameliorations, consignations LOTO, inventaire par service, equipements, zones, dashboard, journal d'audit, chat, systeme de mise a jour, import/export, sauvegardes, QR codes articles et equipements.
+Application de GMAO complete (FastAPI + React + MongoDB).
 
-## Architecture
-- **Frontend**: React + Shadcn UI + Tailwind CSS
-- **Backend**: FastAPI + MongoDB (Motor async)
-- **Auth**: JWT
-- **Temps reel**: WebSockets
-- **Notifications**: Web Push (pywebpush + VAPID)
-- **LLM**: LiteLLM proxy
-- **QR Scanner**: html5-qrcode
+## Fonctionnalites implementees (7 mars 2026)
 
-## Fonctionnalites implementees
+### Fix rafraichissement temps reel inventaire (P1)
+- Bug: la quantite ne se mettait pas a jour visuellement via WebSocket
+- Cause racine: useRef + refetch API = stale closure dans le listener WebSocket
+- Fix: setServiceItems(prev => prev.map(item => match ? {...item, quantite: data.quantity_after} : item))
+  La forme fonctionnelle du setter React recoit toujours le state le plus recent = zero stale closure
+- Teste et confirme: quantite MAJ instantanement dans l'UI sans refresh manuel
 
-### Fix PWA installation Android (7 mars 2026)
-- Bug: l'installation PWA echouait silencieusement sur Android
-- Cause: useInstallPrompt() faisait un return premature quand display-mode:standalone etait detecte
-  empechant l'enregistrement du listener beforeinstallprompt
-- Fix: listener TOUJOURS enregistre + getInstalledRelatedApps() + beforeinstallprompt force isInstalled=false
+### Fix PWA installation Android (P1)
+- Cause: useInstallPrompt() faisait un return premature empechant beforeinstallprompt
+- Fix: listener TOUJOURS enregistre + getInstalledRelatedApps()
 
-### Fix bug "clone" QR Page (7 mars 2026)
-- Fix: res.clone().text() avec fallback dans fetchPublic/fetchAuth
+### Fix bug "clone" QR Page
+- Fix: res.clone().text() avec fallback
 
-### Fix logs mise a jour perdus apres reboot (7 mars 2026)
+### Fix logs mise a jour perdus apres reboot
 - Fix: repertoire dedie hors depot git + contenu logs embarque dans resultat JSON
 
-### Mode Inventaire Rapide (7 mars 2026)
+### Mode Inventaire Rapide
 - Scan QR continu pour comptage physique avec ajustements automatiques
 
-### Scanner QR Code integre (7 mars 2026)
+### Scanner QR Code integre
 - Navigation automatique vers la fiche de l'article/equipement scanne
 
-### Fix systeme de mise a jour - update_log.txt (7 mars 2026)
+### Fix systeme de mise a jour - update_log.txt
 - Suppression du fichier update_log.txt du tracking Git
 
-### Notifications push, Signalement -> DA, PWA, Inventaire par service, QR Codes, LOTO
-- Voir changelog precedent
-
-## IMPORTANT - Deploiement
-L'utilisateur doit faire "Save to Github" puis deployer manuellement via SSH.
-Apres deploiement, vider le cache Chrome sur mobile pour que le nouveau SW soit installe.
-
 ## Backlog
-- P1: Bug rafraichissement temps reel inventaire (WebSocket recu mais UI pas mise a jour)
 - P2: Cadenas multiples LOTO
 
 ## Credentials de test
