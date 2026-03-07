@@ -7,10 +7,11 @@ import { Input } from '../components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
-import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye, Settings, Link2, Unlink, FolderPlus, FolderMinus, QrCode, Download, Camera } from 'lucide-react';
+import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye, Settings, Link2, Unlink, FolderPlus, FolderMinus, QrCode, Download, Camera, ClipboardList } from 'lucide-react';
 import InventoryFormDialog from '../components/Inventory/InventoryFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import QRScannerDialog from '../components/QRScannerDialog';
+import QuickInventoryMode from '../components/QuickInventoryMode';
 import { inventoryAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 
@@ -27,6 +28,7 @@ const Inventory = () => {
   const [equipments, setEquipments] = useState([]);
   const [loadingEquipments, setLoadingEquipments] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [quickInventoryOpen, setQuickInventoryOpen] = useState(false);
 
   // Services d'inventaire (onglets)
   const [services, setServices] = useState([]);
@@ -446,6 +448,14 @@ const Inventory = () => {
           >
             <Camera size={18} className="mr-2" />
             Scanner QR
+          </Button>
+          <Button
+            onClick={() => setQuickInventoryOpen(true)}
+            data-testid="quick-inventory-btn"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <ClipboardList size={18} className="mr-2" />
+            Inventaire Rapide
           </Button>
           {isManagerOrAdmin && (
             <Button
@@ -931,6 +941,12 @@ const Inventory = () => {
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
         onScan={handleQRScan}
+      />
+
+      {/* Inventaire Rapide */}
+      <QuickInventoryMode
+        open={quickInventoryOpen}
+        onClose={() => { setQuickInventoryOpen(false); loadServiceItems(); }}
       />
     </div>
   );
