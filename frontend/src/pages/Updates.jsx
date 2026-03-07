@@ -61,14 +61,14 @@ const Updates = () => {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${BACKEND_URL}/api/updates/log`, {
         headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000
+        timeout: 15000
       });
       if (response.data.found) {
         setServerLog(response.data.content);
         setServerLogInfo({
           path: response.data.path,
           size: response.data.size,
-          source: response.data.source
+          in_progress: response.data.in_progress
         });
       } else {
         setServerLog('');
@@ -76,7 +76,8 @@ const Updates = () => {
       }
     } catch (error) {
       console.error('Erreur chargement logs:', error);
-      setServerLog('Erreur lors du chargement des logs');
+      const detail = error.response?.data?.detail || error.message || 'Erreur inconnue';
+      setServerLog(`Impossible de charger les logs du serveur.\n\nErreur: ${detail}\n\nCela peut arriver si:\n- Le serveur vient de redemarrer apres une mise a jour\n- L'endpoint /api/updates/log n'est pas encore deploye\n- Vous n'etes pas connecte en tant qu'administrateur`);
     } finally {
       setServerLogLoading(false);
     }
@@ -652,8 +653,12 @@ const Updates = () => {
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
                     <FileText size={12} />
                     <span>Fichier: {serverLogInfo.path}</span>
-                    <span>|</span>
-                    <span>Source: {serverLogInfo.source}</span>
+                    {serverLogInfo.in_progress && (
+                      <>
+                        <span>|</span>
+                        <span className="text-amber-600 font-medium">Mise a jour en cours...</span>
+                      </>
+                    )}
                   </div>
                 )}
                 <div 

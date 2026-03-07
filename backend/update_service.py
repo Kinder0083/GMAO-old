@@ -684,6 +684,7 @@ class UpdateService:
         logger.info(f"[MAJ] Result: {result_file}")
         
         # Sauvegarder le statut in_progress dans la DB
+        # IMPORTANT: log_path dans /var/log/ car git reset écrase APP_ROOT
         try:
             await self.db.system_settings.update_one(
                 {"key": "last_update_result"},
@@ -696,7 +697,7 @@ class UpdateService:
                     "version_after": version,
                     "history_id": update_id,
                     "started_at": datetime.now(timezone.utc).isoformat(),
-                    "log_path": str(self.app_root / "update_log.txt"),
+                    "log_path": "/var/log/gmao-iris-update.log",
                     "errors": [],
                     "warnings": [],
                     "completed_at": None
@@ -734,11 +735,11 @@ class UpdateService:
         
         # ============================================================
         # SCRIPT BASH - Reproduit EXACTEMENT les commandes SSH manuelles
-        # de l'administrateur. Log persistant dans APP_ROOT/update_log.txt
-        # car 'reboot' efface /tmp.
+        # LOGS dans /var/log/ car git reset --hard ECRASE tout dans APP_ROOT
         # ============================================================
-        persistent_log = str(self.app_root / "update_log.txt")
-        persistent_result = str(self.app_root / "last_update_result.json")
+        # Chemins HORS du dépôt git (ne sont pas écrasés par git reset)
+        persistent_log = "/var/log/gmao-iris-update.log"
+        persistent_result = "/var/log/gmao-iris-update-result.json"
         
         script_content = f"""#!/bin/bash
 #
@@ -747,6 +748,7 @@ class UpdateService:
 # ID: {update_id}
 #
 # REPRODUIT EXACTEMENT les commandes SSH manuelles de l'administrateur
+# LOGS dans /var/log/ (hors du depot git, survivent au git reset ET au reboot)
 #
 
 set -o pipefail
@@ -760,19 +762,23 @@ GITHUB_BRANCH="{self.github_branch}"
 VENV_ACTIVATE="{venv_activate}"
 MONGO_URL="{mongo_url}"
 
-# Fichiers persistants (survivent au reboot)
+# Fichiers de log HORS du depot git (survivent au git reset + reboot)
 PERSISTENT_LOG="{persistent_log}"
 PERSISTENT_RESULT="{persistent_result}"
 
-# Fichiers temporaires (pour compatibilité)
+# Fichiers temporaires
 TMP_LOG="{log_path}"
 TMP_RESULT="{result_file}"
 
-# Tout rediriger dans DEUX logs : persistant + tmp
-exec > >(tee -a "$PERSISTENT_LOG" "$TMP_LOG") 2>&1
+# S'assurer que /var/log est accessible en ecriture
+touch "$PERSISTENT_LOG" 2>/dev/null || PERSISTENT_LOG="/tmp/gmao-iris-update.log"
+touch "$PERSISTENT_RESULT" 2>/dev/null || PERSISTENT_RESULT="/tmp/gmao-iris-update-result.json"
 
-# Vider le log persistant pour ne garder que la dernière mise à jour
+# Vider le log pour ne garder que la derniere mise a jour
 echo "" > "$PERSISTENT_LOG"
+
+# Tout rediriger dans le log persistant + tmp
+exec > >(tee "$PERSISTENT_LOG" "$TMP_LOG") 2>&1
 
 echo "========================================================"
 echo "DEBUT MISE A JOUR: {self.current_version} -> {version}"
@@ -781,9 +787,10 @@ echo "ID: {update_id}"
 echo "APP_ROOT: $APP_ROOT"
 echo "VENV: $VENV_ACTIVATE"
 echo "GITHUB: $GITHUB_URL branch $GITHUB_BRANCH"
+echo "LOG: $PERSISTENT_LOG"
 echo "========================================================"
 
-export PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/share/.config/yarn/global/node_modules/.bin:$PATH"
+export PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/share/.config/yarn/global/node_modules/.bin:$HOME/.yarn/bin:$PATH"
 ERRORS=0
 CODE_UPDATED=false
 START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -792,7 +799,7 @@ START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo ""
 echo "[ETAPE 1/7] Backup MongoDB..."
 BACKUP_PATH="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$BACKUP_PATH"
+mkdir -p "$BACKUP_PATH" 2>/dev/null
 if command -v mongodump >/dev/null 2>&1; then
     if mongodump --uri="$MONGO_URL" --out="$BACKUP_PATH" 2>&1; then
         echo "[OK] Backup MongoDB: $BACKUP_PATH"
@@ -930,7 +937,7 @@ fi
 
 END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Ecriture du resultat en JSON pur bash (pas de dependance python3)
+# Ecriture du resultat en JSON pur bash
 cat > "$PERSISTENT_RESULT" << EOFRESULT
 {{
   "update_id": "{update_id}",
@@ -954,7 +961,7 @@ echo "========================================================"
 echo "FIN MISE A JOUR"
 echo "Date: $(date)"
 echo "Succes: $SUCCESS | Code mis a jour: $CODE_UPDATED | Erreurs: $ERRORS"
-echo "Log persistant: $PERSISTENT_LOG"
+echo "Log: $PERSISTENT_LOG"
 echo "Resultat: $PERSISTENT_RESULT"
 echo "========================================================"
 echo ""
@@ -972,8 +979,8 @@ for conf in /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/gmao-i
     fi
 done
 
-# Reboot comme en SSH
-reboot
+# Reboot (avec sudo si necessaire)
+reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || sudo shutdown -r now 2>/dev/null || echo "[ERR] Impossible de rebooter - redemarrez manuellement"
 """
         
         # Écrire et lancer le script
@@ -1029,18 +1036,19 @@ reboot
         Vérifie s'il existe un fichier de résultat de mise à jour
         et le sauvegarde dans la base de données.
         Appelée au démarrage du serveur.
-        Cherche d'abord le fichier persistant (APP_ROOT/last_update_result.json)
-        puis les fichiers temporaires dans /tmp (compatibilité).
+        Cherche dans /var/log/ (prioritaire), puis APP_ROOT, puis /tmp.
         """
         import glob as glob_mod
         
-        # Chercher d'abord le fichier persistant (survit au reboot)
-        persistent_result = self.app_root / "last_update_result.json"
         result_files = []
+        # 1) Fichier dans /var/log/ (emplacement principal, survit à git reset + reboot)
+        if os.path.exists("/var/log/gmao-iris-update-result.json"):
+            result_files.append("/var/log/gmao-iris-update-result.json")
+        # 2) Fichier persistant dans APP_ROOT (ancien emplacement, compat)
+        persistent_result = self.app_root / "last_update_result.json"
         if persistent_result.exists():
             result_files.append(str(persistent_result))
-        
-        # Puis les fichiers temporaires
+        # 3) Fichiers temporaires dans /tmp
         result_files.extend(glob_mod.glob("/tmp/gmao_update_result_*.json"))
         
         for rf in result_files:
@@ -1053,20 +1061,19 @@ reboot
                 
                 log_file = rf.replace("_result_", "_update_").replace(".json", ".log")
                 log_content = ""
-                # Chercher le log persistant d'abord
-                persistent_log = self.app_root / "update_log.txt"
-                if persistent_log.exists():
-                    try:
-                        with open(persistent_log, 'r') as lf:
-                            log_content = lf.read()[-10000:]
-                    except Exception:
-                        pass
-                elif os.path.exists(log_file):
-                    try:
-                        with open(log_file, 'r') as lf:
-                            log_content = lf.read()[-10000:]
-                    except Exception:
-                        pass
+                # Chercher le log dans /var/log/ d'abord (principal)
+                for log_candidate in [
+                    "/var/log/gmao-iris-update.log",
+                    str(self.app_root / "update_log.txt"),
+                    log_file
+                ]:
+                    if os.path.exists(log_candidate) and os.path.getsize(log_candidate) > 10:
+                        try:
+                            with open(log_candidate, 'r', errors='replace') as lf:
+                                log_content = lf.read()[-10000:]
+                            break
+                        except Exception:
+                            pass
                 
                 history_entry = {
                     "id": update_id,

@@ -9696,70 +9696,65 @@ async def apply_update_endpoint(
 async def get_update_log(current_user: dict = Depends(get_current_admin_user)):
     """
     Lit et retourne le contenu du dernier fichier de log de mise à jour.
-    Permet le diagnostic à distance depuis le frontend.
-    Cherche d'abord le log persistant (APP_ROOT/update_log.txt),
-    puis le log_path en DB, puis les fichiers dans /tmp.
+    Cherche dans /var/log/ (principal), puis APP_ROOT, puis DB, puis /tmp.
     """
     import glob as glob_mod
     try:
-        # 1) Log persistant dans APP_ROOT (survit au reboot)
-        persistent_log = os.path.join(os.path.dirname(__file__), "update_log.txt")
-        # Remonter d'un niveau (backend -> app_root)
-        persistent_log_root = os.path.join(os.path.dirname(os.path.dirname(__file__)), "update_log.txt")
+        # Liste ordonnée des emplacements à chercher
+        log_candidates = [
+            "/var/log/gmao-iris-update.log",
+            "/tmp/gmao-iris-update.log",
+        ]
         
-        for plog in [persistent_log_root, persistent_log]:
-            if os.path.exists(plog) and os.path.getsize(plog) > 10:
-                with open(plog, 'r', errors='replace') as f:
+        # Ajouter le chemin APP_ROOT
+        app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        log_candidates.append(os.path.join(app_root, "update_log.txt"))
+
+        # Chercher dans la DB
+        last_result = await db.system_settings.find_one({"key": "last_update_result"}, {"_id": 0})
+        db_log_path = last_result.get("log_path") if last_result else None
+        if db_log_path and db_log_path not in log_candidates:
+            log_candidates.insert(1, db_log_path)
+
+        # Chercher le premier fichier existant avec du contenu
+        for path in log_candidates:
+            if path and os.path.exists(path) and os.path.getsize(path) > 10:
+                with open(path, 'r', errors='replace') as f:
                     content = f.read()
                 return {
                     "found": True,
-                    "path": plog,
+                    "path": path,
                     "content": content[-50000:],
-                    "size": os.path.getsize(plog),
-                    "source": "persistent"
+                    "size": os.path.getsize(path),
+                    "in_progress": last_result.get("in_progress", False) if last_result else False
                 }
 
-        # 2) Chercher le log_path dans la DB
-        last_result = await db.system_settings.find_one({"key": "last_update_result"}, {"_id": 0})
-        log_path = last_result.get("log_path") if last_result else None
-
-        if log_path and os.path.exists(log_path) and os.path.getsize(log_path) > 10:
-            with open(log_path, 'r', errors='replace') as f:
-                content = f.read()
-            return {
-                "found": True,
-                "path": log_path,
-                "content": content[-50000:],
-                "size": os.path.getsize(log_path),
-                "source": "database",
-                "in_progress": last_result.get("in_progress", False)
-            }
-
-        # 3) Fallback : fichier le plus récent dans /tmp
-        log_files = sorted(
+        # Fallback: fichier le plus récent dans /tmp
+        tmp_logs = sorted(
             glob_mod.glob("/tmp/gmao_update_*.log"),
             key=lambda f: os.path.getmtime(f),
             reverse=True
         )
-        if log_files:
-            with open(log_files[0], 'r', errors='replace') as f:
+        if tmp_logs:
+            with open(tmp_logs[0], 'r', errors='replace') as f:
                 content = f.read()
             return {
                 "found": True,
-                "path": log_files[0],
+                "path": tmp_logs[0],
                 "content": content[-50000:],
-                "size": os.path.getsize(log_files[0]),
-                "source": "tmp"
+                "size": os.path.getsize(tmp_logs[0]),
+                "in_progress": last_result.get("in_progress", False) if last_result else False
             }
 
-        # 4) Aucun log trouvé
         return {
             "found": False,
             "content": "",
-            "message": "Aucun fichier de log de mise a jour trouve"
+            "message": "Aucun fichier de log trouve. Lancez une mise a jour pour generer des logs."
         }
     except Exception as e:
         logger.error(f"[MAJ] Erreur lecture log: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
