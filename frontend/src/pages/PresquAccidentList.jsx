@@ -1616,7 +1616,7 @@ function PresquAccidentList() {
           {extractedItems.length === 0 ? (
             <div className="space-y-4 py-4">
               <p className="text-sm text-gray-600">
-                Importez un fichier Excel (.xls ou .xlsx) contenant une liste de presqu'accidents.
+                Importez un fichier contenant des presqu'accidents.
                 L'IA analysera le fichier et extraira automatiquement les donnees.
               </p>
               <div className="flex flex-col items-center gap-4 p-8 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/50">
@@ -1624,7 +1624,7 @@ function PresquAccidentList() {
                 <input
                   type="file"
                   ref={extractFileRef}
-                  accept=".xls,.xlsx"
+                  accept=".xls,.xlsx,.pdf,.png,.jpg,.jpeg,.webp"
                   onChange={handleExtractFile}
                   className="hidden"
                   data-testid="extract-file-input"
@@ -1638,10 +1638,10 @@ function PresquAccidentList() {
                   {extracting ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyse en cours...</>
                   ) : (
-                    <><Upload className="w-4 h-4 mr-2" /> Choisir un fichier Excel</>
+                    <><Upload className="w-4 h-4 mr-2" /> Choisir un fichier</>
                   )}
                 </Button>
-                <span className="text-xs text-gray-400">Formats acceptes: .xls, .xlsx</span>
+                <span className="text-xs text-gray-400">Excel (.xls, .xlsx), PDF, Images (png, jpg)</span>
               </div>
             </div>
           ) : (

@@ -883,14 +883,122 @@ async def export_template(current_user: dict = Depends(get_current_user)):
 
 
 
+async def _extract_with_gemini(content: bytes, filename: str) -> list:
+    """Utilise Gemini pour extraire les presqu'accidents d'un PDF ou image."""
+    import os
+    import json
+    import tempfile
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Cle API Gemini non configuree")
+
+    from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+
+    # Determiner le mime type
+    mime_map = {
+        '.pdf': 'application/pdf',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.webp': 'image/webp',
+    }
+    ext = '.' + filename.rsplit('.', 1)[-1]
+    mime_type = mime_map.get(ext, 'application/octet-stream')
+
+    # Sauvegarder temporairement le fichier
+    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"presqu-extract-{os.urandom(4).hex()}",
+            system_message="""Tu es un assistant specialise dans l'extraction de donnees de securite industrielle.
+Tu analyses des documents (PDF, images, tableaux) contenant des presqu'accidents (near-miss) et tu extrais les informations structurees.
+Tu DOIS repondre UNIQUEMENT avec un JSON valide, sans texte avant ou apres. Pas de markdown, pas de ```json."""
+        ).with_model("gemini", "gemini-2.5-flash")
+
+        file_attachment = FileContentWithMimeType(
+            file_path=tmp_path,
+            mime_type=mime_type
+        )
+
+        prompt = """Analyse ce document et extrais TOUS les presqu'accidents (near-miss / incidents) qu'il contient.
+
+Pour chaque presqu'accident, extrais ces champs:
+- titre: titre court (ex: "PA 1 - chute d'objet")
+- description: description detaillee / circonstances
+- date_incident: date au format YYYY-MM-DD (si disponible)
+- lieu: lieu de l'incident
+- service: service concerne (PRODUCTION, MAINTENANCE, QUALITE, LOGISTIQUE, ADV, LABO, DIRECTION, FORMULATION, ou AUTRE)
+- categorie_incident: type de danger (chute, brulure, projection, etc.)
+- declarant: nom de la personne qui declare
+- mesures_immediates: actions immediates prises
+- actions_proposees: actions correctives proposees
+- personnes_impliquees: personnes impliquees
+
+Reponds avec un JSON au format: {"items": [{...}, {...}]}
+Si le document ne contient pas de presqu'accidents, reponds: {"items": []}"""
+
+        user_message = UserMessage(
+            text=prompt,
+            file_contents=[file_attachment]
+        )
+
+        response = await chat.send_message(user_message)
+
+        # Parser le JSON de la reponse
+        response_text = response.strip()
+        # Nettoyer les balises markdown si presentes
+        if response_text.startswith('```'):
+            response_text = response_text.split('\n', 1)[1] if '\n' in response_text else response_text[3:]
+            if response_text.endswith('```'):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+        data = json.loads(response_text)
+        items = data.get("items", [])
+
+        # Normaliser les champs
+        result = []
+        for item in items:
+            service = str(item.get("service", "AUTRE")).upper()
+            valid_services = ["PRODUCTION", "MAINTENANCE", "QUALITE", "LOGISTIQUE", "ADV", "LABO", "DIRECTION", "FORMULATION"]
+            if service not in valid_services:
+                service = "AUTRE"
+
+            result.append({
+                "titre": str(item.get("titre", ""))[:200],
+                "description": str(item.get("description", "")),
+                "date_incident": str(item.get("date_incident", "")),
+                "lieu": str(item.get("lieu", "")),
+                "service": service,
+                "categorie_incident": str(item.get("categorie_incident", "")),
+                "declarant": str(item.get("declarant", "")),
+                "mesures_immediates": str(item.get("mesures_immediates", "")),
+                "actions_proposees": str(item.get("actions_proposees", "")),
+                "personnes_impliquees": str(item.get("personnes_impliquees", "")),
+            })
+        return result
+
+    finally:
+        os.unlink(tmp_path)
+
+
+
 @router.post("/ai/extract")
 async def ai_extract_presqu_accidents(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Extraction IA: analyse un fichier Excel (.xls/.xlsx) et retourne
-    les presqu'accidents extraits, prets a etre importes.
+    Extraction IA: analyse un fichier Excel (.xls/.xlsx), PDF ou image
+    et retourne les presqu'accidents extraits, prets a etre importes.
+    Pour Excel: parsing direct. Pour PDF/images: analyse par Gemini.
     """
     import os
     from io import BytesIO
@@ -898,13 +1006,18 @@ async def ai_extract_presqu_accidents(
     content = await file.read()
     fname = file.filename.lower()
 
-    if not fname.endswith(('.xls', '.xlsx')):
-        raise HTTPException(status_code=400, detail="Format non supporte. Utilisez .xls ou .xlsx")
+    supported = ('.xls', '.xlsx', '.pdf', '.png', '.jpg', '.jpeg', '.webp')
+    if not fname.endswith(supported):
+        raise HTTPException(status_code=400, detail=f"Format non supporte. Formats acceptes: {', '.join(supported)}")
 
     try:
         extracted = []
 
-        if fname.endswith('.xls'):
+        # === PDF / Images => Gemini ===
+        if fname.endswith(('.pdf', '.png', '.jpg', '.jpeg', '.webp')):
+            extracted = await _extract_with_gemini(content, fname)
+
+        elif fname.endswith('.xls'):
             import xlrd
             wb = xlrd.open_workbook(file_contents=content)
             sh = wb.sheet_by_index(0)
