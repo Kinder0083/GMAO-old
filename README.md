@@ -53,6 +53,19 @@ FSAO Iris integre des fonctionnalites d'IA generative (Gemini Pro) pour automati
 - **Resume IA** : Synthese automatique des interventions
 - **Anomalies capteurs** : Detection predictive par analyse de l'historique des mesures
 
+### Consignations LOTO (Lockout/Tagout)
+- Workflow de consignation en 4 etapes : Demande → Consignation → Intervention → Deconsignation
+- **Cadenas multiples** : plusieurs utilisateurs peuvent poser leur cadenas sur une meme consignation. L'equipement n'est deconsigne que lorsque le dernier cadenas est retire
+- **Points d'isolation** : definition des points d'isolation avec type (vanne, disjoncteur, etc.) et localisation
+- **Signatures electroniques** : signature manuscrite + code PIN pour chaque etape du workflow
+- **Suppression reservee aux administrateurs** : seuls les admins peuvent supprimer une consignation (statuts Demande/Annule/Deconsigne) avec confirmation
+- **Journalisation complete** : toutes les operations LOTO (creation, consignation, cadenas, deconsignation, suppression) sont enregistrees dans le journal d'audit
+- **Liaison OT/MP/Amelioration** : possibilite de lier une consignation a un ordre de travail, une maintenance preventive ou une amelioration, avec remplissage automatique de l'equipement, du motif et de la duree prevue
+- **Icone cadenas cliquable** : dans les listes d'OT, d'ameliorations et de maintenance preventive, une icone cadenas coloree indique le statut LOTO et permet de naviguer vers la page LOTO
+- **Mise a jour temps reel** : les icones cadenas se mettent a jour automatiquement via WebSocket
+- **Filtres avances** : filtrage par periode (mois, annee, personnalisee) et par equipement (liste deroulante alphabetique) avec compteur de resultats
+- **Types d'energie** : electrique, hydraulique, pneumatique, thermique, chimique, mecanique
+
 ### Ordres de travail
 - Creation, assignation, suivi et historique complet
 - Gestion des priorites, statuts et temps (estime vs reel)
@@ -501,6 +514,14 @@ Pour utiliser Google Drive comme destination de sauvegarde :
 | POST | `/api/surveillance/create-batch-from-ai` | Correspondance intelligente Plan de Surveillance |
 | POST | `/api/surveillance/confirm-match` | Confirmation manuelle d'une correspondance |
 | GET | `/api/surveillance/rapport-stats` | KPIs du rapport de surveillance |
+| GET | `/api/loto/` | Liste des consignations LOTO |
+| POST | `/api/loto/` | Creer une consignation LOTO |
+| GET | `/api/loto/{id}` | Detail d'une consignation |
+| DELETE | `/api/loto/{id}` | Supprimer une consignation (admin) |
+| POST | `/api/loto/{id}/workflow` | Action workflow (consigner, deconsigner...) |
+| POST | `/api/loto/{id}/cadenas` | Poser ou retirer un cadenas |
+| GET | `/api/loto/stats` | Statistiques des consignations |
+| GET | `/api/loto/by-linked` | Consignations par entite liee |
 | POST | `/api/push-notifications/register` | Enregistrer un token push (mobile) |
 | DELETE | `/api/push-notifications/unregister` | Desactiver un token push |
 | POST | `/api/push-notifications/test` | Envoyer une notification push de test |
@@ -692,6 +713,7 @@ Si les notifications push ne fonctionnent pas :
 | `surveillance_plans` | Plans de surveillance |
 | `presqu_accidents` | Presqu'accidents (enrichi: categorie, equipement, lesion, facteurs, temoins, conditions) |
 | `improvement_requests` | Demandes d'amelioration |
+| `loto_consignations` | Consignations LOTO (workflow, cadenas, signatures) |
 | `purchase_requests` | Demandes d'achat |
 | `releases` | Journal des modifications (changelog, feedback) |
 | `qractions` | Actions rapides pour pages QR (label, url, icone, auth) |

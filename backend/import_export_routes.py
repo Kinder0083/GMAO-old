@@ -80,6 +80,8 @@ EXPORT_MODULES = {
     "weekly-report-templates": "weekly_report_templates",
     # --- Consignes ---
     "consignes": "consignes",
+    # --- Consignations LOTO ---
+    "loto-consignations": "loto_consignations",
     # --- Tableaux blancs ---
     "whiteboards": "whiteboards",
     "whiteboard-objects": "whiteboard_objects",

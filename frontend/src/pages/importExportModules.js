@@ -11,6 +11,7 @@ export const modules = [
   { value: 'improvements', label: 'Améliorations', group: 'Opérations' },
   { value: 'demandes-arret', label: 'Demandes d\'arrêt', group: 'Opérations' },
   { value: 'consignes', label: 'Consignes', group: 'Opérations' },
+  { value: 'loto-consignations', label: 'Consignations LOTO', group: 'Opérations' },
   // --- Équipements & Maintenance ---
   { value: 'equipments', label: 'Équipements', group: 'Équipements' },
   { value: 'meters', label: 'Compteurs', group: 'Équipements' },

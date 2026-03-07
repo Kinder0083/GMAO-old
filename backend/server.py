@@ -10876,6 +10876,8 @@ async def startup_scheduler():
             manual_ch_added = 0
             manual_sec_added = 0
             for chapter in manual_data.get("chapters", []):
+                if "id" not in chapter:
+                    continue
                 existing = await db.manual_chapters.find_one({"id": chapter["id"]})
                 if not existing:
                     chapter.setdefault("created_at", now_utc.isoformat())
@@ -10893,6 +10895,8 @@ async def startup_scheduler():
                         )
                         manual_ch_added += 1
             for section in manual_data.get("sections", []):
+                if "id" not in section:
+                    continue
                 existing = await db.manual_sections.find_one({"id": section["id"]})
                 if not existing:
                     section.setdefault("created_at", now_utc.isoformat())

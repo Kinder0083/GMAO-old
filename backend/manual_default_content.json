@@ -676,6 +676,24 @@
       "updated_at": "2026-02-28T10:00:00.000000+00:00"
     },
     {
+      "id": "ch-038",
+      "title": "Consignations LOTO",
+      "description": "Lockout/Tagout - Securite des interventions",
+      "icon": "Shield",
+      "order": 38,
+      "target_roles": [],
+      "target_modules": ["loto"],
+      "sections": [
+        "sec-loto-01",
+        "sec-loto-02",
+        "sec-loto-03",
+        "sec-loto-04",
+        "sec-loto-05"
+      ],
+      "created_at": "2026-03-07T10:00:00.000000+00:00",
+      "updated_at": "2026-03-07T10:00:00.000000+00:00"
+    },
+    {
       "title": "QR Codes Equipements",
       "icon": "qr-code",
       "sections": [
@@ -3303,6 +3321,86 @@
       "video_url": null,
       "created_at": "2026-02-28T10:00:00.000000+00:00",
       "updated_at": "2026-02-28T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-loto-01",
+      "chapter_id": "ch-038",
+      "title": "Presentation du module LOTO",
+      "content": "**Qu'est-ce que la consignation LOTO ?**\n\nLe module LOTO (Lockout/Tagout) permet de gerer les procedures de consignation des equipements lors d'interventions de maintenance. Il garantit qu'un equipement est correctement isole de ses sources d'energie avant toute intervention.\n\n**Workflow en 4 etapes :**\n\n1. **Demande** : Un utilisateur cree une demande de consignation pour un equipement\n2. **Consignation** : Le responsable consigne l'equipement (isolation des energies, pose des cadenas)\n3. **Intervention** : L'intervention de maintenance peut commencer en toute securite\n4. **Deconsignation** : Une fois l'intervention terminee, l'equipement est remis en service\n\n**Types d'energie geres :** Electrique, Hydraulique, Pneumatique, Thermique, Chimique, Mecanique\n\n**Acces :** Cliquez sur l'icone cadenas dans le header ou naviguez via le menu lateral > Consignations LOTO",
+      "order": 82,
+      "level": "beginner",
+      "keywords": ["loto", "consignation", "lockout", "tagout", "securite", "cadenas"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": ["loto"],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-03-07T10:00:00.000000+00:00",
+      "updated_at": "2026-03-07T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-loto-02",
+      "chapter_id": "ch-038",
+      "title": "Creer une consignation",
+      "content": "**Nouvelle consignation**\n\n1. Sur la page Consignations LOTO, cliquez sur **\"Nouvelle consignation\"**\n2. Remplissez les champs :\n   - **Equipement** : Selectionnez dans la liste deroulante\n   - **Types d'energie** : Cochez les energies a isoler\n   - **Responsable** : Personne en charge de la consignation\n   - **Motif** : Raison de la consignation\n   - **Duree prevue** : Estimation en heures\n3. (Optionnel) **Lier a un OT/MP/Amelioration** : Selectionnez le type puis l'element. Les champs Equipement, Motif et Duree prevue seront remplis automatiquement\n4. (Optionnel) Ajoutez des **points d'isolation** : type (vanne, disjoncteur...), localisation et description\n5. Cliquez sur **\"Creer\"**\n\n**Remplissage automatique :** Lorsque vous liez la consignation a un ordre de travail, les champs Equipement, Motif et Duree prevue sont automatiquement remplis a partir des informations de l'OT.",
+      "order": 83,
+      "level": "beginner",
+      "keywords": ["creer", "consignation", "formulaire", "equipement", "energie", "auto-remplissage"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": ["loto"],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-03-07T10:00:00.000000+00:00",
+      "updated_at": "2026-03-07T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-loto-03",
+      "chapter_id": "ch-038",
+      "title": "Cadenas multiples",
+      "content": "**Systeme de cadenas multiples**\n\nPlusieurs utilisateurs peuvent poser leur cadenas sur une meme consignation. C'est le principe fondamental du LOTO : chaque intervenant pose son propre cadenas pour garantir sa securite.\n\n**Poser un cadenas :**\n1. Ouvrez le detail d'une consignation en statut **Consigne** ou **Intervention**\n2. Cliquez sur **\"Poser mon cadenas\"**\n3. Saisissez votre code PIN LOTO et/ou signez\n\n**Retirer son cadenas :**\n1. Cliquez sur **\"Retirer mon cadenas\"** a cote de votre nom\n2. Confirmez avec votre code PIN\n\n**Regle importante :** L'equipement ne peut etre deconsigne que lorsque **tous les cadenas ont ete retires**. Tant qu'un seul cadenas reste en place, l'equipement reste verrouille.\n\n**Code PIN LOTO :** Chaque utilisateur peut definir un code PIN personnel dans ses parametres. Ce code est requis pour les operations de cadenas.",
+      "order": 84,
+      "level": "intermediate",
+      "keywords": ["cadenas", "multiples", "pin", "securite", "verrouillage"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": ["loto"],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-03-07T10:00:00.000000+00:00",
+      "updated_at": "2026-03-07T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-loto-04",
+      "chapter_id": "ch-038",
+      "title": "Filtres et recherche",
+      "content": "**Filtrer les consignations**\n\nLa page LOTO propose plusieurs niveaux de filtrage :\n\n**Par onglet :**\n- **En cours** : Consignations actives (Demande, Consigne, Intervention)\n- **Terminees** : Consignations deconsignees ou annulees\n- **Toutes** : Ensemble des consignations\n\n**Par periode :**\n- **Mois** : Affiche uniquement les consignations du mois selectionne (par defaut : mois en cours)\n- **Annee** : Affiche les consignations de l'annee selectionnee\n- **Personnalisee** : Definissez une plage de dates (du... au...)\n- **Tout afficher** : Aucun filtre de date\n\n**Par equipement :**\nUtilisez la liste deroulante pour filtrer par equipement specifique. Les equipements sont classes par ordre alphabetique.\n\n**Par statut :**\nFiltrez par statut specifique : Demande, Consigne, Intervention, Deconsigne, Annule.\n\n**Recherche textuelle :**\nRecherchez par numero de consignation, nom d'equipement ou motif.\n\nLe compteur de resultats en bas de la barre de filtres indique le nombre de consignations correspondant aux criteres.",
+      "order": 85,
+      "level": "beginner",
+      "keywords": ["filtre", "recherche", "periode", "mois", "annee", "equipement"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": ["loto"],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-03-07T10:00:00.000000+00:00",
+      "updated_at": "2026-03-07T10:00:00.000000+00:00"
+    },
+    {
+      "id": "sec-loto-05",
+      "chapter_id": "ch-038",
+      "title": "Administration et journalisation",
+      "content": "**Suppression (administrateur uniquement)**\n\nSeuls les administrateurs peuvent supprimer une consignation. La suppression n'est possible que pour les consignations en statut **Demande**, **Annule** ou **Deconsigne** (jamais pour une consignation active).\n\n1. Reperer l'icone corbeille (rouge) dans la colonne Actions\n2. Cliquer sur l'icone\n3. Confirmer dans la boite de dialogue\n\n**Journalisation**\n\nToutes les operations LOTO sont enregistrees dans le journal d'audit :\n- Creation d'une consignation\n- Execution d'une action workflow (consigner, deconsigner, annuler)\n- Pose et retrait de cadenas\n- Suppression d'une consignation\n\nPour consulter le journal : Menu lateral > Journal d'activite > Filtrer par type \"Consignation LOTO\"\n\n**Icone cadenas dans les listes**\n\nDans les pages Ordres de travail, Ameliorations et Maintenance preventive, une icone cadenas coloree s'affiche a cote des elements lies a une consignation LOTO :\n- **Rouge** : Equipement consigne ou en intervention\n- **Orange** : Demande en attente\n- **Vert** : Deconsigne\n\nCliquez sur l'icone pour naviguer vers la page LOTO correspondante. Les icones se mettent a jour en temps reel.",
+      "order": 86,
+      "level": "intermediate",
+      "keywords": ["suppression", "admin", "journal", "audit", "icone", "cadenas", "temps reel"],
+      "parent_id": null,
+      "target_roles": [],
+      "target_modules": ["loto"],
+      "images": [],
+      "video_url": null,
+      "created_at": "2026-03-07T10:00:00.000000+00:00",
+      "updated_at": "2026-03-07T10:00:00.000000+00:00"
     }
   ]
 }
