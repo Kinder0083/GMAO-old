@@ -163,6 +163,20 @@ class UpdateService:
         # Gestionnaire de maintenance
         self.maintenance = MaintenanceMode(self.app_root)
         
+        # SECURITE: Au demarrage, desactiver la maintenance si elle est restee active
+        # (peut arriver si le script de MAJ a crashe avant de restaurer NGINX)
+        if self.maintenance.maintenance_flag.exists():
+            logger.warning("[MAJ] maintenance.flag detecte au demarrage - desactivation automatique")
+            self.maintenance.deactivate()
+        else:
+            # Verifier aussi s'il existe un backup NGINX non restaure
+            nginx_conf = self.maintenance._find_nginx_conf()
+            if nginx_conf:
+                backup = self.maintenance._find_backup(nginx_conf)
+                if backup:
+                    logger.warning(f"[MAJ] Backup NGINX non restaure detecte: {backup} - restauration")
+                    self.maintenance.deactivate()
+        
         logger.info(f"📂 Chemins détectés automatiquement:")
         logger.info(f"   - App root: {self.app_root}")
         logger.info(f"   - Backend: {self.backend_dir}")
@@ -708,9 +722,10 @@ class UpdateService:
         except Exception as e:
             logger.error(f"[MAJ] Erreur sauvegarde statut: {e}")
         
-        # Activer la maintenance
-        maintenance_activated = self.maintenance.activate()
-        logger.info(f"[MAJ] Maintenance {'activée' if maintenance_activated else 'non activée'}")
+        # NE PAS activer la maintenance - elle modifie la config NGINX
+        # et peut bloquer l'utilisateur apres le reboot
+        # Les commandes SSH de l'admin ne le font pas non plus
+        logger.info("[MAJ] Maintenance non activee (commandes SSH identiques)")
         
         # Détecter le venv
         venv_activate = ""
@@ -818,6 +833,37 @@ echo "MISE A JOUR TERMINEE - Reboot dans 5 secondes"
 echo "========================================================"
 
 sleep 5
+
+# CRITIQUE: Restaurer la config NGINX AVANT le reboot
+# Sinon l'utilisateur sera bloque sur la page de maintenance
+echo "Restauration de la configuration NGINX..."
+for conf in /etc/nginx/sites-enabled/gmao-iris /etc/nginx/sites-enabled/fsao-iris /etc/nginx/sites-enabled/default /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-available/default /etc/nginx/conf.d/gmao-iris.conf /etc/nginx/conf.d/default.conf; do
+    backup="${{conf}}.backup_pre_maintenance"
+    if [ -f "$backup" ]; then
+        real_conf=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
+        real_backup="${{real_conf}}.backup_pre_maintenance"
+        if [ -f "$real_backup" ]; then
+            cp "$real_backup" "$real_conf"
+            echo "Config NGINX restauree: $real_backup -> $real_conf"
+        elif [ -f "$backup" ]; then
+            cp "$backup" "$real_conf"
+            echo "Config NGINX restauree: $backup -> $real_conf"
+        fi
+        break
+    fi
+    # Aussi chercher le backup sur le chemin reel (symlink)
+    real_conf=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
+    real_backup="${{real_conf}}.backup_pre_maintenance"
+    if [ -f "$real_backup" ]; then
+        cp "$real_backup" "$real_conf"
+        echo "Config NGINX restauree: $real_backup -> $real_conf"
+        break
+    fi
+done
+rm -f "$APP_ROOT/maintenance.flag" 2>/dev/null
+nginx -t 2>/dev/null && nginx -s reload 2>/dev/null
+echo "NGINX restaure."
+
 reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || echo "ERREUR: reboot impossible"
 """
         
