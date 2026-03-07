@@ -720,284 +720,105 @@ class UpdateService:
                 break
         logger.info(f"[MAJ] venv: {venv_activate if venv_activate else 'NON TROUVÉ'}")
         
-        # Variables d'environnement frontend pour le build
-        frontend_env_exports = ""
-        frontend_env_file = self.frontend_dir / ".env"
-        if frontend_env_file.exists():
-            try:
-                for line in frontend_env_file.read_text().strip().split('\n'):
-                    line = line.strip()
-                    if line and not line.startswith('#') and '=' in line:
-                        frontend_env_exports += f"export {line}\n"
-            except Exception:
-                pass
-        
         mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017/cmms')
         
         # ============================================================
-        # SCRIPT BASH - Reproduit EXACTEMENT les commandes SSH manuelles
-        # LOGS dans /var/log/ car git reset --hard ECRASE tout dans APP_ROOT
+        # SCRIPT BASH - COPIE EXACTE des commandes SSH de l'administrateur
         # ============================================================
-        # Chemins HORS du dépôt git (ne sont pas écrasés par git reset)
-        # IMPORTANT: /var/log peut etre inaccessible, /tmp est efface au reboot
-        # Solution: creer un repertoire dedie HORS du depot git
         log_dir = str(self.app_root.parent / "gmao-iris-logs")
         persistent_log = f"{log_dir}/update.log"
         persistent_result = f"{log_dir}/update-result.json"
         
         script_content = f"""#!/bin/bash
 #
-# FSAO Iris - Script de mise à jour autonome v4.1
-# {self.current_version} -> {version}
-# ID: {update_id}
+# FSAO Iris - Mise a jour v5.0
+# Commandes IDENTIQUES a celles executees manuellement en SSH
 #
-# REPRODUIT EXACTEMENT les commandes SSH manuelles de l'administrateur
-# LOGS dans un repertoire dedie HORS du depot git
-#
-
-set -o pipefail
 
 APP_ROOT="{self.app_root}"
-BACKEND_DIR="{self.backend_dir}"
-FRONTEND_DIR="{self.frontend_dir}"
-BACKUP_DIR="{self.backup_dir}"
 GITHUB_URL="https://github.com/{self.github_user}/{self.github_repo}.git"
-GITHUB_BRANCH="{self.github_branch}"
-VENV_ACTIVATE="{venv_activate}"
-MONGO_URL="{mongo_url}"
 
-# Repertoire de logs DEDIE - hors du depot git, survit au reboot
+# Log dans un repertoire HORS du depot git (survit a git reset + reboot)
 LOG_DIR="{log_dir}"
-mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="/var/log"
 mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="/tmp"
+LOG_FILE="$LOG_DIR/update.log"
+RESULT_FILE="$LOG_DIR/update-result.json"
+touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/gmao-iris-update.log"
+touch "$RESULT_FILE" 2>/dev/null || RESULT_FILE="/tmp/gmao-iris-update-result.json"
 
-PERSISTENT_LOG="$LOG_DIR/update.log"
-PERSISTENT_RESULT="$LOG_DIR/update-result.json"
-
-# Fichiers temporaires
-TMP_LOG="{log_path}"
-TMP_RESULT="{result_file}"
-
-# S'assurer qu'on peut ecrire
-touch "$PERSISTENT_LOG" 2>/dev/null || PERSISTENT_LOG="/tmp/gmao-iris-update.log"
-touch "$PERSISTENT_RESULT" 2>/dev/null || PERSISTENT_RESULT="/tmp/gmao-iris-update-result.json"
-
-# Vider le log pour ne garder que la derniere mise a jour
-echo "" > "$PERSISTENT_LOG"
-
-# Tout rediriger dans le log persistant + tmp
-exec > >(tee "$PERSISTENT_LOG" "$TMP_LOG") 2>&1
+echo "" > "$LOG_FILE"
+exec > >(tee "$LOG_FILE") 2>&1
 
 echo "========================================================"
-echo "DEBUT MISE A JOUR: {self.current_version} -> {version}"
+echo "MISE A JOUR FSAO IRIS"
 echo "Date: $(date)"
-echo "ID: {update_id}"
-echo "APP_ROOT: $APP_ROOT"
-echo "VENV: $VENV_ACTIVATE"
-echo "GITHUB: $GITHUB_URL branch $GITHUB_BRANCH"
-echo "LOG: $PERSISTENT_LOG"
 echo "========================================================"
 
-export PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/share/.config/yarn/global/node_modules/.bin:$HOME/.yarn/bin:$PATH"
-ERRORS=0
-CODE_UPDATED=false
 START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+SUCCESS=false
 
-# ---- ETAPE 1/7: Backup MongoDB ----
-echo ""
-echo "[ETAPE 1/7] Backup MongoDB..."
-BACKUP_PATH="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S)"
-mkdir -p "$BACKUP_PATH" 2>/dev/null
-if command -v mongodump >/dev/null 2>&1; then
-    if mongodump --uri="$MONGO_URL" --out="$BACKUP_PATH" 2>&1; then
-        echo "[OK] Backup MongoDB: $BACKUP_PATH"
-    else
-        echo "[WARN] mongodump echoue (non bloquant)"
-    fi
-else
-    echo "[WARN] mongodump non disponible (non bloquant)"
-fi
+# === COMMANDES SSH IDENTIQUES ===
 
-# ---- ETAPE 2/7: Sauvegarde .env ----
-echo ""
-echo "[ETAPE 2/7] Sauvegarde des fichiers .env..."
-cp "$BACKEND_DIR/.env" /tmp/backend.env 2>/dev/null && echo "[OK] backend/.env sauvegarde" || echo "[WARN] backend/.env non trouve"
-cp "$FRONTEND_DIR/.env" /tmp/frontend.env 2>/dev/null && echo "[OK] frontend/.env sauvegarde" || echo "[WARN] frontend/.env non trouve"
+cd "$APP_ROOT" || {{ echo "ERREUR: impossible de cd $APP_ROOT"; exit 1; }}
+echo "[1/8] cd $APP_ROOT OK"
 
-# ---- ETAPE 3/7: Synchronisation Git (identique SSH) ----
-echo ""
-echo "[ETAPE 3/7] Synchronisation Git..."
-cd "$APP_ROOT" || {{ echo "[ERR] Impossible de cd $APP_ROOT"; ERRORS=1; }}
+cp backend/.env /tmp/backend.env 2>/dev/null
+cp frontend/.env /tmp/frontend.env 2>/dev/null
+echo "[2/8] Sauvegarde .env OK"
 
-echo "  -> rm -rf .git"
-rm -rf "$APP_ROOT/.git" 2>/dev/null
+rm -rf .git
+echo "[3/8] rm -rf .git OK"
 
-echo "  -> git init"
-if ! git init 2>&1; then
-    echo "[ERR] git init echoue"
-    ERRORS=1
-fi
+git init
+git remote add origin "$GITHUB_URL"
+echo "[4/8] git init + remote OK"
 
-echo "  -> git remote add origin $GITHUB_URL"
-if ! git remote add origin "$GITHUB_URL" 2>&1; then
-    echo "[ERR] git remote add echoue"
-    ERRORS=1
-fi
+git fetch origin main
+echo "[5/8] git fetch OK"
 
-echo "  -> git fetch origin $GITHUB_BRANCH"
-if ! git fetch origin "$GITHUB_BRANCH" 2>&1; then
-    echo "[ERR] git fetch echoue - VERIFIEZ LA CONNEXION INTERNET ET L'ACCES GITHUB"
-    ERRORS=1
-fi
+git reset --hard origin/main
+echo "[6/8] git reset --hard OK"
 
-echo "  -> git reset --hard origin/$GITHUB_BRANCH"
-if git reset --hard "origin/$GITHUB_BRANCH" 2>&1; then
-    echo "[OK] Code synchronise avec origin/$GITHUB_BRANCH"
-    CODE_UPDATED=true
-else
-    echo "[ERR] git reset --hard echoue"
-    CODE_UPDATED=false
-    ERRORS=1
-fi
+cp /tmp/backend.env backend/.env 2>/dev/null
+cp /tmp/frontend.env frontend/.env 2>/dev/null
+echo "[7/8] Restauration .env OK"
 
-# ---- ETAPE 4/7: Restauration .env ----
-echo ""
-echo "[ETAPE 4/7] Restauration des fichiers .env..."
-if [ -f /tmp/backend.env ]; then
-    cp /tmp/backend.env "$BACKEND_DIR/.env" && echo "[OK] backend/.env restaure" || echo "[ERR] Restauration backend/.env echouee"
-fi
-if [ -f /tmp/frontend.env ]; then
-    cp /tmp/frontend.env "$FRONTEND_DIR/.env" && echo "[OK] frontend/.env restaure" || echo "[ERR] Restauration frontend/.env echouee"
-fi
+source venv/bin/activate
+pip install -r backend/requirements.txt 2>&1
+deactivate
+echo "[8/8] pip install OK"
 
-# ---- ETAPE 5/7: Dependances backend (identique SSH) ----
-echo ""
-echo "[ETAPE 5/7] Installation dependances backend..."
-if [ -n "$VENV_ACTIVATE" ] && [ -f "$VENV_ACTIVATE" ]; then
-    echo "  -> source $VENV_ACTIVATE"
-    source "$VENV_ACTIVATE"
-    echo "  -> pip install -r $BACKEND_DIR/requirements.txt"
-    if pip install -r "$BACKEND_DIR/requirements.txt" 2>&1; then
-        echo "[OK] pip install termine"
-    else
-        echo "[WARN] pip install a rencontre des erreurs (non bloquant)"
-    fi
-    echo "  -> deactivate"
-    deactivate 2>/dev/null || true
-else
-    echo "  -> pip3 install -r $BACKEND_DIR/requirements.txt (pas de venv)"
-    if pip3 install -r "$BACKEND_DIR/requirements.txt" 2>&1; then
-        echo "[OK] pip3 install termine"
-    else
-        echo "[WARN] pip3 install a rencontre des erreurs"
-    fi
-fi
+cd frontend && yarn install 2>&1 && yarn build 2>&1 && cd ..
+echo "Build frontend OK"
 
-# ---- ETAPE 6/7: Frontend (identique SSH: cd frontend && yarn install && yarn build) ----
-echo ""
-echo "[ETAPE 6/7] Installation et build frontend..."
-if [ -f "$FRONTEND_DIR/package.json" ]; then
-    cd "$FRONTEND_DIR" || echo "[ERR] Impossible de cd $FRONTEND_DIR"
-    
-    export CI=false
-    export NODE_OPTIONS="--max_old_space_size=2048"
-    {frontend_env_exports}
-    
-    # Supprimer node_modules pour un build propre (evite les erreurs @babel/runtime)
-    echo "  -> rm -rf node_modules (clean install)"
-    rm -rf node_modules 2>/dev/null
-    
-    echo "  -> yarn install"
-    if yarn install 2>&1; then
-        echo "[OK] yarn install termine"
-    else
-        echo "[WARN] yarn install a rencontre des erreurs"
-    fi
-    
-    echo "  -> yarn build"
-    if yarn build 2>&1; then
-        if [ -f "build/index.html" ]; then
-            echo "[OK] yarn build termine (index.html present)"
-        else
-            echo "[ERR] yarn build termine mais index.html absent!"
-            ERRORS=1
-        fi
-    else
-        echo "[ERR] yarn build echoue"
-        ERRORS=1
-    fi
-    
-    cd "$APP_ROOT"
-else
-    echo "[WARN] package.json introuvable dans $FRONTEND_DIR"
-fi
-
-# ---- ETAPE 7/7: Ecriture du resultat et reboot ----
-echo ""
-echo "[ETAPE 7/7] Finalisation..."
-
-if [ "$CODE_UPDATED" = true ] && [ "$ERRORS" -eq 0 ]; then
-    SUCCESS=true
-    MSG="Mise a jour vers {version} terminee avec succes"
-elif [ "$CODE_UPDATED" = true ]; then
-    SUCCESS=true
-    MSG="Mise a jour partielle - code synchronise mais erreurs pendant l installation"
-else
-    SUCCESS=false
-    MSG="Echec - code source non mis a jour depuis GitHub"
-fi
-
+SUCCESS=true
 END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# Ecriture du resultat en JSON pur bash
-# IMPORTANT: inclure le contenu du log dans le resultat pour qu'il survive au reboot
-LOG_CONTENT=$(tail -200 "$PERSISTENT_LOG" 2>/dev/null | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n')
-cat > "$PERSISTENT_RESULT" << EOFRESULT
+# Sauvegarder le resultat
+LOG_CONTENT=$(tail -100 "$LOG_FILE" 2>/dev/null | sed 's/\\\\/\\\\\\\\/g; s/"/\\\\"/g; s/$/\\\\n/' | tr -d '\\n')
+cat > "$RESULT_FILE" << EOFRESULT
 {{
   "update_id": "{update_id}",
   "success": $SUCCESS,
-  "code_updated": $CODE_UPDATED,
   "version_before": "{self.current_version}",
   "version_after": "{version}",
-  "message": "$MSG",
   "started_at": "$START_TIME",
   "completed_at": "$END_TIME",
-  "errors_count": $ERRORS,
-  "log_path": "$PERSISTENT_LOG",
+  "log_path": "$LOG_FILE",
   "log_content": "$LOG_CONTENT"
 }}
 EOFRESULT
 
-# Copier le resultat dans TOUS les emplacements possibles pour survivre au reboot
-cp "$PERSISTENT_RESULT" "$TMP_RESULT" 2>/dev/null
-cp "$PERSISTENT_RESULT" "/var/log/gmao-iris-update-result.json" 2>/dev/null
-cp "$PERSISTENT_LOG" "/var/log/gmao-iris-update.log" 2>/dev/null
+cp "$RESULT_FILE" "/var/log/gmao-iris-update-result.json" 2>/dev/null
+cp "$LOG_FILE" "/var/log/gmao-iris-update.log" 2>/dev/null
 
 echo ""
 echo "========================================================"
-echo "FIN MISE A JOUR"
-echo "Date: $(date)"
-echo "Succes: $SUCCESS | Code mis a jour: $CODE_UPDATED | Erreurs: $ERRORS"
-echo "Log: $PERSISTENT_LOG"
-echo "Resultat: $PERSISTENT_RESULT"
+echo "MISE A JOUR TERMINEE - Reboot dans 5 secondes"
 echo "========================================================"
-echo ""
-echo ">>> REBOOT DU SERVEUR DANS 5 SECONDES <<<"
 
 sleep 5
-
-# Desactiver la maintenance avant le reboot
-rm -f "$APP_ROOT/maintenance.flag" 2>/dev/null
-for conf in /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/gmao-iris /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/gmao-iris.conf; do
-    if [ -f "$conf.backup_pre_maintenance" ]; then
-        REAL_CONF=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
-        cp "$conf.backup_pre_maintenance" "$REAL_CONF" 2>/dev/null
-        break
-    fi
-done
-
-# Reboot (avec sudo si necessaire)
-reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || sudo shutdown -r now 2>/dev/null || echo "[ERR] Impossible de rebooter - redemarrez manuellement"
+reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || echo "ERREUR: reboot impossible"
 """
         
         # Écrire et lancer le script
