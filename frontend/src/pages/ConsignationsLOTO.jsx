@@ -793,13 +793,24 @@ function LOTODetail({ id, onBack }) {
     }
   };
 
-  const handleCadenas = async (action, sig) => {
+  const [showCadenasDialog, setShowCadenasDialog] = useState(false);
+  const [cadenasPointIndex, setCadenasPointIndex] = useState(null);
+  const [cadenasType, setCadenasType] = useState('normal');
+
+  const handleCadenas = async (action, sig, opts = {}) => {
     try {
       await apiFetch(`/api/loto/${id}/cadenas`, {
         method: 'POST',
-        body: JSON.stringify({ action, signature: sig || null })
+        body: JSON.stringify({
+          action,
+          signature: sig || null,
+          point_index: opts.point_index !== undefined ? opts.point_index : null,
+          cadenas_type: opts.cadenas_type || 'normal',
+          cadenas_numero: opts.cadenas_numero || null,
+        })
       });
       toast({ title: action === 'poser' ? 'Cadenas pose' : 'Cadenas retire' });
+      setShowCadenasDialog(false);
       load();
     } catch (e) {
       toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
@@ -887,30 +898,74 @@ function LOTODetail({ id, onBack }) {
             </div>
           </div>
 
-          {/* Isolation Points */}
+          {/* Isolation Points with Cadenas per point */}
           <div className="bg-white rounded-lg border p-4">
             <h3 className="font-semibold mb-2">Points d'isolation ({(data.isolation_points || []).filter(p => p.verified).length}/{(data.isolation_points || []).length} verifies)</h3>
             <div className="space-y-2">
-              {(data.isolation_points || []).map((p, i) => (
-                <div key={i} className={`flex items-center gap-3 p-2 rounded ${p.verified ? 'bg-green-50' : 'bg-gray-50'}`}>
-                  {data.status === 'DEMANDE' ? (
-                    <button
-                      onClick={() => verifyPoint(i, !p.verified)}
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center ${p.verified ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'}`}
-                      data-testid={`verify-point-${i}`}
-                    >
-                      {p.verified && <CheckCircle className="w-3 h-3" />}
-                    </button>
-                  ) : (
-                    <div className={`w-5 h-5 rounded flex items-center justify-center ${p.verified ? 'text-green-500' : 'text-gray-300'}`}>
-                      {p.verified ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              {(data.isolation_points || []).map((p, i) => {
+                const pointCadenas = (data.cadenas || []).filter(c => c.point_index === i && !c.retire_at);
+                return (
+                  <div key={i} className={`rounded border ${p.verified ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                    <div className="flex items-center gap-3 p-2">
+                      {data.status === 'DEMANDE' ? (
+                        <button
+                          onClick={() => verifyPoint(i, !p.verified)}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${p.verified ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'}`}
+                          data-testid={`verify-point-${i}`}
+                        >
+                          {p.verified && <CheckCircle className="w-3 h-3" />}
+                        </button>
+                      ) : (
+                        <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${p.verified ? 'text-green-500' : 'text-gray-300'}`}>
+                          {p.verified ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                        </div>
+                      )}
+                      <span className="font-medium text-sm flex-1">{p.name}</span>
+                      <Badge variant="outline" className="text-xs">{p.type}</Badge>
+                      {p.location && <span className="text-xs text-gray-500">{p.location}</span>}
+                      {pointCadenas.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium" data-testid={`point-${i}-cadenas-count`}>
+                          <LockKeyhole className="w-3 h-3" />{pointCadenas.length}
+                        </span>
+                      )}
+                      {['CONSIGNE', 'INTERVENTION'].includes(data.status) && (
+                        <button
+                          onClick={() => { setCadenasPointIndex(i); setCadenasType('normal'); setShowCadenasDialog(true); }}
+                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline shrink-0"
+                          data-testid={`point-${i}-add-cadenas`}
+                        >
+                          + Cadenas
+                        </button>
+                      )}
                     </div>
-                  )}
-                  <span className="font-medium text-sm">{p.name}</span>
-                  <Badge variant="outline" className="text-xs">{p.type}</Badge>
-                  {p.location && <span className="text-xs text-gray-500">{p.location}</span>}
-                </div>
-              ))}
+                    {/* Cadenas poses sur ce point */}
+                    {pointCadenas.length > 0 && (
+                      <div className="px-2 pb-2 space-y-1 ml-8">
+                        {pointCadenas.map((c, ci) => (
+                          <div key={ci} className="flex items-center justify-between text-xs bg-red-50 rounded px-2 py-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <Lock className="w-3 h-3 text-red-600" />
+                              <span className="font-mono font-semibold text-red-700">{c.numero || '?'}</span>
+                              <span className="text-gray-600">{c.owner_nom}</span>
+                              {c.cadenas_type === 'superviseur' && (
+                                <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-medium">SUPERVISEUR</span>
+                              )}
+                            </div>
+                            <button
+                              className="text-gray-400 hover:text-red-600"
+                              onClick={() => handleCadenas('retirer', null, { cadenas_numero: c.numero })}
+                              data-testid={`retirer-cadenas-${c.numero}`}
+                              title={`Retirer ${c.numero}`}
+                            >
+                              <Unlock className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {(data.isolation_points || []).length === 0 && (
                 <p className="text-sm text-gray-500">Aucun point d'isolation defini</p>
               )}
@@ -963,41 +1018,143 @@ function LOTODetail({ id, onBack }) {
             </div>
           </div>
 
-          {/* Cadenas */}
+          {/* Cadenas - Vue globale */}
           {['CONSIGNE', 'INTERVENTION'].includes(data.status) && (
             <div className="bg-white rounded-lg border p-4">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <LockKeyhole className="w-5 h-5 text-red-600" /> Cadenas ({cadenasActifs.length} actif(s))
+                <LockKeyhole className="w-5 h-5 text-red-600" /> Cadenas ({cadenasActifs.length} actif{cadenasActifs.length !== 1 ? 's' : ''})
               </h3>
-              <div className="space-y-2 mb-3">
-                {(data.cadenas || []).map((c, i) => (
-                  <div key={i} className={`flex items-center justify-between p-2 rounded text-sm ${c.retire_at ? 'bg-gray-50 text-gray-500' : 'bg-red-50'}`}>
-                    <div className="flex items-center gap-2">
-                      {c.retire_at ? <Unlock className="w-4 h-4 text-green-500" /> : <Lock className="w-4 h-4 text-red-600" />}
-                      <span className="font-medium">{c.owner_nom}</span>
+
+              {/* Cadenas globaux (non lies a un point) */}
+              {(() => {
+                const globalCadenas = (data.cadenas || []).filter(c => c.point_index === null || c.point_index === undefined);
+                const globalActifs = globalCadenas.filter(c => !c.retire_at);
+                return (
+                  <>
+                    {globalActifs.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-500 font-medium mb-1.5 uppercase tracking-wide">Cadenas globaux</p>
+                        <div className="space-y-1.5">
+                          {globalActifs.map((c, i) => (
+                            <div key={i} className="flex items-center justify-between p-2 rounded text-sm bg-red-50 border border-red-100">
+                              <div className="flex items-center gap-2">
+                                <Lock className="w-4 h-4 text-red-600" />
+                                <span className="font-mono text-xs font-semibold text-red-700">{c.numero || '?'}</span>
+                                <span className="font-medium">{c.owner_nom}</span>
+                                {c.cadenas_type === 'superviseur' && (
+                                  <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-medium">SUP</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">{new Date(c.pose_at).toLocaleString('fr-FR')}</span>
+                                <button
+                                  className="text-gray-400 hover:text-red-600"
+                                  onClick={() => handleCadenas('retirer', null, { cadenas_numero: c.numero })}
+                                  data-testid={`retirer-global-${c.numero}`}
+                                >
+                                  <Unlock className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* Historique cadenas retires */}
+              {(() => {
+                const retired = (data.cadenas || []).filter(c => c.retire_at);
+                if (retired.length === 0) return null;
+                return (
+                  <details className="mb-3">
+                    <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+                      {retired.length} cadenas retire{retired.length !== 1 ? 's' : ''}
+                    </summary>
+                    <div className="space-y-1 mt-1.5">
+                      {retired.map((c, i) => (
+                        <div key={i} className="flex items-center justify-between p-1.5 rounded text-xs bg-gray-50 text-gray-500">
+                          <div className="flex items-center gap-1.5">
+                            <Unlock className="w-3 h-3 text-green-500" />
+                            <span className="font-mono">{c.numero || '?'}</span>
+                            <span>{c.owner_nom}</span>
+                          </div>
+                          <span>retire le {new Date(c.retire_at).toLocaleString('fr-FR')}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-xs">
-                      {c.retire_at ? (
-                        <span className="text-green-600">Retire le {new Date(c.retire_at).toLocaleString('fr-FR')}</span>
-                      ) : (
-                        <span className="text-red-600">Pose le {new Date(c.pose_at).toLocaleString('fr-FR')}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {(data.cadenas || []).length === 0 && (
-                  <p className="text-sm text-gray-500">Aucun cadenas pose</p>
-                )}
-              </div>
+                  </details>
+                );
+              })()}
+
+              {cadenasActifs.length === 0 && (
+                <p className="text-sm text-gray-500 mb-3">Aucun cadenas actif</p>
+              )}
+
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => handleCadenas('poser')} data-testid="cadenas-poser">
-                  <Lock className="w-3 h-3 mr-1" /> Poser mon cadenas
-                </Button>
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => handleCadenas('retirer')} data-testid="cadenas-retirer">
-                  <Unlock className="w-3 h-3 mr-1" /> Retirer mon cadenas
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => { setCadenasPointIndex(null); setCadenasType('normal'); setShowCadenasDialog(true); }} data-testid="cadenas-poser">
+                  <Lock className="w-3 h-3 mr-1" /> Poser un cadenas
                 </Button>
               </div>
             </div>
+          )}
+
+          {/* Dialog de pose de cadenas */}
+          <Dialog open={showCadenasDialog} onOpenChange={setShowCadenasDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-red-600" /> Poser un cadenas
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                {/* Point d'isolation */}
+                <div>
+                  <Label className="text-sm font-medium">Point d'isolation</Label>
+                  <Select value={cadenasPointIndex === null ? 'global' : String(cadenasPointIndex)} onValueChange={(v) => setCadenasPointIndex(v === 'global' ? null : parseInt(v))}>
+                    <SelectTrigger data-testid="cadenas-point-select">
+                      <SelectValue placeholder="Choisir un point" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="global">Global (tous les points)</SelectItem>
+                      {(data.isolation_points || []).map((p, i) => {
+                        const pointLocks = (data.cadenas || []).filter(c => c.point_index === i && !c.retire_at).length;
+                        return (
+                          <SelectItem key={i} value={String(i)}>
+                            {p.name} ({p.type}){pointLocks > 0 ? ` [${pointLocks} cadenas]` : ''}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Type de cadenas */}
+                <div>
+                  <Label className="text-sm font-medium">Type de cadenas</Label>
+                  <Select value={cadenasType} onValueChange={setCadenasType}>
+                    <SelectTrigger data-testid="cadenas-type-select">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="superviseur">Superviseur (admin/responsable)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {cadenasType === 'superviseur' && (
+                    <p className="text-xs text-amber-600 mt-1">Un cadenas superviseur ne peut etre retire que par son poseur ou un administrateur.</p>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowCadenasDialog(false)}>Annuler</Button>
+                <Button className="bg-red-600 hover:bg-red-700" onClick={() => handleCadenas('poser', null, { point_index: cadenasPointIndex, cadenas_type: cadenasType })} data-testid="cadenas-confirm-poser">
+                  <Lock className="w-4 h-4 mr-2" /> Poser le cadenas
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           )}
 
           {/* Intervenants */}

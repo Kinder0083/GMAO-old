@@ -81,8 +81,11 @@ class IsolationPoint(BaseModel):
     verified: bool = False
 
 class CadenasEntry(BaseModel):
+    numero: str = ""  # CAD-001, CAD-002, etc.
     owner_id: str
     owner_nom: str
+    point_index: Optional[int] = None  # Index du point d'isolation (-1 ou None = global)
+    cadenas_type: str = "normal"  # normal | superviseur
     pose_at: Optional[str] = None
     retire_at: Optional[str] = None
     signature_pose: Optional[str] = None  # base64
@@ -132,6 +135,9 @@ class WorkflowAction(BaseModel):
 class CadenasAction(BaseModel):
     action: str  # poser, retirer
     signature: Optional[str] = None  # base64
+    point_index: Optional[int] = None  # Index du point d'isolation (None = global)
+    cadenas_type: str = "normal"  # normal | superviseur
+    cadenas_numero: Optional[str] = None  # Pour retirer un cadenas specifique
 
 class VerifyIsolationPoint(BaseModel):
     point_index: int
@@ -456,7 +462,7 @@ async def execute_workflow(loto_id: str, action: WorkflowAction, current_user: d
     return updated
 
 
-# ===== Cadenas (Padlocks) =====
+# ===== Cadenas (Padlocks) - Multi-cadenas par point d'isolation =====
 
 @router.post("/{loto_id}/cadenas")
 async def manage_cadenas(loto_id: str, data: CadenasAction, current_user: dict = Depends(get_current_user)):
@@ -467,18 +473,45 @@ async def manage_cadenas(loto_id: str, data: CadenasAction, current_user: dict =
     now = datetime.now(timezone.utc).isoformat()
     user_id = current_user["id"]
     user_nom = current_user.get("name", "")
+    user_role = current_user.get("role", "")
 
     if data.action == "poser":
         if doc["status"] not in ["CONSIGNE", "INTERVENTION"]:
             raise HTTPException(400, "Impossible de poser un cadenas : consignation non active")
-        # Check user doesn't already have an active padlock
-        existing = [c for c in doc.get("cadenas", []) if c["owner_id"] == user_id and not c.get("retire_at")]
-        if existing:
-            raise HTTPException(400, "Vous avez déjà un cadenas en place")
+
+        # Valider le point d'isolation si specifie
+        if data.point_index is not None:
+            points = doc.get("isolation_points", [])
+            if data.point_index < 0 or data.point_index >= len(points):
+                raise HTTPException(400, "Index de point d'isolation invalide")
+
+        # Seuls les admins/responsables peuvent poser un cadenas superviseur
+        if data.cadenas_type == "superviseur" and user_role.lower() not in ["admin", "manager"]:
+            raise HTTPException(403, "Seuls les responsables et admins peuvent poser un cadenas superviseur")
+
+        # Generer un numero unique pour le cadenas
+        existing_cadenas = doc.get("cadenas", [])
+        max_num = 0
+        for c in existing_cadenas:
+            num_str = c.get("numero", "")
+            if num_str.startswith("CAD-"):
+                try:
+                    max_num = max(max_num, int(num_str.split("-")[1]))
+                except (ValueError, IndexError):
+                    pass
+        cadenas_numero = f"CAD-{max_num + 1:03d}"
+
+        point_name = ""
+        if data.point_index is not None:
+            points = doc.get("isolation_points", [])
+            point_name = f" sur {points[data.point_index]['name']}"
 
         cadenas = {
+            "numero": cadenas_numero,
             "owner_id": user_id,
             "owner_nom": user_nom,
+            "point_index": data.point_index,
+            "cadenas_type": data.cadenas_type,
             "pose_at": now,
             "retire_at": None,
             "signature_pose": data.signature,
@@ -494,7 +527,7 @@ async def manage_cadenas(loto_id: str, data: CadenasAction, current_user: dict =
                         "user_id": user_id,
                         "user_nom": user_nom,
                         "timestamp": now,
-                        "details": f"Cadenas posé par {user_nom}"
+                        "details": f"Cadenas {cadenas_numero} ({data.cadenas_type}) pose par {user_nom}{point_name}"
                     }
                 },
                 "$set": {"updated_at": now}
@@ -504,39 +537,68 @@ async def manage_cadenas(loto_id: str, data: CadenasAction, current_user: dict =
     elif data.action == "retirer":
         if doc["status"] not in ["CONSIGNE", "INTERVENTION"]:
             raise HTTPException(400, "Impossible de retirer un cadenas : consignation non active")
-        # Find user's active padlock
+
         cadenas_list = doc.get("cadenas", [])
         found = False
-        for i, c in enumerate(cadenas_list):
-            if c["owner_id"] == user_id and not c.get("retire_at"):
-                cadenas_list[i]["retire_at"] = now
-                cadenas_list[i]["signature_retire"] = data.signature
-                found = True
-                break
-        if not found:
-            raise HTTPException(400, "Aucun cadenas actif trouvé pour cet utilisateur")
 
-        await db.loto_consignations.update_one(
-            {"id": loto_id},
-            {
-                "$set": {"cadenas": cadenas_list, "updated_at": now},
-                "$push": {
-                    "historique": {
-                        "action": "CADENAS_RETIRE",
-                        "user_id": user_id,
-                        "user_nom": user_nom,
-                        "timestamp": now,
-                        "details": f"Cadenas retiré par {user_nom}"
+        for i, c in enumerate(cadenas_list):
+            if c.get("retire_at"):
+                continue  # deja retire
+
+            # Si un numero est specifie, retirer ce cadenas precis
+            if data.cadenas_numero:
+                if c.get("numero") != data.cadenas_numero:
+                    continue
+            else:
+                # Sans numero, retirer le premier cadenas actif de l'utilisateur
+                if c["owner_id"] != user_id:
+                    continue
+
+            # Verifier les droits de retrait
+            is_own = c["owner_id"] == user_id
+            is_admin = user_role.lower() in ["admin"]
+            is_superviseur_lock = c.get("cadenas_type") == "superviseur"
+
+            if not is_own and not is_admin:
+                raise HTTPException(403, f"Seul {c['owner_nom']} ou un admin peut retirer le cadenas {c.get('numero', '')}")
+            if is_superviseur_lock and not is_own and not is_admin:
+                raise HTTPException(403, f"Cadenas superviseur : seul {c['owner_nom']} ou un admin peut le retirer")
+
+            cadenas_list[i]["retire_at"] = now
+            cadenas_list[i]["signature_retire"] = data.signature
+            found = True
+
+            point_name = ""
+            if c.get("point_index") is not None:
+                points = doc.get("isolation_points", [])
+                if 0 <= c["point_index"] < len(points):
+                    point_name = f" de {points[c['point_index']]['name']}"
+
+            await db.loto_consignations.update_one(
+                {"id": loto_id},
+                {
+                    "$set": {"cadenas": cadenas_list, "updated_at": now},
+                    "$push": {
+                        "historique": {
+                            "action": "CADENAS_RETIRE",
+                            "user_id": user_id,
+                            "user_nom": user_nom,
+                            "timestamp": now,
+                            "details": f"Cadenas {c.get('numero', '?')} retire par {user_nom}{point_name}"
+                        }
                     }
                 }
-            }
-        )
+            )
+            break
+
+        if not found:
+            raise HTTPException(400, "Aucun cadenas actif trouve" + (f" avec le numero {data.cadenas_numero}" if data.cadenas_numero else " pour cet utilisateur"))
 
     else:
         raise HTTPException(400, f"Action cadenas inconnue: {data.action}")
 
     updated = await db.loto_consignations.find_one({"id": loto_id}, {"_id": 0})
-    action_label = "Cadenas posé" if data.action == "poser" else "Cadenas retiré"
+    action_label = "Cadenas pose" if data.action == "poser" else "Cadenas retire"
     await _log_loto_audit(current_user, "UPDATE", loto_id, doc.get("numero", ""),
                           f"{action_label} par {user_nom} ({doc.get('equipement_nom', '')})")
     return updated
