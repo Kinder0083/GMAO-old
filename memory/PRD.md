@@ -3,36 +3,42 @@
 ## Description
 Application de GMAO complete (FastAPI + React + MongoDB).
 
-## Fonctionnalites implementees (7 mars 2026)
+## Fonctionnalites implementees
 
-### Fix rafraichissement temps reel inventaire (P1)
-- Bug: la quantite ne se mettait pas a jour visuellement via WebSocket
-- Cause racine: useRef + refetch API = stale closure dans le listener WebSocket
-- Fix: setServiceItems(prev => prev.map(item => match ? {...item, quantite: data.quantity_after} : item))
-  La forme fonctionnelle du setter React recoit toujours le state le plus recent = zero stale closure
-- Teste et confirme: quantite MAJ instantanement dans l'UI sans refresh manuel
+### Cadenas multiples LOTO (7 mars 2026)
+- Cadenas par point d'isolation: chaque cadenas est lie a un point specifique (disjoncteur, vanne, etc.) ou global
+- Numerotation automatique: CAD-001, CAD-002, etc.
+- Type normal ou superviseur (seul le poseur ou un admin peut retirer un superviseur)
+- Plusieurs cadenas par utilisateur (suppression de la limite 1/personne)
+- Bouton "+ Cadenas" sur chaque point d'isolation dans la vue detail
+- Dialog de pose: choix du point + type (normal/superviseur)
+- Vue globale: liste des cadenas actifs avec numero, poseur, date, type
+- Historique des cadenas retires (details pliable)
+- Badge compteur sur chaque point d'isolation
+- Deconsignation bloquee tant que des cadenas sont actifs
+- Retrait par numero specifique (cadenas_numero)
+- Fix casse role admin/ADMIN pour cadenas superviseur
 
-### Fix PWA installation Android (P1)
-- Cause: useInstallPrompt() faisait un return premature empechant beforeinstallprompt
-- Fix: listener TOUJOURS enregistre + getInstalledRelatedApps()
+### Fix rafraichissement temps reel inventaire (7 mars 2026)
+- setServiceItems(prev => prev.map(...)) au lieu de refetch API
 
-### Fix bug "clone" QR Page
-- Fix: res.clone().text() avec fallback
+### Fix PWA installation Android (7 mars 2026)
+- Listener beforeinstallprompt toujours enregistre
 
-### Fix logs mise a jour perdus apres reboot
-- Fix: repertoire dedie hors depot git + contenu logs embarque dans resultat JSON
+### Fix bug "clone" QR Page (7 mars 2026)
+- res.clone().text() avec fallback
 
-### Mode Inventaire Rapide
-- Scan QR continu pour comptage physique avec ajustements automatiques
+### Fix logs mise a jour (7 mars 2026)
+- Repertoire dedie hors depot git + logs embarques dans resultat JSON
 
-### Scanner QR Code integre
-- Navigation automatique vers la fiche de l'article/equipement scanne
+### Script mise a jour v5.0 (7 mars 2026)
+- Commandes identiques au deploiement SSH manuel de l'utilisateur
 
-### Fix systeme de mise a jour - update_log.txt
-- Suppression du fichier update_log.txt du tracking Git
+### Mode Inventaire Rapide + Scanner QR (7 mars 2026)
+- Scan QR continu pour comptage physique
 
 ## Backlog
-- P2: Cadenas multiples LOTO
+- Aucun item P0/P1/P2 restant
 
 ## Credentials de test
 - Admin: buenogy@gmail.com / Admin2024!
