@@ -9678,9 +9678,11 @@ async def apply_update_endpoint(
             return {
                 "accepted": True,
                 "success": True,
-                "message": result.get("message", "Mise à jour lancée en arrière-plan"),
+                "message": result.get("message", "Mise a jour lancee"),
                 "update_id": result.get("update_id"),
-                "version": version
+                "version": version,
+                "pid": result.get("pid"),
+                "diagnostic": result.get("diagnostic", {})
             }
         else:
             raise HTTPException(status_code=500, detail=result.get("message", "Erreur lors du lancement"))
@@ -9695,31 +9697,26 @@ async def apply_update_endpoint(
 @api_router.get("/updates/log")
 async def get_update_log(current_user: dict = Depends(get_current_admin_user)):
     """
-    Lit et retourne le contenu du dernier fichier de log de mise à jour.
-    Cherche dans /var/log/ (principal), puis APP_ROOT, puis DB, puis /tmp.
+    Retourne le log de la derniere mise a jour.
+    Source PRINCIPALE: MongoDB (fiable, survit au reboot).
     """
-    import glob as glob_mod
     try:
-        # Liste ordonnée des emplacements à chercher (JAMAIS update_log.txt car il est ecrase par git)
-        log_candidates = [
-            "/var/log/gmao-iris-update.log",
-            "/tmp/gmao-iris-update.log",
-        ]
-        
-        # Ajouter le repertoire dedie hors du depot git
-        app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        dedicated_log_dir = os.path.join(os.path.dirname(app_root), "gmao-iris-logs")
-        dedicated_log = os.path.join(dedicated_log_dir, "update.log")
-        if dedicated_log not in log_candidates:
-            log_candidates.insert(0, dedicated_log)
-
-        # Chercher dans la DB
         last_result = await db.system_settings.find_one({"key": "last_update_result"}, {"_id": 0})
-        db_log_path = last_result.get("log_path") if last_result else None
-        if db_log_path and db_log_path not in log_candidates:
-            log_candidates.insert(1, db_log_path)
-
-        # Chercher le premier fichier existant avec du contenu
+        if last_result and last_result.get("log_output"):
+            return {
+                "found": True,
+                "path": "MongoDB",
+                "content": last_result["log_output"],
+                "in_progress": last_result.get("in_progress", False),
+                "current_step": last_result.get("current_step", ""),
+                "errors": last_result.get("errors", []),
+                "status": last_result.get("status", ""),
+                "success": last_result.get("success", False)
+            }
+        
+        import glob as glob_mod
+        log_candidates = ["/var/log/gmao-iris-update.log", "/var/log/gmao-iris-worker.log",
+                          "/tmp/gmao-iris-update.log", "/tmp/gmao-iris-worker.log"]
         for path in log_candidates:
             if path and os.path.exists(path) and os.path.getsize(path) > 10:
                 with open(path, 'r', errors='replace') as f:
@@ -9728,31 +9725,13 @@ async def get_update_log(current_user: dict = Depends(get_current_admin_user)):
                     "found": True,
                     "path": path,
                     "content": content[-50000:],
-                    "size": os.path.getsize(path),
                     "in_progress": last_result.get("in_progress", False) if last_result else False
                 }
-
-        # Fallback: fichier le plus récent dans /tmp
-        tmp_logs = sorted(
-            glob_mod.glob("/tmp/gmao_update_*.log"),
-            key=lambda f: os.path.getmtime(f),
-            reverse=True
-        )
-        if tmp_logs:
-            with open(tmp_logs[0], 'r', errors='replace') as f:
-                content = f.read()
-            return {
-                "found": True,
-                "path": tmp_logs[0],
-                "content": content[-50000:],
-                "size": os.path.getsize(tmp_logs[0]),
-                "in_progress": last_result.get("in_progress", False) if last_result else False
-            }
 
         return {
             "found": False,
             "content": "",
-            "message": "Aucun fichier de log trouve. Lancez une mise a jour pour generer des logs."
+            "message": "Aucun log disponible."
         }
     except Exception as e:
         logger.error(f"[MAJ] Erreur lecture log: {e}")

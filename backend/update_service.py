@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional, Dict
 import shutil
+import sys
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -677,28 +678,26 @@ class UpdateService:
 
     async def apply_update(self, version: str) -> Dict:
         """
-        Applique une mise à jour via un script bash autonome.
-        Le script reproduit EXACTEMENT les commandes SSH manuelles de l'administrateur.
+        Lance la mise a jour via un processus Python INDEPENDANT (update_worker.py).
+        Le worker est copie dans /tmp/ avant execution pour survivre au git reset.
+        Chaque etape est sauvegardee dans MongoDB en temps reel.
         """
         import subprocess as sp
         
         update_id = str(uuid.uuid4())
-        result_file = f"/tmp/gmao_update_result_{update_id}.json"
-        script_path = f"/tmp/gmao_update_{update_id}.sh"
-        log_path = f"/tmp/gmao_update_{update_id}.log"
+        worker_src = self.backend_dir / "update_worker.py"
         
-        # Log les chemins pour diagnostic
-        logger.info(f"[MAJ] === DIAGNOSTIC CHEMINS ===")
-        logger.info(f"[MAJ] APP_ROOT: {self.app_root} (exists: {self.app_root.exists()})")
-        logger.info(f"[MAJ] BACKEND_DIR: {self.backend_dir} (exists: {self.backend_dir.exists()})")
-        logger.info(f"[MAJ] FRONTEND_DIR: {self.frontend_dir} (exists: {self.frontend_dir.exists()})")
-        logger.info(f"[MAJ] Version: {self.current_version} -> {version}")
-        logger.info(f"[MAJ] GitHub: {self.github_user}/{self.github_repo} branch:{self.github_branch}")
-        logger.info(f"[MAJ] Script: {script_path}")
-        logger.info(f"[MAJ] Log: {log_path}")
-        logger.info(f"[MAJ] Result: {result_file}")
+        if not worker_src.exists():
+            return {"success": False, "message": f"Script worker introuvable: {worker_src}"}
         
-        # Sauvegarder le statut in_progress dans la DB
+        # COPIER le worker dans /tmp/ pour qu'il survive au git reset
+        worker_path = "/tmp/gmao_update_worker.py"
+        shutil.copy2(str(worker_src), worker_path)
+        
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        db_name = os.environ.get('DB_NAME', 'gmao_iris')
+        
+        # Sauvegarder le statut initial dans MongoDB
         try:
             await self.db.system_settings.update_one(
                 {"key": "last_update_result"},
@@ -710,254 +709,73 @@ class UpdateService:
                     "version_before": self.current_version,
                     "version_after": version,
                     "history_id": update_id,
-                    "started_at": datetime.now(timezone.utc).isoformat(),
-                    "log_path": log_path,
+                    "current_step": "Lancement worker",
+                    "log_output": f"Mise a jour {self.current_version} -> {version}\nLancement du processus worker...\n",
                     "errors": [],
-                    "warnings": [],
-                    "completed_at": None
+                    "status": "in_progress",
+                    "started_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
                 }},
                 upsert=True
             )
         except Exception as e:
-            logger.error(f"[MAJ] Erreur sauvegarde statut: {e}")
+            logger.error(f"[MAJ] Erreur sauvegarde statut initial: {e}")
         
-        # NE PAS activer la maintenance - elle modifie la config NGINX
-        # et peut bloquer l'utilisateur apres le reboot
-        # Les commandes SSH de l'admin ne le font pas non plus
-        logger.info("[MAJ] Maintenance non activee (commandes SSH identiques)")
+        # Utiliser le meme python que le serveur actuel
+        python_exec = sys.executable or "python3"
         
-        # Détecter le venv
-        venv_activate = ""
-        for venv_path in [self.app_root / "venv" / "bin" / "activate", self.backend_dir / "venv" / "bin" / "activate"]:
-            if venv_path.exists():
-                venv_activate = str(venv_path)
-                break
-        logger.info(f"[MAJ] venv: {venv_activate if venv_activate else 'NON TROUVÉ'}")
+        # Lancer le worker depuis /tmp/ (hors du repo, survit au git reset)
+        cmd = [
+            python_exec, worker_path,
+            version, str(self.app_root),
+            self.github_user, self.github_repo, self.github_branch,
+            mongo_url, db_name
+        ]
         
-        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017/cmms')
+        logger.info(f"[MAJ] Lancement worker: {' '.join(cmd)}")
         
-        # ============================================================
-        # SCRIPT BASH - COPIE EXACTE des commandes SSH de l'administrateur
-        # ============================================================
-        log_dir = str(self.app_root.parent / "gmao-iris-logs")
-        persistent_log = f"{log_dir}/update.log"
-        persistent_result = f"{log_dir}/update-result.json"
-        
-        script_content = f"""#!/bin/bash
-#
-# FSAO Iris - Mise a jour v5.1
-# Commandes IDENTIQUES a celles executees manuellement en SSH
-#
-
-# CRITIQUE: Configurer le PATH complet car le backend peut avoir un PATH minimal
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-export HOME=$(getent passwd $(whoami) 2>/dev/null | cut -d: -f6 || echo "/root")
-
-# Ajouter yarn au PATH s'il existe
-for YARN_DIR in "$HOME/.yarn/bin" "/usr/local/share/.config/yarn/global/node_modules/.bin" "/usr/share/yarn/bin"; do
-    [ -d "$YARN_DIR" ] && export PATH="$YARN_DIR:$PATH"
-done
-
-# Ajouter node au PATH s'il existe
-for NODE_DIR in /usr/local/lib/nodejs/*/bin "$HOME/.nvm/versions/node"/*/bin; do
-    [ -d "$NODE_DIR" ] && export PATH="$NODE_DIR:$PATH"
-done
-
-APP_ROOT="{self.app_root}"
-GITHUB_URL="https://github.com/{self.github_user}/{self.github_repo}.git"
-
-# Log dans un repertoire HORS du depot git (survit a git reset + reboot)
-LOG_DIR="{log_dir}"
-mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="/tmp"
-LOG_FILE="$LOG_DIR/update.log"
-RESULT_FILE="$LOG_DIR/update-result.json"
-touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/gmao-iris-update.log"
-touch "$RESULT_FILE" 2>/dev/null || RESULT_FILE="/tmp/gmao-iris-update-result.json"
-
-echo "" > "$LOG_FILE"
-exec > >(tee "$LOG_FILE") 2>&1
-
-echo "========================================================"
-echo "MISE A JOUR FSAO IRIS"
-echo "Date: $(date)"
-echo "Utilisateur: $(whoami)"
-echo "PATH: $PATH"
-echo "HOME: $HOME"
-echo "APP_ROOT: $APP_ROOT"
-echo "git: $(which git 2>/dev/null || echo 'NON TROUVE')"
-echo "yarn: $(which yarn 2>/dev/null || echo 'NON TROUVE')"
-echo "node: $(which node 2>/dev/null || echo 'NON TROUVE')"
-echo "pip: $(which pip 2>/dev/null || echo 'NON TROUVE')"
-echo "========================================================"
-
-START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-SUCCESS=false
-ERRORS=""
-
-# === COMMANDES SSH IDENTIQUES (avec verification d'erreur) ===
-
-cd "$APP_ROOT" || {{ echo "ERREUR FATALE: impossible de cd $APP_ROOT"; ERRORS="cd echoue"; }}
-echo "[1/8] cd $APP_ROOT OK"
-
-cp backend/.env /tmp/backend.env 2>/dev/null
-cp frontend/.env /tmp/frontend.env 2>/dev/null
-echo "[2/8] Sauvegarde .env OK"
-
-rm -rf .git
-if [ $? -ne 0 ]; then echo "ERREUR: rm -rf .git echoue (permissions?)"; ERRORS="$ERRORS rm-git"; fi
-echo "[3/8] rm -rf .git OK"
-
-git init
-if [ $? -ne 0 ]; then echo "ERREUR: git init echoue"; ERRORS="$ERRORS git-init"; fi
-git remote add origin "$GITHUB_URL"
-echo "[4/8] git init + remote OK"
-
-git fetch origin main
-if [ $? -ne 0 ]; then echo "ERREUR: git fetch echoue (internet/DNS?)"; ERRORS="$ERRORS git-fetch"; fi
-echo "[5/8] git fetch OK"
-
-git reset --hard origin/main
-if [ $? -ne 0 ]; then echo "ERREUR: git reset echoue"; ERRORS="$ERRORS git-reset"; fi
-echo "[6/8] git reset --hard OK"
-
-cp /tmp/backend.env backend/.env 2>/dev/null
-cp /tmp/frontend.env frontend/.env 2>/dev/null
-echo "[7/8] Restauration .env OK"
-
-source venv/bin/activate 2>/dev/null
-if [ $? -ne 0 ]; then echo "AVERTISSEMENT: source venv/bin/activate echoue"; fi
-pip install -r backend/requirements.txt 2>&1
-if [ $? -ne 0 ]; then echo "AVERTISSEMENT: pip install echoue"; fi
-deactivate 2>/dev/null
-echo "[8/8] pip install OK"
-
-cd frontend 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "ERREUR: cd frontend echoue"
-    ERRORS="$ERRORS cd-frontend"
-else
-    yarn install 2>&1
-    if [ $? -ne 0 ]; then echo "ERREUR: yarn install echoue"; ERRORS="$ERRORS yarn-install"; fi
-    yarn build 2>&1
-    if [ $? -ne 0 ]; then echo "ERREUR: yarn build echoue"; ERRORS="$ERRORS yarn-build"; fi
-    cd ..
-fi
-echo "Build frontend termine"
-
-if [ -z "$ERRORS" ]; then
-    SUCCESS=true
-else
-    SUCCESS=false
-    echo "ERREURS DETECTEES: $ERRORS"
-fi
-END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-# Sauvegarder le resultat
-LOG_CONTENT=$(tail -100 "$LOG_FILE" 2>/dev/null | sed 's/\\\\/\\\\\\\\/g; s/"/\\\\"/g; s/$/\\\\n/' | tr -d '\\n')
-cat > "$RESULT_FILE" << EOFRESULT
-{{
-  "update_id": "{update_id}",
-  "success": $SUCCESS,
-  "version_before": "{self.current_version}",
-  "version_after": "{version}",
-  "started_at": "$START_TIME",
-  "completed_at": "$END_TIME",
-  "log_path": "$LOG_FILE",
-  "log_content": "$LOG_CONTENT"
-}}
-EOFRESULT
-
-cp "$RESULT_FILE" "/var/log/gmao-iris-update-result.json" 2>/dev/null
-cp "$LOG_FILE" "/var/log/gmao-iris-update.log" 2>/dev/null
-
-echo ""
-echo "========================================================"
-echo "MISE A JOUR TERMINEE - Reboot dans 5 secondes"
-echo "========================================================"
-
-sleep 5
-
-# CRITIQUE: Restaurer la config NGINX AVANT le reboot
-# Sinon l'utilisateur sera bloque sur la page de maintenance
-echo "Restauration de la configuration NGINX..."
-for conf in /etc/nginx/sites-enabled/gmao-iris /etc/nginx/sites-enabled/fsao-iris /etc/nginx/sites-enabled/default /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-available/default /etc/nginx/conf.d/gmao-iris.conf /etc/nginx/conf.d/default.conf; do
-    backup="${{conf}}.backup_pre_maintenance"
-    if [ -f "$backup" ]; then
-        real_conf=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
-        real_backup="${{real_conf}}.backup_pre_maintenance"
-        if [ -f "$real_backup" ]; then
-            cp "$real_backup" "$real_conf"
-            echo "Config NGINX restauree: $real_backup -> $real_conf"
-        elif [ -f "$backup" ]; then
-            cp "$backup" "$real_conf"
-            echo "Config NGINX restauree: $backup -> $real_conf"
-        fi
-        break
-    fi
-    # Aussi chercher le backup sur le chemin reel (symlink)
-    real_conf=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
-    real_backup="${{real_conf}}.backup_pre_maintenance"
-    if [ -f "$real_backup" ]; then
-        cp "$real_backup" "$real_conf"
-        echo "Config NGINX restauree: $real_backup -> $real_conf"
-        break
-    fi
-done
-rm -f "$APP_ROOT/maintenance.flag" 2>/dev/null
-nginx -t 2>/dev/null && nginx -s reload 2>/dev/null
-echo "NGINX restaure."
-
-reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || echo "ERREUR: reboot impossible"
-"""
-        
-        # Écrire et lancer le script
         try:
-            with open(script_path, 'w') as f:
-                f.write(script_content)
-            os.chmod(script_path, 0o755)
+            log_file = "/var/log/gmao-iris-worker.log"
+            try:
+                fh = open(log_file, 'a')
+            except PermissionError:
+                log_file = "/tmp/gmao-iris-worker.log"
+                fh = open(log_file, 'a')
             
-            logger.info(f"[MAJ] Script écrit: {script_path} ({os.path.getsize(script_path)} octets)")
-            
-            # Lancer avec nohup, complètement détaché
             process = sp.Popen(
-                ['nohup', '/bin/bash', script_path],
-                stdout=open(log_path, 'a'),
+                cmd,
+                stdout=fh,
                 stderr=sp.STDOUT,
                 start_new_session=True,
                 close_fds=True
             )
             
-            logger.info(f"[MAJ] Script lancé avec PID: {process.pid}")
+            logger.info(f"[MAJ] Worker lance: PID={process.pid}, log={log_file}")
             
             return {
                 "success": True,
                 "accepted": True,
-                "message": f"Mise à jour vers {version} lancée en arrière-plan. Consultez les logs pour suivre la progression.",
+                "message": f"Mise a jour vers {version} lancee (PID {process.pid}). Les logs sont visibles en temps reel.",
                 "update_id": update_id,
-                "log_path": log_path,
-                "result_file": result_file,
-                "script_path": script_path,
                 "version": version,
                 "pid": process.pid,
                 "diagnostic": {
                     "app_root": str(self.app_root),
-                    "backend_dir": str(self.backend_dir),
-                    "frontend_dir": str(self.frontend_dir),
-                    "venv": venv_activate or "NON TROUVÉ",
+                    "worker": worker_path,
+                    "python": python_exec,
                     "github": f"{self.github_user}/{self.github_repo}:{self.github_branch}"
                 }
             }
         except Exception as e:
-            logger.error(f"[MAJ] ERREUR lancement script: {e}")
+            logger.error(f"[MAJ] ERREUR lancement worker: {e}")
             import traceback
             logger.error(traceback.format_exc())
-            self.maintenance.deactivate()
             return {
                 "success": False,
-                "message": f"Impossible de lancer le script: {str(e)}",
+                "message": f"Impossible de lancer le worker: {str(e)}",
                 "error": str(e)
             }
-    
+
     async def check_and_save_update_result(self):
         """
         Vérifie s'il existe un fichier de résultat de mise à jour
