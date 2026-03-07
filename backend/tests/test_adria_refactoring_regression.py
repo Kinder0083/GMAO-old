@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://multi-lock-system.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://iris-inventory-qr.preview.emergentagent.com').rstrip('/')
 
 class TestSetup:
     """Setup fixtures for all tests"""
