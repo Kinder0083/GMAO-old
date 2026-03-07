@@ -100,6 +100,53 @@ const Inventory = () => {
   useEffect(() => { loadServices(); }, []);
   useEffect(() => { if (activeServiceId) loadServiceItems(); }, [activeServiceId, loadServiceItems]);
 
+  // WebSocket: écouter les mises à jour d'inventaire en temps réel
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userId = user.id || user._id;
+    if (!token || !userId) return;
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.host;
+    const wsUrl = `${wsProtocol}//${wsHost}/api/ws/chat?token=${token}&user_id=${userId}`;
+
+    let ws;
+    let reconnectTimeout;
+
+    const connect = () => {
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'inventory_update') {
+            // Rafraîchir l'inventaire automatiquement
+            loadServiceItems();
+            toast({
+              title: `Stock ${data.action === 'ajout' ? 'augmente' : 'diminue'}`,
+              description: `${data.item_name}: ${data.quantity_before} → ${data.quantity_after} (par ${data.user_name})`,
+            });
+          } else if (data.type === 'inventory_restock_request') {
+            toast({
+              title: 'Demande de reapprovisionnement',
+              description: `${data.requested_by_name} demande du reapprovisionnement pour "${data.item_name}" (stock: ${data.current_quantity})`,
+              variant: 'destructive',
+            });
+          }
+        } catch {}
+      };
+      ws.onclose = () => {
+        reconnectTimeout = setTimeout(connect, 5000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (ws) ws.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
+  }, [user.id, user._id]);
+
   // Charger les équipements
   useEffect(() => {
     const loadEquipments = async () => {

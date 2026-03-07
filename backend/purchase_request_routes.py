@@ -133,6 +133,12 @@ async def get_purchase_requests(
         
         requests = await db.purchase_requests.find(query, {"_id": 0}).sort("date_creation", -1).to_list(1000)
         
+        # Convertir les ObjectId en string pour éviter les erreurs de sérialisation
+        for req in requests:
+            for key, val in req.items():
+                if hasattr(val, '__str__') and type(val).__name__ == 'ObjectId':
+                    req[key] = str(val)
+        
         return requests
         
     except Exception as e:
@@ -152,6 +158,11 @@ async def get_purchase_request(
         
         if not request:
             raise HTTPException(status_code=404, detail="Demande introuvable")
+        
+        # Convertir les ObjectId en string
+        for key, val in request.items():
+            if hasattr(val, '__str__') and type(val).__name__ == 'ObjectId':
+                request[key] = str(val)
         
         # Vérifier les permissions
         if current_user.get('role') != 'ADMIN':

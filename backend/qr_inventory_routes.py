@@ -19,6 +19,12 @@ router = APIRouter(prefix="/qr-inventory", tags=["qr-inventory"])
 
 from server import db
 
+# WebSocket manager pour les broadcasts temps réel
+try:
+    from websocket_manager import manager as chat_manager
+except ImportError:
+    chat_manager = None
+
 
 # ========== ROUTES PUBLIQUES (SANS AUTH) ==========
 
@@ -189,6 +195,23 @@ async def create_stock_movement(
     else:
         stock_status = "ok"
 
+    # Broadcast WebSocket pour mise à jour temps réel de l'inventaire
+    if chat_manager:
+        try:
+            await chat_manager.broadcast({
+                "type": "inventory_update",
+                "action": movement_type,
+                "item_id": item_id,
+                "item_name": item.get("nom", ""),
+                "quantity_before": current_qty,
+                "quantity_after": new_qty,
+                "stock_status": stock_status,
+                "user_name": user_name,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as ws_err:
+            logger.warning(f"[QR-Inventaire] Erreur broadcast WS: {ws_err}")
+
     return {
         "success": True,
         "message": f"{'Ajout' if movement_type == 'ajout' else 'Retrait'} de {quantity} unité(s) effectué",
@@ -250,7 +273,71 @@ async def request_restock(
 
     logger.info(f"[QR-Inventaire] Demande réappro '{item.get('nom')}' par {user_name}")
 
-    return {"success": True, "message": "Demande de réapprovisionnement enregistrée"}
+    # Créer automatiquement une Demande d'Achat visible dans la page "Demandes d'Achat"
+    try:
+        from models import PurchaseRequest, PurchaseRequestType, PurchaseRequestUrgency, PurchaseRequestStatus, PurchaseRequestHistoryEntry
+        year = datetime.now(timezone.utc).year
+        count = await db.purchase_requests.count_documents({"numero": {"$regex": f"^DA-{year}-"}})
+        numero = f"DA-{year}-{str(count + 1).zfill(5)}"
+
+        urgency = PurchaseRequestUrgency.URGENT if item.get("quantite", 0) <= 0 else PurchaseRequestUrgency.NORMAL
+        description = f"Signalement de besoin via QR code par {user_name}"
+        if comment:
+            description += f" - Commentaire: {comment}"
+
+        purchase_request = PurchaseRequest(
+            numero=numero,
+            type=PurchaseRequestType.CONSOMMABLE,
+            designation=item.get("nom", "Article inconnu"),
+            description=description,
+            quantite=item.get("quantiteMin") or item.get("seuil_alerte") or 10,
+            unite="Unite",
+            reference=item.get("reference", ""),
+            fournisseur_suggere=item.get("fournisseur", ""),
+            urgence=urgency,
+            justification=f"Besoin signale via QR code. Article: '{item.get('nom')}' (Ref: {item.get('reference', 'N/A')}). Stock actuel: {item.get('quantite', 0)}. {comment}",
+            destinataire_id=None,
+            destinataire_nom="Service Maintenance",
+            inventory_item_id=item_id,
+            attached_files=[],
+            demandeur_id=current_user.get("id", ""),
+            demandeur_nom=user_name,
+            demandeur_email=current_user.get("email", ""),
+            status=PurchaseRequestStatus.SOUMISE,
+            responsable_n1_id=None,
+            responsable_n1_nom=None,
+            history=[
+                PurchaseRequestHistoryEntry(
+                    user_id=current_user.get("id", ""),
+                    user_name=user_name,
+                    action="Signalement de besoin via QR code",
+                    new_status=PurchaseRequestStatus.SOUMISE.value,
+                    comment=comment or f"Besoin signale pour '{item.get('nom')}'"
+                )
+            ]
+        )
+        await db.purchase_requests.insert_one(purchase_request.model_dump())
+        logger.info(f"[QR-Inventaire] Demande d'achat {numero} creee pour '{item.get('nom')}'")
+    except Exception as pr_err:
+        logger.warning(f"[QR-Inventaire] Erreur creation demande d'achat: {pr_err}")
+
+    # Broadcast WebSocket pour notifier tous les utilisateurs connectés
+    if chat_manager:
+        try:
+            await chat_manager.broadcast({
+                "type": "inventory_restock_request",
+                "item_id": item_id,
+                "item_name": item.get("nom", ""),
+                "item_reference": item.get("reference", ""),
+                "current_quantity": item.get("quantite", 0),
+                "comment": comment,
+                "requested_by_name": user_name,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as ws_err:
+            logger.warning(f"[QR-Inventaire] Erreur broadcast WS restock: {ws_err}")
+
+    return {"success": True, "message": "Demande de réapprovisionnement enregistrée et transmise aux Demandes d'Achat"}
 
 
 # ========== GÉNÉRATION QR CODES ==========
