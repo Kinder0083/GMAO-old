@@ -157,19 +157,37 @@ export function useInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
-    }
+    // Verifier si deja installe via getInstalledRelatedApps (plus fiable que display-mode)
+    const checkInstalled = async () => {
+      try {
+        if ('getInstalledRelatedApps' in navigator) {
+          const apps = await navigator.getInstalledRelatedApps();
+          if (apps.length > 0) {
+            setIsInstalled(true);
+          }
+        }
+      } catch {}
+      // display-mode: standalone = on est DANS l'app installee (pas le navigateur)
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        setIsInstalled(true);
+      }
+    };
+    checkInstalled();
 
+    // TOUJOURS ecouter beforeinstallprompt meme si on pense que c'est installe
+    // Chrome ne le declenche pas si c'est vraiment installe
     const handler = (e) => {
       e.preventDefault();
       setInstallPrompt(e);
+      // Si on recoit cet event, c'est que ce n'est PAS installe
+      setIsInstalled(false);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-    window.addEventListener('appinstalled', () => setIsInstalled(true));
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    });
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
@@ -181,6 +199,9 @@ export function useInstallPrompt() {
     installPrompt.prompt();
     const result = await installPrompt.userChoice;
     setInstallPrompt(null);
+    if (result.outcome === 'accepted') {
+      setIsInstalled(true);
+    }
     return result.outcome === 'accepted';
   }, [installPrompt]);
 
