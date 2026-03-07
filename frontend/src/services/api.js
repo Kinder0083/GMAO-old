@@ -178,7 +178,15 @@ export const inventoryAPI = {
   create: (data) => api.post('/inventory', data),
   update: (id, data) => api.put(`/inventory/${id}`, data),
   delete: (id) => api.delete(`/inventory/${id}`),
-  toggleMonitoring: (id) => api.patch(`/inventory/${id}/toggle-monitoring`)
+  toggleMonitoring: (id) => api.patch(`/inventory/${id}/toggle-monitoring`),
+  // Services d'inventaire (onglets)
+  getServices: () => api.get('/inventory/services'),
+  createService: (data) => api.post('/inventory/services', data),
+  deleteService: (id) => api.delete(`/inventory/services/${id}`),
+  getByService: (serviceId) => api.get(`/inventory/by-service/${serviceId}`),
+  // Partage inter-services
+  shareItem: (itemId, targetServiceId) => api.post(`/inventory/${itemId}/share`, { target_service_id: targetServiceId }),
+  unshareItem: (itemId, serviceId) => api.delete(`/inventory/${itemId}/unshare/${serviceId}`)
 };
 
 // ==================== PREVENTIVE MAINTENANCE ====================

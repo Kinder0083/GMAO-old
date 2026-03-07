@@ -15,7 +15,7 @@ import { inventoryAPI, equipmentsAPI } from '../../services/api';
 import { formatErrorMessage } from '../../utils/errorFormatter';
 import { X, Settings, ChevronRight } from 'lucide-react';
 
-const InventoryFormDialog = ({ open, onOpenChange, item, onSuccess }) => {
+const InventoryFormDialog = ({ open, onOpenChange, item, onSuccess, serviceId }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [equipments, setEquipments] = useState([]);
@@ -156,7 +156,8 @@ const InventoryFormDialog = ({ open, onOpenChange, item, onSuccess }) => {
         quantite: parseInt(formData.quantite),
         quantiteMin: parseInt(formData.quantiteMin),
         prixUnitaire: parseFloat(formData.prixUnitaire),
-        equipment_ids: formData.equipment_ids
+        equipment_ids: formData.equipment_ids,
+        service_id: item ? item.service_id : serviceId
       };
 
       if (item) {

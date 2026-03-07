@@ -3083,6 +3083,175 @@ async def get_inventory_stats(current_user: dict = Depends(require_permission("i
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ===== Services d'inventaire (onglets par service) =====
+
+@api_router.get("/inventory/services", tags=["Inventaire - Services"])
+async def get_inventory_services(current_user: dict = Depends(get_current_user)):
+    """Liste tous les services d'inventaire (onglets), triés par ordre alphabétique."""
+    services = await db.inventory_services.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+    return services
+
+
+@api_router.post("/inventory/services", tags=["Inventaire - Services"])
+async def create_inventory_service(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Créer un nouvel onglet de service d'inventaire (Admin ou responsable de service)."""
+    user_role = current_user.get("role", "")
+    is_admin = user_role in ["ADMIN", "admin", "Administrateur"]
+    
+    # Vérifier si responsable de service
+    is_manager = False
+    try:
+        from service_filter import is_service_manager
+        is_manager = await is_service_manager(current_user)
+    except Exception:
+        pass
+    
+    if not is_admin and not is_manager:
+        raise HTTPException(403, "Seuls les administrateurs et responsables de service peuvent créer des onglets")
+    
+    name = data.get("name", "").strip()
+    if not name:
+        raise HTTPException(400, "Le nom du service est requis")
+    
+    # Vérifier unicité
+    existing = await db.inventory_services.find_one({"name": {"$regex": f"^{name}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(400, f"Le service '{name}' existe déjà")
+    
+    service_doc = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "created_by": current_user.get("id"),
+        "created_by_name": f"{current_user.get('prenom', '')} {current_user.get('nom', '')}".strip(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inventory_services.insert_one(service_doc)
+    del service_doc["_id"]
+    return service_doc
+
+
+@api_router.delete("/inventory/services/{service_id}", tags=["Inventaire - Services"])
+async def delete_inventory_service(
+    service_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Supprimer un onglet de service d'inventaire. Les articles seront déplacés vers 'Non classé'."""
+    user_role = current_user.get("role", "")
+    is_admin = user_role in ["ADMIN", "admin", "Administrateur"]
+    
+    is_manager = False
+    try:
+        from service_filter import is_service_manager
+        is_manager = await is_service_manager(current_user)
+    except Exception:
+        pass
+    
+    if not is_admin and not is_manager:
+        raise HTTPException(403, "Seuls les administrateurs et responsables de service peuvent supprimer des onglets")
+    
+    service = await db.inventory_services.find_one({"id": service_id}, {"_id": 0})
+    if not service:
+        raise HTTPException(404, "Service introuvable")
+    
+    if service.get("name") == "Non classé":
+        raise HTTPException(400, "Impossible de supprimer le service 'Non classé'")
+    
+    # Trouver le service "Non classé"
+    non_classe = await db.inventory_services.find_one({"name": "Non classé"}, {"_id": 0})
+    nc_id = non_classe["id"] if non_classe else None
+    
+    # Déplacer les articles vers "Non classé"
+    if nc_id:
+        await db.inventory.update_many(
+            {"service_id": service_id},
+            {"$set": {"service_id": nc_id}}
+        )
+        # Retirer ce service des articles partagés
+        await db.inventory.update_many(
+            {"shared_service_ids": service_id},
+            {"$pull": {"shared_service_ids": service_id}}
+        )
+    
+    await db.inventory_services.delete_one({"id": service_id})
+    
+    article_count = await db.inventory.count_documents({"service_id": nc_id}) if nc_id else 0
+    return {"success": True, "message": f"Service supprimé. Articles déplacés vers 'Non classé'.", "moved_count": article_count}
+
+
+@api_router.post("/inventory/{inv_id}/share", tags=["Inventaire - Partage"])
+async def share_inventory_item(
+    inv_id: str,
+    data: dict,
+    current_user: dict = Depends(require_permission("inventory", "edit"))
+):
+    """Importer/partager un article dans un autre service (lien partagé, même stock)."""
+    target_service_id = data.get("target_service_id")
+    if not target_service_id:
+        raise HTTPException(400, "target_service_id requis")
+    
+    # Vérifier que l'article existe
+    item = await db.inventory.find_one({"_id": ObjectId(inv_id)})
+    if not item:
+        raise HTTPException(404, "Article introuvable")
+    
+    # Vérifier que le service cible existe
+    target_service = await db.inventory_services.find_one({"id": target_service_id}, {"_id": 0})
+    if not target_service:
+        raise HTTPException(404, "Service cible introuvable")
+    
+    # Vérifier que ce n'est pas déjà partagé
+    shared = item.get("shared_service_ids", [])
+    if target_service_id in shared or item.get("service_id") == target_service_id:
+        raise HTTPException(400, "Cet article est déjà dans ce service")
+    
+    await db.inventory.update_one(
+        {"_id": ObjectId(inv_id)},
+        {"$addToSet": {"shared_service_ids": target_service_id}}
+    )
+    
+    updated = await db.inventory.find_one({"_id": ObjectId(inv_id)})
+    return serialize_doc(updated)
+
+
+@api_router.delete("/inventory/{inv_id}/unshare/{service_id}", tags=["Inventaire - Partage"])
+async def unshare_inventory_item(
+    inv_id: str,
+    service_id: str,
+    current_user: dict = Depends(require_permission("inventory", "edit"))
+):
+    """Retirer le partage d'un article d'un service."""
+    item = await db.inventory.find_one({"_id": ObjectId(inv_id)})
+    if not item:
+        raise HTTPException(404, "Article introuvable")
+    
+    await db.inventory.update_one(
+        {"_id": ObjectId(inv_id)},
+        {"$pull": {"shared_service_ids": service_id}}
+    )
+    
+    return {"success": True, "message": "Partage retiré"}
+
+
+@api_router.get("/inventory/by-service/{service_id}", tags=["Inventaire - Services"])
+async def get_inventory_by_service(
+    service_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Liste les articles d'un service (propriétaires + partagés)."""
+    items = await db.inventory.find(
+        {"$or": [
+            {"service_id": service_id},
+            {"shared_service_ids": service_id}
+        ]}
+    ).to_list(1000)
+    return [serialize_doc(item) for item in items]
+
+
+
 # ==================== PREVENTIVE MAINTENANCE ROUTES ====================
 @api_router.get("/preventive-maintenance",
     summary="Lister les maintenances preventives", response_model=List[PreventiveMaintenance], tags=["Maintenance Preventive"])
@@ -10598,6 +10767,38 @@ async def check_update_results_on_startup():
         await update_service.check_and_save_update_result()
     except Exception as e:
         logger.error(f"[MAJ] Erreur vérification résultats MAJ au démarrage: {e}")
+
+
+@app.on_event("startup")
+async def migrate_inventory_services():
+    """Migration: créer le service 'Non classé' et assigner les articles existants sans service_id."""
+    try:
+        # Créer 'Non classé' s'il n'existe pas
+        non_classe = await db.inventory_services.find_one({"name": "Non classé"})
+        if not non_classe:
+            nc_doc = {
+                "id": str(uuid.uuid4()),
+                "name": "Non classé",
+                "created_by": "system",
+                "created_by_name": "Système",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.inventory_services.insert_one(nc_doc)
+            nc_id = nc_doc["id"]
+            logger.info("[Inventaire] Service 'Non classé' créé")
+        else:
+            nc_id = non_classe["id"]
+        
+        # Migrer les articles sans service_id
+        result = await db.inventory.update_many(
+            {"$or": [{"service_id": None}, {"service_id": {"$exists": False}}]},
+            {"$set": {"service_id": nc_id, "shared_service_ids": []}}
+        )
+        if result.modified_count > 0:
+            logger.info(f"[Inventaire] {result.modified_count} articles migrés vers 'Non classé'")
+    except Exception as e:
+        logger.error(f"[Inventaire] Erreur migration services: {e}")
+
 
 
 @app.on_event("startup")

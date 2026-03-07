@@ -989,6 +989,8 @@ class InventoryBase(BaseModel):
     fournisseur: str
     emplacement: str
     equipment_ids: Optional[List[str]] = []  # Liste des IDs d'équipements/sous-équipements associés
+    service_id: Optional[str] = None  # ID du service d'inventaire propriétaire
+    shared_service_ids: Optional[List[str]] = []  # Services ayant importé cet article (lien partagé, même stock)
 
 class InventoryCreate(InventoryBase):
     pass
@@ -1003,6 +1005,8 @@ class InventoryUpdate(BaseModel):
     fournisseur: Optional[str] = None
     emplacement: Optional[str] = None
     equipment_ids: Optional[List[str]] = None  # Liste des IDs d'équipements associés
+    service_id: Optional[str] = None
+    shared_service_ids: Optional[List[str]] = None
 
 class Inventory(InventoryBase):
     id: str
