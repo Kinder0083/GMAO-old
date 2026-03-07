@@ -696,7 +696,7 @@ class UpdateService:
                     "version_after": version,
                     "history_id": update_id,
                     "started_at": datetime.now(timezone.utc).isoformat(),
-                    "log_path": log_path,
+                    "log_path": str(self.app_root / "update_log.txt"),
                     "errors": [],
                     "warnings": [],
                     "completed_at": None
@@ -734,15 +734,19 @@ class UpdateService:
         
         # ============================================================
         # SCRIPT BASH - Reproduit EXACTEMENT les commandes SSH manuelles
+        # de l'administrateur. Log persistant dans APP_ROOT/update_log.txt
+        # car 'reboot' efface /tmp.
         # ============================================================
+        persistent_log = str(self.app_root / "update_log.txt")
+        persistent_result = str(self.app_root / "last_update_result.json")
+        
         script_content = f"""#!/bin/bash
 #
 # FSAO Iris - Script de mise à jour autonome
 # {self.current_version} -> {version}
 # ID: {update_id}
-# Généré: $(date)
 #
-# CE SCRIPT REPRODUIT LES COMMANDES SSH MANUELLES DE L'ADMINISTRATEUR
+# REPRODUIT EXACTEMENT les commandes SSH manuelles de l'administrateur
 #
 
 set -o pipefail
@@ -751,32 +755,40 @@ APP_ROOT="{self.app_root}"
 BACKEND_DIR="{self.backend_dir}"
 FRONTEND_DIR="{self.frontend_dir}"
 BACKUP_DIR="{self.backup_dir}"
-GITHUB_USER="{self.github_user}"
-GITHUB_REPO="{self.github_repo}"
-GITHUB_BRANCH="{self.github_branch}"
 GITHUB_URL="https://github.com/{self.github_user}/{self.github_repo}.git"
-RESULT_FILE="{result_file}"
-LOG_FILE="{log_path}"
+GITHUB_BRANCH="{self.github_branch}"
 VENV_ACTIVATE="{venv_activate}"
 MONGO_URL="{mongo_url}"
 
-# Tout rediriger dans le log
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Fichiers persistants (survivent au reboot)
+PERSISTENT_LOG="{persistent_log}"
+PERSISTENT_RESULT="{persistent_result}"
+
+# Fichiers temporaires (pour compatibilité)
+TMP_LOG="{log_path}"
+TMP_RESULT="{result_file}"
+
+# Tout rediriger dans DEUX logs : persistant + tmp
+exec > >(tee -a "$PERSISTENT_LOG" "$TMP_LOG") 2>&1
+
+# Vider le log persistant pour ne garder que la dernière mise à jour
+echo "" > "$PERSISTENT_LOG"
 
 echo "========================================================"
 echo "DEBUT MISE A JOUR: {self.current_version} -> {version}"
 echo "Date: $(date)"
+echo "ID: {update_id}"
 echo "APP_ROOT: $APP_ROOT"
-echo "BACKEND_DIR: $BACKEND_DIR"
-echo "FRONTEND_DIR: $FRONTEND_DIR"
 echo "VENV: $VENV_ACTIVATE"
 echo "GITHUB: $GITHUB_URL branch $GITHUB_BRANCH"
 echo "========================================================"
 
 export PATH="/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/local/share/.config/yarn/global/node_modules/.bin:$PATH"
 ERRORS=0
+CODE_UPDATED=false
+START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# ---- ETAPE 1: Backup MongoDB ----
+# ---- ETAPE 1/7: Backup MongoDB ----
 echo ""
 echo "[ETAPE 1/7] Backup MongoDB..."
 BACKUP_PATH="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S)"
@@ -785,19 +797,19 @@ if command -v mongodump >/dev/null 2>&1; then
     if mongodump --uri="$MONGO_URL" --out="$BACKUP_PATH" 2>&1; then
         echo "[OK] Backup MongoDB: $BACKUP_PATH"
     else
-        echo "[WARN] mongodump échoué (non bloquant)"
+        echo "[WARN] mongodump echoue (non bloquant)"
     fi
 else
     echo "[WARN] mongodump non disponible (non bloquant)"
 fi
 
-# ---- ETAPE 2: Sauvegarde .env (via cp, comme en SSH) ----
+# ---- ETAPE 2/7: Sauvegarde .env ----
 echo ""
 echo "[ETAPE 2/7] Sauvegarde des fichiers .env..."
-cp "$BACKEND_DIR/.env" /tmp/gmao_backend.env 2>/dev/null && echo "[OK] backend/.env sauvegardé" || echo "[WARN] backend/.env non trouvé"
-cp "$FRONTEND_DIR/.env" /tmp/gmao_frontend.env 2>/dev/null && echo "[OK] frontend/.env sauvegardé" || echo "[WARN] frontend/.env non trouvé"
+cp "$BACKEND_DIR/.env" /tmp/backend.env 2>/dev/null && echo "[OK] backend/.env sauvegarde" || echo "[WARN] backend/.env non trouve"
+cp "$FRONTEND_DIR/.env" /tmp/frontend.env 2>/dev/null && echo "[OK] frontend/.env sauvegarde" || echo "[WARN] frontend/.env non trouve"
 
-# ---- ETAPE 3: Synchronisation Git (identique SSH) ----
+# ---- ETAPE 3/7: Synchronisation Git (identique SSH) ----
 echo ""
 echo "[ETAPE 3/7] Synchronisation Git..."
 cd "$APP_ROOT" || {{ echo "[ERR] Impossible de cd $APP_ROOT"; ERRORS=1; }}
@@ -807,251 +819,161 @@ rm -rf "$APP_ROOT/.git" 2>/dev/null
 
 echo "  -> git init"
 if ! git init 2>&1; then
-    echo "[ERR] git init échoué"
+    echo "[ERR] git init echoue"
     ERRORS=1
 fi
 
 echo "  -> git remote add origin $GITHUB_URL"
 if ! git remote add origin "$GITHUB_URL" 2>&1; then
-    echo "[ERR] git remote add échoué"
+    echo "[ERR] git remote add echoue"
     ERRORS=1
 fi
 
 echo "  -> git fetch origin $GITHUB_BRANCH"
 if ! git fetch origin "$GITHUB_BRANCH" 2>&1; then
-    echo "[ERR] git fetch échoué - VERIFIEZ LA CONNEXION INTERNET ET L'ACCES GITHUB"
+    echo "[ERR] git fetch echoue - VERIFIEZ LA CONNEXION INTERNET ET L'ACCES GITHUB"
     ERRORS=1
 fi
 
 echo "  -> git reset --hard origin/$GITHUB_BRANCH"
 if git reset --hard "origin/$GITHUB_BRANCH" 2>&1; then
-    echo "[OK] Code synchronisé avec origin/$GITHUB_BRANCH"
+    echo "[OK] Code synchronise avec origin/$GITHUB_BRANCH"
     CODE_UPDATED=true
 else
-    echo "[ERR] git reset --hard échoué"
+    echo "[ERR] git reset --hard echoue"
     CODE_UPDATED=false
     ERRORS=1
 fi
 
-# ---- ETAPE 4: Restauration .env (via cp, comme en SSH) ----
+# ---- ETAPE 4/7: Restauration .env ----
 echo ""
 echo "[ETAPE 4/7] Restauration des fichiers .env..."
-if [ -f /tmp/gmao_backend.env ]; then
-    cp /tmp/gmao_backend.env "$BACKEND_DIR/.env" && echo "[OK] backend/.env restauré" || echo "[ERR] Restauration backend/.env échouée"
+if [ -f /tmp/backend.env ]; then
+    cp /tmp/backend.env "$BACKEND_DIR/.env" && echo "[OK] backend/.env restaure" || echo "[ERR] Restauration backend/.env echouee"
 fi
-if [ -f /tmp/gmao_frontend.env ]; then
-    cp /tmp/gmao_frontend.env "$FRONTEND_DIR/.env" && echo "[OK] frontend/.env restauré" || echo "[ERR] Restauration frontend/.env échouée"
+if [ -f /tmp/frontend.env ]; then
+    cp /tmp/frontend.env "$FRONTEND_DIR/.env" && echo "[OK] frontend/.env restaure" || echo "[ERR] Restauration frontend/.env echouee"
 fi
 
-# ---- ETAPE 5: Dépendances backend (identique SSH) ----
+# ---- ETAPE 5/7: Dependances backend (identique SSH) ----
 echo ""
-echo "[ETAPE 5/7] Installation dépendances backend..."
+echo "[ETAPE 5/7] Installation dependances backend..."
 if [ -n "$VENV_ACTIVATE" ] && [ -f "$VENV_ACTIVATE" ]; then
     echo "  -> source $VENV_ACTIVATE"
     source "$VENV_ACTIVATE"
     echo "  -> pip install -r $BACKEND_DIR/requirements.txt"
     if pip install -r "$BACKEND_DIR/requirements.txt" 2>&1; then
-        echo "[OK] pip install terminé"
+        echo "[OK] pip install termine"
     else
-        echo "[WARN] pip install a rencontré des erreurs (non bloquant)"
+        echo "[WARN] pip install a rencontre des erreurs (non bloquant)"
     fi
     echo "  -> deactivate"
     deactivate 2>/dev/null || true
 else
     echo "  -> pip3 install -r $BACKEND_DIR/requirements.txt (pas de venv)"
     if pip3 install -r "$BACKEND_DIR/requirements.txt" 2>&1; then
-        echo "[OK] pip3 install terminé"
+        echo "[OK] pip3 install termine"
     else
-        echo "[WARN] pip3 install a rencontré des erreurs"
+        echo "[WARN] pip3 install a rencontre des erreurs"
     fi
 fi
 
-# ---- ETAPE 6: Frontend (identique SSH: cd frontend && yarn install && yarn build) ----
+# ---- ETAPE 6/7: Frontend (identique SSH: cd frontend && yarn install && yarn build) ----
 echo ""
 echo "[ETAPE 6/7] Installation et build frontend..."
 if [ -f "$FRONTEND_DIR/package.json" ]; then
     cd "$FRONTEND_DIR" || echo "[ERR] Impossible de cd $FRONTEND_DIR"
     
-    # Backup du build actuel
-    if [ -d "build" ]; then
-        echo "  -> Backup build existant..."
-        cp -r build build_backup 2>/dev/null
-    fi
-    
     export CI=false
     export NODE_OPTIONS="--max_old_space_size=2048"
     {frontend_env_exports}
     
-    echo "  -> yarn install --production=false"
-    if yarn install --production=false 2>&1; then
-        echo "[OK] yarn install terminé"
+    echo "  -> yarn install"
+    if yarn install 2>&1; then
+        echo "[OK] yarn install termine"
     else
-        echo "[WARN] yarn install a rencontré des erreurs"
-    fi
-    
-    # Mettre a jour le Service Worker
-    if [ -f "public/sw.js" ]; then
-        sed -i "s|// Version: .*|// Version: $(date +%s)|" public/sw.js 2>/dev/null
+        echo "[WARN] yarn install a rencontre des erreurs"
     fi
     
     echo "  -> yarn build"
     if yarn build 2>&1; then
         if [ -f "build/index.html" ]; then
-            echo "[OK] yarn build terminé (index.html present)"
-            rm -rf build_backup 2>/dev/null
+            echo "[OK] yarn build termine (index.html present)"
         else
-            echo "[ERR] yarn build terminé mais index.html absent!"
-            if [ -d "build_backup" ]; then
-                rm -rf build
-                mv build_backup build
-                echo "[WARN] Build précédent restauré"
-            fi
+            echo "[ERR] yarn build termine mais index.html absent!"
+            ERRORS=1
         fi
     else
-        echo "[ERR] yarn build échoué"
-        if [ -d "build_backup" ]; then
-            rm -rf build 2>/dev/null
-            mv build_backup build
-            echo "[WARN] Build précédent restauré"
-        fi
+        echo "[ERR] yarn build echoue"
         ERRORS=1
     fi
     
-    rm -rf build_backup 2>/dev/null
     cd "$APP_ROOT"
 else
     echo "[WARN] package.json introuvable dans $FRONTEND_DIR"
 fi
 
-# ---- ETAPE 7: Ecriture du résultat et redémarrage ----
+# ---- ETAPE 7/7: Ecriture du resultat et reboot ----
 echo ""
 echo "[ETAPE 7/7] Finalisation..."
 
-# Ecrire le résultat JSON
 if [ "$CODE_UPDATED" = true ] && [ "$ERRORS" -eq 0 ]; then
     SUCCESS=true
-    MSG="Mise à jour vers {version} terminée avec succès"
+    MSG="Mise a jour vers {version} terminee avec succes"
 elif [ "$CODE_UPDATED" = true ]; then
-    SUCCESS=false
-    MSG="Mise à jour partielle - code synchronisé mais erreurs pendant l'installation"
+    SUCCESS=true
+    MSG="Mise a jour partielle - code synchronise mais erreurs pendant l installation"
 else
     SUCCESS=false
-    MSG="Echec - code source non mis à jour depuis GitHub"
+    MSG="Echec - code source non mis a jour depuis GitHub"
 fi
 
-cat > "$RESULT_FILE" << 'HEREDOC_END'
-HEREDOC_END
+END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-python3 -c "
-import json, datetime
-result = {{
-    'update_id': '{update_id}',
-    'success': ${{SUCCESS,,}},
-    'code_updated': ${{CODE_UPDATED,,}},
-    'version_before': '{self.current_version}',
-    'version_after': '{version}',
-    'message': '$MSG',
-    'started_at': '$START_TIME',
-    'completed_at': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-    'errors_count': $ERRORS,
-    'log_path': '$LOG_FILE'
+# Ecriture du resultat en JSON pur bash (pas de dependance python3)
+cat > "$PERSISTENT_RESULT" << EOFRESULT
+{{
+  "update_id": "{update_id}",
+  "success": $SUCCESS,
+  "code_updated": $CODE_UPDATED,
+  "version_before": "{self.current_version}",
+  "version_after": "{version}",
+  "message": "$MSG",
+  "started_at": "$START_TIME",
+  "completed_at": "$END_TIME",
+  "errors_count": $ERRORS,
+  "log_path": "$PERSISTENT_LOG"
 }}
-# Conversion Python bool
-result['success'] = True if '$SUCCESS' == 'true' else False
-result['code_updated'] = True if '$CODE_UPDATED' == 'true' else False
-with open('$RESULT_FILE', 'w') as f:
-    json.dump(result, f, indent=2)
-print('[OK] Résultat écrit dans $RESULT_FILE')
-" 2>&1 || echo "[WARN] Ecriture résultat via python3 échouée, fallback..."
+EOFRESULT
 
-# Vérifier que le résultat a été écrit
-if [ ! -f "$RESULT_FILE" ]; then
-    # Fallback simple sans python
-    echo '{{"update_id":"{update_id}","success":'${{SUCCESS,,}}',"code_updated":'${{CODE_UPDATED,,}}',"version_before":"{self.current_version}","version_after":"{version}","message":"'$MSG'"}}' > "$RESULT_FILE"
-    echo "[OK] Résultat écrit (fallback)"
-fi
+# Copier aussi dans /tmp pour compatibilite
+cp "$PERSISTENT_RESULT" "$TMP_RESULT" 2>/dev/null
 
 echo ""
 echo "========================================================"
-echo "FIN MISE A JOUR - Redémarrage des services..."
+echo "FIN MISE A JOUR"
 echo "Date: $(date)"
-echo "Succès: $SUCCESS | Code mis à jour: $CODE_UPDATED | Erreurs: $ERRORS"
+echo "Succes: $SUCCESS | Code mis a jour: $CODE_UPDATED | Erreurs: $ERRORS"
+echo "Log persistant: $PERSISTENT_LOG"
+echo "Resultat: $PERSISTENT_RESULT"
 echo "========================================================"
+echo ""
+echo ">>> REBOOT DU SERVEUR DANS 5 SECONDES <<<"
 
-sleep 2
+sleep 5
 
-# Redémarrage
-RESTARTED=0
-
-# Essayer supervisorctl
-if command -v supervisorctl >/dev/null 2>&1; then
-    echo "  -> Recherche services supervisorctl..."
-    SVCS=$(supervisorctl status 2>/dev/null | grep -iE 'backend|gmao|iris|uvicorn|fastapi' | awk '{{print $1}}')
-    if [ -n "$SVCS" ]; then
-        for SVC in $SVCS; do
-            echo "  -> supervisorctl restart $SVC"
-            supervisorctl restart "$SVC" 2>/dev/null && RESTARTED=1 && echo "    [OK] $SVC redémarré"
-            [ "$RESTARTED" -eq 0 ] && sudo supervisorctl restart "$SVC" 2>/dev/null && RESTARTED=1 && echo "    [OK] $SVC redémarré (sudo)"
-        done
-    else
-        echo "  -> Aucun service backend trouvé, supervisorctl restart all"
-        supervisorctl restart all 2>/dev/null && RESTARTED=1
-        [ "$RESTARTED" -eq 0 ] && sudo supervisorctl restart all 2>/dev/null && RESTARTED=1
-    fi
-fi
-
-# Essayer systemctl
-if [ "$RESTARTED" -eq 0 ] && command -v systemctl >/dev/null 2>&1; then
-    echo "  -> Recherche services systemctl..."
-    SVCS=$(systemctl list-units --type=service --state=running 2>/dev/null | grep -iE 'gmao|iris|backend|uvicorn|fastapi|gunicorn' | awk '{{print $1}}')
-    if [ -n "$SVCS" ]; then
-        for SVC in $SVCS; do
-            echo "  -> systemctl restart $SVC"
-            sudo systemctl restart "$SVC" 2>/dev/null && RESTARTED=1 && echo "    [OK] $SVC redémarré"
-        done
-    fi
-fi
-
-# Dernier recours : kill le processus
-if [ "$RESTARTED" -eq 0 ]; then
-    echo "  -> [WARN] Aucun gestionnaire de services trouvé, kill du processus..."
-    PIDS=$(pgrep -f 'uvicorn.*server:app' 2>/dev/null || pgrep -f 'uvicorn.*server' 2>/dev/null)
-    if [ -n "$PIDS" ]; then
-        echo "    PIDs: $PIDS"
-        kill -HUP $PIDS 2>/dev/null || kill $PIDS 2>/dev/null
-    else
-        echo "    [WARN] Aucun processus uvicorn trouvé"
-    fi
-fi
-
-[ "$RESTARTED" -eq 1 ] && echo "[OK] Services redémarrés" || echo "[WARN] Services NON redémarrés - vérifiez manuellement"
-
-sleep 3
-
-# Nginx
-echo "  -> Rechargement nginx..."
-nginx -s reload 2>/dev/null || sudo nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null || echo "[WARN] Rechargement nginx échoué"
-
-# Désactiver la maintenance
-MFLAG="{self.app_root}/maintenance.flag"
-rm -f "$MFLAG" 2>/dev/null
-
+# Desactiver la maintenance avant le reboot
+rm -f "$APP_ROOT/maintenance.flag" 2>/dev/null
 for conf in /etc/nginx/sites-available/gmao-iris /etc/nginx/sites-enabled/gmao-iris /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/gmao-iris.conf; do
     if [ -f "$conf.backup_pre_maintenance" ]; then
         REAL_CONF=$(readlink -f "$conf" 2>/dev/null || echo "$conf")
-        cp "$conf.backup_pre_maintenance" "$REAL_CONF" && echo "[OK] Config nginx restaurée"
+        cp "$conf.backup_pre_maintenance" "$REAL_CONF" 2>/dev/null
         break
     fi
 done
-nginx -t 2>/dev/null && (nginx -s reload 2>/dev/null || sudo systemctl reload nginx 2>/dev/null) || true
 
-echo ""
-echo "=== Mise à jour terminée: $(date) ==="
-echo "Log complet: $LOG_FILE"
-echo "Résultat: $RESULT_FILE"
-
-# Cleanup script
-rm -f "{script_path}"
+# Reboot comme en SSH
+reboot
 """
         
         # Écrire et lancer le script
@@ -1107,9 +1029,19 @@ rm -f "{script_path}"
         Vérifie s'il existe un fichier de résultat de mise à jour
         et le sauvegarde dans la base de données.
         Appelée au démarrage du serveur.
+        Cherche d'abord le fichier persistant (APP_ROOT/last_update_result.json)
+        puis les fichiers temporaires dans /tmp (compatibilité).
         """
         import glob as glob_mod
-        result_files = glob_mod.glob("/tmp/gmao_update_result_*.json")
+        
+        # Chercher d'abord le fichier persistant (survit au reboot)
+        persistent_result = self.app_root / "last_update_result.json"
+        result_files = []
+        if persistent_result.exists():
+            result_files.append(str(persistent_result))
+        
+        # Puis les fichiers temporaires
+        result_files.extend(glob_mod.glob("/tmp/gmao_update_result_*.json"))
         
         for rf in result_files:
             try:
@@ -1121,7 +1053,15 @@ rm -f "{script_path}"
                 
                 log_file = rf.replace("_result_", "_update_").replace(".json", ".log")
                 log_content = ""
-                if os.path.exists(log_file):
+                # Chercher le log persistant d'abord
+                persistent_log = self.app_root / "update_log.txt"
+                if persistent_log.exists():
+                    try:
+                        with open(persistent_log, 'r') as lf:
+                            log_content = lf.read()[-10000:]
+                    except Exception:
+                        pass
+                elif os.path.exists(log_file):
                     try:
                         with open(log_file, 'r') as lf:
                             log_content = lf.read()[-10000:]

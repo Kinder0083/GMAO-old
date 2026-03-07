@@ -9692,6 +9692,77 @@ async def apply_update_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/updates/log")
+async def get_update_log(current_user: dict = Depends(get_current_admin_user)):
+    """
+    Lit et retourne le contenu du dernier fichier de log de mise à jour.
+    Permet le diagnostic à distance depuis le frontend.
+    Cherche d'abord le log persistant (APP_ROOT/update_log.txt),
+    puis le log_path en DB, puis les fichiers dans /tmp.
+    """
+    import glob as glob_mod
+    try:
+        # 1) Log persistant dans APP_ROOT (survit au reboot)
+        persistent_log = os.path.join(os.path.dirname(__file__), "update_log.txt")
+        # Remonter d'un niveau (backend -> app_root)
+        persistent_log_root = os.path.join(os.path.dirname(os.path.dirname(__file__)), "update_log.txt")
+        
+        for plog in [persistent_log_root, persistent_log]:
+            if os.path.exists(plog) and os.path.getsize(plog) > 10:
+                with open(plog, 'r', errors='replace') as f:
+                    content = f.read()
+                return {
+                    "found": True,
+                    "path": plog,
+                    "content": content[-50000:],
+                    "size": os.path.getsize(plog),
+                    "source": "persistent"
+                }
+
+        # 2) Chercher le log_path dans la DB
+        last_result = await db.system_settings.find_one({"key": "last_update_result"}, {"_id": 0})
+        log_path = last_result.get("log_path") if last_result else None
+
+        if log_path and os.path.exists(log_path) and os.path.getsize(log_path) > 10:
+            with open(log_path, 'r', errors='replace') as f:
+                content = f.read()
+            return {
+                "found": True,
+                "path": log_path,
+                "content": content[-50000:],
+                "size": os.path.getsize(log_path),
+                "source": "database",
+                "in_progress": last_result.get("in_progress", False)
+            }
+
+        # 3) Fallback : fichier le plus récent dans /tmp
+        log_files = sorted(
+            glob_mod.glob("/tmp/gmao_update_*.log"),
+            key=lambda f: os.path.getmtime(f),
+            reverse=True
+        )
+        if log_files:
+            with open(log_files[0], 'r', errors='replace') as f:
+                content = f.read()
+            return {
+                "found": True,
+                "path": log_files[0],
+                "content": content[-50000:],
+                "size": os.path.getsize(log_files[0]),
+                "source": "tmp"
+            }
+
+        # 4) Aucun log trouvé
+        return {
+            "found": False,
+            "content": "",
+            "message": "Aucun fichier de log de mise a jour trouve"
+        }
+    except Exception as e:
+        logger.error(f"[MAJ] Erreur lecture log: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/updates/last-result")
 async def get_last_update_result(current_user: dict = Depends(get_current_admin_user)):
     """

@@ -12,7 +12,9 @@ import {
   RotateCcw,
   Package,
   GitBranch,
-  History
+  History,
+  FileText,
+  Terminal
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { useConfirmDialog } from '../components/ui/confirm-dialog';
@@ -38,6 +40,12 @@ const Updates = () => {
   const [updateLogs, setUpdateLogs] = useState([]);
   const [rollingBack, setRollingBack] = useState(false);
   
+  // États pour les logs serveur de mise à jour
+  const [serverLog, setServerLog] = useState('');
+  const [serverLogLoading, setServerLogLoading] = useState(false);
+  const [expandedServerLog, setExpandedServerLog] = useState(false);
+  const [serverLogInfo, setServerLogInfo] = useState(null);
+
   // États pour la gestion des conflits Git
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [conflictData, setConflictData] = useState(null);
@@ -46,6 +54,33 @@ const Updates = () => {
   useEffect(() => {
     loadUpdateInfo();
   }, []);
+
+  const loadServerLog = async () => {
+    try {
+      setServerLogLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${BACKEND_URL}/api/updates/log`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000
+      });
+      if (response.data.found) {
+        setServerLog(response.data.content);
+        setServerLogInfo({
+          path: response.data.path,
+          size: response.data.size,
+          source: response.data.source
+        });
+      } else {
+        setServerLog('');
+        setServerLogInfo(null);
+      }
+    } catch (error) {
+      console.error('Erreur chargement logs:', error);
+      setServerLog('Erreur lors du chargement des logs');
+    } finally {
+      setServerLogLoading(false);
+    }
+  };
 
   const waitForBackendReady = async (token, expectedVersion) => {
     // Attendre que le restart commence
@@ -555,7 +590,7 @@ const Updates = () => {
       {updating && updateLogs.length > 0 && (
         <Card className="bg-gray-900 text-white">
           <CardHeader>
-            <CardTitle className="text-white">📋 Logs de mise à jour</CardTitle>
+            <CardTitle className="text-white">Logs de mise à jour</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="font-mono text-sm space-y-1 max-h-64 overflow-y-auto">
@@ -566,6 +601,78 @@ const Updates = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Logs serveur persistants (diagnostic) */}
+      <Card className="border-amber-200">
+        <CardHeader 
+          className="cursor-pointer hover:bg-amber-50"
+          onClick={() => {
+            const next = !expandedServerLog;
+            setExpandedServerLog(next);
+            if (next && !serverLog) loadServerLog();
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-amber-700" data-testid="server-log-title">
+              <Terminal size={20} />
+              Logs du serveur (diagnostic)
+              {serverLogInfo && (
+                <span className="text-xs font-normal text-gray-500">
+                  ({Math.round(serverLogInfo.size / 1024)} Ko)
+                </span>
+              )}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {expandedServerLog && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-amber-700"
+                  onClick={(e) => { e.stopPropagation(); loadServerLog(); }}
+                  disabled={serverLogLoading}
+                  data-testid="refresh-server-log-btn"
+                >
+                  <RefreshCw size={14} className={serverLogLoading ? 'animate-spin' : ''} />
+                </Button>
+              )}
+              {expandedServerLog ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+            </div>
+          </div>
+        </CardHeader>
+        {expandedServerLog && (
+          <CardContent>
+            {serverLogLoading && !serverLog ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw size={24} className="animate-spin text-amber-600" />
+                <span className="ml-2 text-gray-600">Chargement des logs...</span>
+              </div>
+            ) : serverLog ? (
+              <div className="space-y-2">
+                {serverLogInfo && (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                    <FileText size={12} />
+                    <span>Fichier: {serverLogInfo.path}</span>
+                    <span>|</span>
+                    <span>Source: {serverLogInfo.source}</span>
+                  </div>
+                )}
+                <div 
+                  className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-xs leading-relaxed max-h-96 overflow-y-auto whitespace-pre-wrap"
+                  data-testid="server-log-content"
+                >
+                  {serverLog}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                <Terminal size={32} className="mx-auto text-gray-300 mb-2" />
+                <p>Aucun log de mise a jour disponible</p>
+                <p className="text-sm mt-1">Les logs apparaitront ici apres une tentative de mise a jour</p>
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
 
       {/* Changelog */}
       {changelog.length > 0 && (
