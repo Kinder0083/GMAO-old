@@ -1,7 +1,7 @@
 # FSAO Iris - GMAO (Gestion de Maintenance Assistée par Ordinateur)
 
 ## Description
-Application de GMAO complète incluant gestion des ordres de travail, maintenance préventive, améliorations, consignations LOTO, inventaire, équipements, zones, dashboard, journal d'audit, chat, système de mise à jour, import/export, sauvegardes, et plus.
+Application de GMAO complète incluant gestion des ordres de travail, maintenance préventive, améliorations, consignations LOTO, inventaire par service, équipements, zones, dashboard, journal d'audit, chat, système de mise à jour, import/export, sauvegardes, et plus.
 
 ## Architecture
 - **Frontend**: React + Shadcn UI + Tailwind CSS
@@ -12,41 +12,42 @@ Application de GMAO complète incluant gestion des ordres de travail, maintenanc
 
 ## Fonctionnalités implémentées
 
-### LOTO (Consignation) - Complet
-- CRUD procédures LOTO
-- Workflow: DEMANDE → CONSIGNE → INTERVENTION → DECONSIGNE
-- Cadenas multiples (plusieurs utilisateurs)
-- Journalisation audit
-- Suppression admin
-- Icônes temps réel via WebSockets (OT, Améliorations, MP)
-- Remplissage automatique depuis OT
-- Filtres avancés (période, équipement)
+### Inventaire par service (7 mars 2026)
+- **Onglets par service** : L'inventaire est organisé par service (Maintenance, Production, etc.)
+- **Service par défaut** : L'onglet actif correspond au service de l'utilisateur connecté. Si aucun service, "Non classé" est affiché.
+- **Gestion des onglets** : Admins/responsables peuvent ajouter/supprimer des services
+- **Partage inter-services** : Articles partagés entre services via lien (même stock, badge violet)
+- **Permissions** : Tous voient tous les onglets, mais ne modifient que dans leur service
+- **Migration** : Articles existants migrés vers "Non classé" au démarrage
+- Collections : `inventory_services`, champs `service_id` et `shared_service_ids` sur `inventory`
 
-### Système de mise à jour - Corrigé (7 mars 2026)
+### Système de mise à jour (7 mars 2026 - Corrigé)
 - **Approche**: Script bash autonome exécuté via `nohup` en arrière-plan
 - **Endpoint**: `POST /api/updates/apply` → HTTP 202 immédiat
 - **Script**: Backup MongoDB, git init/fetch/reset, pip install, yarn build, restart services
-- **Résultats**: Fichier JSON `/tmp/gmao_update_result_*.json` lu au redémarrage par `check_and_save_update_result()`
-- **Frontend**: Timeout 30s, polling post-redémarrage
+- **Résultats**: Fichier JSON lu au redémarrage par `check_and_save_update_result()`
 
-### Documentation
-- README.md à jour
-- Manuel utilisateur avec chapitres LOTO
-- Import/export incluant LOTO
-- Sauvegarde automatique incluant LOTO
+### LOTO (Consignation) - Complet
+- CRUD procédures LOTO avec workflow complet
+- Cadenas multiples (plusieurs utilisateurs)
+- Journalisation audit, suppression admin
+- Icônes temps réel via WebSockets
+- Filtres avancés (période, équipement)
+
+### Documentation et Intégration
+- README.md, manuel utilisateur, import/export, sauvegardes incluant LOTO
 
 ## Fichiers clés
-- `backend/update_service.py`: Service de mise à jour (script bash autonome)
-- `backend/server.py`: Endpoints API + startup events
-- `backend/loto_routes.py`: Routes LOTO
-- `frontend/src/pages/Updates.jsx`: Page mise à jour
-- `frontend/src/pages/ConsignationsLOTO.jsx`: Page LOTO
-- `frontend/src/components/Common/UpdateNotificationBadge.jsx`: Badge notification MAJ
-- `frontend/src/hooks/useLotoRealtime.js`: Hook WebSocket LOTO
+- `backend/server.py` : Endpoints API (routes inventory/services après ligne ~3085, migration startup)
+- `backend/models.py` : Modèles (InventoryBase avec service_id, shared_service_ids)
+- `backend/update_service.py` : Service de mise à jour (script bash autonome)
+- `frontend/src/pages/Inventory.jsx` : Page inventaire avec onglets
+- `frontend/src/components/Inventory/InventoryFormDialog.jsx` : Formulaire article (prop serviceId)
+- `frontend/src/services/api.js` : API client (inventoryAPI avec services/share/unshare)
 
 ## Backlog
 - P2: Notifications push mobile (Expo) - dépriorisé
-- P3: Validation utilisateur sur environnement Proxmox
+- P3: Validation utilisateur du système de mise à jour sur Proxmox
 
 ## Credentials de test
 - Admin: buenogy@gmail.com / Admin2024!
