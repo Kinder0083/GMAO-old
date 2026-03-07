@@ -106,10 +106,6 @@ const Inventory = () => {
   useEffect(() => { loadServices(); }, []);
   useEffect(() => { if (activeServiceId) loadServiceItems(); }, [activeServiceId, loadServiceItems]);
 
-  // Ref pour toujours avoir la dernière version de loadServiceItems (évite closure stale)
-  const loadServiceItemsRef = React.useRef(loadServiceItems);
-  React.useEffect(() => { loadServiceItemsRef.current = loadServiceItems; }, [loadServiceItems]);
-
   // WebSocket: écouter les mises à jour d'inventaire en temps réel
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -129,8 +125,13 @@ const Inventory = () => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'inventory_update') {
-            // Utiliser le ref pour toujours appeler la dernière version
-            loadServiceItemsRef.current();
+            // Mise a jour DIRECTE de l'article dans le state (pas de refetch API)
+            setServiceItems(prev => prev.map(item => {
+              if (item.id === data.item_id || item._id === data.item_id) {
+                return { ...item, quantite: data.quantity_after };
+              }
+              return item;
+            }));
             toast({
               title: `Stock ${data.action === 'ajout' ? 'augmente' : 'diminue'}`,
               description: `${data.item_name}: ${data.quantity_before} → ${data.quantity_after} (par ${data.user_name})`,
