@@ -880,3 +880,252 @@ async def export_template(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Erreur export template: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.post("/ai/extract")
+async def ai_extract_presqu_accidents(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Extraction IA: analyse un fichier Excel (.xls/.xlsx) et retourne
+    les presqu'accidents extraits, prets a etre importes.
+    """
+    import os
+    from io import BytesIO
+
+    content = await file.read()
+    fname = file.filename.lower()
+
+    if not fname.endswith(('.xls', '.xlsx')):
+        raise HTTPException(status_code=400, detail="Format non supporte. Utilisez .xls ou .xlsx")
+
+    try:
+        extracted = []
+
+        if fname.endswith('.xls'):
+            import xlrd
+            wb = xlrd.open_workbook(file_contents=content)
+            sh = wb.sheet_by_index(0)
+
+            # Chercher la ligne d'en-tete (contient "N°")
+            header_row = 0
+            for r in range(min(10, sh.nrows)):
+                for c in range(min(5, sh.ncols)):
+                    if str(sh.cell_value(r, c)).strip().lower().startswith('n°'):
+                        header_row = r
+                        break
+
+            # Lire les en-tetes
+            headers = []
+            for c in range(sh.ncols):
+                h = str(sh.cell_value(header_row, c)).strip().lower()
+                h = h.replace('\n', ' ').replace('\r', '')
+                headers.append(h)
+
+            def excel_date(val, book):
+                """Convertit une date Excel en string YYYY-MM-DD."""
+                if not val:
+                    return ""
+                try:
+                    if isinstance(val, (int, float)) and val > 40000:
+                        dt = xlrd.xldate_as_tuple(val, book.datemode)
+                        return f"{dt[0]:04d}-{dt[1]:02d}-{dt[2]:02d}"
+                    return str(val).strip()
+                except Exception:
+                    return str(val).strip()
+
+            # Mapper les colonnes par recherche de mots-cles
+            col_map = {}
+            for i, h in enumerate(headers):
+                if h.startswith('n°'):
+                    col_map['numero'] = i
+                elif 'service' in h:
+                    col_map['service'] = i
+                elif 'nom' in h or 'prénom' in h or 'prenom' in h:
+                    col_map['declarant'] = i
+                elif 'date' in h and ('presqu' in h or 'accident' in h or 'incident' in h):
+                    col_map['date_incident'] = i
+                elif 'lieu' in h:
+                    col_map['lieu'] = i
+                elif 'situation' in h and 'dangereuse' in h:
+                    col_map['categorie'] = i
+                elif 'circonstances' in h or 'détaillé' in h:
+                    col_map['description'] = i
+                elif 'actions immédiates' in h or 'actions immediates' in h:
+                    col_map['mesures_immediates'] = i
+                elif 'actions correctives' in h:
+                    col_map['actions_proposees'] = i
+                elif 'décision' in h or 'decision' in h:
+                    col_map['decision'] = i
+                elif 'statut' in h:
+                    col_map['statut'] = i
+                elif 'commentaire' in h or 'plan action' in h:
+                    col_map['commentaire'] = i
+                elif 'acteur' in h:
+                    col_map['acteur'] = i
+
+            # Lire les lignes de donnees
+            for r in range(header_row + 1, sh.nrows):
+                def cell(col_key):
+                    ci = col_map.get(col_key)
+                    if ci is None:
+                        return ""
+                    return str(sh.cell_value(r, ci)).strip()
+
+                # Ignorer les lignes vides (pas de numero ni de declarant)
+                num_val = cell('numero')
+                decl_val = cell('declarant')
+                if not num_val and not decl_val:
+                    continue
+                # Ignorer si numero n'est pas numerique
+                try:
+                    float(num_val) if num_val else None
+                except ValueError:
+                    continue
+
+                date_val = ""
+                di = col_map.get('date_incident')
+                if di is not None:
+                    date_val = excel_date(sh.cell_value(r, di), wb)
+
+                service_raw = cell('service').upper().strip()
+                service_map = {
+                    'PRODUCTION': 'PRODUCTION', 'PROD': 'PRODUCTION',
+                    'MAINTENANCE': 'MAINTENANCE', 'MAINT': 'MAINTENANCE',
+                    'QUALITE': 'QUALITE', 'QHSE': 'QUALITE',
+                    'LOGISTIQUE': 'LOGISTIQUE', 'LOG': 'LOGISTIQUE',
+                    'ADV': 'ADV', 'LABO': 'LABO', 'LABORATOIRE': 'LABO',
+                    'DIRECTION': 'DIRECTION', 'FORMULATION': 'FORMULATION',
+                }
+                service = service_map.get(service_raw, 'AUTRE')
+
+                description = cell('description')
+                categorie = cell('categorie')
+                lieu = cell('lieu')
+                titre = f"PA {cell('numero')} - {categorie}" if categorie else f"PA {cell('numero')} - {lieu}"
+
+                extracted.append({
+                    "titre": titre[:200],
+                    "description": description,
+                    "date_incident": date_val,
+                    "lieu": lieu,
+                    "service": service,
+                    "categorie_incident": categorie,
+                    "declarant": decl_val,
+                    "mesures_immediates": cell('mesures_immediates'),
+                    "actions_proposees": cell('actions_proposees'),
+                    "contexte_cause": cell('decision'),
+                    "conditions_incident": cell('commentaire'),
+                    "personnes_impliquees": cell('acteur'),
+                })
+
+        elif fname.endswith('.xlsx'):
+            import openpyxl
+            wbx = openpyxl.load_workbook(BytesIO(content), data_only=True)
+            ws = wbx.active
+
+            header_row_idx = 1
+            for r in range(1, min(10, ws.max_row + 1)):
+                for c in range(1, min(5, ws.max_column + 1)):
+                    v = str(ws.cell(row=r, column=c).value or '').strip().lower()
+                    if v.startswith('n°'):
+                        header_row_idx = r
+                        break
+
+            headers = []
+            for c in range(1, ws.max_column + 1):
+                h = str(ws.cell(row=header_row_idx, column=c).value or '').strip().lower()
+                headers.append(h.replace('\n', ' '))
+
+            col_map = {}
+            for i, h in enumerate(headers):
+                if h.startswith('n°'):
+                    col_map['numero'] = i
+                elif 'service' in h:
+                    col_map['service'] = i
+                elif 'nom' in h:
+                    col_map['declarant'] = i
+                elif 'date' in h and ('presqu' in h or 'accident' in h):
+                    col_map['date_incident'] = i
+                elif 'lieu' in h:
+                    col_map['lieu'] = i
+                elif 'situation' in h:
+                    col_map['categorie'] = i
+                elif 'circonstances' in h:
+                    col_map['description'] = i
+                elif 'actions imm' in h:
+                    col_map['mesures_immediates'] = i
+                elif 'actions corr' in h:
+                    col_map['actions_proposees'] = i
+                elif 'décision' in h or 'decision' in h:
+                    col_map['decision'] = i
+                elif 'statut' in h:
+                    col_map['statut'] = i
+                elif 'commentaire' in h or 'plan action' in h:
+                    col_map['commentaire'] = i
+                elif 'acteur' in h:
+                    col_map['acteur'] = i
+
+            for r in range(header_row_idx + 1, ws.max_row + 1):
+                def cellv(col_key):
+                    ci = col_map.get(col_key)
+                    if ci is None:
+                        return ""
+                    return str(ws.cell(row=r, column=ci + 1).value or '').strip()
+
+                num_val = cellv('numero')
+                decl_val = cellv('declarant')
+                if not num_val and not decl_val:
+                    continue
+
+                date_val = ""
+                di = col_map.get('date_incident')
+                if di is not None:
+                    v = ws.cell(row=r, column=di + 1).value
+                    if isinstance(v, datetime):
+                        date_val = v.strftime('%Y-%m-%d')
+                    else:
+                        date_val = str(v or '').strip()
+
+                service_raw = cellv('service').upper()
+                service = 'AUTRE'
+                for k, v in {'PRODUCTION': 'PRODUCTION', 'MAINTENANCE': 'MAINTENANCE',
+                             'QUALITE': 'QUALITE', 'QHSE': 'QUALITE',
+                             'LOGISTIQUE': 'LOGISTIQUE', 'ADV': 'ADV',
+                             'LABO': 'LABO', 'DIRECTION': 'DIRECTION'}.items():
+                    if k in service_raw:
+                        service = v
+                        break
+
+                categorie = cellv('categorie')
+                lieu = cellv('lieu')
+                titre = f"PA {cellv('numero')} - {categorie}" if categorie else f"PA {cellv('numero')} - {lieu}"
+
+                extracted.append({
+                    "titre": titre[:200],
+                    "description": cellv('description'),
+                    "date_incident": date_val,
+                    "lieu": lieu,
+                    "service": service,
+                    "categorie_incident": categorie,
+                    "declarant": decl_val,
+                    "mesures_immediates": cellv('mesures_immediates'),
+                    "actions_proposees": cellv('actions_proposees'),
+                    "contexte_cause": cellv('decision'),
+                    "conditions_incident": cellv('commentaire'),
+                    "personnes_impliquees": cellv('acteur'),
+                })
+
+        return {
+            "success": True,
+            "count": len(extracted),
+            "items": extracted
+        }
+
+    except Exception as e:
+        logger.error(f"Erreur extraction IA presqu'accident: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Erreur extraction: {str(e)}")

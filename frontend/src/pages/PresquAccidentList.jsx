@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
-import { Plus, Download, Upload, AlertTriangle, Search, Filter, Edit, Trash2, Paperclip, ClipboardCheck, X, Eye, Wifi, WifiOff, RefreshCw, ChevronDown, ChevronUp, Wrench, Brain } from 'lucide-react';
+import { Plus, Download, Upload, AlertTriangle, Search, Filter, Edit, Trash2, Paperclip, ClipboardCheck, X, Eye, Wifi, WifiOff, RefreshCw, ChevronDown, ChevronUp, Wrench, Brain, Loader2, FileSpreadsheet, CheckCircle } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { presquAccidentAPI, usersAPI, rolesAPI, equipmentsAPI } from '../services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
@@ -88,6 +88,80 @@ function PresquAccidentList() {
     conditions_incident: '',
     actions_proposees: ''
   });
+
+  // AI Extraction state
+  const [openExtract, setOpenExtract] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedItems, setExtractedItems] = useState([]);
+  const [selectedExtracted, setSelectedExtracted] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const extractFileRef = useRef(null);
+
+  // === AI Extraction handlers ===
+  const handleExtractFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExtracting(true);
+    setExtractedItems([]);
+    setSelectedExtracted([]);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/presqu-accident/ai/extract`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setExtractedItems(data.items || []);
+        setSelectedExtracted(data.items?.map((_, i) => i) || []);
+        toast({ title: `${data.count} presqu'accidents extraits` });
+      } else {
+        const err = await res.json();
+        toast({ title: 'Erreur extraction', description: err.detail, variant: 'destructive' });
+      }
+    } catch (err) {
+      toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
+    }
+    setExtracting(false);
+    if (extractFileRef.current) extractFileRef.current.value = '';
+  };
+
+  const toggleExtractedItem = (index) => {
+    setSelectedExtracted(prev =>
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  };
+
+  const handleImportExtracted = async () => {
+    const toImport = selectedExtracted.map(i => extractedItems[i]).filter(Boolean);
+    if (toImport.length === 0) return;
+    setImporting(true);
+    let created = 0;
+    let errors = 0;
+    for (const item of toImport) {
+      try {
+        await presquAccidentAPI.createItem({
+          ...item,
+          severite: 'MOYEN',
+          statut: 'A_TRAITER'
+        });
+        created++;
+      } catch (e) {
+        errors++;
+      }
+    }
+    toast({
+      title: `Import termine`,
+      description: `${created} cree(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`
+    });
+    setImporting(false);
+    setOpenExtract(false);
+    setExtractedItems([]);
+    loadData();
+  };
 
   useEffect(() => {
     loadData();
@@ -580,6 +654,11 @@ function PresquAccidentList() {
           <Button onClick={() => { resetForm(); setOpenForm(true); }}>
             <Plus size={16} className="mr-2" />
             Nouveau
+          </Button>
+          <Button variant="outline" onClick={() => { setExtractedItems([]); setSelectedExtracted([]); setOpenExtract(true); }}
+            data-testid="extraction-ia-btn" className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100">
+            <Brain size={16} className="mr-2" />
+            Extraction IA
           </Button>
         </div>
       </div>
@@ -1523,6 +1602,124 @@ function PresquAccidentList() {
           toast({ title: "Evaluation appliquee", description: `Severite: ${sev}, Recurrence: ${rec}` });
         }}
       />
+
+      {/* Dialog Extraction IA */}
+      <Dialog open={openExtract} onOpenChange={setOpenExtract}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-purple-600" />
+              Extraction IA - Presqu'accidents
+            </DialogTitle>
+          </DialogHeader>
+
+          {extractedItems.length === 0 ? (
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-gray-600">
+                Importez un fichier Excel (.xls ou .xlsx) contenant une liste de presqu'accidents.
+                L'IA analysera le fichier et extraira automatiquement les donnees.
+              </p>
+              <div className="flex flex-col items-center gap-4 p-8 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/50">
+                <FileSpreadsheet className="w-12 h-12 text-purple-400" />
+                <input
+                  type="file"
+                  ref={extractFileRef}
+                  accept=".xls,.xlsx"
+                  onChange={handleExtractFile}
+                  className="hidden"
+                  data-testid="extract-file-input"
+                />
+                <Button
+                  onClick={() => extractFileRef.current?.click()}
+                  disabled={extracting}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  data-testid="select-extract-file-btn"
+                >
+                  {extracting ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyse en cours...</>
+                  ) : (
+                    <><Upload className="w-4 h-4 mr-2" /> Choisir un fichier Excel</>
+                  )}
+                </Button>
+                <span className="text-xs text-gray-400">Formats acceptes: .xls, .xlsx</span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium text-purple-700">{extractedItems.length}</span> presqu'accident(s) trouves.
+                  <span className="ml-2 text-gray-500">{selectedExtracted.length} selectionne(s)</span>
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" className="text-xs"
+                    onClick={() => setSelectedExtracted(extractedItems.map((_, i) => i))}>
+                    Tout selectionner
+                  </Button>
+                  <Button size="sm" variant="ghost" className="text-xs"
+                    onClick={() => setSelectedExtracted([])}>
+                    Tout deselectionner
+                  </Button>
+                </div>
+              </div>
+
+              <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
+                {extractedItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                      selectedExtracted.includes(idx)
+                        ? 'bg-purple-50 border-purple-300'
+                        : 'bg-gray-50 border-gray-200 opacity-60'
+                    }`}
+                    onClick={() => toggleExtractedItem(idx)}
+                    data-testid={`extracted-item-${idx}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedExtracted.includes(idx)}
+                        onChange={() => toggleExtractedItem(idx)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{item.titre}</div>
+                        <div className="text-xs text-gray-500 flex flex-wrap gap-2 mt-1">
+                          {item.date_incident && <span>{item.date_incident}</span>}
+                          {item.lieu && <span>Lieu: {item.lieu}</span>}
+                          {item.service && <Badge variant="outline" className="text-xs py-0">{item.service}</Badge>}
+                          {item.declarant && <span>Par: {item.declarant}</span>}
+                        </div>
+                        {item.description && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <DialogFooter className="flex gap-2 pt-3">
+                <Button variant="outline" onClick={() => { setExtractedItems([]); }} data-testid="extract-new-file-btn">
+                  <Upload className="w-4 h-4 mr-2" /> Autre fichier
+                </Button>
+                <Button
+                  onClick={handleImportExtracted}
+                  disabled={importing || selectedExtracted.length === 0}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  data-testid="import-extracted-btn"
+                >
+                  {importing ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Import en cours...</>
+                  ) : (
+                    <><CheckCircle className="w-4 h-4 mr-2" /> Importer {selectedExtracted.length} presqu'accident(s)</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
