@@ -25,6 +25,13 @@ try:
 except ImportError:
     chat_manager = None
 
+# Web Push notifications
+try:
+    from web_push import send_web_push_to_user, send_web_push_to_users
+except ImportError:
+    send_web_push_to_user = None
+    send_web_push_to_users = None
+
 
 # ========== ROUTES PUBLIQUES (SANS AUTH) ==========
 
@@ -336,6 +343,59 @@ async def request_restock(
             })
         except Exception as ws_err:
             logger.warning(f"[QR-Inventaire] Erreur broadcast WS restock: {ws_err}")
+
+    # Notification push vers le responsable du service ou les admins
+    if send_web_push_to_user:
+        try:
+            item_name = item.get("nom", "Article")
+            stock_actuel = item.get("quantite", 0)
+            push_title = "Signalement de besoin"
+            push_body = f"{user_name} signale un besoin pour \"{item_name}\" (stock: {stock_actuel})"
+            if comment:
+                push_body += f" - {comment[:80]}"
+            push_data = {
+                "type": "inventory_restock",
+                "item_id": item_id,
+                "url": "/purchase-requests"
+            }
+
+            service_id = item.get("service_id")
+            notified = False
+
+            # Si l'article appartient à un service, notifier le responsable du service
+            if service_id:
+                try:
+                    service_query = {"_id": ObjectId(str(service_id))} if ObjectId.is_valid(str(service_id)) else {"id": str(service_id)}
+                    service = await db.inventory_services.find_one(service_query)
+                    if service and service.get("responsable_id"):
+                        resp_id = str(service["responsable_id"])
+                        if resp_id != str(current_user.get("id", "")):
+                            await send_web_push_to_user(
+                                db, resp_id,
+                                title=push_title, body=push_body,
+                                data=push_data, tag=f"restock-{item_id}"
+                            )
+                            notified = True
+                            logger.info(f"[QR-Inventaire] Push envoyee au responsable du service '{service.get('name')}'")
+                except Exception as svc_err:
+                    logger.warning(f"[QR-Inventaire] Erreur lookup service: {svc_err}")
+
+            # Si pas de service (Non classé) ou pas de responsable, notifier les admins
+            if not notified:
+                admin_ids = []
+                async for admin in db.users.find({"role": "ADMIN", "statut": "actif"}, {"_id": 1, "id": 1}):
+                    admin_id = str(admin.get("id") or admin.get("_id", ""))
+                    if admin_id and admin_id != str(current_user.get("id", "")):
+                        admin_ids.append(admin_id)
+                if admin_ids:
+                    await send_web_push_to_users(
+                        db, admin_ids,
+                        title=push_title, body=push_body,
+                        data=push_data, tag=f"restock-{item_id}"
+                    )
+                    logger.info(f"[QR-Inventaire] Push envoyee a {len(admin_ids)} admin(s)")
+        except Exception as push_err:
+            logger.warning(f"[QR-Inventaire] Erreur notification push: {push_err}")
 
     return {"success": True, "message": "Demande de réapprovisionnement enregistrée et transmise aux Demandes d'Achat"}
 

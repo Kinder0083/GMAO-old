@@ -895,6 +895,10 @@ if [ -f "$FRONTEND_DIR/package.json" ]; then
     export NODE_OPTIONS="--max_old_space_size=2048"
     {frontend_env_exports}
     
+    # Supprimer node_modules pour un build propre (evite les erreurs @babel/runtime)
+    echo "  -> rm -rf node_modules (clean install)"
+    rm -rf node_modules 2>/dev/null
+    
     echo "  -> yarn install"
     if yarn install 2>&1; then
         echo "[OK] yarn install termine"
