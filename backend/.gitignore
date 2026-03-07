@@ -1,0 +1,99 @@
+# Backend
+backend/.env
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/uploads/
+backend/tests/
+
+# Frontend
+frontend/node_modules/
+frontend/build/
+frontend/.env
+
+# Logs
+*.log
+logs/
+update_log.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backups
+backups/
+
+# MongoDB data
+mongodb_data/
+
+# Node
+node_modules/
+
+# Emergent (plateforme de dev)
+memory/
+test_reports/
+.emergent/
+
+# Environment files
+*.env
+*.env.*
+
+# Python
+venv/
+*.pyc
+__pycache__/
+.env
+
+# Scripts de mise a jour
+post-update.sh
+update.sh
+
+# Health check state
+health_state.json
+health_recovery_history.json
+health_alert_history.json
+maintenance.flag
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*

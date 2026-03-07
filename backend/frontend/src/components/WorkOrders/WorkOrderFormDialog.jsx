@@ -1,0 +1,600 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Paperclip, Camera } from 'lucide-react';
+import { useToast } from '../../hooks/use-toast';
+import { workOrdersAPI, equipmentsAPI, locationsAPI, usersAPI, workOrderTemplatesAPI } from '../../services/api';
+import StatusChangeDialog from './StatusChangeDialog';
+import { validateDateNotPast } from '../../utils/dateValidation';
+import { formatErrorMessage } from '../../utils/errorFormatter';
+
+const WorkOrderFormDialog = ({ open, onOpenChange, workOrder, prefillData, onSuccess }) => {
+  const { toast } = useToast();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [loading, setLoading] = useState(false);
+  const [equipments, setEquipments] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [formData, setFormData] = useState({
+    titre: '',
+    description: '',
+    statut: 'OUVERT',
+    priorite: 'AUCUNE',
+    categorie: '',
+    equipement_id: '',
+    assigne_a_id: '',
+    emplacement_id: '',
+    dateLimite: '',
+    tempsEstime: ''
+  });
+  const [templateId, setTemplateId] = useState(null); // Pour incrémenter le compteur
+  const [attachments, setAttachments] = useState([]);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [savedWorkOrderId, setSavedWorkOrderId] = useState(null);
+  const [savedWorkOrderStatus, setSavedWorkOrderStatus] = useState(null);
+  // Utiliser une ref au lieu d'un state pour une mise à jour synchrone
+  const submitSuccessfulRef = useRef(false);
+
+  useEffect(() => {
+    if (open) {
+      loadData();
+      setIsClosing(false);
+      submitSuccessfulRef.current = false; // Reset le flag à l'ouverture
+      if (workOrder) {
+        // Mode édition d'un OT existant
+        setFormData({
+          titre: workOrder.titre || '',
+          description: workOrder.description || '',
+          statut: workOrder.statut || 'OUVERT',
+          priorite: workOrder.priorite || 'AUCUNE',
+          categorie: workOrder.categorie || '',
+          equipement_id: workOrder.equipement?.id || '',
+          assigne_a_id: workOrder.assigneA?.id || '',
+          emplacement_id: workOrder.emplacement?.id || '',
+          dateLimite: workOrder.dateLimite?.split('T')[0] || '',
+          tempsEstime: workOrder.tempsEstime || ''
+        });
+        setSavedWorkOrderId(workOrder.id);
+        setSavedWorkOrderStatus(workOrder.statut);
+        setTemplateId(null);
+      } else if (prefillData) {
+        // Mode création avec données pré-remplies (depuis un template)
+        const today = new Date().toISOString().split('T')[0];
+        // Convertir le temps estimé du template en format numérique
+        let tempsEstime = '0.5'; // Défaut 30 min
+        if (prefillData.temps_estime) {
+          // Tenter de parser le format "2h", "2h30", "30min", etc.
+          const tempsStr = prefillData.temps_estime.toLowerCase().trim();
+          const hoursMatch = tempsStr.match(/(\d+(?:\.\d+)?)\s*h/);
+          const minsMatch = tempsStr.match(/(\d+)\s*(?:min|m)/);
+          let hours = 0;
+          if (hoursMatch) hours += parseFloat(hoursMatch[1]);
+          if (minsMatch) hours += parseInt(minsMatch[1]) / 60;
+          if (hours > 0) tempsEstime = hours.toString();
+        }
+        setFormData({
+          titre: prefillData.titre || '',
+          description: prefillData.description || '',
+          statut: prefillData.statut || 'OUVERT',
+          priorite: prefillData.priorite || 'AUCUNE',
+          categorie: prefillData.categorie || '',
+          equipement_id: prefillData.equipement_id || '',
+          assigne_a_id: '',
+          emplacement_id: '', // Sera auto-rempli par le useEffect si équipement présent
+          dateLimite: today,
+          tempsEstime: tempsEstime
+        });
+        setSavedWorkOrderId(null);
+        setSavedWorkOrderStatus(null);
+        setTemplateId(prefillData.template_id || null);
+      } else {
+        // Mode création vide - avec date du jour et temps estimé par défaut (0.5h = 30 min)
+        const today = new Date().toISOString().split('T')[0];
+        setFormData({
+          titre: '',
+          description: '',
+          statut: 'OUVERT',
+          priorite: 'AUCUNE',
+          categorie: '',
+          equipement_id: '',
+          assigne_a_id: '',
+          emplacement_id: '',
+          dateLimite: today,
+          tempsEstime: '0.5'
+        });
+        setAttachments([]);
+        setSavedWorkOrderId(null);
+        setSavedWorkOrderStatus(null);
+        setTemplateId(null);
+      }
+    }
+  }, [open, workOrder, prefillData]);
+
+  // Auto-remplir l'emplacement quand un équipement est sélectionné
+  useEffect(() => {
+    if (formData.equipement_id && equipments.length > 0) {
+      const selectedEquipment = equipments.find(eq => eq.id === formData.equipement_id);
+      if (selectedEquipment && selectedEquipment.emplacement_id) {
+        // Ne mettre à jour que si l'emplacement est différent (évite les boucles)
+        if (formData.emplacement_id !== selectedEquipment.emplacement_id) {
+          setFormData(prev => ({
+            ...prev,
+            emplacement_id: selectedEquipment.emplacement_id
+          }));
+        }
+      }
+    }
+  }, [formData.equipement_id, equipments]);
+
+  const loadData = async () => {
+    try {
+      const [equipRes, locRes, userRes] = await Promise.all([
+        equipmentsAPI.getAll(),
+        locationsAPI.getAll(),
+        usersAPI.getAll()
+      ]);
+      setEquipments(equipRes.data);
+      setLocations(locRes.data);
+      setUsers(userRes.data); // Tous les membres, quel que soit leur rôle
+    } catch (error) {
+      console.error('Erreur de chargement:', error);
+    }
+  };
+
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files || []);
+    const newAttachments = files.map(file => ({
+      file,
+      name: file.name,
+      size: file.size
+    }));
+    setAttachments([...attachments, ...newAttachments]);
+    event.target.value = ''; // Reset input
+  };
+
+  const handleCameraCapture = () => {
+    // Déclencher l'input file avec capture="environment" pour ouvrir la caméra
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click();
+    }
+  };
+
+  const handleRemoveAttachment = (index) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
+  const handleDialogClose = (isOpen) => {
+    if (!isOpen && !isClosing && !loading) {
+      // Si on vient d'une soumission réussie (création), fermer directement sans dialogue
+      if (submitSuccessfulRef.current) {
+        submitSuccessfulRef.current = false;
+        return; // Ne rien faire, le parent a déjà été notifié
+      }
+      // L'utilisateur veut fermer sans sauvegarder
+      // Dans le cas du formulaire, on ouvre le dialog de statut seulement si on modifie un ordre existant
+      if (workOrder) {
+        setShowStatusDialog(true);
+        setIsClosing(true);
+      } else {
+        onOpenChange(false);
+      }
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    if (savedWorkOrderId) {
+      try {
+        await workOrdersAPI.update(savedWorkOrderId, { statut: newStatus });
+        toast({
+          title: 'Succès',
+          description: 'Le statut a été mis à jour'
+        });
+      } catch (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de mettre à jour le statut',
+          variant: 'destructive'
+        });
+      }
+    }
+    setShowStatusDialog(false);
+    onOpenChange(false);
+  };
+
+  const handleSkipStatusChange = () => {
+    setShowStatusDialog(false);
+    onOpenChange(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation de la date limite (pas dans le passé sauf pour admin)
+    if (formData.dateLimite) {
+      const dateValidation = validateDateNotPast(formData.dateLimite, user);
+      if (!dateValidation.valid) {
+        toast({
+          title: 'Erreur',
+          description: dateValidation.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+    }
+    
+    setLoading(true);
+
+    try {
+      const submitData = {
+        ...formData,
+        tempsEstime: formData.tempsEstime ? parseFloat(formData.tempsEstime) : null,
+        dateLimite: formData.dateLimite ? new Date(formData.dateLimite).toISOString() : null,
+        equipement_id: formData.equipement_id || null,
+        assigne_a_id: formData.assigne_a_id || null,
+        emplacement_id: formData.emplacement_id || null
+      };
+
+      if (workOrder) {
+        await workOrdersAPI.update(workOrder.id, submitData);
+        
+        // Upload des fichiers si présents
+        if (attachments.length > 0) {
+          for (const attachment of attachments) {
+            try {
+              await workOrdersAPI.uploadAttachment(workOrder.id, attachment.file);
+            } catch (err) {
+              console.error('Erreur upload fichier:', err);
+            }
+          }
+        }
+        
+        toast({
+          title: 'Succès',
+          description: 'Ordre de travail modifié avec succès'
+        });
+        
+        // Émettre un événement pour rafraîchir les notifications instantanément
+        window.dispatchEvent(new Event('workOrderUpdated'));
+        
+        // Mettre à jour le statut pour le dialog de changement
+        setSavedWorkOrderId(workOrder.id);
+        setSavedWorkOrderStatus(submitData.statut);
+      } else {
+        const response = await workOrdersAPI.create(submitData);
+        const newWorkOrderId = response.data.id;
+        
+        // Incrémenter le compteur d'utilisation du template si utilisé
+        if (templateId) {
+          try {
+            await workOrderTemplatesAPI.incrementUsage(templateId);
+          } catch (err) {
+            console.error('Erreur incrémentation compteur template:', err);
+          }
+        }
+        
+        // Upload des fichiers si présents
+        if (attachments.length > 0) {
+          for (const attachment of attachments) {
+            try {
+              await workOrdersAPI.uploadAttachment(newWorkOrderId, attachment.file);
+            } catch (err) {
+              console.error('Erreur upload fichier:', err);
+            }
+          }
+        }
+        
+        toast({
+          title: 'Succès',
+          description: 'Ordre de travail créé avec succès'
+        });
+        
+        // Émettre un événement pour rafraîchir les notifications instantanément
+        window.dispatchEvent(new Event('workOrderCreated'));
+        
+        // Marquer comme création réussie AVANT d'appeler onOpenChange (ref = synchrone)
+        submitSuccessfulRef.current = true;
+      }
+
+      // Attendre que le rafraîchissement soit terminé avant de fermer
+      // onSuccess peut être async (refreshWorkOrders)
+      await onSuccess();
+      
+      // Afficher le dialog de changement de statut uniquement pour la modification d'un OT existant
+      if (workOrder) {
+        setShowStatusDialog(true);
+      } else {
+        // Pour une création, le flag submitSuccessfulRef est déjà true
+        // handleDialogClose ignorera la logique du dialogue de statut
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('Erreur création/modification ordre de travail:', error);
+      toast({
+        title: 'Erreur',
+        description: formatErrorMessage(error, 'Une erreur est survenue lors de l\'enregistrement'),
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{workOrder ? 'Modifier' : 'Nouvel'} ordre de travail</DialogTitle>
+          <DialogDescription>
+            Remplissez les informations de l'ordre de travail
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4" data-testid="work-order-form">
+          <div className="space-y-2">
+            <Label htmlFor="titre">Titre *</Label>
+            <Input
+              id="titre"
+              data-testid="input-titre-ot"
+              value={formData.titre}
+              onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
+              required
+              placeholder="Entrez le titre de l'ordre de travail"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description *</Label>
+            <Textarea
+              id="description"
+              data-testid="input-description-ot"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+              required
+              placeholder="Décrivez l'intervention à réaliser"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="statut">Statut</Label>
+              <Select value={formData.statut} onValueChange={(value) => setFormData({ ...formData, statut: value })}>
+                <SelectTrigger data-testid="select-statut-ot">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OUVERT">Ouvert</SelectItem>
+                  <SelectItem value="EN_COURS">En cours</SelectItem>
+                  <SelectItem value="EN_ATTENTE">En attente</SelectItem>
+                  <SelectItem value="TERMINE">Terminé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="priorite">Priorité</Label>
+              <Select value={formData.priorite} onValueChange={(value) => setFormData({ ...formData, priorite: value })}>
+                <SelectTrigger data-testid="select-priorite-ot">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="HAUTE">Haute</SelectItem>
+                  <SelectItem value="MOYENNE">Moyenne</SelectItem>
+                  <SelectItem value="BASSE">Basse</SelectItem>
+                  <SelectItem value="AUCUNE">Normale</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="categorie">Catégorie</Label>
+            <Select value={formData.categorie} onValueChange={(value) => setFormData({ ...formData, categorie: value })}>
+              <SelectTrigger data-testid="select-categorie-ot">
+                <SelectValue placeholder="Sélectionner une catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CHANGEMENT_FORMAT">Changement de Format</SelectItem>
+                <SelectItem value="TRAVAUX_PREVENTIFS">Travaux Préventifs</SelectItem>
+                <SelectItem value="TRAVAUX_CURATIF">Travaux Curatif</SelectItem>
+                <SelectItem value="TRAVAUX_DIVERS">Travaux Divers</SelectItem>
+                <SelectItem value="FORMATION">Formation</SelectItem>
+                <SelectItem value="REGLAGE">Réglage</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="equipement_id">Équipement</Label>
+            <Select value={formData.equipement_id} onValueChange={(value) => setFormData({ ...formData, equipement_id: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un équipement" />
+              </SelectTrigger>
+              <SelectContent>
+                {equipments.map(eq => (
+                  <SelectItem key={eq.id} value={eq.id}>{eq.nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="assigne_a_id">Assigné à</Label>
+            <Select value={formData.assigne_a_id || '_none_'} onValueChange={(value) => setFormData({ ...formData, assigne_a_id: value === '_none_' ? '' : value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un technicien" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none_" className="text-gray-400 italic">
+                  Aucun
+                </SelectItem>
+                {users.map(user => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.prenom} {user.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="emplacement_id">Emplacement</Label>
+            <Select value={formData.emplacement_id} onValueChange={(value) => setFormData({ ...formData, emplacement_id: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un emplacement" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map(loc => (
+                  <SelectItem key={loc.id} value={loc.id}>{loc.nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="dateLimite">Date limite</Label>
+              <Input
+                id="dateLimite"
+                type="date"
+                value={formData.dateLimite}
+                onChange={(e) => setFormData({ ...formData, dateLimite: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tempsEstime">Temps estimé (heures)</Label>
+              <Input
+                id="tempsEstime"
+                type="number"
+                step="0.5"
+                value={formData.tempsEstime}
+                onChange={(e) => setFormData({ ...formData, tempsEstime: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Section Fichiers joints */}
+          <div className="space-y-2 pt-4 border-t">
+            <Label>
+              <Paperclip size={16} className="inline mr-1" />
+              Joindre des fichiers
+            </Label>
+            
+            <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1"
+              >
+                <Paperclip size={16} className="mr-2" />
+                Parcourir
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCameraCapture}
+                className="flex-1"
+              >
+                <Camera size={16} className="mr-2" />
+                Appareil photo
+              </Button>
+            </div>
+            
+            <p className="text-xs text-gray-500">
+              Formats acceptés : images, vidéos, documents (max 25MB par fichier)
+            </p>
+            
+            {attachments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <p className="text-sm font-medium text-gray-700">
+                  {attachments.length} fichier(s) sélectionné(s) :
+                </p>
+                {attachments.map((attachment, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <Paperclip size={14} className="text-gray-500" />
+                      <span className="text-sm text-gray-700">{attachment.name}</span>
+                      <span className="text-xs text-gray-500">
+                        ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveAttachment(index)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      Supprimer
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => {
+              if (workOrder) {
+                setShowStatusDialog(true);
+                setIsClosing(true);
+              } else {
+                onOpenChange(false);
+              }
+            }}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700" data-testid="btn-submit-ot">
+              {loading ? 'Enregistrement...' : workOrder ? 'Modifier' : 'Créer'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <StatusChangeDialog
+      open={showStatusDialog}
+      onOpenChange={setShowStatusDialog}
+      currentStatus={savedWorkOrderStatus || (workOrder ? workOrder.statut : 'OUVERT')}
+      onStatusChange={handleStatusChange}
+      onSkip={handleSkipStatusChange}
+    />
+    </>
+  );
+};
+
+export default WorkOrderFormDialog;

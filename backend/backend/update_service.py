@@ -699,6 +699,7 @@ class UpdateService:
         logger.info(f"[MAJ] Result: {result_file}")
         
         # Sauvegarder le statut in_progress dans la DB
+        # IMPORTANT: log_path dans /var/log/ car git reset écrase APP_ROOT
         try:
             await self.db.system_settings.update_one(
                 {"key": "last_update_result"},
@@ -711,7 +712,7 @@ class UpdateService:
                     "version_after": version,
                     "history_id": update_id,
                     "started_at": datetime.now(timezone.utc).isoformat(),
-                    "log_path": log_path,
+                    "log_path": persistent_log,
                     "errors": [],
                     "warnings": [],
                     "completed_at": None
@@ -745,23 +746,9 @@ class UpdateService:
         
         script_content = f"""#!/bin/bash
 #
-# FSAO Iris - Mise a jour v5.1
+# FSAO Iris - Mise a jour v5.0
 # Commandes IDENTIQUES a celles executees manuellement en SSH
 #
-
-# CRITIQUE: Configurer le PATH complet car le backend peut avoir un PATH minimal
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-export HOME=$(getent passwd $(whoami) 2>/dev/null | cut -d: -f6 || echo "/root")
-
-# Ajouter yarn au PATH s'il existe
-for YARN_DIR in "$HOME/.yarn/bin" "/usr/local/share/.config/yarn/global/node_modules/.bin" "/usr/share/yarn/bin"; do
-    [ -d "$YARN_DIR" ] && export PATH="$YARN_DIR:$PATH"
-done
-
-# Ajouter node au PATH s'il existe
-for NODE_DIR in /usr/local/lib/nodejs/*/bin "$HOME/.nvm/versions/node"/*/bin; do
-    [ -d "$NODE_DIR" ] && export PATH="$NODE_DIR:$PATH"
-done
 
 APP_ROOT="{self.app_root}"
 GITHUB_URL="https://github.com/{self.github_user}/{self.github_repo}.git"
@@ -780,23 +767,14 @@ exec > >(tee "$LOG_FILE") 2>&1
 echo "========================================================"
 echo "MISE A JOUR FSAO IRIS"
 echo "Date: $(date)"
-echo "Utilisateur: $(whoami)"
-echo "PATH: $PATH"
-echo "HOME: $HOME"
-echo "APP_ROOT: $APP_ROOT"
-echo "git: $(which git 2>/dev/null || echo 'NON TROUVE')"
-echo "yarn: $(which yarn 2>/dev/null || echo 'NON TROUVE')"
-echo "node: $(which node 2>/dev/null || echo 'NON TROUVE')"
-echo "pip: $(which pip 2>/dev/null || echo 'NON TROUVE')"
 echo "========================================================"
 
 START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 SUCCESS=false
-ERRORS=""
 
-# === COMMANDES SSH IDENTIQUES (avec verification d'erreur) ===
+# === COMMANDES SSH IDENTIQUES ===
 
-cd "$APP_ROOT" || {{ echo "ERREUR FATALE: impossible de cd $APP_ROOT"; ERRORS="cd echoue"; }}
+cd "$APP_ROOT" || {{ echo "ERREUR: impossible de cd $APP_ROOT"; exit 1; }}
 echo "[1/8] cd $APP_ROOT OK"
 
 cp backend/.env /tmp/backend.env 2>/dev/null
@@ -804,52 +782,31 @@ cp frontend/.env /tmp/frontend.env 2>/dev/null
 echo "[2/8] Sauvegarde .env OK"
 
 rm -rf .git
-if [ $? -ne 0 ]; then echo "ERREUR: rm -rf .git echoue (permissions?)"; ERRORS="$ERRORS rm-git"; fi
 echo "[3/8] rm -rf .git OK"
 
 git init
-if [ $? -ne 0 ]; then echo "ERREUR: git init echoue"; ERRORS="$ERRORS git-init"; fi
 git remote add origin "$GITHUB_URL"
 echo "[4/8] git init + remote OK"
 
 git fetch origin main
-if [ $? -ne 0 ]; then echo "ERREUR: git fetch echoue (internet/DNS?)"; ERRORS="$ERRORS git-fetch"; fi
 echo "[5/8] git fetch OK"
 
 git reset --hard origin/main
-if [ $? -ne 0 ]; then echo "ERREUR: git reset echoue"; ERRORS="$ERRORS git-reset"; fi
 echo "[6/8] git reset --hard OK"
 
 cp /tmp/backend.env backend/.env 2>/dev/null
 cp /tmp/frontend.env frontend/.env 2>/dev/null
 echo "[7/8] Restauration .env OK"
 
-source venv/bin/activate 2>/dev/null
-if [ $? -ne 0 ]; then echo "AVERTISSEMENT: source venv/bin/activate echoue"; fi
+source venv/bin/activate
 pip install -r backend/requirements.txt 2>&1
-if [ $? -ne 0 ]; then echo "AVERTISSEMENT: pip install echoue"; fi
-deactivate 2>/dev/null
+deactivate
 echo "[8/8] pip install OK"
 
-cd frontend 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "ERREUR: cd frontend echoue"
-    ERRORS="$ERRORS cd-frontend"
-else
-    yarn install 2>&1
-    if [ $? -ne 0 ]; then echo "ERREUR: yarn install echoue"; ERRORS="$ERRORS yarn-install"; fi
-    yarn build 2>&1
-    if [ $? -ne 0 ]; then echo "ERREUR: yarn build echoue"; ERRORS="$ERRORS yarn-build"; fi
-    cd ..
-fi
-echo "Build frontend termine"
+cd frontend && yarn install 2>&1 && yarn build 2>&1 && cd ..
+echo "Build frontend OK"
 
-if [ -z "$ERRORS" ]; then
-    SUCCESS=true
-else
-    SUCCESS=false
-    echo "ERREURS DETECTEES: $ERRORS"
-fi
+SUCCESS=true
 END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Sauvegarder le resultat

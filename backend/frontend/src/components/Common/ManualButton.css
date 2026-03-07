@@ -1,0 +1,131 @@
+/* Styles personnalisés pour le Manuel Utilisateur */
+
+/* Scrollbars personnalisées */
+.manual-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.manual-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.manual-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.manual-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Pour Firefox */
+.manual-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+/* Table des matières */
+.manual-toc {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* Zone de contenu avec meilleur espacement */
+.manual-content {
+  line-height: 1.8;
+}
+
+.manual-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #1a202c;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.manual-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #2d3748;
+}
+
+.manual-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #2d3748;
+}
+
+.manual-content p {
+  margin-bottom: 1rem;
+  color: #4a5568;
+}
+
+.manual-content ul,
+.manual-content ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.manual-content li {
+  margin-bottom: 0.5rem;
+  color: #4a5568;
+}
+
+.manual-content strong {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.manual-content code {
+  background-color: #f7fafc;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #e53e3e;
+  border: 1px solid #e2e8f0;
+}
+
+.manual-content pre {
+  background-color: #2d3748;
+  color: #f7fafc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.manual-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Breadcrumb amélioré */
+.manual-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #718096;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.manual-breadcrumb span {
+  color: #2d3748;
+}
+
+.manual-breadcrumb span:last-child {
+  color: #3182ce;
+  font-weight: 500;
+}

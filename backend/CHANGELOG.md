@@ -1,0 +1,375 @@
+# GMAO Iris - Notes de Version
+
+## Version 1.6.0 - MISE A JOUR MAJEURE IA & QHSE (Fevrier 2026)
+
+### Intelligence Artificielle - Checklists & Maintenance
+
+#### Generation IA de Checklists
+- Upload d'un document technique (PDF, image, texte), l'IA genere automatiquement un template de checklist complet
+- Les items generes incluent les points de controle, criteres d'acceptation et niveaux de criticite
+- Acces depuis le module "Gestion des Checklists" via le bouton "Generer avec IA"
+
+#### Generation IA de Programmes de Maintenance
+- Upload d'une documentation constructeur, l'IA genere un plan de maintenance preventive detaille
+- Inclut periodicite, taches, competences requises et pieces necessaires
+- Acces depuis le module "Maintenance Preventive"
+
+#### Analyse IA des Non-Conformites
+- Analyse automatique de l'historique des executions de checklists
+- Detection des patterns recurrents de non-conformites, tendances negatives, equipements a risque
+- Suggestions d'actions correctives avec ordres de travail curatifs creables en 1 clic
+- Envoi automatique d'alertes email aux responsables de service concerne en cas de patterns critiques
+
+### Intelligence Artificielle - Presqu'accidents
+
+#### Analyse IA des Causes Racines
+- Methode 5 Pourquoi automatisee : l'IA genere les 5 niveaux de questionnement et identifie la cause racine
+- Diagramme Ishikawa (6M) : analyse structuree par Milieu, Materiel, Methode, Main d'oeuvre, Matiere, Management
+- Proposition d'actions preventives classees par priorite (HAUTE/MOYENNE/BASSE) avec delais recommandes
+- Evaluation automatique severite/recurrence applicable en 1 clic au formulaire de traitement
+- Prise en compte de l'historique des incidents pour identifier les recurrences
+- Acces via le bouton "Analyser avec IA" dans le dialogue de traitement
+
+#### Detection Automatique d'Incidents Similaires
+- Lors de la saisie d'un nouveau presqu'accident, l'IA recherche automatiquement les incidents similaires
+- Declenchement automatique apres 2 secondes de saisie (minimum 15 caracteres de description)
+- Affichage du score de similarite, de la raison de la similarite et des lecons a retenir
+- Recommandations basees sur les actions deja entreprises pour les incidents precedents
+
+#### Analyse IA des Tendances Globales
+- Analyse de l'ensemble des presqu'accidents pour identifier les tendances
+- Detection des patterns recurrents classes par severite (CRITIQUE/IMPORTANT/MODERE)
+- Identification des zones a risque avec niveau de risque et nombre d'incidents
+- Predictions de risques futurs avec probabilite et actions preventives suggerees
+- Analyse des facteurs contributifs (humain, materiel, organisationnel, environnemental)
+- Recommandations prioritaires avec impact attendu et service concerne
+- Envoi automatique d'alertes email aux responsables de service concerne
+- Acces depuis le module "Rapport Presqu'accidents" via le bouton "Analyse IA"
+
+#### Rapport de Synthese QHSE
+- Generation automatique d'un rapport de synthese structure pour reunion QHSE
+- Resume executif, indicateurs cles (total, taux traitement, en retard, tendance)
+- Analyse par service et par categorie d'incident
+- Top risques classes par gravite
+- Plan d'action propose avec priorites, responsables, echeances et resultats attendus
+- Conclusion et points de vigilance
+- Option d'impression directe du rapport
+- Acces depuis le module "Rapport Presqu'accidents" via le bouton "Rapport QHSE"
+
+### Formulaire Presqu'accidents Enrichi
+
+#### 7 Nouvelles Rubriques
+- **Categorie d'incident** : Chute personne, Chute objet, Brulure, Coincement, Coupure, Collision, Exposition chimique, Electrique, Ergonomique, Projection, Incendie/Explosion, Autre
+- **Equipement lie** : Association directe avec un equipement de la base GMAO
+- **Mesures immediates prises** : Actions realisees sur le moment pour securiser la zone
+- **Type de lesion potentielle** : Fracture, Brulure, Coupure, Contusion, Entorse, Intoxication, etc.
+- **Temoins** : Personnes ayant assiste a l'incident (distinct des personnes impliquees)
+- **Conditions au moment de l'incident** : Poste, meteo, fatigue, charge de travail, etc.
+- **Facteurs contributifs** : Selection multiple parmi Humain, Materiel, Organisationnel, Environnemental
+
+#### Reorganisation du Formulaire
+- 7 sections claires avec fieldset : Identification, Description, Personnes, Evaluation, Equipement, Actions, Pieces jointes
+- Placeholders explicatifs dans chaque champ pour guider la saisie
+- Boutons toggle pour les facteurs contributifs (selection/deselection intuitive)
+- Descriptions contextuelles pour les niveaux de gravite
+
+### Alertes Email Automatiques
+- Systeme d'alerte automatique connecte aux analyses IA
+- Envoi d'email HTML formate au responsable du service concerne
+- Notification in-app simultanee dans le systeme d'alertes
+- Template email professionnel avec statistiques, patterns critiques et lien vers l'application
+- Fallback : notification a tous les responsables si le service ne peut etre determine
+
+### Corrections et Ameliorations
+- Correction critique du systeme RBAC (permissions par module) pour les utilisateurs non-admin
+- Migration automatique des permissions au demarrage pour corriger les donnees existantes
+- Plan de surveillance : onglets par annee avec generation automatique des controles recurrents
+
+### Visite Guidee Personnalisee par Profil
+- La visite guidee est desormais adaptee au service de l'utilisateur connecte
+- 6 profils disponibles : Maintenance, Production, QHSE, Logistique/ADV, Direction, Generique (fallback)
+- Etapes communes conservees pour tous (menu, dashboard, notifications, chat, assistant IA)
+- Etapes specifiques au metier avec textes adaptes (ex: "Consultez les OT qui vous sont assignes" pour Maintenance, "Suivez les indicateurs securite" pour Direction)
+- Admin sans service defini recoit la visite Direction
+- Utilisateur sans service defini recoit la visite Generique
+- La visite peut etre relancee depuis les parametres
+
+---
+
+## Version 1.2.0 - MISE A JOUR MAJEURE (Octobre 2024)
+
+### ✨ Nouvelles Fonctionnalités
+
+#### Statistiques Historique Achat
+- **Statistiques par utilisateur (créateur de commandes)**
+  - Affichage du nombre de commandes passées par utilisateur (sans doublons)
+  - Montant total dépensé par membre
+  - Pourcentage du budget total avec barres de progression
+  - Basé sur la colonne L (Creation User) du fichier Requêteur
+
+- **Évolution mensuelle des achats**
+  - Statistiques détaillées par mois
+  - Nombre de commandes et montant par période
+  - Graphiques avec barres de progression
+  - Affichage des 12 derniers mois
+
+#### Système de Notifications
+- **Rafraîchissement automatique des notifications**
+  - Mise à jour toutes les 30 secondes sans F5
+  - Compteur dynamique d'ordres de travail assignés
+  - Badge rouge avec nombre sur la cloche de notification
+
+### 🔧 Corrections Critiques
+
+#### Authentification Externe
+- **FIX : Connexion externe maintenant fonctionnelle**
+  - Correction variable JWT (SECRET_KEY vs JWT_SECRET_KEY) dans auth.py
+  - Ajout SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES dans .env
+  - Résolution du problème "Utilisateur ou mot de passe incorrect" en externe
+  - Fonctionne maintenant sur tous les réseaux (local et externe)
+
+#### Envoi d'Emails
+- **FIX : Configuration SMTP Gmail fonctionnelle**
+  - Support SMTP externe avec authentification (Gmail, SendGrid, etc.)
+  - Configuration automatique via .env
+  - Logs détaillés pour diagnostic
+  - Chargement dynamique des variables d'environnement
+  - Invitations membres opérationnelles
+
+#### Système de Mise à Jour
+- **Amélioration de la détection de versions**
+  - Détection du commit local via git
+  - Comparaison avec le commit distant GitHub
+  - Affichage "Mise à jour disponible" seulement si différent
+
+### 🐛 Corrections de Bugs
+
+- Fix compteurs équipements (affichait 1 au lieu de 0)
+- Fix masquage compte de secours (buenogy@gmail.com) sauf pour admin
+- Fix colonne "Année de Fabrication" dans équipements (remplace "Garantie")
+- Fix rafraîchissement notifications (plus besoin de F5)
+- Fix détection ordres de travail assignés
+
+---
+
+## Version 1.1.0 (Octobre 2024)
+
+### Fonctionnalités
+- Section "Historique Achat" complète
+- Import/Export CSV/Excel
+- Affichage groupé par commande
+- Système de mise à jour intégré
+- Logo personnalisé
+- Droits utilisateurs avec propriété
+
+---
+
+### 🔴 CORRECTION CRITIQUE - BUG LOGIN PROXMOX
+
+**Problème Identifié:**
+Le script Proxmox (`gmao-iris-proxmox.sh`) contenait une **erreur critique** qui empêchait la connexion sur les installations Proxmox :
+- Ligne 344: `db = client.gmao_iris` (nom de base de données EN DUR)
+- L'application utilisait `db = client[os.environ.get('DB_NAME')]`
+- **Résultat:** Les utilisateurs étaient créés dans une base mais l'application les cherchait dans une autre
+
+### ✅ Solutions Appliquées
+
+#### 1. **Script Proxmox Corrigé** (`gmao-iris-proxmox.sh`)
+- ✅ Remplacement de `db = client.gmao_iris` par `db = client[db_name]`
+- ✅ Ajout du chargement des variables d'environnement
+- ✅ Export explicite de `MONGO_URL` et `DB_NAME` lors de l'exécution
+- ✅ Utilisation cohérente de la configuration
+
+#### 2. **Scripts de Réparation Créés**
+- ✅ `fix-proxmox-login.sh` : Diagnostic complet et correction
+- ✅ `quick-create-admin.sh` : Création rapide d'admin
+
+#### 3. **Utilisation des Scripts de Réparation**
+
+**Sur votre serveur Proxmox, depuis le HOST:**
+```bash
+# Entrer dans le container
+pct enter <CTID>
+
+# Télécharger et exécuter le script de correction
+wget https://raw.githubusercontent.com/votreuser/gmao-iris/main/fix-proxmox-login.sh
+chmod +x fix-proxmox-login.sh
+./fix-proxmox-login.sh
+```
+
+**OU version rapide:**
+```bash
+pct enter <CTID>
+wget https://raw.githubusercontent.com/votreuser/gmao-iris/main/quick-create-admin.sh
+chmod +x quick-create-admin.sh
+./quick-create-admin.sh
+```
+
+### 🔍 Diagnostic
+Le script de correction effectue:
+1. Vérification de la configuration (.env)
+2. Vérification de MongoDB et des bases de données
+3. Comptage des utilisateurs existants
+4. Création/réinitialisation du compte admin
+5. Redémarrage du backend
+
+---
+
+## Version 1.0.0 - Corrections Critiques Login & Proxmox (Octobre 2025)
+
+### 🔧 Corrections Critiques
+
+#### 1. **Correction de la Création d'Utilisateurs**
+- **Problème:** Les utilisateurs créés via le script Proxmox n'avaient pas tous les champs requis
+- **Solution:** 
+  - Ajout du champ `id` (UUID) obligatoire
+  - Ajout du champ `statut` avec valeur "actif" (remplace `actif: True`)
+  - Ajout du champ `service` (nullable)
+  - Correction de `derniereConnexion` pour utiliser datetime au lieu de None
+  
+#### 2. **Configuration MongoDB**
+- **Problème:** MONGO_URL contenait le nom de la base de données
+- **Solution:**
+  - Séparation de `MONGO_URL` et `DB_NAME` dans `.env`
+  - `MONGO_URL=mongodb://localhost:27017`
+  - `DB_NAME=gmao_iris`
+
+#### 3. **Script Proxmox (`gmao-iris-proxmox.sh`)**
+- Correction de la création d'utilisateurs avec tous les champs requis
+- Ajout de la gestion des IDs avec UUID
+- Correction du format des permissions
+- Meilleure gestion des utilisateurs existants (mise à jour vs création)
+- Création automatique d'un compte de secours:
+  - Email: `buenogy@gmail.com`
+  - Mot de passe: `Admin2024!`
+
+#### 4. **Fichiers Backend**
+- `server.py`: Ajout de logs de débogage pour le login (temporaires)
+- `models.py`: Vérification des modèles Pydantic
+- `.env.example`: Création d'un template pour la configuration
+
+#### 5. **Fichiers Frontend**
+- `.env.example`: Création d'un template pour la configuration
+- `Login.jsx`: Interface mise à jour avec branding "GMAO Iris"
+
+### 📝 Nouveaux Scripts
+
+#### `create_admin.py` (Racine du projet)
+Script interactif pour créer des administrateurs manuellement:
+```bash
+python3 create_admin.py
+```
+
+Fonctionnalités:
+- Création interactive d'administrateurs
+- Validation des emails et mots de passe
+- Gestion des utilisateurs existants (mise à jour)
+- Compatible avec la structure MongoDB complète
+
+### 📚 Documentation
+
+#### `INSTALLATION_PROXMOX_COMPLET.md`
+Guide complet d'installation incluant:
+- Installation automatique via script
+- Installation manuelle étape par étape
+- Configuration SSL avec Let's Encrypt
+- Gestion et maintenance du container
+- Dépannage et résolution de problèmes
+- Procédures de sauvegarde
+
+### ✅ Tests Validés
+
+1. **Création d'utilisateurs:** ✅
+   - Via script Proxmox
+   - Via `create_admin.py`
+   - Via l'interface web
+
+2. **Login:** ✅
+   - Authentification backend
+   - Authentification frontend
+   - Stockage du token
+   - Navigation après login
+
+3. **MongoDB:** ✅
+   - Connexion correcte
+   - Base de données `gmao_iris`
+   - Structure des documents utilisateurs
+
+### 🔐 Sécurité
+
+**Important:** Après l'installation Proxmox:
+1. Changez le mot de passe du compte de secours `buenogy@gmail.com`
+2. Ou supprimez ce compte si non nécessaire
+3. Générez une nouvelle `SECRET_KEY` en production:
+   ```bash
+   openssl rand -hex 32
+   ```
+
+### 🚀 Déploiement
+
+#### Proxmox
+```bash
+wget -qO - https://raw.githubusercontent.com/votreuser/gmao-iris/main/gmao-iris-proxmox.sh | bash
+```
+
+#### Docker (À venir)
+Documentation Docker à compléter dans une prochaine version.
+
+### 📋 Structure de la Base de Données
+
+#### Collection `users`
+```javascript
+{
+  "_id": ObjectId("..."),
+  "id": "uuid-string",           // UUID v4
+  "email": "user@example.com",
+  "password": "bcrypt-hash",
+  "prenom": "John",
+  "nom": "Doe",
+  "role": "ADMIN|TECHNICIEN|VISUALISEUR",
+  "telephone": "+33612345678",
+  "service": "IT",               // Nullable
+  "statut": "actif|inactif",
+  "dateCreation": ISODate("..."),
+  "derniereConnexion": ISODate("..."),
+  "permissions": {
+    "dashboard": {"view": true, "edit": true, "delete": true},
+    "workOrders": {"view": true, "edit": true, "delete": true},
+    "assets": {"view": true, "edit": true, "delete": true},
+    "preventiveMaintenance": {"view": true, "edit": true, "delete": true},
+    "inventory": {"view": true, "edit": true, "delete": true},
+    "locations": {"view": true, "edit": true, "delete": true},
+    "vendors": {"view": true, "edit": true, "delete": true},
+    "reports": {"view": true, "edit": true, "delete": true}
+  }
+}
+```
+
+### 🐛 Bugs Connus
+
+Aucun bug critique connu à ce jour.
+
+### 📞 Support
+
+Pour toute question:
+1. Consultez `INSTALLATION_PROXMOX_COMPLET.md`
+2. Vérifiez les logs: `/var/log/gmao-iris-backend.*.log`
+3. Ouvrez une issue sur GitHub
+
+---
+
+## Versions Précédentes
+
+### Version 0.9
+- Interface utilisateur complète
+- Gestion des ordres de travail
+- Gestion des équipements
+- Maintenance préventive
+- Gestion d'inventaire
+- Rapports et analytics
+
+---
+
+**Développé par:** Grèg  
+**License:** Propriétaire  
+**Contact:** support@gmao-iris.local

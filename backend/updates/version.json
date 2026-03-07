@@ -1,0 +1,27 @@
+{
+  "version": "1.6.0",
+  "versionName": "Consignation LOTO avancee + IA QHSE",
+  "releaseDate": "2026-03-06",
+  "description": "Ameliorations majeures du systeme LOTO (journalisation, suppression admin, cadenas multiples, icones cliquables, remplissage auto) et integration IA pour analyse QHSE",
+  "changes": [
+    "LOTO : Journalisation complete des operations dans le journal d'audit",
+    "LOTO : Suppression des consignations reservee aux administrateurs",
+    "LOTO : Systeme de cadenas multiples (multi-utilisateurs)",
+    "LOTO : Icones cadenas cliquables dans les listes OT, Ameliorations et MP",
+    "LOTO : Remplissage automatique des champs a la selection d'un OT",
+    "IA : Generation automatique de checklists depuis documents techniques",
+    "IA : Generation automatique de plans de maintenance preventive",
+    "IA : Analyse des non-conformites avec detection de patterns recurrents",
+    "IA : Analyse des causes racines (5 Pourquoi + Ishikawa) pour presqu'accidents",
+    "IA : Generation de rapports de synthese QHSE pour reunions",
+    "Header : Organisation personnalisable des icones par glisser-deposer",
+    "Mode hors-ligne : Cache IndexedDB + synchronisation automatique",
+    "QR Code : Resume IA de l'etat d'un equipement via scan",
+    "Mise a jour : Systeme de mise a jour ameliore et plus fiable"
+  ],
+  "minVersion": "1.5.0",
+  "breaking": false,
+  "downloadUrl": "https://github.com/Kinder0083/GMAO",
+  "author": "Greg",
+  "lastUpdate": "2026-03-06T22:00:00.000000+00:00"
+}

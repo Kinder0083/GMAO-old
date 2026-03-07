@@ -1,0 +1,262 @@
+/* Styles pour la densité d'affichage */
+
+/* Compact - Espacement réduit */
+html[data-density="compact"] {
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --card-padding: 0.75rem;
+  --button-padding-y: 0.375rem;
+  --button-padding-x: 0.75rem;
+  --input-padding-y: 0.375rem;
+  --input-padding-x: 0.75rem;
+  --line-height: 1.3;
+}
+
+html[data-density="compact"] .p-4 {
+  padding: 0.75rem !important;
+}
+
+html[data-density="compact"] .p-6 {
+  padding: 1rem !important;
+}
+
+html[data-density="compact"] .py-3 {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+html[data-density="compact"] .px-4 {
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+html[data-density="compact"] .gap-2 {
+  gap: 0.375rem !important;
+}
+
+html[data-density="compact"] .gap-3 {
+  gap: 0.5rem !important;
+}
+
+html[data-density="compact"] .gap-4 {
+  gap: 0.75rem !important;
+}
+
+html[data-density="compact"] .space-y-2 > * + * {
+  margin-top: 0.375rem !important;
+}
+
+html[data-density="compact"] .space-y-4 > * + * {
+  margin-top: 0.75rem !important;
+}
+
+html[data-density="compact"] .space-y-6 > * + * {
+  margin-top: 1rem !important;
+}
+
+/* Normal - Espacement standard (par défaut) */
+html[data-density="normal"] {
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --card-padding: 1rem;
+  --button-padding-y: 0.5rem;
+  --button-padding-x: 1rem;
+  --input-padding-y: 0.5rem;
+  --input-padding-x: 1rem;
+  --line-height: 1.5;
+}
+
+/* Spacieux - Espacement large */
+html[data-density="spacious"] {
+  --spacing-xs: 0.75rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  --card-padding: 1.5rem;
+  --button-padding-y: 0.75rem;
+  --button-padding-x: 1.5rem;
+  --input-padding-y: 0.75rem;
+  --input-padding-x: 1.5rem;
+  --line-height: 1.7;
+}
+
+html[data-density="spacious"] .p-4 {
+  padding: 1.5rem !important;
+}
+
+html[data-density="spacious"] .p-6 {
+  padding: 2rem !important;
+}
+
+html[data-density="spacious"] .py-3 {
+  padding-top: 0.875rem !important;
+  padding-bottom: 0.875rem !important;
+}
+
+html[data-density="spacious"] .px-4 {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+html[data-density="spacious"] .gap-2 {
+  gap: 0.75rem !important;
+}
+
+html[data-density="spacious"] .gap-3 {
+  gap: 1rem !important;
+}
+
+html[data-density="spacious"] .gap-4 {
+  gap: 1.5rem !important;
+}
+
+html[data-density="spacious"] .space-y-2 > * + * {
+  margin-top: 0.75rem !important;
+}
+
+html[data-density="spacious"] .space-y-4 > * + * {
+  margin-top: 1.5rem !important;
+}
+
+html[data-density="spacious"] .space-y-6 > * + * {
+  margin-top: 2rem !important;
+}
+
+/* Styles pour la taille de police */
+
+/* Petit - Police réduite */
+html[data-font-size="small"] {
+  --font-size-xs: 0.625rem;
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.875rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.125rem;
+  --font-size-2xl: 1.25rem;
+  --font-size-3xl: 1.5rem;
+}
+
+html[data-font-size="small"] body {
+  font-size: 0.875rem !important;
+}
+
+html[data-font-size="small"] .text-xs {
+  font-size: 0.625rem !important;
+}
+
+html[data-font-size="small"] .text-sm {
+  font-size: 0.75rem !important;
+}
+
+html[data-font-size="small"] .text-base {
+  font-size: 0.875rem !important;
+}
+
+html[data-font-size="small"] .text-lg {
+  font-size: 1rem !important;
+}
+
+html[data-font-size="small"] .text-xl {
+  font-size: 1.125rem !important;
+}
+
+html[data-font-size="small"] .text-2xl {
+  font-size: 1.25rem !important;
+}
+
+html[data-font-size="small"] .text-3xl {
+  font-size: 1.5rem !important;
+}
+
+html[data-font-size="small"] h1 {
+  font-size: 1.75rem !important;
+}
+
+html[data-font-size="small"] h2 {
+  font-size: 1.5rem !important;
+}
+
+html[data-font-size="small"] h3 {
+  font-size: 1.25rem !important;
+}
+
+/* Normal - Police standard (par défaut) */
+html[data-font-size="normal"] {
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+}
+
+html[data-font-size="normal"] body {
+  font-size: 1rem !important;
+}
+
+/* Grand - Police agrandie */
+html[data-font-size="large"] {
+  --font-size-xs: 0.875rem;
+  --font-size-sm: 1rem;
+  --font-size-base: 1.125rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 1.875rem;
+  --font-size-3xl: 2.25rem;
+}
+
+html[data-font-size="large"] body {
+  font-size: 1.125rem !important;
+}
+
+html[data-font-size="large"] .text-xs {
+  font-size: 0.875rem !important;
+}
+
+html[data-font-size="large"] .text-sm {
+  font-size: 1rem !important;
+}
+
+html[data-font-size="large"] .text-base {
+  font-size: 1.125rem !important;
+}
+
+html[data-font-size="large"] .text-lg {
+  font-size: 1.25rem !important;
+}
+
+html[data-font-size="large"] .text-xl {
+  font-size: 1.5rem !important;
+}
+
+html[data-font-size="large"] .text-2xl {
+  font-size: 1.875rem !important;
+}
+
+html[data-font-size="large"] .text-3xl {
+  font-size: 2.25rem !important;
+}
+
+html[data-font-size="large"] h1 {
+  font-size: 2.5rem !important;
+}
+
+html[data-font-size="large"] h2 {
+  font-size: 2rem !important;
+}
+
+html[data-font-size="large"] h3 {
+  font-size: 1.75rem !important;
+}
+
+/* Appliquer les variables à tous les éléments concernés */
+* {
+  transition: font-size 0.2s ease, padding 0.2s ease, margin 0.2s ease, gap 0.2s ease;
+}
