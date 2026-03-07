@@ -698,7 +698,7 @@ class UpdateService:
                     "version_after": version,
                     "history_id": update_id,
                     "started_at": datetime.now(timezone.utc).isoformat(),
-                    "log_path": "/var/log/gmao-iris-update.log",
+                    "log_path": persistent_log,
                     "errors": [],
                     "warnings": [],
                     "completed_at": None
@@ -739,17 +739,20 @@ class UpdateService:
         # LOGS dans /var/log/ car git reset --hard ECRASE tout dans APP_ROOT
         # ============================================================
         # Chemins HORS du dépôt git (ne sont pas écrasés par git reset)
-        persistent_log = "/var/log/gmao-iris-update.log"
-        persistent_result = "/var/log/gmao-iris-update-result.json"
+        # IMPORTANT: /var/log peut etre inaccessible, /tmp est efface au reboot
+        # Solution: creer un repertoire dedie HORS du depot git
+        log_dir = str(self.app_root.parent / "gmao-iris-logs")
+        persistent_log = f"{log_dir}/update.log"
+        persistent_result = f"{log_dir}/update-result.json"
         
         script_content = f"""#!/bin/bash
 #
-# FSAO Iris - Script de mise à jour autonome
+# FSAO Iris - Script de mise à jour autonome v4.1
 # {self.current_version} -> {version}
 # ID: {update_id}
 #
 # REPRODUIT EXACTEMENT les commandes SSH manuelles de l'administrateur
-# LOGS dans /var/log/ (hors du depot git, survivent au git reset ET au reboot)
+# LOGS dans un repertoire dedie HORS du depot git
 #
 
 set -o pipefail
@@ -763,15 +766,19 @@ GITHUB_BRANCH="{self.github_branch}"
 VENV_ACTIVATE="{venv_activate}"
 MONGO_URL="{mongo_url}"
 
-# Fichiers de log HORS du depot git (survivent au git reset + reboot)
-PERSISTENT_LOG="{persistent_log}"
-PERSISTENT_RESULT="{persistent_result}"
+# Repertoire de logs DEDIE - hors du depot git, survit au reboot
+LOG_DIR="{log_dir}"
+mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="/var/log"
+mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="/tmp"
+
+PERSISTENT_LOG="$LOG_DIR/update.log"
+PERSISTENT_RESULT="$LOG_DIR/update-result.json"
 
 # Fichiers temporaires
 TMP_LOG="{log_path}"
 TMP_RESULT="{result_file}"
 
-# S'assurer que /var/log est accessible en ecriture
+# S'assurer qu'on peut ecrire
 touch "$PERSISTENT_LOG" 2>/dev/null || PERSISTENT_LOG="/tmp/gmao-iris-update.log"
 touch "$PERSISTENT_RESULT" 2>/dev/null || PERSISTENT_RESULT="/tmp/gmao-iris-update-result.json"
 
@@ -943,6 +950,8 @@ fi
 END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Ecriture du resultat en JSON pur bash
+# IMPORTANT: inclure le contenu du log dans le resultat pour qu'il survive au reboot
+LOG_CONTENT=$(tail -200 "$PERSISTENT_LOG" 2>/dev/null | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n')
 cat > "$PERSISTENT_RESULT" << EOFRESULT
 {{
   "update_id": "{update_id}",
@@ -954,12 +963,15 @@ cat > "$PERSISTENT_RESULT" << EOFRESULT
   "started_at": "$START_TIME",
   "completed_at": "$END_TIME",
   "errors_count": $ERRORS,
-  "log_path": "$PERSISTENT_LOG"
+  "log_path": "$PERSISTENT_LOG",
+  "log_content": "$LOG_CONTENT"
 }}
 EOFRESULT
 
-# Copier aussi dans /tmp pour compatibilite
+# Copier le resultat dans TOUS les emplacements possibles pour survivre au reboot
 cp "$PERSISTENT_RESULT" "$TMP_RESULT" 2>/dev/null
+cp "$PERSISTENT_RESULT" "/var/log/gmao-iris-update-result.json" 2>/dev/null
+cp "$PERSISTENT_LOG" "/var/log/gmao-iris-update.log" 2>/dev/null
 
 echo ""
 echo "========================================================"
@@ -1046,14 +1058,19 @@ reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || 
         import glob as glob_mod
         
         result_files = []
-        # 1) Fichier dans /var/log/ (emplacement principal, survit à git reset + reboot)
+        # 1) Fichier dans le repertoire dedie (hors depot, survit au reboot)
+        dedicated_dir = self.app_root.parent / "gmao-iris-logs"
+        dedicated_result = dedicated_dir / "update-result.json"
+        if dedicated_result.exists():
+            result_files.append(str(dedicated_result))
+        # 2) Fichier dans /var/log/ (emplacement principal, survit à git reset + reboot)
         if os.path.exists("/var/log/gmao-iris-update-result.json"):
             result_files.append("/var/log/gmao-iris-update-result.json")
-        # 2) Fichier persistant dans APP_ROOT (ancien emplacement, compat)
+        # 3) Fichier persistant dans APP_ROOT (ancien emplacement, compat)
         persistent_result = self.app_root / "last_update_result.json"
         if persistent_result.exists():
             result_files.append(str(persistent_result))
-        # 3) Fichiers temporaires dans /tmp
+        # 4) Fichiers temporaires dans /tmp
         result_files.extend(glob_mod.glob("/tmp/gmao_update_result_*.json"))
         
         for rf in result_files:
@@ -1066,18 +1083,24 @@ reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || 
                 
                 log_file = rf.replace("_result_", "_update_").replace(".json", ".log")
                 log_content = ""
-                # Chercher le log dans /var/log/ d'abord (principal)
-                for log_candidate in [
-                    "/var/log/gmao-iris-update.log",
-                    log_file
-                ]:
-                    if os.path.exists(log_candidate) and os.path.getsize(log_candidate) > 10:
-                        try:
-                            with open(log_candidate, 'r', errors='replace') as lf:
-                                log_content = lf.read()[-10000:]
-                            break
-                        except Exception:
-                            pass
+                # D'abord essayer le contenu embarque dans le JSON de resultat
+                if result.get("log_content"):
+                    log_content = result["log_content"].replace("\\n", "\n")
+                else:
+                    # Chercher le log dans le repertoire dedie, puis /var/log/, puis le fichier temp
+                    dedicated_log = str(self.app_root.parent / "gmao-iris-logs" / "update.log")
+                    for log_candidate in [
+                        dedicated_log,
+                        "/var/log/gmao-iris-update.log",
+                        log_file
+                    ]:
+                        if os.path.exists(log_candidate) and os.path.getsize(log_candidate) > 10:
+                            try:
+                                with open(log_candidate, 'r', errors='replace') as lf:
+                                    log_content = lf.read()[-10000:]
+                                break
+                            except Exception:
+                                pass
                 
                 history_entry = {
                     "id": update_id,

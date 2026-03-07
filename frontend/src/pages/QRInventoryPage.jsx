@@ -10,7 +10,12 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const fetchPublic = async (url) => {
   const res = await fetch(`${API_URL}/api/qr-inventory/public${url}`);
-  const text = await res.text();
+  let text;
+  try {
+    text = await res.clone().text();
+  } catch {
+    text = await res.text();
+  }
   let data;
   try { data = JSON.parse(text); } catch { throw new Error('Not found'); }
   if (!res.ok) throw new Error(data.detail || 'Not found');
@@ -27,7 +32,12 @@ const fetchAuth = async (url, options = {}) => {
       ...(options.headers || {})
     }
   });
-  const text = await res.text();
+  let text;
+  try {
+    text = await res.clone().text();
+  } catch {
+    text = await res.text();
+  }
   let data;
   try { data = JSON.parse(text); } catch { data = { detail: text || 'Erreur serveur' }; }
   if (!res.ok) throw new Error(data.detail || 'Erreur');

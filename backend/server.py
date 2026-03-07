@@ -9705,6 +9705,13 @@ async def get_update_log(current_user: dict = Depends(get_current_admin_user)):
             "/var/log/gmao-iris-update.log",
             "/tmp/gmao-iris-update.log",
         ]
+        
+        # Ajouter le repertoire dedie hors du depot git
+        app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dedicated_log_dir = os.path.join(os.path.dirname(app_root), "gmao-iris-logs")
+        dedicated_log = os.path.join(dedicated_log_dir, "update.log")
+        if dedicated_log not in log_candidates:
+            log_candidates.insert(0, dedicated_log)
 
         # Chercher dans la DB
         last_result = await db.system_settings.find_one({"key": "last_update_result"}, {"_id": 0})
