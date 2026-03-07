@@ -26,8 +26,11 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// PAS de listener 'fetch' - le SW ne met plus rien en cache
-// NGINX sert directement index.html et les fichiers statiques
+// PAS de cache - le SW redirige tout vers le réseau
+// Ce fetch handler est OBLIGATOIRE pour que Chrome Android permette l'installation PWA
+self.addEventListener('fetch', (event) => {
+  event.respondWith(fetch(event.request));
+});
 
 // Push notifications
 self.addEventListener('push', (event) => {
