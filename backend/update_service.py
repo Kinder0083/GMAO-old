@@ -366,7 +366,9 @@ class UpdateService:
             "venv/", "backend/uploads/", "backend/tests/", 
             "*.pyc", "__pycache__/", "node_modules/",
             "frontend/build/", ".env", "*.log",
-            "backups/", "post-update.sh", "update.sh"
+            "backups/", "post-update.sh", "update.sh",
+            "health_state.json", "health_recovery_history.json",
+            "health_alert_history.json", "maintenance.flag"
         ]
         
         existing_patterns = set()
@@ -435,7 +437,11 @@ class UpdateService:
             # Parser la sortie
             modified_files = []
             # Fichiers à ignorer dans la détection de conflits
-            ignored_files = {'.gitignore', 'frontend/yarn.lock', 'package-lock.json', 'yarn.lock'}
+            ignored_files = {
+                '.gitignore', 'frontend/yarn.lock', 'package-lock.json', 'yarn.lock',
+                'health_state.json', 'health_recovery_history.json', 'health_alert_history.json',
+                'maintenance.flag', 'maintenance.html'
+            }
             for line in result.stdout.strip().split('\n'):
                 if line.strip():
                     status = line[:2].strip()
@@ -787,11 +793,11 @@ class UpdateService:
                         if not success:
                             git_available = False
                     
-                    # git fetch origin main --depth=1 (télécharge uniquement le dernier commit)
+                    # git fetch origin main (télécharge le code complet)
                     if git_available:
                         success, stdout, stderr = await self._run_command(
-                            update_history, "3/6 - git fetch origin main --depth=1",
-                            ["git", "fetch", "--depth=1", "origin", self.github_branch],
+                            update_history, "3/6 - git fetch origin main",
+                            ["git", "fetch", "origin", self.github_branch],
                             cwd=str(git_dir), env=git_env, timeout=300
                         )
                         if not success:
@@ -809,6 +815,17 @@ class UpdateService:
                             git_available = False
                             update_history["errors"].append(f"CRITIQUE: Git reset échoué - le code n'a PAS été mis à jour. Détail: {stderr[:300]}")
                         else:
+                            # Logger les fichiers réellement modifiés par la mise à jour
+                            diff_success, diff_stdout, _ = await self._run_command(
+                                update_history, "3/6 - Fichiers modifiés par la MAJ",
+                                ["git", "diff", "--stat", "HEAD~1..HEAD"],
+                                cwd=str(git_dir), env=git_env, timeout=10
+                            )
+                            if diff_success and diff_stdout.strip():
+                                files_changed = [line.strip().split('|')[0].strip() for line in diff_stdout.strip().split('\n') if '|' in line]
+                                update_history["files_modified"] = files_changed
+                                update_history["total_files_changed"] = len(files_changed)
+                            
                             self._log_step(update_history, "3/6 - Code synchronisé",
                                           f"Le code est maintenant à jour avec origin/{self.github_branch}",
                                           status="success")
@@ -846,29 +863,36 @@ class UpdateService:
             # Backend dependencies
             backend_req = self.backend_dir / "requirements.txt"
             if backend_req.exists():
-                # Chercher le venv Python
-                venv_pip_backend = self.backend_dir / "venv" / "bin" / "pip"
-                venv_pip_root = self.app_root / "venv" / "bin" / "pip"
-                if venv_pip_backend.exists():
-                    venv_pip = str(venv_pip_backend)
-                elif venv_pip_root.exists():
-                    venv_pip = str(venv_pip_root)
+                # Utiliser source venv/bin/activate && pip install (comme en SSH)
+                venv_activate_backend = self.backend_dir / "venv" / "bin" / "activate"
+                venv_activate_root = self.app_root / "venv" / "bin" / "activate"
+                
+                if venv_activate_root.exists():
+                    pip_cmd = ["bash", "-c", f"source {venv_activate_root} && pip install -r {backend_req}"]
+                elif venv_activate_backend.exists():
+                    pip_cmd = ["bash", "-c", f"source {venv_activate_backend} && pip install -r {backend_req}"]
                 else:
-                    venv_pip = "pip3"
+                    pip_cmd = ["pip3", "install", "-r", str(backend_req)]
                 
                 success, stdout, stderr = await self._run_command(
                     update_history, "4/6 - pip install (dépendances backend)",
-                    [venv_pip, "install", "-r", str(backend_req)],
+                    pip_cmd,
                     timeout=300
                 )
                 if not success:
                     update_history["warnings"].append(f"pip install échoué: {stderr[:200]}")
                 
                 # Installer emergentintegrations séparément (index privé)
+                if venv_activate_root.exists():
+                    ei_cmd = ["bash", "-c", f"source {venv_activate_root} && pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/"]
+                elif venv_activate_backend.exists():
+                    ei_cmd = ["bash", "-c", f"source {venv_activate_backend} && pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/"]
+                else:
+                    ei_cmd = ["pip3", "install", "emergentintegrations", "--extra-index-url", "https://d33sy5i8bnduwe.cloudfront.net/simple/"]
+                
                 await self._run_command(
                     update_history, "4/6 - pip install emergentintegrations",
-                    [venv_pip, "install", "emergentintegrations",
-                     "--extra-index-url", "https://d33sy5i8bnduwe.cloudfront.net/simple/"],
+                    ei_cmd,
                     timeout=120
                 )
             
@@ -1078,13 +1102,14 @@ class UpdateService:
                         import json as json_mod
                         with open(version_file, 'r') as f:
                             version_data = json_mod.load(f)
-                        version_data["version"] = version
+                        # Lire la version depuis le version.json qui vient de GitHub (git reset --hard)
+                        github_version = version_data.get("version", version)
                         version_data["lastUpdate"] = datetime.now(timezone.utc).isoformat()
                         with open(version_file, 'w') as f:
                             json_mod.dump(version_data, f, indent=2, ensure_ascii=False)
-                        self.current_version = version
-                        self._log_step(update_history, "5/6 - Mise à jour version.json",
-                                      f"version.json → {version}", status="success")
+                        self.current_version = github_version
+                        self._log_step(update_history, "5/6 - version.json lu depuis GitHub",
+                                      f"version.json → {github_version}", status="success")
                 except Exception as e:
                     self._log_step(update_history, "5/6 - Mise à jour version.json",
                                   f"Écriture version.json", stderr=str(e), status="warning")

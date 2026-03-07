@@ -59,42 +59,57 @@ class UpdateManager:
         return None
     
     async def check_github_version(self) -> Optional[Dict]:
-        """Vérifie la dernière version disponible sur GitHub (dernier commit)"""
+        """Vérifie la dernière version disponible sur GitHub (dernier commit + version.json)"""
         try:
-            # Récupérer le dernier commit de la branche
-            url = f"https://api.github.com/repos/{self.github_user}/{self.github_repo}/commits/{self.github_branch}"
-            
             async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
+                # 1. Récupérer le dernier commit de la branche
+                commit_url = f"https://api.github.com/repos/{self.github_user}/{self.github_repo}/commits/{self.github_branch}"
+                commit_data = None
+                async with session.get(commit_url) as response:
                     if response.status == 200:
                         commit_data = await response.json()
-                        remote_commit = commit_data["sha"][:7]
-                        commit_date = commit_data["commit"]["author"]["date"]
-                        commit_message = commit_data["commit"]["message"].split('\n')[0]
-                        
-                        # Récupérer le commit local actuel
-                        local_commit = await self.get_current_commit()
-                        
-                        # Vérifier si une mise à jour est disponible
-                        if local_commit:
-                            update_available = local_commit != remote_commit
-                        else:
-                            # .git absent ou corrompu : comparer via version.json
-                            self._load_version()
-                            remote_version_str = f"latest-{remote_commit}"
-                            update_available = self.current_version != remote_version_str
-                        
-                        return {
-                            "version": f"latest-{remote_commit}",
-                            "commit": remote_commit,
-                            "date": commit_date,
-                            "message": commit_message,
-                            "available": update_available,
-                            "local_commit": local_commit
-                        }
-            
-            return None
-                        
+                
+                if not commit_data:
+                    return None
+                
+                remote_commit = commit_data["sha"][:7]
+                commit_date = commit_data["commit"]["author"]["date"]
+                commit_message = commit_data["commit"]["message"].split('\n')[0]
+                
+                # 2. Récupérer version.json depuis GitHub pour le nom de version lisible
+                version_url = f"https://raw.githubusercontent.com/{self.github_user}/{self.github_repo}/{self.github_branch}/updates/version.json"
+                remote_version_name = f"latest-{remote_commit}"
+                remote_changes = []
+                try:
+                    async with session.get(version_url, timeout=aiohttp.ClientTimeout(total=5)) as vresp:
+                        if vresp.status == 200:
+                            version_data = await vresp.json()
+                            v = version_data.get("version", "")
+                            if v and not v.startswith("latest-"):
+                                remote_version_name = v
+                            remote_changes = version_data.get("changes", [])
+                except Exception:
+                    pass
+                
+                # 3. Vérifier si une mise à jour est disponible (comparaison par commit)
+                local_commit = await self.get_current_commit()
+                if local_commit:
+                    update_available = local_commit != remote_commit
+                else:
+                    # .git absent ou corrompu : comparer via version.json
+                    self._load_version()
+                    update_available = self.current_version != remote_version_name
+                
+                return {
+                    "version": remote_version_name,
+                    "commit": remote_commit,
+                    "date": commit_date,
+                    "message": commit_message,
+                    "available": update_available,
+                    "local_commit": local_commit,
+                    "changes": remote_changes
+                }
+        
         except Exception as e:
             print(f"Erreur vérification version GitHub: {e}")
             return None
