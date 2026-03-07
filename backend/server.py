@@ -9700,15 +9700,11 @@ async def get_update_log(current_user: dict = Depends(get_current_admin_user)):
     """
     import glob as glob_mod
     try:
-        # Liste ordonnée des emplacements à chercher
+        # Liste ordonnée des emplacements à chercher (JAMAIS update_log.txt car il est ecrase par git)
         log_candidates = [
             "/var/log/gmao-iris-update.log",
             "/tmp/gmao-iris-update.log",
         ]
-        
-        # Ajouter le chemin APP_ROOT
-        app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        log_candidates.append(os.path.join(app_root, "update_log.txt"))
 
         # Chercher dans la DB
         last_result = await db.system_settings.find_one({"key": "last_update_result"}, {"_id": 0})

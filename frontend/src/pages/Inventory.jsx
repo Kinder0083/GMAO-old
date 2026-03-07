@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLocationStateFilter } from '../hooks/useLocationStateFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -6,14 +7,16 @@ import { Input } from '../components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
-import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye, Settings, Link2, Unlink, FolderPlus, FolderMinus, QrCode, Download } from 'lucide-react';
+import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye, Settings, Link2, Unlink, FolderPlus, FolderMinus, QrCode, Download, Camera } from 'lucide-react';
 import InventoryFormDialog from '../components/Inventory/InventoryFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
+import QRScannerDialog from '../components/QRScannerDialog';
 import { inventoryAPI, equipmentsAPI } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 
 const Inventory = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAlert, setFilterAlert] = useState(false);
   const [filterEquipment, setFilterEquipment] = useState('');
@@ -23,6 +26,7 @@ const Inventory = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [equipments, setEquipments] = useState([]);
   const [loadingEquipments, setLoadingEquipments] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Services d'inventaire (onglets)
   const [services, setServices] = useState([]);
@@ -318,6 +322,47 @@ const Inventory = () => {
     }
   };
 
+  // Scanner QR: extraire l'ID de l'URL scannée et naviguer
+  const handleQRScan = (decodedText) => {
+    try {
+      // Supporter URLs complètes et chemins relatifs
+      let path = decodedText;
+      try {
+        const url = new URL(decodedText);
+        path = url.pathname;
+      } catch {
+        // decodedText est déjà un chemin ou un ID
+      }
+
+      // /qr-inventory/{itemId}
+      const inventoryMatch = path.match(/\/qr-inventory\/([a-f0-9]+)/i);
+      if (inventoryMatch) {
+        navigate(`/qr-inventory/${inventoryMatch[1]}`);
+        toast({ title: 'QR Code scanné', description: 'Redirection vers la fiche article...' });
+        return;
+      }
+
+      // /qr/{equipmentId}
+      const equipmentMatch = path.match(/\/qr\/([a-f0-9]+)/i);
+      if (equipmentMatch) {
+        navigate(`/qr/${equipmentMatch[1]}`);
+        toast({ title: 'QR Code scanné', description: 'Redirection vers la fiche équipement...' });
+        return;
+      }
+
+      // Si c'est juste un ID hex (24 chars = ObjectId)
+      if (/^[a-f0-9]{24}$/i.test(decodedText.trim())) {
+        navigate(`/qr-inventory/${decodedText.trim()}`);
+        toast({ title: 'QR Code scanné', description: 'Redirection vers la fiche article...' });
+        return;
+      }
+
+      toast({ title: 'QR Code non reconnu', description: 'Ce QR code ne correspond pas à un article ou équipement IRIS.', variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erreur', description: 'Impossible de traiter le QR code', variant: 'destructive' });
+    }
+  };
+
   // Télécharger l'étiquette QR
   const handleDownloadQR = async (item) => {
     try {
@@ -393,6 +438,15 @@ const Inventory = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setScannerOpen(true)}
+            data-testid="scan-qr-btn"
+            className="border-blue-200 text-blue-600 hover:bg-blue-50"
+          >
+            <Camera size={18} className="mr-2" />
+            Scanner QR
+          </Button>
           {isManagerOrAdmin && (
             <Button
               variant="outline"
@@ -871,6 +925,13 @@ const Inventory = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* QR Scanner */}
+      <QRScannerDialog
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={handleQRScan}
+      />
     </div>
   );
 };

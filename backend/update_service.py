@@ -1,6 +1,7 @@
 """
 Service de gestion des mises à jour FSAO Iris
 VERSION CORRIGÉE - Détection automatique des chemins
+UPDATE_SYSTEM_VERSION: v4.0 (format ETAPE x/7, logs /var/log/)
 """
 import os
 import json
@@ -1068,7 +1069,6 @@ reboot 2>/dev/null || sudo reboot 2>/dev/null || shutdown -r now 2>/dev/null || 
                 # Chercher le log dans /var/log/ d'abord (principal)
                 for log_candidate in [
                     "/var/log/gmao-iris-update.log",
-                    str(self.app_root / "update_log.txt"),
                     log_file
                 ]:
                     if os.path.exists(log_candidate) and os.path.getsize(log_candidate) > 10:
