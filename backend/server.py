@@ -442,17 +442,19 @@ async def register(user_create: UserCreate):
 )
 async def get_version():
     """Obtenir la version actuelle de l'application (endpoint public).
-    Retourne automatiquement la dernière version du changelog."""
+    Lit la version depuis updates/version.json (source unique de vérité)."""
     try:
-        latest = await db.releases.find_one(
-            {}, {"_id": 0, "version": 1, "date": 1},
-            sort=[("date", -1)]
-        )
-        if latest:
+        version_file = os.path.join(os.path.dirname(__file__), "updates", "version.json")
+        if not os.path.exists(version_file):
+            version_file = os.path.join(os.path.dirname(__file__), "..", "updates", "version.json")
+        if os.path.exists(version_file):
+            import json as json_mod
+            with open(version_file, 'r') as f:
+                data = json_mod.load(f)
             return {
-                "version": latest.get("version", "1.0.0"),
-                "versionName": "",
-                "releaseDate": latest.get("date", "")
+                "version": data.get("version", "1.0.0"),
+                "versionName": data.get("versionName", ""),
+                "releaseDate": data.get("releaseDate", "")
             }
     except Exception:
         pass
