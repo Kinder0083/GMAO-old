@@ -77,6 +77,7 @@ import FormTemplatesPage from "./pages/FormTemplatesPage";
 import WorkOrderTemplatesPage from "./pages/WorkOrderTemplatesPage";
 import CustomWidgetEditor from "./pages/CustomWidgetEditor";
 import QREquipmentPage from "./pages/QREquipmentPage";
+import QRInventoryPage from "./pages/QRInventoryPage";
 import ServiceDashboard from "./pages/ServiceDashboard";
 import ServiceTeamView from "./pages/ServiceTeamView";
 import WeeklyReportsPage from "./pages/WeeklyReportsPage";
@@ -176,6 +177,7 @@ function App() {
           <Route path="/end-maintenance" element={<EndMaintenance />} />
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/qr/:equipmentId" element={<QREquipmentPage />} />
+          <Route path="/qr-inventory/:itemId" element={<QRInventoryPage />} />
           {/* Route spéciale pour le Tableau d'affichage - plein écran sans menu */}
           <Route 
             path="/whiteboard" 

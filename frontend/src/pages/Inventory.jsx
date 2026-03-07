@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
-import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye, Settings, Link2, Unlink, FolderPlus, FolderMinus } from 'lucide-react';
+import { Plus, Minus, Search, Package, AlertTriangle, AlertCircle, TrendingDown, Pencil, Trash2, X, EyeOff, Eye, Settings, Link2, Unlink, FolderPlus, FolderMinus, QrCode, Download } from 'lucide-react';
 import InventoryFormDialog from '../components/Inventory/InventoryFormDialog';
 import DeleteConfirmDialog from '../components/Common/DeleteConfirmDialog';
 import { inventoryAPI, equipmentsAPI } from '../services/api';
@@ -264,6 +264,29 @@ const Inventory = () => {
       loadServiceItems();
     } catch (error) {
       toast({ title: 'Erreur', description: 'Impossible de retirer le partage', variant: 'destructive' });
+    }
+  };
+
+  // Télécharger l'étiquette QR
+  const handleDownloadQR = async (item) => {
+    try {
+      const { default: api } = await import('../services/api').then(m => ({ default: m.default }));
+      const response = await api.get(`/qr-inventory/item/${item.id}/label`, { responseType: 'blob' });
+      if (response.data.type && response.data.type.includes('application/json')) {
+        toast({ title: 'Erreur', description: 'Erreur serveur', variant: 'destructive' });
+        return;
+      }
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `qr_${item.nom || item.id}.png`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast({ title: 'QR Code téléchargé', description: `Étiquette QR pour "${item.nom}" prête à imprimer` });
+    } catch (err) {
+      toast({ title: 'Erreur', description: 'Impossible de générer le QR code', variant: 'destructive' });
     }
   };
 
@@ -605,6 +628,15 @@ const Inventory = () => {
                         <td className="py-3 px-4">
                           <TooltipProvider delayDuration={300}>
                             <div className="flex gap-1">
+                              {/* QR Code */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadQR(item)} className="hover:bg-blue-50 hover:text-blue-600" data-testid={`qr-btn-${item.id}`}>
+                                    <QrCode size={16} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p className="font-medium">Télécharger le QR code</p></TooltipContent>
+                              </Tooltip>
                               {/* Partager */}
                               {canEditInTab && !shared && (
                                 <Tooltip>

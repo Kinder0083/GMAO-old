@@ -10207,6 +10207,10 @@ api_router.include_router(releases_router)
 from qr_routes import router as qr_router
 api_router.include_router(qr_router)
 
+# QR Codes inventaire
+from qr_inventory_routes import router as qr_inventory_router
+api_router.include_router(qr_inventory_router)
+
 # Purchase Request routes
 from purchase_request_routes import router as purchase_request_router
 api_router.include_router(purchase_request_router)
