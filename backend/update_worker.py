@@ -214,11 +214,14 @@ async def main():
             venv_pip = pip_path
             break
 
+    extra_index = "https://d33sy5i8bnduwe.cloudfront.net/simple/"
     if venv_pip:
-        await run_step("7a/7 pip install", [venv_pip, "install", "-r", "backend/requirements.txt"],
+        await run_step("7a/7 pip install", [venv_pip, "install", "-r", "backend/requirements.txt",
+                       "--extra-index-url", extra_index],
                        timeout=300, critical=False)
     else:
-        await run_step("7a/7 pip install (systeme)", ["pip", "install", "-r", "backend/requirements.txt"],
+        await run_step("7a/7 pip install (systeme)", ["pip", "install", "-r", "backend/requirements.txt",
+                       "--extra-index-url", extra_index],
                        timeout=300, critical=False)
 
     # yarn
