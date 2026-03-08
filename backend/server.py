@@ -10689,6 +10689,7 @@ RESET_COLLECTIONS = {
     "chat_messages": "Messages Chat Live",
     "users": "Utilisateurs",
     "surveillance_items": "Plan de surveillance",
+    "presqu_accident_items": "Presqu'accidents",
 }
 
 @api_router.delete("/admin/reset/{section}",
