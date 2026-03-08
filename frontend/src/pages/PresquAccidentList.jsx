@@ -144,9 +144,19 @@ function PresquAccidentList() {
     for (const item of toImport) {
       try {
         await presquAccidentAPI.createItem({
-          ...item,
-          severite: 'MOYEN',
-          statut: 'A_TRAITER'
+          titre: item.titre,
+          description: item.description,
+          date_incident: item.date_incident,
+          lieu: item.lieu,
+          service: item.service,
+          categorie_incident: item.categorie_incident,
+          declarant: item.declarant,
+          personnes_impliquees: item.personnes_impliquees,
+          mesures_immediates: item.mesures_immediates,
+          actions_proposees: item.actions_proposees,
+          contexte_cause: item.contexte_cause,
+          conditions_incident: item.conditions_incident,
+          severite: item.severite || 'MOYEN',
         });
         created++;
       } catch (e) {
@@ -1688,10 +1698,18 @@ function PresquAccidentList() {
                           {item.date_incident && <span>{item.date_incident}</span>}
                           {item.lieu && <span>Lieu: {item.lieu}</span>}
                           {item.service && <Badge variant="outline" className="text-xs py-0">{item.service}</Badge>}
-                          {item.declarant && <span>Par: {item.declarant}</span>}
+                          {item.personnes_impliquees && <span>Personnes: {item.personnes_impliquees}</span>}
+                          {item.status && item.status !== 'A_TRAITER' && <Badge variant="secondary" className="text-xs py-0">{item.status}</Badge>}
                         </div>
                         {item.description && (
                           <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.description}</p>
+                        )}
+                        {(item.conditions_incident || item.mesures_immediates || item.actions_proposees) && (
+                          <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-x-3">
+                            {item.conditions_incident && <span>Conditions: {item.conditions_incident}</span>}
+                            {item.mesures_immediates && <span>Mesures: {item.mesures_immediates.substring(0, 80)}{item.mesures_immediates.length > 80 ? '...' : ''}</span>}
+                            {item.actions_proposees && <span>Actions: {item.actions_proposees.substring(0, 80)}{item.actions_proposees.length > 80 ? '...' : ''}</span>}
+                          </div>
                         )}
                       </div>
                     </div>

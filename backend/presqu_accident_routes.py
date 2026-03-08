@@ -1027,219 +1027,259 @@ async def ai_extract_presqu_accidents(
         if fname.endswith(('.pdf', '.png', '.jpg', '.jpeg', '.webp')):
             extracted = await _extract_with_gemini(content, fname)
 
-        elif fname.endswith('.xls'):
-            import xlrd
-            wb = xlrd.open_workbook(file_contents=content)
-            sh = wb.sheet_by_index(0)
+        elif fname.endswith('.xls') or fname.endswith('.xlsx'):
+            # --- Fonctions utilitaires partagees ---
+            def _map_headers(headers):
+                """Mapping intelligent des en-tetes Excel vers les champs de l'application."""
+                col_map = {}
+                for i, h in enumerate(headers):
+                    hl = h.lower().replace('\n', ' ').replace('\r', '')
+                    # N° (numero)
+                    if hl.startswith('n°') or hl == 'n' or hl == 'no':
+                        col_map.setdefault('numero', i)
+                    # Service
+                    elif 'service' in hl:
+                        col_map.setdefault('service', i)
+                    # Personnes impliquees
+                    elif 'personnes' in hl or 'impliq' in hl:
+                        col_map.setdefault('personnes_impliquees', i)
+                    # Date presqu'accident (prioritaire sur date incident)
+                    elif 'date' in hl and ('presqu' in hl or 'accident' in hl):
+                        col_map['date_pa'] = i
+                    # Date de l'incident
+                    elif 'date' in hl and 'incident' in hl:
+                        col_map.setdefault('date_incident', i)
+                    # Lieu
+                    elif 'lieu' in hl:
+                        col_map.setdefault('lieu', i)
+                    # Conditions au moment de l'incident / situation dangereuse / categorie
+                    elif 'condition' in hl or 'situation' in hl:
+                        col_map.setdefault('conditions_incident', i)
+                    # Description: "que s'est-il passe", "circonstances", "description"
+                    elif any(kw in hl for kw in ["pass", "circonstance", "détaillé", "detaille", "description"]):
+                        col_map.setdefault('description', i)
+                    # Mesures immediates: "mesures imm", "actions immediates"
+                    elif any(kw in hl for kw in ["mesures imm", "actions imm"]):
+                        col_map.setdefault('mesures_immediates', i)
+                    # Actions suggerees / correctives / proposees
+                    elif 'action' in hl and ('sugg' in hl or 'corr' in hl or 'propos' in hl):
+                        col_map.setdefault('actions_proposees', i)
+                    # Decision
+                    elif 'décision' in hl or 'decision' in hl:
+                        col_map.setdefault('decision', i)
+                    # Statut
+                    elif 'statut' in hl:
+                        col_map.setdefault('statut', i)
+                    # Plan action / commentaires
+                    elif 'plan action' in hl or 'commentaire' in hl:
+                        col_map.setdefault('commentaire', i)
+                    # Acteur / responsable
+                    elif 'acteur' in hl or 'responsable' in hl:
+                        col_map.setdefault('acteur', i)
+                    # Declarant (nom/prenom si pas deja mappe)
+                    elif ('nom' in hl or 'prénom' in hl or 'prenom' in hl or 'déclarant' in hl or 'declarant' in hl):
+                        col_map.setdefault('declarant', i)
+                return col_map
 
-            # Chercher la ligne d'en-tete (contient "N°")
-            header_row = 0
-            for r in range(min(10, sh.nrows)):
-                for c in range(min(5, sh.ncols)):
-                    if str(sh.cell_value(r, c)).strip().lower().startswith('n°'):
-                        header_row = r
-                        break
+            SERVICE_MAP = {
+                'PRODUCTION': 'PRODUCTION', 'PROD': 'PRODUCTION',
+                'MAINTENANCE': 'MAINTENANCE', 'MAINT': 'MAINTENANCE',
+                'QUALITE': 'QUALITE', 'QHSE': 'QUALITE', 'QSE': 'QUALITE',
+                'LOGISTIQUE': 'LOGISTIQUE', 'LOG': 'LOGISTIQUE',
+                'ADV': 'ADV', 'LABO': 'LABO', 'LABORATOIRE': 'LABO',
+                'DIRECTION': 'DIRECTION', 'FORMULATION': 'FORMULATION',
+            }
 
-            # Lire les en-tetes
-            headers = []
-            for c in range(sh.ncols):
-                h = str(sh.cell_value(header_row, c)).strip().lower()
-                h = h.replace('\n', ' ').replace('\r', '')
-                headers.append(h)
+            STATUS_MAP = {
+                'SOLDEE': 'TERMINE', 'SOLDE': 'TERMINE', 'SOLDÉE': 'TERMINE',
+                'TERMINEE': 'TERMINE', 'TERMINE': 'TERMINE', 'TERMINÉ': 'TERMINE', 'TERMINÉE': 'TERMINE',
+                'EN COURS': 'EN_COURS', 'ENCOURS': 'EN_COURS',
+                'A TRAITER': 'A_TRAITER', 'ATRAITER': 'A_TRAITER',
+                'SUPPRIMEE': 'TERMINE', 'SUPPRIMÉE': 'TERMINE',
+            }
 
-            def excel_date(val, book):
-                """Convertit une date Excel en string YYYY-MM-DD."""
-                if not val:
-                    return ""
-                try:
-                    if isinstance(val, (int, float)) and val > 40000:
-                        dt = xlrd.xldate_as_tuple(val, book.datemode)
-                        return f"{dt[0]:04d}-{dt[1]:02d}-{dt[2]:02d}"
-                    return str(val).strip()
-                except Exception:
-                    return str(val).strip()
+            def _map_service(raw):
+                raw_up = raw.upper().strip()
+                if raw_up in SERVICE_MAP:
+                    return SERVICE_MAP[raw_up]
+                for k, v in SERVICE_MAP.items():
+                    if k in raw_up:
+                        return v
+                return 'AUTRE'
 
-            # Mapper les colonnes par recherche de mots-cles
-            col_map = {}
-            for i, h in enumerate(headers):
-                if h.startswith('n°'):
-                    col_map['numero'] = i
-                elif 'service' in h:
-                    col_map['service'] = i
-                elif 'nom' in h or 'prénom' in h or 'prenom' in h:
-                    col_map['declarant'] = i
-                elif 'date' in h and ('presqu' in h or 'accident' in h or 'incident' in h):
-                    col_map['date_incident'] = i
-                elif 'lieu' in h:
-                    col_map['lieu'] = i
-                elif 'situation' in h and 'dangereuse' in h:
-                    col_map['categorie'] = i
-                elif 'circonstances' in h or 'détaillé' in h:
-                    col_map['description'] = i
-                elif 'actions immédiates' in h or 'actions immediates' in h:
-                    col_map['mesures_immediates'] = i
-                elif 'actions correctives' in h:
-                    col_map['actions_proposees'] = i
-                elif 'décision' in h or 'decision' in h:
-                    col_map['decision'] = i
-                elif 'statut' in h:
-                    col_map['statut'] = i
-                elif 'commentaire' in h or 'plan action' in h:
-                    col_map['commentaire'] = i
-                elif 'acteur' in h:
-                    col_map['acteur'] = i
+            def _map_status(raw):
+                raw_up = raw.upper().strip()
+                if raw_up in STATUS_MAP:
+                    return STATUS_MAP[raw_up]
+                for k, v in STATUS_MAP.items():
+                    if k in raw_up:
+                        return v
+                return 'A_TRAITER'
 
-            # Lire les lignes de donnees
-            for r in range(header_row + 1, sh.nrows):
-                def cell(col_key):
-                    ci = col_map.get(col_key)
-                    if ci is None:
-                        return ""
-                    return str(sh.cell_value(r, ci)).strip()
-
-                # Ignorer les lignes vides (pas de numero ni de declarant)
-                num_val = cell('numero')
-                decl_val = cell('declarant')
-                if not num_val and not decl_val:
-                    continue
-                # Ignorer si numero n'est pas numerique
-                try:
-                    float(num_val) if num_val else None
-                except ValueError:
-                    continue
-
-                date_val = ""
-                di = col_map.get('date_incident')
-                if di is not None:
-                    date_val = excel_date(sh.cell_value(r, di), wb)
-
-                service_raw = cell('service').upper().strip()
-                service_map = {
-                    'PRODUCTION': 'PRODUCTION', 'PROD': 'PRODUCTION',
-                    'MAINTENANCE': 'MAINTENANCE', 'MAINT': 'MAINTENANCE',
-                    'QUALITE': 'QUALITE', 'QHSE': 'QUALITE',
-                    'LOGISTIQUE': 'LOGISTIQUE', 'LOG': 'LOGISTIQUE',
-                    'ADV': 'ADV', 'LABO': 'LABO', 'LABORATOIRE': 'LABO',
-                    'DIRECTION': 'DIRECTION', 'FORMULATION': 'FORMULATION',
-                }
-                service = service_map.get(service_raw, 'AUTRE')
-
-                description = cell('description')
-                categorie = cell('categorie')
-                lieu = cell('lieu')
-                titre = f"PA {cell('numero')} - {categorie}" if categorie else f"PA {cell('numero')} - {lieu}"
-
-                extracted.append({
+            def _build_item(num, service_raw, personnes, date_val, lieu, conditions,
+                            description, mesures, date_incident, actions, decision,
+                            statut, commentaire, acteur):
+                service = _map_service(service_raw)
+                status = _map_status(statut) if statut else 'A_TRAITER'
+                titre_suffix = conditions if conditions else (lieu if lieu else description[:60] if description else "")
+                titre = f"PA {num} - {titre_suffix}" if num else f"PA - {titre_suffix}"
+                # Utiliser date_pa en priorite, sinon date_incident
+                final_date = date_val if date_val else date_incident
+                return {
                     "titre": titre[:200],
                     "description": description,
-                    "date_incident": date_val,
+                    "date_incident": final_date,
                     "lieu": lieu,
                     "service": service,
-                    "categorie_incident": categorie,
-                    "declarant": decl_val,
-                    "mesures_immediates": cell('mesures_immediates'),
-                    "actions_proposees": cell('actions_proposees'),
-                    "contexte_cause": cell('decision'),
-                    "conditions_incident": cell('commentaire'),
-                    "personnes_impliquees": cell('acteur'),
-                })
+                    "categorie_incident": conditions,
+                    "declarant": "",
+                    "personnes_impliquees": personnes,
+                    "mesures_immediates": mesures,
+                    "actions_proposees": actions,
+                    "contexte_cause": decision,
+                    "conditions_incident": conditions,
+                    "commentaire_traitement": commentaire,
+                    "responsable_action": acteur,
+                    "status": status,
+                }
 
-        elif fname.endswith('.xlsx'):
-            import openpyxl
-            wbx = openpyxl.load_workbook(BytesIO(content), data_only=True)
-            ws = wbx.active
+            # --- Extraction XLS ---
+            if fname.endswith('.xls'):
+                import xlrd
+                wb = xlrd.open_workbook(file_contents=content)
+                sh = wb.sheet_by_index(0)
 
-            header_row_idx = 1
-            for r in range(1, min(10, ws.max_row + 1)):
-                for c in range(1, min(5, ws.max_column + 1)):
-                    v = str(ws.cell(row=r, column=c).value or '').strip().lower()
-                    if v.startswith('n°'):
-                        header_row_idx = r
-                        break
+                header_row = 0
+                for r in range(min(10, sh.nrows)):
+                    for c in range(min(5, sh.ncols)):
+                        if str(sh.cell_value(r, c)).strip().lower().startswith('n°'):
+                            header_row = r
+                            break
 
-            headers = []
-            for c in range(1, ws.max_column + 1):
-                h = str(ws.cell(row=header_row_idx, column=c).value or '').strip().lower()
-                headers.append(h.replace('\n', ' '))
+                headers = []
+                for c in range(sh.ncols):
+                    headers.append(str(sh.cell_value(header_row, c)).strip())
 
-            col_map = {}
-            for i, h in enumerate(headers):
-                if h.startswith('n°'):
-                    col_map['numero'] = i
-                elif 'service' in h:
-                    col_map['service'] = i
-                elif 'nom' in h:
-                    col_map['declarant'] = i
-                elif 'date' in h and ('presqu' in h or 'accident' in h):
-                    col_map['date_incident'] = i
-                elif 'lieu' in h:
-                    col_map['lieu'] = i
-                elif 'situation' in h:
-                    col_map['categorie'] = i
-                elif 'circonstances' in h:
-                    col_map['description'] = i
-                elif 'actions imm' in h:
-                    col_map['mesures_immediates'] = i
-                elif 'actions corr' in h:
-                    col_map['actions_proposees'] = i
-                elif 'décision' in h or 'decision' in h:
-                    col_map['decision'] = i
-                elif 'statut' in h:
-                    col_map['statut'] = i
-                elif 'commentaire' in h or 'plan action' in h:
-                    col_map['commentaire'] = i
-                elif 'acteur' in h:
-                    col_map['acteur'] = i
-
-            for r in range(header_row_idx + 1, ws.max_row + 1):
-                def cellv(col_key):
-                    ci = col_map.get(col_key)
-                    if ci is None:
+                def excel_date(val, book):
+                    if not val:
                         return ""
-                    return str(ws.cell(row=r, column=ci + 1).value or '').strip()
+                    try:
+                        if isinstance(val, (int, float)) and val > 40000:
+                            dt = xlrd.xldate_as_tuple(val, book.datemode)
+                            return f"{dt[0]:04d}-{dt[1]:02d}-{dt[2]:02d}"
+                        return str(val).strip()
+                    except Exception:
+                        return str(val).strip()
 
-                num_val = cellv('numero')
-                decl_val = cellv('declarant')
-                if not num_val and not decl_val:
-                    continue
+                col_map = _map_headers(headers)
+                logger.info(f"XLS col_map: {col_map}")
 
-                date_val = ""
-                di = col_map.get('date_incident')
-                if di is not None:
-                    v = ws.cell(row=r, column=di + 1).value
-                    if isinstance(v, datetime):
-                        date_val = v.strftime('%Y-%m-%d')
-                    else:
-                        date_val = str(v or '').strip()
+                for r in range(header_row + 1, sh.nrows):
+                    def cell(col_key):
+                        ci = col_map.get(col_key)
+                        if ci is None:
+                            return ""
+                        return str(sh.cell_value(r, ci)).strip()
 
-                service_raw = cellv('service').upper()
-                service = 'AUTRE'
-                for k, v in {'PRODUCTION': 'PRODUCTION', 'MAINTENANCE': 'MAINTENANCE',
-                             'QUALITE': 'QUALITE', 'QHSE': 'QUALITE',
-                             'LOGISTIQUE': 'LOGISTIQUE', 'ADV': 'ADV',
-                             'LABO': 'LABO', 'DIRECTION': 'DIRECTION'}.items():
-                    if k in service_raw:
-                        service = v
-                        break
+                    num_val = cell('numero')
+                    if not num_val and not cell('personnes_impliquees') and not cell('description'):
+                        continue
+                    try:
+                        float(num_val) if num_val else None
+                    except ValueError:
+                        continue
 
-                categorie = cellv('categorie')
-                lieu = cellv('lieu')
-                titre = f"PA {cellv('numero')} - {categorie}" if categorie else f"PA {cellv('numero')} - {lieu}"
+                    date_pa = ""
+                    di_pa = col_map.get('date_pa')
+                    if di_pa is not None:
+                        date_pa = excel_date(sh.cell_value(r, di_pa), wb)
+                    date_inc = ""
+                    di_inc = col_map.get('date_incident')
+                    if di_inc is not None:
+                        date_inc = excel_date(sh.cell_value(r, di_inc), wb)
 
-                extracted.append({
-                    "titre": titre[:200],
-                    "description": cellv('description'),
-                    "date_incident": date_val,
-                    "lieu": lieu,
-                    "service": service,
-                    "categorie_incident": categorie,
-                    "declarant": decl_val,
-                    "mesures_immediates": cellv('mesures_immediates'),
-                    "actions_proposees": cellv('actions_proposees'),
-                    "contexte_cause": cellv('decision'),
-                    "conditions_incident": cellv('commentaire'),
-                    "personnes_impliquees": cellv('acteur'),
-                })
+                    extracted.append(_build_item(
+                        num=cell('numero'),
+                        service_raw=cell('service'),
+                        personnes=cell('personnes_impliquees') or cell('declarant'),
+                        date_val=date_pa,
+                        lieu=cell('lieu'),
+                        conditions=cell('conditions_incident'),
+                        description=cell('description'),
+                        mesures=cell('mesures_immediates'),
+                        date_incident=date_inc,
+                        actions=cell('actions_proposees'),
+                        decision=cell('decision'),
+                        statut=cell('statut'),
+                        commentaire=cell('commentaire'),
+                        acteur=cell('acteur'),
+                    ))
+
+            # --- Extraction XLSX ---
+            else:
+                import openpyxl
+                wbx = openpyxl.load_workbook(BytesIO(content), data_only=True)
+                ws = wbx.active
+
+                header_row_idx = 1
+                for r in range(1, min(10, ws.max_row + 1)):
+                    for c in range(1, min(5, ws.max_column + 1)):
+                        v = str(ws.cell(row=r, column=c).value or '').strip().lower()
+                        if v.startswith('n°'):
+                            header_row_idx = r
+                            break
+
+                headers = []
+                for c in range(1, ws.max_column + 1):
+                    headers.append(str(ws.cell(row=header_row_idx, column=c).value or '').strip())
+
+                col_map = _map_headers(headers)
+                logger.info(f"XLSX col_map: {col_map}")
+
+                for r in range(header_row_idx + 1, ws.max_row + 1):
+                    def cellv(col_key):
+                        ci = col_map.get(col_key)
+                        if ci is None:
+                            return ""
+                        return str(ws.cell(row=r, column=ci + 1).value or '').strip()
+
+                    num_val = cellv('numero')
+                    if not num_val and not cellv('personnes_impliquees') and not cellv('description'):
+                        continue
+
+                    date_pa = ""
+                    di_pa = col_map.get('date_pa')
+                    if di_pa is not None:
+                        v = ws.cell(row=r, column=di_pa + 1).value
+                        if isinstance(v, datetime):
+                            date_pa = v.strftime('%Y-%m-%d')
+                        elif v:
+                            date_pa = str(v).strip()
+                    date_inc = ""
+                    di_inc = col_map.get('date_incident')
+                    if di_inc is not None:
+                        v = ws.cell(row=r, column=di_inc + 1).value
+                        if isinstance(v, datetime):
+                            date_inc = v.strftime('%Y-%m-%d')
+                        elif v:
+                            date_inc = str(v).strip()
+
+                    extracted.append(_build_item(
+                        num=cellv('numero'),
+                        service_raw=cellv('service'),
+                        personnes=cellv('personnes_impliquees') or cellv('declarant'),
+                        date_val=date_pa,
+                        lieu=cellv('lieu'),
+                        conditions=cellv('conditions_incident'),
+                        description=cellv('description'),
+                        mesures=cellv('mesures_immediates'),
+                        date_incident=date_inc,
+                        actions=cellv('actions_proposees'),
+                        decision=cellv('decision'),
+                        statut=cellv('statut'),
+                        commentaire=cellv('commentaire'),
+                        acteur=cellv('acteur'),
+                    ))
 
         return {
             "success": True,
