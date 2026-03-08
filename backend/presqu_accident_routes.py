@@ -964,24 +964,34 @@ Si le document ne contient pas de presqu'accidents, reponds: {"items": []}"""
         items = data.get("items", [])
 
         # Normaliser les champs
+        def clean(val):
+            """Convertit en string et nettoie les valeurs None/null."""
+            s = str(val or "").strip()
+            return "" if s.lower() in ("none", "null", "n/a") else s
+
         result = []
-        for item in items:
-            service = str(item.get("service", "AUTRE")).upper()
+        for idx, item in enumerate(items):
+            service = clean(item.get("service")).upper() or "AUTRE"
             valid_services = ["PRODUCTION", "MAINTENANCE", "QUALITE", "LOGISTIQUE", "ADV", "LABO", "DIRECTION", "FORMULATION"]
             if service not in valid_services:
                 service = "AUTRE"
 
+            titre = clean(item.get("titre"))
+            if not titre:
+                desc = clean(item.get("description"))
+                titre = f"PA {idx+1} - {desc[:80]}" if desc else f"PA {idx+1}"
+
             result.append({
-                "titre": str(item.get("titre", ""))[:200],
-                "description": str(item.get("description", "")),
-                "date_incident": str(item.get("date_incident", "")),
-                "lieu": str(item.get("lieu", "")),
+                "titre": titre[:200],
+                "description": clean(item.get("description")),
+                "date_incident": clean(item.get("date_incident")),
+                "lieu": clean(item.get("lieu")),
                 "service": service,
-                "categorie_incident": str(item.get("categorie_incident", "")),
-                "declarant": str(item.get("declarant", "")),
-                "mesures_immediates": str(item.get("mesures_immediates", "")),
-                "actions_proposees": str(item.get("actions_proposees", "")),
-                "personnes_impliquees": str(item.get("personnes_impliquees", "")),
+                "categorie_incident": clean(item.get("categorie_incident")),
+                "declarant": clean(item.get("declarant")),
+                "mesures_immediates": clean(item.get("mesures_immediates")),
+                "actions_proposees": clean(item.get("actions_proposees")),
+                "personnes_impliquees": clean(item.get("personnes_impliquees")),
             })
         return result
 
